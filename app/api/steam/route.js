@@ -109,13 +109,12 @@ export async function GET(request) {
       const data    = await res.json();
       const results = (data?.items || [])
         .map(item => formatSearchItem(item, rate))
-        // Metascore'u olanlara öncelik ver, sonra olmayanlara geç
-        .sort((a, b) => {
-          if (a.metacritic !== null && b.metacritic !== null) return b.metacritic - a.metacritic;
-          if (a.metacritic !== null) return -1;
-          if (b.metacritic !== null) return 1;
-          return 0;
-        });
+        // Önce toplam yorum sayısına, sonra review skoruna, sonra metascore'a göre sırala
+        .sort((a, b) =>
+          (b.totalReviews - a.totalReviews) ||
+          (b.reviewScore  - a.reviewScore)  ||
+          ((b.metacritic ?? 0) - (a.metacritic ?? 0))
+        );
       // Sabit büyük total → sonsuz scroll her zaman aktif kalır
       return NextResponse.json({ results, total: 99999 });
     }
@@ -187,20 +186,22 @@ function formatSearchItem(item, rate) {
   }, rate);
 
   return {
-    id:         item.id,
-    name:       item.name,
-    image:      item.tiny_image,
-    price:      priceInfo.isFree ? 0 : priceInfo.price,
-    original:   priceInfo.original,
-    discount:   priceInfo.discount,
-    isFree:     priceInfo.isFree,
-    onSale:     priceInfo.discount > 0,
-    gamePass:   false,
-    noData:     priceInfo.price === null,
-    metacritic: item.metascore ? parseInt(item.metascore) : null,
-    steamUrl:   `https://store.steampowered.com/app/${item.id}`,
-    platforms:  ['pc'],
-    source:     'steam',
+    id:           item.id,
+    name:         item.name,
+    image:        item.tiny_image,
+    price:        priceInfo.isFree ? 0 : priceInfo.price,
+    original:     priceInfo.original,
+    discount:     priceInfo.discount,
+    isFree:       priceInfo.isFree,
+    onSale:       priceInfo.discount > 0,
+    gamePass:     false,
+    noData:       priceInfo.price === null,
+    metacritic:   item.metascore     ? parseInt(item.metascore)     : null,
+    reviewScore:  item.review_score  ? parseInt(item.review_score)  : 0,
+    totalReviews: item.total_reviews ? parseInt(item.total_reviews) : 0,
+    steamUrl:     `https://store.steampowered.com/app/${item.id}`,
+    platforms:    ['pc'],
+    source:       'steam',
   };
 }
 

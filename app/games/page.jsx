@@ -28,6 +28,7 @@ export default function GamesPage() {
   const sentinelRef   = useRef(null);
   const fetchingRef   = useRef(false);
   const seenIdsRef    = useRef(new Set());
+  const pageRef       = useRef(1); // stale closure'a düşmemek için ref ile takip
 
   const buildUrl = useCallback((pageNum) => {
     if (section) return `/api/steam?section=${section}&num=80`;
@@ -37,6 +38,7 @@ export default function GamesPage() {
 
   const fetchGames = useCallback(async () => {
     setLoading(true);
+    pageRef.current     = 1;
     setPage(1);
     fetchingRef.current = false;
     seenIdsRef.current  = new Set();
@@ -57,26 +59,35 @@ export default function GamesPage() {
     if (fetchingRef.current || !hasMore) return;
     fetchingRef.current = true;
     setLoadingMore(true);
-    const nextPage = page + 1;
-    try {
-      const res        = await fetch(buildUrl(nextPage));
-      const data       = await res.json();
-      const newResults = (data.results || []).filter(g => {
-        if (seenIdsRef.current.has(g.id)) return false;
-        seenIdsRef.current.add(g.id);
-        return true;
-      });
-      if (newResults.length > 0) {
-        setGames(prev => [...prev, ...newResults]);
-      }
-      setPage(nextPage);
-      setHasMore(newResults.length > 0 || nextPage < page + 3);
-    } catch {}
-    finally {
-      fetchingRef.current = false;
-      setLoadingMore(false);
+
+    // Duplicate sayfaları otomatik atla (max 8 deneme)
+    let found = false;
+    let skips = 0;
+    while (!found && skips < 8) {
+      const nextPage = pageRef.current + 1;
+      try {
+        const res        = await fetch(buildUrl(nextPage));
+        const data       = await res.json();
+        const newResults = (data.results || []).filter(g => {
+          if (seenIdsRef.current.has(g.id)) return false;
+          seenIdsRef.current.add(g.id);
+          return true;
+        });
+        pageRef.current = nextPage;
+        setPage(nextPage);
+        if (newResults.length > 0) {
+          setGames(prev => [...prev, ...newResults]);
+          found = true;
+        } else {
+          skips++; // hepsi duplicate — sonraki sayfayı dene
+        }
+      } catch { break; }
     }
-  }, [hasMore, page, buildUrl]);
+
+    setHasMore(true); // total=99999 olduğu için scroll hep devam etmeli
+    fetchingRef.current = false;
+    setLoadingMore(false);
+  }, [hasMore, buildUrl]);
 
   // Arama değişince debounce ile yeniden çek
   useEffect(() => {
