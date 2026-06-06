@@ -27,9 +27,12 @@ export default function GamesPage() {
   const debounceRef = useRef(null);
 
   const buildUrl = useCallback((pageNum) => {
-    if (!query && !section) return `/api/steam?section=all&num=80`;
+    // Belirli bir section seçiliyse — sabit 80 oyun, sayfalama yok
     if (section) return `/api/steam?section=${section}&num=80`;
-    return `/api/steam?q=${encodeURIComponent(query)}&num=${PAGE_SIZE}&page=${pageNum}`;
+    // Arama modunda — sayfalandırılmış
+    if (query) return `/api/steam?q=${encodeURIComponent(query)}&num=${PAGE_SIZE}&page=${pageNum}`;
+    // Varsayılan "Tümü" — tüm Steam kataloğu, sayfalandırılmış
+    return `/api/steam?section=all&num=${PAGE_SIZE}&page=${pageNum}`;
   }, [query, section]);
 
   const fetchGames = useCallback(async () => {
@@ -41,9 +44,9 @@ export default function GamesPage() {
       const results = data.results || [];
       setGames(results);
       setTotalCount(data.total || results.length);
-      // section modunda pagination yok (sayı sabittir); sadece arama modunda göster
-      const isSearchMode = !!query && !section;
-      setHasMore(isSearchMode && (data.total || 0) > PAGE_SIZE);
+      // section seçiliyse pagination yok; arama ve varsayılan browseda var
+      const canPaginate = !section;
+      setHasMore(canPaginate && (data.total || 0) > PAGE_SIZE);
     } catch {}
     finally { setLoading(false); }
   }, [buildUrl, section, query]);
@@ -58,7 +61,7 @@ export default function GamesPage() {
       const newResults = data.results || [];
       setGames(prev => [...prev, ...newResults]);
       setPage(nextPage);
-      setHasMore(games.length + newResults.length < (data.total || 0));
+      setHasMore(newResults.length > 0 && games.length + newResults.length < (data.total || 0));
     } catch {}
     finally { setLoadingMore(false); }
   };
@@ -116,7 +119,7 @@ export default function GamesPage() {
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         {[
           { label: 'Tümü',           value: '' },
-          { label: '🎮 Ücretsiz',    value: 'specials' },
+          { label: '🎮 Ücretsiz',    value: 'free' },
           { label: '🗓️ Yeni Çıkan',  value: 'new' },
           { label: '💥 Trend',       value: 'topsellers' },
           { label: '⭐ Öne Çıkan',   value: 'featured' },
