@@ -78,8 +78,10 @@ export default function GameCard({ game, compact = false }) {
               <span style={{ fontSize: 12, fontWeight: 700, color: '#16a34a' }}>Ücretsiz</span>
             ) : game.price !== null && game.price !== undefined ? (
               <span style={{ fontSize: 12, fontWeight: 700, color: isOnSale ? '#ea580c' : '#1a1a1a' }}>₺{game.price}</span>
+            ) : game.noData ? (
+              <span style={{ fontSize: 11, color: '#DC2626', fontWeight: 500 }}>Fiyatı gör →</span>
             ) : (
-              <span style={{ fontSize: 11, color: '#ccc', fontStyle: 'italic' }}>fiyat yükleniyor</span>
+              <span style={{ fontSize: 11, color: '#ccc', fontStyle: 'italic' }}>yükleniyor…</span>
             )}
             {!compact && (game.genres || []).slice(0, 1).map(g => (
               <span key={g} className="badge badge-gray" style={{ fontSize: 10 }}>{g}</span>

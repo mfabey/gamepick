@@ -57,7 +57,7 @@ export default function GamesPage() {
         const bestPrice = data.gamePass ? null : (data.steam || data.epic || null);
         setGames(prev => prev.map(g =>
           g.id === game.id
-            ? { ...g, price: bestPrice, gamePass: data.gamePass, onSale: (data.steamOriginal || 0) > (data.steam || 0) }
+            ? { ...g, price: bestPrice, gamePass: data.gamePass, onSale: (data.steamOriginal || 0) > (data.steam || 0), noData: !!data.noData }
             : g
         ));
       } catch {}
