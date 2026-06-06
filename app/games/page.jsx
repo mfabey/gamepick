@@ -14,19 +14,6 @@ const PRICE_OPTIONS = [
 
 const PAGE_SIZE = 24;
 
-// Yetişkin içerik anahtar kelimeleri (oyun adında geçerse filtrele)
-const ADULT_KEYWORDS = [
-  'hentai','erotic','erotica','18+','adult','sexy','nude','naked','nsfw',
-  'porn','xxx','lewd','ecchi','ero ','yuri','yaoi','uncensored','oppai',
-  'waifu','fanservice','pantsu','sexualized','mature content',
-  'yetişkin','erotik',
-];
-
-function isAdultGame(name = '') {
-  const n = name.toLowerCase();
-  return ADULT_KEYWORDS.some(kw => n.includes(kw));
-}
-
 export default function GamesPage() {
   const [query,       setQuery]       = useState('');
   const [price,       setPrice]       = useState('all');
@@ -37,29 +24,12 @@ export default function GamesPage() {
   const [page,        setPage]        = useState(1);
   const [totalCount,  setTotalCount]  = useState(0);
   const [hasMore,     setHasMore]     = useState(false);
-  const [hideAdult,   setHideAdult]   = useState(true);
-  const debounceRef = useRef(null);
-
-  // Tercih localStorage'dan yükle
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('gp_hide_adult');
-      if (saved !== null) setHideAdult(saved === '1');
-    } catch {}
-  }, []);
-
-  const toggleAdult = () => {
-    const next = !hideAdult;
-    setHideAdult(next);
-    try { localStorage.setItem('gp_hide_adult', next ? '1' : '0'); } catch {}
-  };
+  const debounceRef  = useRef(null);
+  const sentinelRef  = useRef(null); // sonsuz scroll tetikleyici
 
   const buildUrl = useCallback((pageNum) => {
-    // Belirli bir section seçiliyse — sabit 80 oyun, sayfalama yok
     if (section) return `/api/steam?section=${section}&num=80`;
-    // Arama modunda — sayfalandırılmış
-    if (query) return `/api/steam?q=${encodeURIComponent(query)}&num=${PAGE_SIZE}&page=${pageNum}`;
-    // Varsayılan "Tümü" — tüm Steam kataloğu, sayfalandırılmış
+    if (query)   return `/api/steam?q=${encodeURIComponent(query)}&num=${PAGE_SIZE}&page=${pageNum}`;
     return `/api/steam?section=all&num=${PAGE_SIZE}&page=${pageNum}`;
   }, [query, section]);
 
@@ -67,42 +37,57 @@ export default function GamesPage() {
     setLoading(true);
     setPage(1);
     try {
-      const res  = await fetch(buildUrl(1));
-      const data = await res.json();
+      const res     = await fetch(buildUrl(1));
+      const data    = await res.json();
       const results = data.results || [];
       setGames(results);
       setTotalCount(data.total || results.length);
-      // section seçiliyse pagination yok; arama ve varsayılan browseda var
       const canPaginate = !section;
       setHasMore(canPaginate && (data.total || 0) > PAGE_SIZE);
     } catch {}
     finally { setLoading(false); }
   }, [buildUrl, section, query]);
 
-  const loadMore = async () => {
+  const loadMore = useCallback(async () => {
     if (loadingMore || !hasMore) return;
     setLoadingMore(true);
     const nextPage = page + 1;
     try {
-      const res  = await fetch(buildUrl(nextPage));
-      const data = await res.json();
+      const res     = await fetch(buildUrl(nextPage));
+      const data    = await res.json();
       const newResults = data.results || [];
       setGames(prev => [...prev, ...newResults]);
       setPage(nextPage);
       setHasMore(newResults.length > 0 && games.length + newResults.length < (data.total || 0));
     } catch {}
     finally { setLoadingMore(false); }
-  };
+  }, [loadingMore, hasMore, page, buildUrl, games.length]);
 
+  // Arama değişince debounce ile yeniden çek
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(fetchGames, 400);
     return () => clearTimeout(debounceRef.current);
   }, [fetchGames]);
 
-  // Fiyat + yetişkin içerik filtresi (client-side)
+  // Sonsuz scroll — sayfa sonuna gelince otomatik yükle
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) loadMore();
+      },
+      { rootMargin: '300px' } // sayfa sonuna 300px kala tetikle
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [loadMore]);
+
+  // Fiyat filtresi (client-side)
   const filteredGames = games.filter(g => {
-    if (hideAdult && isAdultGame(g.name)) return false;
     if (price === 'free') return g.isFree || g.gamePass;
     if (price !== 'all') {
       const limit = parseInt(price);
@@ -165,44 +150,20 @@ export default function GamesPage() {
         ))}
       </div>
 
-      {/* Bütçe + içerik filtresi */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
+      {/* Bütçe filtresi */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
         <span style={{ fontSize: 12, color: '#999', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>Bütçe</span>
         <select value={price} onChange={e => setPrice(e.target.value)}
           style={{ padding: '7px 12px', borderRadius: 8, border: '1.5px solid #e5e5e5', background: '#fff', fontSize: 13, color: '#333', outline: 'none' }}>
           {PRICE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
-
-        {/* 18+ toggle */}
-        <button onClick={toggleAdult} style={{
-          display: 'flex', alignItems: 'center', gap: 6,
-          padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600,
-          border: `1.5px solid ${hideAdult ? '#e5e5e5' : '#FECACA'}`,
-          background: hideAdult ? '#f5f5f5' : '#FEF2F2',
-          color: hideAdult ? '#888' : '#DC2626',
-          cursor: 'pointer', transition: 'all 0.15s',
-        }}>
-          <span style={{
-            width: 28, height: 16, borderRadius: 999, position: 'relative',
-            background: hideAdult ? '#ccc' : '#DC2626',
-            transition: 'background 0.2s', flexShrink: 0,
-          }}>
-            <span style={{
-              position: 'absolute', top: 2, left: hideAdult ? 2 : 14,
-              width: 12, height: 12, borderRadius: '50%', background: '#fff',
-              transition: 'left 0.2s',
-            }} />
-          </span>
-          🔞 +18 Gizle
-        </button>
       </div>
 
       {/* Sonuç bilgisi */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <p style={{ fontSize: 14, color: '#999' }}>
           {loading ? 'Yükleniyor…' : (
-            <><span style={{ fontWeight: 600, color: '#1a1a1a' }}>{filteredGames.length}</span> oyun gösteriliyor
-            {totalCount > filteredGames.length && ` / ${totalCount.toLocaleString('tr-TR')}`}</>
+            <><span style={{ fontWeight: 600, color: '#1a1a1a' }}>{filteredGames.length}</span> oyun gösteriliyor</>
           )}
         </p>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -247,24 +208,29 @@ export default function GamesPage() {
             {filteredGames.map(game => <GameCard key={game.id} game={game} />)}
           </div>
 
-          {hasMore && (
-            <div style={{ textAlign: 'center', marginTop: 36 }}>
-              <p style={{ fontSize: 13, color: '#bbb', marginBottom: 12 }}>
-                {filteredGames.length} / {totalCount.toLocaleString('tr-TR')} oyun
-              </p>
-              <button onClick={loadMore} disabled={loadingMore}
-                style={{
-                  padding: '12px 36px', borderRadius: 10,
-                  background: loadingMore ? '#f0f0f0' : '#DC2626',
-                  color: loadingMore ? '#bbb' : '#fff',
-                  border: 'none', fontSize: 14, fontWeight: 600, cursor: loadingMore ? 'default' : 'pointer',
-                }}>
-                {loadingMore ? 'Yükleniyor…' : `Daha Fazla Yükle (+${PAGE_SIZE})`}
-              </button>
+          {/* Sonsuz scroll tetikleyici */}
+          <div ref={sentinelRef} style={{ height: 1 }} />
+
+          {/* Yükleniyor göstergesi */}
+          {loadingMore && (
+            <div style={{ textAlign: 'center', padding: '32px 0' }}>
+              <div style={{
+                display: 'inline-flex', gap: 6, alignItems: 'center',
+                fontSize: 13, color: '#bbb',
+              }}>
+                <span style={{
+                  width: 16, height: 16, borderRadius: '50%',
+                  border: '2px solid #f0f0f0', borderTopColor: '#DC2626',
+                  animation: 'spin 0.7s linear infinite', display: 'inline-block',
+                }} />
+                Yükleniyor…
+              </div>
             </div>
           )}
         </>
       )}
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
