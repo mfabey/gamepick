@@ -5,42 +5,54 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import GameCard from '../components/GameCard';
 
 const PRICE_OPTIONS = [
-  { label: 'Tümü',      value: 'all' },
-  { label: 'Ücretsiz',  value: 'free' },
-  { label: '₺0 – ₺100', value: '100' },
-  { label: '₺0 – ₺300', value: '300' },
-  { label: '₺0 – ₺500', value: '500' },
+  { label: 'Tümü',       value: 'all' },
+  { label: 'Ücretsiz',   value: 'free' },
+  { label: '₺0 – ₺100',  value: '100' },
+  { label: '₺0 – ₺300',  value: '300' },
+  { label: '₺0 – ₺500',  value: '500' },
+];
+
+const STEAM_SECTIONS = [
+  { label: 'Tümü',          value: '' },
+  { label: '🎮 Ücretsiz',   value: 'free' },
+  { label: '🗓️ Yeni Çıkan', value: 'new' },
+  { label: '💥 Trend',      value: 'topsellers' },
+  { label: '⭐ Öne Çıkan',  value: 'featured' },
+];
+
+const EPIC_SECTIONS = [
+  { label: 'Tümü',          value: '' },
+  { label: '🎮 Ücretsiz',   value: 'free' },
+  { label: '🗓️ Yeni Çıkan', value: 'new' },
+  { label: '🔥 İndirimli',  value: 'sale' },
 ];
 
 const PAGE_SIZE = 24;
 
 export default function GamesPage() {
+  const [platform,    setPlatform]    = useState('steam');
   const [query,       setQuery]       = useState('');
   const [price,       setPrice]       = useState('all');
   const [section,     setSection]     = useState('');
   const [games,       setGames]       = useState([]);
   const [loading,     setLoading]     = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [page,        setPage]        = useState(1); // sadece gösterim amaçlı
+  const [page,        setPage]        = useState(1);
   const [totalCount,  setTotalCount]  = useState(0);
-  const debounceRef   = useRef(null);
-  const sentinelRef   = useRef(null);
-  // Tüm scroll state'i ref'te tut — closure/stale-state sorunlarını engeller
-  const scrollRef     = useRef({
-    page:      1,
-    fetching:  false,
-    canMore:   false,
-    seenIds:   new Set(),
-    section:   '',
-    query:     '',
+  const debounceRef = useRef(null);
+  const sentinelRef = useRef(null);
+  const scrollRef   = useRef({
+    page: 1, fetching: false, canMore: false,
+    seenIds: new Set(), section: '', query: '', platform: 'steam',
   });
 
-  // buildUrl — ref üzerinden okur, closure sorunu yok
   const buildUrl = useCallback((pageNum) => {
-    const { section: s, query: q } = scrollRef.current;
-    if (s) return `/api/steam?section=${s}&num=80`;
-    if (q) return `/api/steam?q=${encodeURIComponent(q)}&num=${PAGE_SIZE}&page=${pageNum}`;
-    return `/api/steam?section=all&num=${PAGE_SIZE}&page=${pageNum}`;
+    const { section: s, query: q, platform: p } = scrollRef.current;
+    const api = p === 'epic' ? '/api/epic' : '/api/steam';
+    if (s) return `${api}?section=${s}&num=80`;
+    if (q) return `${api}?q=${encodeURIComponent(q)}&num=${PAGE_SIZE}&page=${pageNum}`;
+    if (p === 'epic') return `${api}?num=${PAGE_SIZE}&page=${pageNum}`;
+    return `${api}?section=all&num=${PAGE_SIZE}&page=${pageNum}`;
   }, []);
 
   const fetchGames = useCallback(async () => {
@@ -51,6 +63,7 @@ export default function GamesPage() {
     ref.seenIds  = new Set();
     ref.section  = section;
     ref.query    = query;
+    ref.platform = platform;
 
     setLoading(true);
     setPage(1);
@@ -61,19 +74,17 @@ export default function GamesPage() {
       results.forEach(g => ref.seenIds.add(g.id));
       setGames(results);
       setTotalCount(data.total || results.length);
-      ref.canMore = !section; // sadece "Tümü" ve arama sayfalanır
+      ref.canMore = !section; // bölüm seçilmemişse sayfalandır
     } catch {}
     finally { setLoading(false); }
-  }, [section, query, buildUrl]);
+  }, [section, query, platform, buildUrl]);
 
-  // Sonsuz scroll — scroll event ile tetiklenir, closure sorunu yok
   const loadMore = useCallback(async () => {
     const ref = scrollRef.current;
     if (ref.fetching || !ref.canMore) return;
     ref.fetching = true;
     setLoadingMore(true);
 
-    // Duplicate sayfaları otomatik atla (max 8 deneme)
     let found = false;
     let skips = 0;
     while (!found && skips < 8) {
@@ -91,9 +102,7 @@ export default function GamesPage() {
         if (newResults.length > 0) {
           setGames(prev => [...prev, ...newResults]);
           found = true;
-        } else {
-          skips++;
-        }
+        } else { skips++; }
       } catch { break; }
     }
 
@@ -101,14 +110,12 @@ export default function GamesPage() {
     setLoadingMore(false);
   }, [buildUrl]);
 
-  // Arama değişince debounce ile yeniden çek
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(fetchGames, 400);
     return () => clearTimeout(debounceRef.current);
   }, [fetchGames]);
 
-  // Scroll event listener — sentinel'a gerek yok, sürekli pozisyon kontrol eder
   useEffect(() => {
     const handleScroll = () => {
       if (!sentinelRef.current) return;
@@ -116,34 +123,55 @@ export default function GamesPage() {
       if (rect.top < window.innerHeight + 400) loadMore();
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
-    // Sayfa kısa ise (scroll yok) ilk yüklemede de tetikle
     const t = setTimeout(handleScroll, 800);
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      clearTimeout(t);
-    };
+    return () => { window.removeEventListener('scroll', handleScroll); clearTimeout(t); };
   }, [loadMore]);
 
-  // Fiyat filtresi (client-side)
   const filteredGames = games.filter(g => {
     if (price === 'free') return g.isFree || g.gamePass;
     if (price !== 'all') {
       const limit = parseInt(price);
-      if (g.price !== null && g.price !== undefined && !g.isFree && g.price > limit) return false;
+      if (g.price != null && !g.isFree && g.price > limit) return false;
     }
     return true;
   });
 
+  const switchPlatform = (p) => {
+    setPlatform(p);
+    setSection('');
+    setQuery('');
+    setPrice('all');
+  };
+
   const resetFilters = () => { setQuery(''); setPrice('all'); setSection(''); };
+
+  const sections = platform === 'epic' ? EPIC_SECTIONS : STEAM_SECTIONS;
 
   return (
     <div className="container" style={{ paddingTop: 32, paddingBottom: 60 }}>
 
-      <div style={{ marginBottom: 24 }}>
+      <div style={{ marginBottom: 20 }}>
         <h1 style={{ fontSize: 26, fontWeight: 800, color: '#1a1a1a', marginBottom: 4 }}>Oyunlar</h1>
         <p style={{ color: '#999', fontSize: 14 }}>
-          {totalCount > 0 ? `${totalCount.toLocaleString('tr-TR')} oyun — Steam fiyatları` : 'Steam\'den gerçek zamanlı fiyatlar'}
+          {totalCount > 0 ? `${totalCount.toLocaleString('tr-TR')} oyun` : 'Gerçek zamanlı fiyatlar'}
         </p>
+      </div>
+
+      {/* Platform tabları */}
+      <div style={{ display: 'flex', gap: 6, marginBottom: 20 }}>
+        {[
+          { label: '💻 Steam', value: 'steam' },
+          { label: '⚡ Epic',  value: 'epic'  },
+        ].map(p => (
+          <button key={p.value} onClick={() => switchPlatform(p.value)} style={{
+            padding: '8px 20px', borderRadius: 999, fontSize: 13, fontWeight: 600,
+            border: 'none', cursor: 'pointer', transition: 'all 0.15s',
+            background: platform === p.value ? '#1a1a1a' : '#f0f0f0',
+            color:      platform === p.value ? '#fff'    : '#555',
+          }}>
+            {p.label}
+          </button>
+        ))}
       </div>
 
       {/* Arama */}
@@ -159,7 +187,7 @@ export default function GamesPage() {
         <input
           value={query}
           onChange={e => { setQuery(e.target.value); setSection(''); }}
-          placeholder="Ne arıyorsunuz? (aksiyon, macera, deniz, uzay…)"
+          placeholder={platform === 'epic' ? 'Epic\'te oyun ara…' : 'Steam\'de oyun ara…'}
           style={{ flex: 1, border: 'none', outline: 'none', fontSize: 15, color: '#1a1a1a', background: 'transparent' }}
         />
         {query && (
@@ -169,13 +197,7 @@ export default function GamesPage() {
 
       {/* Bölüm filtreleri */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-        {[
-          { label: 'Tümü',           value: '' },
-          { label: '🎮 Ücretsiz',    value: 'free' },
-          { label: '🗓️ Yeni Çıkan',  value: 'new' },
-          { label: '💥 Trend',       value: 'topsellers' },
-          { label: '⭐ Öne Çıkan',   value: 'featured' },
-        ].map(s => (
+        {sections.map(s => (
           <button key={s.value} onClick={() => { setSection(s.value); setQuery(''); }}
             style={{
               padding: '7px 16px', borderRadius: 999, fontSize: 13, border: 'none',
@@ -245,17 +267,10 @@ export default function GamesPage() {
           <div className="grid-auto">
             {filteredGames.map(game => <GameCard key={game.id} game={game} />)}
           </div>
-
-          {/* Sonsuz scroll tetikleyici */}
           <div ref={sentinelRef} style={{ height: 1 }} />
-
-          {/* Yükleniyor göstergesi */}
           {loadingMore && (
             <div style={{ textAlign: 'center', padding: '32px 0' }}>
-              <div style={{
-                display: 'inline-flex', gap: 6, alignItems: 'center',
-                fontSize: 13, color: '#bbb',
-              }}>
+              <div style={{ display: 'inline-flex', gap: 6, alignItems: 'center', fontSize: 13, color: '#bbb' }}>
                 <span style={{
                   width: 16, height: 16, borderRadius: '50%',
                   border: '2px solid #f0f0f0', borderTopColor: '#DC2626',

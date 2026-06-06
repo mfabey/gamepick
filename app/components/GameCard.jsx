@@ -15,9 +15,12 @@ export default function GameCard({ game, compact = false }) {
   const imgH   = compact ? 90  : 110;
 
   const glowClass = isFree ? 'glow-green' : isOnSale ? 'glow-orange' : '';
+  const href      = game.source === 'epic'
+    ? `/game/epic/${game.epicSlug}`
+    : `/game/${game.id}`;
 
   return (
-    <Link href={`/game/${game.id}`} style={{ flexShrink: 0, width: compact ? width : undefined }}>
+    <Link href={href} style={{ flexShrink: 0, width: compact ? width : undefined }}>
       <div
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}

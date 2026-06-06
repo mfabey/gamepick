@@ -3,17 +3,14 @@ import { NextResponse } from 'next/server';
 const ITAD_KEY = process.env.ITAD_API_KEY;
 const ITAD     = 'https://api.isthereanydeal.com';
 
-// ITAD store ID → görüntü bilgisi
+// Sadece Steam, Epic ve Xbox gösteriyoruz
+const ALLOWED_STORES = new Set(['epic', 'xboxgames', 'microsoft', 'xbox']);
+
 const STORE_INFO = {
-  steam:        { name: 'Steam',      color: '#1b2838', icon: '💻' },
-  epic:         { name: 'Epic Games', color: '#313131', icon: '⚡' },
-  xboxgames:    { name: 'Xbox',       color: '#107c10', icon: '🎯' },
-  microsoft:    { name: 'Xbox',       color: '#107c10', icon: '🎯' },
-  xbox:         { name: 'Xbox',       color: '#107c10', icon: '🎯' },
-  gog:          { name: 'GOG',        color: '#7a2ada', icon: '🌙' },
-  humble:       { name: 'Humble',     color: '#cc2929', icon: '❤️' },
-  gmg:          { name: 'GreenMan',   color: '#1f7a1f', icon: '🟢' },
-  wingamestore: { name: 'WinGame',    color: '#e65c00', icon: '🏪' },
+  epic:      { name: 'Epic Games', color: '#313131', icon: '⚡' },
+  xboxgames: { name: 'Xbox',       color: '#107c10', icon: '🎮' },
+  microsoft: { name: 'Xbox',       color: '#107c10', icon: '🎮' },
+  xbox:      { name: 'Xbox',       color: '#107c10', icon: '🎮' },
 };
 
 // GET /api/prices?title=OYUN_ADI
@@ -23,10 +20,8 @@ export async function GET(request) {
 
   if (!title) return NextResponse.json({ error: 'title gerekli' }, { status: 400 });
 
-  const psUrl = `https://store.playstation.com/tr-tr/search/${encodeURIComponent(title)}`;
-
   if (!ITAD_KEY) {
-    return NextResponse.json({ stores: [], psUrl, noKey: true });
+    return NextResponse.json({ stores: [], noKey: true });
   }
 
   try {
@@ -40,7 +35,7 @@ export async function GET(request) {
     const gameId = searchData?.[0]?.id;
 
     if (!gameId) {
-      return NextResponse.json({ stores: [], psUrl, notFound: true });
+      return NextResponse.json({ stores: [], notFound: true });
     }
 
     // 2. Fiyatları al (Türkiye — TL)
@@ -57,11 +52,12 @@ export async function GET(request) {
     const priceData = await priceRes.json();
     const deals = priceData?.[0]?.deals || [];
 
-    // Mağaza başına en ucuz fiyatı al
+    // Sadece Epic ve Xbox mağazalarını al
     const storeMap = {};
     for (const deal of deals) {
-      const sid  = deal.shop?.id;
-      if (!sid) continue;
+      const sid = String(deal.shop?.id || '').toLowerCase();
+      if (!ALLOWED_STORES.has(sid)) continue; // Steam + 3. parti atla
+
       const info = STORE_INFO[sid] || { name: deal.shop?.name || sid, color: '#555', icon: '🛒' };
       const amt  = deal.price?.amount ?? 0;
       const cur  = storeMap[sid];
@@ -81,10 +77,10 @@ export async function GET(request) {
     }
 
     const stores = Object.values(storeMap);
-    return NextResponse.json({ stores, psUrl, gameId });
+    return NextResponse.json({ stores, gameId });
 
   } catch (err) {
     console.error('ITAD hatası:', err.message);
-    return NextResponse.json({ stores: [], psUrl, error: err.message });
+    return NextResponse.json({ stores: [], error: err.message });
   }
 }

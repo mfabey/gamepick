@@ -109,6 +109,8 @@ export async function GET(request) {
       const data    = await res.json();
       const results = (data?.items || [])
         .map(item => formatSearchItem(item, rate))
+        // 50'den az yorumu kesin bilinen oyunları çıkar
+        .filter(g => !(g.totalReviews > 0 && g.totalReviews < 50))
         // Önce toplam yorum sayısına, sonra review skoruna, sonra metascore'a göre sırala
         .sort((a, b) =>
           (b.totalReviews - a.totalReviews) ||

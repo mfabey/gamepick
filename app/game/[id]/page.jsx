@@ -248,21 +248,6 @@ export default function GameDetail() {
             <PriceTable stores={allStores} loading={!prices} />
           </div>
 
-          {/* PlayStation — arama linki (ücretsiz API yok) */}
-          <a
-            href={prices?.psUrl || `https://store.playstation.com/tr-tr/search/${encodeURIComponent(game.name)}`}
-            target="_blank" rel="noreferrer"
-            style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '11px 14px', background: '#fff',
-              border: '1.5px solid #003087',
-              borderRadius: 10, textDecoration: 'none', marginBottom: 8,
-            }}
-          >
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#003087' }}>🎮 PlayStation Store</span>
-            <span style={{ fontSize: 12, color: '#003087', fontWeight: 500 }}>PS Store'da Ara →</span>
-          </a>
-
           {/* Doğrudan mağaza butonları */}
           {allStores.length > 0 && (
             <div style={{ marginTop: 4, display: 'flex', flexDirection: 'column', gap: 6 }}>
