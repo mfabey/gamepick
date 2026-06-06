@@ -43,8 +43,10 @@ export default function GamesPage() {
   const debounceRef = useRef(null);
 
   const buildUrl = useCallback((pageNum) => {
+    // Hiçbir filtre yoksa topsellers göster
+    if (!query && !genre && !section) return `/api/steam?section=topsellers&num=${PAGE_SIZE}`;
     if (section) return `/api/steam?section=${section}&num=${PAGE_SIZE}`;
-    const term = genre ? `${query} ${genre}`.trim() : (query || 'popular');
+    const term = genre ? `${query} ${genre}`.trim() : query;
     return `/api/steam?q=${encodeURIComponent(term)}&num=${PAGE_SIZE}&page=${pageNum}`;
   }, [query, genre, section]);
 

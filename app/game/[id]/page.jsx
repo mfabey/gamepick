@@ -278,10 +278,12 @@ function buildStoreList(game, prices) {
     url:      `https://store.steampowered.com/app/${game.id}`,
   });
 
-  // ITAD'dan diğer mağazalar (Steam hariç)
+  // ITAD'dan diğer mağazalar — Steam olanları filtrele (çift fiyat engeli)
   if (prices?.stores?.length) {
     for (const s of prices.stores) {
-      if (s.storeId === 'steam') continue;
+      const isSteam = s.storeId?.toLowerCase().includes('steam') ||
+                      s.name?.toLowerCase().includes('steam');
+      if (isSteam) continue;
       stores.push(s);
     }
   }

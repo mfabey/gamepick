@@ -90,14 +90,13 @@ export default function Home() {
 
       <div className="container" style={{ paddingTop: 40 }}>
 
-        {/* Bu Hafta Ücretsiz */}
+        {/* Bu Hafta İndirimli */}
         <Section
-          title="🎮 Bu Hafta Ücretsiz"
-          subtitle="Ücretsiz oynayabileceğin oyunlar"
+          title="💥 Bu Hafta İndirimli"
+          subtitle="Steam'de şu an indirimde olan oyunlar"
           href="/games?section=specials"
           games={freeGames}
           loading={loadingFree}
-          isFreeSection
         />
 
         {/* Yeni Çıkanlar */}
@@ -111,8 +110,8 @@ export default function Home() {
 
         {/* Bu Hafta Trend */}
         <Section
-          title="💥 Bu Hafta Trend"
-          subtitle="Şu an en çok konuşulan oyunlar"
+          title="🔥 Bu Hafta Trend"
+          subtitle="Şu an en çok satılan oyunlar"
           href="/games?section=topsellers"
           games={trendGames}
           loading={loadingTrend}
@@ -147,7 +146,7 @@ export default function Home() {
   );
 }
 
-function Section({ title, subtitle, href, games, loading, isFreeSection }) {
+function Section({ title, subtitle, href, games, loading }) {
   return (
     <div style={{ marginBottom: 40 }}>
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 16 }}>
@@ -164,9 +163,7 @@ function Section({ title, subtitle, href, games, loading, isFreeSection }) {
           ? Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
           : games.length === 0
             ? <p style={{ color: '#ccc', fontSize: 14 }}>Yüklenemedi.</p>
-            : games.map(g => (
-                <GameCard key={g.id} game={isFreeSection ? { ...g, isFree: true } : g} compact />
-              ))
+            : games.map(g => <GameCard key={g.id} game={g} compact />)
         }
       </div>
     </div>
