@@ -3,39 +3,39 @@
   padding: 6px 14px;
   border-radius: 8px;
   font-size: 14px;
-  color: rgba(255,255,255,0.6);
+  color: #666;
   transition: background 0.15s, color 0.15s;
   display: inline-block;
 }
 .nav-link:hover {
-  background: rgba(255,255,255,0.06);
-  color: #f0f0f0;
+  background: #fef2f2;
+  color: #DC2626;
 }
 
 :root {
-  --bg: #0d0d0d;
-  --bg-card: #181818;
-  --bg-input: #1f1f1f;
-  --bg-hover: #222222;
-  --border: rgba(255, 255, 255, 0.08);
-  --border-hover: rgba(255, 255, 255, 0.16);
-  --text: #f0f0f0;
-  --text-2: #a0a0a0;
-  --text-3: #666;
-  --accent: #7B6EE8;
-  --accent-bg: rgba(123, 110, 232, 0.12);
-  --accent-border: rgba(123, 110, 232, 0.4);
-  --green: #4ade80;
-  --green-bg: rgba(74, 222, 128, 0.1);
-  --green-border: rgba(74, 222, 128, 0.3);
-  --blue: #60a5fa;
-  --blue-bg: rgba(96, 165, 250, 0.1);
-  --amber: #fbbf24;
-  --amber-bg: rgba(251, 191, 36, 0.1);
+  --bg: #ffffff;
+  --bg-card: #ffffff;
+  --bg-input: #f5f5f5;
+  --bg-hover: #fafafa;
+  --border: rgba(0, 0, 0, 0.08);
+  --border-hover: rgba(0, 0, 0, 0.15);
+  --text: #1a1a1a;
+  --text-2: #666666;
+  --text-3: #999999;
+  --accent: #DC2626;
+  --accent-bg: #FEF2F2;
+  --accent-border: #FECACA;
+  --green: #16a34a;
+  --green-bg: #f0fdf4;
+  --green-border: #bbf7d0;
+  --blue: #2563eb;
+  --blue-bg: #eff6ff;
+  --amber: #d97706;
+  --amber-bg: #fffbeb;
   --radius: 10px;
   --radius-lg: 14px;
   --radius-full: 9999px;
-  --shadow: 0 1px 3px rgba(0,0,0,0.4);
+  --shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 * {
@@ -46,7 +46,7 @@
 
 html,
 body {
-  background: var(--bg);
+  background: #f8f8f8;
   color: var(--text);
   font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
   font-size: 15px;
@@ -79,8 +79,8 @@ img {
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25); }
 
 /* Utility classes */
 .container {
@@ -105,7 +105,7 @@ img {
   border: 1px solid var(--green-border);
 }
 
-.badge-purple {
+.badge-red {
   background: var(--accent-bg);
   color: var(--accent);
   border: 1px solid var(--accent-border);
@@ -122,8 +122,9 @@ img {
 }
 
 .badge-gray {
-  background: rgba(255,255,255,0.06);
-  color: var(--text-2);
+  background: #f5f5f5;
+  color: #666;
+  border: 1px solid #e5e5e5;
 }
 
 .card {

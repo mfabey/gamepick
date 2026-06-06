@@ -24,19 +24,16 @@ export default function GameDetail() {
     async function load() {
       setLoading(true);
       try {
-        // Oyun detaylarını al
         const gRes  = await fetch(`/api/games?id=${id}`);
         const gData = await gRes.json();
         setGame(gData.game || null);
 
-        // Fiyatları al (oyun adıyla ITAD'dan)
         if (gData.game?.name) {
           const pRes  = await fetch(`/api/prices?title=${encodeURIComponent(gData.game.name)}`);
           const pData = await pRes.json();
           setPrices(pData);
         }
 
-        // AI özeti al
         if (gData.game) {
           const aRes  = await fetch('/api/recommend', {
             method: 'POST',
@@ -74,7 +71,11 @@ export default function GameDetail() {
   const inWishlist = wishlist.find(w => w.id === game?.id);
 
   if (loading) return <DetailSkeleton />;
-  if (!game)   return <div className="container" style={{ padding: '60px 20px', color: 'rgba(255,255,255,0.5)', textAlign: 'center' }}>Oyun bulunamadı.</div>;
+  if (!game)   return (
+    <div className="container" style={{ padding: '60px 20px', color: '#999', textAlign: 'center' }}>
+      Oyun bulunamadı.
+    </div>
+  );
 
   const bestPrice = getBestPrice(prices);
 
@@ -84,7 +85,7 @@ export default function GameDetail() {
       {/* Geri butonu */}
       <button onClick={() => router.back()} style={{
         display: 'flex', alignItems: 'center', gap: 6,
-        background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)',
+        background: 'none', border: 'none', color: '#999',
         fontSize: 14, marginBottom: 24, cursor: 'pointer', padding: 0,
       }}>
         ← Geri dön
@@ -93,14 +94,14 @@ export default function GameDetail() {
       {/* Üst başlık alanı */}
       <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 28, marginBottom: 32, alignItems: 'start' }}>
         {/* Kapak */}
-        <div style={{ borderRadius: 14, overflow: 'hidden', aspectRatio: '3/4', background: '#1a1a1a', position: 'relative' }}>
+        <div style={{ borderRadius: 14, overflow: 'hidden', aspectRatio: '3/4', background: '#f0f0f0', position: 'relative' }}>
           {game.image ? (
             <Image src={game.image} alt={game.name} fill style={{ objectFit: 'cover' }} />
           ) : (
             <div style={{
               width: '100%', height: '100%', minHeight: 200,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 48, fontWeight: 800, color: 'rgba(255,255,255,0.2)',
+              fontSize: 48, fontWeight: 800, color: '#ccc',
             }}>
               {game.name?.slice(0, 2).toUpperCase()}
             </div>
@@ -116,9 +117,9 @@ export default function GameDetail() {
             {game.gamePass && <span className="badge badge-green">Game Pass</span>}
           </div>
 
-          <h1 style={{ fontSize: 30, fontWeight: 800, letterSpacing: '-0.5px', marginBottom: 6 }}>{game.name}</h1>
+          <h1 style={{ fontSize: 30, fontWeight: 800, letterSpacing: '-0.5px', marginBottom: 6, color: '#1a1a1a' }}>{game.name}</h1>
 
-          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14, marginBottom: 14 }}>
+          <p style={{ color: '#999', fontSize: 14, marginBottom: 14 }}>
             {game.developer && <span>{game.developer}</span>}
             {game.released && <span> · {game.released?.slice(0, 4)}</span>}
           </p>
@@ -127,24 +128,24 @@ export default function GameDetail() {
           <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
             {game.metacritic && (
               <div style={{
-                background: game.metacritic >= 80 ? 'rgba(74,222,128,0.1)' : 'rgba(251,191,36,0.1)',
-                border: `1px solid ${game.metacritic >= 80 ? 'rgba(74,222,128,0.3)' : 'rgba(251,191,36,0.3)'}`,
+                background: game.metacritic >= 80 ? '#f0fdf4' : '#fffbeb',
+                border: `1px solid ${game.metacritic >= 80 ? '#bbf7d0' : '#fde68a'}`,
                 borderRadius: 8, padding: '8px 14px', textAlign: 'center',
               }}>
-                <p style={{ fontSize: 20, fontWeight: 800, color: game.metacritic >= 80 ? '#4ade80' : '#fbbf24' }}>{game.metacritic}</p>
-                <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Metacritic</p>
+                <p style={{ fontSize: 20, fontWeight: 800, color: game.metacritic >= 80 ? '#16a34a' : '#d97706' }}>{game.metacritic}</p>
+                <p style={{ fontSize: 10, color: '#999', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Metacritic</p>
               </div>
             )}
             {game.playtime && (
-              <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, padding: '8px 14px', textAlign: 'center' }}>
-                <p style={{ fontSize: 20, fontWeight: 800, color: '#f0f0f0' }}>{game.playtime}s</p>
-                <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ort. süre</p>
+              <div style={{ background: '#f5f5f5', border: '1px solid #ebebeb', borderRadius: 8, padding: '8px 14px', textAlign: 'center' }}>
+                <p style={{ fontSize: 20, fontWeight: 800, color: '#1a1a1a' }}>{game.playtime}s</p>
+                <p style={{ fontSize: 10, color: '#999', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ort. süre</p>
               </div>
             )}
             {bestPrice && (
-              <div style={{ background: 'rgba(123,110,232,0.08)', border: '1px solid rgba(123,110,232,0.2)', borderRadius: 8, padding: '8px 14px', textAlign: 'center' }}>
-                <p style={{ fontSize: 20, fontWeight: 800, color: '#a594f9' }}>{bestPrice.label}</p>
-                <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>En ucuz</p>
+              <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8, padding: '8px 14px', textAlign: 'center' }}>
+                <p style={{ fontSize: 20, fontWeight: 800, color: '#DC2626' }}>{bestPrice.label}</p>
+                <p style={{ fontSize: 10, color: '#999', textTransform: 'uppercase', letterSpacing: '0.05em' }}>En ucuz</p>
               </div>
             )}
           </div>
@@ -155,9 +156,9 @@ export default function GameDetail() {
               onClick={toggleWishlist}
               style={{
                 padding: '10px 20px', borderRadius: 10, fontSize: 13, fontWeight: 600,
-                background: inWishlist ? 'rgba(123,110,232,0.2)' : 'rgba(255,255,255,0.06)',
-                border: `1px solid ${inWishlist ? 'rgba(123,110,232,0.4)' : 'rgba(255,255,255,0.1)'}`,
-                color: inWishlist ? '#a594f9' : '#f0f0f0',
+                background: inWishlist ? '#FEF2F2' : '#f5f5f5',
+                border: `1px solid ${inWishlist ? '#FECACA' : '#e5e5e5'}`,
+                color: inWishlist ? '#DC2626' : '#555',
                 cursor: 'pointer',
               }}
             >
@@ -167,6 +168,7 @@ export default function GameDetail() {
               <a href={prices.steamUrl} target="_blank" rel="noreferrer" style={{
                 padding: '10px 20px', borderRadius: 10, fontSize: 13, fontWeight: 600,
                 background: '#1a9fff', color: '#fff', border: 'none', cursor: 'pointer',
+                textDecoration: 'none', display: 'inline-block',
               }}>
                 Steam'de Gör
               </a>
@@ -179,25 +181,23 @@ export default function GameDetail() {
 
         {/* Sol: AI özeti + açıklama */}
         <div>
-          {/* AI özet kutusu */}
           {aiData?.summary && (
             <div style={{
-              background: 'rgba(123,110,232,0.07)',
-              border: '1px solid rgba(123,110,232,0.2)',
+              background: '#FEF2F2',
+              border: '1px solid #FECACA',
               borderRadius: 12, padding: '16px 18px', marginBottom: 20,
             }}>
-              <p style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#7B6EE8', fontWeight: 700, marginBottom: 8 }}>
+              <p style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#DC2626', fontWeight: 700, marginBottom: 8 }}>
                 ✦ AI özeti
               </p>
-              <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.75)', lineHeight: 1.7 }}>{aiData.summary}</p>
+              <p style={{ fontSize: 14, color: '#444', lineHeight: 1.7 }}>{aiData.summary}</p>
 
-              {/* Gizli etiketler */}
               {aiData.tags?.length > 0 && (
                 <div style={{ marginTop: 12 }}>
-                  <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginBottom: 6 }}>Gizli etiketler</p>
+                  <p style={{ fontSize: 11, color: '#999', marginBottom: 6 }}>Gizli etiketler</p>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                     {aiData.tags.map(tag => (
-                      <span key={tag} className="badge badge-purple">{tag}</span>
+                      <span key={tag} className="badge badge-red">{tag}</span>
                     ))}
                   </div>
                 </div>
@@ -205,11 +205,10 @@ export default function GameDetail() {
             </div>
           )}
 
-          {/* Açıklama */}
           {game.description && (
             <div>
               <h2 className="section-title" style={{ fontSize: 16 }}>Hakkında</h2>
-              <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', lineHeight: 1.75 }}>
+              <p style={{ fontSize: 14, color: '#555', lineHeight: 1.75 }}>
                 {game.description.replace(/<[^>]+>/g, '').slice(0, 600)}
                 {game.description.length > 600 && '...'}
               </p>
@@ -224,17 +223,16 @@ export default function GameDetail() {
             <PriceTable prices={prices} gamePass={game.gamePass} />
           </div>
 
-          {/* Platform linkleri */}
           {prices && (
             <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
               {prices.steamUrl && (
                 <StoreButton href={prices.steamUrl} name="Steam" color="#1a9fff" price={prices.steam} />
               )}
               {prices.epicUrl && (
-                <StoreButton href={prices.epicUrl} name="Epic Games" color="#7B6EE8" price={prices.epic} />
+                <StoreButton href={prices.epicUrl} name="Epic Games" color="#DC2626" price={prices.epic} />
               )}
               {game.gamePass && (
-                <StoreButton href="https://www.xbox.com/tr-TR/xbox-game-pass" name="Xbox Game Pass" color="#4ade80" price="Ücretsiz" isGP />
+                <StoreButton href="https://www.xbox.com/tr-TR/xbox-game-pass" name="Xbox Game Pass" color="#16a34a" price="Ücretsiz" isGP />
               )}
             </div>
           )}
@@ -255,14 +253,14 @@ function PriceTable({ prices, gamePass }) {
     },
     {
       store: 'Epic Games',
-      color: '#7B6EE8',
+      color: '#DC2626',
       price: prices?.epic ?? null,
       original: prices?.epicOriginal ?? null,
       available: prices?.epic !== undefined,
     },
     {
       store: 'Xbox / Game Pass',
-      color: '#4ade80',
+      color: '#16a34a',
       price: gamePass ? 0 : (prices?.xbox ?? null),
       available: gamePass || prices?.xbox !== undefined,
       isGP: gamePass,
@@ -274,44 +272,44 @@ function PriceTable({ prices, gamePass }) {
   return (
     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
       <thead>
-        <tr style={{ background: 'rgba(255,255,255,0.03)' }}>
-          <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Mağaza</th>
-          <th style={{ padding: '10px 14px', textAlign: 'right', fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Fiyat</th>
+        <tr style={{ background: '#f9f9f9' }}>
+          <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: '#999', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Mağaza</th>
+          <th style={{ padding: '10px 14px', textAlign: 'right', fontSize: 11, fontWeight: 600, color: '#999', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Fiyat</th>
           <th style={{ width: 40 }}></th>
         </tr>
       </thead>
       <tbody>
         {rows.map(row => (
-          <tr key={row.store} style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <tr key={row.store} style={{ borderTop: '1px solid #f0f0f0' }}>
             <td style={{ padding: '12px 14px' }}>
               <span style={{
                 display: 'inline-block', width: 8, height: 8, borderRadius: '50%',
                 background: row.color, marginRight: 8, verticalAlign: 'middle',
               }} />
-              <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)' }}>{row.store}</span>
+              <span style={{ fontSize: 13, color: '#333' }}>{row.store}</span>
             </td>
             <td style={{ padding: '12px 14px', textAlign: 'right' }}>
               {row.isGP ? (
                 <span className="badge badge-green">Ücretsiz</span>
               ) : !row.available ? (
-                <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.25)' }}>Mevcut değil</span>
+                <span style={{ fontSize: 12, color: '#ccc' }}>Mevcut değil</span>
               ) : row.price === null ? (
-                <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>Yükleniyor…</span>
+                <span style={{ fontSize: 12, color: '#ccc' }}>Yükleniyor…</span>
               ) : (
                 <span>
                   {row.original && row.original > row.price && (
-                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', textDecoration: 'line-through', marginRight: 6 }}>₺{row.original}</span>
+                    <span style={{ fontSize: 11, color: '#ccc', textDecoration: 'line-through', marginRight: 6 }}>₺{row.original}</span>
                   )}
                   <span style={{
                     fontSize: 14, fontWeight: 700,
-                    color: row.price === minPrice ? '#4ade80' : '#f0f0f0',
+                    color: row.price === minPrice ? '#16a34a' : '#1a1a1a',
                   }}>₺{row.price}</span>
                 </span>
               )}
             </td>
             <td style={{ padding: '12px 8px', textAlign: 'center' }}>
               {row.price === minPrice && row.price >= 0 && !row.isGP && (
-                <span title="En ucuz" style={{ fontSize: 14 }}>✓</span>
+                <span title="En ucuz" style={{ fontSize: 14, color: '#16a34a' }}>✓</span>
               )}
             </td>
           </tr>
@@ -326,13 +324,13 @@ function StoreButton({ href, name, color, price, isGP }) {
     <a href={href} target="_blank" rel="noreferrer" style={{
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       padding: '10px 14px',
-      background: 'rgba(255,255,255,0.04)',
-      border: '1px solid rgba(255,255,255,0.08)',
+      background: '#fff',
+      border: '1px solid #e5e5e5',
       borderRadius: 10,
       textDecoration: 'none',
     }}>
-      <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.8)' }}>{name}</span>
-      <span style={{ fontSize: 13, fontWeight: 700, color: isGP ? '#4ade80' : '#f0f0f0' }}>
+      <span style={{ fontSize: 13, fontWeight: 600, color: '#333' }}>{name}</span>
+      <span style={{ fontSize: 13, fontWeight: 700, color: isGP ? '#16a34a' : '#DC2626' }}>
         {isGP ? 'Ücretsiz (GP)' : price ? `₺${price}` : 'Gör →'}
       </span>
     </a>
@@ -356,13 +354,13 @@ function getBestPrice(prices) {
 function DetailSkeleton() {
   return (
     <div className="container" style={{ paddingTop: 32 }}>
-      <div style={{ height: 14, width: 80, background: 'rgba(255,255,255,0.06)', borderRadius: 6, marginBottom: 24 }} />
+      <div style={{ height: 14, width: 80, background: '#f0f0f0', borderRadius: 6, marginBottom: 24 }} />
       <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 28 }}>
-        <div style={{ borderRadius: 14, background: 'rgba(255,255,255,0.05)', aspectRatio: '3/4' }} />
+        <div style={{ borderRadius: 14, background: '#f5f5f5', aspectRatio: '3/4' }} />
         <div>
-          <div style={{ height: 16, width: 200, background: 'rgba(255,255,255,0.06)', borderRadius: 6, marginBottom: 14 }} />
-          <div style={{ height: 32, width: '70%', background: 'rgba(255,255,255,0.08)', borderRadius: 6, marginBottom: 12 }} />
-          <div style={{ height: 12, width: 120, background: 'rgba(255,255,255,0.04)', borderRadius: 6 }} />
+          <div style={{ height: 16, width: 200, background: '#f0f0f0', borderRadius: 6, marginBottom: 14 }} />
+          <div style={{ height: 32, width: '70%', background: '#f5f5f5', borderRadius: 6, marginBottom: 12 }} />
+          <div style={{ height: 12, width: 120, background: '#f0f0f0', borderRadius: 6 }} />
         </div>
       </div>
     </div>

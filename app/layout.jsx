@@ -11,10 +11,10 @@ export default function RootLayout({ children }) {
     <html lang="tr">
       <body>
         <header style={{
-          borderBottom: '1px solid rgba(255,255,255,0.06)',
+          borderBottom: '1px solid rgba(0,0,0,0.08)',
           position: 'sticky',
           top: 0,
-          background: 'rgba(13,13,13,0.92)',
+          background: 'rgba(255,255,255,0.95)',
           backdropFilter: 'blur(12px)',
           zIndex: 100,
         }}>
@@ -32,9 +32,9 @@ export default function RootLayout({ children }) {
               fontWeight: 700,
               fontSize: 17,
               letterSpacing: '-0.3px',
-              color: '#f0f0f0',
+              color: '#1a1a1a',
             }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#7B6EE8' }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#DC2626' }}>
                 <rect x="2" y="6" width="20" height="12" rx="2"/>
                 <path d="M6 12h4M8 10v4"/>
                 <circle cx="15" cy="11" r="1" fill="currentColor" stroke="none"/>
