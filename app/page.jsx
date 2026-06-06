@@ -15,15 +15,32 @@ export default function Home() {
   const [loadingNew,   setLoadingNew]   = useState(true);
   const [loadingTrend, setLoadingTrend] = useState(true);
 
+  const fetchPrices = useCallback(async (list, setter) => {
+    list.forEach(async (game) => {
+      try {
+        const res  = await fetch(`/api/prices?title=${encodeURIComponent(game.name)}`);
+        const data = await res.json();
+        const bestPrice = data.gamePass ? null : (data.steam || data.epic || null);
+        setter(prev => prev.map(g =>
+          g.id === game.id
+            ? { ...g, price: bestPrice, gamePass: data.gamePass, onSale: (data.steamOriginal || 0) > (data.steam || 0) }
+            : g
+        ));
+      } catch {}
+    });
+  }, []);
+
   const fetchSection = useCallback(async (section, setter, loadingSetter) => {
     loadingSetter(true);
     try {
       const res  = await fetch(`/api/games?section=${section}&page_size=10`);
       const data = await res.json();
-      setter(data.results || []);
+      const results = data.results || [];
+      setter(results);
+      fetchPrices(results, setter);
     } catch {}
     finally { loadingSetter(false); }
-  }, []);
+  }, [fetchPrices]);
 
   useEffect(() => {
     fetchSection('free',     setFreeGames,  setLoadingFree);
@@ -92,7 +109,7 @@ export default function Home() {
 
         {/* Bu Hafta Ücretsiz */}
         <Section
-          title="🟢 Bu Hafta Ücretsiz"
+          title="🎮 Bu Hafta Ücretsiz"
           subtitle="Ücretsiz oynayabileceğin oyunlar"
           href="/games?section=free"
           games={freeGames}
@@ -102,7 +119,7 @@ export default function Home() {
 
         {/* Yeni Çıkanlar */}
         <Section
-          title="🆕 Yeni Çıkanlar"
+          title="🗓️ Yeni Çıkanlar"
           subtitle="Son 4 ayda yayınlanan oyunlar"
           href="/games?section=new"
           games={newGames}
@@ -111,7 +128,7 @@ export default function Home() {
 
         {/* Bu Hafta Trend */}
         <Section
-          title="🔥 Bu Hafta Trend"
+          title="💥 Bu Hafta Trend"
           subtitle="Şu an en çok konuşulan oyunlar"
           href="/games?section=trending"
           games={trendGames}

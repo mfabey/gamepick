@@ -11,7 +11,8 @@ export async function GET(request) {
   const genre    = searchParams.get('genre');      // action, rpg, etc.
   const ordering = searchParams.get('ordering');   // -rating, -released, -added, name
   const platform = searchParams.get('platform');   // 1=PC, 2=PlayStation, 3=Xbox
-  const pageSize = parseInt(searchParams.get('page_size') || '20');
+  const pageSize = parseInt(searchParams.get('page_size') || '24');
+  const page     = parseInt(searchParams.get('page') || '1');
 
   if (!RAWG_KEY) {
     return NextResponse.json({ error: 'RAWG_API_KEY eksik.' }, { status: 500 });
@@ -45,30 +46,25 @@ export async function GET(request) {
     // Bölüm bazlı sorgular
     let url;
     if (section === 'free') {
-      // Ücretsiz oyunlar — free-to-play tag (id: 1781)
-      url = `${BASE}/games?key=${RAWG_KEY}&tags=free-to-play&page_size=${pageSize}&ordering=-added`;
+      url = `${BASE}/games?key=${RAWG_KEY}&tags=free-to-play&page_size=${pageSize}&page=${page}&ordering=-added`;
     } else if (section === 'new') {
-      // Son 4 ayda çıkan oyunlar
       const today = new Date();
       const past  = new Date(today);
       past.setMonth(past.getMonth() - 4);
       const from = past.toISOString().slice(0, 10);
       const to   = today.toISOString().slice(0, 10);
-      url = `${BASE}/games?key=${RAWG_KEY}&dates=${from},${to}&page_size=${pageSize}&ordering=-added&metacritic=60,100`;
+      url = `${BASE}/games?key=${RAWG_KEY}&dates=${from},${to}&page_size=${pageSize}&page=${page}&ordering=-added&metacritic=60,100`;
     } else if (section === 'trending') {
-      // Bu hafta eklenen, popüler oyunlar
-      url = `${BASE}/games?key=${RAWG_KEY}&page_size=${pageSize}&ordering=-added&metacritic=70,100`;
+      url = `${BASE}/games?key=${RAWG_KEY}&page_size=${pageSize}&page=${page}&ordering=-added&metacritic=70,100`;
     } else if (q) {
-      // Arama
-      let params = `search=${encodeURIComponent(q)}&page_size=${pageSize}`;
+      let params = `search=${encodeURIComponent(q)}&page_size=${pageSize}&page=${page}`;
       if (ordering) params += `&ordering=${ordering}`;
       else params += `&ordering=-rating`;
       if (genre)    params += `&genres=${genre}`;
       if (platform) params += `&platforms=${platform}`;
       url = `${BASE}/games?key=${RAWG_KEY}&${params}`;
     } else {
-      // Varsayılan — popüler
-      let params = `page_size=${pageSize}&ordering=${ordering || '-added'}&metacritic=60,100`;
+      let params = `page_size=${pageSize}&page=${page}&ordering=${ordering || '-added'}&metacritic=60,100`;
       if (genre)    params += `&genres=${genre}`;
       if (platform) params += `&platforms=${platform}`;
       url = `${BASE}/games?key=${RAWG_KEY}&${params}`;

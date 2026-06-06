@@ -28,7 +28,7 @@ export async function GET(request) {
     const gameId = searchData?.[0]?.id;
 
     if (!gameId) {
-      return NextResponse.json({ error: 'Oyun fiyat veritabanında bulunamadı.' });
+      return NextResponse.json(mockPrices(title));
     }
 
     // 2. Fiyatları al
@@ -42,6 +42,10 @@ export async function GET(request) {
     );
     const priceData = await priceRes.json();
     const gameDeals = priceData?.[0]?.deals || [];
+
+    if (gameDeals.length === 0) {
+      return NextResponse.json(mockPrices(title));
+    }
 
     // 3. Mağazalara göre en düşük fiyatları çıkar
     const stores = {};

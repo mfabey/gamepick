@@ -19,29 +19,35 @@ const GENRES = [
 ];
 
 const SORT_OPTIONS = [
-  { label: 'Popülerlik',    value: '-added' },
-  { label: 'Metacritic',    value: '-metacritic' },
-  { label: 'Çıkış tarihi',  value: '-released' },
-  { label: 'İsim A-Z',      value: 'name' },
+  { label: 'Popülerlik',   value: '-added' },
+  { label: 'Metacritic',   value: '-metacritic' },
+  { label: 'Çıkış tarihi', value: '-released' },
+  { label: 'İsim A-Z',     value: 'name' },
 ];
 
 const PRICE_OPTIONS = [
-  { label: 'Tümü',          value: 'all' },
-  { label: 'Ücretsiz',      value: 'free' },
-  { label: '₺0 – ₺100',    value: '100' },
-  { label: '₺0 – ₺300',    value: '300' },
-  { label: '₺0 – ₺500',    value: '500' },
+  { label: 'Tümü',       value: 'all' },
+  { label: 'Ücretsiz',   value: 'free' },
+  { label: '₺0 – ₺100',  value: '100' },
+  { label: '₺0 – ₺300',  value: '300' },
+  { label: '₺0 – ₺500',  value: '500' },
 ];
 
+const PAGE_SIZE = 24;
+
 export default function GamesPage() {
-  const [query,    setQuery]    = useState('');
-  const [genre,    setGenre]    = useState('');
-  const [sort,     setSort]     = useState('-added');
-  const [price,    setPrice]    = useState('all');
-  const [section,  setSection]  = useState(''); // free | new | trending | ''
-  const [games,    setGames]    = useState([]);
-  const [loading,  setLoading]  = useState(false);
-  const debounceRef = useRef(null);
+  const [query,      setQuery]      = useState('');
+  const [genre,      setGenre]      = useState('');
+  const [sort,       setSort]       = useState('-added');
+  const [price,      setPrice]      = useState('all');
+  const [section,    setSection]    = useState('');
+  const [games,      setGames]      = useState([]);
+  const [loading,    setLoading]    = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page,       setPage]       = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [hasMore,    setHasMore]    = useState(true);
+  const debounceRef  = useRef(null);
 
   const fetchPrices = useCallback(async (list) => {
     list.forEach(async (game) => {
@@ -58,17 +64,15 @@ export default function GamesPage() {
     });
   }, []);
 
+  // İlk yükleme veya filtre değişince sıfırdan başla
   const fetchGames = useCallback(async () => {
     setLoading(true);
+    setPage(1);
     try {
-      let url = '/api/games?page_size=24';
-      if (section) {
-        url += `&section=${section}`;
-      } else if (query) {
-        url += `&q=${encodeURIComponent(query)}&ordering=${sort}`;
-      } else {
-        url += `&ordering=${sort}`;
-      }
+      let url = `/api/games?page_size=${PAGE_SIZE}&page=1`;
+      if (section)       url += `&section=${section}`;
+      else if (query)    url += `&q=${encodeURIComponent(query)}&ordering=${sort}`;
+      else               url += `&ordering=${sort}`;
       if (genre && !section) url += `&genre=${genre}`;
 
       const res  = await fetch(url);
@@ -77,15 +81,42 @@ export default function GamesPage() {
         section === 'free' ? { ...g, isFree: true } : g
       );
       setGames(results);
+      setTotalCount(data.count || 0);
+      setHasMore((data.count || 0) > PAGE_SIZE);
       fetchPrices(results);
     } catch {}
     finally { setLoading(false); }
   }, [query, genre, sort, section, fetchPrices]);
 
-  // Debounce arama
+  // Daha fazla yükle
+  const loadMore = async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    const nextPage = page + 1;
+    try {
+      let url = `/api/games?page_size=${PAGE_SIZE}&page=${nextPage}`;
+      if (section)       url += `&section=${section}`;
+      else if (query)    url += `&q=${encodeURIComponent(query)}&ordering=${sort}`;
+      else               url += `&ordering=${sort}`;
+      if (genre && !section) url += `&genre=${genre}`;
+
+      const res  = await fetch(url);
+      const data = await res.json();
+      const newResults = (data.results || []).map(g =>
+        section === 'free' ? { ...g, isFree: true } : g
+      );
+      setGames(prev => [...prev, ...newResults]);
+      setPage(nextPage);
+      setHasMore(games.length + newResults.length < (data.count || 0));
+      fetchPrices(newResults);
+    } catch {}
+    finally { setLoadingMore(false); }
+  };
+
+  // Filtre/sort değişince debounce ile yeniden çek
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(fetchGames, 500);
+    debounceRef.current = setTimeout(fetchGames, 400);
     return () => clearTimeout(debounceRef.current);
   }, [fetchGames]);
 
@@ -99,19 +130,26 @@ export default function GamesPage() {
     return true;
   });
 
+  const resetFilters = () => {
+    setQuery(''); setGenre(''); setSort('-added');
+    setPrice('all'); setSection('');
+  };
+
   return (
     <div className="container" style={{ paddingTop: 32, paddingBottom: 60 }}>
 
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ fontSize: 26, fontWeight: 800, color: '#1a1a1a', marginBottom: 4 }}>Oyunlar</h1>
-        <p style={{ color: '#999', fontSize: 14 }}>Ara, filtrele, fiyatları karşılaştır</p>
+        <p style={{ color: '#999', fontSize: 14 }}>
+          {totalCount > 0 ? `${totalCount.toLocaleString('tr-TR')} oyun mevcut` : 'Ara, filtrele, fiyatları karşılaştır'}
+        </p>
       </div>
 
       {/* Arama */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: 10,
         background: '#fff', border: '1.5px solid #e5e5e5',
-        borderRadius: 12, padding: '10px 16px', marginBottom: 20,
+        borderRadius: 12, padding: '10px 16px', marginBottom: 16,
         boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
       }}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#bbb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -130,13 +168,11 @@ export default function GamesPage() {
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         {[
           { label: 'Tümü',          value: '' },
-          { label: '🟢 Ücretsiz',   value: 'free' },
-          { label: '🆕 Yeni Çıkan', value: 'new' },
-          { label: '🔥 Trend',      value: 'trending' },
+          { label: '🎮 Ücretsiz',   value: 'free' },
+          { label: '🗓️ Yeni Çıkan', value: 'new' },
+          { label: '💥 Trend',      value: 'trending' },
         ].map(s => (
-          <button
-            key={s.value}
-            onClick={() => { setSection(s.value); setQuery(''); }}
+          <button key={s.value} onClick={() => { setSection(s.value); setQuery(''); }}
             style={{
               padding: '7px 16px', borderRadius: 999, fontSize: 13, border: 'none',
               background: section === s.value ? '#DC2626' : '#f5f5f5',
@@ -144,87 +180,73 @@ export default function GamesPage() {
               fontWeight: section === s.value ? 600       : 400,
               cursor: 'pointer', transition: 'all 0.15s',
             }}
-          >
-            {s.label}
-          </button>
+          >{s.label}</button>
         ))}
       </div>
 
       {/* Filtre çubuğu */}
-      <div style={{
-        display: 'flex', gap: 12, marginBottom: 24,
-        flexWrap: 'wrap', alignItems: 'center',
-      }}>
-        {/* Tür */}
-        <div>
-          <p style={{ fontSize: 11, color: '#999', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Tür</p>
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            {GENRES.map(g => (
-              <button
-                key={g.value}
-                onClick={() => setGenre(g.value)}
-                style={{
-                  padding: '5px 12px', borderRadius: 999, fontSize: 12,
-                  border: genre === g.value ? '1.5px solid #DC2626' : '1.5px solid #e5e5e5',
-                  background: genre === g.value ? '#FEF2F2' : '#fff',
-                  color:   genre === g.value ? '#DC2626' : '#555',
-                  cursor: 'pointer', transition: 'all 0.1s',
-                }}
-              >
-                {g.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: 12, marginLeft: 'auto', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          {/* Fiyat */}
-          <div>
-            <p style={{ fontSize: 11, color: '#999', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Bütçe</p>
-            <select
-              value={price}
-              onChange={e => setPrice(e.target.value)}
-              style={{
-                padding: '7px 12px', borderRadius: 8, border: '1.5px solid #e5e5e5',
-                background: '#fff', fontSize: 13, color: '#333', outline: 'none',
-              }}
-            >
-              {PRICE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
+      <div style={{ background: '#fff', border: '1px solid #ebebeb', borderRadius: 12, padding: '14px 16px', marginBottom: 20 }}>
+        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+          {/* Tür */}
+          <div style={{ flex: 1, minWidth: 260 }}>
+            <p style={{ fontSize: 11, color: '#999', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Tür</p>
+            <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+              {GENRES.map(g => (
+                <button key={g.value} onClick={() => setGenre(g.value)}
+                  style={{
+                    padding: '4px 11px', borderRadius: 999, fontSize: 12,
+                    border: genre === g.value ? '1.5px solid #DC2626' : '1.5px solid #e5e5e5',
+                    background: genre === g.value ? '#FEF2F2' : '#fff',
+                    color:   genre === g.value ? '#DC2626' : '#555',
+                    cursor: 'pointer',
+                  }}
+                >{g.label}</button>
+              ))}
+            </div>
           </div>
 
-          {/* Sıralama */}
-          <div>
-            <p style={{ fontSize: 11, color: '#999', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Sıralama</p>
-            <select
-              value={sort}
-              onChange={e => setSort(e.target.value)}
-              style={{
-                padding: '7px 12px', borderRadius: 8, border: '1.5px solid #e5e5e5',
-                background: '#fff', fontSize: 13, color: '#333', outline: 'none',
-              }}
-            >
-              {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            {/* Bütçe */}
+            <div>
+              <p style={{ fontSize: 11, color: '#999', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Bütçe</p>
+              <select value={price} onChange={e => setPrice(e.target.value)}
+                style={{ padding: '7px 12px', borderRadius: 8, border: '1.5px solid #e5e5e5', background: '#fff', fontSize: 13, color: '#333', outline: 'none' }}>
+                {PRICE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </div>
+            {/* Sıralama */}
+            <div>
+              <p style={{ fontSize: 11, color: '#999', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Sıralama</p>
+              <select value={sort} onChange={e => setSort(e.target.value)}
+                style={{ padding: '7px 12px', borderRadius: 8, border: '1.5px solid #e5e5e5', background: '#fff', fontSize: 13, color: '#333', outline: 'none' }}>
+                {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Sonuç sayısı */}
+      {/* Sonuç bilgisi */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <p style={{ fontSize: 14, color: '#999' }}>
-          {loading ? 'Yükleniyor…' : `${filteredGames.length} oyun`}
+          {loading ? 'Yükleniyor…' : (
+            <>
+              <span style={{ fontWeight: 600, color: '#1a1a1a' }}>{filteredGames.length}</span> oyun gösteriliyor
+              {totalCount > filteredGames.length && ` (toplam ${totalCount.toLocaleString('tr-TR')})`}
+            </>
+          )}
         </p>
         <div style={{ display: 'flex', gap: 6 }}>
           {filteredGames.filter(g => g.isFree || g.gamePass).length > 0 && (
-            <span className="badge badge-green">
-              ✓ {filteredGames.filter(g => g.isFree || g.gamePass).length} ücretsiz
-            </span>
+            <span className="badge badge-green">✓ {filteredGames.filter(g => g.isFree || g.gamePass).length} ücretsiz</span>
           )}
           {filteredGames.filter(g => g.onSale).length > 0 && (
-            <span className="badge badge-amber">
-              {filteredGames.filter(g => g.onSale).length} indirimli
-            </span>
+            <span className="badge badge-amber">{filteredGames.filter(g => g.onSale).length} indirimli</span>
+          )}
+          {(query || genre || section || price !== 'all') && (
+            <button onClick={resetFilters} style={{ fontSize: 12, color: '#DC2626', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 8px' }}>
+              × Filtreleri Temizle
+            </button>
           )}
         </div>
       </div>
@@ -232,7 +254,7 @@ export default function GamesPage() {
       {/* Oyun grid */}
       {loading ? (
         <div className="grid-auto">
-          {Array.from({ length: 12 }).map((_, i) => (
+          {Array.from({ length: PAGE_SIZE }).map((_, i) => (
             <div key={i} style={{ background: '#fff', border: '1.5px solid #ebebeb', borderRadius: 14, overflow: 'hidden' }}>
               <div style={{ height: 110, background: '#f5f5f5' }} />
               <div style={{ padding: '10px 12px' }}>
@@ -247,11 +269,45 @@ export default function GamesPage() {
           <p style={{ fontSize: 40, marginBottom: 12 }}>🔍</p>
           <p style={{ fontSize: 16, fontWeight: 600, color: '#555', marginBottom: 6 }}>Sonuç bulunamadı</p>
           <p style={{ fontSize: 13 }}>Farklı bir arama veya filtre deneyin.</p>
+          <button onClick={resetFilters} style={{ marginTop: 16, padding: '8px 20px', borderRadius: 8, background: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+            Filtreleri Temizle
+          </button>
         </div>
       ) : (
-        <div className="grid-auto">
-          {filteredGames.map(game => <GameCard key={game.id} game={game} />)}
-        </div>
+        <>
+          <div className="grid-auto">
+            {filteredGames.map(game => <GameCard key={`${game.id}-${game.platform || ''}`} game={game} />)}
+          </div>
+
+          {/* Daha Fazla Yükle */}
+          {hasMore && (
+            <div style={{ textAlign: 'center', marginTop: 36 }}>
+              <p style={{ fontSize: 13, color: '#bbb', marginBottom: 12 }}>
+                {filteredGames.length} / {totalCount.toLocaleString('tr-TR')} oyun gösteriliyor
+              </p>
+              <button
+                onClick={loadMore}
+                disabled={loadingMore}
+                style={{
+                  padding: '12px 36px', borderRadius: 10,
+                  background: loadingMore ? '#f0f0f0' : '#DC2626',
+                  color: loadingMore ? '#bbb' : '#fff',
+                  border: 'none', fontSize: 14, fontWeight: 600,
+                  cursor: loadingMore ? 'default' : 'pointer',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {loadingMore ? 'Yükleniyor…' : `Daha Fazla Yükle (+${PAGE_SIZE})`}
+              </button>
+            </div>
+          )}
+
+          {!hasMore && filteredGames.length > PAGE_SIZE && (
+            <p style={{ textAlign: 'center', marginTop: 32, color: '#bbb', fontSize: 13 }}>
+              Tüm {filteredGames.length} oyun yüklendi.
+            </p>
+          )}
+        </>
       )}
     </div>
   );
