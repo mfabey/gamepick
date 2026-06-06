@@ -6,11 +6,10 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 export default function GameDetail() {
-  const { id }  = useParams();
-  const router  = useRouter();
-  const [game,   setGame]   = useState(null);
-  const [prices, setPrices] = useState(null);
-  const [aiData, setAiData] = useState(null);
+  const { id }    = useParams();
+  const router    = useRouter();
+  const [game,    setGame]    = useState(null);
+  const [prices,  setPrices]  = useState(null);
   const [loading, setLoading] = useState(true);
   const [wishlist, setWishlist] = useState([]);
 
@@ -24,29 +23,17 @@ export default function GameDetail() {
     async function load() {
       setLoading(true);
       try {
-        const gRes  = await fetch(`/api/games?id=${id}`);
+        // Steam API'den oyun detayı
+        const gRes  = await fetch(`/api/steam?appid=${id}`);
         const gData = await gRes.json();
-        setGame(gData.game || null);
+        const gameData = gData.game || null;
+        setGame(gameData);
 
-        if (gData.game?.name) {
-          const pRes  = await fetch(`/api/prices?title=${encodeURIComponent(gData.game.name)}`);
+        if (gameData?.name) {
+          // ITAD üzerinden çoklu platform fiyatları
+          const pRes  = await fetch(`/api/prices?title=${encodeURIComponent(gameData.name)}`);
           const pData = await pRes.json();
           setPrices(pData);
-        }
-
-        if (gData.game) {
-          const aRes  = await fetch('/api/recommend', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              mode: 'summary',
-              gameTitle: gData.game.name,
-              genres: gData.game.genres?.join(', ') || '',
-              description: gData.game.description?.slice(0, 400) || '',
-            }),
-          });
-          const aData = await aRes.json();
-          setAiData(aData);
         }
       } catch (err) {
         console.error('Detay yüklenemedi:', err);
@@ -71,18 +58,23 @@ export default function GameDetail() {
   const inWishlist = wishlist.find(w => w.id === game?.id);
 
   if (loading) return <DetailSkeleton />;
-  if (!game)   return (
+  if (!game) return (
     <div className="container" style={{ padding: '60px 20px', color: '#999', textAlign: 'center' }}>
-      Oyun bulunamadı.
+      Oyun bulunamadı.{' '}
+      <Link href="/games" style={{ color: '#DC2626' }}>Geri dön →</Link>
     </div>
   );
 
-  const bestPrice = getBestPrice(prices);
+  // Steam'den gelen fiyat + ITAD mağazalarını birleştir
+  const allStores = buildStoreList(game, prices);
+  const paidStores = allStores.filter(s => !s.isFree && s.price > 0);
+  const bestStore  = paidStores.sort((a, b) => a.price - b.price)[0];
+  const freeStore  = allStores.find(s => s.isFree);
 
   return (
     <div className="container" style={{ paddingTop: 32, paddingBottom: 60 }}>
 
-      {/* Geri butonu */}
+      {/* Geri */}
       <button onClick={() => router.back()} style={{
         display: 'flex', alignItems: 'center', gap: 6,
         background: 'none', border: 'none', color: '#999',
@@ -91,18 +83,15 @@ export default function GameDetail() {
         ← Geri dön
       </button>
 
-      {/* Üst başlık alanı */}
+      {/* Üst başlık */}
       <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 28, marginBottom: 32, alignItems: 'start' }}>
+
         {/* Kapak */}
         <div style={{ borderRadius: 14, overflow: 'hidden', aspectRatio: '3/4', background: '#f0f0f0', position: 'relative' }}>
           {game.image ? (
-            <Image src={game.image} alt={game.name} fill style={{ objectFit: 'cover' }} />
+            <Image src={game.image} alt={game.name} fill style={{ objectFit: 'cover' }} unoptimized />
           ) : (
-            <div style={{
-              width: '100%', height: '100%', minHeight: 200,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 48, fontWeight: 800, color: '#ccc',
-            }}>
+            <div style={{ width: '100%', height: '100%', minHeight: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 48, fontWeight: 800, color: '#ccc' }}>
               {game.name?.slice(0, 2).toUpperCase()}
             </div>
           )}
@@ -110,21 +99,23 @@ export default function GameDetail() {
 
         {/* Meta */}
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
             {(game.genres || []).slice(0, 3).map(g => (
               <span key={g} className="badge badge-gray">{g}</span>
             ))}
-            {game.gamePass && <span className="badge badge-green">Game Pass</span>}
           </div>
 
-          <h1 style={{ fontSize: 30, fontWeight: 800, letterSpacing: '-0.5px', marginBottom: 6, color: '#1a1a1a' }}>{game.name}</h1>
+          <h1 style={{ fontSize: 30, fontWeight: 800, letterSpacing: '-0.5px', marginBottom: 6, color: '#1a1a1a' }}>
+            {game.name}
+          </h1>
 
-          <p style={{ color: '#999', fontSize: 14, marginBottom: 14 }}>
+          <p style={{ color: '#999', fontSize: 14, marginBottom: 16 }}>
             {game.developer && <span>{game.developer}</span>}
-            {game.released && <span> · {game.released?.slice(0, 4)}</span>}
+            {game.released  && <span> · {game.released?.slice(0, 4)}</span>}
+            {game.publisher && game.publisher !== game.developer && <span> · {game.publisher}</span>}
           </p>
 
-          {/* Metacritic + süre */}
+          {/* Stat kutular */}
           <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
             {game.metacritic && (
               <div style={{
@@ -136,104 +127,132 @@ export default function GameDetail() {
                 <p style={{ fontSize: 10, color: '#999', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Metacritic</p>
               </div>
             )}
-            {game.playtime && (
-              <div style={{ background: '#f5f5f5', border: '1px solid #ebebeb', borderRadius: 8, padding: '8px 14px', textAlign: 'center' }}>
-                <p style={{ fontSize: 20, fontWeight: 800, color: '#1a1a1a' }}>{game.playtime}s</p>
-                <p style={{ fontSize: 10, color: '#999', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ort. süre</p>
+            {(freeStore || bestStore) && (
+              <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8, padding: '8px 14px', textAlign: 'center' }}>
+                <p style={{ fontSize: 20, fontWeight: 800, color: '#DC2626' }}>
+                  {freeStore ? 'Ücretsiz' : `₺${bestStore.price}`}
+                </p>
+                <p style={{ fontSize: 10, color: '#999', textTransform: 'uppercase', letterSpacing: '0.05em' }}>En ucuz</p>
               </div>
             )}
-            {bestPrice && (
-              <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8, padding: '8px 14px', textAlign: 'center' }}>
-                <p style={{ fontSize: 20, fontWeight: 800, color: '#DC2626' }}>{bestPrice.label}</p>
-                <p style={{ fontSize: 10, color: '#999', textTransform: 'uppercase', letterSpacing: '0.05em' }}>En ucuz</p>
+            {allStores.length > 0 && (
+              <div style={{ background: '#f5f5f5', border: '1px solid #ebebeb', borderRadius: 8, padding: '8px 14px', textAlign: 'center' }}>
+                <p style={{ fontSize: 20, fontWeight: 800, color: '#1a1a1a' }}>{allStores.length}</p>
+                <p style={{ fontSize: 10, color: '#999', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Platform</p>
               </div>
             )}
           </div>
 
           {/* Butonlar */}
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            <button
-              onClick={toggleWishlist}
-              style={{
-                padding: '10px 20px', borderRadius: 10, fontSize: 13, fontWeight: 600,
-                background: inWishlist ? '#FEF2F2' : '#f5f5f5',
-                border: `1px solid ${inWishlist ? '#FECACA' : '#e5e5e5'}`,
-                color: inWishlist ? '#DC2626' : '#555',
-                cursor: 'pointer',
-              }}
-            >
+            <button onClick={toggleWishlist} style={{
+              padding: '10px 20px', borderRadius: 10, fontSize: 13, fontWeight: 600,
+              background: inWishlist ? '#FEF2F2' : '#f5f5f5',
+              border: `1px solid ${inWishlist ? '#FECACA' : '#e5e5e5'}`,
+              color: inWishlist ? '#DC2626' : '#555', cursor: 'pointer',
+            }}>
               {inWishlist ? '✓ İstek listesinde' : '+ İstek listesine ekle'}
             </button>
-            {prices?.steamUrl && (
-              <a href={prices.steamUrl} target="_blank" rel="noreferrer" style={{
-                padding: '10px 20px', borderRadius: 10, fontSize: 13, fontWeight: 600,
-                background: '#1a9fff', color: '#fff', border: 'none', cursor: 'pointer',
-                textDecoration: 'none', display: 'inline-block',
-              }}>
-                Steam'de Gör
-              </a>
-            )}
+            <a href={`https://store.steampowered.com/app/${id}`} target="_blank" rel="noreferrer" style={{
+              padding: '10px 20px', borderRadius: 10, fontSize: 13, fontWeight: 600,
+              background: '#1a9fff', color: '#fff', textDecoration: 'none', display: 'inline-block',
+            }}>
+              Steam'de Gör
+            </a>
           </div>
         </div>
       </div>
 
+      {/* Alt grid: açıklama + fiyatlar */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 24, alignItems: 'start' }}>
 
-        {/* Sol: AI özeti + açıklama */}
+        {/* Sol: Açıklama + ekran görüntüleri */}
         <div>
-          {aiData?.summary && (
-            <div style={{
-              background: '#FEF2F2',
-              border: '1px solid #FECACA',
-              borderRadius: 12, padding: '16px 18px', marginBottom: 20,
-            }}>
-              <p style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#DC2626', fontWeight: 700, marginBottom: 8 }}>
-                ✦ AI özeti
-              </p>
-              <p style={{ fontSize: 14, color: '#444', lineHeight: 1.7 }}>{aiData.summary}</p>
-
-              {aiData.tags?.length > 0 && (
-                <div style={{ marginTop: 12 }}>
-                  <p style={{ fontSize: 11, color: '#999', marginBottom: 6 }}>Gizli etiketler</p>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    {aiData.tags.map(tag => (
-                      <span key={tag} className="badge badge-red">{tag}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
+          {game.description && (
+            <div style={{ marginBottom: 24 }}>
+              <h2 className="section-title" style={{ fontSize: 16 }}>Hakkında</h2>
+              <p
+                style={{ fontSize: 14, color: '#555', lineHeight: 1.75 }}
+                dangerouslySetInnerHTML={{ __html:
+                  game.description.length > 900
+                    ? game.description.slice(0, 900) + '…'
+                    : game.description
+                }}
+              />
             </div>
           )}
 
-          {game.description && (
+          {game.categories?.length > 0 && (
+            <div style={{ marginBottom: 24 }}>
+              <h2 className="section-title" style={{ fontSize: 16 }}>Özellikler</h2>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {game.categories.slice(0, 8).map(c => (
+                  <span key={c} className="badge badge-gray">{c}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {game.screenshots?.length > 0 && (
             <div>
-              <h2 className="section-title" style={{ fontSize: 16 }}>Hakkında</h2>
-              <p style={{ fontSize: 14, color: '#555', lineHeight: 1.75 }}>
-                {game.description.replace(/<[^>]+>/g, '').slice(0, 600)}
-                {game.description.length > 600 && '...'}
-              </p>
+              <h2 className="section-title" style={{ fontSize: 16 }}>Ekran Görüntüleri</h2>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
+                {game.screenshots.slice(0, 4).map((ss, i) => (
+                  <div key={i} style={{ borderRadius: 10, overflow: 'hidden', aspectRatio: '16/9', position: 'relative', background: '#f0f0f0' }}>
+                    <Image src={ss} alt={`Screenshot ${i + 1}`} fill style={{ objectFit: 'cover' }} unoptimized />
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
 
-        {/* Sağ: Fiyat matrisi */}
+        {/* Sağ: Platform fiyatları */}
         <div>
-          <h2 className="section-title" style={{ fontSize: 16 }}>Fiyat karşılaştırması</h2>
-          <div className="card" style={{ overflow: 'hidden' }}>
-            <PriceTable prices={prices} gamePass={game.gamePass} />
+          <h2 className="section-title" style={{ fontSize: 16 }}>Platform Fiyatları</h2>
+
+          <div className="card" style={{ overflow: 'hidden', marginBottom: 10 }}>
+            <PriceTable stores={allStores} loading={!prices} />
           </div>
 
-          {prices && (
-            <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {prices.steamUrl && (
-                <StoreButton href={prices.steamUrl} name="Steam" color="#1a9fff" price={prices.steam} />
-              )}
-              {prices.epicUrl && (
-                <StoreButton href={prices.epicUrl} name="Epic Games" color="#DC2626" price={prices.epic} />
-              )}
-              {game.gamePass && (
-                <StoreButton href="https://www.xbox.com/tr-TR/xbox-game-pass" name="Xbox Game Pass" color="#16a34a" price="Ücretsiz" isGP />
-              )}
+          {/* PlayStation — arama linki (ücretsiz API yok) */}
+          <a
+            href={prices?.psUrl || `https://store.playstation.com/tr-tr/search/${encodeURIComponent(game.name)}`}
+            target="_blank" rel="noreferrer"
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '11px 14px', background: '#fff',
+              border: '1.5px solid #003087',
+              borderRadius: 10, textDecoration: 'none', marginBottom: 8,
+            }}
+          >
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#003087' }}>🎮 PlayStation Store</span>
+            <span style={{ fontSize: 12, color: '#003087', fontWeight: 500 }}>PS Store'da Ara →</span>
+          </a>
+
+          {/* Doğrudan mağaza butonları */}
+          {allStores.length > 0 && (
+            <div style={{ marginTop: 4, display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {allStores.map((store, i) => (
+                <a
+                  key={i}
+                  href={store.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '10px 14px', background: '#fff', border: '1px solid #e5e5e5',
+                    borderRadius: 10, textDecoration: 'none', transition: 'border-color 0.15s',
+                  }}
+                >
+                  <span style={{ fontSize: 13, fontWeight: 600, color: '#333' }}>
+                    {store.icon} {store.name}
+                  </span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: store.isFree ? '#16a34a' : '#DC2626' }}>
+                    {store.isFree ? 'Ücretsiz' : `₺${store.price}`}
+                  </span>
+                </a>
+              ))}
             </div>
           )}
         </div>
@@ -242,32 +261,55 @@ export default function GameDetail() {
   );
 }
 
-function PriceTable({ prices, gamePass }) {
-  const rows = [
-    {
-      store: 'Steam',
-      color: '#1a9fff',
-      price: prices?.steam ?? null,
-      original: prices?.steamOriginal ?? null,
-      available: prices?.steam !== undefined,
-    },
-    {
-      store: 'Epic Games',
-      color: '#DC2626',
-      price: prices?.epic ?? null,
-      original: prices?.epicOriginal ?? null,
-      available: prices?.epic !== undefined,
-    },
-    {
-      store: 'Xbox / Game Pass',
-      color: '#16a34a',
-      price: gamePass ? 0 : (prices?.xbox ?? null),
-      available: gamePass || prices?.xbox !== undefined,
-      isGP: gamePass,
-    },
-  ];
+// Steam'den gelen fiyatı + ITAD mağazalarını birleştir
+function buildStoreList(game, prices) {
+  const stores = [];
 
-  const minPrice = Math.min(...rows.filter(r => r.price !== null && r.price >= 0).map(r => r.price));
+  // Steam önce (Steam API'den gerçek ₺ fiyat)
+  stores.push({
+    storeId:  'steam',
+    name:     'Steam',
+    icon:     '💻',
+    color:    '#1b2838',
+    price:    game.isFree ? 0 : (game.price ?? 0),
+    original: game.original ?? (game.price ?? 0),
+    discount: game.discount ?? 0,
+    isFree:   !!game.isFree,
+    url:      `https://store.steampowered.com/app/${game.id}`,
+  });
+
+  // ITAD'dan diğer mağazalar (Steam hariç)
+  if (prices?.stores?.length) {
+    for (const s of prices.stores) {
+      if (s.storeId === 'steam') continue;
+      stores.push(s);
+    }
+  }
+
+  return stores;
+}
+
+function PriceTable({ stores, loading }) {
+  if (loading) {
+    return (
+      <div style={{ padding: 16 }}>
+        {[1, 2, 3].map(i => (
+          <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #f0f0f0' }}>
+            <div style={{ height: 12, width: 80, background: '#f0f0f0', borderRadius: 4 }} />
+            <div style={{ height: 12, width: 50, background: '#f5f5f5', borderRadius: 4 }} />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (!stores.length) {
+    return <p style={{ padding: 16, fontSize: 13, color: '#ccc' }}>Fiyat bulunamadı.</p>;
+  }
+
+  const minPrice = Math.min(
+    ...stores.filter(s => !s.isFree && s.price > 0).map(s => s.price)
+  );
 
   return (
     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -275,40 +317,42 @@ function PriceTable({ prices, gamePass }) {
         <tr style={{ background: '#f9f9f9' }}>
           <th style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: '#999', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Mağaza</th>
           <th style={{ padding: '10px 14px', textAlign: 'right', fontSize: 11, fontWeight: 600, color: '#999', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Fiyat</th>
-          <th style={{ width: 40 }}></th>
+          <th style={{ width: 32 }}></th>
         </tr>
       </thead>
       <tbody>
-        {rows.map(row => (
-          <tr key={row.store} style={{ borderTop: '1px solid #f0f0f0' }}>
+        {stores.map((store, i) => (
+          <tr key={i} style={{ borderTop: '1px solid #f0f0f0' }}>
             <td style={{ padding: '12px 14px' }}>
               <span style={{
                 display: 'inline-block', width: 8, height: 8, borderRadius: '50%',
-                background: row.color, marginRight: 8, verticalAlign: 'middle',
+                background: store.color, marginRight: 8, verticalAlign: 'middle',
               }} />
-              <span style={{ fontSize: 13, color: '#333' }}>{row.store}</span>
+              <span style={{ fontSize: 13, color: '#333' }}>{store.name}</span>
+              {store.discount > 0 && (
+                <span style={{ marginLeft: 6, fontSize: 10, background: '#FEF2F2', color: '#DC2626', padding: '1px 5px', borderRadius: 4, fontWeight: 600 }}>
+                  -{store.discount}%
+                </span>
+              )}
             </td>
             <td style={{ padding: '12px 14px', textAlign: 'right' }}>
-              {row.isGP ? (
+              {store.isFree ? (
                 <span className="badge badge-green">Ücretsiz</span>
-              ) : !row.available ? (
-                <span style={{ fontSize: 12, color: '#ccc' }}>Mevcut değil</span>
-              ) : row.price === null ? (
-                <span style={{ fontSize: 12, color: '#ccc' }}>Yükleniyor…</span>
               ) : (
                 <span>
-                  {row.original && row.original > row.price && (
-                    <span style={{ fontSize: 11, color: '#ccc', textDecoration: 'line-through', marginRight: 6 }}>₺{row.original}</span>
+                  {store.original > store.price && (
+                    <span style={{ fontSize: 11, color: '#ccc', textDecoration: 'line-through', marginRight: 5 }}>
+                      ₺{store.original}
+                    </span>
                   )}
-                  <span style={{
-                    fontSize: 14, fontWeight: 700,
-                    color: row.price === minPrice ? '#16a34a' : '#1a1a1a',
-                  }}>₺{row.price}</span>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: store.price === minPrice ? '#16a34a' : '#1a1a1a' }}>
+                    ₺{store.price}
+                  </span>
                 </span>
               )}
             </td>
             <td style={{ padding: '12px 8px', textAlign: 'center' }}>
-              {row.price === minPrice && row.price >= 0 && !row.isGP && (
+              {!store.isFree && store.price === minPrice && store.price > 0 && (
                 <span title="En ucuz" style={{ fontSize: 14, color: '#16a34a' }}>✓</span>
               )}
             </td>
@@ -317,38 +361,6 @@ function PriceTable({ prices, gamePass }) {
       </tbody>
     </table>
   );
-}
-
-function StoreButton({ href, name, color, price, isGP }) {
-  return (
-    <a href={href} target="_blank" rel="noreferrer" style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      padding: '10px 14px',
-      background: '#fff',
-      border: '1px solid #e5e5e5',
-      borderRadius: 10,
-      textDecoration: 'none',
-    }}>
-      <span style={{ fontSize: 13, fontWeight: 600, color: '#333' }}>{name}</span>
-      <span style={{ fontSize: 13, fontWeight: 700, color: isGP ? '#16a34a' : '#DC2626' }}>
-        {isGP ? 'Ücretsiz (GP)' : price ? `₺${price}` : 'Gör →'}
-      </span>
-    </a>
-  );
-}
-
-function getBestPrice(prices) {
-  if (!prices) return null;
-  const candidates = [
-    prices.steam && { label: `₺${prices.steam}`, store: 'Steam' },
-    prices.epic  && { label: `₺${prices.epic}`,  store: 'Epic' },
-  ].filter(Boolean);
-  if (!candidates.length) return null;
-  return candidates.reduce((a, b) => {
-    const aNum = parseInt(a.label.replace('₺', ''));
-    const bNum = parseInt(b.label.replace('₺', ''));
-    return aNum < bNum ? a : b;
-  });
 }
 
 function DetailSkeleton() {

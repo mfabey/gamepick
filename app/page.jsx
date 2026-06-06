@@ -15,37 +15,20 @@ export default function Home() {
   const [loadingNew,   setLoadingNew]   = useState(true);
   const [loadingTrend, setLoadingTrend] = useState(true);
 
-  const fetchPrices = useCallback(async (list, setter) => {
-    list.forEach(async (game) => {
-      try {
-        const res  = await fetch(`/api/prices?title=${encodeURIComponent(game.name)}`);
-        const data = await res.json();
-        const bestPrice = data.gamePass ? null : (data.steam || data.epic || null);
-        setter(prev => prev.map(g =>
-          g.id === game.id
-            ? { ...g, price: bestPrice, gamePass: data.gamePass, onSale: (data.steamOriginal || 0) > (data.steam || 0), noData: !!data.noData }
-            : g
-        ));
-      } catch {}
-    });
-  }, []);
-
-  const fetchSection = useCallback(async (section, setter, loadingSetter) => {
+  const fetchSection = useCallback(async (steamSection, setter, loadingSetter) => {
     loadingSetter(true);
     try {
-      const res  = await fetch(`/api/games?section=${section}&page_size=10`);
+      const res  = await fetch(`/api/steam?section=${steamSection}&num=12`);
       const data = await res.json();
-      const results = data.results || [];
-      setter(results);
-      fetchPrices(results, setter);
+      setter(data.results || []);
     } catch {}
     finally { loadingSetter(false); }
-  }, [fetchPrices]);
+  }, []);
 
   useEffect(() => {
-    fetchSection('free',     setFreeGames,  setLoadingFree);
-    fetchSection('new',      setNewGames,   setLoadingNew);
-    fetchSection('trending', setTrendGames, setLoadingTrend);
+    fetchSection('specials',   setFreeGames,  setLoadingFree);
+    fetchSection('new',        setNewGames,   setLoadingNew);
+    fetchSection('topsellers', setTrendGames, setLoadingTrend);
   }, [fetchSection]);
 
   return (
@@ -111,7 +94,7 @@ export default function Home() {
         <Section
           title="🎮 Bu Hafta Ücretsiz"
           subtitle="Ücretsiz oynayabileceğin oyunlar"
-          href="/games?section=free"
+          href="/games?section=specials"
           games={freeGames}
           loading={loadingFree}
           isFreeSection
@@ -130,7 +113,7 @@ export default function Home() {
         <Section
           title="💥 Bu Hafta Trend"
           subtitle="Şu an en çok konuşulan oyunlar"
-          href="/games?section=trending"
+          href="/games?section=topsellers"
           games={trendGames}
           loading={loadingTrend}
         />
