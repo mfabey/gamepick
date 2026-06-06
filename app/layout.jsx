@@ -24,7 +24,6 @@ export default function RootLayout({ children }) {
             height: 60,
             gap: 8,
           }}>
-            {/* Logo */}
             <Link href="/" style={{
               display: 'flex',
               alignItems: 'center',
@@ -33,6 +32,7 @@ export default function RootLayout({ children }) {
               fontWeight: 700,
               fontSize: 17,
               letterSpacing: '-0.3px',
+              color: '#f0f0f0',
             }}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#7B6EE8' }}>
                 <rect x="2" y="6" width="20" height="12" rx="2"/>
@@ -43,10 +43,9 @@ export default function RootLayout({ children }) {
               GamePick
             </Link>
 
-            {/* Nav links */}
             <nav style={{ display: 'flex', gap: 4 }}>
-              <NavLink href="/">Keşfet</NavLink>
-              <NavLink href="/profile">Profilim</NavLink>
+              <Link href="/" className="nav-link">Keşfet</Link>
+              <Link href="/profile" className="nav-link">Profilim</Link>
             </nav>
           </div>
         </header>
@@ -56,27 +55,5 @@ export default function RootLayout({ children }) {
         </main>
       </body>
     </html>
-  );
-}
-
-function NavLink({ href, children }) {
-  return (
-    <Link href={href} style={{
-      padding: '6px 14px',
-      borderRadius: 8,
-      fontSize: 14,
-      color: 'rgba(255,255,255,0.6)',
-      transition: 'background 0.15s, color 0.15s',
-    }}
-    onMouseEnter={e => {
-      e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
-      e.currentTarget.style.color = '#f0f0f0';
-    }}
-    onMouseLeave={e => {
-      e.currentTarget.style.background = 'transparent';
-      e.currentTarget.style.color = 'rgba(255,255,255,0.6)';
-    }}>
-      {children}
-    </Link>
   );
 }
