@@ -4,21 +4,6 @@ export const dynamic = 'force-dynamic';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import GameCard from '../components/GameCard';
 
-// Steam arama terimleri tür filtresine göre
-const GENRES = [
-  { label: 'Tümü',       value: '' },
-  { label: 'Aksiyon',    value: 'action' },
-  { label: 'RPG',        value: 'rpg' },
-  { label: 'Strateji',   value: 'strategy' },
-  { label: 'Macera',     value: 'adventure' },
-  { label: 'Simülasyon', value: 'simulation' },
-  { label: 'Indie',      value: 'indie' },
-  { label: 'Nişancı',    value: 'shooter' },
-  { label: 'Bulmaca',    value: 'puzzle' },
-  { label: 'Spor',       value: 'sports' },
-  { label: 'Yarış',      value: 'racing' },
-];
-
 const PRICE_OPTIONS = [
   { label: 'Tümü',      value: 'all' },
   { label: 'Ücretsiz',  value: 'free' },
@@ -31,7 +16,6 @@ const PAGE_SIZE = 24;
 
 export default function GamesPage() {
   const [query,       setQuery]       = useState('');
-  const [genre,       setGenre]       = useState('');
   const [price,       setPrice]       = useState('all');
   const [section,     setSection]     = useState('');
   const [games,       setGames]       = useState([]);
@@ -43,12 +27,10 @@ export default function GamesPage() {
   const debounceRef = useRef(null);
 
   const buildUrl = useCallback((pageNum) => {
-    // Hiçbir filtre yoksa tüm kategorileri birleştirip göster
-    if (!query && !genre && !section) return `/api/steam?section=all&num=80`;
+    if (!query && !section) return `/api/steam?section=all&num=80`;
     if (section) return `/api/steam?section=${section}&num=80`;
-    const term = genre ? `${query} ${genre}`.trim() : query;
-    return `/api/steam?q=${encodeURIComponent(term)}&num=${PAGE_SIZE}&page=${pageNum}`;
-  }, [query, genre, section]);
+    return `/api/steam?q=${encodeURIComponent(query)}&num=${PAGE_SIZE}&page=${pageNum}`;
+  }, [query, section]);
 
   const fetchGames = useCallback(async () => {
     setLoading(true);
@@ -60,11 +42,11 @@ export default function GamesPage() {
       setGames(results);
       setTotalCount(data.total || results.length);
       // section modunda pagination yok (sayı sabittir); sadece arama modunda göster
-      const isSearchMode = !!(query || genre) && !section;
+      const isSearchMode = !!query && !section;
       setHasMore(isSearchMode && (data.total || 0) > PAGE_SIZE);
     } catch {}
     finally { setLoading(false); }
-  }, [buildUrl, section, query, genre]);
+  }, [buildUrl, section, query]);
 
   const loadMore = async () => {
     if (loadingMore || !hasMore) return;
@@ -97,7 +79,7 @@ export default function GamesPage() {
     return true;
   });
 
-  const resetFilters = () => { setQuery(''); setGenre(''); setPrice('all'); setSection(''); };
+  const resetFilters = () => { setQuery(''); setPrice('all'); setSection(''); };
 
   return (
     <div className="container" style={{ paddingTop: 32, paddingBottom: 60 }}>
@@ -113,19 +95,21 @@ export default function GamesPage() {
       <div style={{
         display: 'flex', alignItems: 'center', gap: 10,
         background: '#fff', border: '1.5px solid #e5e5e5',
-        borderRadius: 12, padding: '10px 16px', marginBottom: 16,
-        boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
+        borderRadius: 12, padding: '12px 18px', marginBottom: 16,
+        boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
       }}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#bbb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
         </svg>
         <input
           value={query}
           onChange={e => { setQuery(e.target.value); setSection(''); }}
-          placeholder="Steam'de oyun ara..."
-          style={{ flex: 1, border: 'none', outline: 'none', fontSize: 14, color: '#1a1a1a', background: 'transparent' }}
+          placeholder="Ne arıyorsunuz? (aksiyon, macera, deniz, uzay…)"
+          style={{ flex: 1, border: 'none', outline: 'none', fontSize: 15, color: '#1a1a1a', background: 'transparent' }}
         />
-        {query && <button onClick={() => setQuery('')} style={{ background: 'none', border: 'none', color: '#bbb', fontSize: 18 }}>×</button>}
+        {query && (
+          <button onClick={() => setQuery('')} style={{ background: 'none', border: 'none', color: '#bbb', fontSize: 20, cursor: 'pointer', lineHeight: 1 }}>×</button>
+        )}
       </div>
 
       {/* Bölüm filtreleri */}
@@ -137,7 +121,7 @@ export default function GamesPage() {
           { label: '💥 Trend',       value: 'topsellers' },
           { label: '⭐ Öne Çıkan',   value: 'featured' },
         ].map(s => (
-          <button key={s.value} onClick={() => { setSection(s.value); setQuery(''); setGenre(''); }}
+          <button key={s.value} onClick={() => { setSection(s.value); setQuery(''); }}
             style={{
               padding: '7px 16px', borderRadius: 999, fontSize: 13, border: 'none',
               background: section === s.value ? '#DC2626' : '#f5f5f5',
@@ -149,36 +133,13 @@ export default function GamesPage() {
         ))}
       </div>
 
-      {/* Filtre kutusu */}
-      <div style={{ background: '#fff', border: '1px solid #ebebeb', borderRadius: 12, padding: '14px 16px', marginBottom: 20 }}>
-        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-          {/* Tür */}
-          <div style={{ flex: 1, minWidth: 260 }}>
-            <p style={{ fontSize: 11, color: '#999', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Tür</p>
-            <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-              {GENRES.map(g => (
-                <button key={g.value} onClick={() => { setGenre(g.value); setSection(''); }}
-                  style={{
-                    padding: '4px 11px', borderRadius: 999, fontSize: 12,
-                    border: genre === g.value ? '1.5px solid #DC2626' : '1.5px solid #e5e5e5',
-                    background: genre === g.value ? '#FEF2F2' : '#fff',
-                    color:   genre === g.value ? '#DC2626' : '#555',
-                    cursor: 'pointer',
-                  }}
-                >{g.label}</button>
-              ))}
-            </div>
-          </div>
-
-          {/* Bütçe */}
-          <div>
-            <p style={{ fontSize: 11, color: '#999', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Bütçe</p>
-            <select value={price} onChange={e => setPrice(e.target.value)}
-              style={{ padding: '7px 12px', borderRadius: 8, border: '1.5px solid #e5e5e5', background: '#fff', fontSize: 13, color: '#333', outline: 'none' }}>
-              {PRICE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
-          </div>
-        </div>
+      {/* Bütçe filtresi */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+        <span style={{ fontSize: 12, color: '#999', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>Bütçe</span>
+        <select value={price} onChange={e => setPrice(e.target.value)}
+          style={{ padding: '7px 12px', borderRadius: 8, border: '1.5px solid #e5e5e5', background: '#fff', fontSize: 13, color: '#333', outline: 'none' }}>
+          {PRICE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
       </div>
 
       {/* Sonuç bilgisi */}
@@ -196,7 +157,7 @@ export default function GamesPage() {
           {filteredGames.filter(g => g.onSale && !g.isFree).length > 0 && (
             <span className="badge badge-amber">{filteredGames.filter(g => g.onSale && !g.isFree).length} indirimli</span>
           )}
-          {(query || genre || section || price !== 'all') && (
+          {(query || section || price !== 'all') && (
             <button onClick={resetFilters} style={{ fontSize: 12, color: '#DC2626', background: 'none', border: 'none', cursor: 'pointer' }}>
               × Temizle
             </button>

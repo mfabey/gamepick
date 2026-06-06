@@ -228,9 +228,9 @@ export default function GameDetail() {
             <div>
               <h2 className="section-title" style={{ fontSize: 16 }}>Ekran Görüntüleri</h2>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
-                {game.screenshots.slice(0, 4).map((ss, i) => (
+                {game.screenshots.filter(ss => typeof ss === 'string' && ss.length > 0).slice(0, 4).map((ss, i) => (
                   <div key={i} style={{ borderRadius: 10, overflow: 'hidden', aspectRatio: '16/9', position: 'relative', background: '#f0f0f0' }}>
-                    <Image src={ss} alt={`Screenshot ${i + 1}`} fill style={{ objectFit: 'cover' }} unoptimized />
+                    <Image src={ss} alt={`Screenshot ${i + 1}`} fill sizes="(max-width: 768px) 100vw, 400px" style={{ objectFit: 'cover' }} unoptimized />
                   </div>
                 ))}
               </div>
@@ -340,9 +340,8 @@ function PriceTable({ stores, loading }) {
     return <p style={{ padding: 16, fontSize: 13, color: '#ccc' }}>Fiyat bulunamadı.</p>;
   }
 
-  const minPrice = Math.min(
-    ...stores.filter(s => !s.isFree && s.price > 0).map(s => s.price)
-  );
+  const paidPrices = stores.filter(s => !s.isFree && s.price > 0).map(s => s.price);
+  const minPrice = paidPrices.length > 0 ? Math.min(...paidPrices) : Infinity;
 
   return (
     <table style={{ width: '100%', borderCollapse: 'collapse' }}>

@@ -211,7 +211,7 @@ function formatAppDetail(data, rate) {
     id:          data.steam_appid,
     name:        data.name,
     image:       data.header_image,
-    screenshots: (data.screenshots || []).slice(0, 5).map(s => s.path_full),
+    screenshots: (data.screenshots || []).slice(0, 5).map(s => s.path_full).filter(s => typeof s === 'string' && s.length > 0),
     description: data.short_description || '',
     fullDesc:    data.detailed_description || '',
     metacritic:  data.metacritic?.score  || null,
