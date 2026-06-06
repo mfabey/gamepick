@@ -51,68 +51,6 @@ function parsePrice(priceObj, rate) {
   };
 }
 
-// ── Steam search/results HTML ayrıştırıcı ────────────────────────────────
-function parseSearchHtml(html, _rate) {
-  const results = [];
-  if (!html) return results;
-
-  const seen    = new Set();
-  const matches = [...html.matchAll(/data-ds-appid="(\d+)"/g)];
-
-  for (const m of matches) {
-    const appid = m[1];
-    if (seen.has(appid)) continue;
-    seen.add(appid);
-
-    const id    = parseInt(appid);
-    const chunk = html.slice(m.index, m.index + 2500);
-
-    // İsim
-    const nm = chunk.match(/<span class="title">([^<]+)<\/span>/);
-    if (!nm) continue;
-    const name = nm[1].trim();
-
-    // Görsel — Steam CDN header her zaman mevcut
-    const image = `https://cdn.akamai.steamstatic.com/steam/apps/${appid}/header.jpg`;
-
-    // Fiyat — data-price-final attribute (TRY kuruş cinsinden, cc=TR)
-    const pf = chunk.match(/data-price-final="(\d+)"/);
-    let price = null, original = null, discount = 0, isFree = false;
-
-    if (pf) {
-      const kurus = parseInt(pf[1]);
-      if (kurus === 0) {
-        isFree = true; price = 0; original = 0;
-      } else {
-        price    = Math.round(kurus / 100);
-        const dm = chunk.match(/<span>-(\d+)%<\/span>/);
-        discount = dm ? parseInt(dm[1]) : 0;
-        original = discount > 0
-          ? Math.round(price / (1 - discount / 100))
-          : price;
-      }
-    }
-
-    results.push({
-      id,
-      name,
-      image,
-      price:    isFree ? 0 : price,
-      original: original ?? price,
-      discount,
-      isFree,
-      onSale:   discount > 0,
-      gamePass: false,
-      noData:   !isFree && price === null,
-      steamUrl: `https://store.steampowered.com/app/${appid}`,
-      platforms: ['pc'],
-      source:   'steam',
-    });
-  }
-
-  return results;
-}
-
 // ── Route handler ──────────────────────────────────────────────────────────
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
@@ -148,31 +86,37 @@ export async function GET(request) {
       return NextResponse.json({ game: formatAppDetail(data, rate) });
     }
 
-    // ── Tümü — Steam store browse (sayfalandırılmış) ─────────────────────
+    // ── Tümü — storesearch ile sayfalandırılmış browse ──────────────────
     if (section === 'all') {
       const start = (page - 1) * num;
+      // Geniş kapsam: her sayfa farklı bir popüler terim kullan
+      const TERMS = ['', 'action', 'adventure', 'rpg', 'strategy', 'simulation',
+                     'puzzle', 'horror', 'sport', 'indie', 'shooter', 'platformer'];
+      const term  = TERMS[page % TERMS.length] || '';
       const res   = await fetch(
-        `https://store.steampowered.com/search/results/?sort_by=Reviews_DESC` +
-        `&json=1&cc=${CC}&l=${LANG}&start=${start}&count=${num}`,
+        `https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(term)}` +
+        `&cc=${CC}&l=${LANG}&num=${num}&start=${start}`,
         { next: { revalidate: 300 } }
       );
-      if (!res.ok) throw new Error(`Steam search HTTP ${res.status}`);
+      if (!res.ok) throw new Error(`Steam storesearch HTTP ${res.status}`);
       const data    = await res.json();
-      const results = parseSearchHtml(data.results_html || '', rate);
-      const total   = data.query_summary?.total_count || results.length;
+      const results = (data?.items || []).map(item => formatSearchItem(item, rate));
+      const total   = data?.total || results.length;
       return NextResponse.json({ results, total });
     }
 
     // ── Ücretsiz oyunlar ──────────────────────────────────────────────────
     if (section === 'free') {
       const res = await fetch(
-        `https://store.steampowered.com/search/results/?sort_by=Reviews_DESC` +
-        `&maxprice=free&json=1&cc=${CC}&l=${LANG}&start=0&count=${num}`,
+        `https://store.steampowered.com/api/storesearch/?term=free+to+play` +
+        `&cc=${CC}&l=${LANG}&num=${num}&start=0`,
         { next: { revalidate: 3600 } }
       );
-      if (!res.ok) throw new Error(`Steam search (free) HTTP ${res.status}`);
+      if (!res.ok) throw new Error(`Steam storesearch (free) HTTP ${res.status}`);
       const data    = await res.json();
-      const results = parseSearchHtml(data.results_html || '', rate);
+      const results = (data?.items || [])
+        .map(item => formatSearchItem(item, rate))
+        .filter(g => g.isFree);
       return NextResponse.json({ results, total: results.length });
     }
 
