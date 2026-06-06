@@ -21,73 +21,85 @@ export default function GamesPage() {
   const [games,       setGames]       = useState([]);
   const [loading,     setLoading]     = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [page,        setPage]        = useState(1);
+  const [page,        setPage]        = useState(1); // sadece gösterim amaçlı
   const [totalCount,  setTotalCount]  = useState(0);
-  const [hasMore,     setHasMore]     = useState(false);
   const debounceRef   = useRef(null);
   const sentinelRef   = useRef(null);
-  const fetchingRef   = useRef(false);
-  const seenIdsRef    = useRef(new Set());
-  const pageRef       = useRef(1); // stale closure'a düşmemek için ref ile takip
+  // Tüm scroll state'i ref'te tut — closure/stale-state sorunlarını engeller
+  const scrollRef     = useRef({
+    page:      1,
+    fetching:  false,
+    canMore:   false,
+    seenIds:   new Set(),
+    section:   '',
+    query:     '',
+  });
 
+  // buildUrl — ref üzerinden okur, closure sorunu yok
   const buildUrl = useCallback((pageNum) => {
-    if (section) return `/api/steam?section=${section}&num=80`;
-    if (query)   return `/api/steam?q=${encodeURIComponent(query)}&num=${PAGE_SIZE}&page=${pageNum}`;
+    const { section: s, query: q } = scrollRef.current;
+    if (s) return `/api/steam?section=${s}&num=80`;
+    if (q) return `/api/steam?q=${encodeURIComponent(q)}&num=${PAGE_SIZE}&page=${pageNum}`;
     return `/api/steam?section=all&num=${PAGE_SIZE}&page=${pageNum}`;
-  }, [query, section]);
+  }, []);
 
   const fetchGames = useCallback(async () => {
+    const ref = scrollRef.current;
+    ref.page     = 1;
+    ref.fetching = false;
+    ref.canMore  = false;
+    ref.seenIds  = new Set();
+    ref.section  = section;
+    ref.query    = query;
+
     setLoading(true);
-    pageRef.current     = 1;
     setPage(1);
-    fetchingRef.current = false;
-    seenIdsRef.current  = new Set();
     try {
       const res     = await fetch(buildUrl(1));
       const data    = await res.json();
       const results = data.results || [];
-      results.forEach(g => seenIdsRef.current.add(g.id));
+      results.forEach(g => ref.seenIds.add(g.id));
       setGames(results);
       setTotalCount(data.total || results.length);
-      const canPaginate = !section;
-      setHasMore(canPaginate && (data.total || 0) > PAGE_SIZE);
+      ref.canMore = !section; // sadece "Tümü" ve arama sayfalanır
     } catch {}
     finally { setLoading(false); }
-  }, [buildUrl, section, query]);
+  }, [section, query, buildUrl]);
 
+  // Sonsuz scroll — scroll event ile tetiklenir, closure sorunu yok
   const loadMore = useCallback(async () => {
-    if (fetchingRef.current || !hasMore) return;
-    fetchingRef.current = true;
+    const ref = scrollRef.current;
+    if (ref.fetching || !ref.canMore) return;
+    ref.fetching = true;
     setLoadingMore(true);
 
     // Duplicate sayfaları otomatik atla (max 8 deneme)
     let found = false;
     let skips = 0;
     while (!found && skips < 8) {
-      const nextPage = pageRef.current + 1;
+      const nextPage = ref.page + 1;
       try {
         const res        = await fetch(buildUrl(nextPage));
         const data       = await res.json();
         const newResults = (data.results || []).filter(g => {
-          if (seenIdsRef.current.has(g.id)) return false;
-          seenIdsRef.current.add(g.id);
+          if (ref.seenIds.has(g.id)) return false;
+          ref.seenIds.add(g.id);
           return true;
         });
-        pageRef.current = nextPage;
+        ref.page = nextPage;
         setPage(nextPage);
         if (newResults.length > 0) {
           setGames(prev => [...prev, ...newResults]);
           found = true;
         } else {
-          skips++; // hepsi duplicate — sonraki sayfayı dene
+          skips++;
         }
       } catch { break; }
     }
 
-    setHasMore(true); // total=99999 olduğu için scroll hep devam etmeli
-    fetchingRef.current = false;
+    ref.fetching = false;
     setLoadingMore(false);
-  }, [hasMore, buildUrl]);
+  }, [buildUrl]);
 
   // Arama değişince debounce ile yeniden çek
   useEffect(() => {
@@ -96,16 +108,20 @@ export default function GamesPage() {
     return () => clearTimeout(debounceRef.current);
   }, [fetchGames]);
 
-  // Sonsuz scroll
+  // Scroll event listener — sentinel'a gerek yok, sürekli pozisyon kontrol eder
   useEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel) return;
-    const observer = new IntersectionObserver(
-      (entries) => { if (entries[0].isIntersecting) loadMore(); },
-      { rootMargin: '300px' }
-    );
-    observer.observe(sentinel);
-    return () => observer.disconnect();
+    const handleScroll = () => {
+      if (!sentinelRef.current) return;
+      const rect = sentinelRef.current.getBoundingClientRect();
+      if (rect.top < window.innerHeight + 400) loadMore();
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    // Sayfa kısa ise (scroll yok) ilk yüklemede de tetikle
+    const t = setTimeout(handleScroll, 800);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      clearTimeout(t);
+    };
   }, [loadMore]);
 
   // Fiyat filtresi (client-side)
