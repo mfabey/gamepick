@@ -88,12 +88,19 @@ export async function GET(request) {
 
     // ── Tümü — storesearch ile sayfalandırılmış browse ──────────────────
     if (section === 'all') {
-      const start = (page - 1) * num;
-      // Geniş kapsam: her sayfa farklı bir popüler terim kullan
-      const TERMS = ['', 'action', 'adventure', 'rpg', 'strategy', 'simulation',
-                     'puzzle', 'horror', 'sport', 'indie', 'shooter', 'platformer'];
-      const term  = TERMS[page % TERMS.length] || '';
-      const res   = await fetch(
+      // Her sayfa farklı bir tür — hiç boş terim YOK
+      const TERMS = [
+        'action', 'adventure', 'rpg', 'strategy', 'simulation',
+        'puzzle', 'horror', 'indie', 'shooter', 'sport', 'racing', 'platformer',
+      ];
+      // Hangi tür:  page 1→action, 2→adventure, ..., 13→action 2.tur, ...
+      const idx   = (page - 1) % TERMS.length;
+      // Her tur tamamlandığında offset artır (1.tur offset=0, 2.tur offset=num, ...)
+      const cycle = Math.floor((page - 1) / TERMS.length);
+      const start = cycle * num;
+      const term  = TERMS[idx];
+
+      const res = await fetch(
         `https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(term)}` +
         `&cc=${CC}&l=${LANG}&num=${num}&start=${start}`,
         { next: { revalidate: 300 } }
@@ -101,8 +108,8 @@ export async function GET(request) {
       if (!res.ok) throw new Error(`Steam storesearch HTTP ${res.status}`);
       const data    = await res.json();
       const results = (data?.items || []).map(item => formatSearchItem(item, rate));
-      const total   = data?.total || results.length;
-      return NextResponse.json({ results, total });
+      // Sabit büyük total → sonsuz scroll her zaman aktif kalır
+      return NextResponse.json({ results, total: 99999 });
     }
 
     // ── Ücretsiz oyunlar ──────────────────────────────────────────────────
