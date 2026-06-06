@@ -331,7 +331,7 @@ function GameCard({ game }) {
             ) : game.price !== null ? (
               <span style={{ fontSize: 13, fontWeight: 700, color: '#f0f0f0' }}>₺{game.price}</span>
             ) : (
-              <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>Fiyat yükleniyor</span>
+              <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>Fiyat gör →</span>
             )}
             {game.onSale && <span className="badge badge-amber">İndirimli</span>}
           </div>
