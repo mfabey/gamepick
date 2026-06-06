@@ -43,9 +43,9 @@ export default function GamesPage() {
   const debounceRef = useRef(null);
 
   const buildUrl = useCallback((pageNum) => {
-    // Hiçbir filtre yoksa topsellers göster
-    if (!query && !genre && !section) return `/api/steam?section=topsellers&num=${PAGE_SIZE}`;
-    if (section) return `/api/steam?section=${section}&num=${PAGE_SIZE}`;
+    // Hiçbir filtre yoksa tüm kategorileri birleştirip göster
+    if (!query && !genre && !section) return `/api/steam?section=all&num=80`;
+    if (section) return `/api/steam?section=${section}&num=80`;
     const term = genre ? `${query} ${genre}`.trim() : query;
     return `/api/steam?q=${encodeURIComponent(term)}&num=${PAGE_SIZE}&page=${pageNum}`;
   }, [query, genre, section]);
@@ -59,10 +59,12 @@ export default function GamesPage() {
       const results = data.results || [];
       setGames(results);
       setTotalCount(data.total || results.length);
-      setHasMore((data.total || 0) > PAGE_SIZE && !section);
+      // section modunda pagination yok (sayı sabittir); sadece arama modunda göster
+      const isSearchMode = !!(query || genre) && !section;
+      setHasMore(isSearchMode && (data.total || 0) > PAGE_SIZE);
     } catch {}
     finally { setLoading(false); }
-  }, [buildUrl, section]);
+  }, [buildUrl, section, query, genre]);
 
   const loadMore = async () => {
     if (loadingMore || !hasMore) return;
