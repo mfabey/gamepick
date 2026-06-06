@@ -24,8 +24,10 @@ export default function GamesPage() {
   const [page,        setPage]        = useState(1);
   const [totalCount,  setTotalCount]  = useState(0);
   const [hasMore,     setHasMore]     = useState(false);
-  const debounceRef  = useRef(null);
-  const sentinelRef  = useRef(null); // sonsuz scroll tetikleyici
+  const debounceRef   = useRef(null);
+  const sentinelRef   = useRef(null);  // sonsuz scroll tetikleyici
+  const fetchingRef   = useRef(false); // çift tetiklenmeyi engelle
+  const seenIdsRef    = useRef(new Set()); // tekrar eden oyunları filtrele
 
   const buildUrl = useCallback((pageNum) => {
     if (section) return `/api/steam?section=${section}&num=80`;
@@ -36,10 +38,13 @@ export default function GamesPage() {
   const fetchGames = useCallback(async () => {
     setLoading(true);
     setPage(1);
+    fetchingRef.current  = false;
+    seenIdsRef.current   = new Set(); // yeni arama — geçmişi sıfırla
     try {
       const res     = await fetch(buildUrl(1));
       const data    = await res.json();
       const results = data.results || [];
+      results.forEach(g => seenIdsRef.current.add(g.id));
       setGames(results);
       setTotalCount(data.total || results.length);
       const canPaginate = !section;
@@ -49,19 +54,30 @@ export default function GamesPage() {
   }, [buildUrl, section, query]);
 
   const loadMore = useCallback(async () => {
-    if (loadingMore || !hasMore) return;
+    if (fetchingRef.current || !hasMore) return;
+    fetchingRef.current = true; // anında kilitle — state güncellenmesini bekleme
     setLoadingMore(true);
     const nextPage = page + 1;
     try {
-      const res     = await fetch(buildUrl(nextPage));
-      const data    = await res.json();
-      const newResults = data.results || [];
-      setGames(prev => [...prev, ...newResults]);
+      const res        = await fetch(buildUrl(nextPage));
+      const data       = await res.json();
+      const newResults = (data.results || []).filter(g => {
+        if (seenIdsRef.current.has(g.id)) return false; // tekrar eden oyunu atla
+        seenIdsRef.current.add(g.id);
+        return true;
+      });
+      if (newResults.length > 0) {
+        setGames(prev => [...prev, ...newResults]);
+      }
       setPage(nextPage);
-      setHasMore(newResults.length > 0 && games.length + newResults.length < (data.total || 0));
+      // Yeni benzersiz oyun gelmediyse 2 sayfa daha dene, sonra dur
+      setHasMore(newResults.length > 0 || nextPage < page + 3);
     } catch {}
-    finally { setLoadingMore(false); }
-  }, [loadingMore, hasMore, page, buildUrl, games.length]);
+    finally {
+      fetchingRef.current = false;
+      setLoadingMore(false);
+    }
+  }, [hasMore, page, buildUrl]);
 
   // Arama değişince debounce ile yeniden çek
   useEffect(() => {
