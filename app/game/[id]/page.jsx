@@ -16,8 +16,10 @@ export default function GameDetail() {
   const [wishlist, setWishlist] = useState([]);
 
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem('gamepick_wishlist') || '[]');
-    setWishlist(stored);
+    try {
+      const stored = JSON.parse(localStorage.getItem('gamepick_wishlist') || '[]');
+      setWishlist(stored);
+    } catch { setWishlist([]); }
   }, []);
 
   useEffect(() => {

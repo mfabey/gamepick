@@ -36,7 +36,7 @@ export default function GameCard({ game, compact = false }) {
         {/* Kapak resmi */}
         <div style={{ height: imgH, background: '#f0f0f0', position: 'relative', overflow: 'hidden' }}>
           {game.image ? (
-            <Image src={game.image} alt={game.name} fill style={{ objectFit: 'cover' }} />
+            <Image src={game.image} alt={game.name} fill sizes="(max-width: 640px) 50vw, 200px" style={{ objectFit: 'cover' }} unoptimized />
           ) : (
             <div style={{
               width: '100%', height: '100%',
