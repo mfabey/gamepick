@@ -314,8 +314,8 @@ function buildStoreList(game, prices) {
   // ITAD'dan diğer mağazalar — Steam olanları filtrele (çift fiyat engeli)
   if (prices?.stores?.length) {
     for (const s of prices.stores) {
-      const isSteam = s.storeId?.toLowerCase().includes('steam') ||
-                      s.name?.toLowerCase().includes('steam');
+      const isSteam = String(s.storeId ?? '').toLowerCase().includes('steam') ||
+                      String(s.name    ?? '').toLowerCase().includes('steam');
       if (isSteam) continue;
       stores.push(s);
     }
