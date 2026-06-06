@@ -14,6 +14,19 @@ const PRICE_OPTIONS = [
 
 const PAGE_SIZE = 24;
 
+// Yetişkin içerik anahtar kelimeleri (oyun adında geçerse filtrele)
+const ADULT_KEYWORDS = [
+  'hentai','erotic','erotica','18+','adult','sexy','nude','naked','nsfw',
+  'porn','xxx','lewd','ecchi','ero ','yuri','yaoi','uncensored','oppai',
+  'waifu','fanservice','pantsu','sexualized','mature content',
+  'yetişkin','erotik',
+];
+
+function isAdultGame(name = '') {
+  const n = name.toLowerCase();
+  return ADULT_KEYWORDS.some(kw => n.includes(kw));
+}
+
 export default function GamesPage() {
   const [query,       setQuery]       = useState('');
   const [price,       setPrice]       = useState('all');
@@ -24,7 +37,22 @@ export default function GamesPage() {
   const [page,        setPage]        = useState(1);
   const [totalCount,  setTotalCount]  = useState(0);
   const [hasMore,     setHasMore]     = useState(false);
+  const [hideAdult,   setHideAdult]   = useState(true);
   const debounceRef = useRef(null);
+
+  // Tercih localStorage'dan yükle
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('gp_hide_adult');
+      if (saved !== null) setHideAdult(saved === '1');
+    } catch {}
+  }, []);
+
+  const toggleAdult = () => {
+    const next = !hideAdult;
+    setHideAdult(next);
+    try { localStorage.setItem('gp_hide_adult', next ? '1' : '0'); } catch {}
+  };
 
   const buildUrl = useCallback((pageNum) => {
     // Belirli bir section seçiliyse — sabit 80 oyun, sayfalama yok
@@ -72,8 +100,9 @@ export default function GamesPage() {
     return () => clearTimeout(debounceRef.current);
   }, [fetchGames]);
 
-  // Fiyat filtresi (client-side)
+  // Fiyat + yetişkin içerik filtresi (client-side)
   const filteredGames = games.filter(g => {
+    if (hideAdult && isAdultGame(g.name)) return false;
     if (price === 'free') return g.isFree || g.gamePass;
     if (price !== 'all') {
       const limit = parseInt(price);
@@ -136,13 +165,36 @@ export default function GamesPage() {
         ))}
       </div>
 
-      {/* Bütçe filtresi */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+      {/* Bütçe + içerik filtresi */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
         <span style={{ fontSize: 12, color: '#999', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>Bütçe</span>
         <select value={price} onChange={e => setPrice(e.target.value)}
           style={{ padding: '7px 12px', borderRadius: 8, border: '1.5px solid #e5e5e5', background: '#fff', fontSize: 13, color: '#333', outline: 'none' }}>
           {PRICE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
+
+        {/* 18+ toggle */}
+        <button onClick={toggleAdult} style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600,
+          border: `1.5px solid ${hideAdult ? '#e5e5e5' : '#FECACA'}`,
+          background: hideAdult ? '#f5f5f5' : '#FEF2F2',
+          color: hideAdult ? '#888' : '#DC2626',
+          cursor: 'pointer', transition: 'all 0.15s',
+        }}>
+          <span style={{
+            width: 28, height: 16, borderRadius: 999, position: 'relative',
+            background: hideAdult ? '#ccc' : '#DC2626',
+            transition: 'background 0.2s', flexShrink: 0,
+          }}>
+            <span style={{
+              position: 'absolute', top: 2, left: hideAdult ? 2 : 14,
+              width: 12, height: 12, borderRadius: '50%', background: '#fff',
+              transition: 'left 0.2s',
+            }} />
+          </span>
+          🔞 +18 Gizle
+        </button>
       </div>
 
       {/* Sonuç bilgisi */}
