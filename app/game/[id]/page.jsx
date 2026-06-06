@@ -10,6 +10,8 @@ export default function GameDetail() {
   const router    = useRouter();
   const [game,    setGame]    = useState(null);
   const [prices,  setPrices]  = useState(null);
+  const [ai,      setAi]      = useState(null);
+  const [aiLoading, setAiLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [wishlist, setWishlist] = useState([]);
 
@@ -23,17 +25,42 @@ export default function GameDetail() {
     async function load() {
       setLoading(true);
       try {
-        // Steam API'den oyun detayı
-        const gRes  = await fetch(`/api/steam?appid=${id}`);
-        const gData = await gRes.json();
+        const gRes     = await fetch(`/api/steam?appid=${id}`);
+        const gData    = await gRes.json();
         const gameData = gData.game || null;
         setGame(gameData);
 
         if (gameData?.name) {
-          // ITAD üzerinden çoklu platform fiyatları
-          const pRes  = await fetch(`/api/prices?title=${encodeURIComponent(gameData.name)}`);
+          // Fiyatlar + AI paralel çalıştır
+          const [pRes] = await Promise.all([
+            fetch(`/api/prices?title=${encodeURIComponent(gameData.name)}`),
+          ]);
           const pData = await pRes.json();
           setPrices(pData);
+
+          // AI verisi ayrıca — yavaş olabilir, ayrı state
+          setAiLoading(true);
+          const cacheKey = `gp_ai_${id}`;
+          const cached   = localStorage.getItem(cacheKey);
+          if (cached) {
+            setAi(JSON.parse(cached));
+            setAiLoading(false);
+          } else {
+            fetch(
+              `/api/ai-game?appid=${id}` +
+              `&name=${encodeURIComponent(gameData.name)}` +
+              `&description=${encodeURIComponent((gameData.description || '').slice(0, 500))}`
+            )
+              .then(r => r.json())
+              .then(d => {
+                if (d.ozet || d.etiketler?.length) {
+                  localStorage.setItem(cacheKey, JSON.stringify(d));
+                }
+                setAi(d);
+              })
+              .catch(() => {})
+              .finally(() => setAiLoading(false));
+          }
         }
       } catch (err) {
         console.error('Detay yüklenemedi:', err);
@@ -166,8 +193,12 @@ export default function GameDetail() {
       {/* Alt grid: açıklama + fiyatlar */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 24, alignItems: 'start' }}>
 
-        {/* Sol: Açıklama + ekran görüntüleri */}
+        {/* Sol: AI + Açıklama + ekran görüntüleri */}
         <div>
+
+          {/* ── AI Özet ── */}
+          <AiSection ai={ai} loading={aiLoading} />
+
           {game.description && (
             <div style={{ marginBottom: 24 }}>
               <h2 className="section-title" style={{ fontSize: 16 }}>Hakkında</h2>
@@ -362,6 +393,80 @@ function PriceTable({ stores, loading }) {
         ))}
       </tbody>
     </table>
+  );
+}
+
+// ── AI Özet Bileşeni ─────────────────────────────────────────────────────────
+function AiSection({ ai, loading }) {
+  if (!loading && !ai?.ozet && !ai?.etiketler?.length) return null;
+
+  return (
+    <div style={{ marginBottom: 24 }}>
+      {/* AI Özet */}
+      {(loading || ai?.ozet) && (
+        <div style={{
+          background: 'linear-gradient(135deg, #FEF2F2 0%, #fff5f5 100%)',
+          border: '1px solid #FECACA',
+          borderRadius: 12, padding: '16px 18px', marginBottom: 14,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+            <span style={{ fontSize: 14 }}>✦</span>
+            <p style={{ fontSize: 11, fontWeight: 700, color: '#DC2626', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              AI Özeti
+            </p>
+            <span style={{ fontSize: 10, color: '#ccc', marginLeft: 'auto' }}>Llama 3.1 · Groq</span>
+          </div>
+
+          {loading ? (
+            <div>
+              <div style={{ height: 12, background: '#fecaca55', borderRadius: 4, marginBottom: 7, width: '95%' }} />
+              <div style={{ height: 12, background: '#fecaca55', borderRadius: 4, marginBottom: 7, width: '80%' }} />
+              <div style={{ height: 12, background: '#fecaca55', borderRadius: 4, width: '60%' }} />
+            </div>
+          ) : (
+            <p style={{ fontSize: 14, color: '#444', lineHeight: 1.75 }}>{ai.ozet}</p>
+          )}
+        </div>
+      )}
+
+      {/* Oyuncu Görüşleri */}
+      {!loading && ai?.duygu && (
+        <div style={{
+          background: '#f9f9f9', border: '1px solid #ebebeb',
+          borderRadius: 12, padding: '14px 16px', marginBottom: 14,
+        }}>
+          <p style={{ fontSize: 11, fontWeight: 700, color: '#555', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+            💬 Oyuncu Görüşleri
+          </p>
+          <p style={{ fontSize: 13, color: '#555', lineHeight: 1.7 }}>{ai.duygu}</p>
+        </div>
+      )}
+
+      {/* AI Etiketleri */}
+      {!loading && ai?.etiketler?.length > 0 && (
+        <div>
+          <p style={{ fontSize: 11, fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+            🏷️ Akıllı Etiketler
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {ai.etiketler.map(tag => (
+              <a
+                key={tag}
+                href={`/games?q=${encodeURIComponent(tag)}`}
+                style={{
+                  padding: '4px 12px', borderRadius: 999, fontSize: 12,
+                  background: '#FEF2F2', border: '1px solid #FECACA',
+                  color: '#DC2626', fontWeight: 500, textDecoration: 'none',
+                  transition: 'background 0.15s',
+                }}
+              >
+                #{tag}
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
