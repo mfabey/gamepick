@@ -107,7 +107,15 @@ export async function GET(request) {
       );
       if (!res.ok) throw new Error(`Steam storesearch HTTP ${res.status}`);
       const data    = await res.json();
-      const results = (data?.items || []).map(item => formatSearchItem(item, rate));
+      const results = (data?.items || [])
+        .map(item => formatSearchItem(item, rate))
+        // Metascore'u olanlara öncelik ver, sonra olmayanlara geç
+        .sort((a, b) => {
+          if (a.metacritic !== null && b.metacritic !== null) return b.metacritic - a.metacritic;
+          if (a.metacritic !== null) return -1;
+          if (b.metacritic !== null) return 1;
+          return 0;
+        });
       // Sabit büyük total → sonsuz scroll her zaman aktif kalır
       return NextResponse.json({ results, total: 99999 });
     }
@@ -179,19 +187,20 @@ function formatSearchItem(item, rate) {
   }, rate);
 
   return {
-    id:        item.id,
-    name:      item.name,
-    image:     item.tiny_image,
-    price:     priceInfo.isFree ? 0 : priceInfo.price,
-    original:  priceInfo.original,
-    discount:  priceInfo.discount,
-    isFree:    priceInfo.isFree,
-    onSale:    priceInfo.discount > 0,
-    gamePass:  false,
-    noData:    priceInfo.price === null,
-    steamUrl:  `https://store.steampowered.com/app/${item.id}`,
-    platforms: ['pc'],
-    source:    'steam',
+    id:         item.id,
+    name:       item.name,
+    image:      item.tiny_image,
+    price:      priceInfo.isFree ? 0 : priceInfo.price,
+    original:   priceInfo.original,
+    discount:   priceInfo.discount,
+    isFree:     priceInfo.isFree,
+    onSale:     priceInfo.discount > 0,
+    gamePass:   false,
+    noData:     priceInfo.price === null,
+    metacritic: item.metascore ? parseInt(item.metascore) : null,
+    steamUrl:   `https://store.steampowered.com/app/${item.id}`,
+    platforms:  ['pc'],
+    source:     'steam',
   };
 }
 
