@@ -11,7 +11,7 @@ export async function GET() {
   }
 
   // 1. Arama
-  const searchUrl = `${ITAD}/games/search/v1?key=${ITAD_KEY}&q=${encodeURIComponent(title)}&limit=3`;
+  const searchUrl = `${ITAD}/games/search/v1?key=${ITAD_KEY}&title=${encodeURIComponent(title)}&limit=3`;
   const searchRes  = await fetch(searchUrl).catch(e => ({ ok: false, error: e.message }));
   const searchData = searchRes.json ? await searchRes.json() : searchRes;
 

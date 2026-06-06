@@ -33,7 +33,7 @@ export async function GET(request) {
   try {
     // 1. Oyunu ITAD'da bul
     const searchRes  = await fetch(
-      `${ITAD}/games/search/v1?key=${ITAD_KEY}&q=${encodeURIComponent(title)}&limit=1`
+      `${ITAD}/games/search/v1?key=${ITAD_KEY}&title=${encodeURIComponent(title)}&limit=1`
     );
     const searchData = await searchRes.json();
     const gameId     = searchData?.[0]?.id;
