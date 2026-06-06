@@ -12,25 +12,19 @@ const PRICE_OPTIONS = [
   { label: '₺0 – ₺500',  value: '500' },
 ];
 
-const STEAM_SECTIONS = [
-  { label: 'Tümü',          value: '' },
-  { label: '🎮 Ücretsiz',   value: 'free' },
-  { label: '🗓️ Yeni Çıkan', value: 'new' },
-  { label: '💥 Trend',      value: 'topsellers' },
-  { label: '⭐ Öne Çıkan',  value: 'featured' },
+// Her bölümün hangi platformdan veri alacağını tanımlar
+const SECTIONS = [
+  { label: 'Tümü',          value: '',           platform: 'both'  },
+  { label: '🎮 Ücretsiz',   value: 'free',       platform: 'both'  },
+  { label: '🗓️ Yeni Çıkan', value: 'new',        platform: 'both'  },
+  { label: '💥 Trend',      value: 'topsellers', platform: 'steam' },
+  { label: '🔥 İndirimli',  value: 'sale',       platform: 'epic'  },
 ];
 
-const EPIC_SECTIONS = [
-  { label: 'Tümü',          value: '' },
-  { label: '🎮 Ücretsiz',   value: 'free' },
-  { label: '🗓️ Yeni Çıkan', value: 'new' },
-  { label: '🔥 İndirimli',  value: 'sale' },
-];
-
-const PAGE_SIZE = 24;
+const PAGE_SIZE  = 24; // toplam (her platformdan 12)
+const HALF_SIZE  = 12;
 
 export default function GamesPage() {
-  const [platform,    setPlatform]    = useState('steam');
   const [query,       setQuery]       = useState('');
   const [price,       setPrice]       = useState('all');
   const [section,     setSection]     = useState('');
@@ -43,16 +37,37 @@ export default function GamesPage() {
   const sentinelRef = useRef(null);
   const scrollRef   = useRef({
     page: 1, fetching: false, canMore: false,
-    seenIds: new Set(), section: '', query: '', platform: 'steam',
+    seenIds: new Set(), section: '', query: '',
   });
 
-  const buildUrl = useCallback((pageNum) => {
-    const { section: s, query: q, platform: p } = scrollRef.current;
-    const api = p === 'epic' ? '/api/epic' : '/api/steam';
-    if (s) return `${api}?section=${s}&num=80`;
-    if (q) return `${api}?q=${encodeURIComponent(q)}&num=${PAGE_SIZE}&page=${pageNum}`;
-    if (p === 'epic') return `${api}?num=${PAGE_SIZE}&page=${pageNum}`;
-    return `${api}?section=all&num=${PAGE_SIZE}&page=${pageNum}`;
+  // Aktif bölümün platform bilgisi
+  const activePlatform = SECTIONS.find(s => s.value === section)?.platform || 'both';
+
+  // URL listesi oluştur (tek veya çift platform)
+  const buildUrls = useCallback((pageNum) => {
+    const { section: s, query: q } = scrollRef.current;
+    const plat = SECTIONS.find(x => x.value === s)?.platform || 'both';
+    const start = (pageNum - 1);  // page sayacı — her API kendi offsetini hesaplar
+
+    const urls = [];
+
+    if (plat === 'both' || plat === 'steam') {
+      if (s)      urls.push(`/api/steam?section=${s}&num=${plat === 'both' ? 40 : 80}`);
+      else if (q) urls.push(`/api/steam?q=${encodeURIComponent(q)}&num=${plat === 'both' ? HALF_SIZE : PAGE_SIZE}&page=${pageNum}`);
+      else        urls.push(`/api/steam?section=all&num=${plat === 'both' ? HALF_SIZE : PAGE_SIZE}&page=${pageNum}`);
+    }
+
+    if (plat === 'both' || plat === 'epic') {
+      if (s && s !== 'topsellers' && s !== 'featured') {
+        urls.push(`/api/epic?section=${s}&num=${plat === 'both' ? 40 : 80}`);
+      } else if (q) {
+        urls.push(`/api/epic?q=${encodeURIComponent(q)}&num=${plat === 'both' ? HALF_SIZE : PAGE_SIZE}&page=${pageNum}`);
+      } else if (!s) {
+        urls.push(`/api/epic?num=${plat === 'both' ? HALF_SIZE : PAGE_SIZE}&page=${pageNum}`);
+      }
+    }
+
+    return urls;
   }, []);
 
   const fetchGames = useCallback(async () => {
@@ -63,21 +78,21 @@ export default function GamesPage() {
     ref.seenIds  = new Set();
     ref.section  = section;
     ref.query    = query;
-    ref.platform = platform;
 
     setLoading(true);
     setPage(1);
     try {
-      const res     = await fetch(buildUrl(1));
-      const data    = await res.json();
-      const results = data.results || [];
+      const urls    = buildUrls(1);
+      const resps   = await Promise.all(urls.map(u => fetch(u).then(r => r.json())));
+      const results = interleave(resps.map(d => d.results || []));
       results.forEach(g => ref.seenIds.add(g.id));
       setGames(results);
-      setTotalCount(data.total || results.length);
-      ref.canMore = !section; // bölüm seçilmemişse sayfalandır
+      const total = resps.reduce((acc, d) => acc + (d.total || 0), 0);
+      setTotalCount(total);
+      ref.canMore = !section; // bölüm yoksa sayfalandır
     } catch {}
     finally { setLoading(false); }
-  }, [section, query, platform, buildUrl]);
+  }, [section, query, buildUrls]);
 
   const loadMore = useCallback(async () => {
     const ref = scrollRef.current;
@@ -90,9 +105,10 @@ export default function GamesPage() {
     while (!found && skips < 8) {
       const nextPage = ref.page + 1;
       try {
-        const res        = await fetch(buildUrl(nextPage));
-        const data       = await res.json();
-        const newResults = (data.results || []).filter(g => {
+        const urls       = buildUrls(nextPage);
+        const resps      = await Promise.all(urls.map(u => fetch(u).then(r => r.json())));
+        const merged     = interleave(resps.map(d => d.results || []));
+        const newResults = merged.filter(g => {
           if (ref.seenIds.has(g.id)) return false;
           ref.seenIds.add(g.id);
           return true;
@@ -108,7 +124,7 @@ export default function GamesPage() {
 
     ref.fetching = false;
     setLoadingMore(false);
-  }, [buildUrl]);
+  }, [buildUrls]);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -136,16 +152,7 @@ export default function GamesPage() {
     return true;
   });
 
-  const switchPlatform = (p) => {
-    setPlatform(p);
-    setSection('');
-    setQuery('');
-    setPrice('all');
-  };
-
   const resetFilters = () => { setQuery(''); setPrice('all'); setSection(''); };
-
-  const sections = platform === 'epic' ? EPIC_SECTIONS : STEAM_SECTIONS;
 
   return (
     <div className="container" style={{ paddingTop: 32, paddingBottom: 60 }}>
@@ -153,25 +160,8 @@ export default function GamesPage() {
       <div style={{ marginBottom: 20 }}>
         <h1 style={{ fontSize: 26, fontWeight: 800, color: '#1a1a1a', marginBottom: 4 }}>Oyunlar</h1>
         <p style={{ color: '#999', fontSize: 14 }}>
-          {totalCount > 0 ? `${totalCount.toLocaleString('tr-TR')} oyun` : 'Gerçek zamanlı fiyatlar'}
+          Steam & Epic Games — gerçek zamanlı fiyatlar
         </p>
-      </div>
-
-      {/* Platform tabları */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 20 }}>
-        {[
-          { label: '💻 Steam', value: 'steam' },
-          { label: '⚡ Epic',  value: 'epic'  },
-        ].map(p => (
-          <button key={p.value} onClick={() => switchPlatform(p.value)} style={{
-            padding: '8px 20px', borderRadius: 999, fontSize: 13, fontWeight: 600,
-            border: 'none', cursor: 'pointer', transition: 'all 0.15s',
-            background: platform === p.value ? '#1a1a1a' : '#f0f0f0',
-            color:      platform === p.value ? '#fff'    : '#555',
-          }}>
-            {p.label}
-          </button>
-        ))}
       </div>
 
       {/* Arama */}
@@ -187,7 +177,7 @@ export default function GamesPage() {
         <input
           value={query}
           onChange={e => { setQuery(e.target.value); setSection(''); }}
-          placeholder={platform === 'epic' ? 'Epic\'te oyun ara…' : 'Steam\'de oyun ara…'}
+          placeholder="Oyun ara… (Steam ve Epic'te arar)"
           style={{ flex: 1, border: 'none', outline: 'none', fontSize: 15, color: '#1a1a1a', background: 'transparent' }}
         />
         {query && (
@@ -197,7 +187,7 @@ export default function GamesPage() {
 
       {/* Bölüm filtreleri */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-        {sections.map(s => (
+        {SECTIONS.map(s => (
           <button key={s.value} onClick={() => { setSection(s.value); setQuery(''); }}
             style={{
               padding: '7px 16px', borderRadius: 999, fontSize: 13, border: 'none',
@@ -206,11 +196,19 @@ export default function GamesPage() {
               fontWeight: section === s.value ? 600       : 400,
               cursor: 'pointer', transition: 'all 0.15s',
             }}
-          >{s.label}</button>
+          >
+            {s.label}
+            {/* Platform göstergesi */}
+            {s.value !== '' && s.platform !== 'both' && (
+              <span style={{ marginLeft: 5, fontSize: 10, opacity: 0.7 }}>
+                {s.platform === 'steam' ? '(Steam)' : '(Epic)'}
+              </span>
+            )}
+          </button>
         ))}
       </div>
 
-      {/* Bütçe filtresi */}
+      {/* Bütçe */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
         <span style={{ fontSize: 12, color: '#999', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>Bütçe</span>
         <select value={price} onChange={e => setPrice(e.target.value)}
@@ -257,7 +255,7 @@ export default function GamesPage() {
       ) : filteredGames.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '60px 0' }}>
           <p style={{ fontSize: 40, marginBottom: 12 }}>🔍</p>
-          <p style={{ fontSize: 16, fontWeight: 600, color: '#555', marginBottom: 6 }}>Sonuç bulunamadı</p>
+          <p style={{ fontSize: 16, fontWeight: 600, color: '#555' }}>Sonuç bulunamadı</p>
           <button onClick={resetFilters} style={{ marginTop: 12, padding: '8px 20px', borderRadius: 8, background: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
             Filtreleri Temizle
           </button>
@@ -286,4 +284,16 @@ export default function GamesPage() {
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
+}
+
+// İki diziden sırayla eleman alarak birleştirir (Steam, Epic, Steam, Epic...)
+function interleave(arrays) {
+  const result = [];
+  const maxLen = Math.max(...arrays.map(a => a.length), 0);
+  for (let i = 0; i < maxLen; i++) {
+    for (const arr of arrays) {
+      if (i < arr.length) result.push(arr[i]);
+    }
+  }
+  return result;
 }

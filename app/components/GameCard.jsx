@@ -55,6 +55,15 @@ export default function GameCard({ game, compact = false }) {
             {isOnSale  && !isFree && <span className="badge badge-amber">İndirim</span>}
             {game.gamePass && <span className="badge badge-green">GP</span>}
           </div>
+          {/* Platform rozeti — sağ üst */}
+          <div style={{ position: 'absolute', top: 7, right: 7 }}>
+            <span style={{
+              fontSize: 9, fontWeight: 700, padding: '2px 5px', borderRadius: 4,
+              background: 'rgba(0,0,0,0.55)', color: '#fff', letterSpacing: '0.03em',
+            }}>
+              {game.source === 'epic' ? '⚡ EPIC' : '💻 STEAM'}
+            </span>
+          </div>
           {game.metacritic && (
             <div style={{ position: 'absolute', bottom: 6, right: 7 }}>
               <span style={{

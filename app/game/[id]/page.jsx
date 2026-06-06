@@ -8,12 +8,13 @@ import Link from 'next/link';
 export default function GameDetail() {
   const { id }    = useParams();
   const router    = useRouter();
-  const [game,    setGame]    = useState(null);
-  const [prices,  setPrices]  = useState(null);
-  const [ai,      setAi]      = useState(null);
-  const [aiLoading, setAiLoading] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [wishlist, setWishlist] = useState([]);
+  const [game,       setGame]       = useState(null);
+  const [prices,     setPrices]     = useState(null);
+  const [epicGame,   setEpicGame]   = useState(undefined); // undefined=yükleniyor, null=bulunamadı
+  const [ai,         setAi]         = useState(null);
+  const [aiLoading,  setAiLoading]  = useState(false);
+  const [loading,    setLoading]    = useState(true);
+  const [wishlist,   setWishlist]   = useState([]);
 
   useEffect(() => {
     try {
@@ -33,12 +34,22 @@ export default function GameDetail() {
         setGame(gameData);
 
         if (gameData?.name) {
-          // Fiyatlar + AI paralel çalıştır
-          const [pRes] = await Promise.all([
+          // Fiyatlar (ITAD) + Epic cross-search paralel
+          const [pRes, epicRes] = await Promise.all([
             fetch(`/api/prices?title=${encodeURIComponent(gameData.name)}`),
+            fetch(`/api/epic?q=${encodeURIComponent(gameData.name)}&num=5`),
           ]);
-          const pData = await pRes.json();
+          const pData    = await pRes.json();
+          const epicData = await epicRes.json();
           setPrices(pData);
+
+          // İsim eşleşmesi — büyük/küçük harf duyarsız
+          const target = gameData.name.toLowerCase().trim();
+          const match  = (epicData.results || []).find(g =>
+            g.name?.toLowerCase().trim() === target ||
+            g.name?.toLowerCase().includes(target.slice(0, 15))
+          );
+          setEpicGame(match || null);
 
           // AI verisi ayrıca — yavaş olabilir, ayrı state
           setAiLoading(true);
@@ -94,8 +105,8 @@ export default function GameDetail() {
     </div>
   );
 
-  // Steam'den gelen fiyat + ITAD mağazalarını birleştir
-  const allStores = buildStoreList(game, prices);
+  // Steam fiyatı + ITAD'dan Xbox fiyatı
+  const allStores  = buildStoreList(game, prices);
   const paidStores = allStores.filter(s => !s.isFree && s.price > 0);
   const bestStore  = paidStores.sort((a, b) => a.price - b.price)[0];
   const freeStore  = allStores.find(s => s.isFree);
@@ -248,31 +259,49 @@ export default function GameDetail() {
             <PriceTable stores={allStores} loading={!prices} />
           </div>
 
-          {/* Doğrudan mağaza butonları */}
-          {allStores.length > 0 && (
-            <div style={{ marginTop: 4, display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {allStores.map((store, i) => (
-                <a
-                  key={i}
-                  href={store.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '10px 14px', background: '#fff', border: '1px solid #e5e5e5',
-                    borderRadius: 10, textDecoration: 'none', transition: 'border-color 0.15s',
-                  }}
-                >
-                  <span style={{ fontSize: 13, fontWeight: 600, color: '#333' }}>
-                    {store.icon} {store.name}
-                  </span>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: store.isFree ? '#16a34a' : '#DC2626' }}>
-                    {store.isFree ? 'Ücretsiz' : `₺${store.price}`}
-                  </span>
-                </a>
-              ))}
-            </div>
-          )}
+          {/* Mağaza butonları */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
+            {allStores.map((store, i) => (
+              <a key={i} href={store.url} target="_blank" rel="noreferrer" style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '10px 14px', background: '#fff', border: '1px solid #e5e5e5',
+                borderRadius: 10, textDecoration: 'none',
+              }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: '#333' }}>{store.icon} {store.name}</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: store.isFree ? '#16a34a' : '#DC2626' }}>
+                  {store.isFree ? 'Ücretsiz' : `₺${store.price}`}
+                </span>
+              </a>
+            ))}
+          </div>
+
+          {/* Epic Games durumu */}
+          <div style={{ marginTop: 8 }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
+              ⚡ Epic Games
+            </p>
+            {epicGame === undefined ? (
+              <div style={{ height: 44, background: '#f5f5f5', borderRadius: 10, animation: 'pulse 1.5s infinite' }} />
+            ) : epicGame ? (
+              <a href={epicGame.epicUrl} target="_blank" rel="noreferrer" style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '10px 14px', background: '#fff', border: '1px solid #e5e5e5',
+                borderRadius: 10, textDecoration: 'none',
+              }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: '#333' }}>⚡ Epic Games</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: epicGame.isFree ? '#16a34a' : '#1a1a1a' }}>
+                  {epicGame.isFree ? 'Ücretsiz' : (epicGame.price ? `₺${epicGame.price}` : 'Gör →')}
+                </span>
+              </a>
+            ) : (
+              <div style={{
+                padding: '10px 14px', background: '#f9f9f9', border: '1px dashed #e5e5e5',
+                borderRadius: 10, fontSize: 13, color: '#bbb', textAlign: 'center',
+              }}>
+                Bu oyun Epic Games'te bulunmuyor
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

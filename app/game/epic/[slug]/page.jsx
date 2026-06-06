@@ -8,10 +8,11 @@ import Link from 'next/link';
 export default function EpicGameDetail() {
   const { slug }      = useParams();
   const router        = useRouter();
-  const [game,        setGame]        = useState(null);
-  const [prices,      setPrices]      = useState(null);
-  const [loading,     setLoading]     = useState(true);
-  const [wishlist,    setWishlist]    = useState([]);
+  const [game,       setGame]       = useState(null);
+  const [prices,     setPrices]     = useState(null);
+  const [steamGame,  setSteamGame]  = useState(undefined); // undefined=yükleniyor, null=bulunamadı
+  const [loading,    setLoading]    = useState(true);
+  const [wishlist,   setWishlist]   = useState([]);
 
   useEffect(() => {
     try {
@@ -31,9 +32,21 @@ export default function EpicGameDetail() {
         setGame(gameData);
 
         if (gameData?.name) {
-          const pRes  = await fetch(`/api/prices?title=${encodeURIComponent(gameData.name)}`);
-          const pData = await pRes.json();
+          // ITAD fiyatları + Steam cross-search paralel
+          const [pRes, steamRes] = await Promise.all([
+            fetch(`/api/prices?title=${encodeURIComponent(gameData.name)}`),
+            fetch(`/api/steam?q=${encodeURIComponent(gameData.name)}&num=5`),
+          ]);
+          const pData     = await pRes.json();
+          const steamData = await steamRes.json();
           setPrices(pData);
+
+          const target = gameData.name.toLowerCase().trim();
+          const match  = (steamData.results || []).find(g =>
+            g.name?.toLowerCase().trim() === target ||
+            g.name?.toLowerCase().includes(target.slice(0, 15))
+          );
+          setSteamGame(match || null);
         }
       } catch (err) {
         console.error('Epic detay yüklenemedi:', err);
@@ -205,7 +218,7 @@ export default function EpicGameDetail() {
             <PriceTable stores={allStores} loading={!prices} />
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
             {allStores.map((store, i) => (
               <a key={i} href={store.url} target="_blank" rel="noreferrer" style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -218,6 +231,34 @@ export default function EpicGameDetail() {
                 </span>
               </a>
             ))}
+          </div>
+
+          {/* Steam durumu */}
+          <div style={{ marginTop: 8 }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
+              💻 Steam
+            </p>
+            {steamGame === undefined ? (
+              <div style={{ height: 44, background: '#f5f5f5', borderRadius: 10 }} />
+            ) : steamGame ? (
+              <a href={`https://store.steampowered.com/app/${steamGame.id}`} target="_blank" rel="noreferrer" style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '10px 14px', background: '#fff', border: '1px solid #e5e5e5',
+                borderRadius: 10, textDecoration: 'none',
+              }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: '#333' }}>💻 Steam</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: steamGame.isFree ? '#16a34a' : '#1a1a1a' }}>
+                  {steamGame.isFree ? 'Ücretsiz' : (steamGame.price ? `₺${steamGame.price}` : 'Gör →')}
+                </span>
+              </a>
+            ) : (
+              <div style={{
+                padding: '10px 14px', background: '#f9f9f9', border: '1px dashed #e5e5e5',
+                borderRadius: 10, fontSize: 13, color: '#bbb', textAlign: 'center',
+              }}>
+                Bu oyun Steam'de bulunmuyor
+              </div>
+            )}
           </div>
         </div>
       </div>
