@@ -1,11 +1,16 @@
 import { NextResponse } from 'next/server';
 
-// CDN tabanlı endpoint — Vercel/AWS IP bloğunu daha iyi aşar
-const GQL     = 'https://store-site-backend-static-ipv4.ak.epicgames.com/graphql';
+// Edge runtime — Vercel'in edge ağını kullanır (AWS Lambda değil)
+// Epic'in IP engeli Lambda'yı etkiler, Edge farklı IP aralığı kullanır
+export const runtime = 'edge';
+
+const GQL_ENDPOINTS = [
+  'https://store.epicgames.com/graphql',
+  'https://store-site-backend-static-ipv4.ak.epicgames.com/graphql',
+];
 const COUNTRY = 'TR';
 const LOCALE  = 'tr';
 
-// Epic'in beklediği header'lar — eksik olursa 403 / boş yanıt döner
 const HEADERS = {
   'Content-Type':    'application/json',
   'Accept':          'application/json, text/plain, */*',
@@ -15,7 +20,6 @@ const HEADERS = {
   'Referer':         'https://store.epicgames.com/',
 };
 
-// Named variable formatı — Epic GQL için daha güvenilir
 const SEARCH_QUERY = `
 query searchStoreQuery(
   $allowCountries: String
@@ -85,26 +89,37 @@ async function queryEpic({ count = 24, start = 0, sortBy = 'releaseDate', sortDi
   if (keywords) variables.keywords = keywords;
   if (onSale)   variables.onSale   = true;
 
-  const res = await fetch(GQL, {
-    method:  'POST',
-    headers: HEADERS,
-    body:    JSON.stringify({ operationName: 'searchStoreQuery', variables, query: SEARCH_QUERY }),
-    next:    { revalidate: 300 },
-  });
+  const body = JSON.stringify({ operationName: 'searchStoreQuery', variables, query: SEARCH_QUERY });
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    console.error(`Epic GQL ${res.status}:`, text.slice(0, 300));
-    throw new Error(`Epic GQL HTTP ${res.status}`);
+  let lastError;
+  for (const gql of GQL_ENDPOINTS) {
+    try {
+      const res = await fetch(gql, { method: 'POST', headers: HEADERS, body });
+
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        console.error(`Epic GQL [${gql}] ${res.status}:`, text.slice(0, 200));
+        lastError = new Error(`HTTP ${res.status}`);
+        continue; // sıradaki endpoint'i dene
+      }
+
+      const json = await res.json();
+      if (json.errors?.length) {
+        console.error('Epic GQL errors:', JSON.stringify(json.errors));
+        lastError = new Error(json.errors[0].message);
+        continue;
+      }
+
+      const resultCount = json?.data?.Catalog?.searchStore?.elements?.length ?? 0;
+      console.log(`Epic GQL OK [${gql}] — ${resultCount} oyun`);
+      return json;
+    } catch (e) {
+      console.error(`Epic GQL [${gql}] fetch hatası:`, e.message);
+      lastError = e;
+    }
   }
-  const json = await res.json();
-  if (json.errors?.length) {
-    console.error('Epic GQL errors:', JSON.stringify(json.errors));
-    throw new Error(json.errors[0].message);
-  }
-  const resultCount = json?.data?.Catalog?.searchStore?.elements?.length ?? 0;
-  console.log(`Epic GQL OK — ${resultCount} oyun döndü`);
-  return json;
+
+  throw lastError || new Error('Tüm Epic endpoint\'leri başarısız');
 }
 
 export async function GET(request) {
@@ -134,7 +149,7 @@ export async function GET(request) {
     if (section === 'free') {
       const res = await fetch(
         'https://store-site-backend-static.ak.epicgames.com/freeGamesPromotions?locale=tr&country=TR&allowCountries=TR',
-        { headers: HEADERS, next: { revalidate: 3600 } }
+        { headers: HEADERS }
       );
       if (!res.ok) throw new Error(`Epic free HTTP ${res.status}`);
       const freeData = await res.json();
@@ -147,24 +162,24 @@ export async function GET(request) {
 
     // ── Yeni çıkanlar ────────────────────────────────────────────────────────
     if (section === 'new') {
-      const data    = await queryEpic({ count: num, start, sortBy: 'releaseDate', sortDir: 'DESC' });
-      const items   = data?.data?.Catalog?.searchStore?.elements || [];
-      const total   = data?.data?.Catalog?.searchStore?.paging?.total || 0;
+      const data  = await queryEpic({ count: num, start, sortBy: 'releaseDate', sortDir: 'DESC' });
+      const items = data?.data?.Catalog?.searchStore?.elements || [];
+      const total = data?.data?.Catalog?.searchStore?.paging?.total || 0;
       return NextResponse.json({ results: items.map(formatEpicItem), total });
     }
 
     // ── İndirimli ────────────────────────────────────────────────────────────
     if (section === 'sale') {
-      const data    = await queryEpic({ count: num, start, onSale: true });
-      const items   = data?.data?.Catalog?.searchStore?.elements || [];
-      const total   = data?.data?.Catalog?.searchStore?.paging?.total || 0;
+      const data  = await queryEpic({ count: num, start, onSale: true });
+      const items = data?.data?.Catalog?.searchStore?.elements || [];
+      const total = data?.data?.Catalog?.searchStore?.paging?.total || 0;
       return NextResponse.json({ results: items.map(formatEpicItem), total });
     }
 
     // ── Arama veya genel listeleme ───────────────────────────────────────────
-    const data    = await queryEpic({ count: num, start, sortBy: 'releaseDate', sortDir: 'DESC', keywords: q || undefined });
-    const items   = data?.data?.Catalog?.searchStore?.elements || [];
-    const total   = data?.data?.Catalog?.searchStore?.paging?.total || 0;
+    const data  = await queryEpic({ count: num, start, sortBy: 'releaseDate', sortDir: 'DESC', keywords: q || undefined });
+    const items = data?.data?.Catalog?.searchStore?.elements || [];
+    const total = data?.data?.Catalog?.searchStore?.paging?.total || 0;
     return NextResponse.json({ results: items.map(formatEpicItem), total, source: 'epic' });
 
   } catch (err) {
@@ -197,21 +212,21 @@ function formatEpicItem(item) {
   const slug          = getSlug(item);
 
   return {
-    id:       `epic_${slug}`,
-    epicSlug: slug,
-    name:     item.title,
-    image:    getImage(item),
-    price:    isFree ? 0 : (discountPrice != null ? Math.round(discountPrice / 100) : null),
-    original: originalPrice != null ? Math.round(originalPrice / 100) : null,
+    id:        `epic_${slug}`,
+    epicSlug:  slug,
+    name:      item.title,
+    image:     getImage(item),
+    price:     isFree ? 0 : (discountPrice != null ? Math.round(discountPrice / 100) : null),
+    original:  originalPrice != null ? Math.round(originalPrice / 100) : null,
     discount,
     isFree,
-    onSale:   discount > 0 && !isFree,
-    gamePass: false,
-    noData:   discountPrice == null,
-    epicUrl:  `https://store.epicgames.com/en-US/p/${slug}`,
-    steamUrl: null,
+    onSale:    discount > 0 && !isFree,
+    gamePass:  false,
+    noData:    discountPrice == null,
+    epicUrl:   `https://store.epicgames.com/en-US/p/${slug}`,
+    steamUrl:  null,
     platforms: ['pc'],
-    source:   'epic',
+    source:    'epic',
   };
 }
 
@@ -224,7 +239,7 @@ function formatEpicDetail(item) {
     genres:      [...new Set(
       (item.categories || []).map(c => c.path?.split('/')?.[1]).filter(Boolean)
     )],
-    tags: (item.tags || []).map(t => t.name).filter(Boolean).slice(0, 15),
+    tags:        (item.tags || []).map(t => t.name).filter(Boolean).slice(0, 15),
     screenshots: (item.keyImages || [])
       .filter(k => ['DieselStoreFrontWide', 'OfferImageWide', 'Screenshot'].includes(k.type))
       .map(k => k.url).filter(Boolean).slice(0, 5),
