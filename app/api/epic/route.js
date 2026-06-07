@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
-const GQL     = 'https://store.epicgames.com/graphql';
+// CDN tabanlı endpoint — Vercel/AWS IP bloğunu daha iyi aşar
+const GQL     = 'https://store-site-backend-static-ipv4.ak.epicgames.com/graphql';
 const COUNTRY = 'TR';
 const LOCALE  = 'tr';
 
@@ -101,8 +102,8 @@ async function queryEpic({ count = 24, start = 0, sortBy = 'releaseDate', sortDi
     console.error('Epic GQL errors:', JSON.stringify(json.errors));
     throw new Error(json.errors[0].message);
   }
-  const count = json?.data?.Catalog?.searchStore?.elements?.length ?? 0;
-  console.log(`Epic GQL OK — ${count} oyun döndü`);
+  const resultCount = json?.data?.Catalog?.searchStore?.elements?.length ?? 0;
+  console.log(`Epic GQL OK — ${resultCount} oyun döndü`);
   return json;
 }
 
