@@ -429,7 +429,7 @@ function AiSection({ ai, loading }) {
             <p style={{ fontSize: 11, fontWeight: 700, color: '#DC2626', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
               AI Özeti
             </p>
-            <span style={{ fontSize: 10, color: '#ccc', marginLeft: 'auto' }}>Llama 3.1 · Groq</span>
+            <span style={{ fontSize: 10, color: '#ccc', marginLeft: 'auto' }}>Claude Haiku · Anthropic</span>
           </div>
 
           {loading ? (

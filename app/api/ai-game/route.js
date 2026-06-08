@@ -79,7 +79,7 @@ Sadece JSON döndür. Başka hiçbir metin ekleme.`.trim();
         'content-type':      'application/json',
       },
       body: JSON.stringify({
-        model,
+        model:       MODEL,
         max_tokens:  600,
         system:      'Sen bir oyun eleştirmenisin. Her zaman geçerli JSON formatında, sade Türkçe yanıt ver.',
         messages: [{ role: 'user', content: userPrompt }],
