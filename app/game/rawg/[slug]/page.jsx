@@ -7,12 +7,15 @@ import Link from 'next/link';
 export default function RawgGamePage({ params }) {
   const { slug } = params;
 
-  const [game,    setGame]    = useState(null);
-  const [prices,  setPrices]  = useState([]);
-  const [ai,      setAi]      = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState(null);
-  const [imgIdx,  setImgIdx]  = useState(0);
+  const [game,          setGame]          = useState(null);
+  const [prices,        setPrices]        = useState([]);
+  const [steamPrice,    setSteamPrice]    = useState(null);
+  const [steamLoading,  setSteamLoading]  = useState(false);
+  const [pricesLoading, setPricesLoading] = useState(false);
+  const [ai,            setAi]            = useState(null);
+  const [loading,       setLoading]       = useState(true);
+  const [error,         setError]         = useState(null);
+  const [imgIdx,        setImgIdx]        = useState(0);
 
   useEffect(() => {
     if (!slug) return;
@@ -20,6 +23,9 @@ export default function RawgGamePage({ params }) {
     setError(null);
     setAi(null);
     setPrices([]);
+    setSteamPrice(null);
+    setSteamLoading(false);
+    setPricesLoading(false);
 
     fetch('/api/rawg-game?slug=' + slug)
       .then(r => r.json())
@@ -28,16 +34,32 @@ export default function RawgGamePage({ params }) {
         const g = gameData.game;
         setGame(g);
 
-        // Xbox — ITAD country=TR
+        // ── Steam fiyatı — appid ile garantili TRY ──────────────────────
+        if (g.steamAppId) {
+          setSteamLoading(true);
+          fetch('/api/steam-price?appid=' + g.steamAppId)
+            .then(r => r.json())
+            .then(d => { if (d.price != null) setSteamPrice(d); })
+            .catch(() => {})
+            .finally(() => setSteamLoading(false));
+        }
+
+        // ── Epic + Xbox — ITAD country=TR ────────────────────────────────
+        setPricesLoading(true);
         fetch('/api/prices?title=' + encodeURIComponent(g.name))
           .then(r => r.json())
           .then(d => setPrices(d.stores || []))
-          .catch(() => {});
+          .catch(() => {})
+          .finally(() => setPricesLoading(false));
 
-        // AI özeti — name + description gönder
+        // ── AI özeti — name + description gönder ─────────────────────────
         const desc = (g.description || '').replace(/<[^>]+>/g, '').slice(0, 400);
         const aiId = g.steamAppId || ('rawg_' + g.rawgId);
-        fetch('/api/ai-game?appid=' + encodeURIComponent(aiId) + '&name=' + encodeURIComponent(g.name) + '&description=' + encodeURIComponent(desc))
+        fetch(
+          '/api/ai-game?appid=' + encodeURIComponent(aiId) +
+          '&name='              + encodeURIComponent(g.name) +
+          '&description='       + encodeURIComponent(desc)
+        )
           .then(r => r.json())
           .then(d => { if (d.ozet) setAi(d); })
           .catch(() => {});
@@ -58,11 +80,14 @@ export default function RawgGamePage({ params }) {
       <p style={{ fontSize: 48, marginBottom: 12 }}>😕</p>
       <p style={{ fontSize: 18, fontWeight: 700, color: '#1a1a1a', marginBottom: 8 }}>Oyun bulunamadı</p>
       <p style={{ color: '#999', marginBottom: 24 }}>{error || 'Bilinmeyen hata'}</p>
-      <Link href="/games" style={{ padding: '10px 24px', background: '#DC2626', color: '#fff', borderRadius: 10, textDecoration: 'none', fontWeight: 600 }}>← Oyunlara Dön</Link>
+      <Link href="/games" style={{ padding: '10px 24px', background: '#DC2626', color: '#fff', borderRadius: 10, textDecoration: 'none', fontWeight: 600 }}>
+        ← Oyunlara Dön
+      </Link>
     </div>
   );
 
   const allImages  = [game.image, ...(game.screenshots || [])].filter(Boolean);
+  const epicPrice  = prices.find(p => p.name === 'Epic Games');
   const xboxPrices = prices.filter(p => p.name === 'Xbox');
 
   return (
@@ -73,7 +98,7 @@ export default function RawgGamePage({ params }) {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 32, alignItems: 'start' }}>
 
-        {/* Sol */}
+        {/* ─── Sol ───────────────────────────────────────────────────── */}
         <div>
           {allImages.length > 0 && (
             <div style={{ borderRadius: 16, overflow: 'hidden', marginBottom: 12, aspectRatio: '16/9', position: 'relative', background: '#f0f0f0' }}>
@@ -134,10 +159,11 @@ export default function RawgGamePage({ params }) {
           )}
         </div>
 
-        {/* Sağ */}
+        {/* ─── Sağ ───────────────────────────────────────────────────── */}
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 800, color: '#1a1a1a', lineHeight: 1.2, marginBottom: 10 }}>{game.name}</h1>
 
+          {/* Puan rozetleri */}
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
             {game.metacritic && (
               <div style={{
@@ -155,6 +181,7 @@ export default function RawgGamePage({ params }) {
             )}
           </div>
 
+          {/* Detay tablosu */}
           <div style={{ background: '#fafafa', border: '1.5px solid #ebebeb', borderRadius: 12, padding: '14px 16px', marginBottom: 20, fontSize: 13 }}>
             {[
               { label: 'Geliştirici', value: game.developer },
@@ -169,32 +196,93 @@ export default function RawgGamePage({ params }) {
             ))}
           </div>
 
-          {xboxPrices.length > 0 && (
-            <>
-              <h2 style={{ fontSize: 15, fontWeight: 700, color: '#1a1a1a', marginBottom: 10 }}>Fiyatlar</h2>
-              {xboxPrices.map(p => (
-                <PriceCard key={p.storeId || p.name} store="Xbox" icon="🎮"
-                  price={p.price} original={p.original} discount={p.discount} url={p.url}
+          {/* ── Platform Fiyatları ──────────────────────────────────── */}
+          <div>
+            <h2 style={{ fontSize: 15, fontWeight: 700, color: '#1a1a1a', marginBottom: 10 }}>Platform Fiyatları</h2>
+
+            {/* Steam */}
+            {game.hasSteam ? (
+              steamLoading
+                ? <LoadingPriceRow />
+                : steamPrice
+                  ? <PriceCard store="Steam" icon="💻"
+                      price={steamPrice.price} original={steamPrice.original}
+                      discount={steamPrice.discount} isFree={steamPrice.isFree}
+                      url={game.steamUrl}
+                    />
+                  : <PlaceholderCard store="Steam" icon="💻" url={game.steamUrl} />
+            ) : (
+              <MissingCard platform="Steam" />
+            )}
+
+            {/* Epic Games */}
+            {game.hasEpic ? (
+              pricesLoading && !epicPrice
+                ? <LoadingPriceRow />
+                : epicPrice
+                  ? <PriceCard store="Epic Games" icon="⚡"
+                      price={epicPrice.price} original={epicPrice.original}
+                      discount={epicPrice.discount} isFree={epicPrice.isFree}
+                      url={epicPrice.url || game.epicUrl}
+                    />
+                  : <PlaceholderCard store="Epic Games" icon="⚡" url={game.epicUrl} />
+            ) : (
+              <MissingCard platform="Epic Games" />
+            )}
+
+            {/* Xbox / Game Pass */}
+            {xboxPrices.length > 0 ? (
+              xboxPrices.map(p => (
+                <PriceCard key={p.storeId || p.name} store="Xbox / Game Pass" icon="🎮"
+                  price={p.price} original={p.original} discount={p.discount}
+                  isFree={p.isFree} url={p.url}
                 />
-              ))}
-            </>
-          )}
+              ))
+            ) : pricesLoading ? (
+              <LoadingPriceRow />
+            ) : (
+              <MissingCard platform="Xbox / Game Pass" />
+            )}
+
+            <p style={{ fontSize: 11, color: '#bbb', marginTop: 10, lineHeight: 1.5 }}>
+              Fiyatlar Steam & ITAD üzerinden alınmaktadır. Anlık değişiklikler yansımayabilir.
+            </p>
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-function PriceCard({ store, icon, price, original, discount, url }) {
-  const isFree   = price === 0;
+// ── Yükleniyor satırı (shimmer) ─────────────────────────────────────────────
+function LoadingPriceRow() {
+  return (
+    <>
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '12px 14px', borderRadius: 10, border: '1.5px solid #f0f0f0',
+        background: '#fafafa', marginBottom: 8,
+      }}>
+        <div style={{ height: 14, width: 80, background: '#ebebeb', borderRadius: 4, animation: 'pulse 1.5s ease-in-out infinite' }} />
+        <div style={{ height: 14, width: 55, background: '#ebebeb', borderRadius: 4, animation: 'pulse 1.5s ease-in-out infinite' }} />
+      </div>
+      <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }`}</style>
+    </>
+  );
+}
+
+// ── Fiyatlı platform kartı ───────────────────────────────────────────────────
+function PriceCard({ store, icon, price, original, discount, isFree: isFreeOverride, url }) {
+  const isFree   = isFreeOverride || price === 0;
   const isOnSale = discount > 0 && !isFree;
   return (
     <a href={url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', display: 'block', marginBottom: 8 }}>
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '12px 14px', borderRadius: 10, border: '1.5px solid #ebebeb', background: '#fff', cursor: 'pointer',
-        transition: 'border-color 0.15s',
-      }}
+      <div
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '12px 14px', borderRadius: 10, border: '1.5px solid #ebebeb',
+          background: '#fff', cursor: 'pointer', transition: 'border-color 0.15s',
+        }}
         onMouseEnter={e => e.currentTarget.style.borderColor = '#FECACA'}
         onMouseLeave={e => e.currentTarget.style.borderColor = '#ebebeb'}
       >
@@ -219,6 +307,7 @@ function PriceCard({ store, icon, price, original, discount, url }) {
   );
 }
 
+// ── Fiyat yok ama link var ───────────────────────────────────────────────────
 function PlaceholderCard({ store, icon, url }) {
   return (
     <a href={url || '#'} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', display: 'block', marginBottom: 8 }}>
@@ -233,6 +322,7 @@ function PlaceholderCard({ store, icon, url }) {
   );
 }
 
+// ── Oyun bu platformda yok ───────────────────────────────────────────────────
 function MissingCard({ platform }) {
   return (
     <div style={{
