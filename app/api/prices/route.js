@@ -3,10 +3,11 @@ import { NextResponse } from 'next/server';
 const ITAD_KEY = process.env.ITAD_API_KEY;
 const ITAD     = 'https://api.isthereanydeal.com';
 
-// Sadece Steam, Epic ve Xbox gösteriyoruz
-const ALLOWED_STORES = new Set(['epic', 'xboxgames', 'microsoft', 'xbox']);
+// Steam dahil tüm mağazalar — hepsi country=TR ile TRY döner
+const ALLOWED_STORES = new Set(['steam', 'epic', 'xboxgames', 'microsoft', 'xbox']);
 
 const STORE_INFO = {
+  steam:     { name: 'Steam',      color: '#1b2838', icon: '💻' },
   epic:      { name: 'Epic Games', color: '#313131', icon: '⚡' },
   xboxgames: { name: 'Xbox',       color: '#107c10', icon: '🎮' },
   microsoft: { name: 'Xbox',       color: '#107c10', icon: '🎮' },

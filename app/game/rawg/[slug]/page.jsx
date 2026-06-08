@@ -30,17 +30,7 @@ export default function RawgGamePage({ params }) {
 
         const pricePromises = [];
 
-        // Steam fiyatı — sunucu üzerinden (CORS yok)
-        if (g.steamAppId) {
-          pricePromises.push(
-            fetch('/api/steam-price?appid=' + g.steamAppId)
-              .then(r => r.json())
-              .then(d => d.price ? [d.price] : [])
-              .catch(() => [])
-          );
-        }
-
-        // Epic + Xbox fiyatları via ITAD
+        // Tüm fiyatlar ITAD üzerinden — Steam+Epic+Xbox hepsi country=TR ile TRY döner
         pricePromises.push(
           fetch('/api/prices?title=' + encodeURIComponent(g.name))
             .then(r => r.json())
@@ -81,7 +71,7 @@ export default function RawgGamePage({ params }) {
   );
 
   const allImages   = [game.image, ...(game.screenshots || [])].filter(Boolean);
-  const steamPrice  = prices.find(p => p.store === 'Steam');
+  const steamPrice  = prices.find(p => p.name === 'Steam');
   const epicPrice   = prices.find(p => p.name  === 'Epic Games');
   const xboxPrices  = prices.filter(p => p.name === 'Xbox');
 
