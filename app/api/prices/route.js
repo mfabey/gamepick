@@ -3,13 +3,15 @@ import { NextResponse } from 'next/server';
 const ITAD_KEY = process.env.ITAD_API_KEY;
 const ITAD     = 'https://api.isthereanydeal.com';
 
-// ITAD sadece Xbox için
-const ALLOWED_STORES = new Set(['xboxgames', 'microsoft', 'xbox']);
+// ITAD — Epic ve Xbox
+const ALLOWED_STORES = new Set(['epic', 'epicgames', 'xboxgames', 'microsoft', 'xbox']);
 
 const STORE_INFO = {
-  xboxgames: { name: 'Xbox', icon: '🎮' },
-  microsoft: { name: 'Xbox', icon: '🎮' },
-  xbox:      { name: 'Xbox', icon: '🎮' },
+  epic:      { name: 'Epic Games', icon: '⚡' },
+  epicgames: { name: 'Epic Games', icon: '⚡' },
+  xboxgames: { name: 'Xbox',       icon: '🎮' },
+  microsoft: { name: 'Xbox',       icon: '🎮' },
+  xbox:      { name: 'Xbox',       icon: '🎮' },
 };
 
 // ── Döviz kuru (USD → TRY) — bellek cache, 4 saatte bir yenile ────────────
@@ -88,6 +90,11 @@ export async function GET(request) {
       const priceTry    = toTry(amt,    currency, rate);
       const originalTry = toTry(regAmt, currency, rate);
 
+      // Epic URL'lerini Türkçe locale'e çevir
+      const storeUrl = sid.startsWith('epic')
+        ? (deal.url || '').replace('/en-US/', '/tr/').replace('/en/', '/tr/') || deal.url
+        : deal.url;
+
       const cur = storeMap[sid];
       if (!cur || priceTry < cur.price) {
         storeMap[sid] = {
@@ -97,7 +104,7 @@ export async function GET(request) {
           price:    priceTry,
           original: originalTry,
           discount: deal.cut || 0,
-          url:      deal.url,
+          url:      storeUrl,
           isFree:   amt === 0,
         };
       }

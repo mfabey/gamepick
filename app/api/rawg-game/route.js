@@ -63,7 +63,7 @@ export async function GET(request) {
       hasSteam,
       hasEpic,
       steamAppId:   steamAppId || null,
-      epicUrl:      epicUrl || (hasEpic ? `https://store.epicgames.com/en-US/p/${slug}` : null),
+      epicUrl:      epicUrl ? epicUrl.replace('/en-US/', '/tr/') : (hasEpic ? `https://store.epicgames.com/tr/p/${slug}` : null),
       steamUrl:     steamAppId ? `https://store.steampowered.com/app/${steamAppId}` : null,
       source:       steamAppId ? 'steam' : hasEpic ? 'epic' : 'rawg',
     };

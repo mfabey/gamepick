@@ -88,7 +88,7 @@ function formatRawgGame(game) {
     source,
     hasSteam,
     hasEpic,
-    epicUrl:      hasEpic ? 'https://store.epicgames.com/en-US/p/' + game.slug : null,
+    epicUrl:      hasEpic ? 'https://store.epicgames.com/tr/p/' + game.slug : null,
     steamUrl:     null,
     genres:       (game.genres || []).map(g => g.name).slice(0, 3),
     released:     game.released || null,
