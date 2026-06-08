@@ -34,21 +34,59 @@ export default function RawgGamePage({ params }) {
         const g = gameData.game;
         setGame(g);
 
-        // ── Steam fiyatı — appid ile garantili TRY ──────────────────────
+        // ── Steam fiyatı ─────────────────────────────────────────────────
         if (g.steamAppId) {
+          // Öncelik: appid ile direkt TRY fiyatı
           setSteamLoading(true);
           fetch('/api/steam-price?appid=' + g.steamAppId)
             .then(r => r.json())
             .then(d => { if (d.price != null) setSteamPrice(d); })
             .catch(() => {})
             .finally(() => setSteamLoading(false));
+        } else if (g.hasSteam) {
+          // Fallback: appid yoksa isim ile storesearch → appdetails
+          setSteamLoading(true);
+          fetch('/api/card-price?name=' + encodeURIComponent(g.name) + '&hasSteam=true')
+            .then(r => r.json())
+            .then(d => { if (d.price != null) setSteamPrice(d); })
+            .catch(() => {})
+            .finally(() => setSteamLoading(false));
         }
 
-        // ── Epic + Xbox — ITAD country=TR ────────────────────────────────
+        // ── Epic + Xbox — ITAD; Epic eksikse Epic API'den doğrudan al ────
         setPricesLoading(true);
         fetch('/api/prices?title=' + encodeURIComponent(g.name))
           .then(r => r.json())
-          .then(d => setPrices(d.stores || []))
+          .then(async d => {
+            const stores      = d.stores || [];
+            const hasEpicItad = stores.some(s => s.name === 'Epic Games');
+
+            // ITAD'da Epic fiyatı bulunamadıysa Epic Games GraphQL'e sor
+            if (!hasEpicItad && g.hasEpic) {
+              try {
+                const eRes  = await fetch('/api/epic?q=' + encodeURIComponent(g.name) + '&num=5');
+                const eData = await eRes.json();
+                const t     = g.name.toLowerCase().trim();
+                const hit   = (eData.results || []).find(i =>
+                  i.name?.toLowerCase().trim() === t ||
+                  i.name?.toLowerCase().includes(t.slice(0, 15))
+                );
+                if (hit && (hit.price != null || hit.isFree)) {
+                  stores.push({
+                    storeId:  'epic',
+                    name:     'Epic Games',
+                    icon:     '⚡',
+                    price:    hit.price,
+                    original: hit.original,
+                    discount: hit.discount ?? 0,
+                    isFree:   hit.isFree,
+                    url:      hit.epicUrl || g.epicUrl,
+                  });
+                }
+              } catch { /* Epic API opsiyonel */ }
+            }
+            setPrices(stores);
+          })
           .catch(() => {})
           .finally(() => setPricesLoading(false));
 
