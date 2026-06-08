@@ -95,7 +95,7 @@ export default function GamesPage() {
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(fetchGames, 350);
+    debounceRef.current = setTimeout(fetchGames, 550);   // 350 → 550ms: yazmayı bitirmeye zaman tanı
     return () => clearTimeout(debounceRef.current);
   }, [fetchGames]);
 

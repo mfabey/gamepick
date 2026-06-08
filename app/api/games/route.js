@@ -34,8 +34,12 @@ export async function GET(request) {
     const base = { platforms: 4, page, page_size: num };
     let params;
 
-    if (q) {
-      params = { ...base, search: q, search_precise: true, ordering: '-added' };
+    const trimmedQ = q.trim();
+    if (trimmedQ) {
+      // search_precise ve ordering kaldırıldı:
+      // → RAWG kendi relevance sıralamasını kullansın (kısmi aramalar düzgün çalışır)
+      // → search_precise:true sadece tam eşleşme arar, "The m" gibi kısmi sorgularda bozulur
+      params = { ...base, search: trimmedQ };
     } else if (section === 'new') {
       const today = new Date().toISOString().slice(0, 10);
       params = { ...base, ordering: '-released', dates: '2023-01-01,' + today };
