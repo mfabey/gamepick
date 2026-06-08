@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 
-const GROQ_KEY = process.env.GROQ_API_KEY;
-const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const MODEL    = 'llama-3.1-8b-instant';
+const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
+const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
+const MODEL         = 'claude-haiku-4-5-20251001';
 
 // Bellekte basit cache (serverless warm state)
 const _cache = new Map();
@@ -18,10 +18,10 @@ export async function GET(request) {
     return NextResponse.json({ error: 'appid ve name gerekli' }, { status: 400 });
   }
 
-  if (!GROQ_KEY) {
+  if (!ANTHROPIC_KEY) {
     return NextResponse.json({
       ozet: null, duygu: null, etiketler: [],
-      hata: 'GROQ_API_KEY tanımlı değil — Vercel env variables kontrol et',
+      hata: 'ANTHROPIC_API_KEY tanımlı değil',
     });
   }
 
@@ -71,33 +71,28 @@ Etiketler için şu listeden uygun olanları seç (5-8 adet, küçük harfli, T�
 
 Sadece JSON döndür. Başka hiçbir metin ekleme.`.trim();
 
-    const groqRes  = await fetch(GROQ_URL, {
+    const aiRes = await fetch(ANTHROPIC_URL, {
       method:  'POST',
       headers: {
-        'Authorization': `Bearer ${GROQ_KEY}`,
-        'Content-Type':  'application/json',
+        'x-api-key':         ANTHROPIC_KEY,
+        'anthropic-version': '2023-06-01',
+        'content-type':      'application/json',
       },
       body: JSON.stringify({
-        model:       MODEL,
-        messages: [
-          {
-            role:    'system',
-            content: 'Sen bir oyun eleştirmenisin. Her zaman geçerli JSON formatında, sade Türkçe yanıt ver.',
-          },
-          { role: 'user', content: userPrompt },
-        ],
-        temperature: 0.3,
-        max_tokens:  500,
+        model,
+        max_tokens:  600,
+        system:      'Sen bir oyun eleştirmenisin. Her zaman geçerli JSON formatında, sade Türkçe yanıt ver.',
+        messages: [{ role: 'user', content: userPrompt }],
       }),
     });
 
-    if (!groqRes.ok) {
-      const errText = await groqRes.text();
-      throw new Error(`Groq HTTP ${groqRes.status}: ${errText.slice(0, 200)}`);
+    if (!aiRes.ok) {
+      const errText = await aiRes.text();
+      throw new Error(`Anthropic HTTP ${aiRes.status}: ${errText.slice(0, 200)}`);
     }
 
-    const groqData = await groqRes.json();
-    const rawText  = groqData?.choices?.[0]?.message?.content || '';
+    const aiData  = await aiRes.json();
+    const rawText = aiData?.content?.[0]?.text || '';
 
     // JSON'u raw içinden çıkar
     const jsonMatch = rawText.match(/\{[\s\S]*\}/);

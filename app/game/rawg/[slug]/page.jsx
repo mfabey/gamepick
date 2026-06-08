@@ -9,6 +9,7 @@ export default function RawgGamePage({ params }) {
 
   const [game,    setGame]    = useState(null);
   const [prices,  setPrices]  = useState([]);
+  const [ai,      setAi]      = useState(null);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(null);
   const [imgIdx,  setImgIdx]  = useState(0);
@@ -17,6 +18,8 @@ export default function RawgGamePage({ params }) {
     if (!slug) return;
     setLoading(true);
     setError(null);
+    setAi(null);
+    setPrices([]);
 
     fetch('/api/rawg-game?slug=' + slug)
       .then(r => r.json())
@@ -25,10 +28,9 @@ export default function RawgGamePage({ params }) {
         const g = gameData.game;
         setGame(g);
 
-        // Fiyat istekleri — hepsi sunucu tarafından yapılır (CORS yok)
         const pricePromises = [];
 
-        // Steam fiyatı — /api/steam-price üzerinden
+        // Steam fiyatı — sunucu üzerinden (CORS yok)
         if (g.steamAppId) {
           pricePromises.push(
             fetch('/api/steam-price?appid=' + g.steamAppId)
@@ -38,7 +40,7 @@ export default function RawgGamePage({ params }) {
           );
         }
 
-        // Epic + Xbox fiyatları — ITAD (stores alanı döner)
+        // Epic + Xbox fiyatları via ITAD
         pricePromises.push(
           fetch('/api/prices?title=' + encodeURIComponent(g.name))
             .then(r => r.json())
@@ -49,6 +51,14 @@ export default function RawgGamePage({ params }) {
         Promise.all(pricePromises).then(results => {
           setPrices(results.flat().filter(Boolean));
         });
+
+        // AI özeti — name + description gönder
+        const desc = (g.description || '').replace(/<[^>]+>/g, '').slice(0, 400);
+        const aiId = g.steamAppId || ('rawg_' + g.rawgId);
+        fetch('/api/ai-game?appid=' + encodeURIComponent(aiId) + '&name=' + encodeURIComponent(g.name) + '&description=' + encodeURIComponent(desc))
+          .then(r => r.json())
+          .then(d => { if (d.ozet) setAi(d); })
+          .catch(() => {});
       })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false));
@@ -72,7 +82,8 @@ export default function RawgGamePage({ params }) {
 
   const allImages   = [game.image, ...(game.screenshots || [])].filter(Boolean);
   const steamPrice  = prices.find(p => p.store === 'Steam');
-  const otherPrices = prices.filter(p => p.store !== 'Steam');
+  const epicPrice   = prices.find(p => p.name  === 'Epic Games');
+  const xboxPrices  = prices.filter(p => p.name === 'Xbox');
 
   return (
     <div className="container" style={{ paddingTop: 28, paddingBottom: 60, maxWidth: 960 }}>
@@ -82,7 +93,7 @@ export default function RawgGamePage({ params }) {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 32, alignItems: 'start' }}>
 
-        {/* Sol: görsel + açıklama */}
+        {/* Sol */}
         <div>
           {allImages.length > 0 && (
             <div style={{ borderRadius: 16, overflow: 'hidden', marginBottom: 12, aspectRatio: '16/9', position: 'relative', background: '#f0f0f0' }}>
@@ -102,12 +113,38 @@ export default function RawgGamePage({ params }) {
               ))}
             </div>
           )}
+
+          {/* AI Özeti */}
+          {ai && (
+            <div style={{ background: 'linear-gradient(135deg,#fff7f7,#fff)', border: '1.5px solid #FECACA', borderRadius: 14, padding: '16px 18px', marginBottom: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <span style={{ fontSize: 18 }}>✨</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#DC2626' }}>AI Özeti</span>
+              </div>
+              {ai.ozet && <p style={{ fontSize: 14, lineHeight: 1.7, color: '#333', marginBottom: ai.duygu ? 10 : 0 }}>{ai.ozet}</p>}
+              {ai.duygu && (
+                <p style={{ fontSize: 13, lineHeight: 1.6, color: '#666', borderTop: '1px solid #fee2e2', paddingTop: 10 }}>
+                  💬 {ai.duygu}
+                </p>
+              )}
+              {ai.etiketler?.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
+                  {ai.etiketler.map(t => (
+                    <span key={t} style={{ padding: '3px 9px', borderRadius: 999, background: '#FEF2F2', color: '#DC2626', fontSize: 11, fontWeight: 600 }}>{t}</span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Açıklama */}
           {game.description && (
             <div style={{ fontSize: 14, lineHeight: 1.75, color: '#444', marginBottom: 20 }}>
               {game.description.replace(/<[^>]+>/g, '').slice(0, 1200)}
               {game.description.length > 1200 ? '…' : ''}
             </div>
           )}
+
           {game.tags?.length > 0 && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {game.tags.slice(0, 12).map(t => (
@@ -117,13 +154,10 @@ export default function RawgGamePage({ params }) {
           )}
         </div>
 
-        {/* Sağ: bilgi + fiyatlar */}
+        {/* Sağ */}
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: '#1a1a1a', lineHeight: 1.2, marginBottom: 10 }}>
-            {game.name}
-          </h1>
+          <h1 style={{ fontSize: 22, fontWeight: 800, color: '#1a1a1a', lineHeight: 1.2, marginBottom: 10 }}>{game.name}</h1>
 
-          {/* Puanlar */}
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
             {game.metacritic && (
               <div style={{
@@ -141,7 +175,6 @@ export default function RawgGamePage({ params }) {
             )}
           </div>
 
-          {/* Meta */}
           <div style={{ background: '#fafafa', border: '1.5px solid #ebebeb', borderRadius: 12, padding: '14px 16px', marginBottom: 20, fontSize: 13 }}>
             {[
               { label: 'Geliştirici', value: game.developer },
@@ -156,40 +189,30 @@ export default function RawgGamePage({ params }) {
             ))}
           </div>
 
-          {/* Fiyatlar */}
           <h2 style={{ fontSize: 15, fontWeight: 700, color: '#1a1a1a', marginBottom: 10 }}>Fiyatlar</h2>
 
           {/* Steam */}
           {game.hasSteam ? (
-            steamPrice ? (
-              <PriceCard store="Steam" icon="💻"
-                price={steamPrice.price} original={steamPrice.original} discount={steamPrice.discount}
-                url={game.steamUrl}
-              />
-            ) : (
-              <PlaceholderCard store="Steam" icon="💻" url={game.steamUrl} />
-            )
+            steamPrice
+              ? <PriceCard store="Steam" icon="💻" price={steamPrice.price} original={steamPrice.original} discount={steamPrice.discount} url={game.steamUrl} />
+              : <PlaceholderCard store="Steam" icon="💻" url={game.steamUrl} />
           ) : (
             <MissingCard platform="Steam" />
           )}
 
           {/* Epic */}
           {game.hasEpic ? (
-            (() => {
-              const ep = otherPrices.find(p => p.name === 'Epic Games');
-              return ep
-                ? <PriceCard store="Epic Games" icon="⚡" price={ep.price} original={ep.original} discount={ep.discount} url={ep.url} />
-                : <PlaceholderCard store="Epic Games" icon="⚡" url={game.epicUrl} />;
-            })()
+            epicPrice
+              ? <PriceCard store="Epic Games" icon="⚡" price={epicPrice.price} original={epicPrice.original} discount={epicPrice.discount} url={game.epicUrl} />
+              : <PlaceholderCard store="Epic Games" icon="⚡" url={game.epicUrl} />
           ) : (
             <MissingCard platform="Epic Games" />
           )}
 
           {/* Xbox */}
-          {otherPrices.filter(p => p.name === 'Xbox').map(p => (
-            <PriceCard key={p.storeId} store="Xbox" icon="🎮"
-              price={p.price} original={p.original} discount={p.discount}
-              url={p.url}
+          {xboxPrices.map(p => (
+            <PriceCard key={p.storeId || p.name} store="Xbox" icon="🎮"
+              price={p.price} original={p.original} discount={p.discount} url={p.url}
             />
           ))}
         </div>
@@ -205,8 +228,7 @@ function PriceCard({ store, icon, price, original, discount, url }) {
     <a href={url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', display: 'block', marginBottom: 8 }}>
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '12px 14px', borderRadius: 10,
-        border: '1.5px solid #ebebeb', background: '#fff', cursor: 'pointer',
+        padding: '12px 14px', borderRadius: 10, border: '1.5px solid #ebebeb', background: '#fff', cursor: 'pointer',
         transition: 'border-color 0.15s',
       }}
         onMouseEnter={e => e.currentTarget.style.borderColor = '#FECACA'}
@@ -235,11 +257,10 @@ function PriceCard({ store, icon, price, original, discount, url }) {
 
 function PlaceholderCard({ store, icon, url }) {
   return (
-    <a href={url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', display: 'block', marginBottom: 8 }}>
+    <a href={url || '#'} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', display: 'block', marginBottom: 8 }}>
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '12px 14px', borderRadius: 10,
-        border: '1.5px solid #ebebeb', background: '#fff',
+        padding: '12px 14px', borderRadius: 10, border: '1.5px solid #ebebeb', background: '#fff',
       }}>
         <span style={{ fontWeight: 600, fontSize: 14, color: '#1a1a1a' }}>{icon} {store}</span>
         <span style={{ fontSize: 13, color: '#DC2626', fontWeight: 500 }}>Mağazaya Git →</span>
