@@ -8,17 +8,17 @@ import { useAuth } from './context/AuthContext';
 
 export default function Home() {
   const { user } = useAuth();
-  const [freeGames,    setFreeGames]    = useState([]);
+  const [popularGames, setPopularGames] = useState([]);
   const [newGames,     setNewGames]     = useState([]);
-  const [trendGames,   setTrendGames]   = useState([]);
-  const [loadingFree,  setLoadingFree]  = useState(true);
+  const [topGames,     setTopGames]     = useState([]);
+  const [loadingPop,   setLoadingPop]   = useState(true);
   const [loadingNew,   setLoadingNew]   = useState(true);
-  const [loadingTrend, setLoadingTrend] = useState(true);
+  const [loadingTop,   setLoadingTop]   = useState(true);
 
-  const fetchSection = useCallback(async (steamSection, setter, loadingSetter) => {
+  const fetchSection = useCallback(async (section, setter, loadingSetter) => {
     loadingSetter(true);
     try {
-      const res  = await fetch(`/api/steam?section=${steamSection}&num=12`);
+      const res  = await fetch(`/api/games?section=${section}&num=12`);
       const data = await res.json();
       setter(data.results || []);
     } catch {}
@@ -26,9 +26,9 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    fetchSection('specials',   setFreeGames,  setLoadingFree);
-    fetchSection('new',        setNewGames,   setLoadingNew);
-    fetchSection('topsellers', setTrendGames, setLoadingTrend);
+    fetchSection('popular',  setPopularGames, setLoadingPop);
+    fetchSection('new',      setNewGames,     setLoadingNew);
+    fetchSection('topscore', setTopGames,     setLoadingTop);
   }, [fetchSection]);
 
   return (
@@ -54,7 +54,7 @@ export default function Home() {
             <span style={{ color: '#DC2626' }}>En İyi Fiyat</span>
           </h1>
           <p style={{ color: '#888', fontSize: 17, maxWidth: 520, margin: '0 auto 28px' }}>
-            Steam, Epic ve Xbox fiyatlarını tek ekranda gör.
+            Binlerce oyunu tek ekranda keşfet.
             Ruh haline göre AI önerisi al.
           </p>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -78,7 +78,7 @@ export default function Home() {
             display: 'flex', gap: 32, justifyContent: 'center',
             marginTop: 40, flexWrap: 'wrap',
           }}>
-            {[['500K+', 'Oyun'], ['3 Platform', 'Fiyat Karşılaştırma'], ['AI', 'Kişisel Öneri']].map(([n, l]) => (
+            {[['500K+', 'Oyun'], ['Puan & Yorum', 'Metacritic Verisi'], ['AI', 'Kişisel Öneri']].map(([n, l]) => (
               <div key={l} style={{ textAlign: 'center' }}>
                 <p style={{ fontSize: 22, fontWeight: 800, color: '#DC2626' }}>{n}</p>
                 <p style={{ fontSize: 12, color: '#999', marginTop: 2 }}>{l}</p>
@@ -90,31 +90,31 @@ export default function Home() {
 
       <div className="container" style={{ paddingTop: 40 }}>
 
-        {/* Bu Hafta İndirimli */}
+        {/* Popüler */}
         <Section
-          title="💥 Bu Hafta İndirimli"
-          subtitle="Steam'de şu an indirimde olan oyunlar"
-          href="/games?section=specials"
-          games={freeGames}
-          loading={loadingFree}
+          title="💥 Popüler Oyunlar"
+          subtitle="Oyuncuların en çok oynadığı oyunlar"
+          href="/games?section=popular"
+          games={popularGames}
+          loading={loadingPop}
         />
 
         {/* Yeni Çıkanlar */}
         <Section
           title="🗓️ Yeni Çıkanlar"
-          subtitle="Son 4 ayda yayınlanan oyunlar"
+          subtitle="Son dönemde yayınlanan oyunlar"
           href="/games?section=new"
           games={newGames}
           loading={loadingNew}
         />
 
-        {/* Bu Hafta Trend */}
+        {/* En Yüksek Puanlı */}
         <Section
-          title="🔥 Bu Hafta Trend"
-          subtitle="Şu an en çok satılan oyunlar"
-          href="/games?section=topsellers"
-          games={trendGames}
-          loading={loadingTrend}
+          title="⭐ En Yüksek Puanlı"
+          subtitle="Metacritic'e göre en iyi oyunlar"
+          href="/games?section=topscore"
+          games={topGames}
+          loading={loadingTop}
         />
 
         {/* CTA - kütüphane */}
@@ -131,10 +131,10 @@ export default function Home() {
               ✦ Tek Kütüphane
             </p>
             <h3 style={{ fontSize: 20, fontWeight: 700, color: '#1a1a1a', marginBottom: 6 }}>
-              Steam, Epic ve Xbox'ı birleştir
+              Oyunlarını tek yerden yönet
             </h3>
             <p style={{ fontSize: 14, color: '#666' }}>
-              Tüm hesaplarını bağla, oyunlarını tek bir yerden yönet.
+              Oyun listenini oluştur, takip et ve AI önerileri al.
             </p>
           </div>
           <Link href={user ? '/library' : '/signup'} className="btn btn-red" style={{ whiteSpace: 'nowrap', padding: '12px 24px' }}>

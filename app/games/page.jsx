@@ -122,7 +122,7 @@ export default function GamesPage() {
     <div className="container" style={{ paddingTop: 32, paddingBottom: 60 }}>
       <div style={{ marginBottom: 20 }}>
         <h1 style={{ fontSize: 26, fontWeight: 800, color: '#1a1a1a', marginBottom: 4 }}>Oyunlar</h1>
-        <p style={{ color: '#999', fontSize: 14 }}>Steam & Epic Games — gerçek zamanlı fiyatlar</p>
+        <p style={{ color: '#999', fontSize: 14 }}>500.000+ oyun — puan, yorum ve AI önerisi</p>
       </div>
 
       {/* Arama */}

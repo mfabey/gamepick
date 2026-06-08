@@ -28,29 +28,11 @@ export default function RawgGamePage({ params }) {
         const g = gameData.game;
         setGame(g);
 
-        const pricePromises = [];
-
-        // Steam fiyatı — appdetails cc=tr ile garantili TRY
-        if (g.steamAppId) {
-          pricePromises.push(
-            fetch('/api/steam-price?appid=' + g.steamAppId)
-              .then(r => r.json())
-              .then(d => d.price ? [{ ...d.price, name: 'Steam' }] : [])
-              .catch(() => [])
-          );
-        }
-
-        // Epic + Xbox — ITAD country=TR
-        pricePromises.push(
-          fetch('/api/prices?title=' + encodeURIComponent(g.name))
-            .then(r => r.json())
-            .then(d => d.stores || [])
-            .catch(() => [])
-        );
-
-        Promise.all(pricePromises).then(results => {
-          setPrices(results.flat().filter(Boolean));
-        });
+        // Xbox — ITAD country=TR
+        fetch('/api/prices?title=' + encodeURIComponent(g.name))
+          .then(r => r.json())
+          .then(d => setPrices(d.stores || []))
+          .catch(() => {});
 
         // AI özeti — name + description gönder
         const desc = (g.description || '').replace(/<[^>]+>/g, '').slice(0, 400);
@@ -80,10 +62,8 @@ export default function RawgGamePage({ params }) {
     </div>
   );
 
-  const allImages   = [game.image, ...(game.screenshots || [])].filter(Boolean);
-  const steamPrice  = prices.find(p => p.name === 'Steam');
-  const epicPrice   = prices.find(p => p.name  === 'Epic Games');
-  const xboxPrices  = prices.filter(p => p.name === 'Xbox');
+  const allImages  = [game.image, ...(game.screenshots || [])].filter(Boolean);
+  const xboxPrices = prices.filter(p => p.name === 'Xbox');
 
   return (
     <div className="container" style={{ paddingTop: 28, paddingBottom: 60, maxWidth: 960 }}>
@@ -189,32 +169,16 @@ export default function RawgGamePage({ params }) {
             ))}
           </div>
 
-          <h2 style={{ fontSize: 15, fontWeight: 700, color: '#1a1a1a', marginBottom: 10 }}>Fiyatlar</h2>
-
-          {/* Steam */}
-          {game.hasSteam ? (
-            steamPrice
-              ? <PriceCard store="Steam" icon="💻" price={steamPrice.price} original={steamPrice.original} discount={steamPrice.discount} url={game.steamUrl} />
-              : <PlaceholderCard store="Steam" icon="💻" url={game.steamUrl} />
-          ) : (
-            <MissingCard platform="Steam" />
+          {xboxPrices.length > 0 && (
+            <>
+              <h2 style={{ fontSize: 15, fontWeight: 700, color: '#1a1a1a', marginBottom: 10 }}>Fiyatlar</h2>
+              {xboxPrices.map(p => (
+                <PriceCard key={p.storeId || p.name} store="Xbox" icon="🎮"
+                  price={p.price} original={p.original} discount={p.discount} url={p.url}
+                />
+              ))}
+            </>
           )}
-
-          {/* Epic */}
-          {game.hasEpic ? (
-            epicPrice
-              ? <PriceCard store="Epic Games" icon="⚡" price={epicPrice.price} original={epicPrice.original} discount={epicPrice.discount} url={game.epicUrl} />
-              : <PlaceholderCard store="Epic Games" icon="⚡" url={game.epicUrl} />
-          ) : (
-            <MissingCard platform="Epic Games" />
-          )}
-
-          {/* Xbox */}
-          {xboxPrices.map(p => (
-            <PriceCard key={p.storeId || p.name} store="Xbox" icon="🎮"
-              price={p.price} original={p.original} discount={p.discount} url={p.url}
-            />
-          ))}
         </div>
       </div>
     </div>

@@ -3,15 +3,13 @@ import { NextResponse } from 'next/server';
 const ITAD_KEY = process.env.ITAD_API_KEY;
 const ITAD     = 'https://api.isthereanydeal.com';
 
-// ITAD sadece Epic ve Xbox için — Steam fiyatı Steam'in kendi API'sinden gelir
-const ALLOWED_STORES = new Set(['epic', 'epicgames', 'xboxgames', 'microsoft', 'xbox']);
+// ITAD sadece Xbox için
+const ALLOWED_STORES = new Set(['xboxgames', 'microsoft', 'xbox']);
 
 const STORE_INFO = {
-  epic:      { name: 'Epic Games', icon: '⚡' },
-  epicgames: { name: 'Epic Games', icon: '⚡' },
-  xboxgames: { name: 'Xbox',       icon: '🎮' },
-  microsoft: { name: 'Xbox',       icon: '🎮' },
-  xbox:      { name: 'Xbox',       icon: '🎮' },
+  xboxgames: { name: 'Xbox', icon: '🎮' },
+  microsoft: { name: 'Xbox', icon: '🎮' },
+  xbox:      { name: 'Xbox', icon: '🎮' },
 };
 
 export async function GET(request) {
