@@ -30,7 +30,17 @@ export default function RawgGamePage({ params }) {
 
         const pricePromises = [];
 
-        // Tüm fiyatlar ITAD üzerinden — Steam+Epic+Xbox hepsi country=TR ile TRY döner
+        // Steam fiyatı — appdetails cc=tr ile garantili TRY
+        if (g.steamAppId) {
+          pricePromises.push(
+            fetch('/api/steam-price?appid=' + g.steamAppId)
+              .then(r => r.json())
+              .then(d => d.price ? [{ ...d.price, name: 'Steam' }] : [])
+              .catch(() => [])
+          );
+        }
+
+        // Epic + Xbox — ITAD country=TR
         pricePromises.push(
           fetch('/api/prices?title=' + encodeURIComponent(g.name))
             .then(r => r.json())
