@@ -1,14 +1,8 @@
 import { NextResponse } from 'next/server';
+import { getUsdToTry } from '../../lib/exchange';
 
 // Epic Games GraphQL API — Türkiye (TR) fiyatları
 // GET /api/epic?q=cyberpunk&num=5
-const EPIC_GQL = 'https://store-site-backend-static-ipv4.ak.epicgames.com/freeGamesPromotions?locale=tr&country=TR&allowCountries=TR';
-const CATALOG  = 'https://catalog-public-service-prod06.ol.epicgames.com/catalog/api/shared/namespace';
-
-// Epic'in Storefront arama API'si
-const SEARCH_URL = 'https://store-site-backend-static-ipv4.ak.epicgames.com/autocomplete?query={QUERY}&locale=tr&country=TR';
-
-// Epic Games arama endpoint (GraphQL)
 const GQL_URL = 'https://graphql.epicgames.com/graphql';
 
 const SEARCH_QUERY = `
@@ -27,7 +21,6 @@ query searchStoreQuery($keywords: String!, $country: String!, $locale: String!) 
         title
         id
         namespace
-        offerType
         price(country: $country) {
           totalPrice {
             discountPrice
@@ -70,37 +63,49 @@ export async function GET(request) {
     const data     = await res.json();
     const elements = data?.data?.Catalog?.searchStore?.elements || [];
 
-    const results = elements.slice(0, num).map(el => {
-      const tp       = el.price?.totalPrice;
-      const priceVal = tp?.discountPrice  ?? null;
-      const origVal  = tp?.originalPrice  ?? null;
-      const disc     = tp?.discount       ?? 0;
-      const cur      = tp?.currencyCode   || 'USD';
+    // Döviz kuruna ihtiyaç olursa al (çoğu zaman TR → TRY gelir)
+    let usdTryRate = null;
 
-      // TRY cinsinden kuruş → TL
-      const toTL = (v) => {
-        if (v == null) return null;
-        return cur === 'USD'
-          ? null   // USD döndürüyorsa kullanma — TRY endpoint kullanılmıyor
-          : Math.round(v / 100);
-      };
+    const results = await Promise.all(elements.slice(0, num).map(async el => {
+      const tp       = el.price?.totalPrice;
+      const rawFinal = tp?.discountPrice  ?? null;
+      const rawOrig  = tp?.originalPrice  ?? null;
+      const disc     = tp?.discount       ?? 0;
+      const currency = tp?.currencyCode   || 'USD';
+
+      let price, original;
+
+      if (currency === 'TRY') {
+        // Epic TR → kuruş / 100 = TL
+        price    = rawFinal != null ? Math.round(rawFinal / 100) : null;
+        original = rawOrig  != null ? Math.round(rawOrig  / 100) : price;
+      } else {
+        // USD veya başka para birimi → güncel kur ile TRY
+        if (!usdTryRate) usdTryRate = await getUsdToTry();
+        const factor = currency === 'EUR' ? usdTryRate * 0.93
+                     : currency === 'GBP' ? usdTryRate * 0.79
+                     : usdTryRate; // USD default
+        price    = rawFinal != null ? Math.round((rawFinal / 100) * factor) : null;
+        original = rawOrig  != null ? Math.round((rawOrig  / 100) * factor) : price;
+      }
 
       const slug = el.catalogNs?.mappings?.[0]?.pageSlug || el.productSlug || el.urlSlug || '';
 
       return {
         id:       el.id,
         name:     el.title,
-        price:    cur === 'TRY' ? Math.round((priceVal ?? 0) / 100) : null,
-        original: cur === 'TRY' ? Math.round((origVal  ?? 0) / 100) : null,
+        price,
+        original,
         discount: disc,
-        isFree:   priceVal === 0,
-        currency: cur,
+        isFree:   rawFinal === 0,
+        currency: 'TRY',
         epicUrl:  slug ? `https://store.epicgames.com/tr/p/${slug}` : null,
       };
-    // Sadece TRY fiyatı olan veya ücretsiz olanları döndür
-    }).filter(r => r.price != null || r.isFree);
+    }));
 
-    return NextResponse.json({ results });
+    // Sadece fiyatı olan veya ücretsiz olanları döndür
+    return NextResponse.json({ results: results.filter(r => r.price != null || r.isFree) });
+
   } catch (err) {
     console.error('Epic API hatası:', err.message);
     return NextResponse.json({ results: [] });

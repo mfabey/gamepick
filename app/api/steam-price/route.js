@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
+import { getUsdToTry, amountToTRY } from '../../lib/exchange';
 
 // GET /api/steam-price?appid=271590
-// Steam appdetails API'sini cc=tr ile çağırır → TRY fiyatı döndürür
+// cc=tr ile çağırır; Steam TRY döndürmezse (USD/EUR) → güncel kur ile dönüştürür
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const appid = searchParams.get('appid');
@@ -17,20 +18,20 @@ export async function GET(request) {
     const data  = await res.json();
     const entry = data?.[appid];
 
-    // Oyun bulunamadıysa
     if (!entry?.success) return NextResponse.json({ price: null });
 
-    // Ücretsiz oyunlar
-    if (!entry.data) return NextResponse.json({ price: 0, isFree: true });
+    // Ücretsiz oyun — price_overview alanı hiç gelmez
+    if (!entry.data?.price_overview) return NextResponse.json({ price: 0, isFree: true });
 
-    const info = entry.data?.price_overview;
-    // price_overview yoksa → oyun ücretsiz
-    if (!info) return NextResponse.json({ price: 0, isFree: true });
+    const info     = entry.data.price_overview;
+    const currency = info.currency || 'TRY';
 
-    // Steam kuruş bazında döner (örn: 68900 = ₺689)
+    // cc=tr rağmen USD/EUR dönerse → gerçek zamanlı kur ile TRY'ye çevir
+    const usdTryRate = currency !== 'TRY' ? await getUsdToTry() : 1;
+
     return NextResponse.json({
-      price:    Math.round(info.final   / 100),
-      original: Math.round(info.initial / 100),
+      price:    amountToTRY(info.final,   currency, usdTryRate),
+      original: amountToTRY(info.initial, currency, usdTryRate),
       discount: info.discount_percent ?? 0,
       isFree:   info.final === 0,
       currency: 'TRY',
