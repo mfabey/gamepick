@@ -93,9 +93,17 @@ export default function GamesPage() {
     setLoadingMore(false);
   }, [buildUrl]);
 
+  // Kullanıcı yazmaya başlar başlamaz eski sonuçları gizle (debounce bitmesini bekleme)
+  useEffect(() => {
+    if (query.trim()) {
+      setGames([]);
+      setLoading(true);
+    }
+  }, [query]);
+
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(fetchGames, 550);   // 350 → 550ms: yazmayı bitirmeye zaman tanı
+    debounceRef.current = setTimeout(fetchGames, 500);
     return () => clearTimeout(debounceRef.current);
   }, [fetchGames]);
 

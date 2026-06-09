@@ -3,6 +3,65 @@ import { NextResponse } from 'next/server';
 const RAWG_KEY = process.env.RAWG_API_KEY;
 const BASE     = 'https://api.rawg.io/api';
 
+// Türkçe tür adı → RAWG genre slug
+const TR_GENRE = {
+  'aksiyon':    'action',
+  'macera':     'adventure',
+  'rpg':        'role-playing-games-rpg',
+  'strateji':   'strategy',
+  'simülasyon': 'simulation',
+  'simulasyon': 'simulation',
+  'bulmaca':    'puzzle',
+  'spor':       'sports',
+  'yarış':      'racing',
+  'yaris':      'racing',
+  'platform':   'platformer',
+  'dövüş':      'fighting',
+  'dovus':      'fighting',
+  'atıcılık':   'shooter',
+  'aticilik':   'shooter',
+  'arcade':     'arcade',
+};
+
+// Türkçe etiket → RAWG tag slug
+const TR_TAG = {
+  'açık dünya':    'open-world',
+  'acik dunya':    'open-world',
+  'açık-dünya':    'open-world',
+  'çok oyunculu':  'multiplayer',
+  'cok oyunculu':  'multiplayer',
+  'co-op':         'co-op',
+  'korku':         'horror',
+  'zombi':         'zombie',
+  'uzay':          'space',
+  'sandbox':       'sandbox',
+  'roguelike':     'roguelike',
+  'hayatta kalma': 'survival',
+  'hayatta-kalma': 'survival',
+  'ücretsiz':      'free-to-play',
+  'ucretsiz':      'free-to-play',
+  'hikaye':        'story',
+  'savaş':         'war',
+  'savas':         'war',
+  'tarih':         'historical',
+  'fantezi':       'fantasy',
+  'bilim kurgu':   'sci-fi',
+  'bilim-kurgu':   'sci-fi',
+  'atmosferik':    'atmospheric',
+  'indie':         'indie',
+  'soulslike':     'souls-like',
+  'yapım':         'building',
+  'yapim':         'building',
+};
+
+// Arama sorgusunu Türkçe tür/etiket filtrelerine dönüştür
+function trFilter(q) {
+  const lq = q.toLowerCase().trim();
+  if (TR_GENRE[lq]) return { genres: TR_GENRE[lq], ordering: '-rating' };
+  if (TR_TAG[lq])   return { tags:   TR_TAG[lq],   ordering: '-rating' };
+  return null;
+}
+
 function rawgUrl(path, params = {}) {
   const url = new URL(`${BASE}${path}`);
   url.searchParams.set('key', RAWG_KEY);
@@ -36,10 +95,13 @@ export async function GET(request) {
 
     const trimmedQ = q.trim();
     if (trimmedQ) {
-      // search_precise ve ordering kaldırıldı:
-      // → RAWG kendi relevance sıralamasını kullansın (kısmi aramalar düzgün çalışır)
-      // → search_precise:true sadece tam eşleşme arar, "The m" gibi kısmi sorgularda bozulur
-      params = { ...base, search: trimmedQ };
+      // Önce Türkçe tür/etiket eşlemesi dene
+      const mapped = trFilter(trimmedQ);
+      if (mapped) {
+        params = { ...base, ...mapped };
+      } else {
+        params = { ...base, search: trimmedQ };
+      }
     } else if (section === 'new') {
       const today = new Date().toISOString().slice(0, 10);
       params = { ...base, ordering: '-released', dates: '2023-01-01,' + today };

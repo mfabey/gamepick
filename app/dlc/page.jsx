@@ -81,9 +81,17 @@ export default function DlcPage() {
     setLoadingMore(false);
   }, [buildUrl]);
 
+  // Kullanıcı yazmaya başlar başlamaz eski sonuçları gizle
+  useEffect(() => {
+    if (query.trim()) {
+      setDlcs([]);
+      setLoading(true);
+    }
+  }, [query]);
+
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(fetchDlcs, 350);
+    debounceRef.current = setTimeout(fetchDlcs, 500);
     return () => clearTimeout(debounceRef.current);
   }, [fetchDlcs]);
 

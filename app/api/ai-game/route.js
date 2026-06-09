@@ -56,12 +56,13 @@ export async function GET(request) {
 
     const userPrompt = `
 Oyun: ${name}
-Açıklama: ${cleanDesc}
+Açıklama (İngilizce): ${cleanDesc}
 ${reviewText ? `\nOyuncu Yorumları: ${reviewText}` : ''}
 
 Aşağıdaki JSON formatında TAM Türkçe yanıt üret:
 {
   "ozet": "Oyunun 2-3 cümlelik açık ve merak uyandırıcı Türkçe özeti",
+  "aciklama": "Açıklama (İngilizce) bölümünü doğal, akıcı Türkçeye çevir. Birebir çeviri değil, doğal Türkçe olsun. Tüm içeriği kapsasın.",
   "duygu": "Yorumlara göre oyuncuların genel izlenimi — sevdikleri ve eleştirdikleri (1-2 cümle)",
   "etiketler": ["etiket1","etiket2","etiket3","etiket4","etiket5"]
 }
@@ -106,6 +107,7 @@ Sadece JSON döndür. Başka hiçbir metin ekleme.`.trim();
 
     const result = {
       ozet:      parsed.ozet      || null,
+      aciklama:  parsed.aciklama  || null,
       duygu:     parsed.duygu     || null,
       etiketler: Array.isArray(parsed.etiketler) ? parsed.etiketler.slice(0, 10) : [],
     };

@@ -91,7 +91,7 @@ export default function RawgGamePage({ params }) {
           .finally(() => setPricesLoading(false));
 
         // ── AI özeti — name + description gönder ─────────────────────────
-        const desc = (g.description || '').replace(/<[^>]+>/g, '').slice(0, 400);
+        const desc = (g.description || '').replace(/<[^>]+>/g, '').slice(0, 1500);
         const aiId = g.steamAppId || ('rawg_' + g.rawgId);
         fetch(
           '/api/ai-game?appid=' + encodeURIComponent(aiId) +
@@ -180,11 +180,23 @@ export default function RawgGamePage({ params }) {
             </div>
           )}
 
-          {/* Açıklama */}
-          {game.description && (
-            <div style={{ fontSize: 14, lineHeight: 1.75, color: '#444', marginBottom: 20 }}>
-              {game.description.replace(/<[^>]+>/g, '').slice(0, 1200)}
-              {game.description.length > 1200 ? '…' : ''}
+          {/* Açıklama — AI yüklenince Türkçe, yoksa İngilizce */}
+          {(ai?.aciklama || game.description) && (
+            <div style={{ fontSize: 14, lineHeight: 1.75, color: '#444', marginBottom: 20, position: 'relative' }}>
+              {ai?.aciklama ? (
+                ai.aciklama
+              ) : (
+                <>
+                  {game.description.replace(/<[^>]+>/g, '').slice(0, 1200)}
+                  {game.description.length > 1200 ? '…' : ''}
+                  {/* Henüz AI yüklenmediyse küçük bir loading ipucu */}
+                  {!ai && (
+                    <span style={{ display: 'inline-block', marginLeft: 6, fontSize: 11, color: '#bbb' }}>
+                      (Türkçe çeviri yükleniyor…)
+                    </span>
+                  )}
+                </>
+              )}
             </div>
           )}
 
