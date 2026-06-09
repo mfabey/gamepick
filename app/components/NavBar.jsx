@@ -49,6 +49,7 @@ export default function NavBar() {
         <nav style={{ display: 'flex', gap: 2, marginRight: 'auto' }}>
           <Link href="/"         className={active('/')}>Anasayfa</Link>
           <Link href="/games"    className={active('/games')}>Oyunlar</Link>
+          <Link href="/dlc"      className={active('/dlc')}>DLC</Link>
           <Link href="/library"  className={active('/library')}>Kütüphane</Link>
         </nav>
 

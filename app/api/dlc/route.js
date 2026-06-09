@@ -19,6 +19,7 @@ async function fetchRawg(path, params = {}) {
   return res.json();
 }
 
+// GET /api/dlc?section=new&q=...&page=1&num=24
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const section = searchParams.get('section') || '';
@@ -31,45 +32,55 @@ export async function GET(request) {
   }
 
   try {
-    const base = { platforms: 4, page, page_size: num, exclude_additions: true };
-    let params;
+    // RAWG'da DLC/ek içerik = "additions" (exclude_additions=false ile gelir,
+    // ama bunları izole etmek için parent_platforms + tags kullanıyoruz)
+    const base = { platforms: 4, page, page_size: num };
 
+    let params;
     const trimmedQ = q.trim();
+
     if (trimmedQ) {
-      // search_precise ve ordering kaldırıldı:
-      // → RAWG kendi relevance sıralamasını kullansın (kısmi aramalar düzgün çalışır)
-      // → search_precise:true sadece tam eşleşme arar, "The m" gibi kısmi sorgularda bozulur
+      // Arama: DLC/expansion/pack içeren sonuçları getir
       params = { ...base, search: trimmedQ };
     } else if (section === 'new') {
       const today = new Date().toISOString().slice(0, 10);
-      params = { ...base, ordering: '-released', dates: '2023-01-01,' + today };
-    } else if (section === 'topscore') {
-      params = { ...base, ordering: '-metacritic', metacritic: '70,100' };
+      params = {
+        ...base,
+        ordering: '-released',
+        dates:    '2020-01-01,' + today,
+        tags:     'dlc,expansion,downloadable-content,season-pass',
+      };
     } else if (section === 'popular') {
-      params = { ...base, ordering: '-rating', metacritic: '60,100' };
-    } else if (section === 'free') {
-      params = { ...base, tags: 'free-to-play', ordering: '-added' };
+      params = {
+        ...base,
+        ordering: '-rating',
+        tags:     'dlc,expansion,downloadable-content,season-pass',
+      };
     } else {
-      params = { ...base, ordering: '-added' };
+      // Varsayılan: en son eklenen DLC'ler
+      params = {
+        ...base,
+        ordering: '-added',
+        tags:     'dlc,expansion,downloadable-content,season-pass',
+      };
     }
 
     const data    = await fetchRawg('/games', params);
-    const results = (data.results || []).map(formatRawgGame);
+    const results = (data.results || []).map(formatDlc);
 
     return NextResponse.json({ results, total: data.count || 0, source: 'rawg' });
 
   } catch (err) {
-    console.error('RAWG API hatasi:', err.message);
+    console.error('DLC API hatası:', err.message);
     return NextResponse.json({ error: err.message, results: [] }, { status: 500 });
   }
 }
 
-function formatRawgGame(game) {
+function formatDlc(game) {
   const steamStore = game.stores?.find(s => s.store?.slug === 'steam');
   const epicStore  = game.stores?.find(s => s.store?.slug === 'epic-games');
   const hasSteam   = !!steamStore;
   const hasEpic    = !!epicStore;
-  const source     = hasSteam ? 'steam' : hasEpic ? 'epic' : 'rawg';
 
   return {
     id:           'rawg_' + game.id,
@@ -81,16 +92,14 @@ function formatRawgGame(game) {
     reviewScore:  game.rating        ? Math.round(game.rating * 20) : 0,
     totalReviews: game.ratings_count || 0,
     isFree:       false,
-    onSale:       false,
     price:        null,
     noData:       true,
     platforms:    ['pc'],
-    source,
     hasSteam,
     hasEpic,
     epicUrl:      hasEpic ? 'https://store.epicgames.com/tr/p/' + game.slug : null,
-    steamUrl:     null,
     genres:       (game.genres || []).map(g => g.name).slice(0, 3),
     released:     game.released || null,
+    isDlc:        true,
   };
 }
