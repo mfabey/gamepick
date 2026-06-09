@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 
-const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
-const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
-const MODEL         = 'claude-haiku-4-5-20251001';
+const GROQ_KEY = process.env.GROQ_API_KEY;
+const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
+const MODEL    = 'llama-3.3-70b-versatile';
 
 // Bellekte basit cache (serverless warm state)
 const _cache = new Map();
@@ -18,10 +18,10 @@ export async function GET(request) {
     return NextResponse.json({ error: 'appid ve name gerekli' }, { status: 400 });
   }
 
-  if (!ANTHROPIC_KEY) {
+  if (!GROQ_KEY) {
     return NextResponse.json({
       ozet: null, duygu: null, etiketler: [],
-      hata: 'ANTHROPIC_API_KEY tanımlı değil',
+      hata: 'GROQ_API_KEY tanımlı değil',
     });
   }
 
@@ -29,29 +29,31 @@ export async function GET(request) {
   if (_cache.has(appid)) return NextResponse.json(_cache.get(appid));
 
   try {
-    // ── Steam yorumlarını al ─────────────────────────────────────────────
+    // ── Steam yorumlarını al (opsiyonel) ────────────────────────────────────
     let reviewText = '';
     try {
-      const rRes  = await fetch(
-        `https://store.steampowered.com/appreviews/${appid}?json=1&num_per_page=12&language=all&filter=helpful`,
-        { next: { revalidate: 7200 } }
-      );
-      const rData = await rRes.json();
-      reviewText  = (rData?.reviews || [])
-        .slice(0, 8)
-        .map(r => r.review?.replace(/\n/g, ' ').slice(0, 180))
-        .filter(Boolean)
-        .join(' | ');
+      // Sadece sayısal appid için Steam reviews çek
+      if (/^\d+$/.test(appid)) {
+        const rRes  = await fetch(
+          `https://store.steampowered.com/appreviews/${appid}?json=1&num_per_page=12&language=all&filter=helpful`,
+          { next: { revalidate: 7200 } }
+        );
+        const rData = await rRes.json();
+        reviewText  = (rData?.reviews || [])
+          .slice(0, 8)
+          .map(r => r.review?.replace(/\n/g, ' ').slice(0, 180))
+          .filter(Boolean)
+          .join(' | ');
+      }
     } catch { /* yorumlar opsiyonel */ }
 
-    // ── Açıklamayı temizle ───────────────────────────────────────────────
+    // ── Açıklamayı temizle ──────────────────────────────────────────────────
     const cleanDesc = description
-      .replace(/<[^>]+>/g, '')   // HTML etiketleri kaldır
+      .replace(/<[^>]+>/g, '')
       .replace(/\s+/g, ' ')
       .trim()
       .slice(0, 600);
 
-    // ── Groq prompt ──────────────────────────────────────────────────────
     const userPrompt = `
 Oyun: ${name}
 Açıklama: ${cleanDesc}
@@ -71,28 +73,30 @@ Etiketler için şu listeden uygun olanları seç (5-8 adet, küçük harfli, T�
 
 Sadece JSON döndür. Başka hiçbir metin ekleme.`.trim();
 
-    const aiRes = await fetch(ANTHROPIC_URL, {
+    const aiRes = await fetch(GROQ_URL, {
       method:  'POST',
       headers: {
-        'x-api-key':         ANTHROPIC_KEY,
-        'anthropic-version': '2023-06-01',
-        'content-type':      'application/json',
+        'Authorization': `Bearer ${GROQ_KEY}`,
+        'Content-Type':  'application/json',
       },
       body: JSON.stringify({
         model:       MODEL,
         max_tokens:  600,
-        system:      'Sen bir oyun eleştirmenisin. Her zaman geçerli JSON formatında, sade Türkçe yanıt ver.',
-        messages: [{ role: 'user', content: userPrompt }],
+        temperature: 0.7,
+        messages: [
+          { role: 'system',  content: 'Sen bir oyun eleştirmenisin. Her zaman geçerli JSON formatında, sade Türkçe yanıt ver.' },
+          { role: 'user',    content: userPrompt },
+        ],
       }),
     });
 
     if (!aiRes.ok) {
       const errText = await aiRes.text();
-      throw new Error(`Anthropic HTTP ${aiRes.status}: ${errText.slice(0, 200)}`);
+      throw new Error(`Groq HTTP ${aiRes.status}: ${errText.slice(0, 200)}`);
     }
 
     const aiData  = await aiRes.json();
-    const rawText = aiData?.content?.[0]?.text || '';
+    const rawText = aiData?.choices?.[0]?.message?.content || '';
 
     // JSON'u raw içinden çıkar
     const jsonMatch = rawText.match(/\{[\s\S]*\}/);
