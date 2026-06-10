@@ -52,49 +52,43 @@ export default function RawgGamePage({ params }) {
             .finally(() => setSteamLoading(false));
         }
 
-        // ── Epic — doğrudan Epic GraphQL, ITAD'a güvenme ─────────────────
-        if (g.hasEpic) {
+        // ── Epic + Xbox — ITAD (birincil kaynak) ─────────────────────────
+        // Epic GraphQL API sunucu tarafından bloklandığı için ITAD kullan
+        const hasEpicOrXbox = g.hasEpic || true; // Xbox için her zaman dene
+        if (hasEpicOrXbox) {
           setEpicLoading(true);
-          fetch('/api/epic?q=' + encodeURIComponent(g.name) + '&num=10')
+          setXboxLoading(true);
+          fetch('/api/prices?title=' + encodeURIComponent(g.name))
             .then(r => r.json())
             .then(d => {
-              const hit = findBestMatch(g.name, d.results || []);
-              if (hit) {
+              const stores = d.stores || [];
+
+              // Epic — isimde 'epic' geçen her store (store ID fark etmez)
+              const itadEpic = stores.find(s =>
+                s.name?.toLowerCase().includes('epic') ||
+                s.storeId?.toLowerCase().includes('epic')
+              );
+              if (itadEpic && g.hasEpic) {
                 setEpicPrice({
-                  price:    hit.price,
-                  original: hit.original,
-                  discount: hit.discount ?? 0,
-                  isFree:   hit.isFree,
-                  url:      hit.epicUrl || g.epicUrl,
+                  price:    itadEpic.price,
+                  original: itadEpic.original,
+                  discount: itadEpic.discount ?? 0,
+                  isFree:   itadEpic.isFree,
+                  url:      itadEpic.url || g.epicUrl,
                 });
               }
+
+              // Xbox — isimde 'xbox' veya 'microsoft' geçen store
+              const xboxList = stores.filter(s =>
+                s.name?.toLowerCase().includes('xbox') ||
+                s.name?.toLowerCase().includes('microsoft') ||
+                s.storeId?.toLowerCase().includes('xbox')
+              );
+              setXboxPrices(xboxList);
             })
             .catch(() => {})
-            .finally(() => setEpicLoading(false));
+            .finally(() => { setEpicLoading(false); setXboxLoading(false); });
         }
-
-        // ── Xbox — ITAD (Epic'i görmezden gel) ───────────────────────────
-        setXboxLoading(true);
-        fetch('/api/prices?title=' + encodeURIComponent(g.name))
-          .then(r => r.json())
-          .then(d => {
-            const stores = d.stores || [];
-            setXboxPrices(stores.filter(s => s.name === 'Xbox'));
-
-            // ITAD'da Epic varsa ve biz henüz bulamadıysak kullan
-            const itadEpic = stores.find(s => s.name === 'Epic Games');
-            if (itadEpic) {
-              setEpicPrice(prev => prev ?? {
-                price:    itadEpic.price,
-                original: itadEpic.original,
-                discount: itadEpic.discount,
-                isFree:   itadEpic.isFree,
-                url:      itadEpic.url,
-              });
-            }
-          })
-          .catch(() => {})
-          .finally(() => setXboxLoading(false));
 
         // ── AI özeti ─────────────────────────────────────────────────────
         const desc = (g.description || '').replace(/<[^>]+>/g, '').slice(0, 1500);

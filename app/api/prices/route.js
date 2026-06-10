@@ -3,45 +3,34 @@ import { NextResponse } from 'next/server';
 const ITAD_KEY = process.env.ITAD_API_KEY;
 const ITAD     = 'https://api.isthereanydeal.com';
 
-// ITAD — Epic ve Xbox
-const ALLOWED_STORES = new Set(['epic', 'epicgames', 'xboxgames', 'microsoft', 'xbox']);
-
-const STORE_INFO = {
-  epic:      { name: 'Epic Games', icon: '⚡' },
-  epicgames: { name: 'Epic Games', icon: '⚡' },
-  xboxgames: { name: 'Xbox',       icon: '🎮' },
-  microsoft: { name: 'Xbox',       icon: '🎮' },
-  xbox:      { name: 'Xbox',       icon: '🎮' },
+// ITAD sayısal store ID eşleştirmesi (ITAD v3 API'deki gerçek ID'ler)
+// Kaynak: ITAD prices API'sinden görülen değerler
+const ITAD_STORE_MAP = {
+  '16':  { name: 'Epic Games', icon: '⚡' },
+  '61':  { name: 'Steam',      icon: '💻' },
+  '35':  { name: 'GOG',        icon: '🌌' },
+  '37':  { name: 'Humble Bundle', icon: '🙏' },
+  '11':  { name: 'Xbox',       icon: '🎮' },  // Microsoft Store olabilir
+  '74':  { name: 'Xbox',       icon: '🎮' },  // Xbox Game Pass
 };
 
-// ── Döviz kuru (USD → TRY) — bellek cache, 4 saatte bir yenile ────────────
-let _rate   = 0;
-let _rateAt = 0;
+// Store adına göre fallback eşleştirme
+function storeInfo(id, rawName) {
+  const sid = String(id);
+  if (ITAD_STORE_MAP[sid]) return ITAD_STORE_MAP[sid];
 
-async function getUsdToTry() {
-  const now = Date.now();
-  if (_rate > 0 && now - _rateAt < 4 * 3600 * 1000) return _rate;
-  try {
-    const r = await fetch('https://api.frankfurter.app/latest?from=USD&to=TRY', { next: { revalidate: 14400 } });
-    const d = await r.json();
-    _rate   = d.rates?.TRY || 38;
-    _rateAt = now;
-  } catch {
-    if (!_rate) _rate = 38;
-  }
-  return _rate;
+  // Sayısal ID eşleşmezse isimle dene
+  const n = (rawName || '').toLowerCase();
+  if (n.includes('epic'))      return { name: 'Epic Games',    icon: '⚡' };
+  if (n.includes('xbox'))      return { name: 'Xbox',          icon: '🎮' };
+  if (n.includes('microsoft')) return { name: 'Xbox',          icon: '🎮' };
+  if (n.includes('steam'))     return { name: 'Steam',         icon: '💻' };
+  if (n.includes('gog'))       return { name: 'GOG',           icon: '🌌' };
+  if (n.includes('humble'))    return { name: 'Humble Bundle', icon: '🙏' };
+  return null;
 }
 
-// ── Fiyatı TRY'ye çevir ───────────────────────────────────────────────────
-function toTry(amount, currency, rate) {
-  if (!amount) return 0;
-  const cur = (currency || '').toUpperCase();
-  if (cur === 'TRY') return Math.round(amount);
-  if (cur === 'USD' || cur === '') return Math.round(amount * rate);
-  // Bilinmeyen para birimi — USD gibi davran
-  return Math.round(amount * rate);
-}
-
+// GET /api/prices?title=Cyberpunk+2077
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const title = searchParams.get('title');
@@ -49,21 +38,17 @@ export async function GET(request) {
   if (!ITAD_KEY) return NextResponse.json({ stores: [] });
 
   try {
-    const [, searchRes] = await Promise.all([
-      getUsdToTry(),   // döviz kurunu ısıt
-      fetch(
-        `${ITAD}/games/search/v1?key=${ITAD_KEY}&title=${encodeURIComponent(title)}&limit=3`,
-        { next: { revalidate: 3600 } }
-      ),
-    ]);
-
-    const rate = await getUsdToTry();
-
+    // 1. Oyunu bul
+    const searchRes = await fetch(
+      `${ITAD}/games/search/v1?key=${ITAD_KEY}&title=${encodeURIComponent(title)}&limit=3`,
+      { next: { revalidate: 3600 } }
+    );
     if (!searchRes.ok) throw new Error(`ITAD search ${searchRes.status}`);
     const searchData = await searchRes.json();
     const gameId     = searchData?.[0]?.id;
     if (!gameId) return NextResponse.json({ stores: [] });
 
+    // 2. Türkiye fiyatlarını al (TRY)
     const priceRes = await fetch(
       `${ITAD}/games/prices/v3?key=${ITAD_KEY}&country=TR`,
       {
@@ -77,34 +62,27 @@ export async function GET(request) {
     const priceData = await priceRes.json();
     const deals     = priceData?.[0]?.deals || [];
 
+    // 3. Her store için en ucuz fiyatı al — filtre YOK, isimle eşleştir
     const storeMap = {};
     for (const deal of deals) {
-      const sid  = String(deal.shop?.id || '').toLowerCase();
-      if (!ALLOWED_STORES.has(sid)) continue;
+      const rawId   = String(deal.shop?.id || '').toLowerCase();
+      const rawName = deal.shop?.name || rawId;
+      const info    = storeInfo(rawId, rawName);
+      if (!info) continue;                    // ilgisiz platform → atla
 
-      const info     = STORE_INFO[sid] || { name: deal.shop?.name || sid, icon: '🛒' };
-      const currency = deal.price?.currency || '';
-      const amt      = deal.price?.amount   ?? 0;
-      const regAmt   = deal.regular?.amount ?? amt;
+      const amt = deal.price?.amount ?? 0;
+      const key = info.name;                  // normalize isim = anahtar
+      const cur = storeMap[key];
 
-      const priceTry    = toTry(amt,    currency, rate);
-      const originalTry = toTry(regAmt, currency, rate);
-
-      // Epic URL'lerini Türkçe locale'e çevir
-      const storeUrl = sid.startsWith('epic')
-        ? (deal.url || '').replace('/en-US/', '/tr/').replace('/en/', '/tr/') || deal.url
-        : deal.url;
-
-      const cur = storeMap[sid];
-      if (!cur || priceTry < cur.price) {
-        storeMap[sid] = {
-          storeId:  sid,
+      if (!cur || amt < cur.price) {
+        storeMap[key] = {
+          storeId:  rawId,
           name:     info.name,
           icon:     info.icon,
-          price:    priceTry,
-          original: originalTry,
+          price:    Math.round(amt),          // ITAD TR → zaten TRY
+          original: Math.round(deal.regular?.amount ?? amt),
           discount: deal.cut || 0,
-          url:      storeUrl,
+          url:      deal.url,
           isFree:   amt === 0,
         };
       }
