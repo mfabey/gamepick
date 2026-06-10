@@ -57,9 +57,9 @@ export default function RawgGamePage({ params }) {
         setEpicLoading(true);
         setXboxLoading(true);
 
-        // steamAppId varsa ITAD kesin lookup, yoksa isim araması
+        // steamAppId varsa ITAD kesin lookup, her iki paramı gönder (lookup başarısız olursa title ile fallback çalışır)
         const priceParam = g.steamAppId
-          ? `appid=${encodeURIComponent(g.steamAppId)}`
+          ? `appid=${encodeURIComponent(g.steamAppId)}&title=${encodeURIComponent(g.name)}`
           : `title=${encodeURIComponent(g.name)}`;
 
         fetch('/api/prices?' + priceParam)

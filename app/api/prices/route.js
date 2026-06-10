@@ -91,23 +91,21 @@ export async function GET(request) {
   try {
     let gameId = null;
 
-    // ── Yöntem 1: Steam AppID → ITAD lookup (kesin, isim problemi yok) ──
+    // ── Yöntem 1: Steam AppID → ITAD lookup GET (kesin, isim problemi yok) ──
     if (appid) {
-      const lookupRes = await fetch(
-        `${ITAD}/games/lookup/v1?key=${ITAD_KEY}`,
-        {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify([{ source: 'steam', id: String(appid) }]),
-          next:    { revalidate: 86400 },
+      try {
+        const lookupRes = await fetch(
+          `${ITAD}/games/lookup/v1?key=${ITAD_KEY}&appid=${encodeURIComponent(appid)}`,
+          { next: { revalidate: 86400 } }
+        );
+        if (lookupRes.ok) {
+          const lookupData = await lookupRes.json();
+          // Yanıt: { found: true, game: { id: "...", slug: "..." } }
+          if (lookupData?.found && lookupData.game?.id) {
+            gameId = lookupData.game.id;
+          }
         }
-      );
-      if (lookupRes.ok) {
-        const lookupData = await lookupRes.json();
-        // Yanıt: { "steam:271590": { game: { id: "..." }, matched: true } }
-        const entry = Object.values(lookupData || {})[0];
-        if (entry?.matched) gameId = entry.game?.id;
-      }
+      } catch { /* lookup başarısız → title fallback'e geç */ }
     }
 
     // ── Yöntem 2: Başlık araması (appid yoksa veya lookup başarısızsa) ──
