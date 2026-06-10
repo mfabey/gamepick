@@ -10,9 +10,13 @@ export default function RawgGamePage({ params }) {
   const [game,         setGame]         = useState(null);
   const [steamPrice,   setSteamPrice]   = useState(null);
   const [epicPrice,    setEpicPrice]    = useState(null);
+  const [gogPrice,      setGogPrice]      = useState(null);
+  const [humblePrice,   setHumblePrice]   = useState(null);
   const [xboxPrices,   setXboxPrices]   = useState([]);
   const [steamLoading, setSteamLoading] = useState(false);
   const [epicLoading,  setEpicLoading]  = useState(false);
+  const [gogLoading,    setGogLoading]    = useState(false);
+  const [humbleLoading, setHumbleLoading] = useState(false);
   const [xboxLoading,  setXboxLoading]  = useState(false);
   const [ai,           setAi]           = useState(null);
   const [loading,      setLoading]      = useState(true);
@@ -26,6 +30,8 @@ export default function RawgGamePage({ params }) {
     setAi(null);
     setSteamPrice(null);
     setEpicPrice(null);
+    setGogPrice(null);
+    setHumblePrice(null);
     setXboxPrices([]);
 
     fetch('/api/rawg-game?slug=' + slug)
@@ -52,10 +58,11 @@ export default function RawgGamePage({ params }) {
             .finally(() => setSteamLoading(false));
         }
 
-        // ── Epic + Xbox — ITAD (appid ile kesin eşleşme) ────────────────
-        // Epic GraphQL API sunucu tarafından bloklandığı için ITAD kullan
+        // ── Epic + Xbox + GOG + Humble — ITAD (appid ile kesin eşleşme) ──
         setEpicLoading(true);
         setXboxLoading(true);
+        setGogLoading(true);
+        setHumbleLoading(true);
 
         // steamAppId varsa ITAD kesin lookup, her iki paramı gönder (lookup başarısız olursa title ile fallback çalışır)
         const priceParam = g.steamAppId
@@ -82,6 +89,36 @@ export default function RawgGamePage({ params }) {
               });
             }
 
+            // GOG — isimde 'gog' geçen her store
+            const itadGog = stores.find(s =>
+              s.name?.toLowerCase().includes('gog') ||
+              s.storeId === '35'
+            );
+            if (itadGog) {
+              setGogPrice({
+                price:    itadGog.price,
+                original: itadGog.original,
+                discount: itadGog.discount ?? 0,
+                isFree:   itadGog.isFree,
+                url:      itadGog.url,
+              });
+            }
+
+            // Humble — isimde 'humble' geçen her store
+            const itadHumble = stores.find(s =>
+              s.name?.toLowerCase().includes('humble') ||
+              s.storeId === '37'
+            );
+            if (itadHumble) {
+              setHumblePrice({
+                price:    itadHumble.price,
+                original: itadHumble.original,
+                discount: itadHumble.discount ?? 0,
+                isFree:   itadHumble.isFree,
+                url:      itadHumble.url,
+              });
+            }
+
             // Xbox — isimde 'xbox' veya 'microsoft' geçen store
             const xboxList = stores.filter(s =>
               s.name?.toLowerCase().includes('xbox') ||
@@ -91,7 +128,12 @@ export default function RawgGamePage({ params }) {
             setXboxPrices(xboxList);
           })
           .catch(() => {})
-          .finally(() => { setEpicLoading(false); setXboxLoading(false); });
+          .finally(() => {
+            setEpicLoading(false);
+            setXboxLoading(false);
+            setGogLoading(false);
+            setHumbleLoading(false);
+          });
 
         // ── AI özeti ─────────────────────────────────────────────────────
         const desc = (g.description || '').replace(/<[^>]+>/g, '').slice(0, 1500);
@@ -280,6 +322,17 @@ export default function RawgGamePage({ params }) {
               <MissingCard platform="Epic Games" />
             )}
 
+            {/* GOG */}
+            {gogPrice ? (
+              <PriceCard store="GOG" icon="🌌"
+                price={gogPrice.price} original={gogPrice.original}
+                discount={gogPrice.discount} isFree={gogPrice.isFree}
+                url={gogPrice.url}
+              />
+            ) : gogLoading ? (
+              <LoadingPriceRow />
+            ) : null}
+
             {/* Xbox / Game Pass */}
             {xboxPrices.length > 0 ? (
               xboxPrices.map(p => (
@@ -293,6 +346,17 @@ export default function RawgGamePage({ params }) {
             ) : (
               <MissingCard platform="Xbox / Game Pass" />
             )}
+
+            {/* Humble Bundle */}
+            {humblePrice ? (
+              <PriceCard store="Humble Bundle" icon="🙏"
+                price={humblePrice.price} original={humblePrice.original}
+                discount={humblePrice.discount} isFree={humblePrice.isFree}
+                url={humblePrice.url}
+              />
+            ) : humbleLoading ? (
+              <LoadingPriceRow />
+            ) : null}
 
             <p style={{ fontSize: 11, color: '#bbb', marginTop: 10, lineHeight: 1.5 }}>
               Fiyatlar Steam & ITAD üzerinden alınmaktadır. Anlık değişiklikler yansımayabilir.
