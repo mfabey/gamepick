@@ -153,7 +153,7 @@ export default function RawgGamePage({ params }) {
 
   if (loading) return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
-      <div style={{ width: 40, height: 40, borderRadius: '50%', border: '3px solid #f0f0f0', borderTopColor: '#DC2626', animation: 'spin 0.8s linear infinite' }} />
+      <div style={{ width: 40, height: 40, borderRadius: '50%', border: '3px solid var(--border)', borderTopColor: 'var(--accent)', animation: 'spin 0.8s linear infinite' }} />
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
@@ -161,9 +161,9 @@ export default function RawgGamePage({ params }) {
   if (error || !game) return (
     <div style={{ textAlign: 'center', padding: '80px 20px' }}>
       <p style={{ fontSize: 48, marginBottom: 12 }}>😕</p>
-      <p style={{ fontSize: 18, fontWeight: 700, color: '#1a1a1a', marginBottom: 8 }}>Oyun bulunamadı</p>
-      <p style={{ color: '#999', marginBottom: 24 }}>{error || 'Bilinmeyen hata'}</p>
-      <Link href="/games" style={{ padding: '10px 24px', background: '#DC2626', color: '#fff', borderRadius: 10, textDecoration: 'none', fontWeight: 600 }}>
+      <p style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>Oyun bulunamadı</p>
+      <p style={{ color: 'var(--text-3)', marginBottom: 24 }}>{error || 'Bilinmeyen hata'}</p>
+      <Link href="/games" style={{ padding: '10px 24px', background: 'var(--accent)', color: '#fff', borderRadius: 10, textDecoration: 'none', fontWeight: 600 }}>
         ← Oyunlara Dön
       </Link>
     </div>
@@ -196,7 +196,7 @@ export default function RawgGamePage({ params }) {
 
   return (
     <div className="container" style={{ paddingTop: 28, paddingBottom: 60, maxWidth: 960 }}>
-      <Link href="/games" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#999', fontSize: 13, textDecoration: 'none', marginBottom: 20 }}>
+      <Link href="/games" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--text-3)', fontSize: 13, textDecoration: 'none', marginBottom: 20 }}>
         ← Oyunlara Dön
       </Link>
 
@@ -205,7 +205,7 @@ export default function RawgGamePage({ params }) {
         {/* ─── Sol ───────────────────────────────────────────────────── */}
         <div>
           {allImages.length > 0 && (
-            <div style={{ borderRadius: 16, overflow: 'hidden', marginBottom: 12, aspectRatio: '16/9', position: 'relative', background: '#f0f0f0' }}>
+            <div style={{ borderRadius: 16, overflow: 'hidden', marginBottom: 12, aspectRatio: '16/9', position: 'relative', background: 'var(--bg-input)' }}>
               <Image src={allImages[imgIdx]} alt={game.name} fill sizes="640px" style={{ objectFit: 'cover' }} unoptimized />
             </div>
           )}
@@ -214,7 +214,7 @@ export default function RawgGamePage({ params }) {
               {allImages.map((src, i) => (
                 <button key={i} onClick={() => setImgIdx(i)} style={{
                   flexShrink: 0, width: 80, height: 50, borderRadius: 8, overflow: 'hidden',
-                  border: i === imgIdx ? '2px solid #DC2626' : '2px solid transparent',
+                  border: i === imgIdx ? '2px solid var(--accent)' : '2px solid transparent',
                   background: 'none', padding: 0, cursor: 'pointer', position: 'relative',
                 }}>
                   <Image src={src} alt="" fill sizes="80px" style={{ objectFit: 'cover' }} unoptimized />
@@ -225,21 +225,21 @@ export default function RawgGamePage({ params }) {
 
           {/* AI Özeti */}
           {ai && (
-            <div style={{ background: 'linear-gradient(135deg,#fff7f7,#fff)', border: '1.5px solid #FECACA', borderRadius: 14, padding: '16px 18px', marginBottom: 20 }}>
+            <div style={{ background: 'var(--hero-bg)', border: '1.5px solid var(--accent-border)', borderRadius: 14, padding: '16px 18px', marginBottom: 20 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                 <span style={{ fontSize: 18 }}>✨</span>
-                <span style={{ fontSize: 13, fontWeight: 700, color: '#DC2626' }}>AI Özeti</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)' }}>AI Özeti</span>
               </div>
-              {ai.ozet && <p style={{ fontSize: 14, lineHeight: 1.7, color: '#333', marginBottom: ai.duygu ? 10 : 0 }}>{ai.ozet}</p>}
+              {ai.ozet && <p style={{ fontSize: 14, lineHeight: 1.7, color: 'var(--text)', marginBottom: ai.duygu ? 10 : 0 }}>{ai.ozet}</p>}
               {ai.duygu && (
-                <p style={{ fontSize: 13, lineHeight: 1.6, color: '#666', borderTop: '1px solid #fee2e2', paddingTop: 10 }}>
+                <p style={{ fontSize: 13, lineHeight: 1.6, color: 'var(--text-2)', borderTop: '1px solid var(--accent-border)', paddingTop: 10 }}>
                   💬 {ai.duygu}
                 </p>
               )}
               {ai.etiketler?.length > 0 && (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
                   {ai.etiketler.map(t => (
-                    <span key={t} style={{ padding: '3px 9px', borderRadius: 999, background: '#FEF2F2', color: '#DC2626', fontSize: 11, fontWeight: 600 }}>{t}</span>
+                    <span key={t} style={{ padding: '3px 9px', borderRadius: 999, background: 'var(--accent-bg)', color: 'var(--accent)', fontSize: 11, fontWeight: 600 }}>{t}</span>
                   ))}
                 </div>
               )}
@@ -248,7 +248,7 @@ export default function RawgGamePage({ params }) {
 
           {/* Açıklama — AI yüklenince Türkçe, yoksa İngilizce */}
           {(ai?.aciklama || game.description) && (
-            <div style={{ fontSize: 14, lineHeight: 1.75, color: '#444', marginBottom: 20 }}>
+            <div style={{ fontSize: 14, lineHeight: 1.75, color: 'var(--text-2)', marginBottom: 20 }}>
               {ai?.aciklama ? (
                 ai.aciklama
               ) : (
@@ -256,7 +256,7 @@ export default function RawgGamePage({ params }) {
                   {game.description.replace(/<[^>]+>/g, '').slice(0, 1200)}
                   {game.description.length > 1200 ? '…' : ''}
                   {!ai && (
-                    <span style={{ display: 'inline-block', marginLeft: 6, fontSize: 11, color: '#bbb' }}>
+                    <span style={{ display: 'inline-block', marginLeft: 6, fontSize: 11, color: 'var(--text-3)' }}>
                       (Türkçe çeviri yükleniyor…)
                     </span>
                   )}
@@ -276,44 +276,45 @@ export default function RawgGamePage({ params }) {
 
         {/* ─── Sağ ───────────────────────────────────────────────────── */}
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: '#1a1a1a', lineHeight: 1.2, marginBottom: 10 }}>{game.name}</h1>
+          <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', lineHeight: 1.2, marginBottom: 10 }}>{game.name}</h1>
 
           {/* Puan rozetleri */}
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
             {game.metacritic && (
               <div style={{
                 padding: '6px 12px', borderRadius: 8, fontWeight: 700, fontSize: 13,
-                background: game.metacritic >= 80 ? '#dcfce7' : game.metacritic >= 60 ? '#fef9c3' : '#fee2e2',
-                color:      game.metacritic >= 80 ? '#166534' : game.metacritic >= 60 ? '#713f12' : '#991b1b',
+                background: game.metacritic >= 80 ? 'var(--green-bg)' : game.metacritic >= 60 ? 'var(--amber-bg)' : 'var(--accent-bg)',
+                color:      game.metacritic >= 80 ? 'var(--green)' : game.metacritic >= 60 ? 'var(--amber)' : 'var(--accent)',
+                border:     game.metacritic >= 80 ? '1px solid var(--green-border)' : game.metacritic >= 60 ? '1px solid var(--border-hover)' : '1px solid var(--accent-border)',
               }}>
                 Metacritic {game.metacritic}
               </div>
             )}
             {game.rating > 0 && (
-              <div style={{ padding: '6px 12px', borderRadius: 8, fontSize: 13, background: '#f5f5f5', color: '#555', fontWeight: 600 }}>
+              <div style={{ padding: '6px 12px', borderRadius: 8, fontSize: 13, background: 'var(--bg-input)', color: 'var(--text-2)', fontWeight: 600 }}>
                 ⭐ {game.rating.toFixed(1)} / 5
               </div>
             )}
           </div>
 
           {/* Detay tablosu */}
-          <div style={{ background: '#fafafa', border: '1.5px solid #ebebeb', borderRadius: 12, padding: '14px 16px', marginBottom: 20, fontSize: 13 }}>
+          <div style={{ background: 'var(--bg-hover)', border: '1.5px solid var(--border)', borderRadius: 12, padding: '14px 16px', marginBottom: 20, fontSize: 13 }}>
             {[
               { label: 'Geliştirici', value: game.developer },
               { label: 'Yayıncı',    value: game.publisher  },
               { label: 'Çıkış',      value: game.released   },
               { label: 'Türler',     value: (game.genres || []).join(', ') },
             ].filter(r => r.value).map(row => (
-              <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid #f0f0f0' }}>
-                <span style={{ color: '#999', flexShrink: 0 }}>{row.label}</span>
-                <span style={{ fontWeight: 500, color: '#1a1a1a', textAlign: 'right', marginLeft: 12 }}>{row.value}</span>
+              <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid var(--border)' }}>
+                <span style={{ color: 'var(--text-3)', flexShrink: 0 }}>{row.label}</span>
+                <span style={{ fontWeight: 500, color: 'var(--text)', textAlign: 'right', marginLeft: 12 }}>{row.value}</span>
               </div>
             ))}
           </div>
 
           {/* ── Platform Fiyatları ──────────────────────────────────── */}
           <div>
-            <h2 style={{ fontSize: 15, fontWeight: 700, color: '#1a1a1a', marginBottom: 10 }}>Platform Fiyatları</h2>
+            <h2 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 10 }}>Platform Fiyatları</h2>
 
             {/* Steam */}
             {game.hasSteam ? (
@@ -386,7 +387,7 @@ export default function RawgGamePage({ params }) {
               <LoadingPriceRow />
             ) : null}
 
-            <p style={{ fontSize: 11, color: '#bbb', marginTop: 10, lineHeight: 1.5 }}>
+            <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 10, lineHeight: 1.5 }}>
               Fiyatlar Steam & ITAD üzerinden alınmaktadır. Anlık değişiklikler yansımayabilir.
             </p>
           </div>
@@ -438,11 +439,11 @@ function LoadingPriceRow() {
     <>
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '12px 14px', borderRadius: 10, border: '1.5px solid #f0f0f0',
-        background: '#fafafa', marginBottom: 8,
+        padding: '12px 14px', borderRadius: 10, border: '1.5px solid var(--border)',
+        background: 'var(--bg-hover)', marginBottom: 8,
       }}>
-        <div style={{ height: 14, width: 80, background: '#ebebeb', borderRadius: 4, animation: 'pulse 1.5s ease-in-out infinite' }} />
-        <div style={{ height: 14, width: 55, background: '#ebebeb', borderRadius: 4, animation: 'pulse 1.5s ease-in-out infinite' }} />
+        <div style={{ height: 14, width: 80, background: 'var(--border-hover)', borderRadius: 4, animation: 'pulse 1.5s ease-in-out infinite' }} />
+        <div style={{ height: 14, width: 55, background: 'var(--border-hover)', borderRadius: 4, animation: 'pulse 1.5s ease-in-out infinite' }} />
       </div>
       <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }`}</style>
     </>
@@ -454,10 +455,10 @@ function PriceCard({ store, icon, price, original, discount, isFree: isFreeOverr
   const isFree   = isFreeOverride || price === 0;
   const isOnSale = discount > 0 && !isFree;
 
-  const borderCol = highlight ? '#FCD34D' : '#ebebeb';
-  const hoverBorderCol = highlight ? '#F59E0B' : '#FECACA';
-  const bgStyle = highlight ? 'linear-gradient(135deg, #FFFDF5, #FFF9E6)' : '#fff';
-  const glowShadow = highlight ? '0 0 12px rgba(245, 158, 11, 0.15)' : 'none';
+  const borderCol = highlight ? 'var(--gold-border)' : 'var(--border)';
+  const hoverBorderCol = highlight ? 'var(--gold-border-hover)' : 'var(--accent-border)';
+  const bgStyle = highlight ? 'var(--gold-bg)' : 'var(--bg-card)';
+  const glowShadow = highlight ? 'var(--gold-shadow)' : 'none';
 
   return (
     <a href={url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', display: 'block', marginBottom: 8 }}>
@@ -477,12 +478,12 @@ function PriceCard({ store, icon, price, original, discount, isFree: isFreeOverr
           if (highlight) e.currentTarget.style.boxShadow = glowShadow;
         }}
       >
-        <span style={{ fontWeight: 600, fontSize: 14, color: '#1a1a1a', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+        <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
           {icon} {store}
           {highlight && (
             <span style={{
               fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 6,
-              background: '#FEF3C7', color: '#D97706', border: '1px solid #FCD34D',
+              background: 'var(--gold-badge-bg)', color: 'var(--gold-badge-text)', border: '1px solid var(--gold-border)',
               marginLeft: 4
             }}>
               👑 En Ucuz
@@ -491,14 +492,14 @@ function PriceCard({ store, icon, price, original, discount, isFree: isFreeOverr
         </span>
         <div style={{ textAlign: 'right' }}>
           {isFree ? (
-            <span style={{ fontWeight: 700, fontSize: 15, color: '#16a34a' }}>Ücretsiz</span>
+            <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--green)' }}>Ücretsiz</span>
           ) : (
             <>
-              <span style={{ fontWeight: 700, fontSize: 15, color: isOnSale ? '#ea580c' : '#1a1a1a' }}>₺{price}</span>
+              <span style={{ fontWeight: 700, fontSize: 15, color: isOnSale ? 'var(--amber)' : 'var(--text)' }}>₺{price}</span>
               {isOnSale && (
-                <div style={{ fontSize: 11, color: '#999' }}>
+                <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
                   <span style={{ textDecoration: 'line-through' }}>₺{original}</span>
-                  {' '}<span style={{ color: '#ea580c' }}>-%{discount}</span>
+                  {' '}<span style={{ color: 'var(--amber)' }}>-%{discount}</span>
                 </div>
               )}
             </>
@@ -515,10 +516,10 @@ function PlaceholderCard({ store, icon, url }) {
     <a href={url || '#'} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', display: 'block', marginBottom: 8 }}>
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '12px 14px', borderRadius: 10, border: '1.5px solid #ebebeb', background: '#fff',
+        padding: '12px 14px', borderRadius: 10, border: '1.5px solid var(--border)', background: 'var(--bg-card)',
       }}>
-        <span style={{ fontWeight: 600, fontSize: 14, color: '#1a1a1a' }}>{icon} {store}</span>
-        <span style={{ fontSize: 13, color: '#DC2626', fontWeight: 500 }}>Mağazaya Git →</span>
+        <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)' }}>{icon} {store}</span>
+        <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 500 }}>Mağazaya Git →</span>
       </div>
     </a>
   );
@@ -529,8 +530,8 @@ function MissingCard({ platform }) {
   return (
     <div style={{
       padding: '12px 14px', borderRadius: 10, marginBottom: 8,
-      border: '1.5px dashed #e5e5e5', background: '#fafafa',
-      fontSize: 13, color: '#bbb', textAlign: 'center',
+      border: '1.5px dashed var(--border)', background: 'var(--bg-hover)',
+      fontSize: 13, color: 'var(--text-3)', textAlign: 'center',
     }}>
       Bu oyun {platform}&apos;te bulunmuyor
     </div>

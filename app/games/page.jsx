@@ -140,12 +140,12 @@ function GamesList() {
   return (
     <div className="container" style={{ paddingTop: 32, paddingBottom: 60 }}>
       <div style={{ marginBottom: 20 }}>
-        <h1 style={{ fontSize: 26, fontWeight: 800, color: '#1a1a1a', marginBottom: 4 }}>Oyunlar</h1>
-        <p style={{ color: '#999', fontSize: 14 }}>500.000+ oyun — puan, yorum ve AI önerisi</p>
+        <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)', marginBottom: 4 }}>Oyunlar</h1>
+        <p style={{ color: 'var(--text-3)', fontSize: 14 }}>500.000+ oyun — puan, yorum ve AI önerisi</p>
       </div>
 
       {/* Arama */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#fff', border: '1.5px solid #e5e5e5', borderRadius: 12, padding: '12px 18px', marginBottom: 16, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--bg-card)', border: '1.5px solid var(--border)', borderRadius: 12, padding: '12px 18px', marginBottom: 16, boxShadow: 'var(--shadow)' }}>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
         </svg>
@@ -153,10 +153,10 @@ function GamesList() {
           value={query}
           onChange={e => { setQuery(e.target.value); setSection(''); }}
           placeholder="Oyun ara…"
-          style={{ flex: 1, border: 'none', outline: 'none', fontSize: 15, color: '#1a1a1a', background: 'transparent' }}
+          style={{ flex: 1, border: 'none', outline: 'none', fontSize: 15, color: 'var(--text)', background: 'transparent' }}
         />
         {query && (
-          <button onClick={() => setQuery('')} style={{ background: 'none', border: 'none', color: '#bbb', fontSize: 20, cursor: 'pointer', lineHeight: 1 }}>×</button>
+          <button onClick={() => setQuery('')} style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: 20, cursor: 'pointer', lineHeight: 1 }}>×</button>
         )}
       </div>
 
@@ -166,8 +166,8 @@ function GamesList() {
           <button key={s.value} onClick={() => { setSection(s.value); setQuery(''); }}
             style={{
               padding: '7px 16px', borderRadius: 999, fontSize: 13, border: 'none', cursor: 'pointer', transition: 'all 0.15s',
-              background: section === s.value ? '#DC2626' : '#f5f5f5',
-              color:      section === s.value ? '#fff'    : '#555',
+              background: section === s.value ? 'var(--accent)' : 'var(--bg-input)',
+              color:      section === s.value ? '#fff'    : 'var(--text-2)',
               fontWeight: section === s.value ? 600       : 400,
             }}
           >
@@ -178,22 +178,22 @@ function GamesList() {
 
       {/* Bütçe */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-        <span style={{ fontSize: 12, color: '#999', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Bütçe</span>
+        <span style={{ fontSize: 12, color: 'var(--text-3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Bütçe</span>
         <select value={price} onChange={e => setPrice(e.target.value)}
-          style={{ padding: '7px 12px', borderRadius: 8, border: '1.5px solid #e5e5e5', background: '#fff', fontSize: 13, color: '#333', outline: 'none' }}>
+          style={{ padding: '7px 12px', borderRadius: 8, border: '1.5px solid var(--border)', background: 'var(--bg-card)', fontSize: 13, color: 'var(--text)', outline: 'none' }}>
           {PRICE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
       </div>
 
       {/* Sonuç bilgisi */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-        <p style={{ fontSize: 14, color: '#999' }}>
+        <p style={{ fontSize: 14, color: 'var(--text-3)' }}>
           {loading ? 'Yükleniyor…' : (
-            <><span style={{ fontWeight: 600, color: '#1a1a1a' }}>{filteredGames.length}</span> oyun gösteriliyor</>
+            <><span style={{ fontWeight: 600, color: 'var(--text)' }}>{filteredGames.length}</span> oyun gösteriliyor</>
           )}
         </p>
         {(query || section || price !== 'all') && (
-          <button onClick={resetFilters} style={{ fontSize: 12, color: '#DC2626', background: 'none', border: 'none', cursor: 'pointer' }}>
+          <button onClick={resetFilters} style={{ fontSize: 12, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer' }}>
             × Temizle
           </button>
         )}
@@ -203,11 +203,11 @@ function GamesList() {
       {loading ? (
         <div className="grid-auto">
           {Array.from({ length: PAGE_SIZE }).map((_, i) => (
-            <div key={i} style={{ background: '#fff', border: '1.5px solid #ebebeb', borderRadius: 14, overflow: 'hidden' }}>
-              <div style={{ height: 110, background: '#f5f5f5' }} />
+            <div key={i} style={{ background: 'var(--bg-card)', border: '1.5px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
+              <div style={{ height: 110, background: 'var(--bg-input)' }} />
               <div style={{ padding: '10px 12px' }}>
-                <div style={{ height: 12, background: '#f0f0f0', borderRadius: 4, marginBottom: 8 }} />
-                <div style={{ height: 10, background: '#f5f5f5', borderRadius: 4, width: '60%' }} />
+                <div style={{ height: 12, background: 'var(--border)', borderRadius: 4, marginBottom: 8 }} />
+                <div style={{ height: 10, background: 'var(--bg-input)', borderRadius: 4, width: '60%' }} />
               </div>
             </div>
           ))}
@@ -215,8 +215,8 @@ function GamesList() {
       ) : filteredGames.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '60px 0' }}>
           <p style={{ fontSize: 40, marginBottom: 12 }}>🔍</p>
-          <p style={{ fontSize: 16, fontWeight: 600, color: '#555' }}>Sonuç bulunamadı</p>
-          <button onClick={resetFilters} style={{ marginTop: 12, padding: '8px 20px', borderRadius: 8, background: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+          <p style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-2)' }}>Sonuç bulunamadı</p>
+          <button onClick={resetFilters} style={{ marginTop: 12, padding: '8px 20px', borderRadius: 8, background: 'var(--accent-bg)', border: '1px solid var(--accent-border)', color: 'var(--accent)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
             Filtreleri Temizle
           </button>
         </div>
@@ -228,8 +228,8 @@ function GamesList() {
           <div ref={sentinelRef} style={{ height: 1 }} />
           {loadingMore && (
             <div style={{ textAlign: 'center', padding: '32px 0' }}>
-              <div style={{ display: 'inline-flex', gap: 6, alignItems: 'center', fontSize: 13, color: '#bbb' }}>
-                <span style={{ width: 16, height: 16, borderRadius: '50%', border: '2px solid #f0f0f0', borderTopColor: '#DC2626', animation: 'spin 0.7s linear infinite', display: 'inline-block' }} />
+              <div style={{ display: 'inline-flex', gap: 6, alignItems: 'center', fontSize: 13, color: 'var(--text-3)' }}>
+                <span style={{ width: 16, height: 16, borderRadius: '50%', border: '2px solid var(--border)', borderTopColor: 'var(--accent)', animation: 'spin 0.7s linear infinite', display: 'inline-block' }} />
                 Yükleniyor…
               </div>
             </div>
@@ -246,10 +246,10 @@ export default function GamesPage() {
     <Suspense fallback={
       <div className="container" style={{ paddingTop: 32, paddingBottom: 60 }}>
         <div style={{ marginBottom: 20 }}>
-          <h1 style={{ fontSize: 26, fontWeight: 800, color: '#1a1a1a', marginBottom: 4 }}>Oyunlar</h1>
-          <p style={{ color: '#999', fontSize: 14 }}>500.000+ oyun — puan, yorum ve AI önerisi</p>
+          <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)', marginBottom: 4 }}>Oyunlar</h1>
+          <p style={{ color: 'var(--text-3)', fontSize: 14 }}>500.000+ oyun — puan, yorum ve AI önerisi</p>
         </div>
-        <div style={{ textAlign: 'center', padding: '60px 0', color: '#999' }}>Yükleniyor…</div>
+        <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-3)' }}>Yükleniyor…</div>
       </div>
     }>
       <GamesList />

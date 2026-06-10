@@ -54,16 +54,16 @@ export default function ProfilePage() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 36 }}>
         <div style={{
           width: 56, height: 56, borderRadius: '50%',
-          background: '#FEF2F2',
-          border: '1px solid #FECACA',
+          background: 'var(--accent-bg)',
+          border: '1px solid var(--accent-border)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 20, fontWeight: 700, color: '#DC2626',
+          fontSize: 20, fontWeight: 700, color: 'var(--accent)',
         }}>
           FK
         </div>
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a' }}>Furkan K.</h1>
-          <p style={{ color: '#999', fontSize: 13 }}>GamePick üyesi</p>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>Furkan K.</h1>
+          <p style={{ color: 'var(--text-3)', fontSize: 13 }}>GamePick üyesi</p>
         </div>
       </div>
 
@@ -110,26 +110,26 @@ export default function ProfilePage() {
           </div>
 
           <div className="card" style={{ padding: '14px 16px', marginBottom: 12 }}>
-            <p style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#999', fontWeight: 600, marginBottom: 10 }}>
+            <p style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-3)', fontWeight: 600, marginBottom: 10 }}>
               En çok oynadığın türler
             </p>
             {GENRE_STATS.map(g => (
               <div key={g.label} style={{ marginBottom: 8 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4, color: '#555' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4, color: 'var(--text-2)' }}>
                   <span>{g.label}</span><span>{g.pct}%</span>
                 </div>
-                <div style={{ height: 5, background: '#f0f0f0', borderRadius: 3, overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${g.pct}%`, background: '#DC2626', borderRadius: 3 }} />
+                <div style={{ height: 5, background: 'var(--bg-input)', borderRadius: 3, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${g.pct}%`, background: 'var(--accent)', borderRadius: 3 }} />
                 </div>
               </div>
             ))}
           </div>
 
           <div className="card" style={{ padding: '14px 16px' }}>
-            <p style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#999', fontWeight: 600, marginBottom: 8 }}>
+            <p style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-3)', fontWeight: 600, marginBottom: 8 }}>
               ✦ AI yorumu
             </p>
-            <p style={{ fontSize: 13, color: '#555', lineHeight: 1.65 }}>
+            <p style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.65 }}>
               Uzun soluklu single-player RPG'leri tercih eden, hikayeye önem veren bir profil.
               Yüksek zorluk eğilimi var. Multiplayer oranı düşük — solo deneyimlere odaklanıyorsunuz.
             </p>
@@ -141,20 +141,20 @@ export default function ProfilePage() {
       <div>
         <h2 className="section-title" style={{ fontSize: 16 }}>
           İstek listesi{' '}
-          <span style={{ fontSize: 14, fontWeight: 400, color: '#999' }}>
+          <span style={{ fontSize: 14, fontWeight: 400, color: 'var(--text-3)' }}>
             — {wishlist.length} oyun takip ediliyor
           </span>
         </h2>
 
         {wishlist.length === 0 ? (
           <div className="card" style={{ padding: '32px', textAlign: 'center' }}>
-            <p style={{ color: '#999', fontSize: 14, marginBottom: 12 }}>
+            <p style={{ color: 'var(--text-3)', fontSize: 14, marginBottom: 12 }}>
               Henüz istek listesinde oyun yok.
             </p>
             <Link href="/" style={{
               display: 'inline-block', padding: '9px 20px', borderRadius: 10,
-              background: '#FEF2F2', border: '1px solid #FECACA',
-              color: '#DC2626', fontSize: 13, fontWeight: 600,
+              background: 'var(--accent-bg)', border: '1px solid var(--accent-border)',
+              color: 'var(--accent)', fontSize: 13, fontWeight: 600,
             }}>
               Oyun Keşfet →
             </Link>
@@ -173,23 +173,23 @@ export default function ProfilePage() {
         <h2 className="section-title" style={{ fontSize: 16 }}>Günlük öneri</h2>
         <div className="card" style={{
           padding: '16px 20px',
-          background: '#FEF2F2',
-          border: '1px solid #FECACA',
+          background: 'var(--accent-bg)',
+          border: '1px solid var(--accent-border)',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
             <div>
-              <p style={{ fontSize: 11, color: '#DC2626', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
+              <p style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
                 ✦ Bugün için öneri
               </p>
-              <p style={{ fontSize: 15, fontWeight: 600, marginBottom: 4, color: '#1a1a1a' }}>Hades</p>
-              <p style={{ fontSize: 13, color: '#666' }}>
+              <p style={{ fontSize: 15, fontWeight: 600, marginBottom: 4, color: 'var(--text)' }}>Hades</p>
+              <p style={{ fontSize: 13, color: 'var(--text-2)' }}>
                 Yorucu bir günün ardından, 20 dakikalık hızlı seanslarıyla mükemmel.
                 Game Pass'te ücretsiz.
               </p>
             </div>
             <Link href="/game/3612" style={{
               padding: '9px 18px', borderRadius: 10,
-              background: '#DC2626', color: '#fff',
+              background: 'var(--accent)', color: '#fff',
               fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap',
             }}>
               İncele →
@@ -213,15 +213,15 @@ function AccountCard({ name, status, connected, color, initials, onToggle }) {
           {initials}
         </div>
         <div>
-          <p style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>{name}</p>
-          <p style={{ fontSize: 12, color: connected ? '#16a34a' : '#bbb' }}>{status}</p>
+          <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{name}</p>
+          <p style={{ fontSize: 12, color: connected ? 'var(--green)' : 'var(--text-3)' }}>{status}</p>
         </div>
       </div>
       <button onClick={onToggle} style={{
         padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600,
-        border: connected ? '1px solid #e5e5e5' : '1px solid #FECACA',
-        background: connected ? '#f5f5f5' : '#FEF2F2',
-        color: connected ? '#999' : '#DC2626',
+        border: connected ? '1px solid var(--border)' : '1px solid var(--accent-border)',
+        background: connected ? 'var(--bg-input)' : 'var(--accent-bg)',
+        color: connected ? 'var(--text-3)' : 'var(--accent)',
         cursor: 'pointer',
       }}>
         {connected ? 'Kes' : 'Bağla'}
@@ -232,9 +232,9 @@ function AccountCard({ name, status, connected, color, initials, onToggle }) {
 
 function StatCard({ number, label }) {
   return (
-    <div style={{ background: '#fff', border: '1px solid #ebebeb', borderRadius: 10, padding: '12px', textAlign: 'center' }}>
-      <p style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a' }}>{number}</p>
-      <p style={{ fontSize: 11, color: '#999', marginTop: 2 }}>{label}</p>
+    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px', textAlign: 'center' }}>
+      <p style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>{number}</p>
+      <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>{label}</p>
     </div>
   );
 }
@@ -244,12 +244,12 @@ function WishlistItem({ game, onRemove }) {
     <div style={{
       display: 'flex', alignItems: 'center', gap: 12,
       padding: '12px 0',
-      borderBottom: '1px solid #f0f0f0',
+      borderBottom: '1px solid var(--border)',
     }}>
       <div style={{
-        width: 40, height: 40, borderRadius: 8, background: '#f5f5f5',
+        width: 40, height: 40, borderRadius: 8, background: 'var(--bg-input)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 14, fontWeight: 700, color: '#ccc',
+        fontSize: 14, fontWeight: 700, color: 'var(--text-3)',
         flexShrink: 0, overflow: 'hidden', position: 'relative',
       }}>
         {game.image ? (
@@ -260,15 +260,15 @@ function WishlistItem({ game, onRemove }) {
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <Link href={`/game/${game.id}`}>
-          <p style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {game.name}
           </p>
         </Link>
-        <p style={{ fontSize: 12, color: '#bbb' }}>Fiyat alarmı aktif</p>
+        <p style={{ fontSize: 12, color: 'var(--text-3)' }}>Fiyat alarmı aktif</p>
       </div>
       <button onClick={onRemove} style={{
         background: 'none', border: 'none',
-        color: '#ccc', fontSize: 18, cursor: 'pointer',
+        color: 'var(--text-3)', fontSize: 18, cursor: 'pointer',
         flexShrink: 0, padding: '4px 8px',
       }} title="Kaldır">
         ×

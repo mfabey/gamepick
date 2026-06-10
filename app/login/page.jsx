@@ -31,13 +31,13 @@ export default function LoginPage() {
       minHeight: 'calc(100vh - 60px)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       padding: '40px 20px',
-      background: 'linear-gradient(135deg, #fff 0%, #fef2f2 100%)',
+      background: 'var(--hero-bg)',
     }}>
       <div style={{ width: '100%', maxWidth: 400 }}>
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <div style={{
-            width: 52, height: 52, borderRadius: 14, background: '#DC2626',
+            width: 52, height: 52, borderRadius: 14, background: 'var(--accent)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             margin: '0 auto 12px',
           }}>
@@ -48,9 +48,9 @@ export default function LoginPage() {
               <circle cx="18" cy="13" r="1" fill="#fff" stroke="none"/>
             </svg>
           </div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a' }}>GamePick'e Giriş Yap</h1>
-          <p style={{ color: '#999', fontSize: 14, marginTop: 4 }}>Hesabın yok mu?{' '}
-            <Link href="/signup" style={{ color: '#DC2626', fontWeight: 600 }}>Üye Ol</Link>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>GamePick'e Giriş Yap</h1>
+          <p style={{ color: 'var(--text-3)', fontSize: 14, marginTop: 4 }}>Hesabın yok mu?{' '}
+            <Link href="/signup" style={{ color: 'var(--accent)', fontWeight: 600 }}>Üye Ol</Link>
           </p>
         </div>
 
@@ -59,16 +59,16 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit}>
             {error && (
               <div style={{
-                background: '#FEF2F2', border: '1px solid #FECACA',
+                background: 'var(--accent-bg)', border: '1px solid var(--accent-border)',
                 borderRadius: 8, padding: '10px 14px', marginBottom: 16,
-                fontSize: 13, color: '#DC2626',
+                fontSize: 13, color: 'var(--accent)',
               }}>
                 {error}
               </div>
             )}
 
             <div style={{ marginBottom: 16 }}>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#333', marginBottom: 6 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>
                 E-posta
               </label>
               <input
@@ -77,17 +77,18 @@ export default function LoginPage() {
                 placeholder="ornek@mail.com"
                 style={{
                   width: '100%', padding: '10px 14px',
-                  border: '1.5px solid #e5e5e5', borderRadius: 8,
-                  fontSize: 14, color: '#1a1a1a', outline: 'none',
+                  border: '1.5px solid var(--border)', borderRadius: 8,
+                  fontSize: 14, color: 'var(--text)', outline: 'none',
+                  background: 'var(--bg-card)',
                   transition: 'border-color 0.15s',
                 }}
-                onFocus={e => e.target.style.borderColor = '#DC2626'}
-                onBlur={e => e.target.style.borderColor = '#e5e5e5'}
+                onFocus={e => e.target.style.borderColor = 'var(--accent)'}
+                onBlur={e => e.target.style.borderColor = 'var(--border)'}
               />
             </div>
 
             <div style={{ marginBottom: 24 }}>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#333', marginBottom: 6 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>
                 Şifre
               </label>
               <input
@@ -96,12 +97,13 @@ export default function LoginPage() {
                 placeholder="••••••••"
                 style={{
                   width: '100%', padding: '10px 14px',
-                  border: '1.5px solid #e5e5e5', borderRadius: 8,
-                  fontSize: 14, color: '#1a1a1a', outline: 'none',
+                  border: '1.5px solid var(--border)', borderRadius: 8,
+                  fontSize: 14, color: 'var(--text)', outline: 'none',
+                  background: 'var(--bg-card)',
                   transition: 'border-color 0.15s',
                 }}
-                onFocus={e => e.target.style.borderColor = '#DC2626'}
-                onBlur={e => e.target.style.borderColor = '#e5e5e5'}
+                onFocus={e => e.target.style.borderColor = 'var(--accent)'}
+                onBlur={e => e.target.style.borderColor = 'var(--border)'}
               />
             </div>
 
@@ -109,7 +111,7 @@ export default function LoginPage() {
               type="submit" disabled={loading}
               style={{
                 width: '100%', padding: '12px',
-                background: '#DC2626', color: '#fff',
+                background: 'var(--accent)', color: '#fff',
                 border: 'none', borderRadius: 8,
                 fontSize: 14, fontWeight: 600, cursor: 'pointer',
                 opacity: loading ? 0.7 : 1,

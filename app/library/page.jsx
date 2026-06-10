@@ -93,8 +93,8 @@ export default function LibraryPage() {
     return (
       <div className="container" style={{ paddingTop: 80, textAlign: 'center' }}>
         <p style={{ fontSize: 40, marginBottom: 16 }}>🔒</p>
-        <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8, color: '#1a1a1a' }}>Kütüphaneye erişmek için giriş yap</h2>
-        <p style={{ color: '#999', marginBottom: 24, fontSize: 14 }}>Steam, Epic ve Xbox hesaplarını bağlamak için üye olman gerekiyor.</p>
+        <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8, color: 'var(--text)' }}>Kütüphaneye erişmek için giriş yap</h2>
+        <p style={{ color: 'var(--text-3)', marginBottom: 24, fontSize: 14 }}>Steam, Epic ve Xbox hesaplarını bağlamak için üye olman gerekiyor.</p>
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
           <Link href="/signup" className="btn btn-red">Ücretsiz Kayıt →</Link>
           <Link href="/login"  className="btn btn-ghost">Giriş Yap</Link>
@@ -108,8 +108,8 @@ export default function LibraryPage() {
 
       {/* Başlık */}
       <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: 26, fontWeight: 800, color: '#1a1a1a', marginBottom: 4 }}>Kütüphanem</h1>
-        <p style={{ color: '#999', fontSize: 14 }}>Tüm hesaplarındaki oyunlar tek ekranda</p>
+        <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)', marginBottom: 4 }}>Kütüphanem</h1>
+        <p style={{ color: 'var(--text-3)', fontSize: 14 }}>Tüm hesaplarındaki oyunlar tek ekranda</p>
       </div>
 
       {/* Hesap bağlama kartları */}
@@ -144,8 +144,8 @@ export default function LibraryPage() {
             { label: 'Platform',    value: connected.length },
           ].map(s => (
             <div key={s.label} className="card" style={{ padding: '12px 16px', textAlign: 'center' }}>
-              <p style={{ fontSize: 22, fontWeight: 700, color: '#DC2626' }}>{s.value}</p>
-              <p style={{ fontSize: 11, color: '#999', marginTop: 2 }}>{s.label}</p>
+              <p style={{ fontSize: 22, fontWeight: 700, color: 'var(--accent)' }}>{s.value}</p>
+              <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>{s.label}</p>
             </div>
           ))}
         </div>
@@ -154,10 +154,10 @@ export default function LibraryPage() {
       {allGames.length === 0 ? (
         <div className="card" style={{ padding: '48px 32px', textAlign: 'center' }}>
           <p style={{ fontSize: 36, marginBottom: 12 }}>🎮</p>
-          <h3 style={{ fontSize: 18, fontWeight: 600, color: '#1a1a1a', marginBottom: 8 }}>
+          <h3 style={{ fontSize: 18, fontWeight: 600, color: 'var(--text)', marginBottom: 8 }}>
             Henüz bağlı hesap yok
           </h3>
-          <p style={{ color: '#999', fontSize: 14 }}>
+          <p style={{ color: 'var(--text-3)', fontSize: 14 }}>
             Yukarıdan Steam, Epic veya Xbox hesabını bağla ve oyunlarını görmeye başla.
           </p>
         </div>
@@ -179,8 +179,8 @@ export default function LibraryPage() {
                   onClick={() => setFilter(f.value)}
                   style={{
                     padding: '6px 14px', borderRadius: 999, fontSize: 12, border: 'none',
-                    background: filter === f.value ? '#DC2626' : '#f5f5f5',
-                    color:      filter === f.value ? '#fff'    : '#555',
+                    background: filter === f.value ? 'var(--accent)' : 'var(--bg-input)',
+                    color:      filter === f.value ? '#fff'    : 'var(--text-2)',
                     cursor: 'pointer', fontWeight: filter === f.value ? 600 : 400,
                   }}
                 >
@@ -192,7 +192,7 @@ export default function LibraryPage() {
             {/* Sıralama */}
             <select
               value={sort} onChange={e => setSort(e.target.value)}
-              style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #e5e5e5', fontSize: 13, color: '#333', background: '#fff', marginLeft: 'auto' }}
+              style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 13, color: 'var(--text)', background: 'var(--bg-card)', marginLeft: 'auto' }}
             >
               <option value="hours">Oynama saati ↓</option>
               <option value="name">İsim A-Z</option>
@@ -204,14 +204,14 @@ export default function LibraryPage() {
               value={search} onChange={e => setSearch(e.target.value)}
               placeholder="Oyun ara..."
               style={{
-                padding: '7px 14px', borderRadius: 8, border: '1.5px solid #e5e5e5',
-                fontSize: 13, color: '#333', outline: 'none', background: '#fff',
+                padding: '7px 14px', borderRadius: 8, border: '1.5px solid var(--border)',
+                fontSize: 13, color: 'var(--text)', outline: 'none', background: 'var(--bg-card)',
               }}
             />
           </div>
 
           {/* Sonuç sayısı */}
-          <p style={{ fontSize: 13, color: '#999', marginBottom: 14 }}>{filtered.length} oyun</p>
+          <p style={{ fontSize: 13, color: 'var(--text-3)', marginBottom: 14 }}>{filtered.length} oyun</p>
 
           {/* Oyun listesi */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -238,17 +238,17 @@ function PlatformCard({ name, connected, color, initials, detail, onConnect, onD
           {initials}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>{name}</p>
-          <p style={{ fontSize: 12, color: connected ? '#16a34a' : '#bbb' }}>{detail}</p>
+          <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{name}</p>
+          <p style={{ fontSize: 12, color: connected ? 'var(--green)' : 'var(--text-3)' }}>{detail}</p>
         </div>
       </div>
       <button
         onClick={connected ? onDisconnect : onConnect}
         style={{
           width: '100%', padding: '7px', borderRadius: 8, fontSize: 12, fontWeight: 600,
-          border: connected ? '1px solid #e5e5e5' : '1px solid #FECACA',
-          background: connected ? '#f5f5f5' : '#FEF2F2',
-          color: connected ? '#999' : '#DC2626',
+          border: connected ? '1px solid var(--border)' : '1px solid var(--accent-border)',
+          background: connected ? 'var(--bg-input)' : 'var(--accent-bg)',
+          color: connected ? 'var(--text-3)' : 'var(--accent)',
           cursor: 'pointer',
         }}
       >
@@ -263,22 +263,22 @@ function LibraryRow({ game }) {
     <Link href={`/game/${game.id}`}>
       <div style={{
         display: 'flex', alignItems: 'center', gap: 14,
-        padding: '10px 14px', borderRadius: 10, background: '#fff',
-        border: '1px solid #f0f0f0', marginBottom: 4,
+        padding: '10px 14px', borderRadius: 10, background: 'var(--bg-card)',
+        border: '1px solid var(--border)', marginBottom: 4,
         transition: 'border-color 0.1s',
       }}
-        onMouseEnter={e => e.currentTarget.style.borderColor = '#FECACA'}
-        onMouseLeave={e => e.currentTarget.style.borderColor = '#f0f0f0'}
+        onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--accent-border)'}
+        onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
       >
         {/* Thumbnail */}
         <div style={{
           width: 48, height: 48, borderRadius: 8, overflow: 'hidden',
-          background: '#f5f5f5', flexShrink: 0, position: 'relative',
+          background: 'var(--bg-input)', flexShrink: 0, position: 'relative',
         }}>
           {game.image ? (
             <Image src={game.image} alt={game.name} fill style={{ objectFit: 'cover' }} />
           ) : (
-            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ccc', fontSize: 14, fontWeight: 700 }}>
+            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-3)', fontSize: 14, fontWeight: 700 }}>
               {game.name?.slice(0, 2).toUpperCase()}
             </div>
           )}
@@ -286,7 +286,7 @@ function LibraryRow({ game }) {
 
         {/* İsim + etiketler */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {game.name}
           </p>
           <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
@@ -304,8 +304,8 @@ function LibraryRow({ game }) {
         {/* Saat */}
         {game.hours && (
           <div style={{ textAlign: 'right', flexShrink: 0 }}>
-            <p style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a' }}>{game.hours}s</p>
-            <p style={{ fontSize: 11, color: '#bbb' }}>oynandı</p>
+            <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{game.hours}s</p>
+            <p style={{ fontSize: 11, color: 'var(--text-3)' }}>oynandı</p>
           </div>
         )}
       </div>

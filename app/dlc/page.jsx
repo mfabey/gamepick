@@ -115,22 +115,22 @@ export default function DlcPage() {
       <div style={{ marginBottom: 20 }}>
         <div style={{
           display: 'inline-flex', alignItems: 'center', gap: 6,
-          background: '#FEF2F2', border: '1px solid #FECACA',
+          background: 'var(--accent-bg)', border: '1px solid var(--accent-border)',
           borderRadius: 999, padding: '3px 12px', marginBottom: 10,
-          fontSize: 11, fontWeight: 700, color: '#DC2626', textTransform: 'uppercase', letterSpacing: '0.05em',
+          fontSize: 11, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.05em',
         }}>
           ✦ Ek İçerik
         </div>
-        <h1 style={{ fontSize: 26, fontWeight: 800, color: '#1a1a1a', marginBottom: 4 }}>DLC & Genişleme Paketleri</h1>
-        <p style={{ color: '#999', fontSize: 14 }}>Oyunlara özel ek içerikler, sezon geçişleri ve genişleme paketleri</p>
+        <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)', marginBottom: 4 }}>DLC & Genişleme Paketleri</h1>
+        <p style={{ color: 'var(--text-3)', fontSize: 14 }}>Oyunlara özel ek içerikler, sezon geçişleri ve genişleme paketleri</p>
       </div>
 
       {/* Arama */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: 10,
-        background: '#fff', border: '1.5px solid #e5e5e5',
+        background: 'var(--bg-card)', border: '1.5px solid var(--border)',
         borderRadius: 12, padding: '12px 18px', marginBottom: 16,
-        boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+        boxShadow: 'var(--shadow)',
       }}>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
@@ -139,10 +139,10 @@ export default function DlcPage() {
           value={query}
           onChange={e => { setQuery(e.target.value); setSection(''); }}
           placeholder="DLC veya paket ara…"
-          style={{ flex: 1, border: 'none', outline: 'none', fontSize: 15, color: '#1a1a1a', background: 'transparent' }}
+          style={{ flex: 1, border: 'none', outline: 'none', fontSize: 15, color: 'var(--text)', background: 'transparent' }}
         />
         {query && (
-          <button onClick={() => setQuery('')} style={{ background: 'none', border: 'none', color: '#bbb', fontSize: 20, cursor: 'pointer', lineHeight: 1 }}>×</button>
+          <button onClick={() => setQuery('')} style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: 20, cursor: 'pointer', lineHeight: 1 }}>×</button>
         )}
       </div>
 
@@ -152,8 +152,8 @@ export default function DlcPage() {
           <button key={s.value} onClick={() => { setSection(s.value); setQuery(''); }}
             style={{
               padding: '7px 16px', borderRadius: 999, fontSize: 13, border: 'none', cursor: 'pointer',
-              background: section === s.value ? '#DC2626' : '#f5f5f5',
-              color:      section === s.value ? '#fff'    : '#555',
+              background: section === s.value ? 'var(--accent)' : 'var(--bg-input)',
+              color:      section === s.value ? '#fff'    : 'var(--text-2)',
               fontWeight: section === s.value ? 600       : 400,
             }}
           >
@@ -164,13 +164,13 @@ export default function DlcPage() {
 
       {/* Sonuç bilgisi */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-        <p style={{ fontSize: 14, color: '#999' }}>
+        <p style={{ fontSize: 14, color: 'var(--text-3)' }}>
           {loading ? 'Yükleniyor…' : (
-            <><span style={{ fontWeight: 600, color: '#1a1a1a' }}>{dlcs.length}</span> ek içerik gösteriliyor</>
+            <><span style={{ fontWeight: 600, color: 'var(--text)' }}>{dlcs.length}</span> ek içerik gösteriliyor</>
           )}
         </p>
         {(query || section) && (
-          <button onClick={resetFilters} style={{ fontSize: 12, color: '#DC2626', background: 'none', border: 'none', cursor: 'pointer' }}>
+          <button onClick={resetFilters} style={{ fontSize: 12, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer' }}>
             × Temizle
           </button>
         )}
@@ -180,11 +180,11 @@ export default function DlcPage() {
       {loading ? (
         <div className="grid-auto">
           {Array.from({ length: PAGE_SIZE }).map((_, i) => (
-            <div key={i} style={{ background: '#fff', border: '1.5px solid #ebebeb', borderRadius: 14, overflow: 'hidden' }}>
-              <div style={{ height: 110, background: '#f5f5f5' }} />
+            <div key={i} style={{ background: 'var(--bg-card)', border: '1.5px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
+              <div style={{ height: 110, background: 'var(--bg-input)' }} />
               <div style={{ padding: '10px 12px' }}>
-                <div style={{ height: 12, background: '#f0f0f0', borderRadius: 4, marginBottom: 8 }} />
-                <div style={{ height: 10, background: '#f5f5f5', borderRadius: 4, width: '60%' }} />
+                <div style={{ height: 12, background: 'var(--border)', borderRadius: 4, marginBottom: 8 }} />
+                <div style={{ height: 10, background: 'var(--bg-input)', borderRadius: 4, width: '60%' }} />
               </div>
             </div>
           ))}
@@ -192,8 +192,8 @@ export default function DlcPage() {
       ) : dlcs.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '60px 0' }}>
           <p style={{ fontSize: 40, marginBottom: 12 }}>📦</p>
-          <p style={{ fontSize: 16, fontWeight: 600, color: '#555' }}>DLC bulunamadı</p>
-          <button onClick={resetFilters} style={{ marginTop: 12, padding: '8px 20px', borderRadius: 8, background: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+          <p style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-2)' }}>DLC bulunamadı</p>
+          <button onClick={resetFilters} style={{ marginTop: 12, padding: '8px 20px', borderRadius: 8, background: 'var(--accent-bg)', border: '1px solid var(--accent-border)', color: 'var(--accent)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
             Filtreleri Temizle
           </button>
         </div>
@@ -205,8 +205,8 @@ export default function DlcPage() {
           <div ref={sentinelRef} style={{ height: 1 }} />
           {loadingMore && (
             <div style={{ textAlign: 'center', padding: '32px 0' }}>
-              <div style={{ display: 'inline-flex', gap: 6, alignItems: 'center', fontSize: 13, color: '#bbb' }}>
-                <span style={{ width: 16, height: 16, borderRadius: '50%', border: '2px solid #f0f0f0', borderTopColor: '#DC2626', animation: 'spin 0.7s linear infinite', display: 'inline-block' }} />
+              <div style={{ display: 'inline-flex', gap: 6, alignItems: 'center', fontSize: 13, color: 'var(--text-3)' }}>
+                <span style={{ width: 16, height: 16, borderRadius: '50%', border: '2px solid var(--border)', borderTopColor: 'var(--accent)', animation: 'spin 0.7s linear infinite', display: 'inline-block' }} />
                 Yükleniyor…
               </div>
             </div>
@@ -229,8 +229,8 @@ function DlcCard({ dlc }) {
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         style={{
-          background:   '#fff',
-          border:       `1.5px solid ${hovered ? '#FECACA' : '#ebebeb'}`,
+          background:   'var(--bg-card)',
+          border:       `1.5px solid ${hovered ? 'var(--accent-border)' : 'var(--border)'}`,
           borderRadius: 14, overflow: 'hidden',
           transition:   'border-color 0.15s, transform 0.15s',
           transform:    hovered ? 'translateY(-2px)' : 'none',
@@ -238,11 +238,11 @@ function DlcCard({ dlc }) {
         }}
       >
         {/* Kapak */}
-        <div style={{ height: 110, background: '#f0f0f0', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ height: 110, background: 'var(--bg-input)', position: 'relative', overflow: 'hidden' }}>
           {dlc.image ? (
             <img src={dlc.image} alt={dlc.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           ) : (
-            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 700, color: '#ccc' }}>
+            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 700, color: 'var(--text-3)' }}>
               {dlc.name?.slice(0, 2).toUpperCase()}
             </div>
           )}
@@ -251,7 +251,7 @@ function DlcCard({ dlc }) {
           <div style={{ position: 'absolute', top: 7, left: 7 }}>
             <span style={{
               fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 4,
-              background: '#DC2626', color: '#fff', letterSpacing: '0.04em',
+              background: 'var(--accent)', color: '#fff', letterSpacing: '0.04em',
             }}>
               DLC
             </span>
@@ -273,11 +273,11 @@ function DlcCard({ dlc }) {
 
         {/* Alt bilgi */}
         <div style={{ padding: '9px 11px' }}>
-          <p style={{ fontWeight: 600, fontSize: 12, lineHeight: 1.3, color: '#1a1a1a', marginBottom: 5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <p style={{ fontWeight: 600, fontSize: 12, lineHeight: 1.3, color: 'var(--text)', marginBottom: 5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {dlc.name}
           </p>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4 }}>
-            <span style={{ fontSize: 11, color: '#999' }}>
+            <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
               {dlc.totalReviews > 0 ? '⭐ ' + dlc.totalReviews.toLocaleString('tr') : dlc.released?.slice(0, 4) || '—'}
             </span>
             {(dlc.genres || []).slice(0, 1).map(g => (

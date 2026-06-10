@@ -30,8 +30,9 @@ export default function SignupPage() {
 
   const fieldStyle = {
     width: '100%', padding: '10px 14px',
-    border: '1.5px solid #e5e5e5', borderRadius: 8,
-    fontSize: 14, color: '#1a1a1a', outline: 'none',
+    border: '1.5px solid var(--border)', borderRadius: 8,
+    fontSize: 14, color: 'var(--text)', outline: 'none',
+    background: 'var(--bg-card)',
     transition: 'border-color 0.15s',
   };
 
@@ -40,13 +41,13 @@ export default function SignupPage() {
       minHeight: 'calc(100vh - 60px)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       padding: '40px 20px',
-      background: 'linear-gradient(135deg, #fff 0%, #fef2f2 100%)',
+      background: 'var(--hero-bg)',
     }}>
       <div style={{ width: '100%', maxWidth: 420 }}>
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <div style={{
-            width: 52, height: 52, borderRadius: 14, background: '#DC2626',
+            width: 52, height: 52, borderRadius: 14, background: 'var(--accent)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             margin: '0 auto 12px',
           }}>
@@ -57,21 +58,21 @@ export default function SignupPage() {
               <circle cx="18" cy="13" r="1" fill="#fff" stroke="none"/>
             </svg>
           </div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#1a1a1a' }}>GamePick'e Üye Ol</h1>
-          <p style={{ color: '#999', fontSize: 14, marginTop: 4 }}>Zaten hesabın var mı?{' '}
-            <Link href="/login" style={{ color: '#DC2626', fontWeight: 600 }}>Giriş Yap</Link>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>GamePick'e Üye Ol</h1>
+          <p style={{ color: 'var(--text-3)', fontSize: 14, marginTop: 4 }}>Zaten hesabın var mı?{' '}
+            <Link href="/login" style={{ color: 'var(--accent)', fontWeight: 600 }}>Giriş Yap</Link>
           </p>
         </div>
 
         {/* Avantajlar */}
         <div style={{
-          background: '#FEF2F2', border: '1px solid #FECACA',
+          background: 'var(--accent-bg)', border: '1px solid var(--accent-border)',
           borderRadius: 10, padding: '12px 16px', marginBottom: 20,
           display: 'flex', flexDirection: 'column', gap: 6,
         }}>
           {['Steam, Epic ve Xbox kütüphaneni tek ekranda gör', 'Fiyat alarmı ile en ucuz fiyatı yakala', 'AI ile ruh haline göre oyun önerisi al'].map(t => (
-            <p key={t} style={{ fontSize: 12, color: '#444', display: 'flex', gap: 8 }}>
-              <span style={{ color: '#DC2626', fontWeight: 700 }}>✓</span> {t}
+            <p key={t} style={{ fontSize: 12, color: 'var(--text-2)', display: 'flex', gap: 8 }}>
+              <span style={{ color: 'var(--accent)', fontWeight: 700 }}>✓</span> {t}
             </p>
           ))}
         </div>
@@ -81,41 +82,41 @@ export default function SignupPage() {
           <form onSubmit={handleSubmit}>
             {error && (
               <div style={{
-                background: '#FEF2F2', border: '1px solid #FECACA',
+                background: 'var(--accent-bg)', border: '1px solid var(--accent-border)',
                 borderRadius: 8, padding: '10px 14px', marginBottom: 16,
-                fontSize: 13, color: '#DC2626',
+                fontSize: 13, color: 'var(--accent)',
               }}>
                 {error}
               </div>
             )}
 
             <div style={{ marginBottom: 14 }}>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#333', marginBottom: 6 }}>İsim</label>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>İsim</label>
               <input
                 type="text" required value={name} onChange={e => setName(e.target.value)}
                 placeholder="Adın Soyadın" style={fieldStyle}
-                onFocus={e => e.target.style.borderColor = '#DC2626'}
-                onBlur={e => e.target.style.borderColor = '#e5e5e5'}
+                onFocus={e => e.target.style.borderColor = 'var(--accent)'}
+                onBlur={e => e.target.style.borderColor = 'var(--border)'}
               />
             </div>
 
             <div style={{ marginBottom: 14 }}>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#333', marginBottom: 6 }}>E-posta</label>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>E-posta</label>
               <input
                 type="email" required value={email} onChange={e => setEmail(e.target.value)}
                 placeholder="ornek@mail.com" style={fieldStyle}
-                onFocus={e => e.target.style.borderColor = '#DC2626'}
-                onBlur={e => e.target.style.borderColor = '#e5e5e5'}
+                onFocus={e => e.target.style.borderColor = 'var(--accent)'}
+                onBlur={e => e.target.style.borderColor = 'var(--border)'}
               />
             </div>
 
             <div style={{ marginBottom: 24 }}>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#333', marginBottom: 6 }}>Şifre</label>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>Şifre</label>
               <input
                 type="password" required value={password} onChange={e => setPassword(e.target.value)}
                 placeholder="En az 6 karakter" style={fieldStyle}
-                onFocus={e => e.target.style.borderColor = '#DC2626'}
-                onBlur={e => e.target.style.borderColor = '#e5e5e5'}
+                onFocus={e => e.target.style.borderColor = 'var(--accent)'}
+                onBlur={e => e.target.style.borderColor = 'var(--border)'}
               />
             </div>
 
@@ -123,7 +124,7 @@ export default function SignupPage() {
               type="submit" disabled={loading}
               style={{
                 width: '100%', padding: '12px',
-                background: '#DC2626', color: '#fff',
+                background: 'var(--accent)', color: '#fff',
                 border: 'none', borderRadius: 8,
                 fontSize: 14, fontWeight: 600, cursor: 'pointer',
                 opacity: loading ? 0.7 : 1,
@@ -132,7 +133,7 @@ export default function SignupPage() {
               {loading ? 'Kaydediliyor...' : 'Ücretsiz Kayıt Ol →'}
             </button>
 
-            <p style={{ fontSize: 11, color: '#bbb', textAlign: 'center', marginTop: 14 }}>
+            <p style={{ fontSize: 11, color: 'var(--text-3)', textAlign: 'center', marginTop: 14 }}>
               Kayıt olarak Kullanım Şartlarını kabul etmiş olursunuz.
             </p>
           </form>
