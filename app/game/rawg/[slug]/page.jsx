@@ -7,25 +7,26 @@ import Link from 'next/link';
 export default function RawgGamePage({ params }) {
   const { slug } = params;
 
-  const [game,          setGame]          = useState(null);
-  const [prices,        setPrices]        = useState([]);
-  const [steamPrice,    setSteamPrice]    = useState(null);
-  const [steamLoading,  setSteamLoading]  = useState(false);
-  const [pricesLoading, setPricesLoading] = useState(false);
-  const [ai,            setAi]            = useState(null);
-  const [loading,       setLoading]       = useState(true);
-  const [error,         setError]         = useState(null);
-  const [imgIdx,        setImgIdx]        = useState(0);
+  const [game,         setGame]         = useState(null);
+  const [steamPrice,   setSteamPrice]   = useState(null);
+  const [epicPrice,    setEpicPrice]    = useState(null);
+  const [xboxPrices,   setXboxPrices]   = useState([]);
+  const [steamLoading, setSteamLoading] = useState(false);
+  const [epicLoading,  setEpicLoading]  = useState(false);
+  const [xboxLoading,  setXboxLoading]  = useState(false);
+  const [ai,           setAi]           = useState(null);
+  const [loading,      setLoading]      = useState(true);
+  const [error,        setError]        = useState(null);
+  const [imgIdx,       setImgIdx]       = useState(0);
 
   useEffect(() => {
     if (!slug) return;
     setLoading(true);
     setError(null);
     setAi(null);
-    setPrices([]);
     setSteamPrice(null);
-    setSteamLoading(false);
-    setPricesLoading(false);
+    setEpicPrice(null);
+    setXboxPrices([]);
 
     fetch('/api/rawg-game?slug=' + slug)
       .then(r => r.json())
@@ -36,7 +37,6 @@ export default function RawgGamePage({ params }) {
 
         // ── Steam fiyatı ─────────────────────────────────────────────────
         if (g.steamAppId) {
-          // Öncelik: appid ile direkt TRY fiyatı
           setSteamLoading(true);
           fetch('/api/steam-price?appid=' + g.steamAppId)
             .then(r => r.json())
@@ -44,7 +44,6 @@ export default function RawgGamePage({ params }) {
             .catch(() => {})
             .finally(() => setSteamLoading(false));
         } else if (g.hasSteam) {
-          // Fallback: appid yoksa isim ile storesearch → appdetails
           setSteamLoading(true);
           fetch('/api/card-price?name=' + encodeURIComponent(g.name) + '&hasSteam=true')
             .then(r => r.json())
@@ -53,44 +52,51 @@ export default function RawgGamePage({ params }) {
             .finally(() => setSteamLoading(false));
         }
 
-        // ── Epic + Xbox — ITAD; Epic eksikse Epic API'den doğrudan al ────
-        setPricesLoading(true);
+        // ── Epic — doğrudan Epic GraphQL, ITAD'a güvenme ─────────────────
+        if (g.hasEpic) {
+          setEpicLoading(true);
+          fetch('/api/epic?q=' + encodeURIComponent(g.name) + '&num=10')
+            .then(r => r.json())
+            .then(d => {
+              const hit = findBestMatch(g.name, d.results || []);
+              if (hit) {
+                setEpicPrice({
+                  price:    hit.price,
+                  original: hit.original,
+                  discount: hit.discount ?? 0,
+                  isFree:   hit.isFree,
+                  url:      hit.epicUrl || g.epicUrl,
+                });
+              }
+            })
+            .catch(() => {})
+            .finally(() => setEpicLoading(false));
+        }
+
+        // ── Xbox — ITAD (Epic'i görmezden gel) ───────────────────────────
+        setXboxLoading(true);
         fetch('/api/prices?title=' + encodeURIComponent(g.name))
           .then(r => r.json())
-          .then(async d => {
-            const stores      = d.stores || [];
-            const hasEpicItad = stores.some(s => s.name === 'Epic Games');
+          .then(d => {
+            const stores = d.stores || [];
+            setXboxPrices(stores.filter(s => s.name === 'Xbox'));
 
-            // ITAD'da Epic fiyatı bulunamadıysa Epic Games GraphQL'e sor
-            if (!hasEpicItad && g.hasEpic) {
-              try {
-                const eRes  = await fetch('/api/epic?q=' + encodeURIComponent(g.name) + '&num=5');
-                const eData = await eRes.json();
-                const t     = g.name.toLowerCase().trim();
-                const hit   = (eData.results || []).find(i =>
-                  i.name?.toLowerCase().trim() === t ||
-                  i.name?.toLowerCase().includes(t.slice(0, 15))
-                );
-                if (hit && (hit.price != null || hit.isFree)) {
-                  stores.push({
-                    storeId:  'epic',
-                    name:     'Epic Games',
-                    icon:     '⚡',
-                    price:    hit.price,
-                    original: hit.original,
-                    discount: hit.discount ?? 0,
-                    isFree:   hit.isFree,
-                    url:      hit.epicUrl || g.epicUrl,
-                  });
-                }
-              } catch { /* Epic API opsiyonel */ }
+            // ITAD'da Epic varsa ve biz henüz bulamadıysak kullan
+            const itadEpic = stores.find(s => s.name === 'Epic Games');
+            if (itadEpic) {
+              setEpicPrice(prev => prev ?? {
+                price:    itadEpic.price,
+                original: itadEpic.original,
+                discount: itadEpic.discount,
+                isFree:   itadEpic.isFree,
+                url:      itadEpic.url,
+              });
             }
-            setPrices(stores);
           })
           .catch(() => {})
-          .finally(() => setPricesLoading(false));
+          .finally(() => setXboxLoading(false));
 
-        // ── AI özeti — name + description gönder ─────────────────────────
+        // ── AI özeti ─────────────────────────────────────────────────────
         const desc = (g.description || '').replace(/<[^>]+>/g, '').slice(0, 1500);
         const aiId = g.steamAppId || ('rawg_' + g.rawgId);
         fetch(
@@ -124,9 +130,7 @@ export default function RawgGamePage({ params }) {
     </div>
   );
 
-  const allImages  = [game.image, ...(game.screenshots || [])].filter(Boolean);
-  const epicPrice  = prices.find(p => p.name === 'Epic Games');
-  const xboxPrices = prices.filter(p => p.name === 'Xbox');
+  const allImages = [game.image, ...(game.screenshots || [])].filter(Boolean);
 
   return (
     <div className="container" style={{ paddingTop: 28, paddingBottom: 60, maxWidth: 960 }}>
@@ -182,14 +186,13 @@ export default function RawgGamePage({ params }) {
 
           {/* Açıklama — AI yüklenince Türkçe, yoksa İngilizce */}
           {(ai?.aciklama || game.description) && (
-            <div style={{ fontSize: 14, lineHeight: 1.75, color: '#444', marginBottom: 20, position: 'relative' }}>
+            <div style={{ fontSize: 14, lineHeight: 1.75, color: '#444', marginBottom: 20 }}>
               {ai?.aciklama ? (
                 ai.aciklama
               ) : (
                 <>
                   {game.description.replace(/<[^>]+>/g, '').slice(0, 1200)}
                   {game.description.length > 1200 ? '…' : ''}
-                  {/* Henüz AI yüklenmediyse küçük bir loading ipucu */}
                   {!ai && (
                     <span style={{ display: 'inline-block', marginLeft: 6, fontSize: 11, color: '#bbb' }}>
                       (Türkçe çeviri yükleniyor…)
@@ -267,7 +270,7 @@ export default function RawgGamePage({ params }) {
 
             {/* Epic Games */}
             {game.hasEpic ? (
-              pricesLoading && !epicPrice
+              epicLoading && !epicPrice
                 ? <LoadingPriceRow />
                 : epicPrice
                   ? <PriceCard store="Epic Games" icon="⚡"
@@ -288,7 +291,7 @@ export default function RawgGamePage({ params }) {
                   isFree={p.isFree} url={p.url}
                 />
               ))
-            ) : pricesLoading ? (
+            ) : xboxLoading ? (
               <LoadingPriceRow />
             ) : (
               <MissingCard platform="Xbox / Game Pass" />
@@ -304,7 +307,43 @@ export default function RawgGamePage({ params }) {
   );
 }
 
-// ── Yükleniyor satırı (shimmer) ─────────────────────────────────────────────
+// ── Epic API sonuçlarında en iyi eşleşmeyi bul ─────────────────────────────
+function findBestMatch(gameName, results) {
+  if (!results.length) return null;
+  const t     = gameName.toLowerCase().trim();
+  // Ana başlık: ":" veya "–" öncesi (örn. "Witcher 3: Wild Hunt" → "witcher 3")
+  const tBase = t.split(/\s*[:–—]\s*/)[0].trim();
+  const tWords = tBase.split(/\s+/).filter(w => w.length > 1);
+
+  // Önce tam eşleşme
+  let hit = results.find(i => (i.name || '').toLowerCase().trim() === t);
+  if (hit) return hit;
+
+  // Ana başlık eşleşmesi
+  hit = results.find(i => {
+    const en     = (i.name || '').toLowerCase().trim();
+    const enBase = en.split(/\s*[:–—]\s*/)[0].trim();
+    return enBase === tBase;
+  });
+  if (hit) return hit;
+
+  // Birinin diğerini içermesi
+  hit = results.find(i => {
+    const en = (i.name || '').toLowerCase().trim();
+    return en.includes(tBase) || tBase.includes(en.split(/\s*[:–—]\s*/)[0].trim());
+  });
+  if (hit) return hit;
+
+  // En az 2 anlamlı kelime eşleşiyorsa kabul et
+  hit = results.find(i => {
+    const enWords = (i.name || '').toLowerCase().split(/\s+/);
+    const shared  = tWords.filter(w => enWords.some(ew => ew === w || ew.startsWith(w)));
+    return shared.length >= Math.min(2, tWords.length);
+  });
+  return hit || null;
+}
+
+// ── Yükleniyor satırı ───────────────────────────────────────────────────────
 function LoadingPriceRow() {
   return (
     <>
