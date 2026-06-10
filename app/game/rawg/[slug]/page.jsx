@@ -266,16 +266,16 @@ export default function RawgGamePage({ params }) {
             )}
 
             {/* Epic Games */}
-            {game.hasEpic ? (
-              epicLoading && !epicPrice
-                ? <LoadingPriceRow />
-                : epicPrice
-                  ? <PriceCard store="Epic Games" icon="⚡"
-                      price={epicPrice.price} original={epicPrice.original}
-                      discount={epicPrice.discount} isFree={epicPrice.isFree}
-                      url={epicPrice.url || game.epicUrl}
-                    />
-                  : <PlaceholderCard store="Epic Games" icon="⚡" url={game.epicUrl} />
+            {epicPrice ? (
+              <PriceCard store="Epic Games" icon="⚡"
+                price={epicPrice.price} original={epicPrice.original}
+                discount={epicPrice.discount} isFree={epicPrice.isFree}
+                url={epicPrice.url || game.epicUrl}
+              />
+            ) : epicLoading ? (
+              <LoadingPriceRow />
+            ) : game.hasEpic ? (
+              <PlaceholderCard store="Epic Games" icon="⚡" url={game.epicUrl} />
             ) : (
               <MissingCard platform="Epic Games" />
             )}

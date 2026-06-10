@@ -27,7 +27,6 @@ function storeInfo(id, rawName) {
 }
 
 // Karşılaştırma için başlığı normalize et
-// "Batman: Arkham City" ↔ "Batman Arkham City Game of the Year Edition"
 function normalizeTitle(s) {
   return (s || '')
     .toLowerCase()
@@ -37,20 +36,24 @@ function normalizeTitle(s) {
     .trim();
 }
 
-// ITAD'dan fiyatları çek (gameId ile)
-async function fetchDeals(gameId) {
+// ITAD'dan fiyatları çek (gameIds dizisi ile)
+async function fetchDeals(gameIds) {
   const priceRes = await fetch(
     `${ITAD}/games/prices/v3?key=${ITAD_KEY}&country=TR`,
     {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify([gameId]),
+      body:    JSON.stringify(gameIds),
       next:    { revalidate: 1800 },
     }
   );
   if (!priceRes.ok) return [];
   const priceData = await priceRes.json();
-  return priceData?.[0]?.deals || [];
+  const allDeals = [];
+  for (const item of priceData || []) {
+    if (item.deals) allDeals.push(...item.deals);
+  }
+  return allDeals;
 }
 
 // Deals → store map
@@ -78,20 +81,19 @@ function dealsToStores(deals) {
   return Object.values(storeMap);
 }
 
-// GET /api/prices?appid=271590   ← steamAppId ile kesin eşleşme (tercihli)
-// GET /api/prices?title=GTA+V    ← isim araması fallback
+// GET /api/prices?appid=271590&title=GTA+V
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
-  const appid = searchParams.get('appid');   // Steam App ID — kesin eşleşme
-  const title = searchParams.get('title');   // İsim — fallback
+  const appid = searchParams.get('appid');   // Steam App ID
+  const title = searchParams.get('title');   // İsim
 
   if (!ITAD_KEY) return NextResponse.json({ stores: [] });
   if (!appid && !title) return NextResponse.json({ stores: [] });
 
   try {
-    let gameId = null;
+    const gameIds = [];
 
-    // ── Yöntem 1: Steam AppID → ITAD lookup GET (kesin, isim problemi yok) ──
+    // ── 1. Steam AppID → ITAD lookup GET (kesin eşleşme) ──
     if (appid) {
       try {
         const lookupRes = await fetch(
@@ -100,37 +102,40 @@ export async function GET(request) {
         );
         if (lookupRes.ok) {
           const lookupData = await lookupRes.json();
-          // Yanıt: { found: true, game: { id: "...", slug: "..." } }
           if (lookupData?.found && lookupData.game?.id) {
-            gameId = lookupData.game.id;
+            gameIds.push(lookupData.game.id);
           }
         }
-      } catch { /* lookup başarısız → title fallback'e geç */ }
+      } catch { /* lookup başarısız */ }
     }
 
-    // ── Yöntem 2: Başlık araması (appid yoksa veya lookup başarısızsa) ──
-    if (!gameId && title) {
-      const searchRes = await fetch(
-        `${ITAD}/games/search/v1?key=${ITAD_KEY}&title=${encodeURIComponent(title)}&limit=5`,
-        { next: { revalidate: 3600 } }
-      );
-      if (searchRes.ok) {
-        const searchData = await searchRes.json();
-        const nt = normalizeTitle(title);
+    // ── 2. İsim araması ile diğer edisyonları bul (Complete, GOTY vb.) ──
+    const searchTitle = title || '';
+    if (searchTitle) {
+      try {
+        const searchRes = await fetch(
+          `${ITAD}/games/search/v1?key=${ITAD_KEY}&title=${encodeURIComponent(searchTitle)}&limit=10`,
+          { next: { revalidate: 3600 } }
+        );
+        if (searchRes.ok) {
+          const searchData = await searchRes.json();
+          const nt = normalizeTitle(searchTitle);
 
-        // En iyi başlık eşleşmesini bul (normalize edilmiş)
-        const best = searchData.find(g => normalizeTitle(g.title) === nt)
-                  || searchData.find(g => normalizeTitle(g.title).startsWith(nt))
-                  || searchData.find(g => nt.startsWith(normalizeTitle(g.title)))
-                  || searchData[0];
-
-        gameId = best?.id || null;
-      }
+          for (const g of searchData || []) {
+            if (g.type === 'dlc') continue; // DLC'leri filtrele
+            const gt = normalizeTitle(g.title);
+            if (gt === nt || gt.startsWith(nt) || nt.startsWith(gt)) {
+              gameIds.push(g.id);
+            }
+          }
+        }
+      } catch { /* arama başarısız */ }
     }
 
-    if (!gameId) return NextResponse.json({ stores: [] });
+    const uniqueIds = Array.from(new Set(gameIds));
+    if (uniqueIds.length === 0) return NextResponse.json({ stores: [] });
 
-    const deals  = await fetchDeals(gameId);
+    const deals  = await fetchDeals(uniqueIds);
     const stores = dealsToStores(deals);
     return NextResponse.json({ stores });
 
