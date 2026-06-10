@@ -19,6 +19,7 @@ export default function RawgGamePage({ params }) {
   const [humbleLoading, setHumbleLoading] = useState(false);
   const [xboxLoading,  setXboxLoading]  = useState(false);
   const [ai,           setAi]           = useState(null);
+  const [aiLoading,    setAiLoading]    = useState(true);
   const [loading,      setLoading]      = useState(true);
   const [error,        setError]        = useState(null);
   const [imgIdx,       setImgIdx]       = useState(0);
@@ -138,14 +139,16 @@ export default function RawgGamePage({ params }) {
         // ── AI özeti ─────────────────────────────────────────────────────
         const desc = (g.description || '').replace(/<[^>]+>/g, '').slice(0, 1500);
         const aiId = g.steamAppId || ('rawg_' + g.rawgId);
+        setAiLoading(true);
         fetch(
           '/api/ai-game?appid=' + encodeURIComponent(aiId) +
           '&name='              + encodeURIComponent(g.name) +
           '&description='       + encodeURIComponent(desc)
         )
           .then(r => r.json())
-          .then(d => { if (d.ozet) setAi(d); })
-          .catch(() => {});
+          .then(d => { if (d && d.ozet) setAi(d); })
+          .catch(() => {})
+          .finally(() => setAiLoading(false));
       })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false));
@@ -255,7 +258,7 @@ export default function RawgGamePage({ params }) {
                 <>
                   {game.description.replace(/<[^>]+>/g, '').slice(0, 1200)}
                   {game.description.length > 1200 ? '…' : ''}
-                  {!ai && (
+                  {aiLoading && (
                     <span style={{ display: 'inline-block', marginLeft: 6, fontSize: 11, color: 'var(--text-3)' }}>
                       (Türkçe çeviri yükleniyor…)
                     </span>
