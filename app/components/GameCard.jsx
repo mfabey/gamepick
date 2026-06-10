@@ -78,7 +78,11 @@ export default function GameCard({ game, compact = false }) {
           {/* Sol üst: indirim / ücretsiz badge */}
           <div style={{ position: 'absolute', top: 7, left: 7, display: 'flex', gap: 4 }}>
             {isFree   && <span className="badge badge-green">Ücretsiz</span>}
-            {isOnSale && <span className="badge badge-amber">İndirim</span>}
+            {isOnSale && (
+              <span className="badge badge-amber" style={{ fontWeight: 700, border: '1px solid #fcd34d' }}>
+                {livePrice.storeIcon} -%{livePrice.discount}
+              </span>
+            )}
           </div>
 
           {/* Sağ alt: metacritic */}
@@ -106,13 +110,28 @@ export default function GameCard({ game, compact = false }) {
             {isFree ? (
               <span style={{ fontSize: 12, fontWeight: 700, color: '#16a34a' }}>Ücretsiz</span>
             ) : livePrice?.price != null ? (
-              <span style={{
-                fontSize: 12, fontWeight: 700,
-                color: isOnSale ? '#ea580c' : '#1a1a1a',
-                transition: 'color 0.2s',
-              }}>
-                ₺{livePrice.price}
-              </span>
+              isOnSale ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: '#ea580c' }}>
+                      ₺{livePrice.price}
+                    </span>
+                    {livePrice.storeIcon && (
+                      <span title={livePrice.storeName} style={{ fontSize: 10, opacity: 0.85 }}>
+                        {livePrice.storeIcon}
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: '#999', marginTop: 1 }}>
+                    <span style={{ textDecoration: 'line-through' }}>₺{livePrice.original}</span>
+                    <span style={{ color: '#ea580c', fontWeight: 700 }}>-%{livePrice.discount}</span>
+                  </div>
+                </div>
+              ) : (
+                <span style={{ fontSize: 12, fontWeight: 700, color: '#1a1a1a' }}>
+                  ₺{livePrice.price}
+                </span>
+              )
             ) : priceLoading ? (
               /* Yükleme noktaları — sadece fetch çalışırken görünür */
               <span style={{ fontSize: 10, color: '#e0e0e0', letterSpacing: 3 }}>•••</span>
