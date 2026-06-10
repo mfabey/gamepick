@@ -11,7 +11,7 @@ export default function GameCard({ game, compact = false }) {
   const [priceDone,    setPriceDone]    = useState(false);
   const cardRef = useRef(null);
 
-  // Kart görünüme girince Steam fiyatı lazy-load et (flicker-free)
+  // Kart görünüme girince Steam fiyatı lazy-load et
   useEffect(() => {
     if (!game.hasSteam || priceDone || priceLoading) return;
     const el = cardRef.current;
@@ -21,7 +21,13 @@ export default function GameCard({ game, compact = false }) {
       if (!entries[0].isIntersecting) return;
       obs.disconnect();
       setPriceLoading(true);
-      fetch('/api/card-price?name=' + encodeURIComponent(game.name) + '&hasSteam=true')
+
+      // Slug varsa garantili doğru eşleşme, yoksa isim fallback
+      const params = game.rawgSlug
+        ? `slug=${encodeURIComponent(game.rawgSlug)}&hasSteam=true`
+        : `name=${encodeURIComponent(game.name)}&hasSteam=true`;
+
+      fetch('/api/card-price?' + params)
         .then(r => r.json())
         .then(d => { if (d.price != null) setLivePrice(d); })
         .catch(() => {})
@@ -30,7 +36,7 @@ export default function GameCard({ game, compact = false }) {
 
     obs.observe(el);
     return () => obs.disconnect();
-  }, [game.name, game.hasSteam, priceLoading, priceDone]);
+  }, [game.name, game.rawgSlug, game.hasSteam, priceLoading, priceDone]);
 
   const isFree   = livePrice?.isFree || game.isFree || game.gamePass;
   const isOnSale = (livePrice?.discount > 0) && !isFree;
