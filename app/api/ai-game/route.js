@@ -14,14 +14,51 @@ function isValidApiKey(key) {
 async function getFallbackAiData(name, description) {
   let translatedDesc = '';
   try {
-    const cleanDesc = description.replace(/<[^>]+>/g, '').trim().slice(0, 1000);
+    const cleanDesc = description.replace(/<[^>]+>/g, '').trim();
     if (cleanDesc) {
-      const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(cleanDesc)}&langpair=en|tr`;
-      const res = await fetch(url);
-      if (res.ok) {
-        const data = await res.json();
-        translatedDesc = data?.responseData?.translatedText || '';
+      // Split into chunks of maximum 450 characters to stay within MyMemory's 500-char limit
+      const sentences = cleanDesc.match(/[^.!?]+[.!?]+(?:\s+|$)/g) || [cleanDesc];
+      const chunks = [];
+      let currentChunk = "";
+      
+      for (const sentence of sentences) {
+        if ((currentChunk + sentence).length > 450) {
+          if (currentChunk.trim()) {
+            chunks.push(currentChunk.trim());
+          }
+          currentChunk = sentence;
+        } else {
+          currentChunk += sentence;
+        }
       }
+      if (currentChunk.trim()) {
+        chunks.push(currentChunk.trim());
+      }
+
+      // Limit fallback translation to top 3 chunks (approx 1200-1350 chars max) to avoid API spamming
+      const activeChunks = chunks.slice(0, 3);
+      const promises = activeChunks.map(async (chunk) => {
+        try {
+          const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(chunk)}&langpair=en|tr`;
+          const res = await fetch(url);
+          if (res.ok) {
+            const data = await res.json();
+            const translatedText = data?.responseData?.translatedText;
+            // Ensure the result is valid and doesn't contain limit warning messages
+            if (translatedText && 
+                !translatedText.includes("LIMIT EXCEEDED") && 
+                !translatedText.includes("MYMEMORY WARNING")) {
+              return translatedText;
+            }
+          }
+        } catch (e) {
+          console.error("Chunk translation fetch error:", e.message);
+        }
+        return chunk; // fallback to original chunk text
+      });
+
+      const translatedChunks = await Promise.all(promises);
+      translatedDesc = translatedChunks.join(' ');
     }
   } catch (err) {
     console.error("Fallback translation error:", err);
