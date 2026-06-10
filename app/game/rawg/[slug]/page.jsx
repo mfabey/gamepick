@@ -169,6 +169,29 @@ export default function RawgGamePage({ params }) {
     </div>
   );
 
+  const dealsList = [];
+  if (steamPrice?.price != null) dealsList.push({ store: 'Steam', price: steamPrice.price, isFree: steamPrice.isFree });
+  if (epicPrice?.price != null) dealsList.push({ store: 'Epic Games', price: epicPrice.price, isFree: epicPrice.isFree });
+  if (gogPrice?.price != null) dealsList.push({ store: 'GOG', price: gogPrice.price, isFree: gogPrice.isFree });
+  if (humblePrice?.price != null) dealsList.push({ store: 'Humble Bundle', price: humblePrice.price, isFree: humblePrice.isFree });
+  for (const p of xboxPrices || []) {
+    if (p.price != null) dealsList.push({ store: 'Xbox', price: p.price, isFree: p.isFree, id: p.storeId });
+  }
+
+  let lowestPrice = Infinity;
+  let bestStoreKey = null;
+  for (const d of dealsList) {
+    const pVal = d.isFree ? 0 : d.price;
+    if (pVal < lowestPrice) {
+      lowestPrice = pVal;
+      bestStoreKey = d.store === 'Xbox' ? `Xbox_${d.id}` : d.store;
+    }
+  }
+
+  const pricesArray = dealsList.map(d => d.isFree ? 0 : d.price);
+  const hasMultiplePrices = pricesArray.length > 1;
+  const isCheaperOption = hasMultiplePrices && (Math.min(...pricesArray) < Math.max(...pricesArray));
+
   const allImages = [game.image, ...(game.screenshots || [])].filter(Boolean);
 
   return (
@@ -301,6 +324,7 @@ export default function RawgGamePage({ params }) {
                       price={steamPrice.price} original={steamPrice.original}
                       discount={steamPrice.discount} isFree={steamPrice.isFree}
                       url={game.steamUrl}
+                      highlight={isCheaperOption && bestStoreKey === 'Steam'}
                     />
                   : <PlaceholderCard store="Steam" icon="💻" url={game.steamUrl} />
             ) : (
@@ -313,6 +337,7 @@ export default function RawgGamePage({ params }) {
                 price={epicPrice.price} original={epicPrice.original}
                 discount={epicPrice.discount} isFree={epicPrice.isFree}
                 url={epicPrice.url || game.epicUrl}
+                highlight={isCheaperOption && bestStoreKey === 'Epic Games'}
               />
             ) : epicLoading ? (
               <LoadingPriceRow />
@@ -328,6 +353,7 @@ export default function RawgGamePage({ params }) {
                 price={gogPrice.price} original={gogPrice.original}
                 discount={gogPrice.discount} isFree={gogPrice.isFree}
                 url={gogPrice.url}
+                highlight={isCheaperOption && bestStoreKey === 'GOG'}
               />
             ) : gogLoading ? (
               <LoadingPriceRow />
@@ -339,6 +365,7 @@ export default function RawgGamePage({ params }) {
                 <PriceCard key={p.storeId || p.name} store="Xbox / Game Pass" icon="🎮"
                   price={p.price} original={p.original} discount={p.discount}
                   isFree={p.isFree} url={p.url}
+                  highlight={isCheaperOption && bestStoreKey === `Xbox_${p.storeId}`}
                 />
               ))
             ) : xboxLoading ? (
@@ -353,6 +380,7 @@ export default function RawgGamePage({ params }) {
                 price={humblePrice.price} original={humblePrice.original}
                 discount={humblePrice.discount} isFree={humblePrice.isFree}
                 url={humblePrice.url}
+                highlight={isCheaperOption && bestStoreKey === 'Humble Bundle'}
               />
             ) : humbleLoading ? (
               <LoadingPriceRow />
@@ -422,21 +450,45 @@ function LoadingPriceRow() {
 }
 
 // ── Fiyatlı platform kartı ───────────────────────────────────────────────────
-function PriceCard({ store, icon, price, original, discount, isFree: isFreeOverride, url }) {
+function PriceCard({ store, icon, price, original, discount, isFree: isFreeOverride, url, highlight = false }) {
   const isFree   = isFreeOverride || price === 0;
   const isOnSale = discount > 0 && !isFree;
+
+  const borderCol = highlight ? '#FCD34D' : '#ebebeb';
+  const hoverBorderCol = highlight ? '#F59E0B' : '#FECACA';
+  const bgStyle = highlight ? 'linear-gradient(135deg, #FFFDF5, #FFF9E6)' : '#fff';
+  const glowShadow = highlight ? '0 0 12px rgba(245, 158, 11, 0.15)' : 'none';
+
   return (
     <a href={url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', display: 'block', marginBottom: 8 }}>
       <div
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '12px 14px', borderRadius: 10, border: '1.5px solid #ebebeb',
-          background: '#fff', cursor: 'pointer', transition: 'border-color 0.15s',
+          padding: '12px 14px', borderRadius: 10, border: `1.5px solid ${borderCol}`,
+          background: bgStyle, cursor: 'pointer', transition: 'border-color 0.15s, box-shadow 0.15s',
+          boxShadow: glowShadow,
         }}
-        onMouseEnter={e => e.currentTarget.style.borderColor = '#FECACA'}
-        onMouseLeave={e => e.currentTarget.style.borderColor = '#ebebeb'}
+        onMouseEnter={e => {
+          e.currentTarget.style.borderColor = hoverBorderCol;
+          if (highlight) e.currentTarget.style.boxShadow = '0 0 16px rgba(245, 158, 11, 0.3)';
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.borderColor = borderCol;
+          if (highlight) e.currentTarget.style.boxShadow = glowShadow;
+        }}
       >
-        <span style={{ fontWeight: 600, fontSize: 14, color: '#1a1a1a' }}>{icon} {store}</span>
+        <span style={{ fontWeight: 600, fontSize: 14, color: '#1a1a1a', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          {icon} {store}
+          {highlight && (
+            <span style={{
+              fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 6,
+              background: '#FEF3C7', color: '#D97706', border: '1px solid #FCD34D',
+              marginLeft: 4
+            }}>
+              👑 En Ucuz
+            </span>
+          )}
+        </span>
         <div style={{ textAlign: 'right' }}>
           {isFree ? (
             <span style={{ fontWeight: 700, fontSize: 15, color: '#16a34a' }}>Ücretsiz</span>
