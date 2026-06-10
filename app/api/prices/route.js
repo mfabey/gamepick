@@ -31,7 +31,7 @@ function normalizeTitle(s) {
   return (s || '')
     .toLowerCase()
     .replace(/[:\-–]/g, ' ')
-    .replace(/\b(game of the year|goty|definitive|complete|gold|platinum|deluxe|premium|standard|remastered|remake|anniversary|edition|bundle|pack|collection|director.s cut)\b/gi, '')
+    .replace(/\b(game of the year|goty|definitive|complete|gold|platinum|deluxe|premium|standard|edition|bundle|pack|collection)\b/gi, '')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -124,7 +124,7 @@ export async function GET(request) {
           for (const g of searchData || []) {
             if (g.type === 'dlc') continue; // DLC'leri filtrele
             const gt = normalizeTitle(g.title);
-            if (gt === nt || gt.startsWith(nt) || nt.startsWith(gt)) {
+            if (gt === nt) {
               gameIds.push(g.id);
             }
           }
