@@ -1,7 +1,8 @@
 'use client';
 export const dynamic = 'force-dynamic';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import GameCard from '../components/GameCard';
 
 const PRICE_OPTIONS = [
@@ -22,16 +23,26 @@ const SECTIONS = [
 
 const PAGE_SIZE = 24;
 
-export default function GamesPage() {
+function GamesList() {
+  const searchParams = useSearchParams();
+  const initialSection = searchParams.get('section') || '';
+
   const [query,       setQuery]       = useState('');
   const [price,       setPrice]       = useState('all');
-  const [section,     setSection]     = useState('');
+  const [section,     setSection]     = useState(initialSection);
   const [games,       setGames]       = useState([]);
   const [loading,     setLoading]     = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const debounceRef  = useRef(null);
   const sentinelRef  = useRef(null);
   const scrollRef    = useRef({ page: 1, fetching: false, canMore: false, seenIds: new Set(), section: '', query: '' });
+
+  // URL'deki section parametresi değiştiğinde state'i ve aramayı güncelle
+  useEffect(() => {
+    const sec = searchParams.get('section') || '';
+    setSection(sec);
+    setQuery('');
+  }, [searchParams]);
 
   const buildUrl = useCallback((pageNum) => {
     const { section: s, query: q } = scrollRef.current;
@@ -227,5 +238,21 @@ export default function GamesPage() {
       )}
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
+  );
+}
+
+export default function GamesPage() {
+  return (
+    <Suspense fallback={
+      <div className="container" style={{ paddingTop: 32, paddingBottom: 60 }}>
+        <div style={{ marginBottom: 20 }}>
+          <h1 style={{ fontSize: 26, fontWeight: 800, color: '#1a1a1a', marginBottom: 4 }}>Oyunlar</h1>
+          <p style={{ color: '#999', fontSize: 14 }}>500.000+ oyun — puan, yorum ve AI önerisi</p>
+        </div>
+        <div style={{ textAlign: 'center', padding: '60px 0', color: '#999' }}>Yükleniyor…</div>
+      </div>
+    }>
+      <GamesList />
+    </Suspense>
   );
 }
