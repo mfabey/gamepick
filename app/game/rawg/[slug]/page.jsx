@@ -72,7 +72,7 @@ export default function RawgGamePage({ params }) {
               s.name?.toLowerCase().includes('epic') ||
               s.storeId?.toLowerCase().includes('epic')
             );
-            if (itadEpic && g.hasEpic) {
+            if (itadEpic) {
               setEpicPrice({
                 price:    itadEpic.price,
                 original: itadEpic.original,
