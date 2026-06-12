@@ -123,9 +123,9 @@ export async function GET(request) {
     // Mağazası olmayan oyunları tamamen filtrele (arama ve tüm listeler dahil)
     results = results.filter(g => g.hasStores);
 
-    // İndirim köşesinde (sale) ücretsiz oyunları kaldır
+    // İndirim köşesinde (sale) ücretsiz oyunları ve tek platformlu oyunları kaldır
     if (section === 'sale') {
-      results = results.filter(g => !g.isFree);
+      results = results.filter(g => !g.isFree && g.hasMultipleStores);
     }
 
     return NextResponse.json({ results, total: data.count || 0, source: 'rawg' });
@@ -181,6 +181,13 @@ function formatRawgGame(game) {
   const hasStores  = !!(game.stores && game.stores.length > 0);
   const isFree     = KNOWN_FREE_SLUGS.has(game.slug) || !!game.tags?.some(t => t.slug === 'free-to-play');
 
+  // PC platformlarımızda (Steam, Epic, GOG) kaç yerde satıldığını kontrol et
+  const pcStores = game.stores?.filter(s => {
+    const slug = s.store?.slug;
+    return slug === 'steam' || slug === 'epic-games' || slug === 'gog';
+  }) || [];
+  const hasMultipleStores = pcStores.length >= 2;
+
   return {
     id:           'rawg_' + game.id,
     rawgId:       game.id,
@@ -199,6 +206,7 @@ function formatRawgGame(game) {
     hasSteam,
     hasEpic,
     hasStores,
+    hasMultipleStores,
     epicUrl:      hasEpic ? 'https://store.epicgames.com/tr/p/' + game.slug : null,
     steamUrl:     null,
     genres:       (game.genres || []).map(g => g.name).slice(0, 3),
