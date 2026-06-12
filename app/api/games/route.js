@@ -116,7 +116,10 @@ export async function GET(request) {
     }
 
     const data    = await fetchRawg('/games', params);
-    const results = (data.results || []).map(formatRawgGame);
+    let results = (data.results || []).map(formatRawgGame);
+
+    // Mağazası olmayan oyunları tamamen filtrele (arama ve tüm listeler dahil)
+    results = results.filter(g => g.hasStores);
 
     return NextResponse.json({ results, total: data.count || 0, source: 'rawg' });
 
@@ -132,6 +135,7 @@ function formatRawgGame(game) {
   const hasSteam   = !!steamStore;
   const hasEpic    = !!epicStore;
   const source     = hasSteam ? 'steam' : hasEpic ? 'epic' : 'rawg';
+  const hasStores  = !!(game.stores && game.stores.length > 0);
 
   return {
     id:           'rawg_' + game.id,
@@ -150,6 +154,7 @@ function formatRawgGame(game) {
     source,
     hasSteam,
     hasEpic,
+    hasStores,
     epicUrl:      hasEpic ? 'https://store.epicgames.com/tr/p/' + game.slug : null,
     steamUrl:     null,
     genres:       (game.genres || []).map(g => g.name).slice(0, 3),
