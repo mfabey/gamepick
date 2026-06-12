@@ -144,7 +144,7 @@ export default function GameCard({ game, compact = false }) {
             {/* Platform badge'leri — sadece geniş kartlarda */}
             {!compact && (
               <div style={{ display: 'flex', gap: 2, flexShrink: 0 }}>
-                {(game.hasSteam || livePrice?.storeName === 'Steam') && (
+                {(game.hasSteam && livePrice?.isAvailable !== false || livePrice?.storeName === 'Steam') && (
                   <span title="Steam" style={{ fontSize: 8, fontWeight: 700, padding: '1px 4px', borderRadius: 3, background: '#e3f2fd', color: '#1565c0' }}>STM</span>
                 )}
                 {(game.hasEpic || livePrice?.storeName === 'Epic Games') && (

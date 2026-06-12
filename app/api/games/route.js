@@ -122,8 +122,8 @@ export async function GET(request) {
     const data    = await fetchRawg('/games', params);
     let results = (data.results || []).map(formatRawgGame);
 
-    // Mağazası olmayan oyunları tamamen filtrele (arama ve tüm listeler dahil)
-    results = results.filter(g => g.hasStores);
+    // Mağazası olmayan oyunları veya satışı olmayan/delisted oyunları tamamen filtrele (arama ve tüm listeler dahil)
+    results = results.filter(g => g.hasStores && !KNOWN_DELISTED_SLUGS.has(g.rawgSlug));
 
     // İndirim köşesinde (sale) ücretsiz oyunları ve tek platformlu oyunları kaldır
     if (section === 'sale') {
@@ -186,6 +186,25 @@ const KNOWN_FREE_SLUGS = new Set([
   'albion-online',
   'roblox',
   'vrchat',
+]);
+
+const KNOWN_DELISTED_SLUGS = new Set([
+  'grand-theft-auto-san-andreas',
+  'grand-theft-auto-vice-city',
+  'grand-theft-auto-iii',
+  'dirt-3',
+  'dirt-showdown',
+  'grid-2',
+  'f1-2018',
+  'f1-2019',
+  'f1-2020',
+  'f1-2021',
+  'marvels-avengers',
+  'spec-ops-the-line',
+  'transformers-devastation',
+  'deadpool',
+  'prey-2006',
+  'driver-san-francisco',
 ]);
 
 function formatRawgGame(game) {

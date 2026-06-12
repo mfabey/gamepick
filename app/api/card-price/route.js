@@ -47,25 +47,55 @@ async function getSteamAppIdBySlug(slug) {
 
 // Steam appid → TRY fiyat
 async function fetchPriceByAppId(appid) {
-  const res = await fetch(
-    `https://store.steampowered.com/api/appdetails?appids=${appid}&cc=tr&filters=price_overview`,
-    { next: { revalidate: 1800 } }
-  );
-  if (!res.ok) return null;
-  const data = await res.json();
-  if (!data?.[appid]?.success) return null;
-  if (!data[appid].data?.price_overview) return { price: 0, isFree: true };
+  try {
+    const res = await fetch(
+      `https://store.steampowered.com/api/appdetails?appids=${appid}&cc=tr&filters=basic,price_overview`,
+      { next: { revalidate: 1800 } }
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    const entry = data?.[appid];
+    if (!entry?.success || !entry.data) return null;
 
-  const info     = data[appid].data.price_overview;
-  const currency = info.currency || 'TRY';
-  const rate     = currency !== 'TRY' ? await getUsdToTry() : 1;
-  return {
-    price:    amountToTRY(info.final,   currency, rate),
-    original: amountToTRY(info.initial, currency, rate),
-    discount: info.discount_percent ?? 0,
-    isFree:   info.final === 0,
-    appid,
-  };
+    const gameData = entry.data;
+
+    // Gerçekten ücretsiz oyun
+    if (gameData.is_free === true) {
+      return {
+        price: 0,
+        original: 0,
+        discount: 0,
+        isFree: true,
+        isAvailable: true,
+        appid,
+      };
+    }
+
+    // Ücretli ve fiyatı var
+    if (gameData.price_overview) {
+      const info     = gameData.price_overview;
+      const currency = info.currency || 'TRY';
+      const rate     = currency !== 'TRY' ? await getUsdToTry() : 1;
+      return {
+        price:    amountToTRY(info.final,   currency, rate),
+        original: amountToTRY(info.initial, currency, rate),
+        discount: info.discount_percent ?? 0,
+        isFree:   info.final === 0,
+        isAvailable: true,
+        appid,
+      };
+    }
+
+    // Fiyat bilgisi yok ve ücretsiz de değilse → Satışta değil/Bulunmuyor
+    return {
+      price: null,
+      isFree: false,
+      isAvailable: false,
+      appid,
+    };
+  } catch {
+    return null;
+  }
 }
 
 // İsim tabanlı arama fallback

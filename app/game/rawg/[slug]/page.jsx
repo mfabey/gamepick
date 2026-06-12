@@ -323,14 +323,16 @@ export default function RawgGamePage({ params }) {
             {game.hasSteam ? (
               steamLoading
                 ? <LoadingPriceRow />
-                : steamPrice
+                : (steamPrice && steamPrice.isAvailable !== false)
                   ? <PriceCard store="Steam" icon="💻"
                       price={steamPrice.price} original={steamPrice.original}
                       discount={steamPrice.discount} isFree={steamPrice.isFree}
                       url={game.steamUrl}
                       highlight={isCheaperOption && bestStoreKey === 'Steam'}
                     />
-                  : <PlaceholderCard store="Steam" icon="💻" url={game.steamUrl} />
+                  : steamPrice?.isAvailable === false
+                    ? <MissingCard platform="Steam" />
+                    : <PlaceholderCard store="Steam" icon="💻" url={game.steamUrl} />
             ) : (
               <MissingCard platform="Steam" />
             )}

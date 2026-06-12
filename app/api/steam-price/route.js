@@ -10,34 +10,58 @@ export async function GET(request) {
 
   try {
     const res = await fetch(
-      `https://store.steampowered.com/api/appdetails?appids=${appid}&cc=tr&filters=price_overview`,
+      `https://store.steampowered.com/api/appdetails?appids=${appid}&cc=tr&filters=basic,price_overview`,
       { next: { revalidate: 1800 } }
     );
-    if (!res.ok) return NextResponse.json({ price: null });
+    if (!res.ok) return NextResponse.json({ price: null, isFree: false, isAvailable: false });
 
     const data  = await res.json();
     const entry = data?.[appid];
 
-    if (!entry?.success) return NextResponse.json({ price: null });
+    if (!entry?.success || !entry.data) {
+      return NextResponse.json({ price: null, isFree: false, isAvailable: false });
+    }
 
-    // Ücretsiz oyun — price_overview alanı hiç gelmez
-    if (!entry.data?.price_overview) return NextResponse.json({ price: 0, isFree: true });
+    const gameData = entry.data;
 
-    const info     = entry.data.price_overview;
-    const currency = info.currency || 'TRY';
+    // Gerçekten ücretsiz oyun
+    if (gameData.is_free === true) {
+      return NextResponse.json({
+        price: 0,
+        original: 0,
+        discount: 0,
+        isFree: true,
+        isAvailable: true,
+        currency: 'TRY',
+      });
+    }
 
-    // cc=tr rağmen USD/EUR dönerse → gerçek zamanlı kur ile TRY'ye çevir
-    const usdTryRate = currency !== 'TRY' ? await getUsdToTry() : 1;
+    // Ücretli ve fiyatı var
+    if (gameData.price_overview) {
+      const info     = gameData.price_overview;
+      const currency = info.currency || 'TRY';
 
+      // cc=tr rağmen USD/EUR dönerse → gerçek zamanlı kur ile TRY'ye çevir
+      const usdTryRate = currency !== 'TRY' ? await getUsdToTry() : 1;
+
+      return NextResponse.json({
+        price:    amountToTRY(info.final,   currency, usdTryRate),
+        original: amountToTRY(info.initial, currency, usdTryRate),
+        discount: info.discount_percent ?? 0,
+        isFree:   info.final === 0,
+        isAvailable: true,
+        currency: 'TRY',
+      });
+    }
+
+    // Fiyat bilgisi yok ve ücretsiz de değilse → Satışta değil/Bulunmuyor
     return NextResponse.json({
-      price:    amountToTRY(info.final,   currency, usdTryRate),
-      original: amountToTRY(info.initial, currency, usdTryRate),
-      discount: info.discount_percent ?? 0,
-      isFree:   info.final === 0,
-      currency: 'TRY',
+      price: null,
+      isFree: false,
+      isAvailable: false,
     });
   } catch (err) {
     console.error('steam-price hatası:', err.message);
-    return NextResponse.json({ price: null });
+    return NextResponse.json({ price: null, isFree: false, isAvailable: false });
   }
 }
