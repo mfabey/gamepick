@@ -162,7 +162,7 @@ html[data-theme="dark"] .badge-purple { background: #1e1b4b; color: #a78bfa; bor
   top: 60px;
   left: 0;
   right: 0;
-  bottom: 0;
+  height: calc(100dvh - 60px);
   background: var(--bg);
   z-index: 99;
   display: flex;
