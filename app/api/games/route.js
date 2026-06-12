@@ -90,7 +90,9 @@ export async function GET(request) {
   }
 
   try {
-    const base = { platforms: 4, page, page_size: num, exclude_additions: true };
+    // Kategori aramalarında filtrelemeden sonra yeterli sayıda oyun kalması için RAWG'dan daha fazla oyun çekelim
+    const fetchNum = (section && section !== '') ? 40 : num;
+    const base = { platforms: 4, page, page_size: fetchNum, exclude_additions: true };
     let params;
 
     const trimmedQ = q.trim();
@@ -126,6 +128,11 @@ export async function GET(request) {
     // İndirim köşesinde (sale) ücretsiz oyunları ve tek platformlu oyunları kaldır
     if (section === 'sale') {
       results = results.filter(g => !g.isFree && g.hasMultipleStores);
+    }
+
+    // İstenen limit kadar keselim (slice)
+    if (section && section !== '') {
+      results = results.slice(0, num);
     }
 
     return NextResponse.json({ results, total: data.count || 0, source: 'rawg' });
@@ -170,6 +177,15 @@ const KNOWN_FREE_SLUGS = new Set([
   'gwent-the-witcher-card-game',
   'yu-gi-oh-master-duel',
   'fallout-shelter',
+  'life-is-strange',
+  'life-is-strange-episode-1',
+  'life-is-strange-episode-1-2',
+  'life-is-strange-2',
+  'life-is-strange-2-episode-1',
+  'eve-online',
+  'albion-online',
+  'roblox',
+  'vrchat',
 ]);
 
 function formatRawgGame(game) {
