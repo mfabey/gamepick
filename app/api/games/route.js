@@ -123,6 +123,11 @@ export async function GET(request) {
     // Mağazası olmayan oyunları tamamen filtrele (arama ve tüm listeler dahil)
     results = results.filter(g => g.hasStores);
 
+    // İndirim köşesinde (sale) ücretsiz oyunları kaldır
+    if (section === 'sale') {
+      results = results.filter(g => !g.isFree);
+    }
+
     return NextResponse.json({ results, total: data.count || 0, source: 'rawg' });
 
   } catch (err) {
@@ -131,6 +136,42 @@ export async function GET(request) {
   }
 }
 
+const KNOWN_FREE_SLUGS = new Set([
+  'counter-strike-global-offensive',
+  'counter-strike-2',
+  'dota-2',
+  'apex-legends',
+  'pubg-battlegrounds',
+  'playerunknowns-battlegrounds',
+  'destiny-2',
+  'warframe',
+  'team-fortress-2',
+  'lost-ark',
+  'the-sims-4',
+  'fall-guys-ultimate-knockout',
+  'fall-guys',
+  'rocket-league',
+  'fortnite',
+  'genshin-impact',
+  'path-of-exile',
+  'brawlhalla',
+  'valorant',
+  'call-of-duty-warzone',
+  'overwatch-2',
+  'hearthstone',
+  'league-of-legends',
+  'smite',
+  'paladins',
+  'war-thunder',
+  'world-of-tanks',
+  'world-of-warships',
+  'unturned',
+  'runescape',
+  'gwent-the-witcher-card-game',
+  'yu-gi-oh-master-duel',
+  'fallout-shelter',
+]);
+
 function formatRawgGame(game) {
   const steamStore = game.stores?.find(s => s.store?.slug === 'steam');
   const epicStore  = game.stores?.find(s => s.store?.slug === 'epic-games');
@@ -138,6 +179,7 @@ function formatRawgGame(game) {
   const hasEpic    = !!epicStore;
   const source     = hasSteam ? 'steam' : hasEpic ? 'epic' : 'rawg';
   const hasStores  = !!(game.stores && game.stores.length > 0);
+  const isFree     = KNOWN_FREE_SLUGS.has(game.slug) || !!game.tags?.some(t => t.slug === 'free-to-play');
 
   return {
     id:           'rawg_' + game.id,
@@ -148,7 +190,7 @@ function formatRawgGame(game) {
     metacritic:   game.metacritic    || null,
     reviewScore:  game.rating        ? Math.round(game.rating * 20) : 0,
     totalReviews: game.ratings_count || 0,
-    isFree:       false,
+    isFree,
     onSale:       false,
     price:        null,
     noData:       true,
