@@ -15,6 +15,7 @@ const PRICE_OPTIONS = [
 
 const SECTIONS = [
   { label: 'Tümü',        value: ''         },
+  { label: '🏷️ İndirimdekiler', value: 'sale' },
   { label: '🎮 Ücretsiz', value: 'free'     },
   { label: '🗓️ Yeni',     value: 'new'      },
   { label: '⭐ En İyi',   value: 'topscore' },

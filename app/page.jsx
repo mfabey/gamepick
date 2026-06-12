@@ -8,9 +8,11 @@ import { useAuth } from './context/AuthContext';
 
 export default function Home() {
   const { user } = useAuth();
+  const [saleGames,    setSaleGames]    = useState([]);
   const [popularGames, setPopularGames] = useState([]);
   const [newGames,     setNewGames]     = useState([]);
   const [topGames,     setTopGames]     = useState([]);
+  const [loadingSale,  setLoadingSale]  = useState(true);
   const [loadingPop,   setLoadingPop]   = useState(true);
   const [loadingNew,   setLoadingNew]   = useState(true);
   const [loadingTop,   setLoadingTop]   = useState(true);
@@ -26,6 +28,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    fetchSection('sale',     setSaleGames,    setLoadingSale);
     fetchSection('popular',  setPopularGames, setLoadingPop);
     fetchSection('new',      setNewGames,     setLoadingNew);
     fetchSection('topscore', setTopGames,     setLoadingTop);
@@ -89,6 +92,15 @@ export default function Home() {
       </div>
 
       <div className="container" style={{ paddingTop: 40 }}>
+
+        {/* İndirim Fırsatları */}
+        <Section
+          title="🏷️ İndirim Fırsatları"
+          subtitle="En ucuz fiyatlı platform teklifleri"
+          href="/games?section=sale"
+          games={saleGames}
+          loading={loadingSale}
+        />
 
         {/* Popüler */}
         <Section

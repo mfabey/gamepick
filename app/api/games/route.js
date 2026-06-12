@@ -111,6 +111,8 @@ export async function GET(request) {
       params = { ...base, ordering: '-rating', metacritic: '60,100' };
     } else if (section === 'free') {
       params = { ...base, tags: 'free-to-play', ordering: '-added' };
+    } else if (section === 'sale') {
+      params = { ...base, ordering: '-added', metacritic: '70,100' };
     } else {
       params = { ...base, ordering: '-added' };
     }
