@@ -137,6 +137,13 @@ html[data-theme="dark"] .badge-purple { background: #1e1b4b; color: #a78bfa; bor
 
 @media (max-width: 768px) {
   .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  .desktop-only { display: none !important; }
+  .mobile-only { display: flex !important; }
+}
+
+@media (min-width: 769px) {
+  .desktop-only { display: flex !important; }
+  .mobile-only { display: none !important; }
 }
 
 .btn {
@@ -148,3 +155,50 @@ html[data-theme="dark"] .badge-purple { background: #1e1b4b; color: #a78bfa; bor
 .btn:hover { opacity: 0.88; transform: translateY(-1px); }
 .btn-red   { background: var(--accent); color: #fff; }
 .btn-ghost { background: var(--bg-input); color: var(--text-2); border: 1px solid var(--border); }
+
+/* ===== MOBIL DRAWER MENU ===== */
+.mobile-drawer {
+  position: fixed;
+  top: 60px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--bg);
+  z-index: 99;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 20px;
+  gap: 16px;
+  border-top: 1px solid var(--border);
+  animation: slideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow-y: auto;
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.mobile-nav-link {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-2);
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.mobile-nav-link:hover {
+  background: var(--accent-bg);
+  color: var(--accent);
+  border-color: var(--accent-border);
+}
+.mobile-nav-link.active {
+  background: var(--accent-bg);
+  color: var(--accent);
+  border-color: var(--accent-border);
+}
