@@ -5,17 +5,26 @@ import { createContext, useContext, useState, useEffect } from 'react';
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [ready, setReady] = useState(false);
+  const [user,      setUser]      = useState(null);   // Site hesabı (e-posta/şifre)
+  const [steamUser, setSteamUser] = useState(null);   // Steam oturumu
+  const [ready,     setReady]     = useState(false);
 
   useEffect(() => {
+    // Site auth — localStorage
     try {
       const stored = localStorage.getItem('gp_user');
       if (stored) setUser(JSON.parse(stored));
     } catch {}
-    setReady(true);
+
+    // Steam auth — httpOnly cookie okunur, /api/auth/me üzerinden
+    fetch('/api/auth/me')
+      .then(r => r.json())
+      .then(d => { if (d.user) setSteamUser(d.user); })
+      .catch(() => {})
+      .finally(() => setReady(true));
   }, []);
 
+  // ── Site hesabı işlemleri ────────────────────────────────────────────────
   const signup = ({ name, email, password }) => {
     const users = JSON.parse(localStorage.getItem('gp_users') || '[]');
     if (users.find(u => u.email === email)) {
@@ -45,8 +54,15 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  // ── Steam işlemleri ──────────────────────────────────────────────────────
+  const steamLogout = () => {
+    setSteamUser(null);
+    // Sunucu tarafı cookie'yi de temizle
+    window.location.href = '/api/auth/logout';
+  };
+
   return (
-    <AuthContext.Provider value={{ user, ready, signup, login, logout }}>
+    <AuthContext.Provider value={{ user, steamUser, ready, signup, login, logout, steamLogout }}>
       {children}
     </AuthContext.Provider>
   );

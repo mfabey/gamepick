@@ -8,7 +8,7 @@ import { useTheme } from '../context/ThemeContext';
 export default function NavBar() {
   const pathname = usePathname();
   const router   = useRouter();
-  const { user, logout } = useAuth();
+  const { user, steamUser, logout, steamLogout } = useAuth();
   const { theme, toggleTheme, mounted } = useTheme();
 
   const active = (path) =>
@@ -76,7 +76,36 @@ export default function NavBar() {
             )}
           </button>
 
-          {user ? (
+          {/* Steam kullanıcısı */}
+          {steamUser && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Link href="/library" style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                padding: '5px 10px', borderRadius: 8,
+                background: 'rgba(26,159,255,0.1)', border: '1px solid rgba(26,159,255,0.3)',
+                fontSize: 13, fontWeight: 600, color: '#1a9fff', textDecoration: 'none',
+              }}>
+                {steamUser.avatar ? (
+                  <img src={steamUser.avatar} alt="" style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover' }} />
+                ) : (
+                  <span style={{ width: 22, height: 22, borderRadius: '50%', background: '#1a9fff', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700 }}>
+                    {steamUser.name?.slice(0, 1).toUpperCase()}
+                  </span>
+                )}
+                {steamUser.name?.slice(0, 16)}{steamUser.name?.length > 16 ? '…' : ''}
+              </Link>
+              <button onClick={steamLogout} style={{
+                padding: '5px 10px', borderRadius: 8, fontSize: 12,
+                background: 'none', border: '1px solid var(--border)',
+                color: 'var(--text-3)', cursor: 'pointer',
+              }}>
+                Çıkış
+              </button>
+            </div>
+          )}
+
+          {/* Site hesabı */}
+          {user && !steamUser ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <Link href="/profile" style={{
                 display: 'flex', alignItems: 'center', gap: 8,
@@ -102,7 +131,7 @@ export default function NavBar() {
                 Çıkış
               </button>
             </div>
-          ) : (
+          ) : !steamUser && (
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <Link href="/login" className="nav-link">Giriş Yap</Link>
               <Link href="/signup" style={{
