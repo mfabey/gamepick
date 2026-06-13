@@ -24,7 +24,7 @@ export default function GameCard({ game, compact = false }) {
 
       // Slug varsa garantili doğru eşleşme, yoksa isim fallback
       const params = game.rawgSlug
-        ? `slug=${encodeURIComponent(game.rawgSlug)}&hasSteam=true`
+        ? `slug=${encodeURIComponent(game.rawgSlug)}&name=${encodeURIComponent(game.name)}&hasSteam=true`
         : `name=${encodeURIComponent(game.name)}&hasSteam=true`;
 
       fetch('/api/card-price?' + params)
