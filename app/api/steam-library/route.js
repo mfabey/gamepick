@@ -65,14 +65,25 @@ export async function GET() {
 
   } catch (err) {
     console.error('Steam library hatası:', err.message);
-    // Profil gizli olabilir
-    if (err.message.includes('403') || err.message.includes('401')) {
+    
+    // 401: Yetkilendirme hatası (Genellikle geçersiz API Key)
+    if (err.message.includes('401')) {
       return NextResponse.json({
-        error:   'Steam profilin gizli. Profil gizliliğini "Herkese Açık" yapman gerekiyor.',
-        games:   [],
-        private: true,
+        error: 'Steam Web API Anahtarı geçersiz veya yetkisiz. Lütfen .env.local dosyasındaki STEAM_API_KEY değerini kontrol edin.',
+        games: [],
+        private: false
+      }, { status: 401 });
+    }
+    
+    // 403: Erişim engellendi (Gizli Profil)
+    if (err.message.includes('403')) {
+      return NextResponse.json({
+        error: 'Steam profilin gizli. Profil gizliliğini "Herkese Açık" yapman gerekiyor.',
+        games: [],
+        private: true
       }, { status: 403 });
     }
+    
     return NextResponse.json({ error: err.message, games: [] }, { status: 500 });
   }
 }
