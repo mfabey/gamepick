@@ -1,14 +1,15 @@
 import { NextResponse } from 'next/server';
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-
 // GET /api/auth/steam  →  Steam OpenID login sayfasına yönlendir
-export async function GET() {
+export async function GET(request) {
+  // Resolve base URL dynamically from the incoming request (supporting both localhost and any production domain automatically)
+  const baseUrl = request.nextUrl.origin;
+
   const params = new URLSearchParams({
     'openid.ns':         'http://specs.openid.net/auth/2.0',
     'openid.mode':       'checkid_setup',
-    'openid.return_to':  `${BASE_URL}/api/auth/steam/callback`,
-    'openid.realm':      BASE_URL,
+    'openid.return_to':  `${baseUrl}/api/auth/steam/callback`,
+    'openid.realm':      baseUrl,
     'openid.identity':   'http://specs.openid.net/auth/2.0/identifier_select',
     'openid.claimed_id': 'http://specs.openid.net/auth/2.0/identifier_select',
   });

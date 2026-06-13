@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server';
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-
 // GET /api/auth/logout  →  Steam oturumunu sil
-export async function GET() {
-  const response = NextResponse.redirect(BASE_URL + '/library');
+export async function GET(request) {
+  const baseUrl = request.nextUrl.origin;
+  const response = NextResponse.redirect(baseUrl + '/library');
   response.cookies.set('gp_steam_session', '', {
     httpOnly: true,
     maxAge:   0,

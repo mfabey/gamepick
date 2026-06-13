@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 
-const BASE_URL      = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
 const STEAM_API_KEY = process.env.STEAM_API_KEY;
 
 export async function GET(request) {
+  const baseUrl = request.nextUrl.origin;
   const { searchParams } = new URL(request.url);
 
   // ── 1. Steam'e doğrulama isteği gönder ──────────────────────────────────
@@ -24,14 +24,14 @@ export async function GET(request) {
   }
 
   if (!verified) {
-    return NextResponse.redirect(`${BASE_URL}/?steam_error=dogrulanamadi`);
+    return NextResponse.redirect(`${baseUrl}/?steam_error=dogrulanamadi`);
   }
 
   // ── 2. Steam ID'yi çıkar ─────────────────────────────────────────────────
   const claimedId = searchParams.get('openid.claimed_id') || '';
   const steamId   = claimedId.match(/\/(\d+)$/)?.[1];
   if (!steamId) {
-    return NextResponse.redirect(`${BASE_URL}/?steam_error=id_bulunamadi`);
+    return NextResponse.redirect(`${baseUrl}/?steam_error=id_bulunamadi`);
   }
 
   // ── 3. Profil bilgilerini al ─────────────────────────────────────────────
@@ -62,7 +62,7 @@ export async function GET(request) {
   }
 
   // ── 4. Oturum cookie'si ayarla ve kütüphaneye yönlendir ─────────────────
-  const response = NextResponse.redirect(`${BASE_URL}/library`);
+  const response = NextResponse.redirect(`${baseUrl}/library`);
   response.cookies.set('gp_steam_session', JSON.stringify(profile), {
     httpOnly: true,
     maxAge:   60 * 60 * 24 * 30,   // 30 gün
