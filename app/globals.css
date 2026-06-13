@@ -285,7 +285,7 @@ html[data-theme="dark"] .badge-purple { background: #1e1b4b; color: #a78bfa; bor
 .hero-scroll-card {
   position: relative;
   width: 100%;
-  aspect-ratio: 16/9; /* Beautiful keycap aspect ratio */
+  height: 80px; /* Clean integer height to eliminate subpixel rounding errors and layout loop jumps */
   border-radius: 8px;
   background: var(--keycap-bg);
   border: 1.5px solid var(--keycap-border);
@@ -294,18 +294,28 @@ html[data-theme="dark"] .badge-purple { background: #1e1b4b; color: #a78bfa; bor
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 12px;
+  padding: 4px; /* Frame inset for the game image */
   box-sizing: border-box;
+  overflow: hidden;
 }
 
-.hero-scroll-card span {
-  font-size: 10.5px;
-  font-weight: 700;
-  color: var(--keycap-text);
-  letter-spacing: 0.8px;
-  text-transform: uppercase;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 110px;
+.hero-scroll-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 5px; /* Neatly rounded edges inside the keycap frame */
+  display: block;
+}
+
+/* Glass shine overlay for that premium 3D mechanical keycap reflection */
+.hero-scroll-card::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  right: 4px;
+  bottom: 7px; /* Align precisely with the image top face above the sloped border-bottom */
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, 0.22) 100%);
+  border-radius: 5px;
+  pointer-events: none;
 }
