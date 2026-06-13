@@ -54,6 +54,13 @@
   --gold-shadow: 0 0 12px rgba(245, 158, 11, 0.15);
   --gold-badge-bg: #FEF3C7;
   --gold-badge-text: #D97706;
+
+  /* Keyboard Keycap Variables (Light Mode) */
+  --keycap-bg: rgba(243, 244, 246, 0.95);
+  --keycap-border: rgba(209, 213, 219, 0.95);
+  --keycap-border-bottom: rgba(156, 163, 175, 0.95);
+  --keycap-text: rgba(55, 65, 81, 0.95);
+  --keycap-shadow: 0 4px 6px rgba(0, 0, 0, 0.08), inset 0 1px 0 #ffffff;
 }
 
 html[data-theme="dark"] {
@@ -87,6 +94,13 @@ html[data-theme="dark"] {
   --gold-shadow: 0 0 12px rgba(245, 158, 11, 0.4);
   --gold-badge-bg: #451a03;
   --gold-badge-text: #fbbf24;
+
+  /* Keyboard Keycap Variables (Dark Mode) */
+  --keycap-bg: rgba(31, 31, 35, 0.95);
+  --keycap-border: rgba(255, 255, 255, 0.08);
+  --keycap-border-bottom: rgba(0, 0, 0, 0.85);
+  --keycap-text: rgba(229, 231, 235, 0.95);
+  --keycap-shadow: 0 4px 8px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -225,29 +239,37 @@ html[data-theme="dark"] .badge-purple { background: #1e1b4b; color: #a78bfa; bor
   bottom: 0;
   width: 140px;
   overflow: hidden;
-  opacity: 0.05;
+  opacity: 0.75; /* Elegant balance of high visibility and layout integration */
   pointer-events: none;
   mask-image: linear-gradient(to bottom, transparent, black 15%, black 85%, transparent);
   -webkit-mask-image: linear-gradient(to bottom, transparent, black 15%, black 85%, transparent);
+  z-index: 0;
 }
 
 .hero-scroll-col.left {
-  left: 3%;
+  left: 2.5%;
 }
 
 .hero-scroll-col.right {
-  right: 3%;
+  right: 2.5%;
+}
+
+@media (max-width: 1200px) {
+  .hero-scroll-col {
+    display: none !important; /* Prevent overlap with hero content on smaller desktop screens */
+  }
 }
 
 .hero-scroll-track {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  animation: scrollVertical 22s linear infinite;
+  padding-bottom: 12px; /* Mathematically ensures a 100% seamless, shift-free loop translation */
+  animation: scrollVertical 24s linear infinite;
 }
 
 .hero-scroll-col.right .hero-scroll-track {
-  animation: scrollVerticalReverse 25s linear infinite;
+  animation: scrollVerticalReverse 28s linear infinite;
 }
 
 @keyframes scrollVertical {
@@ -263,31 +285,27 @@ html[data-theme="dark"] .badge-purple { background: #1e1b4b; color: #a78bfa; bor
 .hero-scroll-card {
   position: relative;
   width: 100%;
-  aspect-ratio: 16/9; /* Klavye tuşu oranı */
+  aspect-ratio: 16/9; /* Beautiful keycap aspect ratio */
   border-radius: 8px;
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid var(--border);
-  box-shadow: inset 0 1px 1px rgba(255,255,255,0.02), 0 2px 4px rgba(0,0,0,0.1);
+  background: var(--keycap-bg);
+  border: 1.5px solid var(--keycap-border);
+  border-bottom: 4.5px solid var(--keycap-border-bottom); /* Distinct 3D mechanical key profile */
+  box-shadow: var(--keycap-shadow);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 8px;
-}
-
-html[data-theme="dark"] .hero-scroll-card {
-  background: rgba(255, 255, 255, 0.015);
-  border: 1.5px solid rgba(255, 255, 255, 0.04);
+  padding: 8px 12px;
+  box-sizing: border-box;
 }
 
 .hero-scroll-card span {
-  font-size: 10px;
+  font-size: 10.5px;
   font-weight: 700;
-  color: var(--text-2);
-  opacity: 0.6;
+  color: var(--keycap-text);
   letter-spacing: 0.8px;
   text-transform: uppercase;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 120px;
+  max-width: 110px;
 }
