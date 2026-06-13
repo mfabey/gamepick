@@ -31,7 +31,7 @@ export async function GET() {
       `&include_appinfo=1` +
       `&include_played_free_games=1` +
       `&format=json`,
-      { next: { revalidate: 300 } }
+      { cache: 'no-store' }
     );
 
     if (!res.ok) throw new Error(`Steam API ${res.status}`);
