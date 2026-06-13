@@ -127,9 +127,9 @@ export async function GET(request) {
     // Mağazası olmayan oyunları veya satışı olmayan/delisted oyunları tamamen filtrele (arama ve tüm listeler dahil)
     results = results.filter(g => g.hasStores && !KNOWN_DELISTED_SLUGS.has(g.rawgSlug));
 
-    // İndirim köşesinde (sale) ücretsiz oyunları ve tek platformlu oyunları kaldır, ayrıca gerçek indirim kontrolü yap
+    // İndirim köşesinde (sale) ücretsiz oyunları kaldır, ayrıca gerçek indirim kontrolü yap
     if (section === 'sale') {
-      results = results.filter(g => !g.isFree && g.hasMultipleStores);
+      results = results.filter(g => !g.isFree);
       
       const saleCheckedResults = await Promise.all(
         results.map(async (g) => {
