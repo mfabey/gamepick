@@ -66,7 +66,7 @@ export default function Home() {
           <div className="hero-scroll-track">
             {SCROLL_GAMES_LEFT.map((g, idx) => (
               <div key={idx} className="hero-scroll-card">
-                <img src={g.image} alt={g.name} />
+                <span>{g.name}</span>
               </div>
             ))}
           </div>
@@ -77,7 +77,7 @@ export default function Home() {
           <div className="hero-scroll-track">
             {SCROLL_GAMES_RIGHT.map((g, idx) => (
               <div key={idx} className="hero-scroll-card">
-                <img src={g.image} alt={g.name} />
+                <span>{g.name}</span>
               </div>
             ))}
           </div>
