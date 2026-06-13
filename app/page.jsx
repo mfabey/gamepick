@@ -20,7 +20,7 @@ export default function Home() {
   const fetchSection = useCallback(async (section, setter, loadingSetter) => {
     loadingSetter(true);
     try {
-      const res  = await fetch(`/api/games?section=${section}&num=12`);
+      const res  = await fetch(`/api/games?section=${section}&num=12&rotate=true`);
       const data = await res.json();
       setter(data.results || []);
     } catch {}

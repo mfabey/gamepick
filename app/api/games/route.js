@@ -84,6 +84,7 @@ export async function GET(request) {
   const q       = searchParams.get('q')       || '';
   const page    = parseInt(searchParams.get('page') || '1');
   const num     = parseInt(searchParams.get('num')  || '24');
+  const rotate  = searchParams.get('rotate')  === 'true';
 
   if (!RAWG_KEY) {
     return NextResponse.json({ error: 'RAWG_API_KEY eksik', results: [] }, { status: 500 });
@@ -128,6 +129,14 @@ export async function GET(request) {
     // İndirim köşesinde (sale) ücretsiz oyunları ve tek platformlu oyunları kaldır
     if (section === 'sale') {
       results = results.filter(g => !g.isFree && g.hasMultipleStores);
+    }
+
+    // Eğer rotate parametresi aktifse, listeyi zaman tabanlı (her 3 saatte bir) kaydırarak farklı oyunlar gösterelim
+    if (rotate && results.length > num) {
+      const hoursSinceEpoch = Math.floor(Date.now() / (1000 * 60 * 60));
+      const seed = Math.floor(hoursSinceEpoch / 3);
+      const offset = (seed * 5) % results.length;
+      results = [...results.slice(offset), ...results.slice(0, offset)];
     }
 
     // İstenen limit kadar keselim (slice)
