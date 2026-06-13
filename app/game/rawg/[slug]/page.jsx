@@ -247,14 +247,14 @@ export default function RawgGamePage({ params }) {
       <div className="game-detail-grid">
 
         {/* ─── Sol ───────────────────────────────────────────────────── */}
-        <div>
+        <div style={{ minWidth: 0 }}>
           {allImages.length > 0 && (
             <div style={{ borderRadius: 16, overflow: 'hidden', marginBottom: 12, aspectRatio: '16/9', position: 'relative', background: 'var(--bg-input)' }}>
               <Image src={allImages[imgIdx]} alt={game.name} fill sizes="640px" style={{ objectFit: 'cover' }} unoptimized />
             </div>
           )}
           {allImages.length > 1 && (
-            <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 20, paddingBottom: 4, maxWidth: '100%' }}>
+            <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 20, paddingBottom: 4, maxWidth: '100%', WebkitOverflowScrolling: 'touch' }}>
               {allImages.map((src, i) => (
                 <button key={i} onClick={() => setImgIdx(i)} style={{
                   flexShrink: 0, width: 80, height: 50, borderRadius: 8, overflow: 'hidden',
@@ -274,9 +274,9 @@ export default function RawgGamePage({ params }) {
                 <span style={{ fontSize: 18 }}>✨</span>
                 <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)' }}>AI Özeti</span>
               </div>
-              {ai.ozet && <p style={{ fontSize: 14, lineHeight: 1.7, color: 'var(--text)', marginBottom: ai.duygu ? 10 : 0 }}>{ai.ozet}</p>}
+              {ai.ozet && <p style={{ fontSize: 14, lineHeight: 1.7, color: 'var(--text)', marginBottom: ai.duygu ? 10 : 0, wordBreak: 'break-word', overflowWrap: 'break-word' }}>{ai.ozet}</p>}
               {ai.duygu && (
-                <p style={{ fontSize: 13, lineHeight: 1.6, color: 'var(--text-2)', borderTop: '1px solid var(--accent-border)', paddingTop: 10 }}>
+                <p style={{ fontSize: 13, lineHeight: 1.6, color: 'var(--text-2)', borderTop: '1px solid var(--accent-border)', paddingTop: 10, wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                   💬 {ai.duygu}
                 </p>
               )}
@@ -292,7 +292,7 @@ export default function RawgGamePage({ params }) {
 
           {/* Açıklama — AI yüklenince Türkçe, yoksa İngilizce */}
           {(ai?.aciklama || game.description) && (
-            <div style={{ fontSize: 14, lineHeight: 1.75, color: 'var(--text-2)', marginBottom: 20 }}>
+            <div style={{ fontSize: 14, lineHeight: 1.75, color: 'var(--text-2)', marginBottom: 20, wordBreak: 'break-word', overflowWrap: 'break-word' }}>
               {ai?.aciklama ? (
                 ai.aciklama
               ) : (
@@ -319,7 +319,7 @@ export default function RawgGamePage({ params }) {
         </div>
 
         {/* ─── Sağ ───────────────────────────────────────────────────── */}
-        <div>
+        <div style={{ minWidth: 0 }}>
           {/* Detay tablosu */}
           <div className="glass-panel" style={{ marginBottom: 20, fontSize: 13 }}>
             {[
@@ -328,9 +328,9 @@ export default function RawgGamePage({ params }) {
               { label: 'Çıkış',      value: game.released   },
               { label: 'Türler',     value: (game.genres || []).join(', ') },
             ].filter(r => r.value).map(row => (
-              <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid var(--border)' }}>
+              <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid var(--border)', gap: 12 }}>
                 <span style={{ color: 'var(--text-3)', flexShrink: 0 }}>{row.label}</span>
-                <span style={{ fontWeight: 500, color: 'var(--text)', textAlign: 'right', marginLeft: 12 }}>{row.value}</span>
+                <span style={{ fontWeight: 500, color: 'var(--text)', textAlign: 'right', marginLeft: 12, wordBreak: 'break-word' }}>{row.value}</span>
               </div>
             ))}
           </div>
@@ -496,6 +496,7 @@ function PriceCard({ store, icon, price, original, discount, isFree: isFreeOverr
           border: highlight ? `1.5px solid ${borderCol}` : undefined,
           background: bgStyle, cursor: 'pointer', transition: 'border-color 0.15s, box-shadow 0.15s, transform 0.1s',
           boxShadow: glowShadow,
+          gap: 12,
         }}
         onMouseEnter={e => {
           if (highlight) {
@@ -518,19 +519,20 @@ function PriceCard({ store, icon, price, original, discount, isFree: isFreeOverr
           }
         }}
       >
-        <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-          {icon} {store}
+        <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, minWidth: 0 }}>
+          <span>{icon}</span>
+          <span style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>{store}</span>
           {highlight && (
             <span style={{
               fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 6,
               background: 'var(--gold-badge-bg)', color: 'var(--gold-badge-text)', border: '1px solid var(--gold-border)',
-              marginLeft: 4
+              whiteSpace: 'nowrap'
             }}>
               👑 En Ucuz
             </span>
           )}
         </span>
-        <div style={{ textAlign: 'right' }}>
+        <div style={{ textAlign: 'right', flexShrink: 0 }}>
           {isFree ? (
             <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--green)' }}>Ücretsiz</span>
           ) : (
@@ -558,6 +560,7 @@ function PlaceholderCard({ store, icon, url }) {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '12px 14px', borderRadius: 10,
         transition: 'border-color 0.15s, box-shadow 0.15s, transform 0.1s',
+        gap: 12,
       }}
         onMouseEnter={e => {
           e.currentTarget.style.borderColor = 'var(--accent-border)';
@@ -570,8 +573,11 @@ function PlaceholderCard({ store, icon, url }) {
           e.currentTarget.style.transform = 'none';
         }}
       >
-        <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)' }}>{icon} {store}</span>
-        <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 500 }}>Mağazaya Git →</span>
+        <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, minWidth: 0 }}>
+          <span>{icon}</span>
+          <span style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>{store}</span>
+        </span>
+        <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 500, flexShrink: 0 }}>Mağazaya Git →</span>
       </div>
     </a>
   );
