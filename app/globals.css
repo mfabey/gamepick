@@ -55,6 +55,9 @@
   --gold-badge-bg: #FEF3C7;
   --gold-badge-text: #D97706;
 
+  /* Cinematic Details backdrop variables */
+  --cinematic-opacity: 0.12;
+  --cinematic-blur: 70px;
 }
 
 html[data-theme="dark"] {
@@ -89,6 +92,9 @@ html[data-theme="dark"] {
   --gold-badge-bg: #451a03;
   --gold-badge-text: #fbbf24;
 
+  /* Cinematic Details backdrop variables */
+  --cinematic-opacity: 0.22;
+  --cinematic-blur: 85px;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -218,5 +224,49 @@ html[data-theme="dark"] .badge-purple { background: #1e1b4b; color: #a78bfa; bor
     grid-template-columns: 1fr;
     gap: 24px;
   }
+}
+
+/* ===== CINEMATIC DETAILS PANEL STYLES ===== */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1.5px solid rgba(0, 0, 0, 0.06);
+  border-radius: 12px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+html[data-theme="dark"] .glass-panel {
+  background: rgba(28, 28, 30, 0.45);
+  border: 1.5px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+}
+
+.glass-ai-panel {
+  background: linear-gradient(135deg, rgba(254, 242, 242, 0.35) 0%, rgba(255, 255, 255, 0.45) 100%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1.5px solid var(--accent-border);
+  border-radius: 14px;
+  box-shadow: 0 4px 30px rgba(220, 38, 38, 0.04);
+}
+
+html[data-theme="dark"] .glass-ai-panel {
+  background: linear-gradient(135deg, rgba(37, 18, 18, 0.35) 0%, rgba(28, 28, 30, 0.45) 100%);
+  border: 1.5px solid var(--accent-border);
+  box-shadow: 0 4px 30px rgba(239, 68, 68, 0.08);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.5) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1.5px solid rgba(0, 0, 0, 0.06) !important;
+}
+
+html[data-theme="dark"] .glass-card {
+  background: rgba(28, 28, 30, 0.5) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.08) !important;
 }
 

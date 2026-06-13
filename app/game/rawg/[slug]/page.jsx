@@ -198,10 +198,29 @@ export default function RawgGamePage({ params }) {
   const allImages = [game.image, ...(game.screenshots || [])].filter(Boolean);
 
   return (
-    <div className="container" style={{ paddingTop: 28, paddingBottom: 60, maxWidth: 960 }}>
-      <Link href="/games" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--text-3)', fontSize: 13, textDecoration: 'none', marginBottom: 20 }}>
-        ← Oyunlara Dön
-      </Link>
+    <div style={{ position: 'relative', overflow: 'hidden', minHeight: '100vh' }}>
+      {/* Cinematic Background Blur */}
+      {game.image && (
+        <div style={{
+          position: 'absolute',
+          top: 0, left: 0, right: 0,
+          height: 600,
+          backgroundImage: `url(${game.image})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          filter: 'blur(var(--cinematic-blur)) saturate(160%)',
+          opacity: 'var(--cinematic-opacity)',
+          pointerEvents: 'none',
+          zIndex: 0,
+          maskImage: 'linear-gradient(to bottom, black 30%, transparent)',
+          WebkitMaskImage: 'linear-gradient(to bottom, black 30%, transparent)',
+        }} />
+      )}
+
+      <div className="container" style={{ paddingTop: 28, paddingBottom: 60, maxWidth: 960, position: 'relative', zIndex: 1 }}>
+        <Link href="/games" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--text-3)', fontSize: 13, textDecoration: 'none', marginBottom: 20 }}>
+          ← Oyunlara Dön
+        </Link>
 
       {/* Başlık ve Rozetler (Mobil Uyumlu) */}
       <div style={{ marginBottom: 24 }}>
@@ -250,7 +269,7 @@ export default function RawgGamePage({ params }) {
 
           {/* AI Özeti */}
           {ai && (
-            <div style={{ background: 'var(--hero-bg)', border: '1.5px solid var(--accent-border)', borderRadius: 14, padding: '16px 18px', marginBottom: 20 }}>
+            <div className="glass-ai-panel" style={{ padding: '16px 18px', marginBottom: 20 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                 <span style={{ fontSize: 18 }}>✨</span>
                 <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)' }}>AI Özeti</span>
@@ -302,7 +321,7 @@ export default function RawgGamePage({ params }) {
         {/* ─── Sağ ───────────────────────────────────────────────────── */}
         <div>
           {/* Detay tablosu */}
-          <div style={{ background: 'var(--bg-hover)', border: '1.5px solid var(--border)', borderRadius: 12, padding: '14px 16px', marginBottom: 20, fontSize: 13 }}>
+          <div className="glass-panel" style={{ padding: '14px 16px', marginBottom: 20, fontSize: 13 }}>
             {[
               { label: 'Geliştirici', value: game.developer },
               { label: 'Yayıncı',    value: game.publisher  },
@@ -400,6 +419,7 @@ export default function RawgGamePage({ params }) {
         </div>
       </div>
     </div>
+    </div>
   );
 }
 
@@ -463,25 +483,39 @@ function PriceCard({ store, icon, price, original, discount, isFree: isFreeOverr
 
   const borderCol = highlight ? 'var(--gold-border)' : 'var(--border)';
   const hoverBorderCol = highlight ? 'var(--gold-border-hover)' : 'var(--accent-border)';
-  const bgStyle = highlight ? 'var(--gold-bg)' : 'var(--bg-card)';
+  const bgStyle = highlight ? 'var(--gold-bg)' : undefined;
   const glowShadow = highlight ? 'var(--gold-shadow)' : 'none';
 
   return (
     <a href={url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', display: 'block', marginBottom: 8 }}>
       <div
+        className={highlight ? '' : 'glass-card'}
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '12px 14px', borderRadius: 10, border: `1.5px solid ${borderCol}`,
-          background: bgStyle, cursor: 'pointer', transition: 'border-color 0.15s, box-shadow 0.15s',
+          padding: '12px 14px', borderRadius: 10,
+          border: highlight ? `1.5px solid ${borderCol}` : undefined,
+          background: bgStyle, cursor: 'pointer', transition: 'border-color 0.15s, box-shadow 0.15s, transform 0.1s',
           boxShadow: glowShadow,
         }}
         onMouseEnter={e => {
-          e.currentTarget.style.borderColor = hoverBorderCol;
-          if (highlight) e.currentTarget.style.boxShadow = '0 0 16px rgba(245, 158, 11, 0.3)';
+          if (highlight) {
+            e.currentTarget.style.borderColor = hoverBorderCol;
+            e.currentTarget.style.boxShadow = '0 0 16px rgba(245, 158, 11, 0.3)';
+          } else {
+            e.currentTarget.style.borderColor = 'var(--accent-border)';
+            e.currentTarget.style.boxShadow = '0 4px 12px rgba(220, 38, 38, 0.05)';
+            e.currentTarget.style.transform = 'translateY(-1px)';
+          }
         }}
         onMouseLeave={e => {
-          e.currentTarget.style.borderColor = borderCol;
-          if (highlight) e.currentTarget.style.boxShadow = glowShadow;
+          if (highlight) {
+            e.currentTarget.style.borderColor = borderCol;
+            e.currentTarget.style.boxShadow = glowShadow;
+          } else {
+            e.currentTarget.style.borderColor = '';
+            e.currentTarget.style.boxShadow = '';
+            e.currentTarget.style.transform = 'none';
+          }
         }}
       >
         <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
@@ -520,10 +554,22 @@ function PriceCard({ store, icon, price, original, discount, isFree: isFreeOverr
 function PlaceholderCard({ store, icon, url }) {
   return (
     <a href={url || '#'} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', display: 'block', marginBottom: 8 }}>
-      <div style={{
+      <div className="glass-card" style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '12px 14px', borderRadius: 10, border: '1.5px solid var(--border)', background: 'var(--bg-card)',
-      }}>
+        padding: '12px 14px', borderRadius: 10,
+        transition: 'border-color 0.15s, box-shadow 0.15s, transform 0.1s',
+      }}
+        onMouseEnter={e => {
+          e.currentTarget.style.borderColor = 'var(--accent-border)';
+          e.currentTarget.style.boxShadow = '0 4px 12px rgba(220, 38, 38, 0.05)';
+          e.currentTarget.style.transform = 'translateY(-1px)';
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.borderColor = '';
+          e.currentTarget.style.boxShadow = '';
+          e.currentTarget.style.transform = 'none';
+        }}
+      >
         <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)' }}>{icon} {store}</span>
         <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 500 }}>Mağazaya Git →</span>
       </div>
@@ -534,9 +580,9 @@ function PlaceholderCard({ store, icon, url }) {
 // ── Oyun bu platformda yok ───────────────────────────────────────────────────
 function MissingCard({ platform }) {
   return (
-    <div style={{
+    <div className="glass-card" style={{
       padding: '12px 14px', borderRadius: 10, marginBottom: 8,
-      border: '1.5px dashed var(--border)', background: 'var(--bg-hover)',
+      borderStyle: 'dashed', opacity: 0.7,
       fontSize: 13, color: 'var(--text-3)', textAlign: 'center',
     }}>
       Bu oyun {platform}&apos;te bulunmuyor
