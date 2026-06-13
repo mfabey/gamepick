@@ -202,3 +202,18 @@ html[data-theme="dark"] .badge-purple { background: #1e1b4b; color: #a78bfa; bor
   color: var(--accent);
   border-color: var(--accent-border);
 }
+
+/* ===== OYUN DETAY RESPONSIVE GRID ===== */
+.game-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 32px;
+  align-items: start;
+}
+
+@media (max-width: 768px) {
+  .game-detail-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+}

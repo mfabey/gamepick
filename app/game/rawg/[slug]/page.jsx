@@ -203,7 +203,29 @@ export default function RawgGamePage({ params }) {
         ← Oyunlara Dön
       </Link>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 32, alignItems: 'start' }}>
+      {/* Başlık ve Rozetler (Mobil Uyumlu) */}
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ fontSize: 28, fontWeight: 800, color: 'var(--text)', lineHeight: 1.25, marginBottom: 12 }}>{game.name}</h1>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {game.metacritic && (
+            <div style={{
+              padding: '6px 12px', borderRadius: 8, fontWeight: 700, fontSize: 13,
+              background: game.metacritic >= 80 ? 'var(--green-bg)' : game.metacritic >= 60 ? 'var(--amber-bg)' : 'var(--accent-bg)',
+              color:      game.metacritic >= 80 ? 'var(--green)' : game.metacritic >= 60 ? 'var(--amber)' : 'var(--accent)',
+              border:     game.metacritic >= 80 ? '1px solid var(--green-border)' : game.metacritic >= 60 ? '1px solid var(--border-hover)' : '1px solid var(--accent-border)',
+            }}>
+              Metacritic {game.metacritic}
+            </div>
+          )}
+          {game.rating > 0 && (
+            <div style={{ padding: '6px 12px', borderRadius: 8, fontSize: 13, background: 'var(--bg-input)', color: 'var(--text-2)', fontWeight: 600 }}>
+              ⭐ {game.rating.toFixed(1)} / 5
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="game-detail-grid">
 
         {/* ─── Sol ───────────────────────────────────────────────────── */}
         <div>
@@ -279,27 +301,6 @@ export default function RawgGamePage({ params }) {
 
         {/* ─── Sağ ───────────────────────────────────────────────────── */}
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', lineHeight: 1.2, marginBottom: 10 }}>{game.name}</h1>
-
-          {/* Puan rozetleri */}
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-            {game.metacritic && (
-              <div style={{
-                padding: '6px 12px', borderRadius: 8, fontWeight: 700, fontSize: 13,
-                background: game.metacritic >= 80 ? 'var(--green-bg)' : game.metacritic >= 60 ? 'var(--amber-bg)' : 'var(--accent-bg)',
-                color:      game.metacritic >= 80 ? 'var(--green)' : game.metacritic >= 60 ? 'var(--amber)' : 'var(--accent)',
-                border:     game.metacritic >= 80 ? '1px solid var(--green-border)' : game.metacritic >= 60 ? '1px solid var(--border-hover)' : '1px solid var(--accent-border)',
-              }}>
-                Metacritic {game.metacritic}
-              </div>
-            )}
-            {game.rating > 0 && (
-              <div style={{ padding: '6px 12px', borderRadius: 8, fontSize: 13, background: 'var(--bg-input)', color: 'var(--text-2)', fontWeight: 600 }}>
-                ⭐ {game.rating.toFixed(1)} / 5
-              </div>
-            )}
-          </div>
-
           {/* Detay tablosu */}
           <div style={{ background: 'var(--bg-hover)', border: '1.5px solid var(--border)', borderRadius: 12, padding: '14px 16px', marginBottom: 20, fontSize: 13 }}>
             {[
