@@ -88,9 +88,14 @@ export default function LoginPage() {
             </div>
 
             <div style={{ marginBottom: 24 }}>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>
-                Şifre
-              </label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-2)' }}>
+                  Şifre
+                </label>
+                <Link href="/forgot-password" style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 500 }}>
+                  Şifremi Unuttum
+                </Link>
+              </div>
               <input
                 type="password" required
                 value={password} onChange={e => setPassword(e.target.value)}

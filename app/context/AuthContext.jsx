@@ -54,6 +54,17 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  const resetPassword = (email, newPassword) => {
+    const users = JSON.parse(localStorage.getItem('gp_users') || '[]');
+    const userIndex = users.findIndex(u => u.email === email);
+    if (userIndex === -1) {
+      return { error: 'Bu e-posta adresine kayıtlı bir hesap bulunamadı.' };
+    }
+    users[userIndex].password = newPassword;
+    localStorage.setItem('gp_users', JSON.stringify(users));
+    return { ok: true };
+  };
+
   // ── Steam işlemleri ──────────────────────────────────────────────────────
   const steamLogout = () => {
     setSteamUser(null);
@@ -62,7 +73,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, steamUser, ready, signup, login, logout, steamLogout }}>
+    <AuthContext.Provider value={{ user, steamUser, ready, signup, login, logout, steamLogout, resetPassword }}>
       {children}
     </AuthContext.Provider>
   );
