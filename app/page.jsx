@@ -6,21 +6,6 @@ import Link from 'next/link';
 import GameCard from './components/GameCard';
 import { useAuth } from './context/AuthContext';
 
-const HERO_GAMES = [
-  { name: "The Witcher 3", image: "https://media.rawg.io/media/games/618/618c2031a07bbff6b4e611f10db81302.jpg" },
-  { name: "GTA V", image: "https://media.rawg.io/media/games/456/456fc5a117526af7a641f117abd0246f.jpg" },
-  { name: "Red Dead Redemption 2", image: "https://media.rawg.io/media/games/511/511c4fc52d83e069060d4c3611cf2d9c.jpg" },
-  { name: "Portal 2", image: "https://media.rawg.io/media/games/328/328361552bcfde94670e178eebde6c28.jpg" },
-  { name: "Skyrim", image: "https://media.rawg.io/media/games/7a2/7a211ae2e2c5e11e5fcf72c5a046c4f7.jpg" },
-  { name: "Cyberpunk 2077", image: "https://media.rawg.io/media/games/26d/26d4437715ebd6013feaff2b6f327c07.jpg" },
-  { name: "Elden Ring", image: "https://media.rawg.io/media/games/5ec/5ec18302c3ef9ab126e03411a7779905.jpg" },
-  { name: "Minecraft", image: "https://media.rawg.io/media/games/b4e/b4e4f73d563fd4b6b243f7c750d107a0.jpg" },
-  { name: "Hades", image: "https://media.rawg.io/media/games/1f4/1f47a5531101d67683d0a47f4d4ce5e5.jpg" },
-  { name: "God of War", image: "https://media.rawg.io/media/games/4be/4be5a6430164ed024040a1acda4ca51a.jpg" },
-];
-
-const SCROLL_GAMES_LEFT = [...HERO_GAMES, ...HERO_GAMES];
-const SCROLL_GAMES_RIGHT = [...HERO_GAMES.slice().reverse(), ...HERO_GAMES.slice().reverse()];
 
 export default function Home() {
   const { user } = useAuth();
@@ -61,27 +46,6 @@ export default function Home() {
         position: 'relative',
         overflow: 'hidden',
       }}>
-        {/* Sol kayan sütun */}
-        <div className="hero-scroll-col left desktop-only">
-          <div className="hero-scroll-track">
-            {SCROLL_GAMES_LEFT.map((g, idx) => (
-              <div key={idx} className="hero-scroll-card" title={g.name}>
-                <img src={g.image} alt={g.name} loading="lazy" />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Sağ kayan sütun */}
-        <div className="hero-scroll-col right desktop-only">
-          <div className="hero-scroll-track">
-            {SCROLL_GAMES_RIGHT.map((g, idx) => (
-              <div key={idx} className="hero-scroll-card" title={g.name}>
-                <img src={g.image} alt={g.name} loading="lazy" />
-              </div>
-            ))}
-          </div>
-        </div>
 
         <div className="container" style={{ textAlign: 'center', position: 'relative', zIndex: 1 }}>
           <div style={{
