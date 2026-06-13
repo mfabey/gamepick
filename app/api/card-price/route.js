@@ -31,7 +31,7 @@ function storeInfo(id, rawName) {
 }
 
 // RAWG slug → Steam appid
-async function getSteamAppIdBySlug(slug) {
+export async function getSteamAppIdBySlug(slug) {
   try {
     const res = await fetch(
       `${RAWG_BASE}/games/${slug}/stores?key=${RAWG_KEY}`,
@@ -46,7 +46,7 @@ async function getSteamAppIdBySlug(slug) {
 }
 
 // Steam appid → TRY fiyat
-async function fetchPriceByAppId(appid) {
+export async function fetchPriceByAppId(appid) {
   try {
     const res = await fetch(
       `https://store.steampowered.com/api/appdetails?appids=${appid}&cc=tr&filters=basic,price_overview`,
@@ -118,7 +118,7 @@ async function fetchPriceByName(name) {
 }
 
 // ITAD'dan en ucuz fiyatı çek (edisyonları birleştirerek)
-async function fetchLowestPriceFromITAD(appid, title) {
+export async function fetchLowestPriceFromITAD(appid, title) {
   if (!ITAD_KEY) return null;
   try {
     const gameIds = [];

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getSteamAppIdBySlug, fetchLowestPriceFromITAD, fetchPriceByAppId } from '../card-price/route';
 
 const RAWG_KEY = process.env.RAWG_API_KEY;
 const BASE     = 'https://api.rawg.io/api';
@@ -92,7 +93,7 @@ export async function GET(request) {
 
   try {
     // Kategori aramalarında filtrelemeden sonra yeterli sayıda oyun kalması için RAWG'dan daha fazla oyun çekelim
-    const fetchNum = (section && section !== '') ? 40 : num;
+    const fetchNum = section === 'sale' ? 60 : (section && section !== '') ? 40 : num;
     const base = { platforms: 4, page, page_size: fetchNum, exclude_additions: true };
     let params;
 
@@ -126,9 +127,32 @@ export async function GET(request) {
     // Mağazası olmayan oyunları veya satışı olmayan/delisted oyunları tamamen filtrele (arama ve tüm listeler dahil)
     results = results.filter(g => g.hasStores && !KNOWN_DELISTED_SLUGS.has(g.rawgSlug));
 
-    // İndirim köşesinde (sale) ücretsiz oyunları ve tek platformlu oyunları kaldır
+    // İndirim köşesinde (sale) ücretsiz oyunları ve tek platformlu oyunları kaldır, ayrıca gerçek indirim kontrolü yap
     if (section === 'sale') {
       results = results.filter(g => !g.isFree && g.hasMultipleStores);
+      
+      const saleCheckedResults = await Promise.all(
+        results.map(async (g) => {
+          try {
+            const appid = await getSteamAppIdBySlug(g.rawgSlug);
+            // ITAD veya Steam üzerinden en ucuz teklifi bul (kartta gösterilen isme göre)
+            let priceInfo = await fetchLowestPriceFromITAD(appid, g.name);
+            if (!priceInfo && appid) {
+              priceInfo = await fetchPriceByAppId(appid);
+            }
+            
+            // Eğer en ucuz teklif indirimdeyse (discount > 0) ve ücretsiz değilse tut
+            if (priceInfo && priceInfo.discount > 0 && priceInfo.price > 0) {
+              return g;
+            }
+            return null;
+          } catch {
+            return null;
+          }
+        })
+      );
+      
+      results = saleCheckedResults.filter(Boolean);
     }
 
     // Eğer rotate parametresi aktifse, listeyi zaman tabanlı (her 3 saatte bir) kaydırarak farklı oyunlar gösterelim
