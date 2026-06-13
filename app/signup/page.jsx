@@ -8,16 +8,31 @@ import { useAuth } from '../context/AuthContext';
 export default function SignupPage() {
   const { signup } = useAuth();
   const router = useRouter();
-  const [name,     setName]     = useState('');
-  const [email,    setEmail]    = useState('');
-  const [password, setPassword] = useState('');
-  const [error,    setError]    = useState('');
-  const [loading,  setLoading]  = useState(false);
+  const [name,            setName]            = useState('');
+  const [email,           setEmail]           = useState('');
+  const [password,        setPassword]        = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [error,           setError]           = useState('');
+  const [loading,         setLoading]         = useState(false);
+  const [captchaChecked,  setCaptchaChecked]  = useState(false);
+  const [captchaLoading,  setCaptchaLoading]  = useState(false);
+
+  const handleCaptchaClick = () => {
+    if (captchaChecked || captchaLoading) return;
+    setCaptchaLoading(true);
+    setTimeout(() => {
+      setCaptchaLoading(false);
+      setCaptchaChecked(true);
+    }, 1000);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     if (password.length < 6) { setError('Şifre en az 6 karakter olmalı.'); return; }
+    if (password !== confirmPassword) { setError('Şifreler eşleşmiyor.'); return; }
+    if (!captchaChecked) { setError('Lütfen robot olmadığınızı doğrulayın.'); return; }
+    
     setLoading(true);
     const result = signup({ name, email, password });
     if (result.ok) {
@@ -110,7 +125,7 @@ export default function SignupPage() {
               />
             </div>
 
-            <div style={{ marginBottom: 24 }}>
+            <div style={{ marginBottom: 14 }}>
               <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>Şifre</label>
               <input
                 type="password" required value={password} onChange={e => setPassword(e.target.value)}
@@ -118,6 +133,66 @@ export default function SignupPage() {
                 onFocus={e => e.target.style.borderColor = 'var(--accent)'}
                 onBlur={e => e.target.style.borderColor = 'var(--border)'}
               />
+            </div>
+
+            <div style={{ marginBottom: 18 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>Şifreyi Onayla</label>
+              <input
+                type="password" required value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
+                placeholder="Şifrenizi tekrar girin" style={fieldStyle}
+                onFocus={e => e.target.style.borderColor = 'var(--accent)'}
+                onBlur={e => e.target.style.borderColor = 'var(--border)'}
+              />
+            </div>
+
+            {/* Custom reCAPTCHA v2 Mock Checkbox */}
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '10px 14px', border: '1.5px solid var(--border)', borderRadius: 8,
+              background: 'var(--bg-hover)', marginBottom: 18,
+              userSelect: 'none',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div 
+                  onClick={handleCaptchaClick}
+                  style={{
+                    width: 24, height: 24, borderRadius: 4, 
+                    border: captchaChecked ? '2px solid #22c55e' : '2px solid var(--border-hover)',
+                    background: captchaChecked ? '#22c55e' : 'var(--bg-card)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: (captchaChecked || captchaLoading) ? 'default' : 'pointer',
+                    position: 'relative',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  {captchaLoading && (
+                    <div style={{
+                      width: 12, height: 12, borderRadius: '50%',
+                      border: '2px solid var(--accent)', borderTopColor: 'transparent',
+                      animation: 'captcha-spin 0.6s linear infinite'
+                    }} />
+                  )}
+                  {captchaChecked && (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  )}
+                </div>
+                <span 
+                  onClick={handleCaptchaClick}
+                  style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-2)', cursor: (captchaChecked || captchaLoading) ? 'default' : 'pointer' }}
+                >
+                  Ben robot değilim
+                </span>
+              </div>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', opacity: 0.55 }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" style={{ color: 'var(--text-2)' }}>
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+                <span style={{ fontSize: 8, fontWeight: 700, color: 'var(--text-3)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.5px' }}>reCAPTCHA</span>
+              </div>
             </div>
 
             <button
@@ -132,6 +207,12 @@ export default function SignupPage() {
             >
               {loading ? 'Kaydediliyor...' : 'Ücretsiz Kayıt Ol →'}
             </button>
+
+            <style>{`
+              @keyframes captcha-spin {
+                to { transform: rotate(360deg); }
+              }
+            `}</style>
 
             <p style={{ fontSize: 11, color: 'var(--text-3)', textAlign: 'center', marginTop: 14 }}>
               Kayıt olarak Kullanım Şartlarını kabul etmiş olursunuz.

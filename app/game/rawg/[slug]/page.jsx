@@ -224,7 +224,7 @@ export default function RawgGamePage({ params }) {
 
       {/* Başlık ve Rozetler (Mobil Uyumlu) */}
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 28, fontWeight: 800, color: 'var(--text)', lineHeight: 1.25, marginBottom: 12 }}>{game.name}</h1>
+        <h1 className="game-title">{game.name}</h1>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {game.metacritic && (
             <div style={{
@@ -254,7 +254,7 @@ export default function RawgGamePage({ params }) {
             </div>
           )}
           {allImages.length > 1 && (
-            <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 20, paddingBottom: 4 }}>
+            <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 20, paddingBottom: 4, maxWidth: '100%' }}>
               {allImages.map((src, i) => (
                 <button key={i} onClick={() => setImgIdx(i)} style={{
                   flexShrink: 0, width: 80, height: 50, borderRadius: 8, overflow: 'hidden',
@@ -269,7 +269,7 @@ export default function RawgGamePage({ params }) {
 
           {/* AI Özeti */}
           {ai && (
-            <div className="glass-ai-panel" style={{ padding: '16px 18px', marginBottom: 20 }}>
+            <div className="glass-ai-panel" style={{ marginBottom: 20 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                 <span style={{ fontSize: 18 }}>✨</span>
                 <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)' }}>AI Özeti</span>
@@ -321,7 +321,7 @@ export default function RawgGamePage({ params }) {
         {/* ─── Sağ ───────────────────────────────────────────────────── */}
         <div>
           {/* Detay tablosu */}
-          <div className="glass-panel" style={{ padding: '14px 16px', marginBottom: 20, fontSize: 13 }}>
+          <div className="glass-panel" style={{ marginBottom: 20, fontSize: 13 }}>
             {[
               { label: 'Geliştirici', value: game.developer },
               { label: 'Yayıncı',    value: game.publisher  },
