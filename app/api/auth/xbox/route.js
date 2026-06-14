@@ -13,6 +13,7 @@ export async function GET(request) {
     redirect_uri:  `${origin}/api/auth/xbox/callback`,
     scope:         'XboxLive.signin XboxLive.read offline_access',
     response_mode: 'query',
+    prompt:        'select_account',
   });
 
   return NextResponse.redirect(
