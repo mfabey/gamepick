@@ -3,8 +3,11 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useAuth, normalizeName } from '../context/AuthContext';
 
 export default function GameCard({ game, compact = false }) {
+  const { ownedGames } = useAuth();
+  const isOwned = ownedGames.size > 0 && ownedGames.has(normalizeName(game.name));
   const [hovered,      setHovered]      = useState(false);
   const [livePrice,    setLivePrice]    = useState(null);
   const [priceLoading, setPriceLoading] = useState(false);
@@ -84,6 +87,20 @@ export default function GameCard({ game, compact = false }) {
               </span>
             )}
           </div>
+
+          {/* Sağ üst: sahiplik rozeti */}
+          {isOwned && (
+            <div style={{ position: 'absolute', top: 7, right: 7 }}>
+              <span style={{
+                fontSize: 9, fontWeight: 800, padding: '2px 6px', borderRadius: 5,
+                background: 'rgba(26,159,255,0.92)',
+                color: '#fff', letterSpacing: '0.03em',
+                backdropFilter: 'blur(4px)',
+              }}>
+                ✓ Sahipsin
+              </span>
+            </div>
+          )}
 
           {/* Sağ alt: metacritic */}
           {game.metacritic && (

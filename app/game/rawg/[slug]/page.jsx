@@ -3,9 +3,11 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useAuth, normalizeName } from '../../../context/AuthContext';
 
 export default function RawgGamePage({ params }) {
   const { slug } = params;
+  const { ownedGames } = useAuth();
 
   const [game,         setGame]         = useState(null);
   const [steamPrice,   setSteamPrice]   = useState(null);
@@ -225,7 +227,16 @@ export default function RawgGamePage({ params }) {
       {/* Başlık ve Rozetler (Mobil Uyumlu) */}
       <div style={{ marginBottom: 24 }}>
         <h1 className="game-title">{game.name}</h1>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          {ownedGames.size > 0 && ownedGames.has(normalizeName(game.name)) && (
+            <div style={{
+              padding: '6px 12px', borderRadius: 8, fontWeight: 700, fontSize: 13,
+              background: 'rgba(26,159,255,0.12)', border: '1px solid rgba(26,159,255,0.35)',
+              color: '#1a9fff', display: 'flex', alignItems: 'center', gap: 5,
+            }}>
+              ✓ Kütüphanende var
+            </div>
+          )}
           {game.metacritic && (
             <div style={{
               padding: '6px 12px', borderRadius: 8, fontWeight: 700, fontSize: 13,

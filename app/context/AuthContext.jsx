@@ -4,10 +4,20 @@ import { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext(null);
 
+// İsim normalleştirme — Steam vs RAWG isim farklılıklarını tolere eder
+export function normalizeName(name) {
+  return (name || '').toLowerCase()
+    .replace(/[™®©]/g, '')
+    .replace(/[:''\-!.,]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 export function AuthProvider({ children }) {
-  const [user,      setUser]      = useState(null);   // Site hesabı (e-posta/şifre)
-  const [steamUser, setSteamUser] = useState(null);   // Steam oturumu
-  const [ready,     setReady]     = useState(false);
+  const [user,       setUser]       = useState(null);      // Site hesabı (e-posta/şifre)
+  const [steamUser,  setSteamUser]  = useState(null);      // Steam oturumu
+  const [ownedGames, setOwnedGames] = useState(new Set()); // Normalize edilmiş kütüphane isimleri
+  const [ready,      setReady]      = useState(false);
 
   useEffect(() => {
     // Site auth — localStorage
@@ -23,6 +33,19 @@ export function AuthProvider({ children }) {
       .catch(() => {})
       .finally(() => setReady(true));
   }, []);
+
+  // Steam kullanıcısı oturumu açınca kütüphane adlarını arka planda çek
+  useEffect(() => {
+    if (!steamUser) { setOwnedGames(new Set()); return; }
+    fetch('/api/steam-library')
+      .then(r => r.json())
+      .then(d => {
+        if (d.games) {
+          setOwnedGames(new Set(d.games.map(g => normalizeName(g.name))));
+        }
+      })
+      .catch(() => {});
+  }, [steamUser]);
 
   // ── Site hesabı işlemleri ────────────────────────────────────────────────
   const signup = ({ name, email, password }) => {
@@ -68,12 +91,12 @@ export function AuthProvider({ children }) {
   // ── Steam işlemleri ──────────────────────────────────────────────────────
   const steamLogout = () => {
     setSteamUser(null);
-    // Sunucu tarafı cookie'yi de temizle
+    setOwnedGames(new Set());
     window.location.href = '/api/auth/logout';
   };
 
   return (
-    <AuthContext.Provider value={{ user, steamUser, ready, signup, login, logout, steamLogout, resetPassword }}>
+    <AuthContext.Provider value={{ user, steamUser, ownedGames, ready, signup, login, logout, steamLogout, resetPassword }}>
       {children}
     </AuthContext.Provider>
   );

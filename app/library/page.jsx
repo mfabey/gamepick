@@ -386,10 +386,10 @@ function GameRow({ game, rank, price, pricesLoading }) {
         </div>
       </div>
 
-      {/* GamePick arama linki */}
+      {/* GamePick detay linki */}
       <a
-        href={`/games?q=${encodeURIComponent(game.name)}`}
-        title="GamePick'te ara"
+        href={`/api/game-lookup?name=${encodeURIComponent(game.name)}`}
+        title="GamePick'te görüntüle"
         style={{
           flexShrink: 0, padding: '4px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600,
           background: 'var(--bg-input)', border: '1px solid var(--border)',
@@ -399,7 +399,7 @@ function GameRow({ game, rank, price, pricesLoading }) {
         onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'}
         onMouseLeave={e => e.currentTarget.style.color = 'var(--text-3)'}
       >
-        🔍 GamePick
+        🎮 GamePick
       </a>
 
       {/* Fiyat */}
