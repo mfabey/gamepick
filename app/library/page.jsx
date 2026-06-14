@@ -404,28 +404,28 @@ function GameRow({ game, rank, price, pricesLoading }) {
 
       {/* Fiyat */}
       <div style={{ textAlign: 'right', flexShrink: 0, minWidth: 80 }}>
-        {price ? (
-          price.isFree ? (
-            <p style={{ fontSize: 12, color: '#4ade80', fontWeight: 700 }}>Ücretsiz</p>
-          ) : (
-            <>
-              {price.discount > 0 && (
-                <p style={{ fontSize: 10, color: 'var(--text-3)', textDecoration: 'line-through', marginBottom: 1 }}>
-                  {price.originalFormatted}
-                </p>
-              )}
-              <p style={{ fontSize: 13, fontWeight: 700, color: price.discount > 0 ? '#4ade80' : 'var(--text)' }}>
-                {price.currentFormatted}
-                {price.discount > 0 && (
-                  <span style={{ marginLeft: 4, fontSize: 10, background: '#16a34a', color: '#fff', borderRadius: 4, padding: '1px 4px' }}>
-                    -{price.discount}%
-                  </span>
-                )}
-              </p>
-            </>
-          )
-        ) : pricesLoading ? (
+        {pricesLoading && !price ? (
           <p style={{ fontSize: 11, color: 'var(--text-3)', fontStyle: 'italic' }}>…</p>
+        ) : price?.isFree ? (
+          <p style={{ fontSize: 12, color: '#4ade80', fontWeight: 700 }}>🎁 Ücretsiz</p>
+        ) : price?.unavailable ? (
+          <p style={{ fontSize: 11, color: 'var(--text-3)', fontStyle: 'italic' }}>Fiyat yok</p>
+        ) : price ? (
+          <>
+            {price.discount > 0 && (
+              <p style={{ fontSize: 10, color: 'var(--text-3)', textDecoration: 'line-through', marginBottom: 1 }}>
+                {price.originalFormatted}
+              </p>
+            )}
+            <p style={{ fontSize: 13, fontWeight: 700, color: price.discount > 0 ? '#4ade80' : 'var(--text)' }}>
+              {price.currentFormatted}
+              {price.discount > 0 && (
+                <span style={{ marginLeft: 4, fontSize: 10, background: '#16a34a', color: '#fff', borderRadius: 4, padding: '1px 4px' }}>
+                  -{price.discount}%
+                </span>
+              )}
+            </p>
+          </>
         ) : null}
       </div>
 
