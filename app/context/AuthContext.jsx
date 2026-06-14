@@ -16,6 +16,7 @@ export function normalizeName(name) {
 export function AuthProvider({ children }) {
   const [user,       setUser]       = useState(null);      // Site hesabı (e-posta/şifre)
   const [steamUser,  setSteamUser]  = useState(null);      // Steam oturumu
+  const [xboxUser,   setXboxUser]   = useState(null);      // Xbox oturumu
   const [ownedGames, setOwnedGames] = useState(new Set()); // Normalize edilmiş kütüphane isimleri
   const [ready,      setReady]      = useState(false);
 
@@ -26,12 +27,14 @@ export function AuthProvider({ children }) {
       if (stored) setUser(JSON.parse(stored));
     } catch {}
 
-    // Steam auth — httpOnly cookie okunur, /api/auth/me üzerinden
-    fetch('/api/auth/me')
-      .then(r => r.json())
-      .then(d => { if (d.user) setSteamUser(d.user); })
-      .catch(() => {})
-      .finally(() => setReady(true));
+    // Steam + Xbox auth paralel çek
+    Promise.all([
+      fetch('/api/auth/me').then(r => r.json()).catch(() => ({ user: null })),
+      fetch('/api/auth/xbox/me').then(r => r.json()).catch(() => ({ user: null })),
+    ]).then(([steamData, xboxData]) => {
+      if (steamData.user) setSteamUser(steamData.user);
+      if (xboxData.user)  setXboxUser(xboxData.user);
+    }).finally(() => setReady(true));
   }, []);
 
   // Steam kullanıcısı oturumu açınca kütüphane adlarını arka planda çek
@@ -95,8 +98,14 @@ export function AuthProvider({ children }) {
     window.location.href = '/api/auth/logout';
   };
 
+  // ── Xbox işlemleri ───────────────────────────────────────────────────────
+  const xboxLogout = () => {
+    setXboxUser(null);
+    window.location.href = '/api/auth/xbox/logout';
+  };
+
   return (
-    <AuthContext.Provider value={{ user, steamUser, ownedGames, ready, signup, login, logout, steamLogout, resetPassword }}>
+    <AuthContext.Provider value={{ user, steamUser, xboxUser, ownedGames, ready, signup, login, logout, steamLogout, xboxLogout, resetPassword }}>
       {children}
     </AuthContext.Provider>
   );
