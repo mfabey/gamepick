@@ -180,7 +180,8 @@ export default function RawgGamePage({ params }) {
   if (gogPrice?.price != null) dealsList.push({ store: 'GOG', price: gogPrice.price, isFree: gogPrice.isFree });
   if (humblePrice?.price != null) dealsList.push({ store: 'Humble Bundle', price: humblePrice.price, isFree: humblePrice.isFree });
   for (const p of xboxPrices || []) {
-    if (p.price != null) dealsList.push({ store: 'Xbox', price: p.price, isFree: p.isFree, id: p.storeId });
+    const xboxLabel = (p.isFree || p.price === 0) ? 'Game Pass' : 'Xbox Store';
+    if (p.price != null) dealsList.push({ store: xboxLabel, price: p.price, isFree: p.isFree, id: p.storeId });
   }
 
   let lowestPrice = Infinity;
@@ -396,20 +397,21 @@ export default function RawgGamePage({ params }) {
               <LoadingPriceRow />
             ) : null}
 
-            {/* Xbox / Game Pass */}
-            {xboxPrices.length > 0 ? (
+            {/* Xbox / Game Pass — yalnızca ITAD'dan veri geldiyse göster */}
+            {xboxLoading ? (
+              <LoadingPriceRow />
+            ) : xboxPrices.length > 0 ? (
               xboxPrices.map(p => (
-                <PriceCard key={p.storeId || p.name} store="Xbox / Game Pass" icon="🎮"
+                <PriceCard
+                  key={p.storeId || p.name}
+                  store={p.isFree || p.price === 0 ? 'Game Pass' : 'Xbox Store'}
+                  icon="🎮"
                   price={p.price} original={p.original} discount={p.discount}
                   isFree={p.isFree} url={p.url}
                   highlight={isCheaperOption && bestStoreKey === `Xbox_${p.storeId}`}
                 />
               ))
-            ) : xboxLoading ? (
-              <LoadingPriceRow />
-            ) : (
-              <MissingCard platform="Xbox / Game Pass" />
-            )}
+            ) : null /* Xbox verisi yoksa hiç gösterme */}
 
             {/* Humble Bundle */}
             {humblePrice ? (
