@@ -1,4 +1,5 @@
 'use client';
+// GamePick Library Page - Version 1.1.0 (Xbox & Game Pass Integration)
 export const dynamic = 'force-dynamic';
 
 import { useState, useEffect, useMemo } from 'react';
