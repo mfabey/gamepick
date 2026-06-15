@@ -83,6 +83,7 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const section = searchParams.get('section') || '';
   const q       = searchParams.get('q')       || '';
+  const genres  = searchParams.get('genres')  || '';
   const page    = parseInt(searchParams.get('page') || '1');
   const num     = parseInt(searchParams.get('num')  || '24');
   const rotate  = searchParams.get('rotate')  === 'true';
@@ -98,7 +99,10 @@ export async function GET(request) {
     let params;
 
     const trimmedQ = q.trim();
-    if (trimmedQ) {
+    if (genres) {
+      // Kategori filtresi (genres param doğrudan RAWG slug)
+      params = { ...base, genres, ordering: '-rating', metacritic: '60,100' };
+    } else if (trimmedQ) {
       // Önce Türkçe tür/etiket eşlemesi dene
       const mapped = trFilter(trimmedQ);
       if (mapped) {

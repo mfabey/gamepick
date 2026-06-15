@@ -14,42 +14,61 @@ const PRICE_OPTIONS = [
 ];
 
 const SECTIONS = [
-  { label: 'Tümü',        value: ''         },
-  { label: '🏷️ İndirimdekiler', value: 'sale' },
-  { label: '🎮 Ücretsiz', value: 'free'     },
-  { label: '🗓️ Yeni',     value: 'new'      },
-  { label: '⭐ En İyi',   value: 'topscore' },
-  { label: '💥 Popüler',  value: 'popular'  },
+  { label: 'Tümü',             value: ''         },
+  { label: '🏷️ İndirimdekiler', value: 'sale'     },
+  { label: '🎮 Ücretsiz',      value: 'free'     },
+  { label: '🗓️ Yeni',          value: 'new'      },
+  { label: '⭐ En İyi',        value: 'topscore' },
+  { label: '💥 Popüler',       value: 'popular'  },
+];
+
+const CATEGORIES = [
+  { label: '🎯 Aksiyon',      slug: 'action'            },
+  { label: '⚔️ RPG',          slug: 'role-playing-games-rpg' },
+  { label: '🧠 Strateji',     slug: 'strategy'          },
+  { label: '🌍 Macera',       slug: 'adventure'         },
+  { label: '🔫 Nişancı',      slug: 'shooter'           },
+  { label: '🧩 Bulmaca',      slug: 'puzzle'            },
+  { label: '⚽ Spor',         slug: 'sports'            },
+  { label: '🚗 Yarış',        slug: 'racing'            },
+  { label: '👻 Korku',        slug: 'action'            },
+  { label: '🎮 Platform',     slug: 'platformer'        },
+  { label: '🃏 Kart & Masa',  slug: 'card'              },
+  { label: '🏙️ Simülasyon',   slug: 'simulation'        },
 ];
 
 const PAGE_SIZE = 24;
 
 function GamesList() {
   const searchParams = useSearchParams();
-  const initialSection = searchParams.get('section') || '';
+  const initialSection  = searchParams.get('section') || '';
+  const initialQuery    = searchParams.get('q') || '';
 
-  const [query,       setQuery]       = useState('');
+  const [query,       setQuery]       = useState(initialQuery);
   const [price,       setPrice]       = useState('all');
   const [section,     setSection]     = useState(initialSection);
+  const [genre,       setGenre]       = useState('');
   const [games,       setGames]       = useState([]);
   const [loading,     setLoading]     = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const debounceRef  = useRef(null);
   const sentinelRef  = useRef(null);
-  const scrollRef    = useRef({ page: 1, fetching: false, canMore: false, seenIds: new Set(), section: '', query: '' });
+  const scrollRef    = useRef({ page: 1, fetching: false, canMore: false, seenIds: new Set(), section: '', query: '', genre: '' });
 
-  // URL'deki section parametresi değiştiğinde state'i ve aramayı güncelle
   useEffect(() => {
     const sec = searchParams.get('section') || '';
+    const q   = searchParams.get('q') || '';
     setSection(sec);
-    setQuery('');
+    setQuery(q);
+    setGenre('');
   }, [searchParams]);
 
   const buildUrl = useCallback((pageNum) => {
-    const { section: s, query: q } = scrollRef.current;
+    const { section: s, query: q, genre: g } = scrollRef.current;
     const p = new URLSearchParams({ page: pageNum, num: PAGE_SIZE });
     if (s) p.set('section', s);
     if (q) p.set('q', q);
+    if (g) p.set('genres', g);
     return '/api/games?' + p.toString();
   }, []);
 
@@ -61,6 +80,7 @@ function GamesList() {
     ref.seenIds  = new Set();
     ref.section  = section;
     ref.query    = query;
+    ref.genre    = genre;
 
     setLoading(true);
     try {
@@ -71,7 +91,7 @@ function GamesList() {
       ref.canMore = (data.total || 0) > PAGE_SIZE;
     } catch {}
     finally { setLoading(false); }
-  }, [section, query, buildUrl]);
+  }, [section, query, genre, buildUrl]);
 
   const loadMore = useCallback(async () => {
     const ref = scrollRef.current;
@@ -105,17 +125,13 @@ function GamesList() {
     setLoadingMore(false);
   }, [buildUrl]);
 
-  // Kullanıcı yazmaya başlar başlamaz eski sonuçları gizle (debounce bitmesini bekleme)
   useEffect(() => {
-    if (query.trim()) {
-      setGames([]);
-      setLoading(true);
-    }
+    if (query.trim()) { setGames([]); setLoading(true); }
   }, [query]);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(fetchGames, 500);
+    debounceRef.current = setTimeout(fetchGames, 400);
     return () => clearTimeout(debounceRef.current);
   }, [fetchGames]);
 
@@ -136,7 +152,13 @@ function GamesList() {
     return true;
   });
 
-  const resetFilters = () => { setQuery(''); setPrice('all'); setSection(''); };
+  const resetFilters = () => { setQuery(''); setPrice('all'); setSection(''); setGenre(''); };
+
+  const handleGenre = (slug) => {
+    setGenre(prev => prev === slug ? '' : slug);
+    setSection('');
+    setQuery('');
+  };
 
   return (
     <div className="container" style={{ paddingTop: 32, paddingBottom: 60 }}>
@@ -152,7 +174,7 @@ function GamesList() {
         </svg>
         <input
           value={query}
-          onChange={e => { setQuery(e.target.value); setSection(''); }}
+          onChange={e => { setQuery(e.target.value); setSection(''); setGenre(''); }}
           placeholder="Oyun ara…"
           style={{ flex: 1, border: 'none', outline: 'none', fontSize: 15, color: 'var(--text)', background: 'transparent' }}
         />
@@ -162,19 +184,39 @@ function GamesList() {
       </div>
 
       {/* Bölüm filtreleri */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
         {SECTIONS.map(s => (
-          <button key={s.value} onClick={() => { setSection(s.value); setQuery(''); }}
+          <button key={s.value} onClick={() => { setSection(s.value); setQuery(''); setGenre(''); }}
             style={{
               padding: '7px 16px', borderRadius: 999, fontSize: 13, border: 'none', cursor: 'pointer', transition: 'all 0.15s',
-              background: section === s.value ? 'var(--accent)' : 'var(--bg-input)',
-              color:      section === s.value ? '#fff'    : 'var(--text-2)',
-              fontWeight: section === s.value ? 600       : 400,
+              background: section === s.value && !genre ? 'var(--accent)' : 'var(--bg-input)',
+              color:      section === s.value && !genre ? '#fff'    : 'var(--text-2)',
+              fontWeight: section === s.value && !genre ? 600       : 400,
             }}
           >
             {s.label}
           </button>
         ))}
+      </div>
+
+      {/* Kategoriler */}
+      <div style={{ marginBottom: 18 }}>
+        <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Kategoriler</p>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {CATEGORIES.map(c => (
+            <button key={c.slug + c.label} onClick={() => handleGenre(c.slug)}
+              style={{
+                padding: '6px 14px', borderRadius: 999, fontSize: 12, cursor: 'pointer', transition: 'all 0.15s',
+                border: genre === c.slug ? '1.5px solid var(--accent)' : '1.5px solid var(--border)',
+                background: genre === c.slug ? 'var(--accent-bg)' : 'var(--bg-card)',
+                color:      genre === c.slug ? 'var(--accent)'    : 'var(--text-2)',
+                fontWeight: genre === c.slug ? 600                : 400,
+              }}
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Bütçe */}
@@ -193,7 +235,7 @@ function GamesList() {
             <><span style={{ fontWeight: 600, color: 'var(--text)' }}>{filteredGames.length}</span> oyun gösteriliyor</>
           )}
         </p>
-        {(query || section || price !== 'all') && (
+        {(query || section || price !== 'all' || genre) && (
           <button onClick={resetFilters} style={{ fontSize: 12, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer' }}>
             × Temizle
           </button>

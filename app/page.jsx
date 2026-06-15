@@ -1,7 +1,7 @@
 'use client';
 export const dynamic = 'force-dynamic';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -12,6 +12,9 @@ export default function Home() {
   const { user } = useAuth();
   const router = useRouter();
   const [query,        setQuery]        = useState('');
+  const [suggestions,  setSuggestions]  = useState([]);
+  const [showSug,      setShowSug]      = useState(false);
+  const [sugLoading,   setSugLoading]   = useState(false);
   const [saleGames,    setSaleGames]    = useState([]);
   const [popularGames, setPopularGames] = useState([]);
   const [newGames,     setNewGames]     = useState([]);
@@ -20,6 +23,8 @@ export default function Home() {
   const [loadingPop,   setLoadingPop]   = useState(true);
   const [loadingNew,   setLoadingNew]   = useState(true);
   const [loadingTop,   setLoadingTop]   = useState(true);
+  const debounceRef = useRef(null);
+  const wrapperRef  = useRef(null);
 
   const fetchSection = useCallback(async (section, setter, loadingSetter) => {
     loadingSetter(true);
@@ -38,9 +43,47 @@ export default function Home() {
     fetchSection('topscore', setTopGames,     setLoadingTop);
   }, [fetchSection]);
 
+  // Autocomplete: query değişince önerileri çek
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    const q = query.trim();
+    if (!q || q.length < 2) { setSuggestions([]); setShowSug(false); return; }
+    debounceRef.current = setTimeout(async () => {
+      setSugLoading(true);
+      try {
+        const res  = await fetch(`/api/games?q=${encodeURIComponent(q)}&num=6`);
+        const data = await res.json();
+        setSuggestions(data.results || []);
+        setShowSug(true);
+      } catch { setSuggestions([]); }
+      finally { setSugLoading(false); }
+    }, 300);
+    return () => clearTimeout(debounceRef.current);
+  }, [query]);
+
+  // Dışarı tıklayınca kapat
+  useEffect(() => {
+    const handler = (e) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+        setShowSug(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
   const handleSearch = (e) => {
     e.preventDefault();
-    if (query.trim()) router.push(`/games?q=${encodeURIComponent(query.trim())}`);
+    const q = query.trim();
+    if (!q) return;
+    setShowSug(false);
+    router.push(`/games?q=${encodeURIComponent(q)}`);
+  };
+
+  const handleSuggestionClick = (game) => {
+    setShowSug(false);
+    const href = game.rawgSlug ? `/game/rawg/${game.rawgSlug}` : `/game/rawg/${game.id}`;
+    router.push(href);
   };
 
   return (
@@ -71,44 +114,97 @@ export default function Home() {
             Binlerce oyunu tek ekranda keşfet. Ruh haline göre AI önerisi al.
           </p>
 
-          {/* ── Büyük Arama Çubuğu ── */}
-          <form onSubmit={handleSearch} style={{ maxWidth: 600, margin: '0 auto 28px', display: 'flex', gap: 0 }}>
-            <div style={{
-              flex: 1, display: 'flex', alignItems: 'center', gap: 10,
-              background: 'var(--bg-card)', border: '2px solid var(--border)',
-              borderRight: 'none', borderRadius: '14px 0 0 14px',
-              padding: '0 18px', transition: 'border-color 0.2s',
-            }}
-              onFocus={e => e.currentTarget.style.borderColor = 'var(--accent)'}
-              onBlur={e => e.currentTarget.style.borderColor = 'var(--border)'}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-              </svg>
-              <input
-                value={query}
-                onChange={e => setQuery(e.target.value)}
-                placeholder="Oyun ara… (örn. Elden Ring, GTA V)"
-                style={{
-                  flex: 1, border: 'none', outline: 'none', fontSize: 16,
-                  color: 'var(--text)', background: 'transparent', padding: '16px 0',
-                }}
-              />
-              {query && (
-                <button type="button" onClick={() => setQuery('')} style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: 20, cursor: 'pointer', lineHeight: 1, padding: 0 }}>×</button>
-              )}
-            </div>
-            <button type="submit" style={{
-              padding: '0 28px', borderRadius: '0 14px 14px 0', border: 'none',
-              background: 'var(--accent)', color: '#fff', fontSize: 15, fontWeight: 700,
-              cursor: 'pointer', whiteSpace: 'nowrap', transition: 'opacity 0.15s',
-            }}
-              onMouseEnter={e => e.currentTarget.style.opacity = '0.88'}
-              onMouseLeave={e => e.currentTarget.style.opacity = '1'}
-            >
-              Ara
-            </button>
-          </form>
+          {/* ── Büyük Arama Çubuğu + Autocomplete ── */}
+          <div ref={wrapperRef} style={{ maxWidth: 600, margin: '0 auto 28px', position: 'relative', textAlign: 'left' }}>
+            <form onSubmit={handleSearch} style={{ display: 'flex', gap: 0 }}>
+              <div style={{
+                flex: 1, display: 'flex', alignItems: 'center', gap: 10,
+                background: 'var(--bg-card)', border: '2px solid var(--border)',
+                borderRight: 'none', borderRadius: '14px 0 0 14px',
+                padding: '0 18px', transition: 'border-color 0.2s',
+              }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                  <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                </svg>
+                <input
+                  value={query}
+                  onChange={e => setQuery(e.target.value)}
+                  onFocus={() => { if (suggestions.length) setShowSug(true); }}
+                  onKeyDown={e => { if (e.key === 'Escape') setShowSug(false); }}
+                  placeholder="Oyun ara… (örn. Elden Ring, GTA V)"
+                  autoComplete="off"
+                  style={{
+                    flex: 1, border: 'none', outline: 'none', fontSize: 16,
+                    color: 'var(--text)', background: 'transparent', padding: '16px 0',
+                  }}
+                />
+                {query && (
+                  <button type="button" onClick={() => { setQuery(''); setSuggestions([]); setShowSug(false); }} style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: 20, cursor: 'pointer', lineHeight: 1, padding: 0 }}>×</button>
+                )}
+              </div>
+              <button type="submit" style={{
+                padding: '0 28px', borderRadius: '0 14px 14px 0', border: 'none',
+                background: 'var(--accent)', color: '#fff', fontSize: 15, fontWeight: 700,
+                cursor: 'pointer', whiteSpace: 'nowrap', transition: 'opacity 0.15s',
+              }}
+                onMouseEnter={e => e.currentTarget.style.opacity = '0.88'}
+                onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+              >
+                Ara
+              </button>
+            </form>
+
+            {/* Dropdown öneriler */}
+            {showSug && (
+              <div style={{
+                position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0,
+                background: 'var(--bg-card)', border: '1.5px solid var(--border)',
+                borderRadius: 14, overflow: 'hidden', zIndex: 1000,
+                boxShadow: '0 12px 40px rgba(0,0,0,0.2)',
+              }}>
+                {sugLoading ? (
+                  <div style={{ padding: '14px 18px', color: 'var(--text-3)', fontSize: 13 }}>Aranıyor…</div>
+                ) : suggestions.length === 0 ? (
+                  <div style={{ padding: '14px 18px', color: 'var(--text-3)', fontSize: 13 }}>Sonuç bulunamadı</div>
+                ) : suggestions.map(game => (
+                  <button
+                    key={game.id}
+                    onMouseDown={() => handleSuggestionClick(game)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 12,
+                      width: '100%', padding: '10px 14px', border: 'none',
+                      background: 'transparent', cursor: 'pointer', textAlign: 'left',
+                      borderBottom: '1px solid var(--border)',
+                      transition: 'background 0.12s',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-input)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    {game.image ? (
+                      <img src={game.image} alt="" style={{ width: 42, height: 28, objectFit: 'cover', borderRadius: 5, flexShrink: 0 }} />
+                    ) : (
+                      <div style={{ width: 42, height: 28, borderRadius: 5, background: 'var(--bg-input)', flexShrink: 0 }} />
+                    )}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{game.name}</p>
+                      <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>
+                        {(game.genres || []).slice(0,2).join(' • ')}
+                        {game.metacritic ? ` • ⭐ ${game.metacritic}` : ''}
+                      </p>
+                    </div>
+                    {game.isFree ? (
+                      <span style={{ fontSize: 11, color: 'var(--green)', fontWeight: 700, flexShrink: 0 }}>Ücretsiz</span>
+                    ) : null}
+                  </button>
+                ))}
+                <div style={{ padding: '8px 14px', borderTop: suggestions.length ? '1px solid var(--border)' : 'none' }}>
+                  <button onMouseDown={handleSearch} style={{ fontSize: 12, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
+                    "{query}" için tüm sonuçları gör →
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
 
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
             <Link href="/games" className="btn btn-red" style={{ fontSize: 14, padding: '12px 28px' }}>
