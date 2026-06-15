@@ -7,8 +7,8 @@ export async function GET() {
   if (!session?.value) return NextResponse.json({ user: null });
 
   try {
-    const { xuid, gamertag, avatar } = JSON.parse(session.value);
-    return NextResponse.json({ user: { xuid, gamertag, avatar } });
+    const { xuid, gamertag, avatar, isMock, gamepassType } = JSON.parse(session.value);
+    return NextResponse.json({ user: { xuid, gamertag, avatar, isMock, gamepassType } });
   } catch {
     return NextResponse.json({ user: null });
   }

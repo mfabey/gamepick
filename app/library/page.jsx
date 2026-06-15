@@ -11,12 +11,30 @@ import { useAuth } from '../context/AuthContext';
 export default function LibraryPage() {
   const { steamUser, steamLogout, xboxUser, xboxLogout } = useAuth();
   const [activeTab, setActiveTab] = useState('steam'); // 'steam' | 'xbox'
+  const [showXboxModal, setShowXboxModal] = useState(false);
+  const [xboxError, setXboxError] = useState(null);
 
   // Xbox bağlandıysa ve Steam yoksa Xbox'a geç
   useEffect(() => {
     if (!steamUser && xboxUser) setActiveTab('xbox');
     if (steamUser) setActiveTab('steam');
   }, [steamUser, xboxUser]);
+
+  // URL'den Xbox hatasını yakala
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const err = params.get('xbox_error');
+      if (err) {
+        setXboxError(decodeURIComponent(err));
+        // URL'yi temizle
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, '', newUrl);
+        // Hatayı göstermek için bağlantı modalını da aç
+        setShowXboxModal(true);
+      }
+    }
+  }, []);
 
   const hasSteam = !!steamUser;
   const hasXbox  = !!xboxUser;
@@ -33,6 +51,21 @@ export default function LibraryPage() {
         <p style={{ color: 'var(--text-3)', fontSize: 15, lineHeight: 1.6, marginBottom: 32 }}>
           Steam veya Xbox hesabınla giriş yaparak oyunlarını, istatistiklerini ve kütüphaneni burada görüntüle.
         </p>
+
+        {/* Xbox Bağlantı Hataları (Modal Kapalıyken Sayfada Göster) */}
+        {!showXboxModal && xboxError && (
+          <div style={{
+            background: '#FEF2F2', border: '1.5px solid #FECACA', borderRadius: 14,
+            padding: '16px 20px', marginBottom: 24, display: 'flex', gap: 12, alignItems: 'flex-start', textAlign: 'left'
+          }}>
+            <span style={{ fontSize: 18 }}>⚠️</span>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: 14, fontWeight: 700, color: '#991b1b', marginBottom: 4 }}>Xbox Bağlantı Hatası</p>
+              <p style={{ fontSize: 13, color: '#7f1d1d', lineHeight: 1.5 }}>{xboxError}</p>
+            </div>
+            <button onClick={() => setXboxError(null)} style={{ background: 'none', border: 'none', color: '#991b1b', cursor: 'pointer', fontSize: 20, padding: 0 }}>×</button>
+          </div>
+        )}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {/* Steam */}
@@ -53,29 +86,36 @@ export default function LibraryPage() {
           </a>
 
           {/* Xbox */}
-          <a href="/api/auth/xbox" style={{ textDecoration: 'none' }}>
-            <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
-              padding: '14px 32px', borderRadius: 12,
-              background: '#107C10', color: '#fff',
-              fontSize: 16, fontWeight: 700, cursor: 'pointer',
-              boxShadow: '0 4px 20px rgba(16,124,16,0.4)', transition: 'transform 0.15s',
-            }}
-              onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-              onMouseLeave={e => e.currentTarget.style.transform = 'none'}
-            >
-              <XboxLogo size={26} />
-              Xbox ile Giriş Yap
-            </div>
-          </a>
+          <div onClick={() => setShowXboxModal(true)} style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
+            padding: '14px 32px', borderRadius: 12,
+            background: '#107C10', color: '#fff',
+            fontSize: 16, fontWeight: 700, cursor: 'pointer',
+            boxShadow: '0 4px 20px rgba(16,124,16,0.4)', transition: 'transform 0.15s',
+          }}
+            onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+            onMouseLeave={e => e.currentTarget.style.transform = 'none'}
+          >
+            <XboxLogo size={26} />
+            Xbox ile Giriş Yap
+          </div>
         </div>
 
         <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 20px', textAlign: 'left', fontSize: 13, color: 'var(--text-3)', marginTop: 24 }}>
           <p style={{ fontWeight: 600, color: 'var(--text-2)', marginBottom: 8 }}>📋 Gereksinimler</p>
           <p style={{ marginBottom: 4 }}>• Steam: profil <strong>herkese açık</strong> olmalı</p>
-          <p style={{ marginBottom: 4 }}>• Xbox: Microsoft hesabınla giriş yapman yeterli</p>
+          <p style={{ marginBottom: 4 }}>• Xbox: Microsoft hesabınla veya Gamertag simülasyonuyla giriş yapabilirsin</p>
           <p>• GamePick hiçbir bilgini kaydetmez, yalnızca görüntüler</p>
         </div>
+
+        {/* Xbox Bağlantı Modalı */}
+        {showXboxModal && (
+          <XboxConnectModal 
+            onClose={() => setShowXboxModal(false)} 
+            xboxError={xboxError} 
+            setXboxError={setXboxError} 
+          />
+        )}
       </div>
     );
   }
@@ -84,7 +124,7 @@ export default function LibraryPage() {
     <div className="container" style={{ paddingTop: 32, paddingBottom: 60 }}>
 
       {/* Platform sekmeleri — ikisi de bağlıysa göster */}
-      {hasSteam && hasXbox && (
+      {hasSteam && hasXbox ? (
         <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
           {[
             { key: 'steam', label: 'Steam', icon: <SteamLogo size={16} color={activeTab === 'steam' ? '#fff' : '#1a9fff'} />, active: '#1b2838' },
@@ -108,6 +148,56 @@ export default function LibraryPage() {
             </button>
           ))}
         </div>
+      ) : (
+        /* Sadece biri bağlıysa, yine de küçük bir sekme gösterelim ve diğerini bağlama butonu sunalım */
+        <div style={{ display: 'flex', gap: 8, marginBottom: 24, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {hasSteam && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 10, background: '#1b2838', color: '#fff', fontWeight: 700, fontSize: 14 }}>
+                <SteamLogo size={16} />
+                Steam Aktif: {steamUser.name}
+              </div>
+            )}
+            {hasXbox && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 10, background: '#107C10', color: '#fff', fontWeight: 700, fontSize: 14 }}>
+                <XboxLogo size={16} />
+                Xbox Aktif: {xboxUser.gamertag}
+              </div>
+            )}
+          </div>
+          
+          {hasSteam && !hasXbox && (
+            <button onClick={() => setShowXboxModal(true)} style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '10px 16px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 13,
+              background: 'var(--bg-card)', color: '#107C10', border: '1px solid #107C10',
+              transition: 'all 0.15s',
+            }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#107C10'; e.currentTarget.style.color = '#fff'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-card)'; e.currentTarget.style.color = '#107C10'; }}
+            >
+              <XboxLogo size={14} color="currentColor" />
+              Xbox Hesabı Bağla
+            </button>
+          )}
+          
+          {hasXbox && !hasSteam && (
+            <a href="/api/auth/steam" style={{ textDecoration: 'none' }}>
+              <button style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                padding: '10px 16px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 13,
+                background: 'var(--bg-card)', color: '#1a9fff', border: '1px solid #1a9fff',
+                transition: 'all 0.15s',
+              }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#1a9fff'; e.currentTarget.style.color = '#fff'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-card)'; e.currentTarget.style.color = '#1a9fff'; }}
+              >
+                <SteamLogo size={14} color="currentColor" />
+                Steam Hesabı Bağla
+              </button>
+            </a>
+          )}
+        </div>
       )}
 
       {/* İçerik */}
@@ -116,6 +206,15 @@ export default function LibraryPage() {
       )}
       {activeTab === 'xbox' && hasXbox && (
         <XboxLibrary xboxUser={xboxUser} onLogout={xboxLogout} />
+      )}
+
+      {/* Xbox Bağlantı Modalı */}
+      {showXboxModal && (
+        <XboxConnectModal 
+          onClose={() => setShowXboxModal(false)} 
+          xboxError={xboxError} 
+          setXboxError={setXboxError} 
+        />
       )}
     </div>
   );
@@ -450,6 +549,15 @@ function GameRow({ game, rank, price, pricesLoading }) {
 // XBOX BİLEŞENLERİ
 // ─────────────────────────────────────────────────────────────────────────────
 function XboxProfileHeader({ xboxUser, library, onLogout }) {
+  const hasGamePass = xboxUser.gamepassType === 'ultimate' || xboxUser.gamepassType === 'pc' || (library && library.gamePassCount > 0);
+  const gpText = xboxUser.gamepassType === 'ultimate' 
+    ? 'Game Pass Ultimate' 
+    : xboxUser.gamepassType === 'pc'
+      ? 'PC Game Pass'
+      : (library && library.gamePassCount > 0)
+        ? 'Xbox Game Pass'
+        : 'Xbox Live Üyesi';
+
   return (
     <div style={{ background: 'linear-gradient(135deg, #0e4d0e, #107C10, #1a9a1a)', borderRadius: 16, padding: '20px 24px', marginBottom: 4 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
@@ -459,8 +567,28 @@ function XboxProfileHeader({ xboxUser, library, onLogout }) {
         }
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Xbox Kütüphanesi</p>
-          <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 4 }}>{xboxUser.gamertag}</h2>
-          <a href={`https://www.xbox.com/tr-TR/play/user/${xboxUser.gamertag}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', textDecoration: 'none' }}>Xbox Profilini Görüntüle →</a>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff' }}>{xboxUser.gamertag}</h2>
+            {hasGamePass ? (
+              <span style={{
+                fontSize: 10, fontWeight: 800, padding: '3px 8px', borderRadius: 6,
+                background: '#fff', color: '#107C10',
+                boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
+                display: 'inline-flex', alignItems: 'center', gap: 4
+              }}>
+                🟢 {gpText}
+              </span>
+            ) : (
+              <span style={{
+                fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 6,
+                background: 'rgba(255,255,255,0.15)', color: '#fff',
+                display: 'inline-flex', alignItems: 'center', gap: 4
+              }}>
+                ⚪ {gpText}
+              </span>
+            )}
+          </div>
+          <a href={`https://www.xbox.com/tr-TR/play/user/${xboxUser.gamertag}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', textDecoration: 'none', display: 'inline-block', marginTop: 6 }}>Xbox Profilini Görüntüle →</a>
         </div>
         {library && (
           <div style={{ display: 'flex', gap: 20, flexShrink: 0, flexWrap: 'wrap' }}>
@@ -637,4 +765,146 @@ function formatLastPlayed(ts) {
   if (diffDays < 30) return `${Math.floor(diffDays / 7)} hafta önce`;
   if (diffDays < 365) return `${Math.floor(diffDays / 30)} ay önce`;
   return `${Math.floor(diffDays / 365)} yıl önce`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// XBOX BAĞLANTI MODALI
+// ─────────────────────────────────────────────────────────────────────────────
+function XboxConnectModal({ onClose, xboxError, setXboxError }) {
+  const [loading, setLoading] = useState(false);
+
+  return (
+    <div style={{
+      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+      background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      zIndex: 1000, padding: 20
+    }} onClick={onClose}>
+      <div style={{
+        background: 'var(--bg-card)', border: '1px solid var(--border)',
+        borderRadius: 20, maxWidth: 460, width: '100%', padding: '28px 32px',
+        boxShadow: '0 10px 40px rgba(0,0,0,0.5)', position: 'relative',
+        textAlign: 'left'
+      }} onClick={e => e.stopPropagation()}>
+        {/* Kapat Butonu */}
+        <button onClick={onClose} style={{
+          position: 'absolute', top: 20, right: 20, background: 'none', border: 'none',
+          color: 'var(--text-3)', fontSize: 24, cursor: 'pointer', outline: 'none'
+        }}>×</button>
+
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+          <div style={{ width: 60, height: 60, borderRadius: '50%', background: '#107C10', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', boxShadow: '0 4px 15px rgba(16,124,16,0.3)' }}>
+            <XboxLogo size={32} />
+          </div>
+          <h2 style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', marginBottom: 6 }}>Xbox Hesabını Bağla</h2>
+          <p style={{ fontSize: 13, color: 'var(--text-3)' }}>Hesabını bağlayarak Game Pass durumunu ve oyunlarını gör.</p>
+        </div>
+
+        {/* Hata Uyarısı */}
+        {xboxError && (
+          <div style={{
+            background: '#FEF2F2', border: '1.5px solid #FECACA', borderRadius: 12,
+            padding: '12px 16px', marginBottom: 20, display: 'flex', gap: 10, alignItems: 'flex-start'
+          }}>
+            <span style={{ fontSize: 16 }}>⚠️</span>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: 13, fontWeight: 700, color: '#991b1b', marginBottom: 2 }}>Bağlantı Hatası</p>
+              <p style={{ fontSize: 12, color: '#7f1d1d', lineHeight: 1.4 }}>{xboxError}</p>
+            </div>
+            <button onClick={() => setXboxError(null)} style={{ background: 'none', border: 'none', color: '#991b1b', cursor: 'pointer', fontSize: 16, padding: 0 }}>×</button>
+          </div>
+        )}
+
+        {/* Seçenek 1: Resmi Bağlantı */}
+        <div style={{
+          background: 'var(--bg-input)', border: '1.5px solid var(--border)', borderRadius: 12,
+          padding: '16px 20px', marginBottom: 16, cursor: 'pointer', transition: 'border-color 0.15s, transform 0.1s'
+        }}
+          onMouseEnter={e => e.currentTarget.style.borderColor = '#107C10'}
+          onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
+          onClick={() => {
+            setLoading(true);
+            window.location.href = '/api/auth/xbox';
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+            <span style={{ fontSize: 18 }}>🔑</span>
+            <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>Microsoft Hesabı ile Giriş Yap</h3>
+          </div>
+          <p style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.5 }}>
+            Resmi Xbox Live verilerini Microsoft OAuth üzerinden güvenle bağla. (Xbox Developer Sandbox yetkisi gerektirebilir).
+          </p>
+        </div>
+
+        {/* Seçenek 2: Gamertag Simülasyonu */}
+        <div style={{
+          background: 'var(--bg-input)', border: '1.5px solid var(--border)', borderRadius: 12,
+          padding: '20px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+            <span style={{ fontSize: 18 }}>⚡</span>
+            <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>Gamertag ile Hızlı Bağlan (Test)</h3>
+          </div>
+          <p style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.5, marginBottom: 16 }}>
+            Eğer resmi Microsoft OAuth bağlantısı çalışmıyorsa veya anında test etmek isterseniz, Gamertag girerek simülasyonu başlatabilirsiniz.
+          </p>
+          
+          <form onSubmit={async (e) => {
+            e.preventDefault();
+            if (loading) return;
+            setLoading(true);
+            const formData = new FormData(e.currentTarget);
+            const gamertag = formData.get('gamertag');
+            const gamepassType = formData.get('gamepassType');
+            
+            try {
+              const res = await fetch('/api/auth/xbox/mock-login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ gamertag, gamepassType })
+              });
+              const data = await res.json();
+              if (data.ok) {
+                window.location.reload();
+              } else {
+                setXboxError(data.error || 'Simüle giriş yapılamadı.');
+                setLoading(false);
+              }
+            } catch (err) {
+              setXboxError(err.message);
+              setLoading(false);
+            }
+          }}>
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>Xbox Gamertag</label>
+              <input name="gamertag" required defaultValue="MasterChief117" placeholder="Gamer Etiketini yaz..." style={{
+                width: '100%', padding: '10px 14px', borderRadius: 8, border: '1.5px solid var(--border)',
+                background: 'var(--bg-card)', color: 'var(--text)', fontSize: 13, outline: 'none'
+              }} />
+            </div>
+            
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>Game Pass Aboneliği</label>
+              <select name="gamepassType" style={{
+                width: '100%', padding: '10px 14px', borderRadius: 8, border: '1.5px solid var(--border)',
+                background: 'var(--bg-card)', color: 'var(--text)', fontSize: 13, outline: 'none'
+              }}>
+                <option value="ultimate">Xbox Game Pass Ultimate (Aktif)</option>
+                <option value="pc">PC Game Pass (Aktif)</option>
+                <option value="none">Abonelik Yok</option>
+              </select>
+            </div>
+            
+            <button type="submit" disabled={loading} style={{
+              width: '100%', padding: '12px', borderRadius: 10, border: 'none', background: '#107C10',
+              color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 15px rgba(16,124,16,0.3)',
+              opacity: loading ? 0.6 : 1, transition: 'opacity 0.15s'
+            }}>
+              {loading ? 'Bağlanıyor...' : 'Bağlantıyı Simüle Et'}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
 }

@@ -18,6 +18,8 @@ export function AuthProvider({ children }) {
   const [steamUser,  setSteamUser]  = useState(null);      // Steam oturumu
   const [xboxUser,   setXboxUser]   = useState(null);      // Xbox oturumu
   const [ownedGames, setOwnedGames] = useState(new Set()); // Normalize edilmiş kütüphane isimleri
+  const [xboxOwnedGames, setXboxOwnedGames] = useState(new Set()); // Xbox'ta sahip olunan oyunlar
+  const [gamePassGames,   setGamePassGames]   = useState(new Set());   // Game Pass oyunları
   const [ready,      setReady]      = useState(false);
 
   useEffect(() => {
@@ -49,6 +51,33 @@ export function AuthProvider({ children }) {
       })
       .catch(() => {});
   }, [steamUser]);
+
+  // Xbox kullanıcısı oturumu açınca kütüphane adlarını arka planda çek
+  useEffect(() => {
+    if (!xboxUser) {
+      setXboxOwnedGames(new Set());
+      setGamePassGames(new Set());
+      return;
+    }
+    fetch('/api/xbox-library')
+      .then(r => r.json())
+      .then(d => {
+        if (d.games) {
+          const gp = [];
+          const owned = [];
+          d.games.forEach(g => {
+            if (g.isGamePass) {
+              gp.push(normalizeName(g.name));
+            } else {
+              owned.push(normalizeName(g.name));
+            }
+          });
+          setGamePassGames(new Set(gp));
+          setXboxOwnedGames(new Set(owned));
+        }
+      })
+      .catch(() => {});
+  }, [xboxUser]);
 
   // ── Site hesabı işlemleri ────────────────────────────────────────────────
   const signup = ({ name, email, password }) => {
@@ -105,7 +134,10 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, steamUser, xboxUser, ownedGames, ready, signup, login, logout, steamLogout, xboxLogout, resetPassword }}>
+    <AuthContext.Provider value={{ 
+      user, steamUser, xboxUser, ownedGames, xboxOwnedGames, gamePassGames, 
+      ready, signup, login, logout, steamLogout, xboxLogout, resetPassword 
+    }}>
       {children}
     </AuthContext.Provider>
   );
