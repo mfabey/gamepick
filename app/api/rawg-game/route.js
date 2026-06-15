@@ -25,22 +25,35 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Oyun bulunamadi' }, { status: 404 });
     }
 
-    // /stores endpoint'inden URL'leri al (store_id ile eşleştir)
-    const storeResults  = storesData.results || [];
-    const steamStoreRow = storeResults.find(s => s.store_id === STEAM_STORE_ID);
-    const epicStoreRow  = storeResults.find(s => s.store_id === EPIC_STORE_ID);
+    // Tüm store URL'lerini eşleştir
+    const storeResults = storesData.results || [];
+    const detailStores = detail.stores || [];
+    const storeMap = {};
+    
+    storeResults.forEach(sr => {
+      const storeDetail = detailStores.find(ds => ds.store?.id === sr.store_id);
+      if (storeDetail) {
+        storeMap[storeDetail.store.slug] = sr.url;
+      } else {
+        if (sr.store_id === 1) storeMap['steam'] = sr.url;
+        if (sr.store_id === 11) storeMap['epic-games'] = sr.url;
+        if (sr.store_id === 2) storeMap['xbox-store'] = sr.url;
+        if (sr.store_id === 3) storeMap['playstation-store'] = sr.url;
+        if (sr.store_id === 5) storeMap['gog'] = sr.url;
+        if (sr.store_id === 6) storeMap['nintendo'] = sr.url;
+      }
+    });
 
     // Steam appid — URL'den regex ile çıkar
-    const steamUrl   = steamStoreRow?.url || null;
+    const steamUrl   = storeMap['steam'] || null;
     const steamAppId = steamUrl?.match(/store\.steampowered\.com\/app\/(\d+)/)?.[1] || null;
 
     // Epic URL
-    const epicUrl = epicStoreRow?.url || null;
+    const epicUrl = storeMap['epic-games'] || null;
 
     // hasSteam/hasEpic için de detail.stores'a fallback (liste endpoint'i bunu zaten veriyor)
-    const detailStores = detail.stores || [];
     const hasSteam = !!steamAppId || detailStores.some(s => s.store?.slug === 'steam');
-    const hasEpic  = !!epicStoreRow  || detailStores.some(s => s.store?.slug === 'epic-games');
+    const hasEpic  = !!epicUrl  || detailStores.some(s => s.store?.slug === 'epic-games');
 
     const game = {
       id:           `rawg_${detail.id}`,
@@ -65,6 +78,11 @@ export async function GET(request) {
       steamAppId:   steamAppId || null,
       epicUrl:      epicUrl ? epicUrl.replace('/en-US/', '/tr/') : (hasEpic ? `https://store.epicgames.com/tr/p/${slug}` : null),
       steamUrl:     steamAppId ? `https://store.steampowered.com/app/${steamAppId}` : null,
+      xboxUrl:      storeMap['xbox-store'] || storeMap['xbox-360-store'] || null,
+      gogUrl:       storeMap['gog'] || null,
+      playstationUrl: storeMap['playstation-store'] || null,
+      nintendoUrl:  storeMap['nintendo'] || null,
+      officialUrl:  detail.website || null,
       source:       steamAppId ? 'steam' : hasEpic ? 'epic' : 'rawg',
     };
 

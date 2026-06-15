@@ -443,6 +443,31 @@ export default function RawgGamePage({ params }) {
               <LoadingPriceRow />
             ) : null}
 
+            {/* Xbox / Microsoft Store Fallback */}
+            {!xboxPrices.length && game.xboxUrl && (
+              <PlaceholderCard store="Xbox / Microsoft Store" icon="🎮" url={game.xboxUrl} />
+            )}
+
+            {/* GOG Fallback */}
+            {!gogPrice && game.gogUrl && (
+              <PlaceholderCard store="GOG Store" icon="🌌" url={game.gogUrl} />
+            )}
+
+            {/* PlayStation Store Fallback */}
+            {game.playstationUrl && (
+              <PlaceholderCard store="PlayStation Store" icon="🟦" url={game.playstationUrl} />
+            )}
+
+            {/* Nintendo eShop Fallback */}
+            {game.nintendoUrl && (
+              <PlaceholderCard store="Nintendo eShop" icon="🔴" url={game.nintendoUrl} />
+            )}
+
+            {/* Resmi Web Sitesi (Minecraft vb. özel oyunlar için) */}
+            {game.officialUrl && (
+              <PlaceholderCard store="Resmi Web Sitesi" icon="🌐" url={game.officialUrl} />
+            )}
+
             <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 10, lineHeight: 1.5 }}>
               Fiyatlar Steam & ITAD üzerinden alınmaktadır. Anlık değişiklikler yansımayabilir.
             </p>
