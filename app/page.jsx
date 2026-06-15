@@ -2,13 +2,16 @@
 export const dynamic = 'force-dynamic';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import GameCard from './components/GameCard';
 import { useAuth } from './context/AuthContext';
 
-
 export default function Home() {
   const { user } = useAuth();
+  const router = useRouter();
+  const [query,        setQuery]        = useState('');
   const [saleGames,    setSaleGames]    = useState([]);
   const [popularGames, setPopularGames] = useState([]);
   const [newGames,     setNewGames]     = useState([]);
@@ -35,6 +38,11 @@ export default function Home() {
     fetchSection('topscore', setTopGames,     setLoadingTop);
   }, [fetchSection]);
 
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (query.trim()) router.push(`/games?q=${encodeURIComponent(query.trim())}`);
+  };
+
   return (
     <div style={{ paddingBottom: 60 }}>
 
@@ -42,11 +50,10 @@ export default function Home() {
       <div style={{
         background: 'var(--hero-bg)',
         borderBottom: '1px solid var(--border)',
-        padding: '60px 0 48px',
+        padding: '60px 0 52px',
         position: 'relative',
         overflow: 'hidden',
       }}>
-
         <div className="container" style={{ textAlign: 'center', position: 'relative', zIndex: 1 }}>
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 6,
@@ -61,9 +68,48 @@ export default function Home() {
             <span style={{ color: 'var(--accent)' }}>En İyi Fiyat</span>
           </h1>
           <p style={{ color: 'var(--text-3)', fontSize: 17, maxWidth: 520, margin: '0 auto 28px' }}>
-            Binlerce oyunu tek ekranda keşfet.
-            Ruh haline göre AI önerisi al.
+            Binlerce oyunu tek ekranda keşfet. Ruh haline göre AI önerisi al.
           </p>
+
+          {/* ── Büyük Arama Çubuğu ── */}
+          <form onSubmit={handleSearch} style={{ maxWidth: 600, margin: '0 auto 28px', display: 'flex', gap: 0 }}>
+            <div style={{
+              flex: 1, display: 'flex', alignItems: 'center', gap: 10,
+              background: 'var(--bg-card)', border: '2px solid var(--border)',
+              borderRight: 'none', borderRadius: '14px 0 0 14px',
+              padding: '0 18px', transition: 'border-color 0.2s',
+            }}
+              onFocus={e => e.currentTarget.style.borderColor = 'var(--accent)'}
+              onBlur={e => e.currentTarget.style.borderColor = 'var(--border)'}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+              </svg>
+              <input
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                placeholder="Oyun ara… (örn. Elden Ring, GTA V)"
+                style={{
+                  flex: 1, border: 'none', outline: 'none', fontSize: 16,
+                  color: 'var(--text)', background: 'transparent', padding: '16px 0',
+                }}
+              />
+              {query && (
+                <button type="button" onClick={() => setQuery('')} style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: 20, cursor: 'pointer', lineHeight: 1, padding: 0 }}>×</button>
+              )}
+            </div>
+            <button type="submit" style={{
+              padding: '0 28px', borderRadius: '0 14px 14px 0', border: 'none',
+              background: 'var(--accent)', color: '#fff', fontSize: 15, fontWeight: 700,
+              cursor: 'pointer', whiteSpace: 'nowrap', transition: 'opacity 0.15s',
+            }}
+              onMouseEnter={e => e.currentTarget.style.opacity = '0.88'}
+              onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+            >
+              Ara
+            </button>
+          </form>
+
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
             <Link href="/games" className="btn btn-red" style={{ fontSize: 14, padding: '12px 28px' }}>
               Oyunları Keşfet →
@@ -80,11 +126,7 @@ export default function Home() {
             )}
           </div>
 
-          {/* Stat çubukları */}
-          <div style={{
-            display: 'flex', gap: 32, justifyContent: 'center',
-            marginTop: 40, flexWrap: 'wrap',
-          }}>
+          <div style={{ display: 'flex', gap: 32, justifyContent: 'center', marginTop: 36, flexWrap: 'wrap' }}>
             {[['500K+', 'Oyun'], ['Puan & Yorum', 'Metacritic Verisi'], ['AI', 'Kişisel Öneri']].map(([n, l]) => (
               <div key={l} style={{ textAlign: 'center' }}>
                 <p style={{ fontSize: 22, fontWeight: 800, color: 'var(--accent)' }}>{n}</p>
@@ -96,6 +138,9 @@ export default function Home() {
       </div>
 
       <div className="container" style={{ paddingTop: 40 }}>
+
+        {/* ── Öne Çıkan Oyunlar (büyük thumbnaillar) ── */}
+        <FeaturedSection games={popularGames} loading={loadingPop} />
 
         {/* İndirim Fırsatları */}
         <Section
@@ -133,7 +178,7 @@ export default function Home() {
           loading={loadingTop}
         />
 
-        {/* CTA - kütüphane */}
+        {/* CTA */}
         <div style={{
           marginTop: 32,
           background: 'var(--cta-bg)',
@@ -162,6 +207,140 @@ export default function Home() {
   );
 }
 
+// ── Öne Çıkan Büyük Kartlar ─────────────────────────────────────────────────
+function FeaturedSection({ games, loading }) {
+  const featured = games.slice(0, 6);
+
+  return (
+    <div style={{ marginBottom: 48 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 16 }}>
+        <div>
+          <h2 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)' }}>🔥 Öne Çıkan Oyunlar</h2>
+          <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 2 }}>Şu an en popüler oyunlar</p>
+        </div>
+        <Link href="/games?section=popular" style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 600 }}>
+          Tümünü gör →
+        </Link>
+      </div>
+
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+        gap: 16,
+      }}>
+        {loading
+          ? Array.from({ length: 6 }).map((_, i) => <FeaturedSkeleton key={i} />)
+          : featured.map(g => <FeaturedCard key={g.id} game={g} />)
+        }
+      </div>
+    </div>
+  );
+}
+
+function FeaturedCard({ game }) {
+  const [hovered, setHovered] = useState(false);
+  const href = game.rawgSlug ? `/game/rawg/${game.rawgSlug}` : `/game/rawg/${game.id}`;
+
+  return (
+    <Link href={href} style={{ textDecoration: 'none', display: 'block' }}>
+      <div
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        style={{
+          borderRadius: 16,
+          overflow: 'hidden',
+          background: 'var(--bg-card)',
+          border: `1.5px solid ${hovered ? 'var(--accent-border)' : 'var(--border)'}`,
+          transform: hovered ? 'scale(1.03)' : 'scale(1)',
+          transition: 'transform 0.2s ease, border-color 0.2s, box-shadow 0.2s',
+          boxShadow: hovered ? '0 12px 40px rgba(0,0,0,0.25)' : '0 2px 8px rgba(0,0,0,0.08)',
+          cursor: 'pointer',
+          position: 'relative',
+          zIndex: hovered ? 10 : 1,
+        }}
+      >
+        {/* Büyük görsel */}
+        <div style={{ height: 160, position: 'relative', background: 'var(--bg-input)' }}>
+          {game.image && (
+            <Image
+              src={game.image} alt={game.name} fill
+              sizes="(max-width: 640px) 100vw, 300px"
+              style={{ objectFit: 'cover', transition: 'transform 0.3s ease', transform: hovered ? 'scale(1.06)' : 'scale(1)' }}
+              unoptimized
+            />
+          )}
+          {/* Gradient overlay */}
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 50%)',
+            transition: 'opacity 0.2s',
+            opacity: hovered ? 1 : 0.6,
+          }} />
+          {/* Metacritic */}
+          {game.metacritic && (
+            <div style={{ position: 'absolute', top: 10, right: 10 }}>
+              <span style={{
+                fontSize: 11, fontWeight: 800, padding: '3px 8px', borderRadius: 7,
+                background: 'rgba(0,0,0,0.7)',
+                color: game.metacritic >= 80 ? '#4ade80' : game.metacritic >= 60 ? '#fbbf24' : '#f87171',
+                backdropFilter: 'blur(4px)',
+              }}>
+                {game.metacritic}
+              </span>
+            </div>
+          )}
+          {/* Oyun adı overlay */}
+          <div style={{ position: 'absolute', bottom: 10, left: 12, right: 12 }}>
+            <p style={{ fontSize: 15, fontWeight: 700, color: '#fff', lineHeight: 1.3, textShadow: '0 1px 4px rgba(0,0,0,0.8)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {game.name}
+            </p>
+          </div>
+        </div>
+
+        {/* Alt bilgi — hover'da açılır */}
+        <div style={{
+          padding: '10px 14px 12px',
+          maxHeight: hovered ? 80 : 44,
+          overflow: 'hidden',
+          transition: 'max-height 0.25s ease',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+              {(game.genres || []).slice(0, 2).map(g => (
+                <span key={g} style={{ fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 5, background: 'var(--bg-input)', color: 'var(--text-3)' }}>{g}</span>
+              ))}
+            </div>
+            {game.totalReviews > 0 && (
+              <span style={{ fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap' }}>
+                ⭐ {game.totalReviews.toLocaleString('tr')}
+              </span>
+            )}
+          </div>
+          {/* Hover'da görünen ek bilgi */}
+          {game.released && (
+            <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 6, opacity: hovered ? 1 : 0, transition: 'opacity 0.2s' }}>
+              📅 {game.released}
+            </p>
+          )}
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+function FeaturedSkeleton() {
+  return (
+    <div style={{ borderRadius: 16, overflow: 'hidden', background: 'var(--bg-card)', border: '1.5px solid var(--border)' }}>
+      <div style={{ height: 160, background: 'var(--bg-input)' }} />
+      <div style={{ padding: '10px 14px' }}>
+        <div style={{ height: 12, background: 'var(--border)', borderRadius: 4, marginBottom: 8, width: '70%' }} />
+        <div style={{ height: 10, background: 'var(--bg-input)', borderRadius: 4, width: '40%' }} />
+      </div>
+    </div>
+  );
+}
+
+// ── Scroll Row Bölümleri ─────────────────────────────────────────────────────
 function Section({ title, subtitle, href, games, loading }) {
   return (
     <div style={{ marginBottom: 40 }}>

@@ -60,10 +60,13 @@ export default function GameCard({ game, compact = false }) {
           border:       `1.5px solid ${hovered ? 'var(--accent-border)' : 'var(--border)'}`,
           borderRadius: 14,
           overflow:     'hidden',
-          transition:   'border-color 0.15s, transform 0.15s',
-          transform:    hovered ? 'translateY(-2px)' : 'none',
+          transition:   'border-color 0.2s, transform 0.2s, box-shadow 0.2s',
+          transform:    hovered ? 'scale(1.06)' : 'scale(1)',
+          boxShadow:    hovered ? '0 10px 32px rgba(0,0,0,0.22)' : 'none',
           cursor:       'pointer',
           width:        compact ? imgH * 1.78 : undefined,
+          position:     'relative',
+          zIndex:       hovered ? 10 : 1,
         }}
       >
         {/* Kapak */}
