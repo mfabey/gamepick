@@ -128,6 +128,14 @@ export async function GET(request) {
               gameIds.push(g.id);
             }
           }
+          // Fallback: Eşleşme çıkmadıysa, aranılan terimi içeren ilk oyunu veya listedeki ilk ana oyunu ekle
+          if (gameIds.length === 0 && (searchData || []).length > 0) {
+            const fallback = searchData.find(g => g.type === 'game' && normalizeTitle(g.title).includes(nt))
+                          || searchData.find(g => g.type === 'game');
+            if (fallback) {
+              gameIds.push(fallback.id);
+            }
+          }
         }
       } catch { /* arama başarısız */ }
     }

@@ -19,7 +19,7 @@ export default function GameCard({ game, compact = false }) {
 
   // Kart görünüme girince Steam fiyatı lazy-load et
   useEffect(() => {
-    if (!game.hasSteam || priceDone || priceLoading) return;
+    if (priceDone || priceLoading) return;
     const el = cardRef.current;
     if (!el) return;
 
@@ -30,8 +30,8 @@ export default function GameCard({ game, compact = false }) {
 
       // Slug varsa garantili doğru eşleşme, yoksa isim fallback
       const params = game.rawgSlug
-        ? `slug=${encodeURIComponent(game.rawgSlug)}&name=${encodeURIComponent(game.name)}&hasSteam=true`
-        : `name=${encodeURIComponent(game.name)}&hasSteam=true`;
+        ? `slug=${encodeURIComponent(game.rawgSlug)}&name=${encodeURIComponent(game.name)}&hasSteam=${!!game.hasSteam}`
+        : `name=${encodeURIComponent(game.name)}&hasSteam=${!!game.hasSteam}`;
 
       fetch('/api/card-price?' + params)
         .then(r => r.json())

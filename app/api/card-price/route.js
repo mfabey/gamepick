@@ -163,6 +163,14 @@ export async function fetchLowestPriceFromITAD(appid, title) {
             gameIds.push(g.id);
           }
         }
+        // Fallback: Eşleşme çıkmadıysa, aranılan terimi içeren ilk oyunu veya listedeki ilk ana oyunu ekle
+        if (gameIds.length === 0 && (searchData || []).length > 0) {
+          const fallback = searchData.find(g => g.type === 'game' && (g.title || '').toLowerCase().replace(/[:\-–]/g, ' ').includes(nt))
+                        || searchData.find(g => g.type === 'game');
+          if (fallback) {
+            gameIds.push(fallback.id);
+          }
+        }
       }
     }
 
