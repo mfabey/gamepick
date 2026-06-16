@@ -448,102 +448,57 @@ export default function Home() {
   );
 }
 
-// ── Animasyonlu yatay scroll satırı ──────────────────────────────────────────
+// ── Sürükleyerek kaydırma satırı ─────────────────────────────────────────────
 function ScrollRow({ children }) {
-  const rowRef   = useRef(null);
-  const [showL,  setShowL]  = useState(false);
-  const [showR,  setShowR]  = useState(false);
-  const [hovered, setHovered] = useState(false);
+  const rowRef = useRef(null);
+  const drag   = useRef({ active: false, startX: 0, scrollLeft: 0, moved: false });
 
-  const update = () => {
+  const onMouseDown = e => {
     const el = rowRef.current;
     if (!el) return;
-    setShowL(el.scrollLeft > 8);
-    setShowR(el.scrollLeft + el.clientWidth < el.scrollWidth - 8);
+    drag.current = { active: true, startX: e.pageX - el.offsetLeft, scrollLeft: el.scrollLeft, moved: false };
+    el.style.cursor = 'grabbing';
   };
 
-  useEffect(() => {
+  const onMouseMove = e => {
+    if (!drag.current.active) return;
+    e.preventDefault();
     const el = rowRef.current;
     if (!el) return;
-    update();
-    el.addEventListener('scroll', update, { passive: true });
-    window.addEventListener('resize', update);
-    return () => {
-      el.removeEventListener('scroll', update);
-      window.removeEventListener('resize', update);
-    };
-  }, [children]);
-
-  const scroll = dir => {
-    rowRef.current?.scrollBy({ left: dir * 480, behavior: 'smooth' });
+    const x    = e.pageX - el.offsetLeft;
+    const walk = (x - drag.current.startX) * 1.3;
+    if (Math.abs(walk) > 4) drag.current.moved = true;
+    el.scrollLeft = drag.current.scrollLeft - walk;
   };
 
-  const btnStyle = (side) => ({
-    position: 'absolute', top: 0, bottom: 12,
-    [side]: 0,
-    width: 72,
-    display: 'flex', alignItems: 'center',
-    justifyContent: side === 'left' ? 'flex-start' : 'flex-end',
-    paddingInline: 10,
-    background: side === 'left'
-      ? 'linear-gradient(to right, var(--bg-body) 30%, transparent)'
-      : 'linear-gradient(to left, var(--bg-body) 30%, transparent)',
-    zIndex: 5,
-    cursor: 'pointer', border: 'none',
-    opacity: hovered ? 1 : 0,
-    transform: hovered ? 'translateX(0)' : (side === 'left' ? 'translateX(-8px)' : 'translateX(8px)'),
-    transition: 'opacity 0.22s ease, transform 0.22s ease',
-    pointerEvents: hovered ? 'auto' : 'none',
-  });
+  const onMouseUp = () => {
+    const el = rowRef.current;
+    if (!el) return;
+    drag.current.active = false;
+    el.style.cursor = 'grab';
+  };
 
-  const arrowStyle = {
-    width: 38, height: 38, borderRadius: '50%',
-    background: 'var(--bg-card)',
-    border: '1.5px solid var(--border-hover)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    color: 'var(--text)',
-    boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
-    transition: 'background 0.15s, border-color 0.15s, transform 0.15s',
-    flexShrink: 0,
+  // Sürükleme sonrası click'in oyun sayfasına gitmesini engelle
+  const onClickCapture = e => {
+    if (drag.current.moved) {
+      e.preventDefault();
+      e.stopPropagation();
+      drag.current.moved = false;
+    }
   };
 
   return (
     <div
-      style={{ position: 'relative' }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      ref={rowRef}
+      className="scroll-row"
+      style={{ cursor: 'grab', scrollbarWidth: 'none', userSelect: 'none' }}
+      onMouseDown={onMouseDown}
+      onMouseMove={onMouseMove}
+      onMouseUp={onMouseUp}
+      onMouseLeave={onMouseUp}
+      onClickCapture={onClickCapture}
     >
-      {/* Sol ok */}
-      {showL && (
-        <button onClick={() => scroll(-1)} style={btnStyle('left')} aria-label="Geri">
-          <div style={arrowStyle}
-            onMouseEnter={e => { e.currentTarget.style.background = 'var(--accent)'; e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.transform = 'scale(1.1)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-card)'; e.currentTarget.style.borderColor = 'var(--border-hover)'; e.currentTarget.style.color = 'var(--text)'; e.currentTarget.style.transform = 'scale(1)'; }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="15 18 9 12 15 6"/>
-            </svg>
-          </div>
-        </button>
-      )}
-
-      <div ref={rowRef} className="scroll-row" style={{ scrollbarWidth: 'none' }}>
-        {children}
-      </div>
-
-      {/* Sağ ok */}
-      {showR && (
-        <button onClick={() => scroll(1)} style={btnStyle('right')} aria-label="İleri">
-          <div style={arrowStyle}
-            onMouseEnter={e => { e.currentTarget.style.background = 'var(--accent)'; e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.transform = 'scale(1.1)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-card)'; e.currentTarget.style.borderColor = 'var(--border-hover)'; e.currentTarget.style.color = 'var(--text)'; e.currentTarget.style.transform = 'scale(1)'; }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="9 18 15 12 9 6"/>
-            </svg>
-          </div>
-        </button>
-      )}
+      {children}
     </div>
   );
 }
