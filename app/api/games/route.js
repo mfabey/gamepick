@@ -21,6 +21,8 @@ const TR_GENRE = {
   'dovus':      'fighting',
   'atıcılık':   'shooter',
   'aticilik':   'shooter',
+  'nişancı':    'shooter',
+  'nisanci':    'shooter',
   'arcade':     'arcade',
 };
 
@@ -53,6 +55,8 @@ const TR_TAG = {
   'soulslike':     'souls-like',
   'yapım':         'building',
   'yapim':         'building',
+  'kart':          'card,card-game',
+  'masa':          'board-games',
 };
 
 // Arama sorgusunu Türkçe tür/etiket filtrelerine dönüştür
@@ -101,7 +105,14 @@ export async function GET(request) {
     const trimmedQ = q.trim();
     if (genres) {
       // Kategori filtresi (genres param doğrudan RAWG slug)
-      params = { ...base, genres, ordering: '-rating', metacritic: '60,100' };
+      // RAWG API'de horror ve card gibi bazı kategoriler 'genre' değil 'tag' olarak tanımlanmıştır.
+      if (genres === 'horror') {
+        params = { ...base, tags: 'horror', ordering: '-rating', metacritic: '60,100' };
+      } else if (genres === 'card') {
+        params = { ...base, genres: 'card,board-games', ordering: '-rating', metacritic: '60,100' };
+      } else {
+        params = { ...base, genres, ordering: '-rating', metacritic: '60,100' };
+      }
     } else if (trimmedQ) {
       // Önce Türkçe tür/etiket eşlemesi dene
       const mapped = trFilter(trimmedQ);

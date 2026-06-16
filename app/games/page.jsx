@@ -31,7 +31,7 @@ const CATEGORIES = [
   { label: '🧩 Bulmaca',      slug: 'puzzle'            },
   { label: '⚽ Spor',         slug: 'sports'            },
   { label: '🚗 Yarış',        slug: 'racing'            },
-  { label: '👻 Korku',        slug: 'action'            },
+  { label: '👻 Korku',        slug: 'horror'            },
   { label: '🎮 Platform',     slug: 'platformer'        },
   { label: '🃏 Kart & Masa',  slug: 'card'              },
   { label: '🏙️ Simülasyon',   slug: 'simulation'        },
