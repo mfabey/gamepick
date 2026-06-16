@@ -156,7 +156,6 @@ function GamesList() {
 
   const handleGenre = (slug) => {
     setGenre(prev => prev === slug ? '' : slug);
-    setSection('');
     setQuery('');
   };
 
@@ -186,12 +185,12 @@ function GamesList() {
       {/* Bölüm filtreleri */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
         {SECTIONS.map(s => (
-          <button key={s.value} onClick={() => { setSection(s.value); setQuery(''); setGenre(''); }}
+          <button key={s.value} onClick={() => { setSection(s.value); setQuery(''); }}
             style={{
               padding: '7px 16px', borderRadius: 999, fontSize: 13, border: 'none', cursor: 'pointer', transition: 'all 0.15s',
-              background: section === s.value && !genre ? 'var(--accent)' : 'var(--bg-input)',
-              color:      section === s.value && !genre ? '#fff'    : 'var(--text-2)',
-              fontWeight: section === s.value && !genre ? 600       : 400,
+              background: section === s.value ? 'var(--accent)' : 'var(--bg-input)',
+              color:      section === s.value ? '#fff'    : 'var(--text-2)',
+              fontWeight: section === s.value ? 600       : 400,
             }}
           >
             {s.label}

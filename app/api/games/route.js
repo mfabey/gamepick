@@ -100,40 +100,65 @@ export async function GET(request) {
     // Kategori aramalarında filtrelemeden sonra yeterli sayıda oyun kalması için RAWG'dan daha fazla oyun çekelim
     const fetchNum = section === 'sale' ? 60 : (section && section !== '') ? 40 : num;
     const base = { platforms: 4, page, page_size: fetchNum, exclude_additions: true };
-    let params;
+    let params = { ...base };
 
     const trimmedQ = q.trim();
-    if (genres) {
-      // Kategori filtresi (genres param doğrudan RAWG slug)
-      // RAWG API'de horror ve card gibi bazı kategoriler 'genre' değil 'tag' olarak tanımlanmıştır.
-      if (genres === 'horror') {
-        params = { ...base, tags: 'horror', ordering: '-rating', metacritic: '60,100' };
-      } else if (genres === 'card') {
-        params = { ...base, genres: 'card,board-games', ordering: '-rating', metacritic: '60,100' };
-      } else {
-        params = { ...base, genres, ordering: '-rating', metacritic: '60,100' };
-      }
-    } else if (trimmedQ) {
+    if (trimmedQ) {
       // Önce Türkçe tür/etiket eşlemesi dene
       const mapped = trFilter(trimmedQ);
       if (mapped) {
-        params = { ...base, ...mapped };
+        params = { ...params, ...mapped };
       } else {
-        params = { ...base, search: trimmedQ };
+        params.search = trimmedQ;
       }
-    } else if (section === 'new') {
-      const today = new Date().toISOString().slice(0, 10);
-      params = { ...base, ordering: '-released', dates: '2023-01-01,' + today };
-    } else if (section === 'topscore') {
-      params = { ...base, ordering: '-metacritic', metacritic: '70,100' };
-    } else if (section === 'popular') {
-      params = { ...base, ordering: '-rating', metacritic: '60,100' };
-    } else if (section === 'free') {
-      params = { ...base, tags: 'free-to-play', ordering: '-added' };
-    } else if (section === 'sale') {
-      params = { ...base, ordering: '-added', metacritic: '70,100' };
     } else {
-      params = { ...base, ordering: '-added' };
+      // Kategori/Tür filtresi
+      if (genres) {
+        if (genres === 'horror') {
+          params.tags = 'horror';
+        } else if (genres === 'card') {
+          params.genres = 'card,board-games';
+        } else {
+          params.genres = genres;
+        }
+      }
+
+      // Bölüm filtresi
+      if (section === 'new') {
+        const today = new Date().toISOString().slice(0, 10);
+        params.ordering = '-released';
+        params.dates = '2023-01-01,' + today;
+      } else if (section === 'topscore') {
+        params.ordering = '-metacritic';
+        params.metacritic = '70,100';
+      } else if (section === 'popular') {
+        params.ordering = '-rating';
+        params.metacritic = '60,100';
+      } else if (section === 'free') {
+        if (params.tags) {
+          params.tags = params.tags + ',free-to-play';
+        } else {
+          params.tags = 'free-to-play';
+        }
+        if (!params.ordering) {
+          params.ordering = '-added';
+        }
+      } else if (section === 'sale') {
+        if (!params.ordering) {
+          params.ordering = '-added';
+        }
+        params.metacritic = '70,100';
+      } else {
+        if (!params.ordering) {
+          params.ordering = '-added';
+        }
+      }
+
+      // Eğer sadece genres seçiliyse ve section yoksa, varsayılan sıralama/metacritic ekleyelim
+      if (genres && !section) {
+        params.ordering = '-rating';
+        params.metacritic = '60,100';
+      }
     }
 
     const data    = await fetchRawg('/games', params);
