@@ -172,56 +172,34 @@ export default function Home() {
     <div style={{ paddingBottom: 60 }}>
 
       {/* ══ HERO: tam ekran blurlu oyun mozaiği ════════════════════════════ */}
-      <div style={{ position: 'relative', height: 'calc(100vh - 64px)', overflow: 'hidden', minHeight: 480 }}>
+      <section style={{ position: 'relative', overflow: 'hidden', padding: '72px 0 8px', background: 'var(--hero-bg)' }}>
+        <div style={{ maxWidth: 880, margin: '0 auto', padding: '0 32px', textAlign: 'center' }}>
 
-        <div className="hero-marquee-wrapper">
-          <div className="hero-marquee-grid">
-            {renderMosaic('copy1')}
-            {renderMosaic('copy2')}
-          </div>
-        </div>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '6px 14px', borderRadius: 999, background: 'var(--bg-card)', border: '1px solid var(--border)', fontSize: 13, fontWeight: 600, color: 'var(--text-2)', boxShadow: 'var(--shadow)', marginBottom: 26 }}>
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--green)', boxShadow: '0 0 0 3px rgba(47,158,107,0.2)' }} /> Canlı fiyat takibi · 7 mağaza
+          </span>
 
-        {/* Genel karartma katmanı — mozaiği gizler, arama ön plana çıkar */}
-        <div style={{
-          position: 'absolute', inset: 0,
-          background: 'linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.65) 60%, rgba(0,0,0,0.88) 100%)',
-        }} />
+          <h1 style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 'clamp(40px, 5.6vw, 74px)', lineHeight: 1.02, letterSpacing: '-2px', color: 'var(--text)', marginBottom: 20, textWrap: 'balance' }}>
+            Bir sonraki oyununu keşfet
+          </h1>
+          <p style={{ fontSize: 18, color: 'var(--text-2)', maxWidth: 560, margin: '0 auto 36px', lineHeight: 1.55 }}>
+            500.000+ oyunu keşfet, Steam · Epic · GOG · Xbox fiyatlarını tek ekranda karşılaştır.
+          </p>
 
-        {/* Overlay: başlık + arama */}
-        <div style={{
-          position: 'absolute', inset: 0,
-          display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center',
-          padding: '0 20px', zIndex: 10,
-        }}>
-
-          {/* Glowing animasyonlu başlık */}
-          <h1 className="hero-glow-title">Ne aramıştınız?</h1>
-
-          {/* Animasyonlu arama çubuğu */}
-          <div ref={wrapperRef} style={{ width: '100%', maxWidth: 720, position: 'relative' }}
-            className="search-scale-in">
+          <div ref={wrapperRef} style={{ width: '100%', maxWidth: 640, position: 'relative', margin: '0 auto' }}>
             <form onSubmit={handleSearch}>
               <div style={{
-                display: 'flex', alignItems: 'center', gap: 14,
-                background: 'rgba(255,255,255,0.12)',
-                backdropFilter: 'blur(20px)',
-                WebkitBackdropFilter: 'blur(20px)',
-                border: '1.5px solid rgba(255,255,255,0.25)',
-                borderRadius: 999, height: 72, padding: '0 10px 0 28px',
-                boxShadow: '0 8px 40px rgba(0,0,0,0.4)',
+                display: 'flex', alignItems: 'center', gap: 10,
+                background: 'var(--bg-card)',
+                border: '1.5px solid var(--border-hover)',
+                borderRadius: 16, height: 66, padding: '0 8px 0 22px',
+                boxShadow: '0 12px 40px rgba(74,52,28,0.10)',
                 transition: 'border-color 0.2s, box-shadow 0.2s',
               }}
-                onFocusCapture={e => {
-                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.6)';
-                  e.currentTarget.style.boxShadow   = '0 8px 48px rgba(0,0,0,0.5)';
-                }}
-                onBlurCapture={e => {
-                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)';
-                  e.currentTarget.style.boxShadow   = '0 8px 40px rgba(0,0,0,0.4)';
-                }}
+                onFocusCapture={e => { e.currentTarget.style.borderColor = 'var(--accent)'; }}
+                onBlurCapture={e => { e.currentTarget.style.borderColor = 'var(--border-hover)'; }}
               >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)"
+                <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)"
                   strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
                   <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
                 </svg>
@@ -230,30 +208,23 @@ export default function Home() {
                   onChange={e => setQuery(e.target.value)}
                   onFocus={() => { if (suggestions.length) setShowSug(true); }}
                   onKeyDown={e => { if (e.key === 'Escape') setShowSug(false); }}
-                  placeholder={query ? '' : phText}
+                  placeholder={query ? '' : (phText ? phText + '▍' : 'Oyun, tür veya stüdyo ara…')}
                   autoComplete="off"
                   style={{
-                    flex: 1, border: 'none', outline: 'none', fontSize: 19,
-                    color: '#fff', background: 'transparent', caretColor: '#fff',
+                    flex: 1, border: 'none', outline: 'none', fontSize: 17,
+                    color: 'var(--text)', background: 'transparent', caretColor: 'var(--accent)',
                   }}
                 />
-                {/* Cursor */}
-                {!query && (
-                  <span style={{
-                    width: 2, height: 22, background: 'rgba(255,255,255,0.8)',
-                    borderRadius: 1, flexShrink: 0, animation: 'blink 1s step-end infinite',
-                  }} />
-                )}
                 {query && (
                   <button type="button" onClick={() => { setQuery(''); setSuggestions([]); setShowSug(false); }}
-                    style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', fontSize: 22, cursor: 'pointer', lineHeight: 1, padding: 0, flexShrink: 0 }}>
+                    style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: 22, cursor: 'pointer', lineHeight: 1, padding: 0, flexShrink: 0 }}>
                     ×
                   </button>
                 )}
                 <button type="submit" style={{
-                  flexShrink: 0, height: 54, padding: '0 28px', borderRadius: 999,
+                  flexShrink: 0, height: 50, padding: '0 26px', borderRadius: 11,
                   border: 'none', background: 'var(--accent)', color: '#fff',
-                  fontSize: 15, fontWeight: 700, cursor: 'pointer', transition: 'opacity 0.15s',
+                  fontSize: 15, fontWeight: 600, cursor: 'pointer', transition: 'opacity 0.15s',
                 }}
                   onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
                   onMouseLeave={e => e.currentTarget.style.opacity = '1'}
@@ -267,40 +238,40 @@ export default function Home() {
             {showSug && (
               <div style={{
                 position: 'absolute', top: 'calc(100% + 8px)', left: 0, right: 0,
-                background: 'rgba(18,18,24,0.95)', backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(255,255,255,0.12)',
-                borderRadius: 20, overflow: 'hidden', zIndex: 100,
-                boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border)',
+                borderRadius: 16, overflow: 'hidden', zIndex: 100,
+                boxShadow: 'var(--shadow-lg)',
                 textAlign: 'left',
               }}>
                 {sugLoading ? (
-                  <div style={{ padding: '14px 20px', color: 'rgba(255,255,255,0.5)', fontSize: 13 }}>Aranıyor…</div>
+                  <div style={{ padding: '14px 20px', color: 'var(--text-3)', fontSize: 13 }}>Aranıyor…</div>
                 ) : suggestions.map(g => (
                   <button key={g.id} onMouseDown={() => handleSugClick(g)}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 12, width: '100%',
                       padding: '10px 16px', border: 'none', background: 'transparent',
-                      cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.07)',
+                      cursor: 'pointer', borderBottom: '1px solid var(--border)',
                       transition: 'background 0.12s',
                     }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                   >
                     {g.image
                       ? <img src={g.image} alt="" style={{ width: 50, height: 32, objectFit: 'cover', borderRadius: 6, flexShrink: 0 }} />
-                      : <div style={{ width: 50, height: 32, borderRadius: 6, background: 'rgba(255,255,255,0.1)', flexShrink: 0 }} />
+                      : <div style={{ width: 50, height: 32, borderRadius: 6, background: 'var(--bg-input)', flexShrink: 0 }} />
                     }
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 13, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{g.name}</p>
-                      <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 1 }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{g.name}</p>
+                      <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>
                         {(g.genres || []).slice(0, 2).join(' • ')}
                         {g.metacritic ? ` • ⭐ ${g.metacritic}` : ''}
                       </p>
                     </div>
-                    {g.isFree && <span style={{ fontSize: 11, color: '#4ade80', fontWeight: 700, flexShrink: 0 }}>Ücretsiz</span>}
+                    {g.isFree && <span style={{ fontSize: 11, color: 'var(--green)', fontWeight: 700, flexShrink: 0 }}>Ücretsiz</span>}
                   </button>
                 ))}
-                <div style={{ padding: '10px 16px', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+                <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)' }}>
                   <button onMouseDown={handleSearch} style={{ fontSize: 12, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
                     "{query}" için tüm sonuçları gör →
                   </button>
@@ -309,26 +280,23 @@ export default function Home() {
             )}
           </div>
 
-          {/* Hızlı linkler — arama yapılınca animasyonla kaybolur */}
+          {/* Hızlı linkler */}
           <div style={{
-            display: 'flex', gap: 10, marginTop: 24, flexWrap: 'wrap', justifyContent: 'center',
+            display: 'flex', gap: 9, marginTop: 22, flexWrap: 'wrap', justifyContent: 'center',
             opacity: query ? 0 : 1,
-            transform: query ? 'translateY(-8px) scale(0.97)' : 'translateY(0) scale(1)',
             pointerEvents: query ? 'none' : 'auto',
-            transition: 'opacity 0.25s ease, transform 0.25s ease',
+            transition: 'opacity 0.25s ease',
           }}>
             {['💥 Popüler', '🏷️ İndirimde', '🗓️ Yeni Çıkan', '⭐ En İyi'].map((label, i) => {
               const sections = ['popular', 'sale', 'new', 'topscore'];
               return (
                 <Link key={label} href={`/games?section=${sections[i]}`}
                   style={{
-                    padding: '6px 16px', borderRadius: 999, fontSize: 12, fontWeight: 600,
-                    background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(8px)',
-                    color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.2)',
-                    transition: 'background 0.15s',
+                    padding: '8px 16px', borderRadius: 999, fontSize: 13, fontWeight: 600,
+                    background: 'var(--bg-card)',
+                    color: 'var(--text-2)', border: '1px solid var(--border)',
+                    boxShadow: '0 1px 4px rgba(74,52,28,0.04)',
                   }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.12)'}
                 >
                   {label}
                 </Link>
@@ -336,7 +304,24 @@ export default function Home() {
             })}
           </div>
         </div>
-      </div>
+
+        {/* Kapak şeridi — yatay kayan */}
+        {heroTiles && (
+          <div style={{ marginTop: 54, WebkitMaskImage: 'linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent)', maskImage: 'linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent)' }}>
+            <div className="hero-strip" style={{ display: 'flex', gap: 16, width: 'max-content', padding: '6px 0 12px' }}>
+              {[...heroTiles, ...heroTiles].map((g, i) => (
+                <Link key={i} href={g.rawgSlug ? `/game/rawg/${g.rawgSlug}` : `/game/rawg/${g.id}`}
+                  style={{ width: 168, aspectRatio: '3 / 4', borderRadius: 16, position: 'relative', overflow: 'hidden', flexShrink: 0, background: 'var(--bg-input)', boxShadow: '0 10px 28px rgba(74,52,28,0.16)' }}>
+                  {g.image && <Image src={g.image} alt="" fill sizes="168px" style={{ objectFit: 'cover' }} unoptimized />}
+                  <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'flex-end', padding: 13, background: 'linear-gradient(to top, rgba(8,8,16,0.62), transparent 58%)' }}>
+                    <span style={{ color: '#fff', fontWeight: 700, fontSize: 13.5, lineHeight: 1.2, textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}>{g.name}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
 
       {/* ══ İÇERİK BÖLÜMLERİ ══════════════════════════════════════════════════ */}
       <div className="container" style={{ paddingTop: 48 }}>
@@ -443,6 +428,11 @@ export default function Home() {
           0%,100% { opacity: 1; }
           50%      { opacity: 0.5; }
         }
+
+        /* Kapak şeridi kayma */
+        .hero-strip { animation: hero-strip-scroll 48s linear infinite; }
+        @keyframes hero-strip-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+        @media (prefers-reduced-motion: reduce) { .hero-strip { animation: none; } }
       `}</style>
     </div>
   );
