@@ -63,7 +63,7 @@ export default function GameCard({ game, compact = false }) {
 
   const isFree   = livePrice?.isFree || game.isFree || game.gamePass;
   const isOnSale = (livePrice?.discount > 0) && !isFree;
-  const imgH     = compact ? 144 : 168;
+  const imgH     = compact ? 130 : 150;
   const href     = game.rawgSlug ? `/game/rawg/${game.rawgSlug}` : `/game/rawg/${game.id}`;
 
   return (
@@ -92,8 +92,7 @@ export default function GameCard({ game, compact = false }) {
             <Image
               src={game.image} alt={game.name} fill
               sizes="(max-width:640px) 50vw, 200px"
-              style={{ objectFit: 'cover', pointerEvents: 'none' }}
-              draggable={false}
+              style={{ objectFit: 'cover' }}
               unoptimized
             />
           ) : (
@@ -101,6 +100,9 @@ export default function GameCard({ game, compact = false }) {
               {game.name?.slice(0, 2).toUpperCase()}
             </div>
           )}
+
+          {/* Oyun kutusu parlaklığı */}
+          <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'linear-gradient(125deg, rgba(255,255,255,0.32) 0%, rgba(255,255,255,0.09) 22%, rgba(255,255,255,0) 44%), linear-gradient(to top, rgba(0,0,0,0.30), rgba(0,0,0,0) 46%)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.30), inset 0 0 0 1px rgba(255,255,255,0.06)' }} />
 
           {/* Sol üst: indirim / ücretsiz badge */}
           <div style={{ position: 'absolute', top: 8, left: 8, display: 'flex', gap: 4 }}>
@@ -190,7 +192,7 @@ export default function GameCard({ game, compact = false }) {
           <p style={{ fontWeight: 600, fontSize: 14, lineHeight: 1.3, color: 'var(--text)', marginBottom: 7, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {game.name}
           </p>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4, fontFamily: "-apple-system, 'Segoe UI', system-ui, Roboto, 'Helvetica Neue', Arial, sans-serif" }}>
 
             {/* Fiyat */}
             {isFree ? (

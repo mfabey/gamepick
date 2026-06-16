@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
@@ -22,6 +22,26 @@ export default function NavBar() {
   const handleLogout = () => { logout(); router.push('/'); };
 
   const isActive = (href) => href === '/' ? pathname === '/' : pathname.startsWith(href);
+
+  // Kayan turuncu pill göstergesi
+  const navRef = useRef(null);
+  const [pill, setPill] = useState({ width: 0, top: 0, height: 0, transform: 'translateX(0)', opacity: 0 });
+  useEffect(() => {
+    const place = () => {
+      const nav = navRef.current;
+      if (!nav) return;
+      const tabs = nav.querySelectorAll('[data-tab]');
+      const idx = NAV_LINKS.findIndex(l => isActive(l.href));
+      const el = idx >= 0 ? tabs[idx] : null;
+      if (!el) { setPill(p => ({ ...p, opacity: 0 })); return; }
+      setPill({ opacity: 1, width: el.offsetWidth, top: el.offsetTop, height: el.offsetHeight, transform: `translateX(${el.offsetLeft}px)` });
+    };
+    place();
+    const t = setTimeout(place, 0);
+    if (typeof document !== 'undefined' && document.fonts && document.fonts.ready) document.fonts.ready.then(place);
+    if (typeof window !== 'undefined') window.addEventListener('resize', place);
+    return () => { clearTimeout(t); if (typeof window !== 'undefined') window.removeEventListener('resize', place); };
+  }, [pathname]);
 
   return (
     <>
@@ -113,25 +133,35 @@ export default function NavBar() {
       </header>
 
       {/* ── Alt cam sekme çubuğu ── */}
-      <nav style={{
-        position: 'fixed', left: '50%', transform: 'translateX(-50%)', bottom: 22, zIndex: 200,
-        display: 'flex', gap: 4,
-        background: 'color-mix(in srgb, var(--bg-card) 60%, transparent)',
-        backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)',
-        border: '1px solid color-mix(in srgb, var(--text) 12%, transparent)',
-        borderRadius: 999, padding: 7,
-        boxShadow: '0 16px 44px rgba(74,52,28,0.22)',
+      <nav ref={navRef} style={{
+        position: 'fixed', left: '50%', transform: 'translateX(-50%)', bottom: 24, zIndex: 200,
+        display: 'flex', gap: 5,
+        background: 'color-mix(in srgb, var(--bg-card) 62%, transparent)',
+        backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+        borderRadius: 999, padding: 9,
+        boxShadow: '0 18px 48px rgba(74,52,28,0.24), inset 0 0 0 1px color-mix(in srgb, var(--text) 12%, transparent)',
+        animation: 'navBarIn 0.8s cubic-bezier(0.16,1,0.3,1) both',
       }}>
+        <div aria-hidden style={{
+          position: 'absolute', left: 0, top: pill.top, height: pill.height, width: pill.width,
+          transform: pill.transform, opacity: pill.opacity,
+          background: 'var(--accent)', borderRadius: 999, boxShadow: '0 6px 18px var(--accent-bg)',
+          transition: 'transform 0.55s cubic-bezier(0.22,1,0.32,1), width 0.55s cubic-bezier(0.22,1,0.32,1)',
+          zIndex: 0, pointerEvents: 'none',
+        }} />
         {NAV_LINKS.map(l => {
           const active = isActive(l.href);
           return (
-            <Link key={l.href} href={l.href} style={{
-              padding: '11px 22px', borderRadius: 999,
-              fontSize: 14.5, fontWeight: active ? 600 : 500, whiteSpace: 'nowrap',
-              background: active ? 'var(--accent)' : 'transparent',
-              color: active ? '#fff' : 'var(--text-2)',
-              transition: 'background 0.15s, color 0.15s',
-            }}>{l.label}</Link>
+            <Link key={l.href} href={l.href} data-tab="t"
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; }}
+              style={{
+                position: 'relative', zIndex: 1,
+                padding: '13px 27px', borderRadius: 999,
+                fontSize: 15.5, fontWeight: active ? 600 : 500, whiteSpace: 'nowrap',
+                color: active ? '#fff' : 'var(--text-2)',
+                transition: 'transform 0.18s cubic-bezier(0.2,0.8,0.3,1), color 0.4s ease',
+              }}>{l.label}</Link>
           );
         })}
       </nav>

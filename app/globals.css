@@ -1,3 +1,9 @@
+/* ===== BOTTOM NAV ENTRANCE ===== */
+@keyframes navBarIn {
+  from { transform: translate(-50%, 28px); opacity: 0; }
+  to   { transform: translate(-50%, 0);    opacity: 1; }
+}
+
 /* ===== GLOW ANIMATIONS ===== */
 @keyframes glow-green {
   0%, 100% { box-shadow: 0 0 6px rgba(0, 210, 110, 0.3); }
@@ -122,7 +128,7 @@ html[data-theme="dark"] body > * { position: relative; z-index: 1; }
 html, body {
   background: var(--bg-body); color: var(--text);
   font-family: var(--font-body);
-  font-size: 17px; line-height: 1.65; min-height: 100vh;
+  font-size: 16px; line-height: 1.65; min-height: 100vh;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -144,7 +150,7 @@ img { max-width: 100%; display: block; }
 ::-webkit-scrollbar-thumb:hover { background: var(--accent); filter: brightness(1.2); }
 
 /* ===== UTILITIES ===== */
-.container { max-width: 1480px; margin: 0 auto; padding: 0 40px; }
+.container { max-width: 1400px; margin: 0 auto; padding: 0 36px; }
 
 .badge {
   display: inline-flex; align-items: center; gap: 4px;
@@ -171,8 +177,8 @@ html[data-theme="dark"] .badge-purple { background: #10102a; color: #a78bfa; bor
 
 .section-title {
   font-family: var(--font-heading);
-  font-size: 32px; font-weight: 700; color: var(--text);
-  margin-bottom: 22px;
+  font-size: 30px; font-weight: 700; color: var(--text);
+  margin-bottom: 20px;
   letter-spacing: -0.3px;
 }
 
@@ -275,7 +281,7 @@ html[data-theme="dark"] .badge-purple { background: #10102a; color: #a78bfa; bor
 /* ===== GAME TITLE ===== */
 .game-title {
   font-family: var(--font-heading);
-  font-size: 36px;
+  font-size: 32px;
   font-weight: 800;
   color: var(--text);
   line-height: 1.15;

@@ -376,6 +376,7 @@ function GamesList() {
                     <button key={o.value} onClick={() => setPrice(o.value)} style={{
                       width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                       padding: '10px 18px', border: 'none', cursor: 'pointer',
+                      fontFamily: "-apple-system, 'Segoe UI', system-ui, Roboto, 'Helvetica Neue', Arial, sans-serif",
                       background: active ? 'var(--accent-bg)' : 'transparent',
                       color: active ? 'var(--accent)' : 'var(--text-2)',
                       fontSize: 14, fontWeight: active ? 600 : 400,
