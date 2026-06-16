@@ -14,9 +14,10 @@ function SteamIcon({ size = 16 }) {
 }
 
 function EpicIcon({ size = 16 }) {
+  // Simpleicons'dan alınan gerçek Epic Games logosu path'i
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-      <path fill="currentColor" d="M4 2h16v3.5H8v4.25h9.5V13H8v4.5h12V21H4V2z"/>
+      <path fill="currentColor" d="M3.623 0v18.954l2.507 1.597V3.207h9.123v3.21H9.118v2.674h5.628v3.21H9.118v3.474h6.231v3.21H6.23V24l14.148-4.625V0z"/>
     </svg>
   );
 }
@@ -148,6 +149,30 @@ export default function GameCard({ game, compact = false }) {
             </div>
           )}
 
+          {/* Sol alt: platform logoları */}
+          <div style={{ position: 'absolute', bottom: 6, left: 7, display: 'flex', gap: 4 }}>
+            {(game.hasSteam || livePrice?.storeName === 'Steam') && livePrice?.isAvailable !== false && (
+              <span title="Steam" style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: 20, height: 20, borderRadius: 5,
+                background: 'rgba(23,42,61,0.92)', backdropFilter: 'blur(4px)',
+                color: '#c7d5e0',
+              }}>
+                <SteamIcon size={12} />
+              </span>
+            )}
+            {(game.hasEpic || livePrice?.storeName === 'Epic Games') && (
+              <span title="Epic Games" style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: 20, height: 20, borderRadius: 5,
+                background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(4px)',
+                color: '#ffffff',
+              }}>
+                <EpicIcon size={11} />
+              </span>
+            )}
+          </div>
+
           {/* Sağ alt: metacritic */}
           {game.metacritic && (
             <div style={{ position: 'absolute', bottom: 6, right: 7 }}>
@@ -204,21 +229,6 @@ export default function GameCard({ game, compact = false }) {
               </span>
             )}
 
-            {/* Platform logo'ları — sadece geniş kartlarda */}
-            {!compact && (
-              <div style={{ display: 'flex', gap: 4, flexShrink: 0, alignItems: 'center' }}>
-                {(game.hasSteam && livePrice?.isAvailable !== false || livePrice?.storeName === 'Steam') && (
-                  <span title="Steam" style={{ display: 'flex', alignItems: 'center', color: 'var(--text-2)', opacity: 0.75 }}>
-                    <SteamIcon size={14} />
-                  </span>
-                )}
-                {(game.hasEpic || livePrice?.storeName === 'Epic Games') && (
-                  <span title="Epic Games" style={{ display: 'flex', alignItems: 'center', color: 'var(--text-2)', opacity: 0.75 }}>
-                    <EpicIcon size={13} />
-                  </span>
-                )}
-              </div>
-            )}
           </div>
 
           {/* Tür — sadece geniş kartlarda */}
