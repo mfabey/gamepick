@@ -304,20 +304,29 @@ html[data-theme="dark"] .glass-card {
   grid-template-columns: repeat(5, 1fr);
   grid-template-rows: repeat(4, 1fr);
   height: 100%;
-  gap: 2px;
+  gap: 16px;
+  padding: 16px;
 }
 
 .hero-mosaic-tile {
   display: block;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
 }
 
 @media (max-width: 768px) {
   .hero-mosaic {
     grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(2, 1fr);
+    grid-template-rows: repeat(5, 1fr);
+    gap: 10px;
+    padding: 10px;
   }
   
-  .hero-mosaic-tile:nth-child(n+7) {
+  .hero-mosaic-tile {
+    border-radius: 12px;
+  }
+  
+  .hero-mosaic-tile:nth-child(n+16) {
     display: none !important;
   }
 }
