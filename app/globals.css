@@ -330,3 +330,34 @@ html[data-theme="dark"] .glass-card {
   }
 }
 
+/* Hero Marquee Animation Container */
+.hero-marquee-wrapper {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.hero-marquee-grid {
+  display: flex;
+  flex-direction: column;
+  height: 200%;
+  animation: marquee-scroll 45s linear infinite;
+}
+
+@keyframes marquee-scroll {
+  0% {
+    transform: translateY(-50%);
+  }
+  100% {
+    transform: translateY(0%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-marquee-grid {
+    animation: none;
+    transform: translateY(0);
+  }
+}
+

@@ -147,30 +147,38 @@ export default function Home() {
     ? Array.from({ length: PANELS }, (_, i) => heroPool[i % heroPool.length])
     : null;
 
+  const renderMosaic = (keyPrefix) => (
+    <div className="hero-mosaic" style={{ height: '50%' }}>
+      {heroTiles ? heroTiles.map((g, i) => (
+        <div key={`${keyPrefix}-${i}`} className="hero-mosaic-tile" style={{ position: 'relative', overflow: 'hidden', background: '#111' }}>
+          {g.image && (
+            <Image src={g.image} alt="" fill
+              sizes="25vw"
+              style={{
+                objectFit: 'cover',
+                filter: 'blur(5px)',
+                transform: 'scale(1.12)', // blur kenar boşluğunu gizle
+              }}
+              unoptimized />
+          )}
+        </div>
+      )) : (
+        <div style={{ gridColumn: '1 / -1', gridRow: '1 / -1', background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)' }} />
+      )}
+    </div>
+  );
+
   return (
     <div style={{ paddingBottom: 60 }}>
 
       {/* ══ HERO: tam ekran blurlu oyun mozaiği ════════════════════════════ */}
       <div style={{ position: 'relative', height: 'calc(100vh - 56px)', overflow: 'hidden', minHeight: 480 }}>
 
-        {/* Mozaik arka plan — CSS sınıfı kontrollü (mobilde 3x2, masaüstünde 5x4) */}
-        <div className="hero-mosaic">
-          {heroTiles ? heroTiles.map((g, i) => (
-            <div key={i} className="hero-mosaic-tile" style={{ position: 'relative', overflow: 'hidden', background: '#111' }}>
-              {g.image && (
-                <Image src={g.image} alt="" fill
-                  sizes="25vw"
-                  style={{
-                    objectFit: 'cover',
-                    filter: 'blur(5px)',
-                    transform: 'scale(1.12)', // blur kenar boşluğunu gizle
-                  }}
-                  unoptimized />
-              )}
-            </div>
-          )) : (
-            <div style={{ gridColumn: '1 / -1', gridRow: '1 / -1', background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)' }} />
-          )}
+        <div className="hero-marquee-wrapper">
+          <div className="hero-marquee-grid">
+            {renderMosaic('copy1')}
+            {renderMosaic('copy2')}
+          </div>
         </div>
 
         {/* Genel karartma katmanı — mozaiği gizler, arama ön plana çıkar */}
