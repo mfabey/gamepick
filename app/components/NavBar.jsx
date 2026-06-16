@@ -30,19 +30,22 @@ export default function NavBar() {
   return (
     <header style={{
       borderBottom: '1px solid var(--border)',
+      borderBottomColor: 'var(--accent)',
+      borderBottomWidth: '2px',
       position: 'sticky', top: 0,
       background: 'var(--bg)',
-      backdropFilter: 'blur(12px)',
       zIndex: 100,
     }}>
       <div className="container" style={{
-        display: 'flex', alignItems: 'center', height: 60, gap: 8,
+        display: 'flex', alignItems: 'center', height: 56, gap: 8,
       }}>
         {/* Logo */}
         <Link href="/" style={{
           display: 'flex', alignItems: 'center', gap: 8,
-          marginRight: 16, fontWeight: 700, fontSize: 17,
-          letterSpacing: '-0.3px', color: 'var(--text)',
+          marginRight: 16, fontWeight: 800, fontSize: 18,
+          letterSpacing: '1.5px', color: 'var(--text)',
+          fontFamily: 'var(--font-heading)',
+          textTransform: 'uppercase',
         }}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
             stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"

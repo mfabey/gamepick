@@ -12,12 +12,14 @@ export default function RootLayout({ children }) {
   return (
     <html lang="tr">
       <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet" />
         <script dangerouslySetInnerHTML={{ __html: `
           (function() {
             try {
               const savedTheme = localStorage.getItem('theme');
-              const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-              const initialTheme = savedTheme || (systemPrefersDark ? 'dark' : 'light');
+              const initialTheme = savedTheme || 'dark';
               document.documentElement.setAttribute('data-theme', initialTheme);
             } catch (e) {}
           })()
@@ -27,7 +29,7 @@ export default function RootLayout({ children }) {
         <ThemeProvider>
           <AuthProvider>
             <NavBar />
-            <main style={{ minHeight: 'calc(100vh - 60px)' }}>
+            <main style={{ minHeight: 'calc(100vh - 56px)' }}>
               {children}
             </main>
           </AuthProvider>
