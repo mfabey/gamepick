@@ -87,7 +87,7 @@ export default function GameCard({ game, compact = false }) {
         }}
       >
         {/* Kapak */}
-        <div style={{ height: imgH, background: 'var(--bg-input)', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ aspectRatio: '16/9', width: '100%', background: 'var(--bg-input)', position: 'relative', overflow: 'hidden' }}>
           {game.image ? (
             <Image
               src={game.image} alt={game.name} fill

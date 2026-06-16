@@ -89,7 +89,28 @@ async function fetchSteamNewReleases() {
     if (!res.ok) return [];
     const data = await res.json();
     const newReleases = data.new_releases?.items || [];
-    return newReleases.map(item => {
+
+    // DLC'leri, Expansion'ları, Soundtrack'leri filtrelemek için paralel appdetails kontrolü
+    const detailedItems = await Promise.all(
+      newReleases.map(async (item) => {
+        try {
+          const detailRes = await fetch(`https://store.steampowered.com/api/appdetails?appids=${item.id}&cc=tr&filters=basic`, { next: { revalidate: 1800 } });
+          if (!detailRes.ok) return null;
+          const detailData = await detailRes.json();
+          const entry = detailData[item.id];
+          if (entry && entry.success && entry.data?.type === 'game') {
+            return item;
+          }
+          return null;
+        } catch {
+          return null;
+        }
+      })
+    );
+
+    const gamesOnly = detailedItems.filter(Boolean);
+
+    return gamesOnly.map(item => {
       const slug = item.name.toLowerCase()
         .replace(/[^a-z0-9\s-]/g, '')
         .trim()

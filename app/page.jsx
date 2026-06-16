@@ -153,16 +153,10 @@ export default function Home() {
       {/* ══ HERO: tam ekran blurlu oyun mozaiği ════════════════════════════ */}
       <div style={{ position: 'relative', height: 'calc(100vh - 56px)', overflow: 'hidden', minHeight: 480 }}>
 
-        {/* Mozaik arka plan — 5×4 grid, tüm görseller blurlu */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: `repeat(${COLS}, 1fr)`,
-          gridTemplateRows:    `repeat(${ROWS}, 1fr)`,
-          height: '100%',
-          gap: 2,
-        }}>
+        {/* Mozaik arka plan — CSS sınıfı kontrollü (mobilde 3x2, masaüstünde 5x4) */}
+        <div className="hero-mosaic">
           {heroTiles ? heroTiles.map((g, i) => (
-            <div key={i} style={{ position: 'relative', overflow: 'hidden', background: '#111' }}>
+            <div key={i} className="hero-mosaic-tile" style={{ position: 'relative', overflow: 'hidden', background: '#111' }}>
               {g.image && (
                 <Image src={g.image} alt="" fill
                   sizes="25vw"

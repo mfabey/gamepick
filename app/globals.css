@@ -298,3 +298,35 @@ html[data-theme="dark"] .glass-card {
   border: 1.5px solid rgba(255, 255, 255, 0.08) !important;
 }
 
+/* Hero Mosaic Grid classes */
+.hero-mosaic {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+  height: 100%;
+  gap: 2px;
+}
+
+.hero-mosaic-tile {
+  display: block;
+}
+
+@media (max-width: 768px) {
+  .hero-mosaic {
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+  }
+  
+  .hero-mosaic-tile:nth-child(n+7) {
+    display: none !important;
+  }
+}
+
+/* Responsive Grid Auto definitions (2 columns on mobile) */
+@media (max-width: 480px) {
+  .grid-auto {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
+  }
+}
+
