@@ -407,21 +407,21 @@ export default function Home() {
           animation: glow-pulse 3s ease-in-out infinite;
           text-shadow:
             0 0 20px rgba(255,255,255,0.4),
-            0 0 60px rgba(220,60,60,0.3),
+            0 0 60px rgba(194,89,58,0.3),
             0 2px 8px rgba(0,0,0,0.8);
         }
         @keyframes glow-pulse {
           0%, 100% {
             text-shadow:
               0 0 20px rgba(255,255,255,0.4),
-              0 0 60px rgba(220,60,60,0.3),
+              0 0 60px rgba(194,89,58,0.3),
               0 2px 8px rgba(0,0,0,0.8);
           }
           50% {
             text-shadow:
               0 0 30px rgba(255,255,255,0.7),
-              0 0 90px rgba(220,60,60,0.6),
-              0 0 120px rgba(180,40,40,0.3),
+              0 0 90px rgba(194,89,58,0.6),
+              0 0 120px rgba(166,74,46,0.3),
               0 2px 8px rgba(0,0,0,0.8);
           }
         }

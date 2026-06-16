@@ -25,34 +25,34 @@
 
 /* ===== CSS VARIABLES ===== */
 :root {
-  --bg: #ffffff;
-  --bg-body: #f0f0f4;
-  --bg-card: #ffffff;
-  --bg-input: #e8e8ee;
-  --bg-hover: #f4f4f8;
-  --border: rgba(0,0,0,0.09);
-  --border-hover: rgba(0,0,0,0.18);
-  --text: #080814;
-  --text-2: #505070;
-  --text-3: #8888a8;
-  --accent: #d91020;
-  --accent-bg: #fff0f1;
-  --accent-border: #ffc0c5;
-  --accent-glow: rgba(217,16,32,0.22);
-  --green: #009944;
-  --green-bg: #edfdf5;
-  --green-border: #9beed0;
-  --blue: #1a5ce0;
-  --blue-bg: #eef4ff;
-  --amber: #c07800;
-  --amber-bg: #fff8e8;
-  --radius: 6px; --radius-lg: 10px; --radius-full: 9999px;
-  --shadow: 0 2px 8px rgba(0,0,0,0.08);
-  --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
-  --hero-bg: linear-gradient(160deg, #f4f4f8 0%, #ffe8ea 60%, #f0f0f4 100%);
-  --cta-bg: linear-gradient(160deg, #fff0f1, #ffffff);
-  --font-heading: 'Outfit', 'Segoe UI', sans-serif;
-  --font-body: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --bg: #fffdf8;
+  --bg-body: #f6f1e8;
+  --bg-card: #fffdf8;
+  --bg-input: #efe7d9;
+  --bg-hover: #f2ece1;
+  --border: rgba(74,52,28,0.10);
+  --border-hover: rgba(74,52,28,0.20);
+  --text: #241d14;
+  --text-2: #6d5d49;
+  --text-3: #a89580;
+  --accent: #c2593a;
+  --accent-bg: #f4e4d8;
+  --accent-border: #e7c2ac;
+  --accent-glow: rgba(194,89,58,0.22);
+  --green: #2f9e6b;
+  --green-bg: #e8f3ea;
+  --green-border: #bfe3cc;
+  --blue: #2f73e8;
+  --blue-bg: #e8f0fd;
+  --amber: #cf7d18;
+  --amber-bg: #f7edd6;
+  --radius: 8px; --radius-lg: 14px; --radius-full: 9999px;
+  --shadow: 0 2px 8px rgba(74,52,28,0.07);
+  --shadow-lg: 0 16px 44px rgba(74,52,28,0.14);
+  --hero-bg: radial-gradient(125% 130% at 50% -20%, #f4e4d8 0%, #f6f1e8 55%);
+  --cta-bg: linear-gradient(120deg, #f4e4d8, #fffdf8 70%);
+  --font-heading: 'Bricolage Grotesque', 'Segoe UI', sans-serif;
+  --font-body: 'Schibsted Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
   --gold-bg: linear-gradient(135deg, #FFFCF0, #FFF5D0);
   --gold-border: #d4a800;
@@ -66,20 +66,20 @@
 }
 
 html[data-theme="dark"] {
-  --bg: #111113;
-  --bg-body: #0d0d0e;
-  --bg-card: #181819;
-  --bg-input: #212123;
-  --bg-hover: #1c1c1e;
+  --bg: #16130e;
+  --bg-body: #100d09;
+  --bg-card: #1d1812;
+  --bg-input: #261f17;
+  --bg-hover: #211b14;
   --border: rgba(255,255,255,0.08);
   --border-hover: rgba(255,255,255,0.16);
   --text: #f0f0f0;
   --text-2: #909090;
   --text-3: #606060;
-  --accent: #e8192c;
-  --accent-bg: #1c0509;
-  --accent-border: #420c14;
-  --accent-glow: rgba(232,25,44,0.38);
+  --accent: #e07a55;
+  --accent-bg: #2a160e;
+  --accent-border: #4a2618;
+  --accent-glow: rgba(224,122,85,0.40);
   --green: #00d26e;
   --green-bg: #021208;
   --green-border: #073d1c;
@@ -89,8 +89,8 @@ html[data-theme="dark"] {
   --amber-bg: #140e00;
   --shadow: 0 2px 10px rgba(0,0,0,0.7);
   --shadow-lg: 0 12px 48px rgba(0,0,0,0.85);
-  --hero-bg: linear-gradient(160deg, #0e0e12 0%, #1c0509 50%, #0e0e12 100%);
-  --cta-bg: linear-gradient(160deg, #1c0509, #12121a);
+  --hero-bg: linear-gradient(160deg, #100d09 0%, #2a160e 50%, #100d09 100%);
+  --cta-bg: linear-gradient(160deg, #2a160e, #16130e);
 
   --gold-bg: linear-gradient(135deg, #181100, #100c00);
   --gold-border: #c89800;

@@ -6,255 +6,135 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 
+const NAV_LINKS = [
+  { href: '/',        label: 'Anasayfa' },
+  { href: '/games',   label: 'Oyunlar'  },
+  { href: '/dlc',     label: 'DLC'      },
+  { href: '/library', label: 'Kütüphane' },
+];
+
 export default function NavBar() {
   const pathname = usePathname();
   const router   = useRouter();
   const { user, steamUser, logout, steamLogout } = useAuth();
   const { theme, toggleTheme, mounted } = useTheme();
 
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const handleLogout = () => { logout(); router.push('/'); };
 
-  // Sayfa değiştiğinde mobil menüyü otomatik kapat
-  useEffect(() => {
-    setMobileMenuOpen(false);
-  }, [pathname]);
-
-  const active = (path) =>
-    pathname === path ? 'nav-link active' : 'nav-link';
-
-  const handleLogout = () => {
-    logout();
-    router.push('/');
-  };
+  const isActive = (href) => href === '/' ? pathname === '/' : pathname.startsWith(href);
 
   return (
-    <header style={{
-      borderBottom: '1px solid var(--border)',
-      borderBottomColor: 'var(--accent)',
-      borderBottomWidth: '2px',
-      position: 'sticky', top: 0,
-      background: 'var(--bg)',
-      zIndex: 100,
-    }}>
-      <div className="container" style={{
-        display: 'flex', alignItems: 'center', height: 64, gap: 8,
+    <>
+      {/* ── Üst bar: ortalı logo + sağda tema & hesap ── */}
+      <header style={{
+        position: 'sticky', top: 0, zIndex: 100,
+        background: 'color-mix(in srgb, var(--bg) 82%, transparent)',
+        backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+        borderBottom: '1px solid var(--border)',
       }}>
-        {/* Logo */}
-        <Link href="/" style={{
-          display: 'flex', alignItems: 'center', gap: 8,
-          marginRight: 16, fontWeight: 700, fontSize: 20,
-          letterSpacing: '-0.2px', color: 'var(--text)',
-          fontFamily: 'var(--font-heading)',
+        <div style={{
+          maxWidth: 1320, margin: '0 auto', padding: '0 32px',
+          height: 64, display: 'flex', alignItems: 'center',
+          justifyContent: 'flex-end', position: 'relative',
         }}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"
-            strokeLinejoin="round" style={{ color: 'var(--accent)' }}>
-            <rect x="2" y="6" width="20" height="12" rx="2"/>
-            <path d="M6 12h4M8 10v4"/>
-            <circle cx="15" cy="11" r="1" fill="currentColor" stroke="none"/>
-            <circle cx="18" cy="13" r="1" fill="currentColor" stroke="none"/>
-          </svg>
-          GamePick
-        </Link>
-
-        {/* Ana navigasyon (Masaüstü) */}
-        <nav className="desktop-only" style={{ display: 'flex', gap: 2, marginRight: 'auto' }}>
-          <Link href="/"         className={active('/')}>Anasayfa</Link>
-          <Link href="/games"    className={active('/games')}>Oyunlar</Link>
-          <Link href="/dlc"      className={active('/dlc')}>DLC</Link>
-          <Link href="/library"  className={active('/library')}>Kütüphane</Link>
-        </nav>
-
-        {/* Sağ taraf (Tema + Butonlar) */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginLeft: 'auto' }}>
-          {/* Tema Değiştirici */}
-          <button onClick={toggleTheme} style={{
-            background: 'none', border: '1px solid var(--border)',
-            borderRadius: 8, width: 34, height: 34,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: 'var(--text-2)', cursor: 'pointer', transition: 'all 0.15s',
-          }} title={theme === 'dark' ? 'Aydınlık Mod' : 'Karanlık Mod'}>
-            {!mounted ? (
-              <div style={{ width: 18, height: 18 }} />
-            ) : theme === 'dark' ? (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+          {/* Ortalı logo */}
+          <Link href="/" style={{
+            display: 'flex', alignItems: 'center', gap: 9, cursor: 'pointer',
+            position: 'absolute', left: '50%', transform: 'translateX(-50%)',
+            color: 'var(--text)',
+          }}>
+            <span style={{
+              width: 34, height: 34, borderRadius: 10, background: 'var(--accent)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 4px 14px var(--accent-bg)',
+            }}>
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff"
+                strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="6" width="20" height="12" rx="3"/>
+                <path d="M6 12h4M8 10v4"/>
+                <circle cx="15.5" cy="11" r="1" fill="#fff" stroke="none"/>
+                <circle cx="18" cy="13.5" r="1" fill="#fff" stroke="none"/>
               </svg>
-            ) : (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
-              </svg>
-            )}
-          </button>
+            </span>
+            <span style={{
+              fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: 21,
+              letterSpacing: '-0.5px', color: 'var(--text)',
+            }}>GamePick</span>
+          </Link>
 
-          {/* Masaüstü Auth Butonları */}
-          <div className="desktop-only" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            {/* Steam kullanıcısı */}
-            {steamUser && (
+          {/* Sağ: tema + hesap */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <button onClick={toggleTheme} title={theme === 'dark' ? 'Aydınlık Mod' : 'Karanlık Mod'} style={{
+              background: 'none', border: '1px solid var(--border)', borderRadius: 9,
+              width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'var(--text-2)', cursor: 'pointer',
+            }}>
+              {!mounted ? <div style={{ width: 18, height: 18 }} />
+                : theme === 'dark' ? (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+                )}
+            </button>
+
+            {steamUser ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Link href="/library" style={{
-                  display: 'flex', alignItems: 'center', gap: 8,
-                  padding: '5px 10px', borderRadius: 8,
-                  background: 'rgba(26,159,255,0.1)', border: '1px solid rgba(26,159,255,0.3)',
-                  fontSize: 13, fontWeight: 600, color: '#1a9fff', textDecoration: 'none',
+                  display: 'flex', alignItems: 'center', gap: 8, padding: '5px 10px', borderRadius: 9,
+                  background: 'rgba(47,115,232,0.1)', border: '1px solid rgba(47,115,232,0.3)',
+                  fontSize: 13, fontWeight: 600, color: '#2f73e8',
                 }}>
-                  {steamUser.avatar ? (
-                    <img src={steamUser.avatar} alt="" style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover' }} />
-                  ) : (
-                    <span style={{ width: 22, height: 22, borderRadius: '50%', background: '#1a9fff', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700 }}>
-                      {steamUser.name?.slice(0, 1).toUpperCase()}
-                    </span>
-                  )}
-                  {steamUser.name?.slice(0, 16)}{steamUser.name?.length > 16 ? '…' : ''}
+                  {steamUser.avatar
+                    ? <img src={steamUser.avatar} alt="" style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover' }} />
+                    : <span style={{ width: 22, height: 22, borderRadius: '50%', background: '#2f73e8', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700 }}>{steamUser.name?.slice(0, 1).toUpperCase()}</span>}
+                  {steamUser.name?.slice(0, 14)}{steamUser.name?.length > 14 ? '…' : ''}
                 </Link>
-                <button onClick={steamLogout} style={{
-                  padding: '5px 10px', borderRadius: 8, fontSize: 12,
-                  background: 'none', border: '1px solid var(--border)',
-                  color: 'var(--text-3)', cursor: 'pointer',
-                }}>
-                  Çıkış
-                </button>
+                <button onClick={steamLogout} style={{ padding: '5px 10px', borderRadius: 9, fontSize: 12, background: 'none', border: '1px solid var(--border)', color: 'var(--text-3)', cursor: 'pointer' }}>Çıkış</button>
               </div>
-            )}
-
-            {/* Site hesabı */}
-            {user && !steamUser ? (
+            ) : user ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <Link href="/profile" style={{
-                  display: 'flex', alignItems: 'center', gap: 8,
-                  padding: '6px 12px', borderRadius: 8,
-                  background: 'var(--accent-bg)', border: '1px solid var(--accent-border)',
-                  fontSize: 13, fontWeight: 600, color: 'var(--accent)',
+                  display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 9,
+                  background: 'var(--accent-bg)', border: '1px solid var(--accent-border)', fontSize: 13, fontWeight: 600, color: 'var(--accent)',
                 }}>
-                  <span style={{
-                    width: 24, height: 24, borderRadius: '50%',
-                    background: 'var(--accent)', color: '#fff',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 11, fontWeight: 700, flexShrink: 0,
-                  }}>
-                    {user.name?.slice(0, 1).toUpperCase()}
-                  </span>
+                  <span style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700 }}>{user.name?.slice(0, 1).toUpperCase()}</span>
                   {user.name?.split(' ')[0]}
                 </Link>
-                <button onClick={handleLogout} style={{
-                  padding: '6px 12px', borderRadius: 8, fontSize: 12,
-                  background: 'none', border: '1px solid var(--border)',
-                  color: 'var(--text-3)', cursor: 'pointer',
-                }}>
-                  Çıkış
-                </button>
+                <button onClick={handleLogout} style={{ padding: '6px 12px', borderRadius: 9, fontSize: 12, background: 'none', border: '1px solid var(--border)', color: 'var(--text-3)', cursor: 'pointer' }}>Çıkış</button>
               </div>
-            ) : !steamUser && (
+            ) : (
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <Link href="/login" className="nav-link">Giriş Yap</Link>
-                <Link href="/signup" style={{
-                  padding: '7px 16px', borderRadius: 8, fontSize: 13,
-                  fontWeight: 600, background: 'var(--accent)', color: '#fff',
-                  display: 'inline-block',
-                }}>
-                  Üye Ol
-                </Link>
+                <Link href="/login" style={{ padding: '8px 14px', fontSize: 14, fontWeight: 500, color: 'var(--text-2)', whiteSpace: 'nowrap' }}>Giriş Yap</Link>
+                <Link href="/signup" style={{ padding: '9px 20px', borderRadius: 10, fontSize: 14, fontWeight: 600, background: 'var(--accent)', color: '#fff', whiteSpace: 'nowrap', boxShadow: '0 6px 18px var(--accent-bg)' }}>Üye Ol</Link>
               </div>
             )}
           </div>
-
-          {/* Mobil Hamburger Butonu */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="mobile-only"
-            style={{
-              background: 'none', border: '1px solid var(--border)',
-              borderRadius: 8, width: 34, height: 34,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'var(--text-2)', cursor: 'pointer', transition: 'all 0.15s',
-            }}
-          >
-            {mobileMenuOpen ? (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-              </svg>
-            ) : (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/>
-              </svg>
-            )}
-          </button>
         </div>
-      </div>
+      </header>
 
-      {/* Mobil Açılır Menü Çekmecesi (Drawer) */}
-      {mobileMenuOpen && (
-        <div className="mobile-drawer mobile-only">
-          <Link href="/" className={`${active('/') === 'nav-link active' ? 'mobile-nav-link active' : 'mobile-nav-link'}`}>
-            <span>Anasayfa</span>
-            <span>→</span>
-          </Link>
-          <Link href="/games" className={`${active('/games') === 'nav-link active' ? 'mobile-nav-link active' : 'mobile-nav-link'}`}>
-            <span>Oyunlar</span>
-            <span>→</span>
-          </Link>
-          <Link href="/dlc" className={`${active('/dlc') === 'nav-link active' ? 'mobile-nav-link active' : 'mobile-nav-link'}`}>
-            <span>DLC</span>
-            <span>→</span>
-          </Link>
-          <Link href="/library" className={`${active('/library') === 'nav-link active' ? 'mobile-nav-link active' : 'mobile-nav-link'}`}>
-            <span>Kütüphane</span>
-            <span>→</span>
-          </Link>
-
-          <hr style={{ border: 'none', borderTop: '1px solid var(--border)', margin: '8px 0' }} />
-
-          {steamUser ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 10,
-                padding: '12px 16px', borderRadius: 10,
-                background: 'rgba(26,159,255,0.06)', border: '1px solid rgba(26,159,255,0.2)',
-                color: '#1a9fff', fontWeight: 600, fontSize: 14,
-              }}>
-                {steamUser.avatar && (
-                  <img src={steamUser.avatar} alt="" style={{ width: 26, height: 26, borderRadius: '50%' }} />
-                )}
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{steamUser.name}</span>
-              </div>
-              <button onClick={steamLogout} className="btn btn-ghost" style={{ padding: '12px', fontSize: 14, borderRadius: 10 }}>
-                Steam Çıkışı Yap
-              </button>
-            </div>
-          ) : user ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <Link href="/profile" style={{
-                display: 'flex', alignItems: 'center', gap: 10,
-                padding: '12px 16px', borderRadius: 10,
-                background: 'var(--accent-bg)', border: '1px solid var(--accent-border)',
-                color: 'var(--accent)', fontWeight: 600, fontSize: 14,
-              }}>
-                <span style={{
-                  width: 26, height: 26, borderRadius: '50%',
-                  background: 'var(--accent)', color: '#fff',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 11, fontWeight: 700,
-                }}>
-                  {user.name?.slice(0, 1).toUpperCase()}
-                </span>
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.name}</span>
-              </Link>
-              <button onClick={handleLogout} className="btn btn-ghost" style={{ padding: '12px', fontSize: 14, borderRadius: 10 }}>
-                Çıkış Yap
-              </button>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <Link href="/login" className="btn btn-ghost" style={{ padding: '12px', fontSize: 14, borderRadius: 10, textAlign: 'center' }}>
-                Giriş Yap
-              </Link>
-              <Link href="/signup" className="btn btn-red" style={{ padding: '12px', fontSize: 14, borderRadius: 10, textAlign: 'center' }}>
-                Üye Ol
-              </Link>
-            </div>
-          )}
-        </div>
-      )}
-    </header>
+      {/* ── Alt cam sekme çubuğu ── */}
+      <nav style={{
+        position: 'fixed', left: '50%', transform: 'translateX(-50%)', bottom: 22, zIndex: 200,
+        display: 'flex', gap: 4,
+        background: 'color-mix(in srgb, var(--bg-card) 60%, transparent)',
+        backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)',
+        border: '1px solid color-mix(in srgb, var(--text) 12%, transparent)',
+        borderRadius: 999, padding: 7,
+        boxShadow: '0 16px 44px rgba(74,52,28,0.22)',
+      }}>
+        {NAV_LINKS.map(l => {
+          const active = isActive(l.href);
+          return (
+            <Link key={l.href} href={l.href} style={{
+              padding: '11px 22px', borderRadius: 999,
+              fontSize: 14.5, fontWeight: active ? 600 : 500, whiteSpace: 'nowrap',
+              background: active ? 'var(--accent)' : 'transparent',
+              color: active ? '#fff' : 'var(--text-2)',
+              transition: 'background 0.15s, color 0.15s',
+            }}>{l.label}</Link>
+          );
+        })}
+      </nav>
+    </>
   );
 }
