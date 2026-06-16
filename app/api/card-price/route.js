@@ -239,6 +239,25 @@ export async function fetchLowestPriceFromITAD(appid, title) {
   }
 }
 
+async function searchSteamGameIdBySlug(slug) {
+  try {
+    const term = slug.replace(/-/g, ' ');
+    const searchRes = await fetch(`https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(term)}&cc=tr&category1=998`);
+    if (!searchRes.ok) return null;
+    const searchData = await searchRes.json();
+    const items = searchData.items || [];
+    if (items.length === 0) return null;
+
+    const cleanSlug = slug.replace(/[^a-z0-9]/g, '');
+    const match = items.find(i => i.name.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanSlug)
+               || items[0];
+    
+    return match ? String(match.id) : null;
+  } catch {
+    return null;
+  }
+}
+
 // GET /api/card-price?slug=tomb-raider&name=Tomb%20Raider&hasSteam=true
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
@@ -253,6 +272,9 @@ export async function GET(request) {
 
     if (slug) {
       appid = await getSteamAppIdBySlug(slug);
+      if (!appid) {
+        appid = await searchSteamGameIdBySlug(slug);
+      }
     }
 
     const itadPrice = await fetchLowestPriceFromITAD(appid, name || slug);

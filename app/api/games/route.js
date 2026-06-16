@@ -83,6 +83,51 @@ async function fetchRawg(path, params = {}) {
   return res.json();
 }
 
+async function fetchSteamNewReleases() {
+  try {
+    const res = await fetch('https://store.steampowered.com/api/featuredcategories/', { next: { revalidate: 1800 } });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const newReleases = data.new_releases?.items || [];
+    return newReleases.map(item => {
+      const slug = item.name.toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .trim()
+        .replace(/\s+/g, '-');
+      
+      const isFree = item.final_price === 0 && !item.original_price;
+
+      return {
+        id:           'rawg_' + item.id,
+        rawgId:       item.id,
+        rawgSlug:     slug,
+        name:         item.name,
+        image:        item.header_image || item.large_capsule_image || item.small_capsule_image,
+        metacritic:   null,
+        reviewScore:  0,
+        totalReviews: 0,
+        isFree,
+        onSale:       item.discounted || false,
+        price:        item.final_price ? item.final_price / 100 : null,
+        noData:       false,
+        platforms:    ['pc'],
+        source:       'steam',
+        hasSteam:     true,
+        hasEpic:      false,
+        hasStores:    true,
+        hasMultipleStores: false,
+        epicUrl:      null,
+        steamUrl:     `https://store.steampowered.com/app/${item.id}`,
+        genres:       [],
+        released:     new Date().toISOString().slice(0, 10),
+      };
+    });
+  } catch (err) {
+    console.error("Failed to fetch Steam new releases:", err);
+    return [];
+  }
+}
+
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const section = searchParams.get('section') || '';
@@ -161,11 +206,49 @@ export async function GET(request) {
       }
     }
 
-    const data    = await fetchRawg('/games', params);
-    let results = (data.results || []).map(formatRawgGame);
+    let results = [];
+    let total = 0;
 
-    // Mağazası olmayan oyunları veya satışı olmayan/delisted oyunları tamamen filtrele (arama ve tüm listeler dahil)
-    results = results.filter(g => g.hasStores && !KNOWN_DELISTED_SLUGS.has(g.rawgSlug));
+    if (section === 'new') {
+      if (page === 1) {
+        // Yeni Çıkanlar için hem RAWG hem de Steam'den paralel çek
+        const [rawgData, steamResults] = await Promise.all([
+          fetchRawg('/games', params).catch(() => ({ results: [], count: 0 })),
+          fetchSteamNewReleases()
+        ]);
+
+        const rawgResults = (rawgData.results || []).map(formatRawgGame);
+        total = (rawgData.count || 0) + steamResults.length;
+
+        // Temizleme: hasStores olanları ve silinenleri filtrele
+        const filteredRawg = rawgResults.filter(g => g.hasStores && !KNOWN_DELISTED_SLUGS.has(g.rawgSlug));
+
+        // Tekilleştirme: Hem Steam AppId hem de isim bazlı kontrol et
+        const seenAppIds = new Set(steamResults.map(g => g.rawgId));
+        const seenNames = new Set(steamResults.map(g => g.name.toLowerCase().replace(/[^a-z0-9]/g, '')));
+
+        const uniqueRawg = filteredRawg.filter(g => {
+          const cleanName = g.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+          const hasMatch = (g.steamAppId && seenAppIds.has(Number(g.steamAppId))) || seenNames.has(cleanName);
+          return !hasMatch;
+        });
+
+        // Steam en yeni çıkanlar en üstte olacak şekilde birleştir
+        results = [...steamResults, ...uniqueRawg];
+      } else {
+        // page > 1 ise sadece RAWG
+        const data = await fetchRawg('/games', params);
+        total = data.count || 0;
+        const rawgResults = (data.results || []).map(formatRawgGame);
+        results = rawgResults.filter(g => g.hasStores && !KNOWN_DELISTED_SLUGS.has(g.rawgSlug));
+      }
+    } else {
+      // Diğer tüm bölümler/aramalar için normal RAWG
+      const data = await fetchRawg('/games', params);
+      total = data.count || 0;
+      results = (data.results || []).map(formatRawgGame);
+      results = results.filter(g => g.hasStores && !KNOWN_DELISTED_SLUGS.has(g.rawgSlug));
+    }
 
     // İndirim köşesinde (sale) ücretsiz oyunları kaldır, ayrıca gerçek indirim kontrolü yap
     if (section === 'sale') {
@@ -208,10 +291,10 @@ export async function GET(request) {
       results = results.slice(0, num);
     }
 
-    return NextResponse.json({ results, total: data.count || 0, source: 'rawg' });
+    return NextResponse.json({ results, total, source: 'rawg-steam-merge' });
 
   } catch (err) {
-    console.error('RAWG API hatasi:', err.message);
+    console.error('RAWG/Steam API hatasi:', err.message);
     return NextResponse.json({ error: err.message, results: [] }, { status: 500 });
   }
 }
