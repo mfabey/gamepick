@@ -96,52 +96,59 @@ function formatGame(rawgGame, steamspyGame) {
   };
 }
 
+const STREAMER_GAME_IDS = [
+  23598,  // League of Legends
+  415171, // Valorant
+  3498,   // Grand Theft Auto V
+  965470, // Counter-Strike 2
+  326243, // Elden Ring
+  22509,  // Minecraft
+  617010, // Chained Together
+  28131,  // Fortnite
+  9671,   // Rust
+  968329, // Lethal Company
+  427930, // Phasmophobia
+  290856, // Apex Legends
+  779,    // Roblox
+  52106,  // Escape from Tarkov
+  963218, // EA Sports FC 24
+  324997, // Baldur's Gate 3
+  28,     // Red Dead Redemption 2
+  10142,  // PUBG: BATTLEGROUNDS
+  983289, // Bodycam
+  9721    // Garry's Mod
+];
+
 export async function GET() {
   try {
     if (!RAWG_KEY) throw new Error('RAWG_API_KEY eksik');
 
-    // ── 1. SteamSpy: son 2 haftanın en çok oynanan oyunları ───────────────
-    const spyRes = await fetch(
-      'https://steamspy.com/api.php?request=top100in2weeks',
-      { next: { revalidate: 21600 }, signal: AbortSignal.timeout(8000) }
-    );
+    const idsStr = STREAMER_GAME_IDS.join(',');
+    const url = `${BASE}/games?key=${RAWG_KEY}&ids=${idsStr}&page_size=20`;
+    const res = await fetch(url, { next: { revalidate: 21600 } });
+    if (!res.ok) throw new Error(`RAWG ${res.status}`);
+    const data = await res.json();
 
-    if (!spyRes.ok) throw new Error('SteamSpy yanıt vermedi');
+    let results = (data.results || []).map(g => formatGame(g, null));
 
-    const spyData = await spyRes.json();
+    // Listeyi biraz çeşitlendirmek/zamanla değiştirmek için her 3 saatte bir kaydıralım (rotate)
+    const hoursSinceEpoch = Math.floor(Date.now() / (1000 * 60 * 60));
+    const seed = Math.floor(hoursSinceEpoch / 3);
+    const offset = (seed * 3) % results.length;
+    results = [...results.slice(offset), ...results.slice(0, offset)];
 
-    // players_2weeks'e göre sırala → top 20
-    const top20 = Object.values(spyData)
-      .filter(g => g.name && g.players_2weeks > 0)
-      .sort((a, b) => (b.players_2weeks || 0) - (a.players_2weeks || 0))
-      .slice(0, 20);
-
-    // ── 2. RAWG'da her oyunu ara (paralel) ────────────────────────────────
-    const rawgResults = await Promise.allSettled(
-      top20.map(async sg => {
-        const rawg = await searchRawg(sg.name);
-        if (!rawg) return null;
-        return formatGame(rawg, sg);
-      })
-    );
-
-    const results = rawgResults
-      .filter(r => r.status === 'fulfilled' && r.value !== null)
-      .map(r => r.value)
-      .slice(0, 16);
-
-    if (results.length < 4) throw new Error('Yeterli sonuç yok, fallback\'e geç');
+    // En fazla 16 adet göster
+    results = results.slice(0, 16);
 
     return NextResponse.json({
       results,
       total:  results.length,
-      source: 'steamspy+rawg',
-      label:  'Bu hafta en çok oynanan',
+      source: 'curated-streamers',
+      label:  'Yayıncıların Gözdesi',
     });
 
   } catch (err) {
-    // ── Fallback: RAWG'dan son 30 günün yüksek puanlı oyunları ────────────
-    console.warn('Trending fallback:', err.message);
+    console.warn('Trending fetch error, fallback to general popular:', err.message);
     try {
       const today    = new Date().toISOString().slice(0, 10);
       const monthAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);

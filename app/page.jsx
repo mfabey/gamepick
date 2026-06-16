@@ -333,10 +333,10 @@ export default function Home() {
       {/* ══ İÇERİK BÖLÜMLERİ ══════════════════════════════════════════════════ */}
       <div className="container" style={{ paddingTop: 48 }}>
 
-        {/* Bu Hafta Trend — SteamSpy gerçek zamanlı data */}
+        {/* Bu Hafta Trend — Yayıncıların oynadığı popüler oyunlar */}
         <Section
           title="🔥 Bu Hafta Trend"
-          subtitle="Steam'de bu hafta en çok oynanan oyunlar"
+          subtitle="Ünlü yayıncıların en çok oynadığı popüler oyunlar"
           href="/games?section=popular"
           games={trendGames}
           loading={loadingTrend}
