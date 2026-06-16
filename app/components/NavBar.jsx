@@ -37,12 +37,12 @@ export default function NavBar() {
       zIndex: 100,
     }}>
       <div className="container" style={{
-        display: 'flex', alignItems: 'center', height: 56, gap: 8,
+        display: 'flex', alignItems: 'center', height: 64, gap: 8,
       }}>
         {/* Logo */}
         <Link href="/" style={{
           display: 'flex', alignItems: 'center', gap: 8,
-          marginRight: 16, fontWeight: 700, fontSize: 17,
+          marginRight: 16, fontWeight: 700, fontSize: 20,
           letterSpacing: '-0.2px', color: 'var(--text)',
           fontFamily: 'var(--font-heading)',
         }}>

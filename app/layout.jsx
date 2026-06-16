@@ -29,7 +29,7 @@ export default function RootLayout({ children }) {
         <ThemeProvider>
           <AuthProvider>
             <NavBar />
-            <main style={{ minHeight: 'calc(100vh - 56px)' }}>
+            <main style={{ minHeight: 'calc(100vh - 64px)' }}>
               {children}
             </main>
           </AuthProvider>

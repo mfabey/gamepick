@@ -122,7 +122,7 @@ html[data-theme="dark"] body > * { position: relative; z-index: 1; }
 html, body {
   background: var(--bg-body); color: var(--text);
   font-family: var(--font-body);
-  font-size: 15px; line-height: 1.6; min-height: 100vh;
+  font-size: 16px; line-height: 1.65; min-height: 100vh;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -144,12 +144,12 @@ img { max-width: 100%; display: block; }
 ::-webkit-scrollbar-thumb:hover { background: var(--accent); filter: brightness(1.2); }
 
 /* ===== UTILITIES ===== */
-.container { max-width: 1280px; margin: 0 auto; padding: 0 28px; }
+.container { max-width: 1400px; margin: 0 auto; padding: 0 36px; }
 
 .badge {
   display: inline-flex; align-items: center; gap: 4px;
-  font-size: 12px; font-weight: 600; letter-spacing: 0.2px;
-  padding: 3px 9px; border-radius: var(--radius);
+  font-size: 13px; font-weight: 600; letter-spacing: 0.2px;
+  padding: 4px 10px; border-radius: var(--radius);
   font-family: var(--font-body);
 }
 .badge-green  { background: var(--green-bg);  color: var(--green);  border: 1px solid var(--green-border); }
@@ -171,17 +171,17 @@ html[data-theme="dark"] .badge-purple { background: #10102a; color: #a78bfa; bor
 
 .section-title {
   font-family: var(--font-heading);
-  font-size: 26px; font-weight: 700; color: var(--text);
-  margin-bottom: 18px;
+  font-size: 30px; font-weight: 700; color: var(--text);
+  margin-bottom: 20px;
   letter-spacing: -0.3px;
 }
 
-.scroll-row { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; }
+.scroll-row { display: flex; gap: 18px; overflow-x: auto; padding-bottom: 12px; scrollbar-width: none; }
 .scroll-row::-webkit-scrollbar { display: none; }
 
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-.grid-auto { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+.grid-auto { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
 
 @media (max-width: 768px) {
   .grid-2, .grid-3 { grid-template-columns: 1fr; }
@@ -196,8 +196,8 @@ html[data-theme="dark"] .badge-purple { background: #10102a; color: #a78bfa; bor
 
 .btn {
   display: inline-flex; align-items: center; justify-content: center;
-  gap: 7px; padding: 11px 22px; border-radius: var(--radius);
-  font-size: 14px; font-weight: 600; letter-spacing: 0.1px;
+  gap: 8px; padding: 13px 26px; border-radius: var(--radius);
+  font-size: 15px; font-weight: 600; letter-spacing: 0.1px;
   border: none; cursor: pointer;
   transition: opacity 0.12s, transform 0.1s, box-shadow 0.12s;
   font-family: var(--font-body);
@@ -216,9 +216,9 @@ html[data-theme="dark"] .badge-purple { background: #10102a; color: #a78bfa; bor
 /* ===== MOBIL DRAWER MENU ===== */
 .mobile-drawer {
   position: fixed;
-  top: 56px;
+  top: 64px;
   left: 0; right: 0;
-  height: calc(100dvh - 56px);
+  height: calc(100dvh - 64px);
   background: var(--bg);
   z-index: 99;
   display: flex;

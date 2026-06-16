@@ -5,44 +5,45 @@ import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import GameCard from '../components/GameCard';
 
-const PRICE_OPTIONS = [
-  { label: 'Tümü',       value: 'all'  },
-  { label: 'Ücretsiz',   value: 'free' },
-  { label: '₺0 – ₺100',  value: '100'  },
-  { label: '₺0 – ₺300',  value: '300'  },
-  { label: '₺0 – ₺500',  value: '500'  },
-];
-
 const SECTIONS = [
-  { label: 'Tümü',             value: ''         },
-  { label: '🏷️ İndirimdekiler', value: 'sale'     },
-  { label: '🎮 Ücretsiz',      value: 'free'     },
-  { label: '🗓️ Yeni',          value: 'new'      },
-  { label: '⭐ En İyi',        value: 'topscore' },
-  { label: '💥 Popüler',       value: 'popular'  },
+  { label: 'Tümü',          value: '',         icon: '🎮' },
+  { label: 'İndirimde',     value: 'sale',     icon: '🏷️' },
+  { label: 'Ücretsiz',      value: 'free',     icon: '🎁' },
+  { label: 'Yeni Çıkan',    value: 'new',      icon: '🗓️' },
+  { label: 'En İyi Puan',   value: 'topscore', icon: '⭐' },
+  { label: 'Popüler',       value: 'popular',  icon: '💥' },
 ];
 
 const CATEGORIES = [
-  { label: '🎯 Aksiyon',      slug: 'action'            },
-  { label: '⚔️ RPG',          slug: 'role-playing-games-rpg' },
-  { label: '🧠 Strateji',     slug: 'strategy'          },
-  { label: '🌍 Macera',       slug: 'adventure'         },
-  { label: '🔫 Nişancı',      slug: 'shooter'           },
-  { label: '🧩 Bulmaca',      slug: 'puzzle'            },
-  { label: '⚽ Spor',         slug: 'sports'            },
-  { label: '🚗 Yarış',        slug: 'racing'            },
-  { label: '👻 Korku',        slug: 'horror'            },
-  { label: '🎮 Platform',     slug: 'platformer'        },
-  { label: '🃏 Kart & Masa',  slug: 'card'              },
-  { label: '🏙️ Simülasyon',   slug: 'simulation'        },
+  { label: 'Tüm Türler',   slug: ''                        },
+  { label: 'Aksiyon',      slug: 'action'                  },
+  { label: 'RPG',          slug: 'role-playing-games-rpg'  },
+  { label: 'Strateji',     slug: 'strategy'                },
+  { label: 'Macera',       slug: 'adventure'               },
+  { label: 'Nişancı',      slug: 'shooter'                 },
+  { label: 'Bulmaca',      slug: 'puzzle'                  },
+  { label: 'Spor',         slug: 'sports'                  },
+  { label: 'Yarış',        slug: 'racing'                  },
+  { label: 'Korku',        slug: 'horror'                  },
+  { label: 'Platform',     slug: 'platformer'              },
+  { label: 'Kart & Masa',  slug: 'card'                    },
+  { label: 'Simülasyon',   slug: 'simulation'              },
+];
+
+const PRICE_OPTIONS = [
+  { label: 'Tüm Fiyatlar', value: 'all'  },
+  { label: 'Ücretsiz',     value: 'free' },
+  { label: '₺0 – ₺100',    value: '100'  },
+  { label: '₺0 – ₺300',    value: '300'  },
+  { label: '₺0 – ₺500',    value: '500'  },
 ];
 
 const PAGE_SIZE = 24;
 
 function GamesList() {
-  const searchParams = useSearchParams();
-  const initialSection  = searchParams.get('section') || '';
-  const initialQuery    = searchParams.get('q') || '';
+  const searchParams   = useSearchParams();
+  const initialSection = searchParams.get('section') || '';
+  const initialQuery   = searchParams.get('q') || '';
 
   const [query,       setQuery]       = useState(initialQuery);
   const [price,       setPrice]       = useState('all');
@@ -51,9 +52,11 @@ function GamesList() {
   const [games,       setGames]       = useState([]);
   const [loading,     setLoading]     = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
-  const debounceRef  = useRef(null);
-  const sentinelRef  = useRef(null);
-  const scrollRef    = useRef({ page: 1, fetching: false, canMore: false, seenIds: new Set(), section: '', query: '', genre: '' });
+  const [searchFocus, setSearchFocus] = useState(false);
+
+  const debounceRef = useRef(null);
+  const sentinelRef = useRef(null);
+  const scrollRef   = useRef({ page: 1, fetching: false, canMore: false, seenIds: new Set(), section: '', query: '', genre: '' });
 
   useEffect(() => {
     const sec = searchParams.get('section') || '';
@@ -81,11 +84,10 @@ function GamesList() {
     ref.section  = section;
     ref.query    = query;
     ref.genre    = genre;
-
     setLoading(true);
     try {
       const data    = await fetch(buildUrl(1)).then(r => r.json());
-      const results = (data.results || []);
+      const results = data.results || [];
       results.forEach(g => ref.seenIds.add(g.id));
       setGames(results);
       ref.canMore = (data.total || 0) > PAGE_SIZE;
@@ -98,29 +100,21 @@ function GamesList() {
     if (ref.fetching || !ref.canMore) return;
     ref.fetching = true;
     setLoadingMore(true);
-
     let found = false, skips = 0;
     while (!found && skips < 6) {
       const nextPage = ref.page + 1;
       try {
         const data       = await fetch(buildUrl(nextPage)).then(r => r.json());
-        const merged     = (data.results || []);
-        const newResults = merged.filter(g => {
+        const newResults = (data.results || []).filter(g => {
           if (ref.seenIds.has(g.id)) return false;
           ref.seenIds.add(g.id);
           return true;
         });
         ref.page = nextPage;
-        if (newResults.length > 0) {
-          setGames(prev => [...prev, ...newResults]);
-          found = true;
-        } else {
-          skips++;
-          if (nextPage * PAGE_SIZE >= (data.total || 0)) { ref.canMore = false; break; }
-        }
+        if (newResults.length > 0) { setGames(prev => [...prev, ...newResults]); found = true; }
+        else { skips++; if (nextPage * PAGE_SIZE >= (data.total || 0)) { ref.canMore = false; break; } }
       } catch { break; }
     }
-
     ref.fetching = false;
     setLoadingMore(false);
   }, [buildUrl]);
@@ -138,8 +132,7 @@ function GamesList() {
   useEffect(() => {
     const handleScroll = () => {
       if (!sentinelRef.current) return;
-      const rect = sentinelRef.current.getBoundingClientRect();
-      if (rect.top < window.innerHeight + 500) loadMore();
+      if (sentinelRef.current.getBoundingClientRect().top < window.innerHeight + 500) loadMore();
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     const t = setTimeout(handleScroll, 800);
@@ -157,128 +150,265 @@ function GamesList() {
   const handleGenre = (slug) => {
     setGenre(prev => prev === slug ? '' : slug);
     setQuery('');
+    setSection('');
   };
 
+  const handleSection = (val) => {
+    setSection(val);
+    setQuery('');
+  };
+
+  const activeCount = [query, section, price !== 'all' ? price : '', genre].filter(Boolean).length;
+
   return (
-    <div className="container" style={{ paddingTop: 32, paddingBottom: 60 }}>
-      <div style={{ marginBottom: 20 }}>
-        <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)', marginBottom: 4 }}>Oyunlar</h1>
-        <p style={{ color: 'var(--text-3)', fontSize: 14 }}>500.000+ oyun — puan, yorum ve AI önerisi</p>
-      </div>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-body)' }}>
 
-      {/* Arama */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--bg-card)', border: '1.5px solid var(--border)', borderRadius: 12, padding: '12px 18px', marginBottom: 16, boxShadow: 'var(--shadow)' }}>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-        </svg>
-        <input
-          value={query}
-          onChange={e => { setQuery(e.target.value); setSection(''); setGenre(''); }}
-          placeholder="Oyun ara…"
-          style={{ flex: 1, border: 'none', outline: 'none', fontSize: 15, color: 'var(--text)', background: 'transparent' }}
-        />
-        {query && (
-          <button onClick={() => setQuery('')} style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: 20, cursor: 'pointer', lineHeight: 1 }}>×</button>
-        )}
-      </div>
-
-      {/* Bölüm filtreleri */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
-        {SECTIONS.map(s => (
-          <button key={s.value} onClick={() => { setSection(s.value); setQuery(''); }}
-            style={{
-              padding: '7px 16px', borderRadius: 999, fontSize: 13, border: 'none', cursor: 'pointer', transition: 'all 0.15s',
-              background: section === s.value ? 'var(--accent)' : 'var(--bg-input)',
-              color:      section === s.value ? '#fff'    : 'var(--text-2)',
-              fontWeight: section === s.value ? 600       : 400,
-            }}
-          >
-            {s.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Kategoriler */}
-      <div style={{ marginBottom: 18 }}>
-        <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Kategoriler</p>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {CATEGORIES.map(c => (
-            <button key={c.slug + c.label} onClick={() => handleGenre(c.slug)}
+      {/* ── Sticky üst arama çubuğu ── */}
+      <div style={{
+        position: 'sticky', top: 64, zIndex: 50,
+        background: 'var(--bg)',
+        borderBottom: '1px solid var(--border)',
+        backdropFilter: 'blur(12px)',
+      }}>
+        <div className="container" style={{ paddingTop: 14, paddingBottom: 14 }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 12,
+            background: 'var(--bg-input)',
+            border: `1.5px solid ${searchFocus ? 'var(--accent)' : 'var(--border)'}`,
+            borderRadius: 10, padding: '0 18px', height: 50,
+            transition: 'border-color 0.15s, box-shadow 0.15s',
+            boxShadow: searchFocus ? '0 0 0 3px var(--accent-glow)' : 'none',
+          }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+              stroke={searchFocus ? 'var(--accent)' : 'var(--text-3)'}
+              strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
+              style={{ flexShrink: 0, transition: 'stroke 0.15s' }}>
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            </svg>
+            <input
+              value={query}
+              onChange={e => { setQuery(e.target.value); setSection(''); setGenre(''); }}
+              onFocus={() => setSearchFocus(true)}
+              onBlur={() => setSearchFocus(false)}
+              placeholder="Oyun ara… (500.000+ oyun)"
               style={{
-                padding: '6px 14px', borderRadius: 999, fontSize: 12, cursor: 'pointer', transition: 'all 0.15s',
-                border: genre === c.slug ? '1.5px solid var(--accent)' : '1.5px solid var(--border)',
-                background: genre === c.slug ? 'var(--accent-bg)' : 'var(--bg-card)',
-                color:      genre === c.slug ? 'var(--accent)'    : 'var(--text-2)',
-                fontWeight: genre === c.slug ? 600                : 400,
+                flex: 1, border: 'none', outline: 'none',
+                fontSize: 15, color: 'var(--text)', background: 'transparent',
               }}
-            >
-              {c.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Bütçe */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-        <span style={{ fontSize: 12, color: 'var(--text-3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Bütçe</span>
-        <select value={price} onChange={e => setPrice(e.target.value)}
-          style={{ padding: '7px 12px', borderRadius: 8, border: '1.5px solid var(--border)', background: 'var(--bg-card)', fontSize: 13, color: 'var(--text)', outline: 'none' }}>
-          {PRICE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
-      </div>
-
-      {/* Sonuç bilgisi */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-        <p style={{ fontSize: 14, color: 'var(--text-3)' }}>
-          {loading ? 'Yükleniyor…' : (
-            <><span style={{ fontWeight: 600, color: 'var(--text)' }}>{filteredGames.length}</span> oyun gösteriliyor</>
-          )}
-        </p>
-        {(query || section || price !== 'all' || genre) && (
-          <button onClick={resetFilters} style={{ fontSize: 12, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer' }}>
-            × Temizle
-          </button>
-        )}
-      </div>
-
-      {/* Grid */}
-      {loading ? (
-        <div className="grid-auto">
-          {Array.from({ length: PAGE_SIZE }).map((_, i) => (
-            <div key={i} style={{ background: 'var(--bg-card)', border: '1.5px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
-              <div style={{ height: 110, background: 'var(--bg-input)' }} />
-              <div style={{ padding: '10px 12px' }}>
-                <div style={{ height: 12, background: 'var(--border)', borderRadius: 4, marginBottom: 8 }} />
-                <div style={{ height: 10, background: 'var(--bg-input)', borderRadius: 4, width: '60%' }} />
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : filteredGames.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '60px 0' }}>
-          <p style={{ fontSize: 40, marginBottom: 12 }}>🔍</p>
-          <p style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-2)' }}>Sonuç bulunamadı</p>
-          <button onClick={resetFilters} style={{ marginTop: 12, padding: '8px 20px', borderRadius: 8, background: 'var(--accent-bg)', border: '1px solid var(--accent-border)', color: 'var(--accent)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-            Filtreleri Temizle
-          </button>
-        </div>
-      ) : (
-        <>
-          <div className="grid-auto">
-            {filteredGames.map(game => <GameCard key={game.id} game={game} />)}
+            />
+            {query && (
+              <button onClick={() => setQuery('')}
+                style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: 22, cursor: 'pointer', lineHeight: 1, padding: 0 }}>
+                ×
+              </button>
+            )}
+            {activeCount > 0 && (
+              <button onClick={resetFilters} style={{
+                flexShrink: 0, padding: '5px 12px', borderRadius: 6,
+                background: 'var(--accent-bg)', border: '1px solid var(--accent-border)',
+                color: 'var(--accent)', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+              }}>
+                Temizle ({activeCount})
+              </button>
+            )}
           </div>
-          <div ref={sentinelRef} style={{ height: 1 }} />
-          {loadingMore && (
-            <div style={{ textAlign: 'center', padding: '32px 0' }}>
-              <div style={{ display: 'inline-flex', gap: 6, alignItems: 'center', fontSize: 13, color: 'var(--text-3)' }}>
-                <span style={{ width: 16, height: 16, borderRadius: '50%', border: '2px solid var(--border)', borderTopColor: 'var(--accent)', animation: 'spin 0.7s linear infinite', display: 'inline-block' }} />
-                Yükleniyor…
+        </div>
+      </div>
+
+      {/* ── Ana layout: sol içerik + sağ sidebar ── */}
+      <div className="container" style={{ paddingTop: 28, paddingBottom: 60 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 260px', gap: 32, alignItems: 'start' }}>
+
+          {/* ── SOL: bölüm filtreleri + oyun grid ── */}
+          <div>
+            {/* Section chip'leri */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
+              {SECTIONS.map(s => {
+                const active = section === s.value;
+                return (
+                  <button key={s.value} onClick={() => handleSection(s.value)} style={{
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    padding: '8px 18px', borderRadius: 999,
+                    border: active ? '1.5px solid var(--accent)' : '1.5px solid var(--border)',
+                    background: active ? 'var(--accent)' : 'var(--bg-card)',
+                    color: active ? '#fff' : 'var(--text-2)',
+                    fontSize: 13, fontWeight: active ? 600 : 400,
+                    cursor: 'pointer', transition: 'all 0.15s',
+                    boxShadow: active ? '0 4px 12px var(--accent-glow)' : 'none',
+                  }}>
+                    <span>{s.icon}</span>
+                    <span>{s.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Sonuç bilgisi */}
+            <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <p style={{ fontSize: 14, color: 'var(--text-3)' }}>
+                {loading ? 'Yükleniyor…' : (
+                  <><span style={{ fontWeight: 700, color: 'var(--text)' }}>{filteredGames.length}</span> oyun</>
+                )}
+                {genre && <span style={{ color: 'var(--accent)', marginLeft: 6 }}>· {CATEGORIES.find(c => c.slug === genre)?.label}</span>}
+                {section && <span style={{ color: 'var(--accent)', marginLeft: 6 }}>· {SECTIONS.find(s => s.value === section)?.label}</span>}
+              </p>
+            </div>
+
+            {/* Oyun grid */}
+            {loading ? (
+              <div className="grid-auto">
+                {Array.from({ length: PAGE_SIZE }).map((_, i) => (
+                  <div key={i} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
+                    <div style={{ aspectRatio: '16/9', background: 'var(--bg-input)' }} />
+                    <div style={{ padding: '13px 15px' }}>
+                      <div style={{ height: 14, background: 'var(--border)', borderRadius: 4, marginBottom: 9 }} />
+                      <div style={{ height: 12, background: 'var(--bg-input)', borderRadius: 4, width: '55%' }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : filteredGames.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '80px 0' }}>
+                <p style={{ fontSize: 48, marginBottom: 16 }}>🔍</p>
+                <p style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>Sonuç bulunamadı</p>
+                <p style={{ fontSize: 14, color: 'var(--text-3)', marginBottom: 20 }}>Farklı bir arama veya filtre deneyin</p>
+                <button onClick={resetFilters} style={{
+                  padding: '10px 24px', borderRadius: 8,
+                  background: 'var(--accent)', color: '#fff',
+                  border: 'none', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+                }}>
+                  Filtreleri Temizle
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="grid-auto">
+                  {filteredGames.map(game => <GameCard key={game.id} game={game} />)}
+                </div>
+                <div ref={sentinelRef} style={{ height: 1 }} />
+                {loadingMore && (
+                  <div style={{ textAlign: 'center', padding: '32px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+                    <div style={{
+                      width: 20, height: 20, borderRadius: '50%',
+                      border: '2.5px solid var(--border)',
+                      borderTopColor: 'var(--accent)',
+                      animation: 'spin 0.7s linear infinite',
+                    }} />
+                    <span style={{ fontSize: 14, color: 'var(--text-3)' }}>Daha fazla yükleniyor…</span>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* ── SAĞ: sticky sidebar ── */}
+          <aside style={{ position: 'sticky', top: 130 }}>
+
+            {/* Kategoriler */}
+            <div style={{
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border)',
+              borderRadius: 12,
+              overflow: 'hidden',
+              marginBottom: 16,
+            }}>
+              <div style={{
+                padding: '14px 18px',
+                borderBottom: '1px solid var(--border)',
+                display: 'flex', alignItems: 'center', gap: 8,
+              }}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+                  <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+                </svg>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', letterSpacing: 0.3 }}>KATEGORİLER</span>
+              </div>
+              <div style={{ padding: '8px 0' }}>
+                {CATEGORIES.map(c => {
+                  const active = genre === c.slug;
+                  return (
+                    <button key={c.slug} onClick={() => handleGenre(c.slug)} style={{
+                      width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '10px 18px', border: 'none', cursor: 'pointer',
+                      background: active ? 'var(--accent-bg)' : 'transparent',
+                      color: active ? 'var(--accent)' : 'var(--text-2)',
+                      fontSize: 14, fontWeight: active ? 600 : 400,
+                      transition: 'background 0.12s, color 0.12s',
+                      borderLeft: active ? '3px solid var(--accent)' : '3px solid transparent',
+                      textAlign: 'left',
+                    }}
+                      onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'var(--bg-hover)'; e.currentTarget.style.color = 'var(--text)'; }}}
+                      onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-2)'; }}}
+                    >
+                      <span>{c.label}</span>
+                      {active && (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
-          )}
-        </>
-      )}
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+
+            {/* Bütçe filtresi */}
+            <div style={{
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border)',
+              borderRadius: 12,
+              overflow: 'hidden',
+            }}>
+              <div style={{
+                padding: '14px 18px',
+                borderBottom: '1px solid var(--border)',
+                display: 'flex', alignItems: 'center', gap: 8,
+              }}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                </svg>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', letterSpacing: 0.3 }}>BÜTÇE</span>
+              </div>
+              <div style={{ padding: '8px 0' }}>
+                {PRICE_OPTIONS.map(o => {
+                  const active = price === o.value;
+                  return (
+                    <button key={o.value} onClick={() => setPrice(o.value)} style={{
+                      width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '10px 18px', border: 'none', cursor: 'pointer',
+                      background: active ? 'var(--accent-bg)' : 'transparent',
+                      color: active ? 'var(--accent)' : 'var(--text-2)',
+                      fontSize: 14, fontWeight: active ? 600 : 400,
+                      transition: 'background 0.12s, color 0.12s',
+                      borderLeft: active ? '3px solid var(--accent)' : '3px solid transparent',
+                      textAlign: 'left',
+                    }}
+                      onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'var(--bg-hover)'; e.currentTarget.style.color = 'var(--text)'; }}}
+                      onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-2)'; }}}
+                    >
+                      <span>{o.label}</span>
+                      {active && (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+          </aside>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @media (max-width: 768px) {
+          .games-layout { grid-template-columns: 1fr !important; }
+          .games-sidebar { display: none !important; }
+        }
+      `}</style>
     </div>
   );
 }
@@ -286,12 +416,13 @@ function GamesList() {
 export default function GamesPage() {
   return (
     <Suspense fallback={
-      <div className="container" style={{ paddingTop: 32, paddingBottom: 60 }}>
-        <div style={{ marginBottom: 20 }}>
-          <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)', marginBottom: 4 }}>Oyunlar</h1>
-          <p style={{ color: 'var(--text-3)', fontSize: 14 }}>500.000+ oyun — puan, yorum ve AI önerisi</p>
+      <div style={{ minHeight: '100vh', background: 'var(--bg-body)' }}>
+        <div style={{ borderBottom: '1px solid var(--border)', padding: '14px 36px' }}>
+          <div style={{ height: 50, background: 'var(--bg-input)', borderRadius: 10 }} />
         </div>
-        <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-3)' }}>Yükleniyor…</div>
+        <div className="container" style={{ paddingTop: 60, textAlign: 'center', color: 'var(--text-3)' }}>
+          Yükleniyor…
+        </div>
       </div>
     }>
       <GamesList />

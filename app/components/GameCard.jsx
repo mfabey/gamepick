@@ -63,7 +63,7 @@ export default function GameCard({ game, compact = false }) {
 
   const isFree   = livePrice?.isFree || game.isFree || game.gamePass;
   const isOnSale = (livePrice?.discount > 0) && !isFree;
-  const imgH     = compact ? 112 : 130;
+  const imgH     = compact ? 130 : 150;
   const href     = game.rawgSlug ? `/game/rawg/${game.rawgSlug}` : `/game/rawg/${game.id}`;
 
   return (
@@ -185,8 +185,8 @@ export default function GameCard({ game, compact = false }) {
         </div>
 
         {/* Alt bilgi */}
-        <div style={{ padding: '11px 13px' }}>
-          <p style={{ fontWeight: 600, fontSize: 13, lineHeight: 1.3, color: 'var(--text)', marginBottom: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <div style={{ padding: '13px 15px' }}>
+          <p style={{ fontWeight: 600, fontSize: 14, lineHeight: 1.3, color: 'var(--text)', marginBottom: 7, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {game.name}
           </p>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4 }}>

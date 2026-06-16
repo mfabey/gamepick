@@ -172,7 +172,7 @@ export default function Home() {
     <div style={{ paddingBottom: 60 }}>
 
       {/* ══ HERO: tam ekran blurlu oyun mozaiği ════════════════════════════ */}
-      <div style={{ position: 'relative', height: 'calc(100vh - 56px)', overflow: 'hidden', minHeight: 480 }}>
+      <div style={{ position: 'relative', height: 'calc(100vh - 64px)', overflow: 'hidden', minHeight: 480 }}>
 
         <div className="hero-marquee-wrapper">
           <div className="hero-marquee-grid">
@@ -448,14 +448,114 @@ export default function Home() {
   );
 }
 
+// ── Animasyonlu yatay scroll satırı ──────────────────────────────────────────
+function ScrollRow({ children }) {
+  const rowRef   = useRef(null);
+  const [showL,  setShowL]  = useState(false);
+  const [showR,  setShowR]  = useState(false);
+  const [hovered, setHovered] = useState(false);
+
+  const update = () => {
+    const el = rowRef.current;
+    if (!el) return;
+    setShowL(el.scrollLeft > 8);
+    setShowR(el.scrollLeft + el.clientWidth < el.scrollWidth - 8);
+  };
+
+  useEffect(() => {
+    const el = rowRef.current;
+    if (!el) return;
+    update();
+    el.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    return () => {
+      el.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+    };
+  }, [children]);
+
+  const scroll = dir => {
+    rowRef.current?.scrollBy({ left: dir * 480, behavior: 'smooth' });
+  };
+
+  const btnStyle = (side) => ({
+    position: 'absolute', top: 0, bottom: 12,
+    [side]: 0,
+    width: 72,
+    display: 'flex', alignItems: 'center',
+    justifyContent: side === 'left' ? 'flex-start' : 'flex-end',
+    paddingInline: 10,
+    background: side === 'left'
+      ? 'linear-gradient(to right, var(--bg-body) 30%, transparent)'
+      : 'linear-gradient(to left, var(--bg-body) 30%, transparent)',
+    zIndex: 5,
+    cursor: 'pointer', border: 'none',
+    opacity: hovered ? 1 : 0,
+    transform: hovered ? 'translateX(0)' : (side === 'left' ? 'translateX(-8px)' : 'translateX(8px)'),
+    transition: 'opacity 0.22s ease, transform 0.22s ease',
+    pointerEvents: hovered ? 'auto' : 'none',
+  });
+
+  const arrowStyle = {
+    width: 38, height: 38, borderRadius: '50%',
+    background: 'var(--bg-card)',
+    border: '1.5px solid var(--border-hover)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    color: 'var(--text)',
+    boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+    transition: 'background 0.15s, border-color 0.15s, transform 0.15s',
+    flexShrink: 0,
+  };
+
+  return (
+    <div
+      style={{ position: 'relative' }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {/* Sol ok */}
+      {showL && (
+        <button onClick={() => scroll(-1)} style={btnStyle('left')} aria-label="Geri">
+          <div style={arrowStyle}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--accent)'; e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.transform = 'scale(1.1)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-card)'; e.currentTarget.style.borderColor = 'var(--border-hover)'; e.currentTarget.style.color = 'var(--text)'; e.currentTarget.style.transform = 'scale(1)'; }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
+          </div>
+        </button>
+      )}
+
+      <div ref={rowRef} className="scroll-row" style={{ scrollbarWidth: 'none' }}>
+        {children}
+      </div>
+
+      {/* Sağ ok */}
+      {showR && (
+        <button onClick={() => scroll(1)} style={btnStyle('right')} aria-label="İleri">
+          <div style={arrowStyle}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--accent)'; e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.transform = 'scale(1.1)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-card)'; e.currentTarget.style.borderColor = 'var(--border-hover)'; e.currentTarget.style.color = 'var(--text)'; e.currentTarget.style.transform = 'scale(1)'; }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </div>
+        </button>
+      )}
+    </div>
+  );
+}
+
 // ── Yatay scroll bölüm ────────────────────────────────────────────────────────
 function Section({ title, subtitle, href, games, loading, badge }) {
   return (
-    <div style={{ marginBottom: 48 }}>
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 16 }}>
+    <div style={{ marginBottom: 56 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 18 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <h2 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>{title}</h2>
+            <h2 style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)' }}>{title}</h2>
             {badge && (
               <span style={{
                 fontSize: 10, fontWeight: 800, padding: '2px 7px', borderRadius: 999,
@@ -467,20 +567,20 @@ function Section({ title, subtitle, href, games, loading, badge }) {
               </span>
             )}
           </div>
-          {subtitle && <p style={{ fontSize: 14, color: 'var(--text-3)', marginTop: 3 }}>{subtitle}</p>}
+          {subtitle && <p style={{ fontSize: 15, color: 'var(--text-3)', marginTop: 4 }}>{subtitle}</p>}
         </div>
-        <Link href={href} style={{ fontSize: 14, color: 'var(--accent)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+        <Link href={href} style={{ fontSize: 15, color: 'var(--accent)', fontWeight: 600, whiteSpace: 'nowrap' }}>
           Tümünü gör →
         </Link>
       </div>
-      <div className="scroll-row">
+      <ScrollRow>
         {loading
           ? Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)
           : games.length === 0
             ? <p style={{ color: 'var(--text-3)', fontSize: 14 }}>Yüklenemedi.</p>
             : games.map(g => <GameCard key={g.id} game={g} compact />)
         }
-      </div>
+      </ScrollRow>
     </div>
   );
 }
@@ -488,13 +588,13 @@ function Section({ title, subtitle, href, games, loading, badge }) {
 function SkeletonCard() {
   return (
     <div style={{
-      flexShrink: 0, width: 200, borderRadius: 12,
+      flexShrink: 0, width: 232, borderRadius: 12,
       background: 'var(--bg-card)', border: '1.5px solid var(--border)', overflow: 'hidden',
     }}>
-      <div style={{ height: 112, background: 'var(--bg-input)' }} />
-      <div style={{ padding: '11px 13px' }}>
-        <div style={{ height: 13, background: 'var(--border)', borderRadius: 4, marginBottom: 8 }} />
-        <div style={{ height: 11, background: 'var(--bg-input)', borderRadius: 4, width: '60%' }} />
+      <div style={{ height: 130, background: 'var(--bg-input)' }} />
+      <div style={{ padding: '13px 15px' }}>
+        <div style={{ height: 14, background: 'var(--border)', borderRadius: 4, marginBottom: 9 }} />
+        <div style={{ height: 12, background: 'var(--bg-input)', borderRadius: 4, width: '60%' }} />
       </div>
     </div>
   );
