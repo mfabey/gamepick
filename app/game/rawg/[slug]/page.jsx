@@ -479,6 +479,85 @@ export default function RawgGamePage({ params }) {
   );
 }
 
+// ── Mağaza logo bileşeni ─────────────────────────────────────────────────────
+function StoreLogo({ store }) {
+  const s = store?.toLowerCase() || '';
+
+  if (s.includes('steam')) return (
+    <span style={{ display:'flex', alignItems:'center', justifyContent:'center', width:32, height:32, borderRadius:8, background:'#1b2838', flexShrink:0 }}>
+      <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path fill="#c7d5e0" d="M11.979 0C5.678 0 .511 4.86.022 11.037l6.432 2.658c.545-.371 1.203-.59 1.912-.59.063 0 .125.004.188.006l2.861-4.142V8.91c0-2.495 2.028-4.524 4.524-4.524 2.494 0 4.524 2.031 4.524 4.527s-2.03 4.525-4.524 4.525h-.105l-4.076 2.909c0 .052.004.105.004.159 0 1.875-1.515 3.396-3.39 3.396-1.635 0-3.016-1.173-3.331-2.727L.436 15.27C1.862 20.307 6.486 24 11.979 24c6.627 0 11.999-5.373 11.999-12S18.605 0 11.979 0zM7.54 18.21l-1.473-.61c.262.543.714.999 1.314 1.25 1.297.539 2.793-.076 3.332-1.375.263-.63.264-1.319.005-1.949s-.75-1.121-1.377-1.383c-.624-.26-1.29-.249-1.878-.03l1.523.63c.956.4 1.409 1.503 1.009 2.459-.397.957-1.501 1.41-2.455 1.008zm11.415-9.303c0-1.662-1.353-3.015-3.015-3.015-1.665 0-3.015 1.353-3.015 3.015 0 1.665 1.35 3.015 3.015 3.015 1.663 0 3.015-1.35 3.015-3.015zm-5.273-.005c0-1.252 1.013-2.266 2.265-2.266 1.249 0 2.266 1.014 2.266 2.266 0 1.251-1.017 2.265-2.266 2.265-1.253 0-2.265-1.014-2.265-2.265z"/>
+      </svg>
+    </span>
+  );
+
+  if (s.includes('epic')) return (
+    <span style={{ display:'flex', alignItems:'center', justifyContent:'center', width:32, height:32, borderRadius:8, background:'#000', flexShrink:0 }}>
+      <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path fill="#fff" d="M3.623 0v18.954l2.507 1.597V3.207h9.123v3.21H9.118v2.674h5.628v3.21H9.118v3.474h6.231v3.21H6.23V24l14.148-4.625V0z"/>
+      </svg>
+    </span>
+  );
+
+  if (s.includes('gog')) return (
+    <span style={{ display:'flex', alignItems:'center', justifyContent:'center', width:32, height:32, borderRadius:8, background:'#7b2fbe', flexShrink:0 }}>
+      <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path fill="#fff" d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 4.8c3.978 0 7.2 3.222 7.2 7.2s-3.222 7.2-7.2 7.2S4.8 15.978 4.8 12 8.022 4.8 12 4.8zm0 2.4c-2.651 0-4.8 2.149-4.8 4.8s2.149 4.8 4.8 4.8 4.8-2.149 4.8-4.8-2.149-4.8-4.8-4.8zm0 1.8a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/>
+      </svg>
+    </span>
+  );
+
+  if (s.includes('game pass')) return (
+    <span style={{ display:'flex', alignItems:'center', justifyContent:'center', width:32, height:32, borderRadius:8, background:'#107c10', flexShrink:0 }}>
+      <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path fill="#fff" d="M4.102 5.475C6.37 2.mumble15 9.039 0 12 0c2.96 0 5.63 2.15 7.898 5.475C22.166 8.8 24 12.74 24 16.5c0 2.072-.957 3.768-2.285 4.786C20.392 22.304 18.784 23 16.5 23c-1.432 0-2.583-.41-3.676-1.16A23.65 23.65 0 0 1 12 21.5a23.65 23.65 0 0 1-.824.34C10.083 22.59 8.932 23 7.5 23c-2.284 0-3.892-.696-5.215-1.714C.957 20.268 0 18.572 0 16.5c0-3.76 1.834-7.7 4.102-11.025zM12 2c-1.895 0-4.16 1.745-6.2 4.737C3.755 9.713 2 13.363 2 16.5c0 1.428.668 2.607 1.66 3.377C4.657 20.65 5.865 21 7.5 21c1.068 0 1.917-.31 2.824-.84.415-.246.78-.474 1.676-.974.896.5 1.261.728 1.676.974.907.53 1.756.84 2.824.84 1.635 0 2.843-.35 3.84-1.123C21.332 19.107 22 17.928 22 16.5c0-3.137-1.755-6.787-3.8-9.763C16.16 3.745 13.895 2 12 2z"/>
+      </svg>
+    </span>
+  );
+
+  if (s.includes('xbox') || s.includes('microsoft')) return (
+    <span style={{ display:'flex', alignItems:'center', justifyContent:'center', width:32, height:32, borderRadius:8, background:'#107c10', flexShrink:0 }}>
+      <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path fill="#fff" d="M4.102 5.475C6.37 2.15 9.039 0 12 0c2.96 0 5.63 2.15 7.898 5.475C22.166 8.8 24 12.74 24 16.5c0 2.072-.957 3.768-2.285 4.786C20.392 22.304 18.784 23 16.5 23c-1.432 0-2.583-.41-3.676-1.16A23.65 23.65 0 0 1 12 21.5a23.65 23.65 0 0 1-.824.34C10.083 22.59 8.932 23 7.5 23c-2.284 0-3.892-.696-5.215-1.714C.957 20.268 0 18.572 0 16.5c0-3.76 1.834-7.7 4.102-11.025zM12 2c-1.895 0-4.16 1.745-6.2 4.737C3.755 9.713 2 13.363 2 16.5c0 1.428.668 2.607 1.66 3.377C4.657 20.65 5.865 21 7.5 21c1.068 0 1.917-.31 2.824-.84.415-.246.78-.474 1.676-.974.896.5 1.261.728 1.676.974.907.53 1.756.84 2.824.84 1.635 0 2.843-.35 3.84-1.123C21.332 19.107 22 17.928 22 16.5c0-3.137-1.755-6.787-3.8-9.763C16.16 3.745 13.895 2 12 2z"/>
+      </svg>
+    </span>
+  );
+
+  if (s.includes('humble')) return (
+    <span style={{ display:'flex', alignItems:'center', justifyContent:'center', width:32, height:32, borderRadius:8, background:'#cc2727', flexShrink:0 }}>
+      <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path fill="#fff" d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm-.371 18.764l-4.53-4.53 1.414-1.414 3.116 3.116 6.364-6.364 1.414 1.414-7.778 7.778z"/>
+      </svg>
+    </span>
+  );
+
+  if (s.includes('playstation')) return (
+    <span style={{ display:'flex', alignItems:'center', justifyContent:'center', width:32, height:32, borderRadius:8, background:'#003791', flexShrink:0 }}>
+      <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path fill="#fff" d="M8.984 2.596v15.43l3.915 1.23V6.688c0-.612.27-.978.702-.844.561.18.67.812.67 1.424v5.8l3.917 1.23V7.57c0-2.785-1.52-4.074-3.987-4.86-1.201-.383-3.043-.79-5.217-1.114zM2 17.42l4.989 1.735.006-3.63L2 13.738zm15.285-4.528c-2.255-.77-4.758-1.08-6.285-1.478v3.067l3.79 1.307v-1.664c0-.61.244-1.022.69-.864.563.197.663.743.663 1.35v7.389L24 21.39V14.97c-1.927-1.257-4.11-1.554-6.715-2.078z"/>
+      </svg>
+    </span>
+  );
+
+  if (s.includes('nintendo')) return (
+    <span style={{ display:'flex', alignItems:'center', justifyContent:'center', width:32, height:32, borderRadius:8, background:'#e60012', flexShrink:0 }}>
+      <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path fill="#fff" d="M9.03 4H14.97A8 8 0 0 1 23 12a8 8 0 0 1-8.03 8H9.03A8 8 0 0 1 1 12a8 8 0 0 1 8.03-8zm5.47 2.5A5.5 5.5 0 0 1 20 12a5.5 5.5 0 0 1-5.5 5.5A5.5 5.5 0 0 1 9 12a5.5 5.5 0 0 1 5.5-5.5zM8.5 8.5a3.5 3.5 0 0 0-3.5 3.5 3.5 3.5 0 0 0 3.5 3.5A3.5 3.5 0 0 0 12 12a3.5 3.5 0 0 0-3.5-3.5z"/>
+      </svg>
+    </span>
+  );
+
+  // Genel / resmi site
+  return (
+    <span style={{ display:'flex', alignItems:'center', justifyContent:'center', width:32, height:32, borderRadius:8, background:'var(--bg-input)', flexShrink:0 }}>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-2)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
+        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+      </svg>
+    </span>
+  );
+}
+
 // ── Epic API sonuçlarında en iyi eşleşmeyi bul ─────────────────────────────
 function findBestMatch(gameName, results) {
   if (!results.length) return null;
@@ -533,7 +612,7 @@ function LoadingPriceRow() {
 }
 
 // ── Fiyatlı platform kartı ───────────────────────────────────────────────────
-function PriceCard({ store, icon, price, original, discount, isFree: isFreeOverride, url, highlight = false }) {
+function PriceCard({ store, price, original, discount, isFree: isFreeOverride, url, highlight = false }) {
   const isFree   = isFreeOverride || price === 0;
   const isOnSale = discount > 0 && !isFree;
 
@@ -575,8 +654,8 @@ function PriceCard({ store, icon, price, original, discount, isFree: isFreeOverr
           }
         }}
       >
-        <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, minWidth: 0 }}>
-          <span>{icon}</span>
+        <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 10, minWidth: 0 }}>
+          <StoreLogo store={store} />
           <span style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>{store}</span>
           {highlight && (
             <span style={{
@@ -609,7 +688,7 @@ function PriceCard({ store, icon, price, original, discount, isFree: isFreeOverr
 }
 
 // ── Fiyat yok ama link var ───────────────────────────────────────────────────
-function PlaceholderCard({ store, icon, url }) {
+function PlaceholderCard({ store, url }) {
   return (
     <a href={url || '#'} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', display: 'block', marginBottom: 8 }}>
       <div className="glass-card" style={{
@@ -629,8 +708,8 @@ function PlaceholderCard({ store, icon, url }) {
           e.currentTarget.style.transform = 'none';
         }}
       >
-        <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, minWidth: 0 }}>
-          <span>{icon}</span>
+        <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 10, minWidth: 0 }}>
+          <StoreLogo store={store} />
           <span style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>{store}</span>
         </span>
         <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 500, flexShrink: 0 }}>Mağazaya Git →</span>
@@ -643,11 +722,13 @@ function PlaceholderCard({ store, icon, url }) {
 function MissingCard({ platform }) {
   return (
     <div className="glass-card" style={{
+      display: 'flex', alignItems: 'center', gap: 10,
       padding: '12px 14px', borderRadius: 10, marginBottom: 8,
-      borderStyle: 'dashed', opacity: 0.7,
-      fontSize: 13, color: 'var(--text-3)', textAlign: 'center',
+      borderStyle: 'dashed', opacity: 0.55,
+      fontSize: 13, color: 'var(--text-3)',
     }}>
-      Bu oyun {platform}&apos;te bulunmuyor
+      <StoreLogo store={platform} />
+      <span>Bu oyun {platform}&apos;te bulunmuyor</span>
     </div>
   );
 }

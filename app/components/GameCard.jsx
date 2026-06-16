@@ -63,7 +63,7 @@ export default function GameCard({ game, compact = false }) {
 
   const isFree   = livePrice?.isFree || game.isFree || game.gamePass;
   const isOnSale = (livePrice?.discount > 0) && !isFree;
-  const imgH     = compact ? 130 : 150;
+  const imgH     = compact ? 144 : 168;
   const href     = game.rawgSlug ? `/game/rawg/${game.rawgSlug}` : `/game/rawg/${game.id}`;
 
   return (
@@ -92,7 +92,8 @@ export default function GameCard({ game, compact = false }) {
             <Image
               src={game.image} alt={game.name} fill
               sizes="(max-width:640px) 50vw, 200px"
-              style={{ objectFit: 'cover' }}
+              style={{ objectFit: 'cover', pointerEvents: 'none' }}
+              draggable={false}
               unoptimized
             />
           ) : (
