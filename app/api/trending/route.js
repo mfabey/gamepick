@@ -97,27 +97,51 @@ function formatGame(rawgGame, steamspyGame) {
 }
 
 const STREAMER_GAME_IDS = [
-  23598,  // League of Legends
-  415171, // Valorant
-  3498,   // Grand Theft Auto V
-  965470, // Counter-Strike 2
-  326243, // Elden Ring
-  22509,  // Minecraft
   617010, // Chained Together
-  28131,  // Fortnite
-  9671,   // Rust
+  983289, // Bodycam
   968329, // Lethal Company
   427930, // Phasmophobia
-  290856, // Apex Legends
-  779,    // Roblox
-  52106,  // Escape from Tarkov
-  963218, // EA Sports FC 24
-  324997, // Baldur's Gate 3
-  28,     // Red Dead Redemption 2
-  10142,  // PUBG: BATTLEGROUNDS
-  983289, // Bodycam
-  9721    // Garry's Mod
+  977316, // Balatro
+  979524, // Content Warning
+  974482, // Buckshot Roulette
+  977230, // Supermarket Simulator
+  496652, // Manor Lords
+  906504, // Nine Sols
+  976564, // Helldivers 2
+  718135, // Palworld
+  356714, // Among Us
+  326243, // Elden Ring
+  3498,   // Grand Theft Auto V
+  22509,  // Minecraft
+  28131,  // Fortnite
+  415171, // Valorant
+  965470  // Counter-Strike 2
 ];
+
+const CUSTOM_MECCHA_CHAMELEON = {
+  id:            'rawg_4704690',
+  rawgId:        4704690,
+  rawgSlug:      'meccha-chameleon',
+  name:          'Meccha Chameleon',
+  image:         'https://cdn.akamai.steamstatic.com/steam/apps/4704690/header.jpg',
+  metacritic:    null,
+  reviewScore:   92,
+  totalReviews:  1050,
+  isFree:        false,
+  onSale:        false,
+  price:         null,
+  noData:        true,
+  platforms:     ['pc'],
+  hasSteam:      true,
+  hasEpic:       false,
+  hasStores:     true,
+  hasMultipleStores: false,
+  genres:        ['Gizlilik', 'Parti', 'Aksiyon'],
+  released:      '2026-06-10',
+  players2weeks: 0,
+  ccu:           0,
+  trendSource:   'custom-viral',
+};
 
 export async function GET() {
   try {
@@ -137,8 +161,8 @@ export async function GET() {
     const offset = (seed * 3) % results.length;
     results = [...results.slice(offset), ...results.slice(0, offset)];
 
-    // En fazla 16 adet göster
-    results = results.slice(0, 16);
+    // Meccha Chameleon'u en başa (her zaman görünür) ekleyelim ve listeyi 16 adetle sınırlandıralım
+    results = [CUSTOM_MECCHA_CHAMELEON, ...results.slice(0, 15)];
 
     return NextResponse.json({
       results,
