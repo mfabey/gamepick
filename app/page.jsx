@@ -453,32 +453,37 @@ function ScrollRow({ children }) {
   const rowRef = useRef(null);
   const drag   = useRef({ active: false, startX: 0, scrollLeft: 0, moved: false });
 
+  useEffect(() => {
+    const onMove = e => {
+      if (!drag.current.active) return;
+      const dx = e.clientX - drag.current.startX;
+      if (Math.abs(dx) > 3) drag.current.moved = true;
+      rowRef.current.scrollLeft = drag.current.scrollLeft - dx;
+    };
+
+    const onUp = () => {
+      if (!drag.current.active) return;
+      drag.current.active = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+  }, []);
+
   const onMouseDown = e => {
     const el = rowRef.current;
     if (!el) return;
-    drag.current = { active: true, startX: e.pageX - el.offsetLeft, scrollLeft: el.scrollLeft, moved: false };
-    el.style.cursor = 'grabbing';
+    drag.current = { active: true, startX: e.clientX, scrollLeft: el.scrollLeft, moved: false };
+    document.body.style.cursor = 'grabbing';
+    document.body.style.userSelect = 'none';
   };
 
-  const onMouseMove = e => {
-    if (!drag.current.active) return;
-    e.preventDefault();
-    const el = rowRef.current;
-    if (!el) return;
-    const x    = e.pageX - el.offsetLeft;
-    const walk = (x - drag.current.startX) * 1.3;
-    if (Math.abs(walk) > 4) drag.current.moved = true;
-    el.scrollLeft = drag.current.scrollLeft - walk;
-  };
-
-  const onMouseUp = () => {
-    const el = rowRef.current;
-    if (!el) return;
-    drag.current.active = false;
-    el.style.cursor = 'grab';
-  };
-
-  // Sürükleme sonrası click'in oyun sayfasına gitmesini engelle
   const onClickCapture = e => {
     if (drag.current.moved) {
       e.preventDefault();
@@ -491,11 +496,8 @@ function ScrollRow({ children }) {
     <div
       ref={rowRef}
       className="scroll-row"
-      style={{ cursor: 'grab', scrollbarWidth: 'none', userSelect: 'none' }}
+      style={{ cursor: 'grab', scrollbarWidth: 'none' }}
       onMouseDown={onMouseDown}
-      onMouseMove={onMouseMove}
-      onMouseUp={onMouseUp}
-      onMouseLeave={onMouseUp}
       onClickCapture={onClickCapture}
     >
       {children}
