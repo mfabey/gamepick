@@ -63,7 +63,7 @@ export default function GameCard({ game, compact = false }) {
 
   const isFree   = livePrice?.isFree || game.isFree || game.gamePass;
   const isOnSale = (livePrice?.discount > 0) && !isFree;
-  const imgH     = compact ? 90 : 110;
+  const imgH     = compact ? 112 : 130;
   const href     = game.rawgSlug ? `/game/rawg/${game.rawgSlug}` : `/game/rawg/${game.id}`;
 
   return (
@@ -75,7 +75,7 @@ export default function GameCard({ game, compact = false }) {
         style={{
           background:   'var(--bg-card)',
           border:       `1.5px solid ${hovered ? 'var(--accent-border)' : 'var(--border)'}`,
-          borderRadius: 14,
+          borderRadius: 12,
           overflow:     'hidden',
           transition:   'border-color 0.2s, transform 0.2s, box-shadow 0.2s',
           transform:    hovered ? 'scale(1.06)' : 'scale(1)',
@@ -102,7 +102,7 @@ export default function GameCard({ game, compact = false }) {
           )}
 
           {/* Sol üst: indirim / ücretsiz badge */}
-          <div style={{ position: 'absolute', top: 7, left: 7, display: 'flex', gap: 4 }}>
+          <div style={{ position: 'absolute', top: 8, left: 8, display: 'flex', gap: 4 }}>
             {isFree   && <span className="badge badge-green">Ücretsiz</span>}
             {isOnSale && (
               <span className="badge badge-amber" style={{ fontWeight: 700, border: '1px solid var(--border-hover)' }}>
@@ -113,36 +113,33 @@ export default function GameCard({ game, compact = false }) {
 
           {/* Sağ üst: sahiplik rozeti */}
           {isOwnedSteam && (
-            <div style={{ position: 'absolute', top: 7, right: 7 }}>
+            <div style={{ position: 'absolute', top: 8, right: 8 }}>
               <span style={{
-                fontSize: 9, fontWeight: 800, padding: '2px 6px', borderRadius: 5,
+                fontSize: 10, fontWeight: 700, padding: '3px 7px', borderRadius: 5,
                 background: 'rgba(26,159,255,0.92)',
-                color: '#fff', letterSpacing: '0.03em',
-                backdropFilter: 'blur(4px)',
+                color: '#fff', backdropFilter: 'blur(4px)',
               }}>
                 ✓ Sahipsin
               </span>
             </div>
           )}
           {!isOwnedSteam && isOwnedXbox && (
-            <div style={{ position: 'absolute', top: 7, right: 7 }}>
+            <div style={{ position: 'absolute', top: 8, right: 8 }}>
               <span style={{
-                fontSize: 9, fontWeight: 800, padding: '2px 6px', borderRadius: 5,
+                fontSize: 10, fontWeight: 700, padding: '3px 7px', borderRadius: 5,
                 background: 'rgba(16,124,16,0.92)',
-                color: '#fff', letterSpacing: '0.03em',
-                backdropFilter: 'blur(4px)',
+                color: '#fff', backdropFilter: 'blur(4px)',
               }}>
                 ✓ Xbox'ta
               </span>
             </div>
           )}
           {!isOwnedSteam && !isOwnedXbox && isGamePass && (
-            <div style={{ position: 'absolute', top: 7, right: 7 }}>
+            <div style={{ position: 'absolute', top: 8, right: 8 }}>
               <span style={{
-                fontSize: 9, fontWeight: 800, padding: '2px 6px', borderRadius: 5,
+                fontSize: 10, fontWeight: 700, padding: '3px 7px', borderRadius: 5,
                 background: 'rgba(16,124,16,0.92)',
-                color: '#fff', letterSpacing: '0.03em',
-                backdropFilter: 'blur(4px)',
+                color: '#fff', backdropFilter: 'blur(4px)',
               }}>
                 🎮 Game Pass
               </span>
@@ -150,35 +147,35 @@ export default function GameCard({ game, compact = false }) {
           )}
 
           {/* Sol alt: platform logoları */}
-          <div style={{ position: 'absolute', bottom: 6, left: 7, display: 'flex', gap: 4 }}>
+          <div style={{ position: 'absolute', bottom: 7, left: 8, display: 'flex', gap: 4 }}>
             {(game.hasSteam || livePrice?.storeName === 'Steam') && livePrice?.isAvailable !== false && (
               <span title="Steam" style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                width: 20, height: 20, borderRadius: 5,
+                width: 24, height: 24, borderRadius: 6,
                 background: 'rgba(23,42,61,0.92)', backdropFilter: 'blur(4px)',
                 color: '#c7d5e0',
               }}>
-                <SteamIcon size={12} />
+                <SteamIcon size={14} />
               </span>
             )}
             {(game.hasEpic || livePrice?.storeName === 'Epic Games') && (
               <span title="Epic Games" style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                width: 20, height: 20, borderRadius: 5,
+                width: 24, height: 24, borderRadius: 6,
                 background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(4px)',
                 color: '#ffffff',
               }}>
-                <EpicIcon size={11} />
+                <EpicIcon size={13} />
               </span>
             )}
           </div>
 
           {/* Sağ alt: metacritic */}
           {game.metacritic && (
-            <div style={{ position: 'absolute', bottom: 6, right: 7 }}>
+            <div style={{ position: 'absolute', bottom: 7, right: 8 }}>
               <span style={{
-                fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 6,
-                background: 'rgba(0,0,0,0.6)',
+                fontSize: 11, fontWeight: 700, padding: '2px 7px', borderRadius: 6,
+                background: 'rgba(0,0,0,0.65)',
                 color: game.metacritic >= 80 ? '#4ade80' : game.metacritic >= 60 ? '#fbbf24' : '#f87171',
               }}>
                 {game.metacritic}
@@ -188,43 +185,42 @@ export default function GameCard({ game, compact = false }) {
         </div>
 
         {/* Alt bilgi */}
-        <div style={{ padding: '9px 11px' }}>
-          <p style={{ fontWeight: 600, fontSize: 12, lineHeight: 1.3, color: 'var(--text)', marginBottom: 5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <div style={{ padding: '11px 13px' }}>
+          <p style={{ fontWeight: 600, fontSize: 13, lineHeight: 1.3, color: 'var(--text)', marginBottom: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {game.name}
           </p>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4 }}>
 
-            {/* Fiyat — yükleme sırasında ⭐ sayısı kalır, gelince ₺ ile değişir */}
+            {/* Fiyat */}
             {isFree ? (
-              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--green)' }}>Ücretsiz</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--green)' }}>Ücretsiz</span>
             ) : livePrice?.price != null ? (
               isOnSale ? (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--amber)' }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--amber)' }}>
                       ₺{livePrice.price}
                     </span>
                     {livePrice.storeIcon && (
-                      <span title={livePrice.storeName} style={{ fontSize: 10, opacity: 0.85 }}>
+                      <span title={livePrice.storeName} style={{ fontSize: 11, opacity: 0.85 }}>
                         {livePrice.storeIcon}
                       </span>
                     )}
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: 'var(--text-3)', marginTop: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>
                     <span style={{ textDecoration: 'line-through' }}>₺{livePrice.original}</span>
                     <span style={{ color: 'var(--amber)', fontWeight: 700 }}>-%{livePrice.discount}</span>
                   </div>
                 </div>
               ) : (
-                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
                   ₺{livePrice.price}
                 </span>
               )
             ) : priceLoading ? (
-              /* Yükleme noktaları — sadece fetch çalışırken görünür */
-              <span style={{ fontSize: 10, color: 'var(--border-hover)', letterSpacing: 3 }}>•••</span>
+              <span style={{ fontSize: 11, color: 'var(--border-hover)', letterSpacing: 3 }}>•••</span>
             ) : (
-              <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
+              <span style={{ fontSize: 12, color: 'var(--text-3)' }}>
                 {game.totalReviews > 0 ? '⭐ ' + game.totalReviews.toLocaleString('tr') : '—'}
               </span>
             )}
@@ -233,7 +229,7 @@ export default function GameCard({ game, compact = false }) {
 
           {/* Tür — sadece geniş kartlarda */}
           {!compact && (game.genres || []).slice(0, 1).map(g => (
-            <span key={g} className="badge badge-gray" style={{ fontSize: 10, marginTop: 4 }}>{g}</span>
+            <span key={g} className="badge badge-gray" style={{ marginTop: 6 }}>{g}</span>
           ))}
         </div>
       </div>

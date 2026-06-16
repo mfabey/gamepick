@@ -199,7 +199,7 @@ export default function Home() {
           <h1 className="hero-glow-title">Ne aramıştınız?</h1>
 
           {/* Animasyonlu arama çubuğu */}
-          <div ref={wrapperRef} style={{ width: '100%', maxWidth: 620, position: 'relative' }}
+          <div ref={wrapperRef} style={{ width: '100%', maxWidth: 720, position: 'relative' }}
             className="search-scale-in">
             <form onSubmit={handleSearch}>
               <div style={{
@@ -208,7 +208,7 @@ export default function Home() {
                 backdropFilter: 'blur(20px)',
                 WebkitBackdropFilter: 'blur(20px)',
                 border: '1.5px solid rgba(255,255,255,0.25)',
-                borderRadius: 999, height: 62, padding: '0 8px 0 24px',
+                borderRadius: 999, height: 72, padding: '0 10px 0 28px',
                 boxShadow: '0 8px 40px rgba(0,0,0,0.4)',
                 transition: 'border-color 0.2s, box-shadow 0.2s',
               }}
@@ -221,7 +221,7 @@ export default function Home() {
                   e.currentTarget.style.boxShadow   = '0 8px 40px rgba(0,0,0,0.4)';
                 }}
               >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)"
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)"
                   strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
                   <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
                 </svg>
@@ -233,7 +233,7 @@ export default function Home() {
                   placeholder={query ? '' : phText}
                   autoComplete="off"
                   style={{
-                    flex: 1, border: 'none', outline: 'none', fontSize: 17,
+                    flex: 1, border: 'none', outline: 'none', fontSize: 19,
                     color: '#fff', background: 'transparent', caretColor: '#fff',
                   }}
                 />
@@ -251,9 +251,9 @@ export default function Home() {
                   </button>
                 )}
                 <button type="submit" style={{
-                  flexShrink: 0, height: 46, padding: '0 24px', borderRadius: 999,
+                  flexShrink: 0, height: 54, padding: '0 28px', borderRadius: 999,
                   border: 'none', background: 'var(--accent)', color: '#fff',
-                  fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'opacity 0.15s',
+                  fontSize: 15, fontWeight: 700, cursor: 'pointer', transition: 'opacity 0.15s',
                 }}
                   onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
                   onMouseLeave={e => e.currentTarget.style.opacity = '1'}
@@ -309,8 +309,14 @@ export default function Home() {
             )}
           </div>
 
-          {/* Hızlı linkler */}
-          <div style={{ display: 'flex', gap: 10, marginTop: 24, flexWrap: 'wrap', justifyContent: 'center' }}>
+          {/* Hızlı linkler — arama yapılınca animasyonla kaybolur */}
+          <div style={{
+            display: 'flex', gap: 10, marginTop: 24, flexWrap: 'wrap', justifyContent: 'center',
+            opacity: query ? 0 : 1,
+            transform: query ? 'translateY(-8px) scale(0.97)' : 'translateY(0) scale(1)',
+            pointerEvents: query ? 'none' : 'auto',
+            transition: 'opacity 0.25s ease, transform 0.25s ease',
+          }}>
             {['💥 Popüler', '🏷️ İndirimde', '🗓️ Yeni Çıkan', '⭐ En İyi'].map((label, i) => {
               const sections = ['popular', 'sale', 'new', 'topscore'];
               return (
@@ -448,8 +454,8 @@ function Section({ title, subtitle, href, games, loading, badge }) {
     <div style={{ marginBottom: 48 }}>
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 16 }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <h2 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)' }}>{title}</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <h2 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>{title}</h2>
             {badge && (
               <span style={{
                 fontSize: 10, fontWeight: 800, padding: '2px 7px', borderRadius: 999,
@@ -461,9 +467,9 @@ function Section({ title, subtitle, href, games, loading, badge }) {
               </span>
             )}
           </div>
-          {subtitle && <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 2 }}>{subtitle}</p>}
+          {subtitle && <p style={{ fontSize: 14, color: 'var(--text-3)', marginTop: 3 }}>{subtitle}</p>}
         </div>
-        <Link href={href} style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+        <Link href={href} style={{ fontSize: 14, color: 'var(--accent)', fontWeight: 600, whiteSpace: 'nowrap' }}>
           Tümünü gör →
         </Link>
       </div>
@@ -482,13 +488,13 @@ function Section({ title, subtitle, href, games, loading, badge }) {
 function SkeletonCard() {
   return (
     <div style={{
-      flexShrink: 0, width: 160, borderRadius: 14,
+      flexShrink: 0, width: 200, borderRadius: 12,
       background: 'var(--bg-card)', border: '1.5px solid var(--border)', overflow: 'hidden',
     }}>
-      <div style={{ height: 90, background: 'var(--bg-input)' }} />
-      <div style={{ padding: '9px 11px' }}>
-        <div style={{ height: 11, background: 'var(--border)', borderRadius: 4, marginBottom: 7 }} />
-        <div style={{ height: 10, background: 'var(--bg-input)', borderRadius: 4, width: '60%' }} />
+      <div style={{ height: 112, background: 'var(--bg-input)' }} />
+      <div style={{ padding: '11px 13px' }}>
+        <div style={{ height: 13, background: 'var(--border)', borderRadius: 4, marginBottom: 8 }} />
+        <div style={{ height: 11, background: 'var(--bg-input)', borderRadius: 4, width: '60%' }} />
       </div>
     </div>
   );

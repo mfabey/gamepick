@@ -46,7 +46,7 @@
   --blue-bg: #eef4ff;
   --amber: #c07800;
   --amber-bg: #fff8e8;
-  --radius: 5px; --radius-lg: 8px; --radius-full: 9999px;
+  --radius: 6px; --radius-lg: 10px; --radius-full: 9999px;
   --shadow: 0 2px 8px rgba(0,0,0,0.08);
   --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
   --hero-bg: linear-gradient(160deg, #f4f4f8 0%, #ffe8ea 60%, #f0f0f4 100%);
@@ -122,7 +122,7 @@ html[data-theme="dark"] body > * { position: relative; z-index: 1; }
 html, body {
   background: var(--bg-body); color: var(--text);
   font-family: var(--font-body);
-  font-size: 14px; line-height: 1.6; min-height: 100vh;
+  font-size: 15px; line-height: 1.6; min-height: 100vh;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -144,12 +144,12 @@ img { max-width: 100%; display: block; }
 ::-webkit-scrollbar-thumb:hover { background: var(--accent); filter: brightness(1.2); }
 
 /* ===== UTILITIES ===== */
-.container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+.container { max-width: 1280px; margin: 0 auto; padding: 0 28px; }
 
 .badge {
   display: inline-flex; align-items: center; gap: 4px;
-  font-size: 11px; font-weight: 600; letter-spacing: 0.2px;
-  padding: 3px 8px; border-radius: var(--radius);
+  font-size: 12px; font-weight: 600; letter-spacing: 0.2px;
+  padding: 3px 9px; border-radius: var(--radius);
   font-family: var(--font-body);
 }
 .badge-green  { background: var(--green-bg);  color: var(--green);  border: 1px solid var(--green-border); }
@@ -171,17 +171,17 @@ html[data-theme="dark"] .badge-purple { background: #10102a; color: #a78bfa; bor
 
 .section-title {
   font-family: var(--font-heading);
-  font-size: 22px; font-weight: 700; color: var(--text);
-  margin-bottom: 16px;
+  font-size: 26px; font-weight: 700; color: var(--text);
+  margin-bottom: 18px;
   letter-spacing: -0.3px;
 }
 
-.scroll-row { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 8px; scrollbar-width: none; }
+.scroll-row { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; }
 .scroll-row::-webkit-scrollbar { display: none; }
 
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-.grid-auto { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+.grid-auto { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
 
 @media (max-width: 768px) {
   .grid-2, .grid-3 { grid-template-columns: 1fr; }
@@ -196,8 +196,8 @@ html[data-theme="dark"] .badge-purple { background: #10102a; color: #a78bfa; bor
 
 .btn {
   display: inline-flex; align-items: center; justify-content: center;
-  gap: 6px; padding: 9px 18px; border-radius: var(--radius);
-  font-size: 13px; font-weight: 600; letter-spacing: 0.1px;
+  gap: 7px; padding: 11px 22px; border-radius: var(--radius);
+  font-size: 14px; font-weight: 600; letter-spacing: 0.1px;
   border: none; cursor: pointer;
   transition: opacity 0.12s, transform 0.1s, box-shadow 0.12s;
   font-family: var(--font-body);
