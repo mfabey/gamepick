@@ -335,7 +335,24 @@ function FeaturedSection({ games, loading }) {
 
 function FeaturedCard({ game }) {
   const [hovered, setHovered] = useState(false);
+  const [livePrice, setLivePrice] = useState(null);
+  const [priceLoading, setPriceLoading] = useState(false);
   const href = game.rawgSlug ? `/game/rawg/${game.rawgSlug}` : `/game/rawg/${game.id}`;
+
+  useEffect(() => {
+    setPriceLoading(true);
+    const params = game.rawgSlug
+      ? `slug=${encodeURIComponent(game.rawgSlug)}&name=${encodeURIComponent(game.name)}&hasSteam=${!!game.hasSteam}`
+      : `name=${encodeURIComponent(game.name)}&hasSteam=${!!game.hasSteam}`;
+
+    fetch('/api/card-price?' + params)
+      .then(r => r.json())
+      .then(d => { if (d.price != null) setLivePrice(d); })
+      .catch(() => {})
+      .finally(() => setPriceLoading(false));
+  }, [game.name, game.rawgSlug, game.hasSteam]);
+
+  const releaseYear = game.released ? game.released.split('-')[0] : null;
 
   return (
     <Link href={href} style={{ textDecoration: 'none', display: 'block' }}>
@@ -396,7 +413,7 @@ function FeaturedCard({ game }) {
         {/* Alt bilgi — hover'da açılır */}
         <div style={{
           padding: '10px 14px 12px',
-          maxHeight: hovered ? 80 : 44,
+          maxHeight: hovered ? 85 : 44,
           overflow: 'hidden',
           transition: 'max-height 0.25s ease',
         }}>
@@ -412,12 +429,30 @@ function FeaturedCard({ game }) {
               </span>
             )}
           </div>
-          {/* Hover'da görünen ek bilgi */}
-          {game.released && (
-            <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 6, opacity: hovered ? 1 : 0, transition: 'opacity 0.2s' }}>
-              📅 {game.released}
-            </p>
-          )}
+          {/* Hover'da görünen ek bilgi (Çıkış yılı ve en ucuz fiyat) */}
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center', 
+            marginTop: 6, 
+            opacity: hovered ? 1 : 0, 
+            transition: 'opacity 0.2s' 
+          }}>
+            {releaseYear && (
+              <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
+                📅 {releaseYear}
+              </span>
+            )}
+            {priceLoading ? (
+              <span style={{ fontSize: 10, color: 'var(--border-hover)', letterSpacing: 2 }}>•••</span>
+            ) : livePrice ? (
+              <span style={{ fontSize: 12, fontWeight: 700, color: livePrice.isFree ? 'var(--green)' : 'var(--accent)' }}>
+                {livePrice.storeIcon} {livePrice.isFree ? 'Ücretsiz' : `₺${livePrice.price}`}
+              </span>
+            ) : (
+              <span style={{ fontSize: 11, color: 'var(--text-3)', fontStyle: 'italic' }}>Fiyat yok</span>
+            )}
+          </div>
         </div>
       </div>
     </Link>
