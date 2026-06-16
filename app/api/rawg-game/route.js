@@ -7,65 +7,122 @@ const BASE     = 'https://api.rawg.io/api';
 const STEAM_STORE_ID = 1;
 const EPIC_STORE_ID  = 11;
 
+async function searchSteamGame(slug) {
+  try {
+    const term = slug.replace(/-/g, ' ');
+    const searchRes = await fetch(`https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(term)}&cc=tr&category1=998`);
+    if (!searchRes.ok) return null;
+    const searchData = await searchRes.json();
+    const items = searchData.items || [];
+    if (items.length === 0) return null;
+
+    // Eşleşen en yakın oyunu bul veya ilkini al
+    const cleanSlug = slug.replace(/[^a-z0-9]/g, '');
+    const match = items.find(i => i.name.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanSlug)
+               || items[0];
+    
+    return match.id;
+  } catch (err) {
+    console.error("Steam arama hatasi:", err);
+    return null;
+  }
+}
+
+async function fetchSteamDetails(appid, slug) {
+  try {
+    const res = await fetch(`https://store.steampowered.com/api/appdetails?appids=${appid}&cc=tr&l=tr`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const entry = data[appid];
+    if (!entry || !entry.success || !entry.data) return null;
+    
+    const d = entry.data;
+    
+    return {
+      id:           `rawg_${appid}`,
+      rawgId:       appid,
+      rawgSlug:     slug,
+      name:         d.name,
+      image:        d.header_image,
+      description:  d.about_the_game || d.detailed_description || '',
+      metacritic:   d.metacritic?.score || null,
+      rating:       d.recommendations?.total ? 4.5 : 0,
+      totalReviews: d.recommendations?.total || 0,
+      developer:    d.developers?.[0] || null,
+      publisher:    d.publishers?.[0] || null,
+      released:     d.release_date?.date || null,
+      playtime:     null,
+      genres:       (d.genres || []).map(g => g.description),
+      tags:         (d.categories || []).map(c => c.description).slice(0, 15),
+      platforms:    ['PC'],
+      screenshots:  (d.screenshots || []).map(s => s.path_full).slice(0, 6),
+      hasSteam:     true,
+      hasEpic:      false,
+      steamAppId:   String(appid),
+      epicUrl:      null,
+      steamUrl:     `https://store.steampowered.com/app/${appid}`,
+      xboxUrl:      null,
+      gogUrl:       null,
+      playstationUrl: null,
+      nintendoUrl:  null,
+      officialUrl:  d.website || null,
+      source:       'steam',
+    };
+  } catch (err) {
+    console.error("Steam detay hatasi:", err);
+    return null;
+  }
+}
+
+async function trySteamFallback(slug) {
+  const appid = await searchSteamGame(slug);
+  if (!appid) return null;
+  return fetchSteamDetails(appid, slug);
+}
+
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const slug = searchParams.get('slug');
 
   if (!slug) return NextResponse.json({ error: 'slug eksik' }, { status: 400 });
 
-  if (slug === 'meccha-chameleon') {
-    const game = {
-      id:           'rawg_4704690',
-      rawgId:       4704690,
-      rawgSlug:     'meccha-chameleon',
-      name:         'Meccha Chameleon',
-      image:        'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/4704690/163e2a742e5fb8e1f5d1e3a890da98f04ab809d4/header.jpg?t=1781108224',
-      description:  'Meccha Chameleon, oyuncuların kendilerini çevreye uydurmak için el ile boyadığı ve kamufle ettiği, son derece eğlenceli ve popüler bir saklambaç oyunudur. Eşyaya dönüşmek yerine, düz beyaz bir karakter olarak başlayıp renk paletleri ve dokular kullanarak sahneye uyum sağlamaya çalışırsınız.',
-      metacritic:   null,
-      rating:       4.6,
-      totalReviews: 1050,
-      developer:    'lemorion_1224',
-      publisher:    'lemorion_1224',
-      released:     '2026-06-10',
-      playtime:     null,
-      genres:       ['Aksiyon', 'Casual', 'Gizlilik'],
-      tags:         ['Saklambaç', 'Party', 'Çok Oyunculu', 'Komik', 'Kamufle'],
-      platforms:    ['PC'],
-      screenshots:  [
-        'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/4704690/6c0a47cc2fba1b160901d1553637a764198bdc98/ss_6c0a47cc2fba1b160901d1553637a764198bdc98.1920x1080.jpg?t=1781108224',
-        'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/4704690/0383a711ed93bf8edd848df4b63b331fc44f3ad5/ss_0383a711ed93bf8edd848df4b63b331fc44f3ad5.1920x1080.jpg?t=1781108224',
-        'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/4704690/51b0a906d1767b1b5abde623350dec64c6877c93/ss_51b0a906d1767b1b5abde623350dec64c6877c93.1920x1080.jpg?t=1781108224',
-        'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/4704690/0a8a562016b13a349349e685f7a4d5a6cbccef3e/ss_0a8a562016b13a349349e685f7a4d5a6cbccef3e.1920x1080.jpg?t=1781108224',
-        'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/4704690/2764a4a42c24a88d0bbb9b67e5c2bde979a24ac9/ss_2764a4a42c24a88d0bbb9b67e5c2bde979a24ac9.1920x1080.jpg?t=1781108224',
-        'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/4704690/c0c3ab9f5f2b41e86606a1c790fef432fe2d65cf/ss_c0c3ab9f5f2b41e86606a1c790fef432fe2d65cf.1920x1080.jpg?t=1781108224'
-      ],
-      hasSteam:     true,
-      hasEpic:      false,
-      steamAppId:   '4704690',
-      epicUrl:      null,
-      steamUrl:     'https://store.steampowered.com/app/4704690',
-      xboxUrl:      null,
-      gogUrl:       null,
-      playstationUrl: null,
-      nintendoUrl:  null,
-      officialUrl:  null,
-      source:       'steam',
-    };
-    return NextResponse.json({ game });
-  }
+  let detail;
+  let shots = { results: [] };
+  let storesData = { results: [] };
+  let rawgFailed = false;
 
   try {
-    // 3 endpoint paralel: detail + screenshots + store URLs
-    const [detail, shots, storesData] = await Promise.all([
+    const [detailRes, shotsRes, storesRes] = await Promise.all([
       fetch(`${BASE}/games/${slug}?key=${RAWG_KEY}`, { next: { revalidate: 3600 } }).then(r => r.json()),
       fetch(`${BASE}/games/${slug}/screenshots?key=${RAWG_KEY}`, { next: { revalidate: 3600 } }).then(r => r.json()).catch(() => ({ results: [] })),
       fetch(`${BASE}/games/${slug}/stores?key=${RAWG_KEY}`, { next: { revalidate: 3600 } }).then(r => r.json()).catch(() => ({ results: [] })),
     ]);
 
-    if (detail.detail === 'Not found.') {
-      return NextResponse.json({ error: 'Oyun bulunamadi' }, { status: 404 });
-    }
+    detail = detailRes;
+    shots = shotsRes;
+    storesData = storesRes;
 
+    if (detail.detail === 'Not found.') {
+      rawgFailed = true;
+    }
+  } catch (err) {
+    console.error('RAWG game fetch hatasi veya bulunamadi:', err.message);
+    rawgFailed = true;
+  }
+
+  // Eğer RAWG'ta bulunamadıysa veya hata alındıysa, Steam fallback'ini dene
+  if (rawgFailed) {
+    console.log(`"${slug}" RAWG'ta bulunamadı. Steam fallback deneniyor...`);
+    const fallbackGame = await trySteamFallback(slug);
+    if (fallbackGame) {
+      console.log(`"${slug}" Steam üzerinde başarıyla bulundu ve oluşturuldu.`);
+      return NextResponse.json({ game: fallbackGame });
+    }
+    return NextResponse.json({ error: 'Oyun bulunamadi' }, { status: 404 });
+  }
+
+  // RAWG'tan başarıyla alındıysa standard eşleme:
+  try {
     // Tüm store URL'lerini eşleştir
     const storeResults = storesData.results || [];
     const detailStores = detail.stores || [];
@@ -128,9 +185,8 @@ export async function GET(request) {
     };
 
     return NextResponse.json({ game });
-
   } catch (err) {
-    console.error('RAWG game detail hatasi:', err.message);
+    console.error('RAWG game mapping hatasi:', err.message);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
