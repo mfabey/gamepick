@@ -13,6 +13,47 @@ export async function GET(request) {
 
   if (!slug) return NextResponse.json({ error: 'slug eksik' }, { status: 400 });
 
+  if (slug === 'meccha-chameleon') {
+    const game = {
+      id:           'rawg_4704690',
+      rawgId:       4704690,
+      rawgSlug:     'meccha-chameleon',
+      name:         'Meccha Chameleon',
+      image:        'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/4704690/163e2a742e5fb8e1f5d1e3a890da98f04ab809d4/header.jpg?t=1781108224',
+      description:  'Meccha Chameleon, oyuncuların kendilerini çevreye uydurmak için el ile boyadığı ve kamufle ettiği, son derece eğlenceli ve popüler bir saklambaç oyunudur. Eşyaya dönüşmek yerine, düz beyaz bir karakter olarak başlayıp renk paletleri ve dokular kullanarak sahneye uyum sağlamaya çalışırsınız.',
+      metacritic:   null,
+      rating:       4.6,
+      totalReviews: 1050,
+      developer:    'lemorion_1224',
+      publisher:    'lemorion_1224',
+      released:     '2026-06-10',
+      playtime:     null,
+      genres:       ['Aksiyon', 'Casual', 'Gizlilik'],
+      tags:         ['Saklambaç', 'Party', 'Çok Oyunculu', 'Komik', 'Kamufle'],
+      platforms:    ['PC'],
+      screenshots:  [
+        'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/4704690/6c0a47cc2fba1b160901d1553637a764198bdc98/ss_6c0a47cc2fba1b160901d1553637a764198bdc98.1920x1080.jpg?t=1781108224',
+        'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/4704690/0383a711ed93bf8edd848df4b63b331fc44f3ad5/ss_0383a711ed93bf8edd848df4b63b331fc44f3ad5.1920x1080.jpg?t=1781108224',
+        'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/4704690/51b0a906d1767b1b5abde623350dec64c6877c93/ss_51b0a906d1767b1b5abde623350dec64c6877c93.1920x1080.jpg?t=1781108224',
+        'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/4704690/0a8a562016b13a349349e685f7a4d5a6cbccef3e/ss_0a8a562016b13a349349e685f7a4d5a6cbccef3e.1920x1080.jpg?t=1781108224',
+        'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/4704690/2764a4a42c24a88d0bbb9b67e5c2bde979a24ac9/ss_2764a4a42c24a88d0bbb9b67e5c2bde979a24ac9.1920x1080.jpg?t=1781108224',
+        'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/4704690/c0c3ab9f5f2b41e86606a1c790fef432fe2d65cf/ss_c0c3ab9f5f2b41e86606a1c790fef432fe2d65cf.1920x1080.jpg?t=1781108224'
+      ],
+      hasSteam:     true,
+      hasEpic:      false,
+      steamAppId:   '4704690',
+      epicUrl:      null,
+      steamUrl:     'https://store.steampowered.com/app/4704690',
+      xboxUrl:      null,
+      gogUrl:       null,
+      playstationUrl: null,
+      nintendoUrl:  null,
+      officialUrl:  null,
+      source:       'steam',
+    };
+    return NextResponse.json({ game });
+  }
+
   try {
     // 3 endpoint paralel: detail + screenshots + store URLs
     const [detail, shots, storesData] = await Promise.all([

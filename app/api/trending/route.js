@@ -123,7 +123,7 @@ const CUSTOM_MECCHA_CHAMELEON = {
   rawgId:        4704690,
   rawgSlug:      'meccha-chameleon',
   name:          'Meccha Chameleon',
-  image:         'https://cdn.akamai.steamstatic.com/steam/apps/4704690/header.jpg',
+  image:         'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/4704690/163e2a742e5fb8e1f5d1e3a890da98f04ab809d4/header.jpg?t=1781108224',
   metacritic:    null,
   reviewScore:   92,
   totalReviews:  1050,
