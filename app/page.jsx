@@ -1,7 +1,7 @@
 'use client';
 export const dynamic = 'force-dynamic';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -29,9 +29,11 @@ export default function Home() {
   const [phPhase, setPhPhase] = useState('typing');
 
   // Bölüm verileri
-  const [popularGames, setPopularGames] = useState([]);
+  const [trendGames,   setTrendGames]   = useState([]);
+  const [popularGames, setPopularGames] = useState([]); // hero arka plan için
   const [newGames,     setNewGames]     = useState([]);
   const [saleGames,    setSaleGames]    = useState([]);
+  const [loadingTrend, setLoadingTrend] = useState(true);
   const [loadingPop,   setLoadingPop]   = useState(true);
   const [loadingNew,   setLoadingNew]   = useState(true);
   const [loadingSale,  setLoadingSale]  = useState(true);
@@ -39,14 +41,24 @@ export default function Home() {
   const debounceRef = useRef(null);
   const wrapperRef  = useRef(null);
 
-  const fetchSection = useCallback(async (section, setter, loadingSetter) => {
+  const fetchSection = useCallback(async (section, setter, loadingSetter, num = 16) => {
     loadingSetter(true);
     try {
-      const res  = await fetch(`/api/games?section=${section}&num=12&rotate=true`);
+      const res  = await fetch(`/api/games?section=${section}&num=${num}&rotate=true`);
       const data = await res.json();
       setter(data.results || []);
     } catch {}
     finally { loadingSetter(false); }
+  }, []);
+
+  // Gerçek zamanlı trending verisi (SteamSpy + RAWG)
+  useEffect(() => {
+    setLoadingTrend(true);
+    fetch('/api/trending')
+      .then(r => r.json())
+      .then(d => setTrendGames(d.results || []))
+      .catch(() => {})
+      .finally(() => setLoadingTrend(false));
   }, []);
 
   useEffect(() => {
@@ -117,46 +129,60 @@ export default function Home() {
     router.push(game.rawgSlug ? `/game/rawg/${game.rawgSlug}` : `/game/rawg/${game.id}`);
   };
 
-  // Hero için 5 oyun (populardan al)
-  const heroGames = popularGames.slice(0, 5);
+  // Hero arka plan: trending + popular karışık, her açılışta farklı sıra
+  const heroPool = useMemo(() => {
+    const combined = [...trendGames, ...popularGames];
+    if (combined.length < 4) return null;
+    // Fisher-Yates shuffle — sayfa her açılınca farklı sıra
+    const arr = [...combined];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }, [trendGames, popularGames]);
+
+  const COLS = 5, ROWS = 4, PANELS = COLS * ROWS;
+  const heroTiles = heroPool
+    ? Array.from({ length: PANELS }, (_, i) => heroPool[i % heroPool.length])
+    : null;
 
   return (
     <div style={{ paddingBottom: 60 }}>
 
-      {/* ══ HERO: tam ekran 5 oyun mozaiği ══════════════════════════════════ */}
+      {/* ══ HERO: tam ekran blurlu oyun mozaiği ════════════════════════════ */}
       <div style={{ position: 'relative', height: 'calc(100vh - 56px)', overflow: 'hidden', minHeight: 480 }}>
 
-        {/* Mozaik arka plan */}
+        {/* Mozaik arka plan — 5×4 grid, tüm görseller blurlu */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: '3fr 2fr 2fr',
-          gridTemplateRows: '1fr 1fr',
+          gridTemplateColumns: `repeat(${COLS}, 1fr)`,
+          gridTemplateRows:    `repeat(${ROWS}, 1fr)`,
           height: '100%',
-          gap: 3,
+          gap: 2,
         }}>
-          {heroGames.length >= 5 ? heroGames.map((g, i) => (
-            <div key={g.id} style={{
-              gridRow: i === 0 ? '1 / 3' : 'auto',
-              position: 'relative', overflow: 'hidden', background: 'var(--bg-input)',
-            }}>
+          {heroTiles ? heroTiles.map((g, i) => (
+            <div key={i} style={{ position: 'relative', overflow: 'hidden', background: '#111' }}>
               {g.image && (
-                <Image src={g.image} alt={g.name} fill
-                  sizes="50vw" style={{ objectFit: 'cover', transition: 'transform 8s ease' }}
+                <Image src={g.image} alt="" fill
+                  sizes="25vw"
+                  style={{
+                    objectFit: 'cover',
+                    filter: 'blur(5px)',
+                    transform: 'scale(1.12)', // blur kenar boşluğunu gizle
+                  }}
                   unoptimized />
               )}
-              {/* Her panelde hafif koyu vignette */}
-              <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.25)' }} />
             </div>
           )) : (
-            // Yüklenirken gradient placeholder
             <div style={{ gridColumn: '1 / -1', gridRow: '1 / -1', background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)' }} />
           )}
         </div>
 
-        {/* Büyük genel karartma + gradient alt */}
+        {/* Genel karartma katmanı — mozaiği gizler, arama ön plana çıkar */}
         <div style={{
           position: 'absolute', inset: 0,
-          background: 'linear-gradient(to bottom, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 60%, rgba(0,0,0,0.80) 100%)',
+          background: 'linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.65) 60%, rgba(0,0,0,0.88) 100%)',
         }} />
 
         {/* Overlay: başlık + arama */}
@@ -307,6 +333,16 @@ export default function Home() {
       {/* ══ İÇERİK BÖLÜMLERİ ══════════════════════════════════════════════════ */}
       <div className="container" style={{ paddingTop: 48 }}>
 
+        {/* Bu Hafta Trend — SteamSpy gerçek zamanlı data */}
+        <Section
+          title="🔥 Bu Hafta Trend"
+          subtitle="Steam'de bu hafta en çok oynanan oyunlar"
+          href="/games?section=popular"
+          games={trendGames}
+          loading={loadingTrend}
+          badge="CANLI"
+        />
+
         {/* Yeni Çıkanlar */}
         <Section
           title="🗓️ Yeni Çıkanlar"
@@ -314,15 +350,6 @@ export default function Home() {
           href="/games?section=new"
           games={newGames}
           loading={loadingNew}
-        />
-
-        {/* Popüler Oyunlar */}
-        <Section
-          title="💥 Popüler Oyunlar"
-          subtitle="Oyuncuların en çok oynadığı oyunlar"
-          href="/games?section=popular"
-          games={popularGames}
-          loading={loadingPop}
         />
 
         {/* İndirimdekiler */}
@@ -402,18 +429,36 @@ export default function Home() {
 
         /* Cursor blink */
         @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+        /* Canlı badge */
+        @keyframes pulse-badge {
+          0%,100% { opacity: 1; }
+          50%      { opacity: 0.5; }
+        }
       `}</style>
     </div>
   );
 }
 
 // ── Yatay scroll bölüm ────────────────────────────────────────────────────────
-function Section({ title, subtitle, href, games, loading }) {
+function Section({ title, subtitle, href, games, loading, badge }) {
   return (
     <div style={{ marginBottom: 48 }}>
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 16 }}>
         <div>
-          <h2 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)' }}>{title}</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <h2 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)' }}>{title}</h2>
+            {badge && (
+              <span style={{
+                fontSize: 10, fontWeight: 800, padding: '2px 7px', borderRadius: 999,
+                background: 'rgba(220,60,60,0.15)', color: 'var(--accent)',
+                border: '1px solid rgba(220,60,60,0.3)',
+                letterSpacing: '0.05em', animation: 'pulse-badge 2s ease-in-out infinite',
+              }}>
+                ● {badge}
+              </span>
+            )}
+          </div>
           {subtitle && <p style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 2 }}>{subtitle}</p>}
         </div>
         <Link href={href} style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 600, whiteSpace: 'nowrap' }}>
