@@ -13,13 +13,12 @@
 
 /* ===== NAV LINK ===== */
 .nav-link {
-  padding: 5px 11px; border-radius: var(--radius);
-  font-size: 11px; font-weight: 700; letter-spacing: 0.8px;
-  text-transform: uppercase;
+  padding: 6px 12px; border-radius: var(--radius);
+  font-size: 13px; font-weight: 600; letter-spacing: 0.1px;
   color: var(--text-2);
   transition: background 0.12s, color 0.12s;
   display: inline-block;
-  font-family: var(--font-heading);
+  font-family: var(--font-body);
 }
 .nav-link:hover  { background: var(--accent-bg); color: var(--accent); }
 .nav-link.active { background: var(--accent-bg); color: var(--accent); }
@@ -52,8 +51,8 @@
   --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
   --hero-bg: linear-gradient(160deg, #f4f4f8 0%, #ffe8ea 60%, #f0f0f4 100%);
   --cta-bg: linear-gradient(160deg, #fff0f1, #ffffff);
-  --font-heading: 'Barlow Condensed', 'Arial Narrow', 'Impact', sans-serif;
-  --font-body: 'Barlow', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-heading: 'Outfit', 'Segoe UI', sans-serif;
+  --font-body: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
   --gold-bg: linear-gradient(135deg, #FFFCF0, #FFF5D0);
   --gold-border: #d4a800;
@@ -67,16 +66,16 @@
 }
 
 html[data-theme="dark"] {
-  --bg: #0e0e12;
-  --bg-body: #09090c;
-  --bg-card: #12121a;
-  --bg-input: #1c1c26;
-  --bg-hover: #16161e;
-  --border: rgba(255,255,255,0.07);
-  --border-hover: rgba(255,255,255,0.15);
-  --text: #eeeef5;
-  --text-2: #7878a0;
-  --text-3: #48486a;
+  --bg: #111113;
+  --bg-body: #0d0d0e;
+  --bg-card: #181819;
+  --bg-input: #212123;
+  --bg-hover: #1c1c1e;
+  --border: rgba(255,255,255,0.08);
+  --border-hover: rgba(255,255,255,0.16);
+  --text: #f0f0f0;
+  --text-2: #909090;
+  --text-3: #606060;
   --accent: #e8192c;
   --accent-bg: #1c0509;
   --accent-border: #420c14;
@@ -127,10 +126,10 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Headings use the gaming condensed font */
+/* Headings use the gaming font */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
-  letter-spacing: 0.4px;
+  letter-spacing: -0.2px;
 }
 
 a { color: inherit; text-decoration: none; }
@@ -149,10 +148,9 @@ img { max-width: 100%; display: block; }
 
 .badge {
   display: inline-flex; align-items: center; gap: 4px;
-  font-size: 10px; font-weight: 700; letter-spacing: 0.6px;
-  text-transform: uppercase;
-  padding: 2px 7px; border-radius: 3px;
-  font-family: var(--font-heading);
+  font-size: 11px; font-weight: 600; letter-spacing: 0.2px;
+  padding: 3px 8px; border-radius: var(--radius);
+  font-family: var(--font-body);
 }
 .badge-green  { background: var(--green-bg);  color: var(--green);  border: 1px solid var(--green-border); }
 .badge-red    { background: var(--accent-bg); color: var(--accent); border: 1px solid var(--accent-border); }
@@ -173,9 +171,9 @@ html[data-theme="dark"] .badge-purple { background: #10102a; color: #a78bfa; bor
 
 .section-title {
   font-family: var(--font-heading);
-  font-size: 24px; font-weight: 800; color: var(--text);
+  font-size: 22px; font-weight: 700; color: var(--text);
   margin-bottom: 16px;
-  text-transform: uppercase; letter-spacing: 1.5px;
+  letter-spacing: -0.3px;
 }
 
 .scroll-row { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 8px; scrollbar-width: none; }
@@ -199,10 +197,10 @@ html[data-theme="dark"] .badge-purple { background: #10102a; color: #a78bfa; bor
 .btn {
   display: inline-flex; align-items: center; justify-content: center;
   gap: 6px; padding: 9px 18px; border-radius: var(--radius);
-  font-size: 11px; font-weight: 700; letter-spacing: 0.8px;
-  text-transform: uppercase; border: none; cursor: pointer;
+  font-size: 13px; font-weight: 600; letter-spacing: 0.1px;
+  border: none; cursor: pointer;
   transition: opacity 0.12s, transform 0.1s, box-shadow 0.12s;
-  font-family: var(--font-heading);
+  font-family: var(--font-body);
 }
 .btn:hover { opacity: 0.9; transform: translateY(-1px); }
 .btn-red {
@@ -238,9 +236,8 @@ html[data-theme="dark"] .badge-purple { background: #10102a; color: #a78bfa; bor
 }
 
 .mobile-nav-link {
-  font-family: var(--font-heading);
-  font-size: 16px; font-weight: 700; letter-spacing: 1px;
-  text-transform: uppercase;
+  font-family: var(--font-body);
+  font-size: 15px; font-weight: 600; letter-spacing: 0.1px;
   color: var(--text-2);
   padding: 13px 16px;
   border-radius: var(--radius);
@@ -278,13 +275,12 @@ html[data-theme="dark"] .badge-purple { background: #10102a; color: #a78bfa; bor
 /* ===== GAME TITLE ===== */
 .game-title {
   font-family: var(--font-heading);
-  font-size: 34px;
+  font-size: 32px;
   font-weight: 800;
   color: var(--text);
-  line-height: 1.1;
+  line-height: 1.15;
   margin-bottom: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: -0.5px;
 }
 
 @media (max-width: 768px) {

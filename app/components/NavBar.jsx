@@ -42,10 +42,9 @@ export default function NavBar() {
         {/* Logo */}
         <Link href="/" style={{
           display: 'flex', alignItems: 'center', gap: 8,
-          marginRight: 16, fontWeight: 800, fontSize: 18,
-          letterSpacing: '1.5px', color: 'var(--text)',
+          marginRight: 16, fontWeight: 700, fontSize: 17,
+          letterSpacing: '-0.2px', color: 'var(--text)',
           fontFamily: 'var(--font-heading)',
-          textTransform: 'uppercase',
         }}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
             stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"
