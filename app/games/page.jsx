@@ -33,9 +33,9 @@ const CATEGORIES = [
 const PRICE_OPTIONS = [
   { label: 'Tüm Fiyatlar', value: 'all'  },
   { label: 'Ücretsiz',     value: 'free' },
-  { label: '0 ₺ – 100 ₺',  value: '100'  },
-  { label: '0 ₺ – 300 ₺',  value: '300'  },
-  { label: '0 ₺ – 500 ₺',  value: '500'  },
+  { label: '0 TL – 100 TL', value: '100'  },
+  { label: '0 TL – 300 TL', value: '300'  },
+  { label: '0 TL – 500 TL', value: '500'  },
 ];
 
 const PAGE_SIZE = 24;
@@ -271,7 +271,10 @@ function GamesList() {
               {/* Bütçe */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--accent)', lineHeight: 1 }}>₺</span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                    <line x1="7" y1="7" x2="7.01" y2="7"/>
+                  </svg>
                   <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-3)', letterSpacing: 0.3 }}>BÜTÇE</span>
                 </div>
                 <div className="scroll-filter-row-mobile" style={{ display: 'flex', gap: 8, overflowX: 'auto', flexWrap: 'nowrap' }}>
@@ -416,7 +419,10 @@ function GamesList() {
                 borderBottom: '1px solid var(--border)',
                 display: 'flex', alignItems: 'center', gap: 8,
               }}>
-                <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--accent)', width: 15, height: 15, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>₺</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                  <line x1="7" y1="7" x2="7.01" y2="7"/>
+                </svg>
                 <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', letterSpacing: 0.3 }}>BÜTÇE</span>
               </div>
               <div style={{ padding: '8px 0' }}>
