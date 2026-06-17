@@ -30,6 +30,12 @@ function storeInfo(id, rawName) {
   return null;
 }
 
+function cleanNameForMatch(name) {
+  const trMap = { 'ç': 'c', 'ğ': 'g', 'ı': 'i', 'i': 'i', 'ö': 'o', 'ş': 's', 'ü': 'u', 'Ç': 'c', 'Ğ': 'g', 'I': 'i', 'İ': 'i', 'Ö': 'o', 'Ş': 's', 'Ü': 'u' };
+  if (!name) return '';
+  return name.replace(/[çğıiöşüÇĞIİÖŞÜ]/g, m => trMap[m]).toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
 // RAWG slug → Steam appid
 export async function getSteamAppIdBySlug(slug) {
   try {
@@ -253,9 +259,9 @@ async function searchSteamGameIdBySlug(slug) {
     const items = searchData.items || [];
     if (items.length === 0) return null;
 
-    const cleanSlug = slug.replace(/[^a-z0-9]/g, '');
-    const match = items.find(i => i.name.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanSlug)
-               || items.find(i => i.name.toLowerCase().includes(term.toLowerCase()))
+    const cleanSlug = cleanNameForMatch(slug);
+    const match = items.find(i => cleanNameForMatch(i.name) === cleanSlug)
+               || items.find(i => cleanNameForMatch(i.name).includes(cleanSlug))
                || items[0];
     
     if (!match) return null;

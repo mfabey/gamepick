@@ -198,6 +198,12 @@ async function fetchRawg(path, params = {}) {
   return res.json();
 }
 
+function generateSlug(text) {
+  const trMap = { 'ç': 'c', 'ğ': 'g', 'ı': 'i', 'i': 'i', 'ö': 'o', 'ş': 's', 'ü': 'u', 'Ç': 'c', 'Ğ': 'g', 'I': 'i', 'İ': 'i', 'Ö': 'o', 'Ş': 's', 'Ü': 'u' };
+  let slug = text.replace(/[çğıiöşüÇĞIİÖŞÜ]/g, m => trMap[m]).toLowerCase();
+  return slug.replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-');
+}
+
 const STATIC_FREE_GAMES = [
   { id: 'rawg_730', rawgId: 730, rawgSlug: 'counter-strike-2', name: 'Counter-Strike 2', image: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/730/header.jpg', metacritic: null, reviewScore: 88, totalReviews: 76400, isFree: true, onSale: false, price: null, noData: false, platforms: ['pc'], source: 'steam', hasSteam: true, hasEpic: false, hasStores: true, genres: ['Aksiyon', 'Nişancı'], released: '2023-09-27' },
   { id: 'rawg_570', rawgId: 570, rawgSlug: 'dota-2', name: 'Dota 2', image: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/570/header.jpg', metacritic: 90, reviewScore: 82, totalReviews: 32000, isFree: true, onSale: false, price: null, noData: false, platforms: ['pc'], source: 'steam', hasSteam: true, hasEpic: false, hasStores: true, genres: ['Strateji'], released: '2013-07-09' },
@@ -219,10 +225,7 @@ async function fetchSteamFeatured(category) {
     const cleanItems = items.filter(item => !isAdultTitleOrSlug(item.name, item.name));
 
     return cleanItems.map(item => {
-      const slug = item.name.toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, '')
-        .trim()
-        .replace(/\s+/g, '-');
+      const slug = generateSlug(item.name);
       
       const isFree = item.final_price === 0 || (!item.final_price && !item.original_price);
 
@@ -285,10 +288,7 @@ async function fetchSteamNewReleases() {
     const gamesOnly = detailedItems.filter(Boolean).filter(item => !isAdultTitleOrSlug(item.name, item.name));
 
     return gamesOnly.map(item => {
-      const slug = item.name.toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, '')
-        .trim()
-        .replace(/\s+/g, '-');
+      const slug = generateSlug(item.name);
       
       const isFree = item.final_price === 0 && !item.original_price;
 
@@ -495,10 +495,7 @@ export async function GET(request) {
           return items.map(item => {
             const appidMatch = item.logo.match(/\/apps\/(\d+)\//);
             const appid = appidMatch ? parseInt(appidMatch[1]) : null;
-            const slug = item.name.toLowerCase()
-              .replace(/[^a-z0-9\s-]/g, '')
-              .trim()
-              .replace(/\s+/g, '-');
+            const slug = generateSlug(item.name);
             
             const g = {
               id: 'rawg_' + appid,

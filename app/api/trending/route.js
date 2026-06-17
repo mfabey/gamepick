@@ -30,6 +30,12 @@ const FREE_SLUGS = new Set([
   'enlisted', 'lost-ark', 'genshin-impact',
 ]);
 
+function cleanNameForMatch(name) {
+  const trMap = { 'ç': 'c', 'ğ': 'g', 'ı': 'i', 'i': 'i', 'ö': 'o', 'ş': 's', 'ü': 'u', 'Ç': 'c', 'Ğ': 'g', 'I': 'i', 'İ': 'i', 'Ö': 'o', 'Ş': 's', 'Ü': 'u' };
+  if (!name) return '';
+  return name.replace(/[çğıiöşüÇĞIİÖŞÜ]/g, m => trMap[m]).toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
 async function searchRawg(name) {
   const fixedName = NAME_FIXES[name] || name;
   const url = `${BASE}/games?key=${RAWG_KEY}&search=${encodeURIComponent(fixedName)}&page_size=3&search_precise=true`;
@@ -39,18 +45,18 @@ async function searchRawg(name) {
 
   // İsim benzerliği kontrol et — yanlış eşleşmeleri önle
   const results = data.results || [];
-  const nameNorm = fixedName.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const nameNorm = cleanNameForMatch(fixedName);
 
   // Önce tam eşleşme dene
   let match = results.find(g => {
-    const gn = g.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const gn = cleanNameForMatch(g.name);
     return gn === nameNorm;
   });
 
   // Yoksa başlayan eşleşme
   if (!match) {
     match = results.find(g => {
-      const gn = g.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const gn = cleanNameForMatch(g.name);
       return gn.startsWith(nameNorm.slice(0, 8)) || nameNorm.startsWith(gn.slice(0, 8));
     });
   }

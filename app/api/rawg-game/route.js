@@ -8,6 +8,12 @@ const BASE     = 'https://api.rawg.io/api';
 const STEAM_STORE_ID = 1;
 const EPIC_STORE_ID  = 11;
 
+function cleanNameForMatch(name) {
+  const trMap = { 'ç': 'c', 'ğ': 'g', 'ı': 'i', 'i': 'i', 'ö': 'o', 'ş': 's', 'ü': 'u', 'Ç': 'c', 'Ğ': 'g', 'I': 'i', 'İ': 'i', 'Ö': 'o', 'Ş': 's', 'Ü': 'u' };
+  if (!name) return '';
+  return name.replace(/[çğıiöşüÇĞIİÖŞÜ]/g, m => trMap[m]).toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
 async function searchSteamGame(slug) {
   try {
     const term = slug.replace(/-/g, ' ');
@@ -18,9 +24,9 @@ async function searchSteamGame(slug) {
     if (items.length === 0) return null;
 
     // Eşleşen en yakın oyunu bul veya ilkini al
-    const cleanSlug = slug.replace(/[^a-z0-9]/g, '');
-    const match = items.find(i => i.name.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanSlug)
-               || items.find(i => i.name.toLowerCase().includes(term.toLowerCase()))
+    const cleanSlug = cleanNameForMatch(slug);
+    const match = items.find(i => cleanNameForMatch(i.name) === cleanSlug)
+               || items.find(i => cleanNameForMatch(i.name).includes(cleanSlug))
                || items[0];
     
     const appidMatch = match.logo.match(/\/apps\/(\d+)\//);
