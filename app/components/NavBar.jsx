@@ -18,6 +18,11 @@ export default function NavBar() {
   const router   = useRouter();
   const { user, steamUser, logout, steamLogout } = useAuth();
   const { theme, toggleTheme, mounted } = useTheme();
+  const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    setIsOpen(false);
+  }, [pathname]);
 
   const isAuthPage = pathname === '/login' || pathname === '/signup' || pathname === '/forgot-password';
 
@@ -59,6 +64,28 @@ export default function NavBar() {
           height: 64, display: 'flex', alignItems: 'center',
           justifyContent: 'flex-end', position: 'relative',
         }}>
+          {/* Sol: Hamburger butonu (sadece mobil) */}
+          <button
+            className="mobile-only"
+            onClick={() => setIsOpen(!isOpen)}
+            style={{
+              position: 'absolute', left: 24,
+              background: 'none', border: '1px solid var(--border)', borderRadius: 9,
+              width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'var(--text)', cursor: 'pointer', zIndex: 110,
+            }}
+          >
+            {isOpen ? (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            ) : (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
+              </svg>
+            )}
+          </button>
+
           {/* Ortalı logo */}
           <Link href="/" style={{
             display: 'flex', alignItems: 'center', gap: 9, cursor: 'pointer',
@@ -85,7 +112,7 @@ export default function NavBar() {
           </Link>
 
           {/* Sağ: tema + hesap */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, zIndex: 110 }}>
             <button onClick={toggleTheme} title={theme === 'dark' ? 'Aydınlık Mod' : 'Karanlık Mod'} style={{
               background: 'none', border: '1px solid var(--border)', borderRadius: 9,
               width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -99,37 +126,40 @@ export default function NavBar() {
                 )}
             </button>
 
-            {steamUser ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Link href="/library" style={{
-                  display: 'flex', alignItems: 'center', gap: 8, padding: '5px 10px', borderRadius: 9,
-                  background: 'rgba(47,115,232,0.1)', border: '1px solid rgba(47,115,232,0.3)',
-                  fontSize: 13, fontWeight: 600, color: '#2f73e8',
-                }}>
-                  {steamUser.avatar
-                    ? <img src={steamUser.avatar} alt="" style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover' }} />
-                    : <span style={{ width: 22, height: 22, borderRadius: '50%', background: '#2f73e8', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700 }}>{steamUser.name?.slice(0, 1).toUpperCase()}</span>}
-                  {steamUser.name?.slice(0, 14)}{steamUser.name?.length > 14 ? '…' : ''}
-                </Link>
-                <button onClick={steamLogout} style={{ padding: '5px 10px', borderRadius: 9, fontSize: 12, background: 'none', border: '1px solid var(--border)', color: 'var(--text-3)', cursor: 'pointer' }}>Çıkış</button>
-              </div>
-            ) : user ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <Link href="/profile" style={{
-                  display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 9,
-                  background: 'var(--accent-bg)', border: '1px solid var(--accent-border)', fontSize: 13, fontWeight: 600, color: 'var(--accent)',
-                }}>
-                  <span style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700 }}>{user.name?.slice(0, 1).toUpperCase()}</span>
-                  {user.name?.split(' ')[0]}
-                </Link>
-                <button onClick={handleLogout} style={{ padding: '6px 12px', borderRadius: 9, fontSize: 12, background: 'none', border: '1px solid var(--border)', color: 'var(--text-3)', cursor: 'pointer' }}>Çıkış</button>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <Link href="/login" style={{ padding: '8px 14px', fontSize: 14, fontWeight: 500, color: 'var(--text-2)', whiteSpace: 'nowrap' }}>Giriş Yap</Link>
-                <Link href="/signup" style={{ padding: '9px 20px', borderRadius: 10, fontSize: 14, fontWeight: 600, background: 'var(--accent)', color: '#fff', whiteSpace: 'nowrap', boxShadow: '0 6px 18px var(--accent-bg)' }}>Üye Ol</Link>
-              </div>
-            )}
+            {/* Masaüstü Hesap Butonları */}
+            <div className="desktop-only" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              {steamUser ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Link href="/library" style={{
+                    display: 'flex', alignItems: 'center', gap: 8, padding: '5px 10px', borderRadius: 9,
+                    background: 'rgba(47,115,232,0.1)', border: '1px solid rgba(47,115,232,0.3)',
+                    fontSize: 13, fontWeight: 600, color: '#2f73e8',
+                  }}>
+                    {steamUser.avatar
+                      ? <img src={steamUser.avatar} alt="" style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover' }} />
+                      : <span style={{ width: 22, height: 22, borderRadius: '50%', background: '#2f73e8', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700 }}>{steamUser.name?.slice(0, 1).toUpperCase()}</span>}
+                    {steamUser.name?.slice(0, 14)}{steamUser.name?.length > 14 ? '…' : ''}
+                  </Link>
+                  <button onClick={steamLogout} style={{ padding: '5px 10px', borderRadius: 9, fontSize: 12, background: 'none', border: '1px solid var(--border)', color: 'var(--text-3)', cursor: 'pointer' }}>Çıkış</button>
+                </div>
+              ) : user ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <Link href="/profile" style={{
+                    display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 9,
+                    background: 'var(--accent-bg)', border: '1px solid var(--accent-border)', fontSize: 13, fontWeight: 600, color: 'var(--accent)',
+                  }}>
+                    <span style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700 }}>{user.name?.slice(0, 1).toUpperCase()}</span>
+                    {user.name?.split(' ')[0]}
+                  </Link>
+                  <button onClick={handleLogout} style={{ padding: '6px 12px', borderRadius: 9, fontSize: 12, background: 'none', border: '1px solid var(--border)', color: 'var(--text-3)', cursor: 'pointer' }}>Çıkış</button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <Link href="/login" style={{ padding: '8px 14px', fontSize: 14, fontWeight: 500, color: 'var(--text-2)', whiteSpace: 'nowrap' }}>Giriş Yap</Link>
+                  <Link href="/signup" style={{ padding: '9px 20px', borderRadius: 10, fontSize: 14, fontWeight: 600, background: 'var(--accent)', color: '#fff', whiteSpace: 'nowrap', boxShadow: '0 6px 18px var(--accent-bg)' }}>Üye Ol</Link>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>      {!isAuthPage && (
@@ -166,6 +196,85 @@ export default function NavBar() {
             );
           })}
         </nav>
+      )}
+      {/* ── Mobil Çekmece Menüsü ── */}
+      {isOpen && (
+        <div className="mobile-drawer">
+          {/* Gezinti Bağlantıları */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-3)', paddingLeft: 8, letterSpacing: 0.5 }}>MENÜ</span>
+            {NAV_LINKS.map(l => {
+              const active = isActive(l.href);
+              return (
+                <Link
+                  key={l.href}
+                  href={l.href}
+                  onClick={() => setIsOpen(false)}
+                  className={`mobile-nav-link ${active ? 'active' : ''}`}
+                >
+                  <span>{l.label}</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="9 18 15 12 9 6"/>
+                  </svg>
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* Hesap İşlemleri */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, borderTop: '1px solid var(--border)', paddingTop: 20 }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-3)', paddingLeft: 8, letterSpacing: 0.5 }}>HESAP</span>
+            {steamUser ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <Link href="/library" onClick={() => setIsOpen(false)} style={{
+                  display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderRadius: 9,
+                  background: 'rgba(47,115,232,0.1)', border: '1px solid rgba(47,115,232,0.3)',
+                  fontSize: 14, fontWeight: 600, color: '#2f73e8',
+                }}>
+                  {steamUser.avatar
+                    ? <img src={steamUser.avatar} alt="" style={{ width: 26, height: 26, borderRadius: '50%', objectFit: 'cover' }} />
+                    : <span style={{ width: 26, height: 26, borderRadius: '50%', background: '#2f73e8', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700 }}>{steamUser.name?.slice(0, 1).toUpperCase()}</span>}
+                  <span>{steamUser.name}</span>
+                </Link>
+                <button onClick={() => { steamLogout(); setIsOpen(false); }} style={{
+                  padding: '12px 16px', borderRadius: 9, fontSize: 14, fontWeight: 600,
+                  background: 'var(--bg-hover)', border: '1px solid var(--border)', color: 'var(--text-2)', cursor: 'pointer', textAlign: 'left',
+                }}>Steam Çıkışı</button>
+              </div>
+            ) : user ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <Link href="/profile" onClick={() => setIsOpen(false)} style={{
+                  display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderRadius: 9,
+                  background: 'var(--accent-bg)', border: '1px solid var(--accent-border)',
+                  fontSize: 14, fontWeight: 600, color: 'var(--accent)',
+                }}>
+                  <span style={{ width: 26, height: 26, borderRadius: '50%', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700 }}>{user.name?.slice(0, 1).toUpperCase()}</span>
+                  <span>{user.name}</span>
+                </Link>
+                <button onClick={() => { handleLogout(); setIsOpen(false); }} style={{
+                  padding: '12px 16px', borderRadius: 9, fontSize: 14, fontWeight: 600,
+                  background: 'var(--bg-hover)', border: '1px solid var(--border)', color: 'var(--text-2)', cursor: 'pointer', textAlign: 'left',
+                }}>Çıkış Yap</button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <Link href="/login" onClick={() => setIsOpen(false)} style={{
+                  padding: '12px 16px', borderRadius: 9, fontSize: 14, fontWeight: 600,
+                  background: 'var(--bg-hover)', border: '1px solid var(--border)', color: 'var(--text-2)', textAlign: 'center',
+                }}>
+                  Giriş Yap
+                </Link>
+                <Link href="/signup" onClick={() => setIsOpen(false)} style={{
+                  padding: '12px 16px', borderRadius: 9, fontSize: 14, fontWeight: 700,
+                  background: 'var(--accent)', color: '#fff', textAlign: 'center',
+                  boxShadow: '0 6px 18px var(--accent-bg)',
+                }}>
+                  Üye Ol
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </>
   );
