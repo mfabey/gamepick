@@ -179,20 +179,20 @@ export default function GameCard({ game, compact = false }) {
         </div>
 
         {/* Alt bilgi */}
-        <div style={{ padding: '13px 15px' }}>
-          <p style={{ fontWeight: 600, fontSize: 14, lineHeight: 1.3, color: 'var(--text)', marginBottom: 7, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <div className="game-card-info" style={{ padding: '13px 15px' }}>
+          <p className="game-card-title" style={{ fontWeight: 600, fontSize: 14, lineHeight: 1.3, color: 'var(--text)', marginBottom: 7, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {game.name}
           </p>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4, fontFamily: "-apple-system, 'Segoe UI', system-ui, Roboto, 'Helvetica Neue', Arial, sans-serif" }}>
 
             {/* Fiyat */}
             {isFree ? (
-              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--green)' }}>Ücretsiz</span>
+              <span className="game-card-price" style={{ fontSize: 13, fontWeight: 700, color: 'var(--green)' }}>Ücretsiz</span>
             ) : livePrice?.price != null ? (
               isOnSale ? (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--amber)' }}>
+                    <span className="game-card-price" style={{ fontSize: 13, fontWeight: 700, color: 'var(--amber)' }}>
                       {livePrice.price}₺
                     </span>
                     {livePrice.storeIcon && (
@@ -207,14 +207,14 @@ export default function GameCard({ game, compact = false }) {
                   </div>
                 </div>
               ) : (
-                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
+                <span className="game-card-price" style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
                   {livePrice.price}₺
                 </span>
               )
             ) : priceLoading ? (
               <span style={{ fontSize: 11, color: 'var(--border-hover)', letterSpacing: 3 }}>•••</span>
             ) : (
-              <span style={{ fontSize: 12, color: 'var(--text-3)' }}>
+              <span className="game-card-meta" style={{ fontSize: 12, color: 'var(--text-3)' }}>
                 {game.totalReviews > 0 ? '⭐ ' + game.totalReviews.toLocaleString('tr') : '—'}
               </span>
             )}
@@ -223,7 +223,7 @@ export default function GameCard({ game, compact = false }) {
 
           {/* Tür — sadece geniş kartlarda */}
           {!compact && (game.genres || []).slice(0, 1).map(g => (
-            <span key={g} className="badge badge-gray" style={{ marginTop: 6 }}>{g}</span>
+            <span key={g} className="badge badge-gray game-card-genre" style={{ marginTop: 6 }}>{g}</span>
           ))}
         </div>
       </div>
