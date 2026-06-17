@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSteamAppIdBySlug, fetchLowestPriceFromITAD, fetchPriceByAppId } from '../card-price/route.js';
 import { isAdultContent, isAdultTitleOrSlug } from '../../lib/adult-filter.js';
+import { FALLBACK_GAMES } from '../../lib/fallback-games.js';
 
 const RAWG_KEY = process.env.RAWG_API_KEY;
 const BASE     = 'https://api.rawg.io/api';
@@ -450,18 +451,184 @@ export async function GET(request) {
 
     // Fallback logic for sections when RAWG is limited or returns no results
     if (results.length === 0) {
-      if (section === 'sale') {
-        console.log('Falling back to Steam specials...');
-        results = await fetchSteamFeatured('specials');
-        total = results.length;
-      } else if (section === 'popular' || section === 'topscore') {
-        console.log('Falling back to Steam top sellers...');
-        results = await fetchSteamFeatured('top_sellers');
-        total = results.length;
+      console.log(`Applying paginated fallback for section: ${section || 'all'}, page: ${page}, query: ${q}`);
+
+      const STEAM_GENRE_MAP = {
+        'action': 'Action',
+        'role-playing-games-rpg': 'RPG',
+        'strategy': 'Strategy',
+        'adventure': 'Adventure',
+        'sports': 'Sports',
+        'racing': 'Racing',
+        'simulation': 'Simulation'
+      };
+      const STEAM_TAG_MAP = {
+        'shooter': '1662',
+        'horror': '1667',
+        'platformer': '1625',
+        'puzzle': '1664',
+        'card': '1738'
+      };
+      const GENRE_MAP = {
+        'action': 'Aksiyon',
+        'role-playing-games-rpg': 'RPG',
+        'strategy': 'Strateji',
+        'adventure': 'Macera',
+        'shooter': 'Nişancı',
+        'puzzle': 'Bulmaca',
+        'sports': 'Spor',
+        'racing': 'Yarış',
+        'horror': 'Korku',
+        'platformer': 'Platform',
+        'card': 'Kart & Masa',
+        'simulation': 'Simülasyon'
+      };
+
+      // Helper to fetch and format search results from Steam
+      async function fetchSteamSearchPaginated(searchUrl, isFree = false, isOnSale = false) {
+        try {
+          const res = await fetch(searchUrl, { next: { revalidate: 1800 } });
+          if (!res.ok) return [];
+          const data = await res.json();
+          const items = data.items || [];
+          
+          return items.map(item => {
+            const appidMatch = item.logo.match(/\/apps\/(\d+)\//);
+            const appid = appidMatch ? parseInt(appidMatch[1]) : null;
+            const slug = item.name.toLowerCase()
+              .replace(/[^a-z0-9\s-]/g, '')
+              .trim()
+              .replace(/\s+/g, '-');
+            
+            const g = {
+              id: 'rawg_' + appid,
+              rawgId: appid,
+              rawgSlug: slug,
+              name: item.name,
+              image: appid ? `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/header.jpg` : item.logo,
+              metacritic: null,
+              reviewScore: 0,
+              totalReviews: 0,
+              isFree,
+              onSale: isOnSale,
+              price: null,
+              noData: false,
+              platforms: ['pc'],
+              source: 'steam',
+              hasSteam: true,
+              hasEpic: false,
+              hasStores: true,
+              genres: [],
+              released: null
+            };
+
+            // Cross-reference with our fallback database for rich metadata
+            if (appid) {
+              const dbMatch = FALLBACK_GAMES.find(dg => dg.rawgId === appid);
+              if (dbMatch) {
+                g.genres = dbMatch.genres || [];
+                g.metacritic = dbMatch.metacritic || null;
+                g.reviewScore = dbMatch.reviewScore || 0;
+                g.totalReviews = dbMatch.totalReviews || 0;
+                g.isFree = dbMatch.isFree ?? isFree;
+              }
+            }
+
+            return g;
+          }).filter(g => !isAdultTitleOrSlug(g.name, g.rawgSlug));
+        } catch (err) {
+          console.error("Steam search fallback failed:", err);
+          return [];
+        }
+      }
+
+      // Try fetching dynamically from Steam search results first for dynamic categories
+      let dynamicResults = [];
+      let fetchedDynamically = false;
+
+      if (q.trim()) {
+        const url = `https://store.steampowered.com/search/results/?term=${encodeURIComponent(q.trim())}&cc=tr&l=tr&json=1&start=${(page-1)*num}&count=${num}`;
+        dynamicResults = await fetchSteamSearchPaginated(url, false, false);
+        fetchedDynamically = true;
+      } else if (section === 'sale') {
+        let url = `https://store.steampowered.com/search/results/?specials=1&cc=tr&l=tr&json=1&start=${(page-1)*num}&count=${num}`;
+        if (genres) {
+          if (STEAM_GENRE_MAP[genres]) url += `&genre=${STEAM_GENRE_MAP[genres]}`;
+          if (STEAM_TAG_MAP[genres]) url += `&tags=${STEAM_TAG_MAP[genres]}`;
+        }
+        dynamicResults = await fetchSteamSearchPaginated(url, false, true);
+        fetchedDynamically = true;
       } else if (section === 'free') {
-        console.log('Falling back to static free games...');
-        results = STATIC_FREE_GAMES.filter(g => !isAdultTitleOrSlug(g.name, g.rawgSlug));
-        total = results.length;
+        let url = `https://store.steampowered.com/search/results/?genre=Free+to+Play&cc=tr&l=tr&json=1&start=${(page-1)*num}&count=${num}`;
+        if (genres) {
+          if (STEAM_GENRE_MAP[genres]) url += `&genre=${STEAM_GENRE_MAP[genres]}`;
+          if (STEAM_TAG_MAP[genres]) url += `&tags=${STEAM_TAG_MAP[genres]}`;
+        }
+        dynamicResults = await fetchSteamSearchPaginated(url, true, false);
+        fetchedDynamically = true;
+      } else if (section === 'popular') {
+        let url = `https://store.steampowered.com/search/results/?filter=topsellers&cc=tr&l=tr&json=1&start=${(page-1)*num}&count=${num}`;
+        if (genres) {
+          if (STEAM_GENRE_MAP[genres]) url += `&genre=${STEAM_GENRE_MAP[genres]}`;
+          if (STEAM_TAG_MAP[genres]) url += `&tags=${STEAM_TAG_MAP[genres]}`;
+        }
+        dynamicResults = await fetchSteamSearchPaginated(url, false, false);
+        fetchedDynamically = true;
+      } else if (section === 'new') {
+        let url = `https://store.steampowered.com/search/results/?filter=popularnew&cc=tr&l=tr&json=1&start=${(page-1)*num}&count=${num}`;
+        if (genres) {
+          if (STEAM_GENRE_MAP[genres]) url += `&genre=${STEAM_GENRE_MAP[genres]}`;
+          if (STEAM_TAG_MAP[genres]) url += `&tags=${STEAM_TAG_MAP[genres]}`;
+        }
+        dynamicResults = await fetchSteamSearchPaginated(url, false, false);
+        fetchedDynamically = true;
+      }
+
+      if (fetchedDynamically && dynamicResults.length > 0) {
+        results = dynamicResults;
+        if (results.length < num) {
+          total = (page - 1) * num + results.length;
+        } else {
+          total = page * num + 48; // keep paging enabled
+        }
+      } else {
+        // Fallback to our local high-quality database (or if dynamic fetching failed/was empty)
+        let dbGames = [...FALLBACK_GAMES];
+        
+        // Filter by genre
+        if (genres) {
+          const trGenre = GENRE_MAP[genres];
+          if (trGenre) {
+            dbGames = dbGames.filter(g => g.genres.includes(trGenre));
+          }
+        }
+        
+        // Filter by free
+        if (section === 'free') {
+          dbGames = dbGames.filter(g => g.isFree);
+        }
+
+        // Search text matching
+        if (q.trim()) {
+          const normQ = q.trim().toLowerCase();
+          dbGames = dbGames.filter(g => g.name.toLowerCase().includes(normQ) || g.rawgSlug.toLowerCase().includes(normQ));
+        }
+
+        // Sort appropriately
+        if (section === 'topscore') {
+          dbGames.sort((a, b) => (b.metacritic || 0) - (a.metacritic || 0));
+        } else if (section === 'popular') {
+          dbGames.sort((a, b) => b.totalReviews - a.totalReviews);
+        } else if (section === 'new') {
+          dbGames.sort((a, b) => new Date(b.released || 0) - new Date(a.released || 0));
+        } else {
+          // Default sort by metacritic
+          dbGames.sort((a, b) => (b.metacritic || 0) - (a.metacritic || 0));
+        }
+
+        const startIndex = (page - 1) * num;
+        results = dbGames.slice(startIndex, startIndex + num);
+        total = dbGames.length;
       }
     }
 
