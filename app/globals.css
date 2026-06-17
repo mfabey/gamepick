@@ -419,3 +419,56 @@ html[data-theme="dark"] .glass-card {
   display: none;
 }
 
+.bottom-nav-bar {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 24px;
+  z-index: 200;
+  display: flex;
+  gap: 5px;
+  background: color-mix(in srgb, var(--bg-card) 62%, transparent);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 999px;
+  padding: 9px;
+  box-shadow: 0 18px 48px rgba(74,52,28,0.24), inset 0 0 0 1px color-mix(in srgb, var(--text) 12%, transparent);
+  animation: navBarIn 0.8s cubic-bezier(0.16,1,0.3,1) both;
+}
+
+.bottom-nav-link {
+  position: relative;
+  z-index: 1;
+  padding: 13px 27px;
+  border-radius: 999px;
+  font-size: 15.5px;
+  white-space: nowrap;
+  color: var(--text-2);
+  transition: transform 0.18s cubic-bezier(0.2,0.8,0.3,1), color 0.4s ease;
+}
+
+@media (max-width: 768px) {
+  .bottom-nav-bar {
+    bottom: 16px !important;
+    padding: 6px !important;
+    gap: 3px !important;
+  }
+  .bottom-nav-link {
+    padding: 8px 16px !important;
+    font-size: 13.5px !important;
+  }
+}
+
+@media (max-width: 400px) {
+  .bottom-nav-bar {
+    bottom: 12px !important;
+    padding: 5px !important;
+    gap: 2px !important;
+  }
+  .bottom-nav-link {
+    padding: 7px 11px !important;
+    font-size: 12px !important;
+  }
+}
+
+

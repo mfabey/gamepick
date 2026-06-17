@@ -217,7 +217,7 @@ function GamesList() {
 
       {/* ── Ana layout: sol içerik + sağ sidebar ── */}
       <div className="container" style={{ paddingTop: 28, paddingBottom: 60 }}>
-        <div className="games-layout" style={{ display: 'grid', gridTemplateColumns: '1fr 260px', gap: 32, alignItems: 'start' }}>
+        <div className="games-layout" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 260px', gap: 32, alignItems: 'start' }}>
 
           {/* ── SOL: bölüm filtreleri + oyun grid ── */}
           <div>
@@ -351,7 +351,7 @@ function GamesList() {
           </div>
 
           {/* ── SAĞ: sticky sidebar ── */}
-          <aside className="games-sidebar" style={{ position: 'sticky', top: 130 }}>
+          <aside className="games-sidebar games-sidebar-scroll" style={{ position: 'sticky', top: 130 }}>
 
             {/* Kategoriler */}
             <div style={{
@@ -454,8 +454,19 @@ function GamesList() {
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
+        .games-sidebar-scroll {
+          max-height: calc(100vh - 160px);
+          overflow-y: auto;
+          scrollbar-width: none; /* Firefox */
+        }
+        .games-sidebar-scroll::-webkit-scrollbar {
+          display: none; /* Chrome, Safari, Opera */
+        }
         @media (max-width: 768px) {
-          .games-layout { grid-template-columns: 1fr !important; }
+          .games-layout {
+            grid-template-columns: minmax(0, 1fr) !important;
+            gap: 16px !important;
+          }
           .games-sidebar { display: none !important; }
         }
       `}</style>
