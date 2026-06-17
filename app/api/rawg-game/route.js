@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { isAdultContent, isAdultTitleOrSlug } from '../../lib/adult-filter.js';
 
 const RAWG_KEY = process.env.RAWG_API_KEY;
 const BASE     = 'https://api.rawg.io/api';
@@ -104,6 +105,8 @@ export async function GET(request) {
 
     if (detail.detail === 'Not found.') {
       rawgFailed = true;
+    } else if (isAdultContent(detail)) {
+      return NextResponse.json({ error: 'Bu oyun kütüphanede gösterilmemektedir.' }, { status: 403 });
     }
   } catch (err) {
     console.error('RAWG game fetch hatasi veya bulunamadi:', err.message);
@@ -115,6 +118,9 @@ export async function GET(request) {
     console.log(`"${slug}" RAWG'ta bulunamadı. Steam fallback deneniyor...`);
     const fallbackGame = await trySteamFallback(slug);
     if (fallbackGame) {
+      if (isAdultTitleOrSlug(fallbackGame.name, fallbackGame.rawgSlug)) {
+        return NextResponse.json({ error: 'Bu oyun kütüphanede gösterilmemektedir.' }, { status: 403 });
+      }
       console.log(`"${slug}" Steam üzerinde başarıyla bulundu ve oluşturuldu.`);
       return NextResponse.json({ game: fallbackGame });
     }

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { isAdultContent } from '../../lib/adult-filter.js';
 
 const RAWG_KEY = process.env.RAWG_API_KEY;
 const BASE     = 'https://api.rawg.io/api';
@@ -153,7 +154,7 @@ export async function GET() {
     if (!res.ok) throw new Error(`RAWG ${res.status}`);
     const data = await res.json();
 
-    let results = (data.results || []).map(g => formatGame(g, null));
+    let results = (data.results || []).filter(g => !isAdultContent(g)).map(g => formatGame(g, null));
 
     // Listeyi biraz çeşitlendirmek/zamanla değiştirmek için her 3 saatte bir kaydıralım (rotate)
     const hoursSinceEpoch = Math.floor(Date.now() / (1000 * 60 * 60));
@@ -183,7 +184,7 @@ export async function GET() {
       );
       const data = await res.json();
 
-      const results = (data.results || []).map(g => ({
+      const results = (data.results || []).filter(g => !isAdultContent(g)).map(g => ({
         id:           'rawg_' + g.id,
         rawgId:       g.id,
         rawgSlug:     g.slug,

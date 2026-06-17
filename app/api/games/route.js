@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getSteamAppIdBySlug, fetchLowestPriceFromITAD, fetchPriceByAppId } from '../card-price/route';
+import { getSteamAppIdBySlug, fetchLowestPriceFromITAD, fetchPriceByAppId } from '../card-price/route.js';
+import { isAdultContent, isAdultTitleOrSlug } from '../../lib/adult-filter.js';
 
 const RAWG_KEY = process.env.RAWG_API_KEY;
 const BASE     = 'https://api.rawg.io/api';
@@ -221,7 +222,7 @@ async function fetchSteamNewReleases() {
       })
     );
 
-    const gamesOnly = detailedItems.filter(Boolean);
+    const gamesOnly = detailedItems.filter(Boolean).filter(item => !isAdultTitleOrSlug(item.name, item.name));
 
     return gamesOnly.map(item => {
       const slug = item.name.toLowerCase()
@@ -351,7 +352,7 @@ export async function GET(request) {
           fetchSteamNewReleases()
         ]);
 
-        const rawgResults = (rawgData.results || []).map(formatRawgGame);
+        const rawgResults = (rawgData.results || []).filter(g => !isAdultContent(g)).map(formatRawgGame);
         total = (rawgData.count || 0) + steamResults.length;
 
         // Temizleme: hasStores olanları ve silinenleri filtrele
@@ -373,14 +374,14 @@ export async function GET(request) {
         // page > 1 ise sadece RAWG
         const data = await fetchRawg('/games', params);
         total = data.count || 0;
-        const rawgResults = (data.results || []).map(formatRawgGame);
+        const rawgResults = (data.results || []).filter(g => !isAdultContent(g)).map(formatRawgGame);
         results = rawgResults.filter(g => g.hasStores && !KNOWN_DELISTED_SLUGS.has(g.rawgSlug));
       }
     } else {
       // Diğer tüm bölümler/aramalar için normal RAWG
       const data = await fetchRawg('/games', params);
       total = data.count || 0;
-      results = (data.results || []).map(formatRawgGame);
+      results = (data.results || []).filter(g => !isAdultContent(g)).map(formatRawgGame);
       results = results.filter(g => g.hasStores && !KNOWN_DELISTED_SLUGS.has(g.rawgSlug));
     }
 

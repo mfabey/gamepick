@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { isAdultContent } from '../../lib/adult-filter.js';
 
 const RAWG_KEY = process.env.RAWG_API_KEY;
 const BASE     = 'https://api.rawg.io/api';
@@ -66,7 +67,7 @@ export async function GET(request) {
     }
 
     const data    = await fetchRawg('/games', params);
-    const results = (data.results || []).map(formatDlc);
+    const results = (data.results || []).filter(g => !isAdultContent(g)).map(formatDlc);
 
     return NextResponse.json({ results, total: data.count || 0, source: 'rawg' });
 
