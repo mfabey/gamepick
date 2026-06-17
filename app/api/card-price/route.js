@@ -101,7 +101,7 @@ export async function fetchPriceByAppId(appid) {
 // İsim tabanlı arama fallback
 async function fetchPriceByName(name) {
   const sRes = await fetch(
-    `https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(name)}&cc=tr&l=tr&category1=998`,
+    `https://store.steampowered.com/search/results/?term=${encodeURIComponent(name)}&cc=tr&l=tr&json=1`,
     { next: { revalidate: 3600 } }
   );
   if (!sRes.ok) return null;
@@ -111,10 +111,15 @@ async function fetchPriceByName(name) {
 
   const match = items.find(i => i.name?.toLowerCase().trim() === target)
              || items.find(i => i.name?.toLowerCase().trim().startsWith(target))
-             || items.find(i => target.startsWith(i.name?.toLowerCase().trim() || 'XXXXX'));
+             || items.find(i => target.startsWith(i.name?.toLowerCase().trim() || 'XXXXX'))
+             || items[0];
 
-  if (!match?.id) return null;
-  return fetchPriceByAppId(match.id);
+  if (!match) return null;
+  const appidMatch = match.logo?.match(/\/apps\/(\d+)\//);
+  const appid = appidMatch ? parseInt(appidMatch[1]) : null;
+  if (!appid) return null;
+
+  return fetchPriceByAppId(appid);
 }
 
 // ITAD'dan en ucuz fiyatı çek (edisyonları birleştirerek)
@@ -242,7 +247,7 @@ export async function fetchLowestPriceFromITAD(appid, title) {
 async function searchSteamGameIdBySlug(slug) {
   try {
     const term = slug.replace(/-/g, ' ');
-    const searchRes = await fetch(`https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(term)}&cc=tr&category1=998`);
+    const searchRes = await fetch(`https://store.steampowered.com/search/results/?term=${encodeURIComponent(term)}&cc=tr&l=tr&json=1`);
     if (!searchRes.ok) return null;
     const searchData = await searchRes.json();
     const items = searchData.items || [];
@@ -250,9 +255,12 @@ async function searchSteamGameIdBySlug(slug) {
 
     const cleanSlug = slug.replace(/[^a-z0-9]/g, '');
     const match = items.find(i => i.name.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanSlug)
+               || items.find(i => i.name.toLowerCase().includes(term.toLowerCase()))
                || items[0];
     
-    return match ? String(match.id) : null;
+    if (!match) return null;
+    const appidMatch = match.logo?.match(/\/apps\/(\d+)\//);
+    return appidMatch ? String(appidMatch[1]) : null;
   } catch {
     return null;
   }

@@ -11,7 +11,7 @@ const EPIC_STORE_ID  = 11;
 async function searchSteamGame(slug) {
   try {
     const term = slug.replace(/-/g, ' ');
-    const searchRes = await fetch(`https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(term)}&cc=tr&category1=998`);
+    const searchRes = await fetch(`https://store.steampowered.com/search/results/?term=${encodeURIComponent(term)}&cc=tr&l=tr&json=1`);
     if (!searchRes.ok) return null;
     const searchData = await searchRes.json();
     const items = searchData.items || [];
@@ -20,9 +20,11 @@ async function searchSteamGame(slug) {
     // Eşleşen en yakın oyunu bul veya ilkini al
     const cleanSlug = slug.replace(/[^a-z0-9]/g, '');
     const match = items.find(i => i.name.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanSlug)
+               || items.find(i => i.name.toLowerCase().includes(term.toLowerCase()))
                || items[0];
     
-    return match.id;
+    const appidMatch = match.logo.match(/\/apps\/(\d+)\//);
+    return appidMatch ? parseInt(appidMatch[1]) : null;
   } catch (err) {
     console.error("Steam arama hatasi:", err);
     return null;
