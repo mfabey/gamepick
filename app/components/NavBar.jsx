@@ -199,30 +199,9 @@ export default function NavBar() {
       )}
       {/* ── Mobil Çekmece Menüsü ── */}
       {isOpen && (
-        <div className="mobile-drawer">
-          {/* Gezinti Bağlantıları */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-3)', paddingLeft: 8, letterSpacing: 0.5 }}>MENÜ</span>
-            {NAV_LINKS.map(l => {
-              const active = isActive(l.href);
-              return (
-                <Link
-                  key={l.href}
-                  href={l.href}
-                  onClick={() => setIsOpen(false)}
-                  className={`mobile-nav-link ${active ? 'active' : ''}`}
-                >
-                  <span>{l.label}</span>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="9 18 15 12 9 6"/>
-                  </svg>
-                </Link>
-              );
-            })}
-          </div>
-
+        <div className="mobile-drawer" style={{ paddingTop: 24 }}>
           {/* Hesap İşlemleri */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, borderTop: '1px solid var(--border)', paddingTop: 20 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-3)', paddingLeft: 8, letterSpacing: 0.5 }}>HESAP</span>
             {steamUser ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
