@@ -226,7 +226,7 @@ function GamesList() {
               {SECTIONS.map(s => {
                 const active = section === s.value;
                 return (
-                  <button key={s.value} onClick={() => handleSection(s.value)} style={{
+                  <button key={s.value} onClick={() => handleSection(s.value)} className="section-filter-btn" style={{
                     display: 'flex', alignItems: 'center', gap: 6,
                     padding: '8px 18px', borderRadius: 999,
                     border: active ? '1.5px solid var(--accent)' : '1.5px solid var(--border)',
@@ -252,7 +252,7 @@ function GamesList() {
                   {CATEGORIES.map(c => {
                     const active = genre === c.slug;
                     return (
-                      <button key={c.slug} onClick={() => handleGenre(c.slug)} style={{
+                      <button key={c.slug} onClick={() => handleGenre(c.slug)} className="section-filter-btn" style={{
                         padding: '6px 14px', borderRadius: 8,
                         border: active ? '1.5px solid var(--accent)' : '1.5px solid var(--border)',
                         background: active ? 'var(--accent-bg)' : 'var(--bg-card)',
@@ -275,7 +275,7 @@ function GamesList() {
                   {PRICE_OPTIONS.map(o => {
                     const active = price === o.value;
                     return (
-                      <button key={o.value} onClick={() => setPrice(o.value)} style={{
+                      <button key={o.value} onClick={() => setPrice(o.value)} className="section-filter-btn" style={{
                         padding: '6px 14px', borderRadius: 8,
                         border: active ? '1.5px solid var(--accent)' : '1.5px solid var(--border)',
                         background: active ? 'var(--accent-bg)' : 'var(--bg-card)',
