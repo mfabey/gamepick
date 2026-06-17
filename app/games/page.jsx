@@ -33,9 +33,9 @@ const CATEGORIES = [
 const PRICE_OPTIONS = [
   { label: 'Tüm Fiyatlar', value: 'all'  },
   { label: 'Ücretsiz',     value: 'free' },
-  { label: '₺0 – ₺100',    value: '100'  },
-  { label: '₺0 – ₺300',    value: '300'  },
-  { label: '₺0 – ₺500',    value: '500'  },
+  { label: '0 ₺ – 100 ₺',  value: '100'  },
+  { label: '0 ₺ – 300 ₺',  value: '300'  },
+  { label: '0 ₺ – 500 ₺',  value: '500'  },
 ];
 
 const PAGE_SIZE = 24;
@@ -217,12 +217,12 @@ function GamesList() {
 
       {/* ── Ana layout: sol içerik + sağ sidebar ── */}
       <div className="container" style={{ paddingTop: 28, paddingBottom: 60 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 260px', gap: 32, alignItems: 'start' }}>
+        <div className="games-layout" style={{ display: 'grid', gridTemplateColumns: '1fr 260px', gap: 32, alignItems: 'start' }}>
 
           {/* ── SOL: bölüm filtreleri + oyun grid ── */}
           <div>
             {/* Section chip'leri */}
-            <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
+            <div className="scroll-filter-row-mobile" style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
               {SECTIONS.map(s => {
                 const active = section === s.value;
                 return (
@@ -241,6 +241,55 @@ function GamesList() {
                   </button>
                 );
               })}
+            </div>
+
+            {/* Mobil için Kategori ve Bütçe Filtreleri */}
+            <div className="mobile-only" style={{ flexDirection: 'column', gap: 16, marginBottom: 24 }}>
+              {/* Kategoriler */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-3)', letterSpacing: 0.3 }}>KATEGORİLER</span>
+                <div className="scroll-filter-row-mobile" style={{ display: 'flex', gap: 8, overflowX: 'auto', flexWrap: 'nowrap' }}>
+                  {CATEGORIES.map(c => {
+                    const active = genre === c.slug;
+                    return (
+                      <button key={c.slug} onClick={() => handleGenre(c.slug)} style={{
+                        padding: '6px 14px', borderRadius: 8,
+                        border: active ? '1.5px solid var(--accent)' : '1.5px solid var(--border)',
+                        background: active ? 'var(--accent-bg)' : 'var(--bg-card)',
+                        color: active ? 'var(--accent)' : 'var(--text-2)',
+                        fontSize: 13, fontWeight: active ? 600 : 400,
+                        cursor: 'pointer', whiteSpace: 'nowrap',
+                        transition: 'all 0.15s',
+                      }}>
+                        {c.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Bütçe */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-3)', letterSpacing: 0.3 }}>BÜTÇE</span>
+                <div className="scroll-filter-row-mobile" style={{ display: 'flex', gap: 8, overflowX: 'auto', flexWrap: 'nowrap' }}>
+                  {PRICE_OPTIONS.map(o => {
+                    const active = price === o.value;
+                    return (
+                      <button key={o.value} onClick={() => setPrice(o.value)} style={{
+                        padding: '6px 14px', borderRadius: 8,
+                        border: active ? '1.5px solid var(--accent)' : '1.5px solid var(--border)',
+                        background: active ? 'var(--accent-bg)' : 'var(--bg-card)',
+                        color: active ? 'var(--accent)' : 'var(--text-2)',
+                        fontSize: 13, fontWeight: active ? 600 : 400,
+                        cursor: 'pointer', whiteSpace: 'nowrap',
+                        transition: 'all 0.15s',
+                      }}>
+                        {o.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
 
             {/* Sonuç bilgisi */}
@@ -302,7 +351,7 @@ function GamesList() {
           </div>
 
           {/* ── SAĞ: sticky sidebar ── */}
-          <aside style={{ position: 'sticky', top: 130 }}>
+          <aside className="games-sidebar" style={{ position: 'sticky', top: 130 }}>
 
             {/* Kategoriler */}
             <div style={{

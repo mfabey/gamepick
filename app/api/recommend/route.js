@@ -70,7 +70,7 @@ tags örnekleri: "Sakin tempo", "Yüksek adrenalin", "Solo deneyim", "Açık dü
     const prompt = `Bir oyun platformu asistanısın. Kullanıcının ruh haline ve bütçesine göre en uygun oyun türünü belirle.
 
 Ruh hali: ${body.moods}
-Bütçe: ₺${body.budget}
+Bütçe: ${body.budget} ₺
 
 YALNIZCA şu JSON formatında yanıtla:
 {

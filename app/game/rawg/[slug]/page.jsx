@@ -593,10 +593,10 @@ function PriceCard({ store, icon, price, original, discount, isFree: isFreeOverr
             <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--green)' }}>Ücretsiz</span>
           ) : (
             <>
-              <span style={{ fontWeight: 700, fontSize: 15, color: isOnSale ? 'var(--amber)' : 'var(--text)' }}>₺{price}</span>
+              <span style={{ fontWeight: 700, fontSize: 15, color: isOnSale ? 'var(--amber)' : 'var(--text)' }}>{price} ₺</span>
               {isOnSale && (
                 <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
-                  <span style={{ textDecoration: 'line-through' }}>₺{original}</span>
+                  <span style={{ textDecoration: 'line-through' }}>{original} ₺</span>
                   {' '}<span style={{ color: 'var(--amber)' }}>-%{discount}</span>
                 </div>
               )}

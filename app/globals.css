@@ -401,3 +401,21 @@ html[data-theme="dark"] .glass-card {
 @media (prefers-reduced-motion: reduce) {
   .hero-marquee-grid { animation: none; transform: translateY(0); }
 }
+
+@media (max-width: 768px) {
+  .container { padding: 0 16px !important; }
+}
+
+.scroll-filter-row-mobile {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  flex-wrap: nowrap !important;
+  padding-bottom: 6px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.scroll-filter-row-mobile::-webkit-scrollbar {
+  display: none;
+}
+

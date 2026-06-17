@@ -19,6 +19,8 @@ export default function NavBar() {
   const { user, steamUser, logout, steamLogout } = useAuth();
   const { theme, toggleTheme, mounted } = useTheme();
 
+  const isAuthPage = pathname === '/login' || pathname === '/signup' || pathname === '/forgot-password';
+
   const handleLogout = () => { logout(); router.push('/'); };
 
   const isActive = (href) => href === '/' ? pathname === '/' : pathname.startsWith(href);
@@ -133,38 +135,40 @@ export default function NavBar() {
       </header>
 
       {/* ── Alt cam sekme çubuğu ── */}
-      <nav ref={navRef} style={{
-        position: 'fixed', left: '50%', transform: 'translateX(-50%)', bottom: 24, zIndex: 200,
-        display: 'flex', gap: 5,
-        background: 'color-mix(in srgb, var(--bg-card) 62%, transparent)',
-        backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-        borderRadius: 999, padding: 9,
-        boxShadow: '0 18px 48px rgba(74,52,28,0.24), inset 0 0 0 1px color-mix(in srgb, var(--text) 12%, transparent)',
-        animation: 'navBarIn 0.8s cubic-bezier(0.16,1,0.3,1) both',
-      }}>
-        <div aria-hidden style={{
-          position: 'absolute', left: 0, top: pill.top, height: pill.height, width: pill.width,
-          transform: pill.transform, opacity: pill.opacity,
-          background: 'var(--accent)', borderRadius: 999, boxShadow: '0 6px 18px var(--accent-bg)',
-          transition: 'transform 0.55s cubic-bezier(0.22,1,0.32,1), width 0.55s cubic-bezier(0.22,1,0.32,1)',
-          zIndex: 0, pointerEvents: 'none',
-        }} />
-        {NAV_LINKS.map(l => {
-          const active = isActive(l.href);
-          return (
-            <Link key={l.href} href={l.href} data-tab="t"
-              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; }}
-              style={{
-                position: 'relative', zIndex: 1,
-                padding: '13px 27px', borderRadius: 999,
-                fontSize: 15.5, fontWeight: active ? 600 : 500, whiteSpace: 'nowrap',
-                color: active ? '#fff' : 'var(--text-2)',
-                transition: 'transform 0.18s cubic-bezier(0.2,0.8,0.3,1), color 0.4s ease',
-              }}>{l.label}</Link>
-          );
-        })}
-      </nav>
+      {!isAuthPage && (
+        <nav ref={navRef} style={{
+          position: 'fixed', left: '50%', transform: 'translateX(-50%)', bottom: 24, zIndex: 200,
+          display: 'flex', gap: 5,
+          background: 'color-mix(in srgb, var(--bg-card) 62%, transparent)',
+          backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+          borderRadius: 999, padding: 9,
+          boxShadow: '0 18px 48px rgba(74,52,28,0.24), inset 0 0 0 1px color-mix(in srgb, var(--text) 12%, transparent)',
+          animation: 'navBarIn 0.8s cubic-bezier(0.16,1,0.3,1) both',
+        }}>
+          <div aria-hidden style={{
+            position: 'absolute', left: 0, top: pill.top, height: pill.height, width: pill.width,
+            transform: pill.transform, opacity: pill.opacity,
+            background: 'var(--accent)', borderRadius: 999, boxShadow: '0 6px 18px var(--accent-bg)',
+            transition: 'transform 0.55s cubic-bezier(0.22,1,0.32,1), width 0.55s cubic-bezier(0.22,1,0.32,1)',
+            zIndex: 0, pointerEvents: 'none',
+          }} />
+          {NAV_LINKS.map(l => {
+            const active = isActive(l.href);
+            return (
+              <Link key={l.href} href={l.href} data-tab="t"
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; }}
+                style={{
+                  position: 'relative', zIndex: 1,
+                  padding: '13px 27px', borderRadius: 999,
+                  fontSize: 15.5, fontWeight: active ? 600 : 500, whiteSpace: 'nowrap',
+                  color: active ? '#fff' : 'var(--text-2)',
+                  transition: 'transform 0.18s cubic-bezier(0.2,0.8,0.3,1), color 0.4s ease',
+                }}>{l.label}</Link>
+            );
+          })}
+        </nav>
+      )}
     </>
   );
 }
