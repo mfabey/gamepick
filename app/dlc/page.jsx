@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import GameCard from '../components/GameCard';
+import GameImage from '../components/GameImage';
 
 const SECTIONS = [
   { label: 'Tümü',       value: ''        },
@@ -245,13 +246,7 @@ function DlcCard({ dlc }) {
       >
         {/* Kapak */}
         <div style={{ height: 110, background: 'var(--bg-input)', position: 'relative', overflow: 'hidden' }}>
-          {dlc.image ? (
-            <img src={dlc.image} alt={dlc.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          ) : (
-            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 700, color: 'var(--text-3)' }}>
-              {dlc.name?.slice(0, 2).toUpperCase()}
-            </div>
-          )}
+          <GameImage game={dlc} fill sizes="(max-width:640px) 50vw, 200px" />
 
           {/* DLC rozeti */}
           <div style={{ position: 'absolute', top: 7, left: 7 }}>

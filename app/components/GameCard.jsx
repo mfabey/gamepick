@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useAuth, normalizeName } from '../context/AuthContext';
+import GameImage from './GameImage';
 
 function SteamIcon({ size = 16 }) {
   return (
@@ -34,13 +34,7 @@ export default function GameCard({ game, compact = false }) {
   const [priceDone,    setPriceDone]    = useState(false);
   const cardRef = useRef(null);
 
-  const [imgSrc, setImgSrc] = useState(game.image);
-  const [triedFallback, setTriedFallback] = useState(false);
 
-  useEffect(() => {
-    setImgSrc(game.image);
-    setTriedFallback(false);
-  }, [game.image]);
 
   // Kart görünüme girince Steam fiyatı lazy-load et
   useEffect(() => {
@@ -96,31 +90,7 @@ export default function GameCard({ game, compact = false }) {
       >
         {/* Kapak */}
         <div style={{ aspectRatio: '16/9', width: '100%', background: 'var(--bg-input)', position: 'relative', overflow: 'hidden' }}>
-          {imgSrc ? (
-            <Image
-              src={imgSrc} alt={game.name} fill
-              sizes="(max-width:640px) 50vw, 200px"
-              style={{ objectFit: 'cover' }}
-              unoptimized
-              onError={() => {
-                if (!triedFallback) {
-                  setTriedFallback(true);
-                  if (game.logo) {
-                    const medium = game.logo.replace('capsule_sm_120.jpg', 'capsule_231x87.jpg');
-                    setImgSrc(medium);
-                  } else {
-                    setImgSrc(null);
-                  }
-                } else {
-                  setImgSrc(null);
-                }
-              }}
-            />
-          ) : (
-            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 700, color: 'var(--text-3)', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
-              {game.name?.slice(0, 2).toUpperCase()}
-            </div>
-          )}
+          <GameImage game={game} fill sizes="(max-width:640px) 50vw, 200px" />
 
           {/* Oyun kutusu parlaklığı */}
           <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'linear-gradient(125deg, rgba(255,255,255,0.32) 0%, rgba(255,255,255,0.09) 22%, rgba(255,255,255,0) 44%), linear-gradient(to top, rgba(0,0,0,0.30), rgba(0,0,0,0) 46%)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.30), inset 0 0 0 1px rgba(255,255,255,0.06)' }} />

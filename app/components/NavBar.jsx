@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import GameImage from './GameImage';
 
 const NAV_LINKS = [
   { href: '/',        label: 'Anasayfa' },
@@ -229,9 +230,7 @@ export default function NavBar() {
             position: 'relative', width: 30, height: 30, borderRadius: 8, overflow: 'hidden', flexShrink: 0,
             background: 'var(--bg-input)', boxShadow: '0 2px 6px rgba(74,52,28,0.25), inset 0 1px 0 rgba(255,255,255,0.3)',
           }}>
-            {viewing?.image
-              ? <img src={viewing.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              : <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 14, color: 'var(--text-3)' }}>{viewing?.name?.slice(0, 1)}</span>}
+            <GameImage game={viewing} fill sizes="30px" />
           </span>
           <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15, whiteSpace: 'nowrap', overflow: 'hidden' }}>
             <span style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-3)' }}>İnceleniyor</span>

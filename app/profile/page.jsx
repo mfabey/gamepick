@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import GameImage from '../components/GameImage';
 
 const GENRE_STATS = [
   { label: 'RPG',          pct: 38 },
@@ -252,11 +253,7 @@ function WishlistItem({ game, onRemove }) {
         fontSize: 14, fontWeight: 700, color: 'var(--text-3)',
         flexShrink: 0, overflow: 'hidden', position: 'relative',
       }}>
-        {game.image ? (
-          <img src={game.image} alt={game.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-        ) : (
-          game.name?.slice(0, 2).toUpperCase()
-        )}
+        <GameImage game={game} fill sizes="40px" />
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <Link href={`/game/${game.id}`}>
