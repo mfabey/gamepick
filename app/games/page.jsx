@@ -139,9 +139,26 @@ function GamesList() {
     return () => { window.removeEventListener('scroll', handleScroll); clearTimeout(t); };
   }, [loadMore]);
 
+  const handlePriceLoaded = useCallback((gameId, priceInfo) => {
+    setGames(prev => prev.map(g => {
+      if (g.id === gameId) {
+        return { ...g, priceInfo };
+      }
+      return g;
+    }));
+  }, []);
+
   const filteredGames = games.filter(g => {
-    if (price === 'free') return g.isFree;
-    if (price !== 'all' && g.price != null && !g.isFree && g.price > parseInt(price)) return false;
+    if (price === 'free') {
+      const isFree = g.priceInfo ? g.priceInfo.isFree : g.isFree;
+      return isFree;
+    }
+    if (price !== 'all') {
+      const isFree = g.priceInfo ? g.priceInfo.isFree : g.isFree;
+      if (isFree) return true;
+      const currentPrice = g.priceInfo ? g.priceInfo.price : g.price;
+      if (currentPrice != null && currentPrice > parseInt(price)) return false;
+    }
     return true;
   });
 
@@ -338,7 +355,7 @@ function GamesList() {
             ) : (
               <>
                 <div className="grid-auto">
-                  {filteredGames.map(game => <GameCard key={game.id} game={game} />)}
+                  {filteredGames.map(game => <GameCard key={game.id} game={game} onPriceLoaded={handlePriceLoaded} />)}
                 </div>
                 <div ref={sentinelRef} style={{ height: 1 }} />
                 {loadingMore && (
