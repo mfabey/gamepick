@@ -103,7 +103,7 @@ export async function GET(request) {
     shots = shotsRes;
     storesData = storesRes;
 
-    if (detail.detail === 'Not found.') {
+    if (detail.detail === 'Not found.' || detail.error || !detail.id) {
       rawgFailed = true;
     } else if (isAdultContent(detail)) {
       return NextResponse.json({ error: 'Bu oyun kütüphanede gösterilmemektedir.' }, { status: 403 });
