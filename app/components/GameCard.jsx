@@ -202,7 +202,7 @@ export default function GameCard({ game, compact = false }) {
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                     <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--amber)' }}>
-                      ₺{livePrice.price}
+                      {livePrice.price}₺
                     </span>
                     {livePrice.storeIcon && (
                       <span title={livePrice.storeName} style={{ fontSize: 11, opacity: 0.85 }}>
@@ -211,13 +211,13 @@ export default function GameCard({ game, compact = false }) {
                     )}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>
-                    <span style={{ textDecoration: 'line-through' }}>₺{livePrice.original}</span>
+                    <span style={{ textDecoration: 'line-through' }}>{livePrice.original}₺</span>
                     <span style={{ color: 'var(--amber)', fontWeight: 700 }}>-%{livePrice.discount}</span>
                   </div>
                 </div>
               ) : (
                 <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
-                  ₺{livePrice.price}
+                  {livePrice.price}₺
                 </span>
               )
             ) : priceLoading ? (

@@ -587,7 +587,7 @@ function PriceCard({ store, icon, price, original, discount, isFree: isFreeOverr
         }}
       >
         <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, minWidth: 0 }}>
-          <span>{icon}</span>
+          <StoreLogo store={store} />
           <span style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>{store}</span>
           {highlight && (
             <span style={{
@@ -604,10 +604,10 @@ function PriceCard({ store, icon, price, original, discount, isFree: isFreeOverr
             <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--green)' }}>Ücretsiz</span>
           ) : (
             <>
-              <span style={{ fontWeight: 700, fontSize: 15, color: isOnSale ? 'var(--amber)' : 'var(--text)' }}>₺{price}</span>
+              <span style={{ fontWeight: 700, fontSize: 15, color: isOnSale ? 'var(--amber)' : 'var(--text)' }}>{price}₺</span>
               {isOnSale && (
                 <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
-                  <span style={{ textDecoration: 'line-through' }}>₺{original}</span>
+                  <span style={{ textDecoration: 'line-through' }}>{original}₺</span>
                   {' '}<span style={{ color: 'var(--amber)' }}>-%{discount}</span>
                 </div>
               )}
@@ -641,7 +641,7 @@ function PlaceholderCard({ store, icon, url }) {
         }}
       >
         <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, minWidth: 0 }}>
-          <span>{icon}</span>
+          <StoreLogo store={store} />
           <span style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>{store}</span>
         </span>
         <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 500, flexShrink: 0 }}>Mağazaya Git →</span>
@@ -662,3 +662,28 @@ function MissingCard({ platform }) {
     </div>
   );
 }
+
+// ── Mağaza logoları ──────────────────────────────────────────────────────────
+function StoreLogo({ store }) {
+  const s = (store || '').toLowerCase();
+  let slug = 'googlechrome', bg = 'var(--accent)';
+  if (s.includes('steam'))            { slug = 'steam';          bg = '#1b2838'; }
+  else if (s.includes('epic'))        { slug = 'epicgames';      bg = '#121212'; }
+  else if (s.includes('game pass'))   { slug = 'xbox';           bg = 'linear-gradient(135deg,#107c10,#0b5a0b)'; }
+  else if (s.includes('xbox') || s.includes('microsoft')) { slug = 'xbox'; bg = '#107c10'; }
+  else if (s.includes('gog'))         { slug = 'gogdotcom';      bg = '#7c2da0'; }
+  else if (s.includes('humble'))      { slug = 'humblebundle';   bg = '#cc2929'; }
+  else if (s.includes('playstation')) { slug = 'playstation';    bg = '#003791'; }
+  else if (s.includes('nintendo'))    { slug = 'nintendoswitch'; bg = '#e60012'; }
+
+  return (
+    <span style={{
+      width: 26, height: 26, borderRadius: 7, background: bg, flexShrink: 0,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18), 0 1px 2px rgba(0,0,0,0.12)',
+    }}>
+      <img src={`https://cdn.simpleicons.org/${slug}/white`} alt={store} width={15} height={15} style={{ display: 'block' }} />
+    </span>
+  );
+}
+

@@ -33,9 +33,9 @@ const CATEGORIES = [
 const PRICE_OPTIONS = [
   { label: 'Tüm Fiyatlar', value: 'all'  },
   { label: 'Ücretsiz',     value: 'free' },
-  { label: '₺0 – ₺100',    value: '100'  },
-  { label: '₺0 – ₺300',    value: '300'  },
-  { label: '₺0 – ₺500',    value: '500'  },
+  { label: '0 – 100₺',    value: '100'  },
+  { label: '0 – 300₺',    value: '300'  },
+  { label: '0 – 500₺',    value: '500'  },
 ];
 
 const PAGE_SIZE = 24;
