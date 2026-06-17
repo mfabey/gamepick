@@ -13,6 +13,39 @@ const PLACEHOLDER_GAMES = [
   'The Witcher 3', "Baldur's Gate 3", 'God of War', 'Hollow Knight',
 ];
 
+function getGameGradient(name) {
+  const n = (name || '').toLowerCase();
+  if (n.includes('elden') || n.includes('god of war') || n.includes('witcher')) {
+    return { grad: 'linear-gradient(135deg, #c28e28 0%, #1a1104 100%)', text: '#ffd79e' };
+  }
+  if (n.includes('hades') || n.includes('cyberpunk') || n.includes('among')) {
+    return { grad: 'linear-gradient(135deg, #a11b5e 0%, #1c030e 100%)', text: '#ffc9e3' };
+  }
+  if (n.includes('stardew') || n.includes('hollow') || n.includes('zelda')) {
+    return { grad: 'linear-gradient(135deg, #2d944e 0%, #061f0e 100%)', text: '#bdffd4' };
+  }
+  if (n.includes('dave') || n.includes('gta') || n.includes('fifa') || n.includes('nfs') || n.includes('need for speed')) {
+    return { grad: 'linear-gradient(135deg, #136da5 0%, #02172b 100%)', text: '#bfe4ff' };
+  }
+  if (n.includes('balatro') || n.includes('red dead') || n.includes('spider-man') || n.includes('spiderman') || n.includes('fallout') || n.includes('counter-strike') || n.includes('cs:go') || n.includes('cs2')) {
+    return { grad: 'linear-gradient(135deg, #a81c24 0%, #210305 100%)', text: '#ffcbd0' };
+  }
+  
+  const grads = [
+    { grad: 'linear-gradient(135deg, #c28e28 0%, #1a1104 100%)', text: '#ffd79e' },
+    { grad: 'linear-gradient(135deg, #a11b5e 0%, #1c030e 100%)', text: '#ffc9e3' },
+    { grad: 'linear-gradient(135deg, #2d944e 0%, #061f0e 100%)', text: '#bdffd4' },
+    { grad: 'linear-gradient(135deg, #136da5 0%, #02172b 100%)', text: '#bfe4ff' },
+    { grad: 'linear-gradient(135deg, #a81c24 0%, #210305 100%)', text: '#ffcbd0' },
+  ];
+  let hash = 0;
+  for (let i = 0; i < n.length; i++) {
+    hash = n.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const idx = Math.abs(hash) % grads.length;
+  return grads[idx];
+}
+
 export default function Home() {
   const { user } = useAuth();
   const router   = useRouter();
@@ -309,15 +342,67 @@ export default function Home() {
         {heroTiles && (
           <div style={{ marginTop: 54, WebkitMaskImage: 'linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent)', maskImage: 'linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent)' }}>
             <div className="hero-strip" style={{ display: 'flex', gap: 16, width: 'max-content', padding: '6px 0 12px' }}>
-              {[...heroTiles, ...heroTiles].map((g, i) => (
-                <Link key={i} href={g.rawgSlug ? `/game/rawg/${g.rawgSlug}` : `/game/rawg/${g.id}`}
-                  style={{ width: 168, aspectRatio: '3 / 4', borderRadius: 16, position: 'relative', overflow: 'hidden', flexShrink: 0, background: 'var(--bg-input)', boxShadow: '0 10px 28px rgba(74,52,28,0.16)' }}>
-                  {g.image && <Image src={g.image} alt="" fill sizes="168px" style={{ objectFit: 'cover' }} unoptimized />}
-                  <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'flex-end', padding: 13, background: 'linear-gradient(to top, rgba(8,8,16,0.62), transparent 58%)' }}>
-                    <span style={{ color: '#fff', fontWeight: 700, fontSize: 13.5, lineHeight: 1.2, textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}>{g.name}</span>
-                  </div>
-                </Link>
-              ))}
+              {[...heroTiles, ...heroTiles].map((g, i) => {
+                const themeInfo = getGameGradient(g.name);
+                const firstLetter = (g.name || 'G').trim().slice(0, 1).toUpperCase();
+                return (
+                  <Link key={i} href={g.rawgSlug ? `/game/rawg/${g.rawgSlug}` : `/game/rawg/${g.id}`}
+                    style={{
+                      width: 168, aspectRatio: '3 / 4', borderRadius: 16,
+                      position: 'relative', overflow: 'hidden', flexShrink: 0,
+                      background: themeInfo.grad,
+                      boxShadow: '0 10px 28px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.08)',
+                      transition: 'transform 0.2s, box-shadow 0.2s',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 15px 36px rgba(0,0,0,0.5)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 10px 28px rgba(0,0,0,0.35)'; }}
+                  >
+                    {/* Blended Oyun Görseli */}
+                    {g.image && (
+                      <div style={{ position: 'absolute', inset: 0, opacity: 0.38, mixBlendMode: 'luminosity' }}>
+                        <Image src={g.image} alt="" fill sizes="168px" style={{ objectFit: 'cover' }} unoptimized />
+                      </div>
+                    )}
+
+                    {/* Arka Plan Büyük Harf */}
+                    <div style={{
+                      position: 'absolute', right: -10, top: -20,
+                      fontSize: 130, fontWeight: 900,
+                      fontFamily: 'var(--font-heading)',
+                      color: 'rgba(255, 255, 255, 0.05)',
+                      userSelect: 'none', pointerEvents: 'none',
+                      lineHeight: 1,
+                    }}>
+                      {firstLetter}
+                    </div>
+
+                    {/* Işık kırılması / Podyum Glare yansıması */}
+                    <div style={{
+                      position: 'absolute', inset: 0,
+                      background: 'linear-gradient(135deg, rgba(255,255,255,0) 32%, rgba(255,255,255,0.06) 42%, rgba(255,255,255,0.22) 50%, rgba(255,255,255,0.06) 58%, rgba(255,255,255,0) 68%)',
+                      pointerEvents: 'none',
+                      zIndex: 2,
+                    }} />
+
+                    {/* Alt Gölgelendirme ve Başlık */}
+                    <div style={{
+                      position: 'absolute', inset: 0,
+                      background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.2) 40%, rgba(0,0,0,0) 100%)',
+                      display: 'flex', alignItems: 'flex-end', padding: 14,
+                      zIndex: 3,
+                    }}>
+                      <span style={{
+                        color: themeInfo.text, fontWeight: 700, fontSize: 13.5,
+                        lineHeight: 1.2, textShadow: '0 1px 3px rgba(0,0,0,0.6)',
+                        fontFamily: 'var(--font-body)',
+                        letterSpacing: '0.1px',
+                      }}>
+                        {g.name}
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           </div>
         )}
