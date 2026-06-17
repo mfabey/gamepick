@@ -543,6 +543,7 @@ function StoreLogo({ store }) {
   const base = {
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+    fontWeight: 800, color: '#fff', fontFamily: 'Arial, sans-serif', letterSpacing: '-0.5px',
   };
 
   if (s.includes('steam')) return (
@@ -562,51 +563,29 @@ function StoreLogo({ store }) {
   );
 
   if (s.includes('gog')) return (
-    <span style={{ ...base, background: '#7b2fbe' }}>
-      <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path fill="#fff" d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 3.6c4.638 0 8.4 3.762 8.4 8.4s-3.762 8.4-8.4 8.4S3.6 16.638 3.6 12 7.362 3.6 12 3.6zm-3 5.4v6h1.8v-2.4H12v2.4h1.8V9H12v2.4h-1.2V9H9zm6 0v6h1.8V9H15z"/>
-      </svg>
-    </span>
+    <span style={{ ...base, background: '#7b2fbe', fontSize: 10 }}>GOG</span>
   );
 
   if (s.includes('game pass')) return (
-    <span style={{ ...base, background: '#107c10' }}>
-      <svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path fill="#fff" d="M4.102 5.4C2.116 7.17 1 9.455 1 12s1.116 4.83 3.102 6.6C5.976 20.262 8.838 21 12 21s6.024-.738 7.898-2.4C21.884 16.83 23 14.545 23 12s-1.116-4.83-3.102-6.6C17.924 3.738 15.162 3 12 3S6.076 3.738 4.102 5.4zm10.126 3.42l2.064 2.064-4.356 4.296-2.124-2.124-.96.96L7.07 12l5.802-5.82 1.356 2.64zM6.48 9.9l1.782 1.782L6.48 13.44l-1.782-1.782L6.48 9.9z"/>
-      </svg>
+    <span style={{ ...base, background: '#107c10', fontSize: 9, lineHeight: 1.1, textAlign: 'center' }}>
+      Game{'\n'}Pass
     </span>
   );
 
   if (s.includes('xbox') || s.includes('microsoft')) return (
-    <span style={{ ...base, background: '#107c10' }}>
-      <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path fill="#fff" d="M4.102 5.4C2.116 7.17 1 9.455 1 12s1.116 4.83 3.102 6.6C5.976 20.262 8.838 21 12 21s6.024-.738 7.898-2.4C21.884 16.83 23 14.545 23 12s-1.116-4.83-3.102-6.6C17.924 3.738 15.162 3 12 3S6.076 3.738 4.102 5.4zm10.126 3.42l2.064 2.064-4.356 4.296-2.124-2.124-.96.96L7.07 12l5.802-5.82 1.356 2.64zM6.48 9.9l1.782 1.782L6.48 13.44l-1.782-1.782L6.48 9.9z"/>
-      </svg>
-    </span>
+    <span style={{ ...base, background: '#107c10', fontSize: 20 }}>X</span>
   );
 
   if (s.includes('humble')) return (
-    <span style={{ ...base, background: '#cc2727' }}>
-      <svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path fill="#fff" d="M12 0L1.5 6v12L12 24l10.5-6V6L12 0zm0 3.273l7.5 4.318v8.818L12 20.727l-7.5-4.318V7.591L12 3.273zM8 8v8h2v-3h4v3h2V8h-2v3h-4V8H8z"/>
-      </svg>
-    </span>
+    <span style={{ ...base, background: '#cc2727', fontSize: 10 }}>HB</span>
   );
 
   if (s.includes('playstation')) return (
-    <span style={{ ...base, background: '#003791' }}>
-      <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path fill="#fff" d="M8.984 2.596v14.127l3.5 1.17V6.16s-.047-1.06.916-.76c.96.3.868 1.25.868 1.25v5.34s2.127.71 3.5-.8c.75-1.03.616-2.93.616-2.93S18.35 5.4 15.4 4.42c-1.73-.57-6.416-1.824-6.416-1.824zm2.5 14.886L5.8 19.07v1.73l5.684 1.904v-5.222zm5.616.584l-2.1.74v1.43l2.1-.7v-1.47zm2.9-.97l-2.1.74v1.43l2.1-.7v-1.47z"/>
-      </svg>
-    </span>
+    <span style={{ ...base, background: '#003791', fontSize: 11 }}>PS</span>
   );
 
   if (s.includes('nintendo')) return (
-    <span style={{ ...base, background: '#e60012' }}>
-      <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path fill="#fff" d="M9 2C5.14 2 2 5.14 2 9v6c0 3.86 3.14 7 7 7h6c3.86 0 7-3.14 7-7V9c0-3.86-3.14-7-7-7H9zm0 2h6c2.757 0 5 2.243 5 5v6c0 2.757-2.243 5-5 5H9c-2.757 0-5-2.243-5-5V9c0-2.757 2.243-5 5-5zm-1 3v10l7-5-7-5z"/>
-      </svg>
-    </span>
+    <span style={{ ...base, background: '#e60012', fontSize: 16 }}>N</span>
   );
 
   return (
