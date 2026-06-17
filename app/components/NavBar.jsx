@@ -79,10 +79,23 @@ export default function NavBar() {
   return (
     <>
       {/* ── Üst bar: ortalı logo + sağda tema & hesap ── */}
-      <header className="main-header">
-        <div className="header-container">
+      <header className="main-header" style={{
+        position: 'sticky', top: 0, zIndex: 100,
+        background: 'color-mix(in srgb, var(--bg) 82%, transparent)',
+        backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+        borderBottom: '1px solid var(--border)',
+      }}>
+        <div className="header-container" style={{
+          maxWidth: 1320, margin: '0 auto', padding: '0 32px',
+          height: 64, display: 'flex', alignItems: 'center',
+          justifyContent: 'flex-end', position: 'relative',
+        }}>
           {/* Logo */}
-          <Link href="/" className="header-logo">
+          <Link href="/" className="header-logo" style={{
+            display: 'flex', alignItems: 'center', gap: 9, cursor: 'pointer',
+            position: 'absolute', left: '50%', transform: 'translateX(-50%)',
+            color: 'var(--text)',
+          }}>
             <span style={{
               width: 34, height: 34, borderRadius: 10, background: 'var(--accent)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -96,12 +109,19 @@ export default function NavBar() {
                 <circle cx="18" cy="13.5" r="1" fill="#fff" stroke="none"/>
               </svg>
             </span>
-            <span className="header-logo-text">GamePick</span>
+            <span className="header-logo-text" style={{
+              fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: 21,
+              letterSpacing: '-0.5px', color: 'var(--text)',
+            }}>GamePick</span>
           </Link>
 
           {/* Sağ: tema + hesap */}
-          <div className="header-right">
-            <button className="theme-toggle-btn" onClick={toggleTheme} title={theme === 'dark' ? 'Aydınlık Mod' : 'Karanlık Mod'}>
+          <div className="header-right" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <button className="theme-toggle-btn" onClick={toggleTheme} title={theme === 'dark' ? 'Aydınlık Mod' : 'Karanlık Mod'} style={{
+              background: 'none', border: '1px solid var(--border)', borderRadius: 9,
+              width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'var(--text-2)', cursor: 'pointer',
+            }}>
               {!mounted ? <div style={{ width: 18, height: 18 }} />
                 : theme === 'dark' ? (
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
@@ -112,26 +132,33 @@ export default function NavBar() {
 
             {steamUser ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Link href="/library" className="steam-user-badge">
+                <Link href="/library" className="steam-user-badge" style={{
+                  display: 'flex', alignItems: 'center', gap: 8, padding: '5px 10px', borderRadius: 9,
+                  background: 'rgba(47,115,232,0.1)', border: '1px solid rgba(47,115,232,0.3)',
+                  fontSize: 13, fontWeight: 600, color: '#2f73e8',
+                }}>
                   {steamUser.avatar
                     ? <img src={steamUser.avatar} alt="" style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover' }} />
                     : <span style={{ width: 22, height: 22, borderRadius: '50%', background: '#2f73e8', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700 }}>{steamUser.name?.slice(0, 1).toUpperCase()}</span>}
                   <span className="steam-user-name">{steamUser.name?.slice(0, 14)}{steamUser.name?.length > 14 ? '…' : ''}</span>
                 </Link>
-                <button onClick={steamLogout} className="logout-btn">Çıkış</button>
+                <button onClick={steamLogout} className="logout-btn" style={{ padding: '5px 10px', borderRadius: 9, fontSize: 12, background: 'none', border: '1px solid var(--border)', color: 'var(--text-3)', cursor: 'pointer' }}>Çıkış</button>
               </div>
             ) : user ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <Link href="/profile" className="email-user-badge">
+                <Link href="/profile" className="email-user-badge" style={{
+                  display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 9,
+                  background: 'var(--accent-bg)', border: '1px solid var(--accent-border)', fontSize: 13, fontWeight: 600, color: 'var(--accent)',
+                }}>
                   <span style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700 }}>{user.name?.slice(0, 1).toUpperCase()}</span>
                   <span className="email-user-name">{user.name?.split(' ')[0]}</span>
                 </Link>
-                <button onClick={handleLogout} className="logout-btn">Çıkış</button>
+                <button onClick={handleLogout} className="logout-btn" style={{ padding: '6px 12px', borderRadius: 9, fontSize: 12, background: 'none', border: '1px solid var(--border)', color: 'var(--text-3)', cursor: 'pointer' }}>Çıkış</button>
               </div>
             ) : (
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <Link href="/login" className="login-btn">Giriş Yap</Link>
-                <Link href="/signup" className="signup-btn">Üye Ol</Link>
+                <Link href="/login" className="login-btn" style={{ padding: '8px 14px', fontSize: 14, fontWeight: 500, color: 'var(--text-2)', whiteSpace: 'nowrap' }}>Giriş Yap</Link>
+                <Link href="/signup" className="signup-btn" style={{ padding: '9px 20px', borderRadius: 10, fontSize: 14, fontWeight: 600, background: 'var(--accent)', color: '#fff', whiteSpace: 'nowrap', boxShadow: '0 6px 18px var(--accent-bg)' }}>Üye Ol</Link>
               </div>
             )}
           </div>
@@ -157,7 +184,12 @@ export default function NavBar() {
       )}
 
       <nav ref={navRef} className="bottom-nav-bar" style={{
-        zIndex: hintOpen ? 201 : 200,
+        position: 'fixed', left: '50%', transform: 'translateX(-50%)', bottom: 28, zIndex: hintOpen ? 201 : 200,
+        display: 'flex', gap: 6,
+        background: 'linear-gradient(180deg, color-mix(in srgb, var(--bg-card) 72%, transparent), color-mix(in srgb, var(--bg-card) 58%, transparent))',
+        backdropFilter: 'blur(28px) saturate(150%)', WebkitBackdropFilter: 'blur(28px) saturate(150%)',
+        borderRadius: 999, padding: 11,
+        boxShadow: '0 2px 6px rgba(74,52,28,0.10), 0 12px 28px rgba(74,52,28,0.16), 0 32px 64px rgba(74,52,28,0.20), inset 0 1px 0 color-mix(in srgb, var(--bg-card) 90%, white), inset 0 0 0 1px color-mix(in srgb, var(--text) 8%, transparent)',
         animation: hintOpen
           ? 'navBarIn 0.85s cubic-bezier(0.16,1,0.3,1) both, navBarAttract 1.5s ease-in-out 0.9s 2, navBarRing 1.6s ease-out 1s 2'
           : 'navBarIn 0.85s cubic-bezier(0.16,1,0.3,1) both',
@@ -174,7 +206,12 @@ export default function NavBar() {
               onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; }}
               onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; }}
               style={{
+                position: 'relative', zIndex: 1,
+                padding: '15px 31px', borderRadius: 999,
+                fontSize: 16, letterSpacing: '-0.1px', fontWeight: active ? 600 : 500, whiteSpace: 'nowrap',
+                color: active ? '#fff' : 'var(--text-2)',
                 textShadow: active ? '0 1px 2px rgba(74,52,28,0.25)' : 'none',
+                transition: 'transform 0.18s cubic-bezier(0.2,0.8,0.3,1), color 0.4s ease',
               }}>{l.label}</Link>
           );
         })}

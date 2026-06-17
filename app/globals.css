@@ -639,27 +639,32 @@ html[data-theme="dark"] .glass-card {
 @media (max-width: 768px) {
   /* Header */
   .header-container {
-    padding: 0 16px;
-    justify-content: space-between;
+    padding: 0 16px !important;
+    justify-content: space-between !important;
   }
   .header-logo {
-    position: static;
-    transform: none;
-    left: auto;
+    position: static !important;
+    transform: none !important;
+    left: auto !important;
   }
   .header-right {
-    gap: 8px;
+    gap: 8px !important;
   }
 
   /* Bottom Bar */
   .bottom-nav-bar {
-    bottom: 16px;
-    padding: 7px;
-    gap: 2px;
+    position: fixed !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    bottom: 16px !important;
+    padding: 7px !important;
+    gap: 2px !important;
+    border-radius: 999px !important;
+    width: auto !important;
   }
   .bottom-nav-link {
-    padding: 10px 18px;
-    font-size: 14px;
+    padding: 10px 18px !important;
+    font-size: 14px !important;
   }
   /* Hide the active viewing game badge inside the bottom tab bar on tablet/mobile */
   .viewing-badge {
@@ -670,10 +675,10 @@ html[data-theme="dark"] .glass-card {
 @media (max-width: 480px) {
   /* Header adjustments for small mobile */
   .header-container {
-    padding: 0 12px;
+    padding: 0 12px !important;
   }
   .header-logo-text {
-    display: none; /* Only show logo icon to save space */
+    display: none !important;
   }
   
   /* Logged-out buttons shrinking */
@@ -690,15 +695,15 @@ html[data-theme="dark"] .glass-card {
 
   /* Logged-in badges shrinking */
   .steam-user-name, .email-user-name {
-    display: none; /* Hide name, avatar is enough */
+    display: none !important;
   }
   .steam-user-badge, .email-user-badge {
     padding: 5px !important;
     gap: 0 !important;
     border-radius: 50% !important;
-    width: 34px;
-    height: 34px;
-    justify-content: center;
+    width: 34px !important;
+    height: 34px !important;
+    justify-content: center !important;
   }
   .logout-btn {
     padding: 5px 8px !important;
@@ -708,16 +713,17 @@ html[data-theme="dark"] .glass-card {
 
   /* Bottom Bar adjustments for small mobile */
   .bottom-nav-bar {
-    bottom: 12px;
-    padding: 5px;
-    gap: 0px;
-    width: calc(100% - 16px);
-    max-width: 360px;
-    justify-content: space-around;
+    bottom: 12px !important;
+    padding: 5px !important;
+    gap: 0px !important;
+    width: calc(100% - 16px) !important;
+    max-width: 360px !important;
+    justify-content: space-around !important;
   }
   .bottom-nav-link {
-    padding: 8px 10px;
-    font-size: 12.5px;
+    padding: 8px 10px !important;
+    font-size: 12.5px !important;
   }
 }
+
 
