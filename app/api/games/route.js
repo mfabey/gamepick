@@ -197,6 +197,65 @@ async function fetchRawg(path, params = {}) {
   return res.json();
 }
 
+const STATIC_FREE_GAMES = [
+  { id: 'rawg_730', rawgId: 730, rawgSlug: 'counter-strike-2', name: 'Counter-Strike 2', image: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/730/header.jpg', metacritic: null, reviewScore: 88, totalReviews: 76400, isFree: true, onSale: false, price: null, noData: false, platforms: ['pc'], source: 'steam', hasSteam: true, hasEpic: false, hasStores: true, genres: ['Aksiyon', 'Nişancı'], released: '2023-09-27' },
+  { id: 'rawg_570', rawgId: 570, rawgSlug: 'dota-2', name: 'Dota 2', image: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/570/header.jpg', metacritic: 90, reviewScore: 82, totalReviews: 32000, isFree: true, onSale: false, price: null, noData: false, platforms: ['pc'], source: 'steam', hasSteam: true, hasEpic: false, hasStores: true, genres: ['Strateji'], released: '2013-07-09' },
+  { id: 'rawg_1172470', rawgId: 1172470, rawgSlug: 'apex-legends', name: 'Apex Legends', image: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1172470/header.jpg', metacritic: 88, reviewScore: 80, totalReviews: 24500, isFree: true, onSale: false, price: null, noData: false, platforms: ['pc'], source: 'steam', hasSteam: true, hasEpic: false, hasStores: true, genres: ['Aksiyon', 'Nişancı'], released: '2020-11-04' },
+  { id: 'rawg_578080', rawgId: 578080, rawgSlug: 'pubg-battlegrounds', name: 'PUBG: BATTLEGROUNDS', image: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/578080/header.jpg', metacritic: 86, reviewScore: 57, totalReviews: 124000, isFree: true, onSale: false, price: null, noData: false, platforms: ['pc'], source: 'steam', hasSteam: true, hasEpic: false, hasStores: true, genres: ['Aksiyon', 'Nişancı'], released: '2017-12-21' },
+  { id: 'rawg_230410', rawgId: 230410, rawgSlug: 'warframe', name: 'Warframe', image: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/230410/header.jpg', metacritic: 69, reviewScore: 87, totalReviews: 18400, isFree: true, onSale: false, price: null, noData: false, platforms: ['pc'], source: 'steam', hasSteam: true, hasEpic: false, hasStores: true, genres: ['Aksiyon', 'RPG'], released: '2013-03-25' },
+  { id: 'rawg_440', rawgId: 440, rawgSlug: 'team-fortress-2', name: 'Team Fortress 2', image: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/440/header.jpg', metacritic: 92, reviewScore: 93, totalReviews: 14500, isFree: true, onSale: false, price: null, noData: false, platforms: ['pc'], source: 'steam', hasSteam: true, hasEpic: false, hasStores: true, genres: ['Aksiyon', 'Nişancı'], released: '2007-10-10' },
+  { id: 'rawg_1085660', rawgId: 1085660, rawgSlug: 'destiny-2', name: 'Destiny 2', image: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1085660/header.jpg', metacritic: 83, reviewScore: 82, totalReviews: 29500, isFree: true, onSale: false, price: null, noData: false, platforms: ['pc'], source: 'steam', hasSteam: true, hasEpic: false, hasStores: true, genres: ['Aksiyon', 'Nişancı'], released: '2019-10-01' }
+];
+
+async function fetchSteamFeatured(category) {
+  try {
+    const res = await fetch('https://store.steampowered.com/api/featuredcategories/?cc=tr&l=tr', { next: { revalidate: 1800 } });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const items = data[category]?.items || [];
+
+    // Filtrelenmiş adult öğeleri
+    const cleanItems = items.filter(item => !isAdultTitleOrSlug(item.name, item.name));
+
+    return cleanItems.map(item => {
+      const slug = item.name.toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .trim()
+        .replace(/\s+/g, '-');
+      
+      const isFree = item.final_price === 0 || (!item.final_price && !item.original_price);
+
+      return {
+        id:           'rawg_' + item.id,
+        rawgId:       item.id,
+        rawgSlug:     slug,
+        name:         item.name,
+        image:        item.header_image || item.large_capsule_image || item.small_capsule_image,
+        metacritic:   null,
+        reviewScore:  0,
+        totalReviews: 0,
+        isFree,
+        onSale:       item.discounted || false,
+        price:        item.final_price ? item.final_price / 100 : null,
+        noData:       false,
+        platforms:    ['pc'],
+        source:       'steam',
+        hasSteam:     true,
+        hasEpic:      false,
+        hasStores:    true,
+        hasMultipleStores: false,
+        epicUrl:      null,
+        steamUrl:     `https://store.steampowered.com/app/${item.id}`,
+        genres:       [],
+        released:     new Date().toISOString().slice(0, 10),
+      };
+    });
+  } catch (err) {
+    console.error(`Failed to fetch Steam featured ${category}:`, err);
+    return [];
+  }
+}
+
 async function fetchSteamNewReleases() {
   try {
     const res = await fetch('https://store.steampowered.com/api/featuredcategories/', { next: { revalidate: 1800 } });
@@ -344,49 +403,70 @@ export async function GET(request) {
     let results = [];
     let total = 0;
 
-    if (section === 'new') {
-      if (page === 1) {
-        // Yeni Çıkanlar için hem RAWG hem de Steam'den paralel çek
-        const [rawgData, steamResults] = await Promise.all([
-          fetchRawg('/games', params).catch(() => ({ results: [], count: 0 })),
-          fetchSteamNewReleases()
-        ]);
+    try {
+      if (section === 'new') {
+        if (page === 1) {
+          // Yeni Çıkanlar için hem RAWG hem de Steam'den paralel çek
+          const [rawgData, steamResults] = await Promise.all([
+            fetchRawg('/games', params).catch(() => ({ results: [], count: 0 })),
+            fetchSteamNewReleases()
+          ]);
 
-        const rawgResults = (rawgData.results || []).filter(g => !isAdultContent(g)).map(formatRawgGame);
-        total = (rawgData.count || 0) + steamResults.length;
+          const rawgResults = (rawgData.results || []).filter(g => !isAdultContent(g)).map(formatRawgGame);
+          total = (rawgData.count || 0) + steamResults.length;
 
-        // Temizleme: hasStores olanları ve silinenleri filtrele
-        const filteredRawg = rawgResults.filter(g => g.hasStores && !KNOWN_DELISTED_SLUGS.has(g.rawgSlug));
+          // Temizleme: hasStores olanları ve silinenleri filtrele
+          const filteredRawg = rawgResults.filter(g => g.hasStores && !KNOWN_DELISTED_SLUGS.has(g.rawgSlug));
 
-        // Tekilleştirme: Hem Steam AppId hem de isim bazlı kontrol et
-        const seenAppIds = new Set(steamResults.map(g => g.rawgId));
-        const seenNames = new Set(steamResults.map(g => g.name.toLowerCase().replace(/[^a-z0-9]/g, '')));
+          // Tekilleştirme: Hem Steam AppId hem de isim bazlı kontrol et
+          const seenAppIds = new Set(steamResults.map(g => g.rawgId));
+          const seenNames = new Set(steamResults.map(g => g.name.toLowerCase().replace(/[^a-z0-9]/g, '')));
 
-        const uniqueRawg = filteredRawg.filter(g => {
-          const cleanName = g.name.toLowerCase().replace(/[^a-z0-9]/g, '');
-          const hasMatch = (g.steamAppId && seenAppIds.has(Number(g.steamAppId))) || seenNames.has(cleanName);
-          return !hasMatch;
-        });
+          const uniqueRawg = filteredRawg.filter(g => {
+            const cleanName = g.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const hasMatch = (g.steamAppId && seenAppIds.has(Number(g.steamAppId))) || seenNames.has(cleanName);
+            return !hasMatch;
+          });
 
-        // Steam en yeni çıkanlar en üstte olacak şekilde birleştir
-        results = [...steamResults, ...uniqueRawg];
+          // Steam en yeni çıkanlar en üstte olacak şekilde birleştir
+          results = [...steamResults, ...uniqueRawg];
+        } else {
+          // page > 1 ise sadece RAWG
+          const data = await fetchRawg('/games', params);
+          total = data.count || 0;
+          const rawgResults = (data.results || []).filter(g => !isAdultContent(g)).map(formatRawgGame);
+          results = rawgResults.filter(g => g.hasStores && !KNOWN_DELISTED_SLUGS.has(g.rawgSlug));
+        }
       } else {
-        // page > 1 ise sadece RAWG
+        // Diğer tüm bölümler/aramalar için normal RAWG
         const data = await fetchRawg('/games', params);
         total = data.count || 0;
-        const rawgResults = (data.results || []).filter(g => !isAdultContent(g)).map(formatRawgGame);
-        results = rawgResults.filter(g => g.hasStores && !KNOWN_DELISTED_SLUGS.has(g.rawgSlug));
+        results = (data.results || []).filter(g => !isAdultContent(g)).map(formatRawgGame);
+        results = results.filter(g => g.hasStores && !KNOWN_DELISTED_SLUGS.has(g.rawgSlug));
       }
-    } else {
-      // Diğer tüm bölümler/aramalar için normal RAWG
-      const data = await fetchRawg('/games', params);
-      total = data.count || 0;
-      results = (data.results || []).filter(g => !isAdultContent(g)).map(formatRawgGame);
-      results = results.filter(g => g.hasStores && !KNOWN_DELISTED_SLUGS.has(g.rawgSlug));
+    } catch (err) {
+      console.warn('RAWG API fetch failed, proceeding to fallback:', err.message);
+    }
+
+    // Fallback logic for sections when RAWG is limited or returns no results
+    if (results.length === 0) {
+      if (section === 'sale') {
+        console.log('Falling back to Steam specials...');
+        results = await fetchSteamFeatured('specials');
+        total = results.length;
+      } else if (section === 'popular' || section === 'topscore') {
+        console.log('Falling back to Steam top sellers...');
+        results = await fetchSteamFeatured('top_sellers');
+        total = results.length;
+      } else if (section === 'free') {
+        console.log('Falling back to static free games...');
+        results = STATIC_FREE_GAMES.filter(g => !isAdultTitleOrSlug(g.name, g.rawgSlug));
+        total = results.length;
+      }
     }
 
     // İndirim köşesinde (sale) ücretsiz oyunları kaldır, ayrıca gerçek indirim kontrolü yap
-    if (section === 'sale') {
+    if (section === 'sale' && results.length > 0 && results[0]?.source !== 'steam') {
       results = results.filter(g => !g.isFree);
       
       const saleCheckedResults = await Promise.all(
