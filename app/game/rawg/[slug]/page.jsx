@@ -397,7 +397,7 @@ export default function RawgGamePage({ params }) {
               steamLoading
                 ? <LoadingPriceRow />
                 : (steamPrice && steamPrice.isAvailable !== false)
-                  ? <PriceCard store="Steam" icon="💻"
+                  ? <PriceCard store="Steam"
                       price={steamPrice.price} original={steamPrice.original}
                       discount={steamPrice.discount} isFree={steamPrice.isFree}
                       url={game.steamUrl}
@@ -405,14 +405,14 @@ export default function RawgGamePage({ params }) {
                     />
                   : steamPrice?.isAvailable === false
                     ? <MissingCard platform="Steam" />
-                    : <PlaceholderCard store="Steam" icon="💻" url={game.steamUrl} />
+                    : <PlaceholderCard store="Steam" url={game.steamUrl} />
             ) : (
               <MissingCard platform="Steam" />
             )}
 
             {/* Epic Games */}
             {epicPrice ? (
-              <PriceCard store="Epic Games" icon="⚡"
+              <PriceCard store="Epic Games"
                 price={epicPrice.price} original={epicPrice.original}
                 discount={epicPrice.discount} isFree={epicPrice.isFree}
                 url={epicPrice.url || game.epicUrl}
@@ -421,14 +421,14 @@ export default function RawgGamePage({ params }) {
             ) : epicLoading ? (
               <LoadingPriceRow />
             ) : game.hasEpic ? (
-              <PlaceholderCard store="Epic Games" icon="⚡" url={game.epicUrl} />
+              <PlaceholderCard store="Epic Games" url={game.epicUrl} />
             ) : (
               <MissingCard platform="Epic Games" />
             )}
 
             {/* GOG */}
             {gogPrice ? (
-              <PriceCard store="GOG" icon="🌌"
+              <PriceCard store="GOG"
                 price={gogPrice.price} original={gogPrice.original}
                 discount={gogPrice.discount} isFree={gogPrice.isFree}
                 url={gogPrice.url}
@@ -446,7 +446,6 @@ export default function RawgGamePage({ params }) {
                 <PriceCard
                   key={p.storeId || p.name}
                   store={p.isFree || p.price === 0 ? 'Game Pass' : 'Xbox Store'}
-                  icon="🎮"
                   price={p.price} original={p.original} discount={p.discount}
                   isFree={p.isFree} url={p.url}
                   highlight={isCheaperOption && bestStoreKey === `Xbox_${p.storeId}`}
@@ -456,7 +455,7 @@ export default function RawgGamePage({ params }) {
 
             {/* Humble Bundle */}
             {humblePrice ? (
-              <PriceCard store="Humble Bundle" icon="🙏"
+              <PriceCard store="Humble Bundle"
                 price={humblePrice.price} original={humblePrice.original}
                 discount={humblePrice.discount} isFree={humblePrice.isFree}
                 url={humblePrice.url}
@@ -468,27 +467,27 @@ export default function RawgGamePage({ params }) {
 
             {/* Xbox / Microsoft Store Fallback */}
             {!xboxPrices.length && game.xboxUrl && (
-              <PlaceholderCard store="Xbox / Microsoft Store" icon="🎮" url={game.xboxUrl} />
+              <PlaceholderCard store="Xbox / Microsoft Store" url={game.xboxUrl} />
             )}
 
             {/* GOG Fallback */}
             {!gogPrice && game.gogUrl && (
-              <PlaceholderCard store="GOG Store" icon="🌌" url={game.gogUrl} />
+              <PlaceholderCard store="GOG Store" url={game.gogUrl} />
             )}
 
             {/* PlayStation Store Fallback */}
             {game.playstationUrl && (
-              <PlaceholderCard store="PlayStation Store" icon="🟦" url={game.playstationUrl} />
+              <PlaceholderCard store="PlayStation Store" url={game.playstationUrl} />
             )}
 
             {/* Nintendo eShop Fallback */}
             {game.nintendoUrl && (
-              <PlaceholderCard store="Nintendo eShop" icon="🔴" url={game.nintendoUrl} />
+              <PlaceholderCard store="Nintendo eShop" url={game.nintendoUrl} />
             )}
 
             {/* Resmi Web Sitesi (Minecraft vb. özel oyunlar için) */}
             {game.officialUrl && (
-              <PlaceholderCard store="Resmi Web Sitesi" icon="🌐" url={game.officialUrl} />
+              <PlaceholderCard store="Resmi Web Sitesi" url={game.officialUrl} />
             )}
 
             <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 10, lineHeight: 1.5 }}>
@@ -538,6 +537,88 @@ function findBestMatch(gameName, results) {
   return hit || null;
 }
 
+// ── Mağaza logosu ────────────────────────────────────────────────────────────
+function StoreLogo({ store }) {
+  const s = (store || '').toLowerCase();
+  const base = {
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+  };
+
+  if (s.includes('steam')) return (
+    <span style={{ ...base, background: '#1b2838' }}>
+      <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path fill="#c7d5e0" d="M11.979 0C5.678 0 .511 4.86.022 11.037l6.432 2.658c.545-.371 1.203-.59 1.912-.59.063 0 .125.004.188.006l2.861-4.142V8.91c0-2.495 2.028-4.524 4.524-4.524 2.494 0 4.524 2.031 4.524 4.527s-2.03 4.525-4.524 4.525h-.105l-4.076 2.909c0 .052.004.105.004.159 0 1.875-1.515 3.396-3.39 3.396-1.635 0-3.016-1.173-3.331-2.727L.436 15.27C1.862 20.307 6.486 24 11.979 24c6.627 0 11.999-5.373 11.999-12S18.605 0 11.979 0zM7.54 18.21l-1.473-.61c.262.543.714.999 1.314 1.25 1.297.539 2.793-.076 3.332-1.375.263-.63.264-1.319.005-1.949s-.75-1.121-1.377-1.383c-.624-.26-1.29-.249-1.878-.03l1.523.63c.956.4 1.409 1.503 1.009 2.459-.397.957-1.501 1.41-2.455 1.008zm11.415-9.303c0-1.662-1.353-3.015-3.015-3.015-1.665 0-3.015 1.353-3.015 3.015 0 1.665 1.35 3.015 3.015 3.015 1.663 0 3.015-1.35 3.015-3.015zm-5.273-.005c0-1.252 1.013-2.266 2.265-2.266 1.249 0 2.266 1.014 2.266 2.266 0 1.251-1.017 2.265-2.266 2.265-1.253 0-2.265-1.014-2.265-2.265z"/>
+      </svg>
+    </span>
+  );
+
+  if (s.includes('epic')) return (
+    <span style={{ ...base, background: '#000' }}>
+      <svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path fill="#fff" d="M3.623 0v18.954l2.507 1.597V3.207h9.123v3.21H9.118v2.674h5.628v3.21H9.118v3.474h6.231v3.21H6.23V24l14.148-4.625V0z"/>
+      </svg>
+    </span>
+  );
+
+  if (s.includes('gog')) return (
+    <span style={{ ...base, background: '#7b2fbe' }}>
+      <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path fill="#fff" d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 3.6c4.638 0 8.4 3.762 8.4 8.4s-3.762 8.4-8.4 8.4S3.6 16.638 3.6 12 7.362 3.6 12 3.6zm-3 5.4v6h1.8v-2.4H12v2.4h1.8V9H12v2.4h-1.2V9H9zm6 0v6h1.8V9H15z"/>
+      </svg>
+    </span>
+  );
+
+  if (s.includes('game pass')) return (
+    <span style={{ ...base, background: '#107c10' }}>
+      <svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path fill="#fff" d="M4.102 5.4C2.116 7.17 1 9.455 1 12s1.116 4.83 3.102 6.6C5.976 20.262 8.838 21 12 21s6.024-.738 7.898-2.4C21.884 16.83 23 14.545 23 12s-1.116-4.83-3.102-6.6C17.924 3.738 15.162 3 12 3S6.076 3.738 4.102 5.4zm10.126 3.42l2.064 2.064-4.356 4.296-2.124-2.124-.96.96L7.07 12l5.802-5.82 1.356 2.64zM6.48 9.9l1.782 1.782L6.48 13.44l-1.782-1.782L6.48 9.9z"/>
+      </svg>
+    </span>
+  );
+
+  if (s.includes('xbox') || s.includes('microsoft')) return (
+    <span style={{ ...base, background: '#107c10' }}>
+      <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path fill="#fff" d="M4.102 5.4C2.116 7.17 1 9.455 1 12s1.116 4.83 3.102 6.6C5.976 20.262 8.838 21 12 21s6.024-.738 7.898-2.4C21.884 16.83 23 14.545 23 12s-1.116-4.83-3.102-6.6C17.924 3.738 15.162 3 12 3S6.076 3.738 4.102 5.4zm10.126 3.42l2.064 2.064-4.356 4.296-2.124-2.124-.96.96L7.07 12l5.802-5.82 1.356 2.64zM6.48 9.9l1.782 1.782L6.48 13.44l-1.782-1.782L6.48 9.9z"/>
+      </svg>
+    </span>
+  );
+
+  if (s.includes('humble')) return (
+    <span style={{ ...base, background: '#cc2727' }}>
+      <svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path fill="#fff" d="M12 0L1.5 6v12L12 24l10.5-6V6L12 0zm0 3.273l7.5 4.318v8.818L12 20.727l-7.5-4.318V7.591L12 3.273zM8 8v8h2v-3h4v3h2V8h-2v3h-4V8H8z"/>
+      </svg>
+    </span>
+  );
+
+  if (s.includes('playstation')) return (
+    <span style={{ ...base, background: '#003791' }}>
+      <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path fill="#fff" d="M8.984 2.596v14.127l3.5 1.17V6.16s-.047-1.06.916-.76c.96.3.868 1.25.868 1.25v5.34s2.127.71 3.5-.8c.75-1.03.616-2.93.616-2.93S18.35 5.4 15.4 4.42c-1.73-.57-6.416-1.824-6.416-1.824zm2.5 14.886L5.8 19.07v1.73l5.684 1.904v-5.222zm5.616.584l-2.1.74v1.43l2.1-.7v-1.47zm2.9-.97l-2.1.74v1.43l2.1-.7v-1.47z"/>
+      </svg>
+    </span>
+  );
+
+  if (s.includes('nintendo')) return (
+    <span style={{ ...base, background: '#e60012' }}>
+      <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path fill="#fff" d="M9 2C5.14 2 2 5.14 2 9v6c0 3.86 3.14 7 7 7h6c3.86 0 7-3.14 7-7V9c0-3.86-3.14-7-7-7H9zm0 2h6c2.757 0 5 2.243 5 5v6c0 2.757-2.243 5-5 5H9c-2.757 0-5-2.243-5-5V9c0-2.757 2.243-5 5-5zm-1 3v10l7-5-7-5z"/>
+      </svg>
+    </span>
+  );
+
+  return (
+    <span style={{ ...base, background: 'var(--bg-input)' }}>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
+        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+      </svg>
+    </span>
+  );
+}
+
 // ── Yükleniyor satırı ───────────────────────────────────────────────────────
 function LoadingPriceRow() {
   return (
@@ -556,7 +637,7 @@ function LoadingPriceRow() {
 }
 
 // ── Fiyatlı platform kartı ───────────────────────────────────────────────────
-function PriceCard({ store, icon, price, original, discount, isFree: isFreeOverride, url, highlight = false }) {
+function PriceCard({ store, price, original, discount, isFree: isFreeOverride, url, highlight = false }) {
   const isFree   = isFreeOverride || price === 0;
   const isOnSale = discount > 0 && !isFree;
 
@@ -598,8 +679,8 @@ function PriceCard({ store, icon, price, original, discount, isFree: isFreeOverr
           }
         }}
       >
-        <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, minWidth: 0 }}>
-          <span>{icon}</span>
+        <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, minWidth: 0 }}>
+          <StoreLogo store={store} />
           <span style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>{store}</span>
           {highlight && (
             <span style={{
@@ -632,7 +713,7 @@ function PriceCard({ store, icon, price, original, discount, isFree: isFreeOverr
 }
 
 // ── Fiyat yok ama link var ───────────────────────────────────────────────────
-function PlaceholderCard({ store, icon, url }) {
+function PlaceholderCard({ store, url }) {
   return (
     <a href={url || '#'} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', display: 'block', marginBottom: 8 }}>
       <div className="glass-card" style={{
@@ -652,8 +733,8 @@ function PlaceholderCard({ store, icon, url }) {
           e.currentTarget.style.transform = 'none';
         }}
       >
-        <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, minWidth: 0 }}>
-          <span>{icon}</span>
+        <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, minWidth: 0 }}>
+          <StoreLogo store={store} />
           <span style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>{store}</span>
         </span>
         <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 500, flexShrink: 0 }}>Mağazaya Git →</span>
