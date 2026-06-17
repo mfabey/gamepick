@@ -357,9 +357,9 @@ export default function Home() {
                     onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 15px 36px rgba(0,0,0,0.5)'; }}
                     onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 10px 28px rgba(0,0,0,0.35)'; }}
                   >
-                    {/* Blended Oyun Görseli */}
+                    {/* Oyun Görseli */}
                     {g.image && (
-                      <div style={{ position: 'absolute', inset: 0, opacity: 0.38, mixBlendMode: 'luminosity' }}>
+                      <div style={{ position: 'absolute', inset: 0, zIndex: 1 }}>
                         <Image src={g.image} alt="" fill sizes="168px" style={{ objectFit: 'cover' }} unoptimized />
                       </div>
                     )}
@@ -369,9 +369,10 @@ export default function Home() {
                       position: 'absolute', right: -10, top: -20,
                       fontSize: 130, fontWeight: 900,
                       fontFamily: 'var(--font-heading)',
-                      color: 'rgba(255, 255, 255, 0.05)',
+                      color: 'rgba(255, 255, 255, 0.12)',
                       userSelect: 'none', pointerEvents: 'none',
                       lineHeight: 1,
+                      zIndex: 2,
                     }}>
                       {firstLetter}
                     </div>
@@ -381,18 +382,18 @@ export default function Home() {
                       position: 'absolute', inset: 0,
                       background: 'linear-gradient(135deg, rgba(255,255,255,0) 32%, rgba(255,255,255,0.06) 42%, rgba(255,255,255,0.22) 50%, rgba(255,255,255,0.06) 58%, rgba(255,255,255,0) 68%)',
                       pointerEvents: 'none',
-                      zIndex: 2,
+                      zIndex: 3,
                     }} />
 
                     {/* Alt Gölgelendirme ve Başlık */}
                     <div style={{
                       position: 'absolute', inset: 0,
-                      background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.2) 40%, rgba(0,0,0,0) 100%)',
+                      background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 45%, rgba(0,0,0,0) 100%)',
                       display: 'flex', alignItems: 'flex-end', padding: 14,
-                      zIndex: 3,
+                      zIndex: 4,
                     }}>
                       <span style={{
-                        color: themeInfo.text, fontWeight: 700, fontSize: 13.5,
+                        color: '#fff', fontWeight: 700, fontSize: 13.5,
                         lineHeight: 1.2, textShadow: '0 1px 3px rgba(0,0,0,0.6)',
                         fontFamily: 'var(--font-body)',
                         letterSpacing: '0.1px',
