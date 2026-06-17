@@ -87,7 +87,7 @@ export default function NavBar() {
           </button>
 
           {/* Ortalı logo */}
-          <Link href="/" style={{
+          <Link href="/" onClick={() => { if (typeof window !== 'undefined') sessionStorage.removeItem('games_page_state'); }} style={{
             display: 'flex', alignItems: 'center', gap: 9, cursor: 'pointer',
             position: 'absolute', left: '50%', transform: 'translateX(-50%)',
             color: 'var(--text)',
@@ -186,6 +186,7 @@ export default function NavBar() {
                 className="bottom-nav-link"
                 onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; }}
                 onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; }}
+                onClick={() => { if (typeof window !== 'undefined') sessionStorage.removeItem('games_page_state'); }}
                 style={{
                   position: 'relative', zIndex: 1,
                   padding: '13px 27px', borderRadius: 999,

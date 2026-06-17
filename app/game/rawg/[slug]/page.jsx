@@ -3,10 +3,12 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAuth, normalizeName } from '../../../context/AuthContext';
 
 export default function RawgGamePage({ params }) {
   const { slug } = params;
+  const router = useRouter();
   const { ownedGames, xboxOwnedGames = new Set(), gamePassGames = new Set() } = useAuth();
 
   const [game,         setGame]         = useState(null);
@@ -26,6 +28,18 @@ export default function RawgGamePage({ params }) {
   const [error,        setError]        = useState(null);
   const [imgIdx,       setImgIdx]       = useState(0);
   const [backLink,     setBackLink]     = useState({ href: '/games', label: 'Oyunlara Dön' });
+
+  const handleBackClick = (e) => {
+    if (typeof window !== 'undefined' && document.referrer) {
+      try {
+        const refUrl = new URL(document.referrer);
+        if (refUrl.host === window.location.host) {
+          e.preventDefault();
+          router.back();
+        }
+      } catch (err) {}
+    }
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined' && document.referrer) {
@@ -180,7 +194,7 @@ export default function RawgGamePage({ params }) {
       <p style={{ fontSize: 48, marginBottom: 12 }}>😕</p>
       <p style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>Oyun bulunamadı</p>
       <p style={{ color: 'var(--text-3)', marginBottom: 24 }}>{error || 'Bilinmeyen hata'}</p>
-      <Link href={backLink.href} style={{ padding: '10px 24px', background: 'var(--accent)', color: '#fff', borderRadius: 10, textDecoration: 'none', fontWeight: 600 }}>
+      <Link href={backLink.href} onClick={handleBackClick} style={{ padding: '10px 24px', background: 'var(--accent)', color: '#fff', borderRadius: 10, textDecoration: 'none', fontWeight: 600 }}>
         ← {backLink.label}
       </Link>
     </div>
@@ -233,7 +247,7 @@ export default function RawgGamePage({ params }) {
       )}
 
       <div className="container" style={{ paddingTop: 28, paddingBottom: 60, maxWidth: 960, position: 'relative', zIndex: 1 }}>
-        <Link href={backLink.href} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--text-3)', fontSize: 13, textDecoration: 'none', marginBottom: 20 }}>
+        <Link href={backLink.href} onClick={handleBackClick} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--text-3)', fontSize: 13, textDecoration: 'none', marginBottom: 20 }}>
           ← {backLink.label}
         </Link>
 

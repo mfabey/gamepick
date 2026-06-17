@@ -53,14 +53,105 @@ function GamesList() {
   const [loading,     setLoading]     = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [searchFocus, setSearchFocus] = useState(false);
+  const [isRestored,  setIsRestored]  = useState(false);
 
   const debounceRef = useRef(null);
   const sentinelRef = useRef(null);
   const scrollRef   = useRef({ page: 1, fetching: false, canMore: false, seenIds: new Set(), section: '', query: '', genre: '' });
 
+  // Tarayıcı geçmişinden/sessionStorage'dan durum geri yükleme
+  useEffect(() => {
+    const saved = sessionStorage.getItem('games_page_state');
+    if (saved) {
+      try {
+        const state = JSON.parse(saved);
+        const currentSearch = window.location.search;
+        if (state.search === currentSearch) {
+          if (state.query !== undefined) setQuery(state.query);
+          if (state.section !== undefined) setSection(state.section);
+          if (state.genre !== undefined) setGenre(state.genre);
+          if (state.price !== undefined) setPrice(state.price);
+          if (state.games !== undefined) setGames(state.games);
+          if (state.scrollRefVal !== undefined) {
+            scrollRef.current = {
+              ...scrollRef.current,
+              ...state.scrollRefVal,
+              seenIds: new Set(state.scrollRefVal.seenIds || [])
+            };
+          }
+          setIsRestored(true);
+
+          if (state.scrollPosition) {
+            setTimeout(() => {
+              window.scrollTo({ top: state.scrollPosition, behavior: 'instant' });
+            }, 100);
+          }
+          return;
+        }
+      } catch (e) {}
+    }
+    sessionStorage.removeItem('games_page_state');
+  }, []);
+
+  // Durumu sessionStorage'a kaydetme
+  useEffect(() => {
+    const saveState = () => {
+      const state = {
+        search: window.location.search,
+        query,
+        section,
+        genre,
+        price,
+        games,
+        scrollRefVal: {
+          ...scrollRef.current,
+          seenIds: Array.from(scrollRef.current.seenIds || [])
+        },
+        scrollPosition: window.scrollY
+      };
+      sessionStorage.setItem('games_page_state', JSON.stringify(state));
+    };
+
+    saveState();
+
+    window.addEventListener('beforeunload', saveState);
+    return () => {
+      saveState();
+      window.removeEventListener('beforeunload', saveState);
+    };
+  }, [query, section, genre, price, games]);
+
+  // Kaydırma (scroll) konumunu anlık güncelleme (sessionStorage optimize)
+  useEffect(() => {
+    const handleScrollSave = () => {
+      const saved = sessionStorage.getItem('games_page_state');
+      if (saved) {
+        try {
+          const state = JSON.parse(saved);
+          state.scrollPosition = window.scrollY;
+          sessionStorage.setItem('games_page_state', JSON.stringify(state));
+        } catch (e) {}
+      }
+    };
+    window.addEventListener('scroll', handleScrollSave, { passive: true });
+    return () => window.removeEventListener('scroll', handleScrollSave);
+  }, []);
+
   useEffect(() => {
     const sec = searchParams.get('section') || '';
     const q   = searchParams.get('q') || '';
+    
+    // Eğer restored durumdaysak URL değişiklik takibini ilk seferde pas geç
+    const saved = sessionStorage.getItem('games_page_state');
+    if (saved) {
+      try {
+        const state = JSON.parse(saved);
+        if (state.search === window.location.search) {
+          return;
+        }
+      } catch (e) {}
+    }
+
     setSection(sec);
     setQuery(q);
     setGenre('');
@@ -76,6 +167,10 @@ function GamesList() {
   }, []);
 
   const fetchGames = useCallback(async () => {
+    if (isRestored) {
+      setIsRestored(false);
+      return;
+    }
     const ref    = scrollRef.current;
     ref.page     = 1;
     ref.fetching = false;
@@ -93,7 +188,7 @@ function GamesList() {
       ref.canMore = (data.total || 0) > PAGE_SIZE;
     } catch {}
     finally { setLoading(false); }
-  }, [section, query, genre, buildUrl]);
+  }, [section, query, genre, buildUrl, isRestored]);
 
   const loadMore = useCallback(async () => {
     const ref = scrollRef.current;
@@ -120,8 +215,8 @@ function GamesList() {
   }, [buildUrl]);
 
   useEffect(() => {
-    if (query.trim()) { setGames([]); setLoading(true); }
-  }, [query]);
+    if (query.trim() && !isRestored) { setGames([]); setLoading(true); }
+  }, [query, isRestored]);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
