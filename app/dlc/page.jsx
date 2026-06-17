@@ -106,6 +106,12 @@ export default function DlcPage() {
     return () => { window.removeEventListener('scroll', handleScroll); clearTimeout(t); };
   }, [loadMore]);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('prev_catalog', '/dlc');
+    }
+  }, []);
+
   const resetFilters = () => { setQuery(''); setSection(''); };
 
   return (

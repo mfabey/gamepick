@@ -50,6 +50,12 @@ export default function Home() {
   const { user } = useAuth();
   const router   = useRouter();
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('prev_catalog', '/');
+    }
+  }, []);
+
   // Arama
   const [query,       setQuery]       = useState('');
   const [suggestions, setSuggestions] = useState([]);

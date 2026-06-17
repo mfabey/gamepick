@@ -30,25 +30,22 @@ export default function RawgGamePage({ params }) {
   const [backLink,     setBackLink]     = useState({ href: '/games', label: 'Oyunlara Dön' });
 
   const handleBackClick = (e) => {
-    if (typeof window !== 'undefined' && document.referrer) {
-      try {
-        const refUrl = new URL(document.referrer);
-        if (refUrl.host === window.location.host) {
-          e.preventDefault();
-          router.back();
-        }
-      } catch (err) {}
+    if (typeof window !== 'undefined' && sessionStorage.getItem('prev_catalog')) {
+      e.preventDefault();
+      router.back();
     }
   };
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && document.referrer) {
-      try {
-        const refUrl = new URL(document.referrer);
-        if (refUrl.pathname === '/' || refUrl.pathname === '') {
-          setBackLink({ href: '/', label: 'Ana Sayfaya Dön' });
-        }
-      } catch (e) {}
+    if (typeof window !== 'undefined') {
+      const prev = sessionStorage.getItem('prev_catalog');
+      if (prev === '/') {
+        setBackLink({ href: '/', label: 'Ana Sayfaya Dön' });
+      } else if (prev === '/dlc') {
+        setBackLink({ href: '/dlc', label: 'DLC Bölümüne Dön' });
+      } else {
+        setBackLink({ href: '/games', label: 'Oyunlara Dön' });
+      }
     }
   }, []);
 

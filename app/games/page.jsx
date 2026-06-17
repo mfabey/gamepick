@@ -59,6 +59,12 @@ function GamesList() {
   const sentinelRef = useRef(null);
   const scrollRef   = useRef({ page: 1, fetching: false, canMore: false, seenIds: new Set(), section: '', query: '', genre: '' });
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('prev_catalog', '/games');
+    }
+  }, []);
+
   // Tarayıcı geçmişinden/sessionStorage'dan durum geri yükleme
   useEffect(() => {
     const saved = sessionStorage.getItem('games_page_state');
