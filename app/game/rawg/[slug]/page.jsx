@@ -3,12 +3,10 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useAuth, normalizeName } from '../../../context/AuthContext';
 
 export default function RawgGamePage({ params }) {
   const { slug } = params;
-  const router = useRouter();
   const { ownedGames, xboxOwnedGames = new Set(), gamePassGames = new Set() } = useAuth();
 
   const [game,         setGame]         = useState(null);
@@ -27,27 +25,17 @@ export default function RawgGamePage({ params }) {
   const [loading,      setLoading]      = useState(true);
   const [error,        setError]        = useState(null);
   const [imgIdx,       setImgIdx]       = useState(0);
-  const [backLink,     setBackLink]     = useState({ href: '/games', label: 'Oyunlara Dön' });
 
-  const handleBackClick = (e) => {
-    if (typeof window !== 'undefined' && sessionStorage.getItem('prev_catalog')) {
-      e.preventDefault();
-      router.back();
-    }
-  };
-
+  // Alt bara "şu an incelenen oyun" bilgisini bildir
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const prev = sessionStorage.getItem('prev_catalog');
-      if (prev === '/') {
-        setBackLink({ href: '/', label: 'Ana Sayfaya Dön' });
-      } else if (prev === '/dlc') {
-        setBackLink({ href: '/dlc', label: 'DLC Bölümüne Dön' });
-      } else {
-        setBackLink({ href: '/games', label: 'Oyunlara Dön' });
-      }
+    if (typeof window === 'undefined') return;
+    if (game) {
+      window.dispatchEvent(new CustomEvent('gamepick:viewing', {
+        detail: { name: game.name, image: game.image || null },
+      }));
     }
-  }, []);
+    return () => { window.dispatchEvent(new CustomEvent('gamepick:viewing', { detail: null })); };
+  }, [game]);
 
   useEffect(() => {
     if (!slug) return;
@@ -191,8 +179,8 @@ export default function RawgGamePage({ params }) {
       <p style={{ fontSize: 48, marginBottom: 12 }}>😕</p>
       <p style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>Oyun bulunamadı</p>
       <p style={{ color: 'var(--text-3)', marginBottom: 24 }}>{error || 'Bilinmeyen hata'}</p>
-      <Link href={backLink.href} onClick={handleBackClick} style={{ padding: '10px 24px', background: 'var(--accent)', color: '#fff', borderRadius: 10, textDecoration: 'none', fontWeight: 600 }}>
-        ← {backLink.label}
+      <Link href="/games" style={{ padding: '10px 24px', background: 'var(--accent)', color: '#fff', borderRadius: 10, textDecoration: 'none', fontWeight: 600 }}>
+        ← Oyunlara Dön
       </Link>
     </div>
   );
@@ -244,8 +232,8 @@ export default function RawgGamePage({ params }) {
       )}
 
       <div className="container" style={{ paddingTop: 28, paddingBottom: 60, maxWidth: 960, position: 'relative', zIndex: 1 }}>
-        <Link href={backLink.href} onClick={handleBackClick} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--text-3)', fontSize: 13, textDecoration: 'none', marginBottom: 20 }}>
-          ← {backLink.label}
+        <Link href="/games" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--text-3)', fontSize: 13, textDecoration: 'none', marginBottom: 20 }}>
+          ← Oyunlara Dön
         </Link>
 
       {/* Başlık ve Rozetler (Mobil Uyumlu) */}
@@ -397,7 +385,7 @@ export default function RawgGamePage({ params }) {
               steamLoading
                 ? <LoadingPriceRow />
                 : (steamPrice && steamPrice.isAvailable !== false)
-                  ? <PriceCard store="Steam"
+                  ? <PriceCard store="Steam" icon="💻"
                       price={steamPrice.price} original={steamPrice.original}
                       discount={steamPrice.discount} isFree={steamPrice.isFree}
                       url={game.steamUrl}
@@ -405,14 +393,14 @@ export default function RawgGamePage({ params }) {
                     />
                   : steamPrice?.isAvailable === false
                     ? <MissingCard platform="Steam" />
-                    : <PlaceholderCard store="Steam" url={game.steamUrl} />
+                    : <PlaceholderCard store="Steam" icon="💻" url={game.steamUrl} />
             ) : (
               <MissingCard platform="Steam" />
             )}
 
             {/* Epic Games */}
             {epicPrice ? (
-              <PriceCard store="Epic Games"
+              <PriceCard store="Epic Games" icon="⚡"
                 price={epicPrice.price} original={epicPrice.original}
                 discount={epicPrice.discount} isFree={epicPrice.isFree}
                 url={epicPrice.url || game.epicUrl}
@@ -421,14 +409,14 @@ export default function RawgGamePage({ params }) {
             ) : epicLoading ? (
               <LoadingPriceRow />
             ) : game.hasEpic ? (
-              <PlaceholderCard store="Epic Games" url={game.epicUrl} />
+              <PlaceholderCard store="Epic Games" icon="⚡" url={game.epicUrl} />
             ) : (
               <MissingCard platform="Epic Games" />
             )}
 
             {/* GOG */}
             {gogPrice ? (
-              <PriceCard store="GOG"
+              <PriceCard store="GOG" icon="🌌"
                 price={gogPrice.price} original={gogPrice.original}
                 discount={gogPrice.discount} isFree={gogPrice.isFree}
                 url={gogPrice.url}
@@ -446,6 +434,7 @@ export default function RawgGamePage({ params }) {
                 <PriceCard
                   key={p.storeId || p.name}
                   store={p.isFree || p.price === 0 ? 'Game Pass' : 'Xbox Store'}
+                  icon="🎮"
                   price={p.price} original={p.original} discount={p.discount}
                   isFree={p.isFree} url={p.url}
                   highlight={isCheaperOption && bestStoreKey === `Xbox_${p.storeId}`}
@@ -455,7 +444,7 @@ export default function RawgGamePage({ params }) {
 
             {/* Humble Bundle */}
             {humblePrice ? (
-              <PriceCard store="Humble Bundle"
+              <PriceCard store="Humble Bundle" icon="🙏"
                 price={humblePrice.price} original={humblePrice.original}
                 discount={humblePrice.discount} isFree={humblePrice.isFree}
                 url={humblePrice.url}
@@ -467,27 +456,27 @@ export default function RawgGamePage({ params }) {
 
             {/* Xbox / Microsoft Store Fallback */}
             {!xboxPrices.length && game.xboxUrl && (
-              <PlaceholderCard store="Xbox / Microsoft Store" url={game.xboxUrl} />
+              <PlaceholderCard store="Xbox / Microsoft Store" icon="🎮" url={game.xboxUrl} />
             )}
 
             {/* GOG Fallback */}
             {!gogPrice && game.gogUrl && (
-              <PlaceholderCard store="GOG Store" url={game.gogUrl} />
+              <PlaceholderCard store="GOG Store" icon="🌌" url={game.gogUrl} />
             )}
 
             {/* PlayStation Store Fallback */}
             {game.playstationUrl && (
-              <PlaceholderCard store="PlayStation Store" url={game.playstationUrl} />
+              <PlaceholderCard store="PlayStation Store" icon="🟦" url={game.playstationUrl} />
             )}
 
             {/* Nintendo eShop Fallback */}
             {game.nintendoUrl && (
-              <PlaceholderCard store="Nintendo eShop" url={game.nintendoUrl} />
+              <PlaceholderCard store="Nintendo eShop" icon="🔴" url={game.nintendoUrl} />
             )}
 
             {/* Resmi Web Sitesi (Minecraft vb. özel oyunlar için) */}
             {game.officialUrl && (
-              <PlaceholderCard store="Resmi Web Sitesi" url={game.officialUrl} />
+              <PlaceholderCard store="Resmi Web Sitesi" icon="🌐" url={game.officialUrl} />
             )}
 
             <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 10, lineHeight: 1.5 }}>
@@ -537,67 +526,6 @@ function findBestMatch(gameName, results) {
   return hit || null;
 }
 
-// ── Mağaza logosu ────────────────────────────────────────────────────────────
-function StoreLogo({ store }) {
-  const s = (store || '').toLowerCase();
-  const base = {
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    width: 32, height: 32, borderRadius: 8, flexShrink: 0,
-    fontWeight: 800, color: '#fff', fontFamily: 'Arial, sans-serif', letterSpacing: '-0.5px',
-  };
-
-  if (s.includes('steam')) return (
-    <span style={{ ...base, background: '#1b2838' }}>
-      <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path fill="#c7d5e0" d="M11.979 0C5.678 0 .511 4.86.022 11.037l6.432 2.658c.545-.371 1.203-.59 1.912-.59.063 0 .125.004.188.006l2.861-4.142V8.91c0-2.495 2.028-4.524 4.524-4.524 2.494 0 4.524 2.031 4.524 4.527s-2.03 4.525-4.524 4.525h-.105l-4.076 2.909c0 .052.004.105.004.159 0 1.875-1.515 3.396-3.39 3.396-1.635 0-3.016-1.173-3.331-2.727L.436 15.27C1.862 20.307 6.486 24 11.979 24c6.627 0 11.999-5.373 11.999-12S18.605 0 11.979 0zM7.54 18.21l-1.473-.61c.262.543.714.999 1.314 1.25 1.297.539 2.793-.076 3.332-1.375.263-.63.264-1.319.005-1.949s-.75-1.121-1.377-1.383c-.624-.26-1.29-.249-1.878-.03l1.523.63c.956.4 1.409 1.503 1.009 2.459-.397.957-1.501 1.41-2.455 1.008zm11.415-9.303c0-1.662-1.353-3.015-3.015-3.015-1.665 0-3.015 1.353-3.015 3.015 0 1.665 1.35 3.015 3.015 3.015 1.663 0 3.015-1.35 3.015-3.015zm-5.273-.005c0-1.252 1.013-2.266 2.265-2.266 1.249 0 2.266 1.014 2.266 2.266 0 1.251-1.017 2.265-2.266 2.265-1.253 0-2.265-1.014-2.265-2.265z"/>
-      </svg>
-    </span>
-  );
-
-  if (s.includes('epic')) return (
-    <span style={{ ...base, background: '#000' }}>
-      <svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path fill="#fff" d="M3.623 0v18.954l2.507 1.597V3.207h9.123v3.21H9.118v2.674h5.628v3.21H9.118v3.474h6.231v3.21H6.23V24l14.148-4.625V0z"/>
-      </svg>
-    </span>
-  );
-
-  if (s.includes('gog')) return (
-    <span style={{ ...base, background: '#7b2fbe', fontSize: 10 }}>GOG</span>
-  );
-
-  if (s.includes('game pass')) return (
-    <span style={{ ...base, background: '#107c10', fontSize: 9, lineHeight: 1.1, textAlign: 'center' }}>
-      Game{'\n'}Pass
-    </span>
-  );
-
-  if (s.includes('xbox') || s.includes('microsoft')) return (
-    <span style={{ ...base, background: '#107c10', fontSize: 20 }}>X</span>
-  );
-
-  if (s.includes('humble')) return (
-    <span style={{ ...base, background: '#cc2727', fontSize: 10 }}>HB</span>
-  );
-
-  if (s.includes('playstation')) return (
-    <span style={{ ...base, background: '#003791', fontSize: 11 }}>PS</span>
-  );
-
-  if (s.includes('nintendo')) return (
-    <span style={{ ...base, background: '#e60012', fontSize: 16 }}>N</span>
-  );
-
-  return (
-    <span style={{ ...base, background: 'var(--bg-input)' }}>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
-        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-      </svg>
-    </span>
-  );
-}
-
 // ── Yükleniyor satırı ───────────────────────────────────────────────────────
 function LoadingPriceRow() {
   return (
@@ -616,7 +544,7 @@ function LoadingPriceRow() {
 }
 
 // ── Fiyatlı platform kartı ───────────────────────────────────────────────────
-function PriceCard({ store, price, original, discount, isFree: isFreeOverride, url, highlight = false }) {
+function PriceCard({ store, icon, price, original, discount, isFree: isFreeOverride, url, highlight = false }) {
   const isFree   = isFreeOverride || price === 0;
   const isOnSale = discount > 0 && !isFree;
 
@@ -658,8 +586,8 @@ function PriceCard({ store, price, original, discount, isFree: isFreeOverride, u
           }
         }}
       >
-        <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, minWidth: 0 }}>
-          <StoreLogo store={store} />
+        <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, minWidth: 0 }}>
+          <span>{icon}</span>
           <span style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>{store}</span>
           {highlight && (
             <span style={{
@@ -676,10 +604,10 @@ function PriceCard({ store, price, original, discount, isFree: isFreeOverride, u
             <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--green)' }}>Ücretsiz</span>
           ) : (
             <>
-              <span style={{ fontWeight: 700, fontSize: 15, color: isOnSale ? 'var(--amber)' : 'var(--text)' }}>{price} ₺</span>
+              <span style={{ fontWeight: 700, fontSize: 15, color: isOnSale ? 'var(--amber)' : 'var(--text)' }}>₺{price}</span>
               {isOnSale && (
                 <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
-                  <span style={{ textDecoration: 'line-through' }}>{original} ₺</span>
+                  <span style={{ textDecoration: 'line-through' }}>₺{original}</span>
                   {' '}<span style={{ color: 'var(--amber)' }}>-%{discount}</span>
                 </div>
               )}
@@ -692,7 +620,7 @@ function PriceCard({ store, price, original, discount, isFree: isFreeOverride, u
 }
 
 // ── Fiyat yok ama link var ───────────────────────────────────────────────────
-function PlaceholderCard({ store, url }) {
+function PlaceholderCard({ store, icon, url }) {
   return (
     <a href={url || '#'} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', display: 'block', marginBottom: 8 }}>
       <div className="glass-card" style={{
@@ -712,8 +640,8 @@ function PlaceholderCard({ store, url }) {
           e.currentTarget.style.transform = 'none';
         }}
       >
-        <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, minWidth: 0 }}>
-          <StoreLogo store={store} />
+        <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, minWidth: 0 }}>
+          <span>{icon}</span>
           <span style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>{store}</span>
         </span>
         <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 500, flexShrink: 0 }}>Mağazaya Git →</span>

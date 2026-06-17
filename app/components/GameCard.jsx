@@ -22,23 +22,17 @@ function EpicIcon({ size = 16 }) {
   );
 }
 
-export default function GameCard({ game, compact = false, onPriceLoaded }) {
+export default function GameCard({ game, compact = false }) {
   const { ownedGames, xboxOwnedGames = new Set(), gamePassGames = new Set() } = useAuth();
   const normalizedNameStr = normalizeName(game.name);
   const isOwnedSteam = ownedGames.size > 0 && ownedGames.has(normalizedNameStr);
   const isOwnedXbox  = xboxOwnedGames.size > 0 && xboxOwnedGames.has(normalizedNameStr);
   const isGamePass   = gamePassGames.size > 0 && gamePassGames.has(normalizedNameStr);
   const [hovered,      setHovered]      = useState(false);
-  const [livePrice,    setLivePrice]    = useState(game.priceInfo || null);
+  const [livePrice,    setLivePrice]    = useState(null);
   const [priceLoading, setPriceLoading] = useState(false);
-  const [priceDone,    setPriceDone]    = useState(!!game.priceInfo);
+  const [priceDone,    setPriceDone]    = useState(false);
   const cardRef = useRef(null);
-
-  useEffect(() => {
-    if (game.priceInfo) {
-      setPriceDone(true);
-    }
-  }, [game.priceInfo]);
 
   // Kart görünüme girince Steam fiyatı lazy-load et
   useEffect(() => {
@@ -58,23 +52,17 @@ export default function GameCard({ game, compact = false, onPriceLoaded }) {
 
       fetch('/api/card-price?' + params)
         .then(r => r.json())
-        .then(d => {
-          if (d.price != null) {
-            setLivePrice(d);
-            if (onPriceLoaded) onPriceLoaded(game.id, d);
-          }
-        })
+        .then(d => { if (d.price != null) setLivePrice(d); })
         .catch(() => {})
         .finally(() => { setPriceLoading(false); setPriceDone(true); });
     }, { rootMargin: '300px' });
 
     obs.observe(el);
     return () => obs.disconnect();
-  }, [game.name, game.rawgSlug, game.hasSteam, priceLoading, priceDone, onPriceLoaded, game.id]);
+  }, [game.name, game.rawgSlug, game.hasSteam, priceLoading, priceDone]);
 
-  const activePrice = game.priceInfo || livePrice;
-  const isFree   = activePrice?.isFree || game.isFree || game.gamePass;
-  const isOnSale = (activePrice?.discount > 0) && !isFree;
+  const isFree   = livePrice?.isFree || game.isFree || game.gamePass;
+  const isOnSale = (livePrice?.discount > 0) && !isFree;
   const imgH     = compact ? 130 : 150;
   const href     = game.rawgSlug ? `/game/rawg/${game.rawgSlug}` : `/game/rawg/${game.id}`;
 
@@ -104,8 +92,7 @@ export default function GameCard({ game, compact = false, onPriceLoaded }) {
             <Image
               src={game.image} alt={game.name} fill
               sizes="(max-width:640px) 50vw, 200px"
-              style={{ objectFit: 'cover', pointerEvents: 'none' }}
-              draggable={false}
+              style={{ objectFit: 'cover' }}
               unoptimized
             />
           ) : (
@@ -122,7 +109,7 @@ export default function GameCard({ game, compact = false, onPriceLoaded }) {
             {isFree   && <span className="badge badge-green">Ücretsiz</span>}
             {isOnSale && (
               <span className="badge badge-amber" style={{ fontWeight: 700, border: '1px solid var(--border-hover)' }}>
-                {activePrice.storeIcon} -%{activePrice.discount}
+                {livePrice.storeIcon} -%{livePrice.discount}
               </span>
             )}
           </div>
@@ -164,7 +151,7 @@ export default function GameCard({ game, compact = false, onPriceLoaded }) {
 
           {/* Sol alt: platform logoları */}
           <div style={{ position: 'absolute', bottom: 7, left: 8, display: 'flex', gap: 4 }}>
-            {(game.hasSteam || activePrice?.storeName === 'Steam') && activePrice?.isAvailable !== false && (
+            {(game.hasSteam || livePrice?.storeName === 'Steam') && livePrice?.isAvailable !== false && (
               <span title="Steam" style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 width: 24, height: 24, borderRadius: 6,
@@ -174,7 +161,7 @@ export default function GameCard({ game, compact = false, onPriceLoaded }) {
                 <SteamIcon size={14} />
               </span>
             )}
-            {(game.hasEpic || activePrice?.storeName === 'Epic Games') && (
+            {(game.hasEpic || livePrice?.storeName === 'Epic Games') && (
               <span title="Epic Games" style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 width: 24, height: 24, borderRadius: 6,
@@ -210,27 +197,27 @@ export default function GameCard({ game, compact = false, onPriceLoaded }) {
             {/* Fiyat */}
             {isFree ? (
               <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--green)' }}>Ücretsiz</span>
-            ) : activePrice?.price != null ? (
+            ) : livePrice?.price != null ? (
               isOnSale ? (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                     <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--amber)' }}>
-                      {activePrice.price} ₺
+                      ₺{livePrice.price}
                     </span>
-                    {activePrice.storeIcon && (
-                      <span title={activePrice.storeName} style={{ fontSize: 11, opacity: 0.85 }}>
-                        {activePrice.storeIcon}
+                    {livePrice.storeIcon && (
+                      <span title={livePrice.storeName} style={{ fontSize: 11, opacity: 0.85 }}>
+                        {livePrice.storeIcon}
                       </span>
                     )}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>
-                    <span style={{ textDecoration: 'line-through' }}>{activePrice.original} ₺</span>
-                    <span style={{ color: 'var(--amber)', fontWeight: 700 }}>-%{activePrice.discount}</span>
+                    <span style={{ textDecoration: 'line-through' }}>₺{livePrice.original}</span>
+                    <span style={{ color: 'var(--amber)', fontWeight: 700 }}>-%{livePrice.discount}</span>
                   </div>
                 </div>
               ) : (
                 <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
-                  {activePrice.price} ₺
+                  ₺{livePrice.price}
                 </span>
               )
             ) : priceLoading ? (

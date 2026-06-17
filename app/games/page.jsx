@@ -33,9 +33,9 @@ const CATEGORIES = [
 const PRICE_OPTIONS = [
   { label: 'Tüm Fiyatlar', value: 'all'  },
   { label: 'Ücretsiz',     value: 'free' },
-  { label: '0 TL – 100 TL', value: '100'  },
-  { label: '0 TL – 300 TL', value: '300'  },
-  { label: '0 TL – 500 TL', value: '500'  },
+  { label: '₺0 – ₺100',    value: '100'  },
+  { label: '₺0 – ₺300',    value: '300'  },
+  { label: '₺0 – ₺500',    value: '500'  },
 ];
 
 const PAGE_SIZE = 24;
@@ -53,111 +53,14 @@ function GamesList() {
   const [loading,     setLoading]     = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [searchFocus, setSearchFocus] = useState(false);
-  const [isRestored,  setIsRestored]  = useState(false);
 
   const debounceRef = useRef(null);
   const sentinelRef = useRef(null);
   const scrollRef   = useRef({ page: 1, fetching: false, canMore: false, seenIds: new Set(), section: '', query: '', genre: '' });
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem('prev_catalog', '/games');
-    }
-  }, []);
-
-  // Tarayıcı geçmişinden/sessionStorage'dan durum geri yükleme
-  useEffect(() => {
-    const saved = sessionStorage.getItem('games_page_state');
-    if (saved) {
-      try {
-        const state = JSON.parse(saved);
-        const currentSearch = window.location.search;
-        if (state.search === currentSearch) {
-          if (state.query !== undefined) setQuery(state.query);
-          if (state.section !== undefined) setSection(state.section);
-          if (state.genre !== undefined) setGenre(state.genre);
-          if (state.price !== undefined) setPrice(state.price);
-          if (state.games !== undefined) setGames(state.games);
-          if (state.scrollRefVal !== undefined) {
-            scrollRef.current = {
-              ...scrollRef.current,
-              ...state.scrollRefVal,
-              seenIds: new Set(state.scrollRefVal.seenIds || [])
-            };
-          }
-          setIsRestored(true);
-
-          if (state.scrollPosition) {
-            setTimeout(() => {
-              window.scrollTo({ top: state.scrollPosition, behavior: 'instant' });
-            }, 100);
-          }
-          return;
-        }
-      } catch (e) {}
-    }
-    sessionStorage.removeItem('games_page_state');
-  }, []);
-
-  // Durumu sessionStorage'a kaydetme
-  useEffect(() => {
-    const saveState = () => {
-      const state = {
-        search: window.location.search,
-        query,
-        section,
-        genre,
-        price,
-        games,
-        scrollRefVal: {
-          ...scrollRef.current,
-          seenIds: Array.from(scrollRef.current.seenIds || [])
-        },
-        scrollPosition: window.scrollY
-      };
-      sessionStorage.setItem('games_page_state', JSON.stringify(state));
-    };
-
-    saveState();
-
-    window.addEventListener('beforeunload', saveState);
-    return () => {
-      saveState();
-      window.removeEventListener('beforeunload', saveState);
-    };
-  }, [query, section, genre, price, games]);
-
-  // Kaydırma (scroll) konumunu anlık güncelleme (sessionStorage optimize)
-  useEffect(() => {
-    const handleScrollSave = () => {
-      const saved = sessionStorage.getItem('games_page_state');
-      if (saved) {
-        try {
-          const state = JSON.parse(saved);
-          state.scrollPosition = window.scrollY;
-          sessionStorage.setItem('games_page_state', JSON.stringify(state));
-        } catch (e) {}
-      }
-    };
-    window.addEventListener('scroll', handleScrollSave, { passive: true });
-    return () => window.removeEventListener('scroll', handleScrollSave);
-  }, []);
-
-  useEffect(() => {
     const sec = searchParams.get('section') || '';
     const q   = searchParams.get('q') || '';
-    
-    // Eğer restored durumdaysak URL değişiklik takibini ilk seferde pas geç
-    const saved = sessionStorage.getItem('games_page_state');
-    if (saved) {
-      try {
-        const state = JSON.parse(saved);
-        if (state.search === window.location.search) {
-          return;
-        }
-      } catch (e) {}
-    }
-
     setSection(sec);
     setQuery(q);
     setGenre('');
@@ -173,10 +76,6 @@ function GamesList() {
   }, []);
 
   const fetchGames = useCallback(async () => {
-    if (isRestored) {
-      setIsRestored(false);
-      return;
-    }
     const ref    = scrollRef.current;
     ref.page     = 1;
     ref.fetching = false;
@@ -194,7 +93,7 @@ function GamesList() {
       ref.canMore = (data.total || 0) > PAGE_SIZE;
     } catch {}
     finally { setLoading(false); }
-  }, [section, query, genre, buildUrl, isRestored]);
+  }, [section, query, genre, buildUrl]);
 
   const loadMore = useCallback(async () => {
     const ref = scrollRef.current;
@@ -221,8 +120,8 @@ function GamesList() {
   }, [buildUrl]);
 
   useEffect(() => {
-    if (query.trim() && !isRestored) { setGames([]); setLoading(true); }
-  }, [query, isRestored]);
+    if (query.trim()) { setGames([]); setLoading(true); }
+  }, [query]);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -240,26 +139,9 @@ function GamesList() {
     return () => { window.removeEventListener('scroll', handleScroll); clearTimeout(t); };
   }, [loadMore]);
 
-  const handlePriceLoaded = useCallback((gameId, priceInfo) => {
-    setGames(prev => prev.map(g => {
-      if (g.id === gameId) {
-        return { ...g, priceInfo };
-      }
-      return g;
-    }));
-  }, []);
-
   const filteredGames = games.filter(g => {
-    if (price === 'free') {
-      const isFree = g.priceInfo ? g.priceInfo.isFree : g.isFree;
-      return isFree;
-    }
-    if (price !== 'all') {
-      const isFree = g.priceInfo ? g.priceInfo.isFree : g.isFree;
-      if (isFree) return true;
-      const currentPrice = g.priceInfo ? g.priceInfo.price : g.price;
-      if (currentPrice != null && currentPrice > parseInt(price)) return false;
-    }
+    if (price === 'free') return g.isFree;
+    if (price !== 'all' && g.price != null && !g.isFree && g.price > parseInt(price)) return false;
     return true;
   });
 
@@ -335,16 +217,16 @@ function GamesList() {
 
       {/* ── Ana layout: sol içerik + sağ sidebar ── */}
       <div className="container" style={{ paddingTop: 28, paddingBottom: 60 }}>
-        <div className="games-layout" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 260px', gap: 32, alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 260px', gap: 32, alignItems: 'start' }}>
 
           {/* ── SOL: bölüm filtreleri + oyun grid ── */}
           <div>
             {/* Section chip'leri */}
-            <div className="scroll-filter-row-mobile" style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
               {SECTIONS.map(s => {
                 const active = section === s.value;
                 return (
-                  <button key={s.value} onClick={() => handleSection(s.value)} className="section-filter-btn" style={{
+                  <button key={s.value} onClick={() => handleSection(s.value)} style={{
                     display: 'flex', alignItems: 'center', gap: 6,
                     padding: '8px 18px', borderRadius: 999,
                     border: active ? '1.5px solid var(--accent)' : '1.5px solid var(--border)',
@@ -359,61 +241,6 @@ function GamesList() {
                   </button>
                 );
               })}
-            </div>
-
-            {/* Mobil için Kategori ve Bütçe Filtreleri */}
-            <div className="mobile-only" style={{ flexDirection: 'column', gap: 16, marginBottom: 24 }}>
-              {/* Kategoriler */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-3)', letterSpacing: 0.3 }}>KATEGORİLER</span>
-                <div className="scroll-filter-row-mobile" style={{ display: 'flex', gap: 8, overflowX: 'auto', flexWrap: 'nowrap' }}>
-                  {CATEGORIES.map(c => {
-                    const active = genre === c.slug;
-                    return (
-                      <button key={c.slug} onClick={() => handleGenre(c.slug)} className="section-filter-btn" style={{
-                        padding: '6px 14px', borderRadius: 8,
-                        border: active ? '1.5px solid var(--accent)' : '1.5px solid var(--border)',
-                        background: active ? 'var(--accent-bg)' : 'var(--bg-card)',
-                        color: active ? 'var(--accent)' : 'var(--text-2)',
-                        fontSize: 13, fontWeight: active ? 600 : 400,
-                        cursor: 'pointer', whiteSpace: 'nowrap',
-                        transition: 'all 0.15s',
-                      }}>
-                        {c.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Bütçe */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
-                    <line x1="7" y1="7" x2="7.01" y2="7"/>
-                  </svg>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-3)', letterSpacing: 0.3 }}>BÜTÇE</span>
-                </div>
-                <div className="scroll-filter-row-mobile" style={{ display: 'flex', gap: 8, overflowX: 'auto', flexWrap: 'nowrap' }}>
-                  {PRICE_OPTIONS.map(o => {
-                    const active = price === o.value;
-                    return (
-                      <button key={o.value} onClick={() => setPrice(o.value)} className="section-filter-btn" style={{
-                        padding: '6px 14px', borderRadius: 8,
-                        border: active ? '1.5px solid var(--accent)' : '1.5px solid var(--border)',
-                        background: active ? 'var(--accent-bg)' : 'var(--bg-card)',
-                        color: active ? 'var(--accent)' : 'var(--text-2)',
-                        fontSize: 13, fontWeight: active ? 600 : 400,
-                        cursor: 'pointer', whiteSpace: 'nowrap',
-                        transition: 'all 0.15s',
-                      }}>
-                        {o.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
             </div>
 
             {/* Sonuç bilgisi */}
@@ -456,7 +283,7 @@ function GamesList() {
             ) : (
               <>
                 <div className="grid-auto">
-                  {filteredGames.map(game => <GameCard key={game.id} game={game} onPriceLoaded={handlePriceLoaded} />)}
+                  {filteredGames.map(game => <GameCard key={game.id} game={game} />)}
                 </div>
                 <div ref={sentinelRef} style={{ height: 1 }} />
                 {loadingMore && (
@@ -475,7 +302,7 @@ function GamesList() {
           </div>
 
           {/* ── SAĞ: sticky sidebar ── */}
-          <aside className="games-sidebar games-sidebar-scroll" style={{ position: 'sticky', top: 130 }}>
+          <aside style={{ position: 'sticky', top: 130 }}>
 
             {/* Kategoriler */}
             <div style={{
@@ -537,9 +364,8 @@ function GamesList() {
                 borderBottom: '1px solid var(--border)',
                 display: 'flex', alignItems: 'center', gap: 8,
               }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
-                  <line x1="7" y1="7" x2="7.01" y2="7"/>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
                 </svg>
                 <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', letterSpacing: 0.3 }}>BÜTÇE</span>
               </div>
@@ -579,19 +405,8 @@ function GamesList() {
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
-        .games-sidebar-scroll {
-          max-height: calc(100vh - 160px);
-          overflow-y: auto;
-          scrollbar-width: none; /* Firefox */
-        }
-        .games-sidebar-scroll::-webkit-scrollbar {
-          display: none; /* Chrome, Safari, Opera */
-        }
         @media (max-width: 768px) {
-          .games-layout {
-            grid-template-columns: minmax(0, 1fr) !important;
-            gap: 16px !important;
-          }
+          .games-layout { grid-template-columns: 1fr !important; }
           .games-sidebar { display: none !important; }
         }
       `}</style>
