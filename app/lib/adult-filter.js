@@ -7,27 +7,38 @@ export function isAdultContent(game) {
   const name = (game.name || '').toLowerCase();
   const slug = (game.slug || '').toLowerCase();
 
-  // 1. Kelime bazlı başlık/slug kontrolü (birebir eşleşen sakıncalı kelimeler)
-  const forbiddenWords = ['hentai', 'porn', 'erotica', 'nsfw', 'adult-only', 'uncensored', 'nudity', 'boobs', 'r18', 'r-18'];
+  // 1. Kısmi eşleşmesi sakıncalı kelimeler (herhangi bir kelimenin içinde geçmesi durumunda elenir)
+  const forbiddenWords = ['hentai', 'porn', 'erotica', 'erotic', 'nsfw', 'uncensored', 'boobs', 'boob', 'r18', 'r-18', 'fetish', 'vagina', 'penis', 'dildo', 'masturbation'];
   if (forbiddenWords.some(word => name.includes(word) || slug.includes(word))) {
     return true;
   }
 
-  // Standalone 'sex' kelimesi kontrolü (sexy gibi kelimeleri dışlamak için)
+  // Standalone/Birebir eşleşen sakıncalı kelimeler (sexy veya bloodlust gibi kelimelerin filtrelenmesini engellemek için)
   const nameWords = name.split(/[^a-z0-9]+/);
   const slugWords = slug.split(/[^a-z0-9]+/);
-  if (nameWords.includes('sex') || slugWords.includes('sex')) {
+  const standaloneForbidden = ['sex', 'adult', 'nude', 'nudity', 'naked', 'lust', 'sensual', 'sexual', 'ass', 'butt', 'xxx', 'ecchi'];
+  if (standaloneForbidden.some(word => nameWords.includes(word) || slugWords.includes(word))) {
     return true;
   }
 
   // 2. RAWG Etiket (tag) bazlı kontrol
   if (game.tags && game.tags.length > 0) {
-    const forbiddenTags = ['hentai', 'nsfw', 'erotica', 'porn', 'adult-only', 'adult', 'uncensored', 'sex', 'r-18', 'r18'];
+    const forbiddenTags = ['hentai', 'nsfw', 'erotica', 'erotic', 'porn', 'adult-only', 'adult', 'uncensored', 'sex', 'r-18', 'r18', 'xxx', 'naked', 'lewd', 'ecchi', 'lust', 'fetish', 'boobs', 'boob', 'ass', 'butt'];
     const hasForbiddenTag = game.tags.some(t => {
       const tagSlug = (t.slug || '').toLowerCase();
       const tagName = (t.name || '').toLowerCase();
-      // Birebir veya kısmi eşleşme kontrolü (örn: "hentai-game" veya "sex")
-      return forbiddenTags.some(ft => tagSlug === ft || tagSlug.startsWith(ft + '-') || tagSlug.endsWith('-' + ft) || tagName === ft);
+
+      return forbiddenTags.some(ft => {
+        // Birebir eşleşme
+        if (tagSlug === ft || tagName === ft) return true;
+
+        // Belirli tehlikeli kelimeler için önek/esnek eşleşme yapalım
+        const flexMatchWords = ['hentai', 'porn', 'sex', 'erotic', 'erotica', 'nsfw', 'adult'];
+        if (flexMatchWords.includes(ft)) {
+          return tagSlug.startsWith(ft + '-') || tagSlug.endsWith('-' + ft);
+        }
+        return false;
+      });
     });
     if (hasForbiddenTag) return true;
   }
@@ -49,14 +60,15 @@ export function isAdultTitleOrSlug(name, slug) {
   const n = (name || '').toLowerCase();
   const s = (slug || '').toLowerCase();
 
-  const forbiddenWords = ['hentai', 'porn', 'erotica', 'nsfw', 'adult-only', 'uncensored', 'nudity', 'boobs', 'r18', 'r-18'];
+  const forbiddenWords = ['hentai', 'porn', 'erotica', 'erotic', 'nsfw', 'uncensored', 'boobs', 'boob', 'r18', 'r-18', 'fetish', 'vagina', 'penis', 'dildo', 'masturbation'];
   if (forbiddenWords.some(word => n.includes(word) || s.includes(word))) {
     return true;
   }
 
   const nameWords = n.split(/[^a-z0-9]+/);
   const slugWords = s.split(/[^a-z0-9]+/);
-  if (nameWords.includes('sex') || slugWords.includes('sex')) {
+  const standaloneForbidden = ['sex', 'adult', 'nude', 'nudity', 'naked', 'lust', 'sensual', 'sexual', 'ass', 'butt', 'xxx', 'ecchi'];
+  if (standaloneForbidden.some(word => nameWords.includes(word) || slugWords.includes(word))) {
     return true;
   }
 
