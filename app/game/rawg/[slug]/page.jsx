@@ -25,6 +25,18 @@ export default function RawgGamePage({ params }) {
   const [loading,      setLoading]      = useState(true);
   const [error,        setError]        = useState(null);
   const [imgIdx,       setImgIdx]       = useState(0);
+  const [backLink,     setBackLink]     = useState({ href: '/games', label: 'Oyunlara Dön' });
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && document.referrer) {
+      try {
+        const refUrl = new URL(document.referrer);
+        if (refUrl.pathname === '/' || refUrl.pathname === '') {
+          setBackLink({ href: '/', label: 'Ana Sayfaya Dön' });
+        }
+      } catch (e) {}
+    }
+  }, []);
 
   useEffect(() => {
     if (!slug) return;
@@ -168,8 +180,8 @@ export default function RawgGamePage({ params }) {
       <p style={{ fontSize: 48, marginBottom: 12 }}>😕</p>
       <p style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>Oyun bulunamadı</p>
       <p style={{ color: 'var(--text-3)', marginBottom: 24 }}>{error || 'Bilinmeyen hata'}</p>
-      <Link href="/games" style={{ padding: '10px 24px', background: 'var(--accent)', color: '#fff', borderRadius: 10, textDecoration: 'none', fontWeight: 600 }}>
-        ← Oyunlara Dön
+      <Link href={backLink.href} style={{ padding: '10px 24px', background: 'var(--accent)', color: '#fff', borderRadius: 10, textDecoration: 'none', fontWeight: 600 }}>
+        ← {backLink.label}
       </Link>
     </div>
   );
@@ -221,8 +233,8 @@ export default function RawgGamePage({ params }) {
       )}
 
       <div className="container" style={{ paddingTop: 28, paddingBottom: 60, maxWidth: 960, position: 'relative', zIndex: 1 }}>
-        <Link href="/games" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--text-3)', fontSize: 13, textDecoration: 'none', marginBottom: 20 }}>
-          ← Oyunlara Dön
+        <Link href={backLink.href} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--text-3)', fontSize: 13, textDecoration: 'none', marginBottom: 20 }}>
+          ← {backLink.label}
         </Link>
 
       {/* Başlık ve Rozetler (Mobil Uyumlu) */}
