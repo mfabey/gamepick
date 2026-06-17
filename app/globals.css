@@ -402,10 +402,20 @@ html[data-theme="dark"] .glass-card {
 }
 
 /* ===== RESPONSIVE GRID ===== */
-@media (max-width: 480px) {
+@media (max-width: 768px) {
+  .container {
+    padding: 0 16px !important;
+  }
   .grid-auto {
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)) !important;
+    gap: 16px !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .grid-auto {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
   }
 }
 
