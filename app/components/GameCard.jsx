@@ -104,7 +104,8 @@ export default function GameCard({ game, compact = false, onPriceLoaded }) {
             <Image
               src={game.image} alt={game.name} fill
               sizes="(max-width:640px) 50vw, 200px"
-              style={{ objectFit: 'cover' }}
+              style={{ objectFit: 'cover', pointerEvents: 'none' }}
+              draggable={false}
               unoptimized
             />
           ) : (

@@ -137,13 +137,21 @@ Aşağıdaki JSON formatında TAM Türkçe yanıt üret:
   "ozet": "Oyunun 2-3 cümlelik açık ve merak uyandırıcı Türkçe özeti",
   "aciklama": "Açıklama (İngilizce) bölümünü doğal, akıcı Türkçeye çevir. Birebir çeviri değil, doğal Türkçe olsun. Tüm içeriği kapsasın.",
   "duygu": "Yorumlara göre oyuncuların genel izlenimi — sevdikleri ve eleştirdikleri (1-2 cümle)",
-  "etiketler": ["etiket1","etiket2","etiket3","etiket4","etiket5"]
+  "etiketler": ["etiket1","etiket2",...,"etiket12"]
 }
 
-Etiketler için şu listeden uygun olanları seç (5-8 adet, küçük harfli, Türkçe):
-• Tür: aksiyon, macera, rpg, strateji, simülasyon, bulmaca, korku, spor, yarış, platform, dövüş
-• Tema: uzay, deniz, savaş, tarih, fantezi, bilim-kurgu, zombi, vahşi-doğa, şehir, suç, mitoloji
-• Özellik: açık-dünya, çok-oyunculu, hikaye-odaklı, rekabetçi, co-op, sandbox, roguelike, hayatta-kalma
+Etiketler için şu listeden OYUNA UYGUN olanları seç (8-15 adet, küçük harfli, Türkçe).
+Listede olmayan ama oyuna çok uygun özgün etiketler de ekleyebilirsin:
+
+• TÜR: aksiyon, macera, rpg, strateji, simülasyon, bulmaca, korku, spor, yarış, platform, dövüş, nişancı
+• TARİHSEL DÖNEM: kovboy, western, ortaçağ, viking, samuray, ninja, korsan, antik-yunan, roma, mısır, şövalye, rönesans, ww2, birinci-dünya-savaşı, soğuk-savaş, gelecek
+• TEMA: uzay, deniz, savaş, tarih, fantezi, bilim-kurgu, zombi, vahşi-doğa, şehir, suç, mitoloji, ejderha, vampir, cadı, siberpunk, distopya, apokaliptik, steampunk, anime, japon, çizgi-roman
+• ORTAM: orman, çöl, kar, ada, okyanusun-altı, uzay-istasyonu, dungeon, bataklık, şehir-harabeleri, yeraltı
+• OYNANŞ: açık-dünya, çok-oyunculu, hikaye-odaklı, rekabetçi, co-op, sandbox, roguelike, hayatta-kalma, yapım, crafting, keşif, gizlilik, at-binme, uçuş, iki-boyutlu, üst-görünüş, sinematik, gerilim, gizem, dedektif, atmosferik, retro, piksel, indie
+
+Oyunun arka plan bilgilerine göre özellikle ÖZGÜn, AYIRT EDİCİ etiketler seç.
+Örnek: Red Dead Redemption → kovboy, western, at-binme, açık-dünya, suç, vahşi-doğa
+Örnek: Sekiro → samuray, ninja, soulslike, japon, dövüş, hikaye-odaklı
 
 Sadece JSON döndür. Başka hiçbir metin ekleme.`.trim();
 
@@ -155,7 +163,7 @@ Sadece JSON döndür. Başka hiçbir metin ekleme.`.trim();
       },
       body: JSON.stringify({
         model:       MODEL,
-        max_tokens:  600,
+        max_tokens:  800,
         temperature: 0.7,
         messages: [
           { role: 'system',  content: 'Sen bir oyun eleştirmenisin. Her zaman geçerli JSON formatında, sade Türkçe yanıt ver.' },
@@ -182,7 +190,7 @@ Sadece JSON döndür. Başka hiçbir metin ekleme.`.trim();
       ozet:      parsed.ozet      || null,
       aciklama:  parsed.aciklama  || null,
       duygu:     parsed.duygu     || null,
-      etiketler: Array.isArray(parsed.etiketler) ? parsed.etiketler.slice(0, 10) : [],
+      etiketler: Array.isArray(parsed.etiketler) ? parsed.etiketler.slice(0, 15) : [],
     };
 
     if (!result.ozet || !result.aciklama) {

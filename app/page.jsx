@@ -581,6 +581,7 @@ function ScrollRow({ children }) {
       style={{ cursor: 'grab', scrollbarWidth: 'none' }}
       onMouseDown={onMouseDown}
       onClickCapture={onClickCapture}
+      onDragStart={e => e.preventDefault()}
     >
       {children}
     </div>
