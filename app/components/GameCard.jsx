@@ -34,6 +34,14 @@ export default function GameCard({ game, compact = false }) {
   const [priceDone,    setPriceDone]    = useState(false);
   const cardRef = useRef(null);
 
+  const [imgSrc, setImgSrc] = useState(game.image);
+  const [triedFallback, setTriedFallback] = useState(false);
+
+  useEffect(() => {
+    setImgSrc(game.image);
+    setTriedFallback(false);
+  }, [game.image]);
+
   // Kart görünüme girince Steam fiyatı lazy-load et
   useEffect(() => {
     if (priceDone || priceLoading) return;
@@ -88,15 +96,28 @@ export default function GameCard({ game, compact = false }) {
       >
         {/* Kapak */}
         <div style={{ aspectRatio: '16/9', width: '100%', background: 'var(--bg-input)', position: 'relative', overflow: 'hidden' }}>
-          {game.image ? (
+          {imgSrc ? (
             <Image
-              src={game.image} alt={game.name} fill
+              src={imgSrc} alt={game.name} fill
               sizes="(max-width:640px) 50vw, 200px"
               style={{ objectFit: 'cover' }}
               unoptimized
+              onError={() => {
+                if (!triedFallback) {
+                  setTriedFallback(true);
+                  if (game.logo) {
+                    const medium = game.logo.replace('capsule_sm_120.jpg', 'capsule_231x87.jpg');
+                    setImgSrc(medium);
+                  } else {
+                    setImgSrc(null);
+                  }
+                } else {
+                  setImgSrc(null);
+                }
+              }}
             />
           ) : (
-            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 700, color: 'var(--text-3)' }}>
+            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 700, color: 'var(--text-3)', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
               {game.name?.slice(0, 2).toUpperCase()}
             </div>
           )}

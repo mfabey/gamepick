@@ -506,6 +506,7 @@ export async function GET(request) {
               rawgSlug: slug,
               name: item.name,
               image: appid ? `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/header.jpg` : item.logo,
+              logo: item.logo,
               metacritic: null,
               reviewScore: 0,
               totalReviews: 0,
