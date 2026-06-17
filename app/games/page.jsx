@@ -270,7 +270,10 @@ function GamesList() {
 
               {/* Bütçe */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-3)', letterSpacing: 0.3 }}>BÜTÇE</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--accent)', lineHeight: 1 }}>₺</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-3)', letterSpacing: 0.3 }}>BÜTÇE</span>
+                </div>
                 <div className="scroll-filter-row-mobile" style={{ display: 'flex', gap: 8, overflowX: 'auto', flexWrap: 'nowrap' }}>
                   {PRICE_OPTIONS.map(o => {
                     const active = price === o.value;
@@ -413,9 +416,7 @@ function GamesList() {
                 borderBottom: '1px solid var(--border)',
                 display: 'flex', alignItems: 'center', gap: 8,
               }}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                </svg>
+                <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--accent)', width: 15, height: 15, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>₺</span>
                 <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', letterSpacing: 0.3 }}>BÜTÇE</span>
               </div>
               <div style={{ padding: '8px 0' }}>
