@@ -1,7 +1,7 @@
 'use client';
 export const dynamic = 'force-dynamic';
 
-import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import GameCard from '../components/GameCard';
 
@@ -130,20 +130,29 @@ function GamesList() {
   }, [fetchGames]);
 
   useEffect(() => {
-    const handleScroll = () => {
+    // rAF ile throttle — her scroll olayında getBoundingClientRect (layout reflow)
+    // çağrılmasını önler, kare başına en fazla bir kez kontrol eder
+    let ticking = false;
+    const check = () => {
+      ticking = false;
       if (!sentinelRef.current) return;
       if (sentinelRef.current.getBoundingClientRect().top < window.innerHeight + 500) loadMore();
     };
+    const handleScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(check);
+    };
     window.addEventListener('scroll', handleScroll, { passive: true });
-    const t = setTimeout(handleScroll, 800);
+    const t = setTimeout(check, 800);
     return () => { window.removeEventListener('scroll', handleScroll); clearTimeout(t); };
   }, [loadMore]);
 
-  const filteredGames = games.filter(g => {
+  const filteredGames = useMemo(() => games.filter(g => {
     if (price === 'free') return g.isFree;
     if (price !== 'all' && g.price != null && !g.isFree && g.price > parseInt(price)) return false;
     return true;
-  });
+  }), [games, price]);
 
   const resetFilters = () => { setQuery(''); setPrice('all'); setSection(''); setGenre(''); };
 

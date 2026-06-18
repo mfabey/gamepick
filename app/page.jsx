@@ -1,7 +1,7 @@
 'use client';
 export const dynamic = 'force-dynamic';
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo, memo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -142,31 +142,34 @@ export default function Home() {
     return arr;
   }, [trendGames, popularGames]);
 
-  const COLS = 5, ROWS = 4, PANELS = COLS * ROWS;
-  const heroTiles = heroPool
-    ? Array.from({ length: PANELS }, (_, i) => heroPool[i % heroPool.length])
-    : null;
-
-  const renderMosaic = (keyPrefix) => (
-    <div className="hero-mosaic" style={{ height: '50%' }}>
-      {heroTiles ? heroTiles.map((g, i) => (
-        <div key={`${keyPrefix}-${i}`} className="hero-mosaic-tile" style={{ position: 'relative', overflow: 'hidden', background: '#111' }}>
-          {g.image && (
-            <Image src={g.image} alt="" fill
-              sizes="25vw"
-              style={{
-                objectFit: 'cover',
-                filter: 'blur(5px)',
-                transform: 'scale(1.12)', // blur kenar boşluğunu gizle
-              }}
-              unoptimized />
-          )}
-        </div>
-      )) : (
-        <div style={{ gridColumn: '1 / -1', gridRow: '1 / -1', background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)' }} />
-      )}
-    </div>
+  const PANELS = 20;
+  const heroTiles = useMemo(
+    () => heroPool
+      ? Array.from({ length: PANELS }, (_, i) => heroPool[i % heroPool.length])
+      : null,
+    [heroPool]
   );
+
+  // Kayan kapak şeridi — yalnızca heroTiles değişince yeniden oluşur,
+  // typewriter/arama state güncellemelerinde ~38 Image yeniden render edilmez
+  const heroStrip = useMemo(() => {
+    if (!heroTiles) return null;
+    return (
+      <div style={{ marginTop: 54, WebkitMaskImage: 'linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent)', maskImage: 'linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent)' }}>
+        <div className="hero-strip" style={{ display: 'flex', gap: 16, width: 'max-content', padding: '6px 0 12px' }}>
+          {[...heroTiles, ...heroTiles].map((g, i) => (
+            <Link key={i} href={g.rawgSlug ? `/game/rawg/${g.rawgSlug}` : `/game/rawg/${g.id}`}
+              style={{ width: 168, aspectRatio: '3 / 4', borderRadius: 16, position: 'relative', overflow: 'hidden', flexShrink: 0, background: 'var(--bg-input)', boxShadow: '0 10px 28px rgba(74,52,28,0.16)' }}>
+              {g.image && <Image src={g.image} alt="" fill sizes="168px" style={{ objectFit: 'cover' }} unoptimized />}
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'flex-end', padding: 13, background: 'linear-gradient(to top, rgba(8,8,16,0.62), transparent 58%)' }}>
+                <span style={{ color: '#fff', fontWeight: 700, fontSize: 13.5, lineHeight: 1.2, textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}>{g.name}</span>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+    );
+  }, [heroTiles]);
 
   return (
     <div style={{ paddingBottom: 60 }}>
@@ -305,22 +308,8 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Kapak şeridi — yatay kayan */}
-        {heroTiles && (
-          <div style={{ marginTop: 54, WebkitMaskImage: 'linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent)', maskImage: 'linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent)' }}>
-            <div className="hero-strip" style={{ display: 'flex', gap: 16, width: 'max-content', padding: '6px 0 12px' }}>
-              {[...heroTiles, ...heroTiles].map((g, i) => (
-                <Link key={i} href={g.rawgSlug ? `/game/rawg/${g.rawgSlug}` : `/game/rawg/${g.id}`}
-                  style={{ width: 168, aspectRatio: '3 / 4', borderRadius: 16, position: 'relative', overflow: 'hidden', flexShrink: 0, background: 'var(--bg-input)', boxShadow: '0 10px 28px rgba(74,52,28,0.16)' }}>
-                  {g.image && <Image src={g.image} alt="" fill sizes="168px" style={{ objectFit: 'cover' }} unoptimized />}
-                  <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'flex-end', padding: 13, background: 'linear-gradient(to top, rgba(8,8,16,0.62), transparent 58%)' }}>
-                    <span style={{ color: '#fff', fontWeight: 700, fontSize: 13.5, lineHeight: 1.2, textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}>{g.name}</span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Kapak şeridi — yatay kayan (memo'lanmış) */}
+        {heroStrip}
       </section>
 
       {/* ══ İÇERİK BÖLÜMLERİ ══════════════════════════════════════════════════ */}
@@ -496,7 +485,7 @@ function ScrollRow({ children }) {
 }
 
 // ── Yatay scroll bölüm ────────────────────────────────────────────────────────
-function Section({ title, subtitle, href, games, loading, badge }) {
+const Section = memo(function Section({ title, subtitle, href, games, loading, badge }) {
   return (
     <div style={{ marginBottom: 56 }}>
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 18 }}>
@@ -530,7 +519,7 @@ function Section({ title, subtitle, href, games, loading, badge }) {
       </ScrollRow>
     </div>
   );
-}
+});
 
 function SkeletonCard() {
   return (

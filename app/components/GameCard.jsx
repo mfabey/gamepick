@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, memo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth, normalizeName } from '../context/AuthContext';
@@ -22,7 +22,7 @@ function EpicIcon({ size = 16 }) {
   );
 }
 
-export default function GameCard({ game, compact = false }) {
+function GameCard({ game, compact = false }) {
   const { ownedGames, xboxOwnedGames = new Set(), gamePassGames = new Set() } = useAuth();
   const normalizedNameStr = normalizeName(game.name);
   const isOwnedSteam = ownedGames.size > 0 && ownedGames.has(normalizedNameStr);
@@ -32,6 +32,7 @@ export default function GameCard({ game, compact = false }) {
   const [livePrice,    setLivePrice]    = useState(null);
   const [priceLoading, setPriceLoading] = useState(false);
   const [priceDone,    setPriceDone]    = useState(false);
+  const [imgError,     setImgError]     = useState(false);
   const cardRef = useRef(null);
 
   // Kart görünüme girince Steam fiyatı lazy-load et
@@ -88,15 +89,17 @@ export default function GameCard({ game, compact = false }) {
       >
         {/* Kapak */}
         <div style={{ aspectRatio: '16/9', width: '100%', background: 'var(--bg-input)', position: 'relative', overflow: 'hidden' }}>
-          {game.image ? (
+          {game.image && !imgError ? (
             <Image
               src={game.image} alt={game.name} fill
               sizes="(max-width:640px) 50vw, 200px"
-              style={{ objectFit: 'cover' }}
+              style={{ objectFit: 'cover', pointerEvents: 'none' }}
+              draggable={false}
               unoptimized
+              onError={() => setImgError(true)}
             />
           ) : (
-            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 700, color: 'var(--text-3)' }}>
+            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 700, color: 'var(--text-3)', background: 'linear-gradient(135deg, var(--bg-input), var(--bg-card))' }}>
               {game.name?.slice(0, 2).toUpperCase()}
             </div>
           )}
@@ -239,3 +242,10 @@ export default function GameCard({ game, compact = false }) {
     </Link>
   );
 }
+
+// game.id değişmedikçe yeniden render etme — anasayfadaki typewriter/hover
+// state güncellemelerinde 60+ kartın gereksiz re-render'ını önler
+export default memo(GameCard, (prev, next) =>
+  prev.game.id === next.game.id &&
+  prev.compact === next.compact
+);

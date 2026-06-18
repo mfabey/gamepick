@@ -374,33 +374,6 @@ html[data-theme="dark"] .glass-card {
   border: 1px solid var(--border) !important;
 }
 
-/* ===== HERO MOSAIC GRID ===== */
-.hero-mosaic {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  grid-template-rows: repeat(4, 1fr);
-  height: 100%;
-  gap: 10px;
-  padding: 12px;
-}
-
-.hero-mosaic-tile {
-  display: block;
-  border-radius: var(--radius-lg);
-  box-shadow: 0 6px 24px rgba(0,0,0,0.5);
-}
-
-@media (max-width: 768px) {
-  .hero-mosaic {
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(5, 1fr);
-    gap: 8px;
-    padding: 8px;
-  }
-  .hero-mosaic-tile { border-radius: var(--radius); }
-  .hero-mosaic-tile:nth-child(n+16) { display: none !important; }
-}
-
 /* ===== RESPONSIVE GRID ===== */
 @media (max-width: 480px) {
   .grid-auto {
