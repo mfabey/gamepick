@@ -30,7 +30,7 @@ export default function NewsPage() {
 
       {/* ── Hero ── */}
       <section style={{ position: 'relative', overflow: 'hidden', padding: '58px 0 28px', background: 'var(--hero-bg)', borderBottom: '1px solid var(--border)' }}>
-        <div style={{ maxWidth: 1180, margin: '0 auto', padding: '0 36px' }}>
+        <div className="news-hero-container">
           <p style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: 12 }}>● Güncel · Oyun Dünyası</p>
           <h1 style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 'clamp(36px,4.6vw,56px)', lineHeight: 1.04, letterSpacing: '-1.5px', color: 'var(--text)', marginBottom: 14 }}>Oyun Haberleri</h1>
           <p style={{ fontSize: 17, color: 'var(--text-2)', maxWidth: 540, lineHeight: 1.55, marginBottom: 26 }}>İndirimler, çıkış tarihleri ve sektörden son gelişmeler — büyük oyun kaynaklarından canlı akış.</p>
@@ -53,7 +53,7 @@ export default function NewsPage() {
         </div>
       </section>
 
-      <div style={{ maxWidth: 1180, margin: '0 auto', padding: '34px 36px 0' }}>
+      <div className="news-main-container">
 
         {/* ── Yükleniyor ── */}
         {loading ? (
@@ -69,14 +69,14 @@ export default function NewsPage() {
             {/* ── Öne çıkan ── */}
             {featured && (
               <a href={featured.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
-                <article style={{ display: 'grid', gridTemplateColumns: '1.08fr 1fr', border: '1px solid var(--border)', borderRadius: 22, overflow: 'hidden', background: 'var(--bg-card)', marginBottom: 38, boxShadow: 'var(--shadow-lg)', cursor: 'pointer' }}>
+                <article className="news-featured-card">
                   <div style={{ position: 'relative', minHeight: 312, background: featured.art, overflow: 'hidden' }}>
                     {featured.image
                       ? <img src={featured.image} alt="" loading="lazy" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
                       : <span style={{ position: 'absolute', right: -12, bottom: -34, fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 230, lineHeight: 1, color: 'rgba(255,255,255,0.15)', userSelect: 'none' }}>{featured.mono}</span>}
                     <span style={{ position: 'absolute', left: 20, top: 20, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 999, background: 'var(--accent)', color: '#fff', fontSize: 11.5, fontWeight: 800, letterSpacing: '0.06em', boxShadow: '0 6px 16px rgba(0,0,0,0.2)' }}>✦ ÖNE ÇIKAN</span>
                   </div>
-                  <div style={{ padding: '40px 42px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <div className="news-featured-content">
                     <div style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 13, color: 'var(--text-3)', marginBottom: 14, flexWrap: 'wrap' }}>
                       <span style={{ padding: '4px 11px', borderRadius: 999, background: 'var(--accent-bg)', color: 'var(--accent)', fontWeight: 700, fontSize: 12 }}>{featured.cat}</span>
                       {featured.source && <span style={{ fontWeight: 600, color: 'var(--text-2)' }}>{featured.source}</span>}
@@ -91,7 +91,7 @@ export default function NewsPage() {
             )}
 
             {/* ── Haber ızgarası ── */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(322px,1fr))', gap: 24 }}>
+            <div className="news-grid">
               {rest.map(n => (
                 <a key={n.id} href={n.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
                   <article className="card" style={{ borderRadius: 18, overflow: 'hidden', cursor: 'pointer', transition: 'transform 0.2s ease, box-shadow 0.2s ease', height: '100%' }}
@@ -134,9 +134,9 @@ export default function NewsPage() {
 function NewsSkeleton() {
   return (
     <>
-      <div style={{ display: 'grid', gridTemplateColumns: '1.08fr 1fr', border: '1px solid var(--border)', borderRadius: 22, overflow: 'hidden', background: 'var(--bg-card)', marginBottom: 38 }}>
+      <div className="news-featured-card" style={{ borderStyle: 'solid' }}>
         <div style={{ minHeight: 312, background: 'var(--bg-input)', animation: 'pulse 1.5s ease-in-out infinite' }} />
-        <div style={{ padding: '40px 42px' }}>
+        <div className="news-featured-content">
           <div style={{ height: 20, width: 120, background: 'var(--bg-input)', borderRadius: 6, marginBottom: 18 }} />
           <div style={{ height: 28, background: 'var(--bg-input)', borderRadius: 6, marginBottom: 10 }} />
           <div style={{ height: 28, width: '70%', background: 'var(--bg-input)', borderRadius: 6, marginBottom: 22 }} />
@@ -144,7 +144,7 @@ function NewsSkeleton() {
           <div style={{ height: 14, width: '85%', background: 'var(--bg-input)', borderRadius: 4 }} />
         </div>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(322px,1fr))', gap: 24 }}>
+      <div className="news-grid">
         {Array.from({ length: 6 }).map((_, i) => (
           <div key={i} className="card" style={{ borderRadius: 18, overflow: 'hidden' }}>
             <div style={{ height: 166, background: 'var(--bg-input)', animation: 'pulse 1.5s ease-in-out infinite' }} />

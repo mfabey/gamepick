@@ -91,7 +91,7 @@ export default function SupportPage() {
         </div>
 
         {/* ── Form + SSS ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1.05fr 1fr', gap: 34, alignItems: 'start' }}>
+        <div className="support-split" style={{ display: 'grid', gridTemplateColumns: '1.05fr 1fr', gap: 34, alignItems: 'start' }}>
 
           <div className="card" style={{ borderRadius: 20, padding: 30, boxShadow: 'var(--shadow)' }}>
             <h2 style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: 23, letterSpacing: '-0.5px', color: 'var(--text)', marginBottom: 5 }}>Bize yazın</h2>
@@ -105,7 +105,7 @@ export default function SupportPage() {
             )}
 
             <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 17 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+              <div className="support-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                 <div>
                   <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 7 }}>Ad Soyad</label>
                   <input value={name} onChange={e => setName(e.target.value)} placeholder="Adınız" style={inputBase}

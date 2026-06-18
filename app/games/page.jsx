@@ -208,12 +208,7 @@ function GamesList() {
     <div style={{ minHeight: '100vh', background: 'var(--bg-body)' }}>
 
       {/* ── Sticky üst arama çubuğu ── */}
-      <div style={{
-        position: 'sticky', top: 64, zIndex: 50,
-        background: 'var(--bg)',
-        borderBottom: '1px solid var(--border)',
-        backdropFilter: 'blur(12px)',
-      }}>
+      <div className="sticky-search-bar">
         <div className="container" style={{ paddingTop: 14, paddingBottom: 14 }}>
           <div style={{
             display: 'flex', alignItems: 'center', gap: 12,
@@ -261,7 +256,7 @@ function GamesList() {
 
       {/* ── Ana layout: sol içerik + sağ sidebar ── */}
       <div className="container" style={{ paddingTop: 28, paddingBottom: 60 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 260px', gap: 32, alignItems: 'start' }}>
+        <div className="games-layout" style={{ display: 'grid', gridTemplateColumns: '1fr 260px', gap: 32, alignItems: 'start' }}>
 
           {/* ── SOL: bölüm filtreleri + oyun grid ── */}
           <div>
@@ -346,7 +341,7 @@ function GamesList() {
           </div>
 
           {/* ── SAĞ: sticky sidebar ── */}
-          <aside style={{ position: 'sticky', top: 130 }}>
+          <aside className="games-sidebar" style={{ position: 'sticky', top: 130 }}>
 
             {/* Kategoriler */}
             <div style={{
