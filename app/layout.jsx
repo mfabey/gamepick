@@ -1,6 +1,7 @@
 import './globals.css';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { LanguageProvider } from './context/LanguageContext';
 import NavBar from './components/NavBar';
 
 export const metadata = {
@@ -27,12 +28,14 @@ export default function RootLayout({ children }) {
       </head>
       <body>
         <ThemeProvider>
-          <AuthProvider>
-            <NavBar />
-            <main style={{ minHeight: 'calc(100vh - 64px)' }}>
-              {children}
-            </main>
-          </AuthProvider>
+          <LanguageProvider>
+            <AuthProvider>
+              <NavBar />
+              <main style={{ minHeight: 'calc(100vh - 64px)' }}>
+                {children}
+              </main>
+            </AuthProvider>
+          </LanguageProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -6,12 +6,14 @@ import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import GameImage from '../components/GameImage';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ANA SAYFA
 // ─────────────────────────────────────────────────────────────────────────────
 export default function LibraryPage() {
   const { steamUser, steamLogout, xboxUser, xboxLogout } = useAuth();
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('steam'); // 'steam' | 'xbox'
   const [showXboxModal, setShowXboxModal] = useState(false);
   const [xboxError, setXboxError] = useState(null);
@@ -48,10 +50,10 @@ export default function LibraryPage() {
       <div className="container" style={{ paddingTop: 80, paddingBottom: 60, maxWidth: 520, margin: '0 auto', textAlign: 'center' }}>
         <div style={{ fontSize: 64, marginBottom: 20 }}>🎮</div>
         <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', marginBottom: 8 }}>
-          Kütüphaneni Bağla
+          {t('library.connect')}
         </h1>
         <p style={{ color: 'var(--text-3)', fontSize: 15, lineHeight: 1.6, marginBottom: 32 }}>
-          Steam veya Xbox hesabınla giriş yaparak oyunlarını, istatistiklerini ve kütüphaneni burada görüntüle.
+          {t('library.connectDesc')}
         </p>
 
         {/* Xbox Bağlantı Hataları (Modal Kapalıyken Sayfada Göster) */}
@@ -62,7 +64,7 @@ export default function LibraryPage() {
           }}>
             <span style={{ fontSize: 18 }}>⚠️</span>
             <div style={{ flex: 1 }}>
-              <p style={{ fontSize: 14, fontWeight: 700, color: '#991b1b', marginBottom: 4 }}>Xbox Bağlantı Hatası</p>
+              <p style={{ fontSize: 14, fontWeight: 700, color: '#991b1b', marginBottom: 4 }}>{t('library.xboxError')}</p>
               <p style={{ fontSize: 13, color: '#7f1d1d', lineHeight: 1.5 }}>{xboxError}</p>
             </div>
             <button onClick={() => setXboxError(null)} style={{ background: 'none', border: 'none', color: '#991b1b', cursor: 'pointer', fontSize: 20, padding: 0 }}>×</button>
@@ -83,7 +85,7 @@ export default function LibraryPage() {
               onMouseLeave={e => e.currentTarget.style.transform = 'none'}
             >
               <SteamLogo size={26} />
-              Steam ile Giriş Yap
+              {t('library.steamLogin')}
             </div>
           </a>
 
@@ -99,15 +101,15 @@ export default function LibraryPage() {
             onMouseLeave={e => e.currentTarget.style.transform = 'none'}
           >
             <XboxLogo size={26} />
-            Xbox ile Giriş Yap
+            {t('library.xboxLogin')}
           </div>
         </div>
 
         <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 20px', textAlign: 'left', fontSize: 13, color: 'var(--text-3)', marginTop: 24 }}>
-          <p style={{ fontWeight: 600, color: 'var(--text-2)', marginBottom: 8 }}>📋 Gereksinimler</p>
-          <p style={{ marginBottom: 4 }}>• Steam: profil <strong>herkese açık</strong> olmalı</p>
-          <p style={{ marginBottom: 4 }}>• Xbox: Microsoft hesabınla veya Gamertag simülasyonuyla giriş yapabilirsin</p>
-          <p>• GamePick hiçbir bilgini kaydetmez, yalnızca görüntüler</p>
+          <p style={{ fontWeight: 600, color: 'var(--text-2)', marginBottom: 8 }}>{t('library.req.title')}</p>
+          <p style={{ marginBottom: 4 }}>{t('library.req.steam')}</p>
+          <p style={{ marginBottom: 4 }}>{t('library.req.xbox')}</p>
+          <p>{t('library.req.gp')}</p>
         </div>
 
         {/* Xbox Bağlantı Modalı */}
@@ -157,13 +159,13 @@ export default function LibraryPage() {
             {hasSteam && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 10, background: '#1b2838', color: '#fff', fontWeight: 700, fontSize: 14 }}>
                 <SteamLogo size={16} />
-                Steam Aktif: {steamUser.name}
+                {t('library.steamActive').replace('{name}', steamUser.name)}
               </div>
             )}
             {hasXbox && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 10, background: '#107C10', color: '#fff', fontWeight: 700, fontSize: 14 }}>
                 <XboxLogo size={16} />
-                Xbox Aktif: {xboxUser.gamertag}
+                {t('library.xboxActive').replace('{gamertag}', xboxUser.gamertag)}
               </div>
             )}
           </div>
@@ -179,7 +181,7 @@ export default function LibraryPage() {
               onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-card)'; e.currentTarget.style.color = '#107C10'; }}
             >
               <XboxLogo size={14} color="currentColor" />
-              Xbox Hesabı Bağla
+              {t('library.connectXbox')}
             </button>
           )}
           
@@ -195,7 +197,7 @@ export default function LibraryPage() {
                 onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-card)'; e.currentTarget.style.color = '#1a9fff'; }}
               >
                 <SteamLogo size={14} color="currentColor" />
-                Steam Hesabı Bağla
+                {t('library.connectSteam')}
               </button>
             </a>
           )}
@@ -226,6 +228,7 @@ export default function LibraryPage() {
 // STEAM KÜTÜPHANESİ
 // ─────────────────────────────────────────────────────────────────────────────
 function SteamLibrary({ steamUser, onLogout }) {
+  const { t } = useLanguage();
   const [library,       setLibrary]       = useState(null);
   const [loading,       setLoading]       = useState(false);
   const [error,         setError]         = useState(null);
@@ -297,7 +300,11 @@ function SteamLibrary({ steamUser, onLogout }) {
       {/* Filtreler */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 24, marginBottom: 16, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', gap: 6 }}>
-          {[{ label: 'Tümü', value: 'all' }, { label: '▶ Oynandı', value: 'played' }, { label: '○ Oynanmadı', value: 'unplayed' }].map(f => (
+          {[
+            { label: t('library.filter.all'), value: 'all' },
+            { label: t('library.filter.played'), value: 'played' },
+            { label: t('library.filter.unplayed'), value: 'unplayed' }
+          ].map(f => (
             <button key={f.value} onClick={() => setFilter(f.value)} style={{
               padding: '7px 14px', borderRadius: 999, fontSize: 12, border: 'none', cursor: 'pointer',
               background: filter === f.value ? '#1a9fff' : 'var(--bg-input)',
@@ -307,17 +314,22 @@ function SteamLibrary({ steamUser, onLogout }) {
           ))}
         </div>
         <select value={sort} onChange={e => setSort(e.target.value)} style={{ padding: '7px 12px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 13, color: 'var(--text)', background: 'var(--bg-card)' }}>
-          <option value="hours">Saat ↓</option>
-          <option value="name">İsim A-Z</option>
-          <option value="recent">Son Oynanan</option>
-          <option value="value">Değer ↓</option>
+          <option value="hours">{t('library.sort.hours')}</option>
+          <option value="name">{t('library.sort.name')}</option>
+          <option value="recent">{t('library.sort.recent')}</option>
+          <option value="value">{t('library.sort.value')}</option>
         </select>
-        <SearchBox value={search} onChange={setSearch} placeholder="Kütüphanede ara…" />
+        <SearchBox value={search} onChange={setSearch} placeholder={t('library.searchPlaceholder')} />
       </div>
 
       <p style={{ fontSize: 13, color: 'var(--text-3)', marginBottom: 12 }}>
-        <span style={{ fontWeight: 600, color: 'var(--text)' }}>{filtered.length}</span> oyun gösteriliyor
-        {pricesLoading && <span style={{ marginLeft: 10, color: '#1a9fff', fontStyle: 'italic' }}>fiyatlar yükleniyor…</span>}
+        {t('library.showingGames').split('{count}').map((part, i) => (
+          <span key={i}>
+            {part}
+            {i === 0 && <span style={{ fontWeight: 600, color: 'var(--text)' }}>{filtered.length}</span>}
+          </span>
+        ))}
+        {pricesLoading && <span style={{ marginLeft: 10, color: '#1a9fff', fontStyle: 'italic' }}>{t('library.showingGamesLoading')}</span>}
       </p>
 
       {filtered.length === 0
@@ -336,6 +348,7 @@ function SteamLibrary({ steamUser, onLogout }) {
 // XBOX KÜTÜPHANESİ
 // ─────────────────────────────────────────────────────────────────────────────
 function XboxLibrary({ xboxUser, onLogout }) {
+  const { t } = useLanguage();
   const [library, setLibrary] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState(null);
@@ -365,12 +378,12 @@ function XboxLibrary({ xboxUser, onLogout }) {
       <div style={{ marginTop: 24, background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 14, padding: '24px 28px', textAlign: 'center' }}>
         <p style={{ fontSize: 36, marginBottom: 12 }}>⚠️</p>
         <p style={{ fontSize: 15, fontWeight: 700, color: '#991b1b', marginBottom: 8 }}>
-          {error.expired ? 'Oturum Süresi Doldu' : 'Kütüphane Yüklenemedi'}
+          {error.expired ? t('library.xbox.sessionExpired') : t('library.xbox.loadFailed')}
         </p>
         <p style={{ fontSize: 14, color: '#7f1d1d' }}>{error.error}</p>
         {error.expired && (
           <a href="/api/auth/xbox" style={{ display: 'inline-block', marginTop: 16, padding: '10px 24px', borderRadius: 8, background: '#107C10', color: '#fff', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>
-            Tekrar Giriş Yap
+            {t('library.xbox.relogin')}
           </a>
         )}
       </div>
@@ -397,9 +410,9 @@ function XboxLibrary({ xboxUser, onLogout }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 24, marginBottom: 16, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', gap: 6 }}>
           {[
-            { label: 'Tümü', value: 'all' },
-            { label: '🎮 Game Pass', value: 'gamepass' },
-            { label: '🛒 Sahip Olunan', value: 'owned' },
+            { label: t('library.filter.all'), value: 'all' },
+            { label: t('library.filter.gamepass'), value: 'gamepass' },
+            { label: t('library.filter.owned'), value: 'owned' },
           ].map(f => (
             <button key={f.value} onClick={() => setFilter(f.value)} style={{
               padding: '7px 14px', borderRadius: 999, fontSize: 12, border: 'none', cursor: 'pointer',
@@ -410,15 +423,20 @@ function XboxLibrary({ xboxUser, onLogout }) {
           ))}
         </div>
         <select value={sort} onChange={e => setSort(e.target.value)} style={{ padding: '7px 12px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 13, color: 'var(--text)', background: 'var(--bg-card)' }}>
-          <option value="recent">Son Oynanan</option>
-          <option value="name">İsim A-Z</option>
-          <option value="score">Gamerscore ↓</option>
+          <option value="recent">{t('library.sort.recent')}</option>
+          <option value="name">{t('library.sort.name')}</option>
+          <option value="score">{t('library.sort.score')}</option>
         </select>
-        <SearchBox value={search} onChange={setSearch} placeholder="Xbox kütüphanesinde ara…" />
+        <SearchBox value={search} onChange={setSearch} placeholder={t('library.searchXboxPlaceholder')} />
       </div>
 
       <p style={{ fontSize: 13, color: 'var(--text-3)', marginBottom: 12 }}>
-        <span style={{ fontWeight: 600, color: 'var(--text)' }}>{filtered.length}</span> oyun gösteriliyor
+        {t('library.showingGames').split('{count}').map((part, i) => (
+          <span key={i}>
+            {part}
+            {i === 0 && <span style={{ fontWeight: 600, color: 'var(--text)' }}>{filtered.length}</span>}
+          </span>
+        ))}
       </p>
 
       {filtered.length === 0
@@ -437,7 +455,7 @@ function XboxLibrary({ xboxUser, onLogout }) {
 // STEAM BİLEŞENLERİ
 // ─────────────────────────────────────────────────────────────────────────────
 function SteamProfileHeader({ steamUser, library, totalValue, pricesLoading, onLogout }) {
-  const fmtTL = n => n.toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + ' ₺';
+  const { t, formatPrice } = useLanguage();
   return (
     <div style={{ background: 'linear-gradient(135deg, #1b2838, #2a475e)', borderRadius: 16, padding: '20px 24px', marginBottom: 4 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
@@ -446,16 +464,16 @@ function SteamProfileHeader({ steamUser, library, totalValue, pricesLoading, onL
           : <div style={{ width: 64, height: 64, borderRadius: 12, background: '#1a9fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 700, color: '#fff', flexShrink: 0 }}>{steamUser.name?.slice(0, 1).toUpperCase()}</div>
         }
         <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Steam Kütüphanesi</p>
+          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>{t('library.steam')}</p>
           <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 4 }}>{steamUser.name}</h2>
-          <a href={steamUser.profileUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: '#1a9fff', textDecoration: 'none' }}>Profili Görüntüle →</a>
+          <a href={steamUser.profileUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: '#1a9fff', textDecoration: 'none' }}>{t('library.viewProfile')}</a>
         </div>
         {library && (
           <div style={{ display: 'flex', gap: 20, flexShrink: 0, flexWrap: 'wrap' }}>
             {[
-              { label: 'Toplam Oyun', value: library.total },
-              { label: 'Oynanan',     value: library.played },
-              { label: 'Toplam Saat', value: `${library.totalHours}s` },
+              { label: t('library.stats.totalGames'), value: library.total },
+              { label: t('library.stats.played'),     value: library.played },
+              { label: t('library.stats.totalHours'), value: `${library.totalHours}${t('library.hours').toLowerCase().slice(0, 1)}` },
             ].map(s => (
               <div key={s.label} style={{ textAlign: 'center' }}>
                 <p style={{ fontSize: 20, fontWeight: 800, color: '#fff' }}>{s.value}</p>
@@ -464,19 +482,19 @@ function SteamProfileHeader({ steamUser, library, totalValue, pricesLoading, onL
             ))}
             <div style={{ textAlign: 'center' }}>
               {pricesLoading && !totalValue
-                ? <><p style={{ fontSize: 18, fontWeight: 800, color: 'rgba(255,255,255,0.4)', fontStyle: 'italic' }}>…</p><p style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>Kütüphane Değeri</p></>
+                ? <><p style={{ fontSize: 18, fontWeight: 800, color: 'rgba(255,255,255,0.4)', fontStyle: 'italic' }}>…</p><p style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>{t('library.value')}</p></>
                 : totalValue
-                  ? <><p style={{ fontSize: 18, fontWeight: 800, color: '#4ade80' }}>{fmtTL(totalValue.sum)}</p><p style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>Kütüphane Değeri</p></>
+                  ? <><p style={{ fontSize: 18, fontWeight: 800, color: '#4ade80' }}>{formatPrice(totalValue.sum)}</p><p style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>{t('library.value')}</p></>
                   : null
               }
             </div>
           </div>
         )}
-        <button onClick={onLogout} style={{ padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', flexShrink: 0 }}>Çıkış Yap</button>
+        <button onClick={onLogout} style={{ padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', flexShrink: 0 }}>{t('nav.logout')}</button>
       </div>
       {totalValue && (
         <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 10 }}>
-          * Güncel Steam Türkiye fiyatları baz alınmıştır ({totalValue.counted} oyun). Ücretsiz ve bölgede satılmayan oyunlar dahil edilmemiştir.
+          {t('library.disclaimer').replace('{count}', totalValue.counted)}
         </p>
       )}
     </div>
@@ -484,7 +502,9 @@ function SteamProfileHeader({ steamUser, library, totalValue, pricesLoading, onL
 }
 
 function GameRow({ game, rank, price, pricesLoading }) {
-  const lastPlayed = game.lastPlayed ? formatLastPlayed(game.lastPlayed) : null;
+  const { t, formatPrice, lang } = useLanguage();
+  const lastPlayed = game.lastPlayed ? formatLastPlayed(game.lastPlayed, t) : null;
+  const hourSymbol = lang === 'tr' ? 's' : 'h';
 
   return (
     <div
@@ -512,8 +532,8 @@ function GameRow({ game, rank, price, pricesLoading }) {
           <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{game.name}</p>
         </a>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 3, flexWrap: 'wrap' }}>
-          {game.hoursRecent > 0 && <span style={{ fontSize: 11, color: '#1a9fff' }}>Son 2 haftada {game.hoursRecent}s</span>}
-          {lastPlayed && !game.hoursRecent && <span style={{ fontSize: 11, color: 'var(--text-3)' }}>Son: {lastPlayed}</span>}
+          {game.hoursRecent > 0 && <span style={{ fontSize: 11, color: '#1a9fff' }}>{t('library.playedRecent').replace('{hours}', game.hoursRecent)}</span>}
+          {lastPlayed && !game.hoursRecent && <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t('library.lastPlayedLabel').replace('{date}', lastPlayed)}</span>}
         </div>
       </div>
       <a href={`/api/game-lookup?name=${encodeURIComponent(game.name)}`} title="GamePick'te görüntüle" style={{ flexShrink: 0, padding: '4px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text-3)', textDecoration: 'none', whiteSpace: 'nowrap' }}
@@ -524,14 +544,14 @@ function GameRow({ game, rank, price, pricesLoading }) {
         {pricesLoading && !price
           ? <p style={{ fontSize: 11, color: 'var(--text-3)', fontStyle: 'italic' }}>…</p>
           : price?.isFree
-            ? <p style={{ fontSize: 12, color: '#4ade80', fontWeight: 700 }}>🎁 Ücretsiz</p>
+            ? <p style={{ fontSize: 12, color: '#4ade80', fontWeight: 700 }}>{t('library.free')}</p>
             : price?.unavailable
-              ? <p style={{ fontSize: 11, color: 'var(--text-3)', fontStyle: 'italic' }}>Fiyat yok</p>
+              ? <p style={{ fontSize: 11, color: 'var(--text-3)', fontStyle: 'italic' }}>{t('library.noPrice')}</p>
               : price
                 ? <>
-                    {price.discount > 0 && <p style={{ fontSize: 10, color: 'var(--text-3)', textDecoration: 'line-through', marginBottom: 1 }}>{price.originalFormatted}</p>}
+                    {price.discount > 0 && <p style={{ fontSize: 10, color: 'var(--text-3)', textDecoration: 'line-through', marginBottom: 1 }}>{formatPrice(price.original)}</p>}
                     <p style={{ fontSize: 13, fontWeight: 700, color: price.discount > 0 ? '#4ade80' : 'var(--text)' }}>
-                      {price.currentFormatted}
+                      {formatPrice(price.current)}
                       {price.discount > 0 && <span style={{ marginLeft: 4, fontSize: 10, background: '#16a34a', color: '#fff', borderRadius: 4, padding: '1px 4px' }}>-{price.discount}%</span>}
                     </p>
                   </>
@@ -540,8 +560,8 @@ function GameRow({ game, rank, price, pricesLoading }) {
       </div>
       <div style={{ textAlign: 'right', flexShrink: 0, minWidth: 60 }}>
         {game.hours > 0
-          ? <><p style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{game.hours}s</p><p style={{ fontSize: 11, color: 'var(--text-3)' }}>oynandı</p></>
-          : <p style={{ fontSize: 12, color: 'var(--text-3)', fontStyle: 'italic' }}>Oynanmadı</p>
+          ? <><p style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{game.hours}{hourSymbol}</p><p style={{ fontSize: 11, color: 'var(--text-3)' }}>{t('library.hoursPlayed')}</p></>
+          : <p style={{ fontSize: 12, color: 'var(--text-3)', fontStyle: 'italic' }}>{t('library.notPlayed')}</p>
         }
       </div>
     </div>
@@ -552,14 +572,15 @@ function GameRow({ game, rank, price, pricesLoading }) {
 // XBOX BİLEŞENLERİ
 // ─────────────────────────────────────────────────────────────────────────────
 function XboxProfileHeader({ xboxUser, library, onLogout }) {
+  const { t, lang } = useLanguage();
   const hasGamePass = xboxUser.gamepassType === 'ultimate' || xboxUser.gamepassType === 'pc' || (library && library.gamePassCount > 0);
   const gpText = xboxUser.gamepassType === 'ultimate' 
-    ? 'Game Pass Ultimate' 
+    ? t('library.xbox.ultimate') 
     : xboxUser.gamepassType === 'pc'
-      ? 'PC Game Pass'
+      ? t('library.xbox.pc')
       : (library && library.gamePassCount > 0)
-        ? 'Xbox Game Pass'
-        : 'Xbox Live Üyesi';
+        ? t('library.xbox.gp')
+        : t('library.xbox.member');
 
   return (
     <div style={{ background: 'linear-gradient(135deg, #0e4d0e, #107C10, #1a9a1a)', borderRadius: 16, padding: '20px 24px', marginBottom: 4 }}>
@@ -569,7 +590,7 @@ function XboxProfileHeader({ xboxUser, library, onLogout }) {
           : <div style={{ width: 64, height: 64, borderRadius: 12, background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><XboxLogo size={36} color="#fff" /></div>
         }
         <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Xbox Kütüphanesi</p>
+          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>{t('library.xbox')}</p>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff' }}>{xboxUser.gamertag}</h2>
             {hasGamePass ? (
@@ -591,14 +612,14 @@ function XboxProfileHeader({ xboxUser, library, onLogout }) {
               </span>
             )}
           </div>
-          <a href={`https://www.xbox.com/tr-TR/play/user/${xboxUser.gamertag}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', textDecoration: 'none', display: 'inline-block', marginTop: 6 }}>Xbox Profilini Görüntüle →</a>
+          <a href={`https://www.xbox.com/${lang === 'tr' ? 'tr-TR' : 'en-US'}/play/user/${xboxUser.gamertag}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', textDecoration: 'none', display: 'inline-block', marginTop: 6 }}>{t('library.viewProfile')}</a>
         </div>
         {library && (
           <div style={{ display: 'flex', gap: 20, flexShrink: 0, flexWrap: 'wrap' }}>
             {[
-              { label: 'Oynanan Oyun',   value: library.total },
+              { label: t('library.stats.played') + ' ' + t('library.games'),   value: library.total },
               { label: 'Game Pass',      value: library.gamePassCount },
-              { label: 'Gamerscore',     value: library.totalGamerscore?.toLocaleString('tr') },
+              { label: 'Gamerscore',     value: library.totalGamerscore?.toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US') },
             ].map(s => (
               <div key={s.label} style={{ textAlign: 'center' }}>
                 <p style={{ fontSize: 20, fontWeight: 800, color: '#fff' }}>{s.value}</p>
@@ -607,11 +628,11 @@ function XboxProfileHeader({ xboxUser, library, onLogout }) {
             ))}
           </div>
         )}
-        <button onClick={onLogout} style={{ padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', flexShrink: 0 }}>Çıkış Yap</button>
+        <button onClick={onLogout} style={{ padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', flexShrink: 0 }}>{t('nav.logout')}</button>
       </div>
       {library && (
         <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 10 }}>
-          * Xbox Live oyun geçmişi gösterilmektedir. Game Pass ile oynanan oyunlar ayrıca işaretlenmiştir.
+          {t('library.xbox.disclaimer')}
         </p>
       )}
     </div>
@@ -619,7 +640,8 @@ function XboxProfileHeader({ xboxUser, library, onLogout }) {
 }
 
 function XboxGameRow({ game }) {
-  const lastPlayed = game.lastPlayed ? formatLastPlayed(game.lastPlayed) : null;
+  const { t } = useLanguage();
+  const lastPlayed = game.lastPlayed ? formatLastPlayed(game.lastPlayed, t) : null;
   const pct = game.totalAchievements > 0
     ? Math.round((game.currentAchievements / game.totalAchievements) * 100)
     : 0;
@@ -705,31 +727,33 @@ function SkeletonList() {
 }
 
 function EmptyState() {
+  const { t } = useLanguage();
   return (
     <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--text-3)' }}>
       <p style={{ fontSize: 36, marginBottom: 12 }}>🔍</p>
-      <p style={{ fontSize: 15, fontWeight: 600 }}>Oyun bulunamadı</p>
+      <p style={{ fontSize: 15, fontWeight: 600 }}>{t('games.noResults')}</p>
     </div>
   );
 }
 
 function ErrorBox({ error }) {
+  const { t } = useLanguage();
   return (
     <div style={{ marginTop: 32, background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 14, padding: '24px 28px', textAlign: 'center' }}>
       <p style={{ fontSize: 36, marginBottom: 12 }}>🔒</p>
       <p style={{ fontSize: 16, fontWeight: 700, color: '#991b1b', marginBottom: 8 }}>
-        {error.private ? 'Profil Gizli' : 'Kütüphane Yüklenemedi'}
+        {error.private ? t('library.profilePrivate') : t('library.xbox.loadFailed')}
       </p>
       <p style={{ fontSize: 14, color: '#7f1d1d', lineHeight: 1.6 }}>
         {error.private
-          ? 'Steam profilini "Herkese Açık" yapman gerekiyor.'
+          ? t('library.profilePrivateDesc')
           : error.error
         }
       </p>
       {error.private && (
         <a href="https://steamcommunity.com/my/edit/settings" target="_blank" rel="noopener noreferrer"
           style={{ display: 'inline-block', marginTop: 16, padding: '10px 24px', borderRadius: 8, background: '#1b2838', color: '#fff', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>
-          Steam Gizlilik Ayarları →
+          {t('library.steamSettings')}
         </a>
       )}
     </div>
@@ -760,21 +784,22 @@ function XboxLogo({ size = 24, color = '#fff' }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // YARDIMCI FONKSİYONLAR
 // ─────────────────────────────────────────────────────────────────────────────
-function formatLastPlayed(ts) {
+function formatLastPlayed(ts, t) {
   if (!ts || ts === 0) return null;
   const diffDays = Math.floor((Date.now() - ts * 1000) / (1000 * 60 * 60 * 24));
-  if (diffDays === 0) return 'Bugün';
-  if (diffDays === 1) return 'Dün';
-  if (diffDays < 7)  return `${diffDays} gün önce`;
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)} hafta önce`;
-  if (diffDays < 365) return `${Math.floor(diffDays / 30)} ay önce`;
-  return `${Math.floor(diffDays / 365)} yıl önce`;
+  if (diffDays === 0) return t('library.today');
+  if (diffDays === 1) return t('library.yesterday');
+  if (diffDays < 7)  return t('library.daysAgo').replace('{days}', diffDays);
+  if (diffDays < 30) return t('library.weeksAgo').replace('{weeks}', Math.floor(diffDays / 7));
+  if (diffDays < 365) return t('library.monthsAgo').replace('{months}', Math.floor(diffDays / 30));
+  return t('library.yearsAgo').replace('{years}', Math.floor(diffDays / 365));
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // XBOX BAĞLANTI MODALI
 // ─────────────────────────────────────────────────────────────────────────────
 function XboxConnectModal({ onClose, xboxError, setXboxError }) {
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
 
   return (
@@ -800,8 +825,8 @@ function XboxConnectModal({ onClose, xboxError, setXboxError }) {
           <div style={{ width: 60, height: 60, borderRadius: '50%', background: '#107C10', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', boxShadow: '0 4px 15px rgba(16,124,16,0.3)' }}>
             <XboxLogo size={32} />
           </div>
-          <h2 style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', marginBottom: 6 }}>Xbox Hesabını Bağla</h2>
-          <p style={{ fontSize: 13, color: 'var(--text-3)' }}>Hesabını bağlayarak Game Pass durumunu ve oyunlarını gör.</p>
+          <h2 style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', marginBottom: 6 }}>{t('library.xbox.connectTitle')}</h2>
+          <p style={{ fontSize: 13, color: 'var(--text-3)' }}>{t('library.xbox.connectDesc')}</p>
         </div>
 
         {/* Hata Uyarısı */}
@@ -812,7 +837,7 @@ function XboxConnectModal({ onClose, xboxError, setXboxError }) {
           }}>
             <span style={{ fontSize: 16 }}>⚠️</span>
             <div style={{ flex: 1 }}>
-              <p style={{ fontSize: 13, fontWeight: 700, color: '#991b1b', marginBottom: 2 }}>Bağlantı Hatası</p>
+              <p style={{ fontSize: 13, fontWeight: 700, color: '#991b1b', marginBottom: 2 }}>{t('library.xboxError')}</p>
               <p style={{ fontSize: 12, color: '#7f1d1d', lineHeight: 1.4 }}>{xboxError}</p>
             </div>
             <button onClick={() => setXboxError(null)} style={{ background: 'none', border: 'none', color: '#991b1b', cursor: 'pointer', fontSize: 16, padding: 0 }}>×</button>
@@ -833,10 +858,10 @@ function XboxConnectModal({ onClose, xboxError, setXboxError }) {
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
             <span style={{ fontSize: 18 }}>🔑</span>
-            <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>Microsoft Hesabı ile Giriş Yap</h3>
+            <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{t('library.xbox.connectOAuth')}</h3>
           </div>
           <p style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.5 }}>
-            Resmi Xbox Live verilerini Microsoft OAuth üzerinden güvenle bağla. (Xbox Developer Sandbox yetkisi gerektirebilir).
+            {t('library.xbox.connectOAuthDesc')}
           </p>
         </div>
 
@@ -847,10 +872,10 @@ function XboxConnectModal({ onClose, xboxError, setXboxError }) {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
             <span style={{ fontSize: 18 }}>⚡</span>
-            <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>Gamertag ile Hızlı Bağlan (Test)</h3>
+            <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{t('library.xbox.connectMock')}</h3>
           </div>
           <p style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.5, marginBottom: 16 }}>
-            Eğer resmi Microsoft OAuth bağlantısı çalışmıyorsa veya anında test etmek isterseniz, Gamertag girerek simülasyonu başlatabilirsiniz.
+            {t('library.xbox.connectMockDesc')}
           </p>
           
           <form onSubmit={async (e) => {
@@ -871,7 +896,7 @@ function XboxConnectModal({ onClose, xboxError, setXboxError }) {
               if (data.ok) {
                 window.location.reload();
               } else {
-                setXboxError(data.error || 'Simüle giriş yapılamadı.');
+                setXboxError(data.error || t('library.xbox.connectMockFailed'));
                 setLoading(false);
               }
             } catch (err) {
@@ -880,22 +905,22 @@ function XboxConnectModal({ onClose, xboxError, setXboxError }) {
             }
           }}>
             <div style={{ marginBottom: 12 }}>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>Xbox Gamertag</label>
-              <input name="gamertag" required defaultValue="MasterChief117" placeholder="Gamer Etiketini yaz..." style={{
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>{t('library.xbox.connectMockLabel')}</label>
+              <input name="gamertag" required defaultValue="MasterChief117" placeholder={t('library.xbox.connectMockPlaceholder')} style={{
                 width: '100%', padding: '10px 14px', borderRadius: 8, border: '1.5px solid var(--border)',
                 background: 'var(--bg-card)', color: 'var(--text)', fontSize: 13, outline: 'none'
               }} />
             </div>
             
             <div style={{ marginBottom: 20 }}>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>Game Pass Aboneliği</label>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>{t('library.xbox.connectMockGP')}</label>
               <select name="gamepassType" style={{
                 width: '100%', padding: '10px 14px', borderRadius: 8, border: '1.5px solid var(--border)',
                 background: 'var(--bg-card)', color: 'var(--text)', fontSize: 13, outline: 'none'
               }}>
-                <option value="ultimate">Xbox Game Pass Ultimate (Aktif)</option>
-                <option value="pc">PC Game Pass (Aktif)</option>
-                <option value="none">Abonelik Yok</option>
+                <option value="ultimate">{t('library.xbox.connectMockGPU')}</option>
+                <option value="pc">{t('library.xbox.connectMockGPPC')}</option>
+                <option value="none">{t('library.xbox.connectMockGPNone')}</option>
               </select>
             </div>
             
@@ -904,7 +929,7 @@ function XboxConnectModal({ onClose, xboxError, setXboxError }) {
               color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 15px rgba(16,124,16,0.3)',
               opacity: loading ? 0.6 : 1, transition: 'opacity 0.15s'
             }}>
-              {loading ? 'Bağlanıyor...' : 'Bağlantıyı Simüle Et'}
+              {loading ? t('library.xbox.connectMockSubmitting') : t('library.xbox.connectMockSubmit')}
             </button>
           </form>
         </div>

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, memo } from 'react';
 import Link from 'next/link';
 import GameImage from './GameImage';
 import { useAuth, normalizeName } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 function SteamIcon({ size = 16 }) {
   return (
@@ -24,6 +25,7 @@ function EpicIcon({ size = 16 }) {
 
 function GameCard({ game, compact = false }) {
   const { ownedGames, xboxOwnedGames = new Set(), gamePassGames = new Set() } = useAuth();
+  const { lang, t, formatPrice } = useLanguage();
   const normalizedNameStr = normalizeName(game.name);
   const isOwnedSteam = ownedGames.size > 0 && ownedGames.has(normalizedNameStr);
   const isOwnedXbox  = xboxOwnedGames.size > 0 && xboxOwnedGames.has(normalizedNameStr);
@@ -100,7 +102,7 @@ function GameCard({ game, compact = false }) {
 
           {/* Sol üst: indirim / ücretsiz badge */}
           <div style={{ position: 'absolute', top: 8, left: 8, display: 'flex', gap: 4 }}>
-            {isFree   && <span className="badge badge-green">Ücretsiz</span>}
+            {isFree   && <span className="badge badge-green">{t('card.free')}</span>}
             {isOnSale && (
               <span className="badge badge-amber" style={{ fontWeight: 700, border: '1px solid var(--border-hover)' }}>
                 {livePrice.storeIcon} -%{livePrice.discount}
@@ -116,7 +118,7 @@ function GameCard({ game, compact = false }) {
                 background: 'rgba(26,159,255,0.92)',
                 color: '#fff', backdropFilter: 'blur(4px)',
               }}>
-                ✓ Sahipsin
+                ✓ {t('card.owned')}
               </span>
             </div>
           )}
@@ -127,7 +129,7 @@ function GameCard({ game, compact = false }) {
                 background: 'rgba(16,124,16,0.92)',
                 color: '#fff', backdropFilter: 'blur(4px)',
               }}>
-                ✓ Xbox'ta
+                ✓ {t('card.xbox')}
               </span>
             </div>
           )}
@@ -138,7 +140,7 @@ function GameCard({ game, compact = false }) {
                 background: 'rgba(16,124,16,0.92)',
                 color: '#fff', backdropFilter: 'blur(4px)',
               }}>
-                🎮 Game Pass
+                🎮 {t('card.gamepass')}
               </span>
             </div>
           )}
@@ -190,13 +192,13 @@ function GameCard({ game, compact = false }) {
 
             {/* Fiyat */}
             {isFree ? (
-              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--green)' }}>Ücretsiz</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--green)' }}>{t('card.free')}</span>
             ) : livePrice?.price != null ? (
               isOnSale ? (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                     <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--amber)' }}>
-                      {livePrice.price}₺
+                      {formatPrice(livePrice.price)}
                     </span>
                     {livePrice.storeIcon && (
                       <span title={livePrice.storeName} style={{ fontSize: 11, opacity: 0.85 }}>
@@ -205,13 +207,13 @@ function GameCard({ game, compact = false }) {
                     )}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>
-                    <span style={{ textDecoration: 'line-through' }}>{livePrice.original}₺</span>
+                    <span style={{ textDecoration: 'line-through' }}>{formatPrice(livePrice.original)}</span>
                     <span style={{ color: 'var(--amber)', fontWeight: 700 }}>-%{livePrice.discount}</span>
                   </div>
                 </div>
               ) : (
                 <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
-                  {livePrice.price}₺
+                  {formatPrice(livePrice.price)}
                 </span>
               )
             ) : priceLoading ? (

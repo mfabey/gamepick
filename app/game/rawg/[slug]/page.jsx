@@ -4,10 +4,12 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth, normalizeName } from '../../../context/AuthContext';
+import { useLanguage } from '../../../context/LanguageContext';
 
 export default function RawgGamePage({ params }) {
   const { slug } = params;
   const { ownedGames, xboxOwnedGames = new Set(), gamePassGames = new Set() } = useAuth();
+  const { lang, t, formatPrice } = useLanguage();
 
   const [game,         setGame]         = useState(null);
   const [steamPrice,   setSteamPrice]   = useState(null);
@@ -185,12 +187,15 @@ export default function RawgGamePage({ params }) {
   );
 
   if (error || !game) return (
-    <div style={{ textAlign: 'center', padding: '80px 20px' }}>
-      <p style={{ fontSize: 48, marginBottom: 12 }}>😕</p>
-      <p style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>Oyun bulunamadı</p>
-      <p style={{ color: 'var(--text-3)', marginBottom: 24 }}>{error || 'Bilinmeyen hata'}</p>
-      <Link href="/games" style={{ padding: '10px 24px', background: 'var(--accent)', color: '#fff', borderRadius: 10, textDecoration: 'none', fontWeight: 600 }}>
-        ← Oyunlara Dön
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 'calc(100vh - 64px)', background: 'var(--bg-body)' }}>
+      <p style={{ fontSize: 48, marginBottom: 12 }}>🔍</p>
+      <p style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>{t('detail.notFound')}</p>
+      <Link href="/games" style={{
+        padding: '10px 24px', borderRadius: 8,
+        background: 'var(--accent)', color: '#fff',
+        textDecoration: 'none', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+      }}>
+        {t('detail.goBack')}
       </Link>
     </div>
   );
@@ -243,7 +248,7 @@ export default function RawgGamePage({ params }) {
 
       <div className="container" style={{ paddingTop: 28, paddingBottom: 60, maxWidth: 960, position: 'relative', zIndex: 1 }}>
         <Link href="/games" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--text-3)', fontSize: 13, textDecoration: 'none', marginBottom: 20 }}>
-          ← Oyunlara Dön
+          ← {lang === 'tr' ? 'Oyunlara Dön' : 'Back to Games'}
         </Link>
 
       {/* Başlık ve Rozetler (Mobil Uyumlu) */}
@@ -256,7 +261,7 @@ export default function RawgGamePage({ params }) {
               background: 'rgba(26,159,255,0.12)', border: '1px solid rgba(26,159,255,0.35)',
               color: '#1a9fff', display: 'flex', alignItems: 'center', gap: 5,
             }}>
-              ✓ Steam Kütüphanende var
+              ✓ {lang === 'tr' ? 'Steam Kütüphanende var' : 'In your Steam Library'}
             </div>
           )}
           {xboxOwnedGames.size > 0 && xboxOwnedGames.has(normalizeName(game.name)) && (
@@ -265,7 +270,7 @@ export default function RawgGamePage({ params }) {
               background: 'rgba(16,124,16,0.12)', border: '1px solid rgba(16,124,16,0.35)',
               color: '#107C10', display: 'flex', alignItems: 'center', gap: 5,
             }}>
-              ✓ Xbox Kütüphanende var
+              ✓ {lang === 'tr' ? 'Xbox Kütüphanende var' : 'In your Xbox Library'}
             </div>
           )}
           {gamePassGames.size > 0 && gamePassGames.has(normalizeName(game.name)) && (
@@ -274,7 +279,7 @@ export default function RawgGamePage({ params }) {
               background: 'rgba(16,124,16,0.12)', border: '1px solid rgba(16,124,16,0.35)',
               color: '#107C10', display: 'flex', alignItems: 'center', gap: 5,
             }}>
-              🎮 Game Pass Kütüphanende var
+              🎮 {lang === 'tr' ? 'Game Pass Kütüphanende var' : 'In your Game Pass Library'}
             </div>
           )}
           {game.metacritic && (
@@ -321,9 +326,9 @@ export default function RawgGamePage({ params }) {
           {/* AI Özeti */}
           {ai && (
             <div className="glass-ai-panel" style={{ marginBottom: 20 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                <span style={{ fontSize: 18 }}>✨</span>
-                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)' }}>AI Özeti</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                <span style={{ fontSize: 18 }}>💡</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)' }}>{lang === 'tr' ? 'AI Özeti' : 'AI Summary'}</span>
               </div>
               {ai.ozet && <p style={{ fontSize: 14, lineHeight: 1.7, color: 'var(--text)', marginBottom: ai.duygu ? 10 : 0, wordBreak: 'break-word', overflowWrap: 'break-word' }}>{ai.ozet}</p>}
               {ai.duygu && (
@@ -352,7 +357,7 @@ export default function RawgGamePage({ params }) {
                   {game.description.length > 1200 ? '…' : ''}
                   {aiLoading && (
                     <span style={{ display: 'inline-block', marginLeft: 6, fontSize: 11, color: 'var(--text-3)' }}>
-                      (Türkçe çeviri yükleniyor…)
+                      ({lang === 'tr' ? 'Türkçe çeviri yükleniyor…' : 'Translating...'})
                     </span>
                   )}
                 </>
@@ -372,7 +377,7 @@ export default function RawgGamePage({ params }) {
           {news.length > 0 && (
             <div style={{ marginTop: 26 }}>
               <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 7 }}>
-                📰 İlgili Haberler
+                📰 {t('detail.news')}
               </h2>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {news.map(n => (
@@ -383,7 +388,7 @@ export default function RawgGamePage({ params }) {
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                       <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)' }}>{n.source}</span>
-                      {n.date && <span style={{ fontSize: 11, color: 'var(--text-3)' }}>· {new Date(n.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' })}</span>}
+                      {n.date && <span style={{ fontSize: 11, color: 'var(--text-3)' }}>· {new Date(n.date).toLocaleDateString(lang === 'tr' ? 'tr-TR' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</span>}
                     </div>
                     <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', lineHeight: 1.35, marginBottom: n.excerpt ? 5 : 0 }}>{n.title}</p>
                     {n.excerpt && <p style={{ fontSize: 12.5, color: 'var(--text-2)', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{n.excerpt}</p>}
@@ -399,10 +404,10 @@ export default function RawgGamePage({ params }) {
           {/* Detay tablosu */}
           <div className="glass-panel" style={{ marginBottom: 20, fontSize: 13 }}>
             {[
-              { label: 'Geliştirici', value: game.developer },
-              { label: 'Yayıncı',    value: game.publisher  },
-              { label: 'Çıkış',      value: game.released   },
-              { label: 'Türler',     value: (game.genres || []).join(', ') },
+              { label: lang === 'tr' ? 'Geliştirici' : 'Developer', value: game.developer },
+              { label: lang === 'tr' ? 'Yayıncı' : 'Publisher',    value: game.publisher  },
+              { label: lang === 'tr' ? 'Çıkış' : 'Release',      value: game.released   },
+              { label: lang === 'tr' ? 'Türler' : 'Genres',     value: (game.genres || []).join(', ') },
             ].filter(r => r.value).map(row => (
               <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid var(--border)', gap: 12 }}>
                 <span style={{ color: 'var(--text-3)', flexShrink: 0 }}>{row.label}</span>
@@ -413,7 +418,7 @@ export default function RawgGamePage({ params }) {
 
           {/* ── Platform Fiyatları ──────────────────────────────────── */}
           <div>
-            <h2 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 10 }}>Platform Fiyatları</h2>
+            <h2 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 10 }}>{t('detail.priceComparison')}</h2>
 
             {/* Steam */}
             {game.hasSteam ? (
@@ -511,11 +516,11 @@ export default function RawgGamePage({ params }) {
 
             {/* Resmi Web Sitesi (Minecraft vb. özel oyunlar için) */}
             {game.officialUrl && (
-              <PlaceholderCard store="Resmi Web Sitesi" icon="🌐" url={game.officialUrl} />
+              <PlaceholderCard store={lang === 'tr' ? 'Resmi Web Sitesi' : 'Official Website'} icon="🌐" url={game.officialUrl} />
             )}
 
             <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 10, lineHeight: 1.5 }}>
-              Fiyatlar Steam & ITAD üzerinden alınmaktadır. Anlık değişiklikler yansımayabilir.
+              {lang === 'tr' ? 'Fiyatlar Steam & ITAD üzerinden alınmaktadır. Anlık değişiklikler yansımayabilir.' : 'Prices are fetched via Steam & ITAD. Real-time changes may not be reflected immediately.'}
             </p>
           </div>
         </div>
@@ -580,6 +585,7 @@ function LoadingPriceRow() {
 
 // ── Fiyatlı platform kartı ───────────────────────────────────────────────────
 function PriceCard({ store, icon, price, original, discount, isFree: isFreeOverride, url, highlight = false }) {
+  const { lang, t, formatPrice } = useLanguage();
   const isFree   = isFreeOverride || price === 0;
   const isOnSale = discount > 0 && !isFree;
 
@@ -630,19 +636,19 @@ function PriceCard({ store, icon, price, original, discount, isFree: isFreeOverr
               background: 'var(--gold-badge-bg)', color: 'var(--gold-badge-text)', border: '1px solid var(--gold-border)',
               whiteSpace: 'nowrap'
             }}>
-              👑 En Ucuz
+              👑 {t('detail.cheapest')}
             </span>
           )}
         </span>
         <div style={{ textAlign: 'right', flexShrink: 0, fontFamily: "-apple-system, 'Segoe UI', system-ui, Roboto, 'Helvetica Neue', Arial, sans-serif" }}>
           {isFree ? (
-            <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--green)' }}>Ücretsiz</span>
+            <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--green)' }}>{t('card.free')}</span>
           ) : (
             <>
-              <span style={{ fontWeight: 700, fontSize: 15, color: isOnSale ? 'var(--amber)' : 'var(--text)' }}>{price}₺</span>
+              <span style={{ fontWeight: 700, fontSize: 15, color: isOnSale ? 'var(--amber)' : 'var(--text)' }}>{formatPrice(price)}</span>
               {isOnSale && (
                 <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
-                  <span style={{ textDecoration: 'line-through' }}>{original}₺</span>
+                  <span style={{ textDecoration: 'line-through' }}>{formatPrice(original)}</span>
                   {' '}<span style={{ color: 'var(--amber)' }}>-%{discount}</span>
                 </div>
               )}
@@ -679,7 +685,7 @@ function PlaceholderCard({ store, icon, url }) {
           <StoreLogo store={store} />
           <span style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>{store}</span>
         </span>
-        <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 500, flexShrink: 0 }}>Mağazaya Git →</span>
+        <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 500, flexShrink: 0 }}>{lang === 'tr' ? 'Mağazaya Git →' : 'Go to Store →'}</span>
       </div>
     </a>
   );
@@ -687,13 +693,14 @@ function PlaceholderCard({ store, icon, url }) {
 
 // ── Oyun bu platformda yok ───────────────────────────────────────────────────
 function MissingCard({ platform }) {
+  const { lang } = useLanguage();
   return (
     <div className="glass-card" style={{
       padding: '12px 14px', borderRadius: 10, marginBottom: 8,
       borderStyle: 'dashed', opacity: 0.7,
       fontSize: 13, color: 'var(--text-3)', textAlign: 'center',
     }}>
-      Bu oyun {platform}&apos;te bulunmuyor
+      {lang === 'tr' ? `Bu oyun ${platform}'te bulunmuyor` : `This game is not available on ${platform}`}
     </div>
   );
 }

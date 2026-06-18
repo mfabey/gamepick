@@ -5,20 +5,22 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-
-const NAV_LINKS = [
-  { href: '/',        label: 'Anasayfa' },
-  { href: '/games',   label: 'Oyunlar'  },
-  { href: '/news',    label: 'Haberler' },
-  { href: '/dlc',     label: 'DLC'      },
-  { href: '/library', label: 'Kütüphane' },
-];
+import { useLanguage } from '../context/LanguageContext';
 
 export default function NavBar() {
   const pathname = usePathname();
   const router   = useRouter();
   const { user, steamUser, logout, steamLogout } = useAuth();
   const { theme, toggleTheme, mounted } = useTheme();
+  const { lang, changeLanguage, t } = useLanguage();
+
+  const NAV_LINKS = [
+    { href: '/',        label: t('nav.home') },
+    { href: '/games',   label: t('nav.games') },
+    { href: '/news',    label: t('nav.news') },
+    { href: '/dlc',     label: t('nav.dlc') },
+    { href: '/library', label: t('nav.library') },
+  ];
 
   const handleLogout = () => { logout(); router.push('/'); };
 
@@ -91,6 +93,54 @@ export default function NavBar() {
           height: 64, display: 'flex', alignItems: 'center',
           justifyContent: 'flex-end', position: 'relative',
         }}>
+          {/* Sol: Dil seçimi */}
+          <div style={{
+            marginRight: 'auto',
+            display: 'flex',
+            alignItems: 'center',
+            background: 'var(--bg-input)',
+            border: '1px solid var(--border)',
+            borderRadius: 9,
+            padding: '2px',
+            gap: 2,
+            fontSize: 12,
+            fontWeight: 600,
+            zIndex: 10,
+          }}>
+            <button
+              onClick={() => changeLanguage('tr')}
+              style={{
+                padding: '4px 8px',
+                borderRadius: 7,
+                border: 'none',
+                background: lang === 'tr' ? 'var(--accent)' : 'transparent',
+                color: lang === 'tr' ? '#fff' : 'var(--text-3)',
+                cursor: 'pointer',
+                fontSize: 11,
+                fontWeight: 700,
+                transition: 'background 0.2s, color 0.2s',
+              }}
+            >
+              TR
+            </button>
+            <button
+              onClick={() => changeLanguage('en')}
+              style={{
+                padding: '4px 8px',
+                borderRadius: 7,
+                border: 'none',
+                background: lang === 'en' ? 'var(--accent)' : 'transparent',
+                color: lang === 'en' ? '#fff' : 'var(--text-3)',
+                cursor: 'pointer',
+                fontSize: 11,
+                fontWeight: 700,
+                transition: 'background 0.2s, color 0.2s',
+              }}
+            >
+              EN
+            </button>
+          </div>
+
           {/* Ortalı logo */}
           <Link href="/" style={{
             display: 'flex', alignItems: 'center', gap: 9, cursor: 'pointer',
@@ -122,7 +172,7 @@ export default function NavBar() {
               padding: '8px 14px', fontSize: 14, fontWeight: 500, whiteSpace: 'nowrap',
               color: pathname.startsWith('/support') ? 'var(--accent)' : 'var(--text-2)',
               transition: 'color 0.15s',
-            }}>Destek</Link>
+            }}>{t('nav.support')}</Link>
             <button onClick={toggleTheme} title={theme === 'dark' ? 'Aydınlık Mod' : 'Karanlık Mod'} style={{
               background: 'none', border: '1px solid var(--border)', borderRadius: 9,
               width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -148,7 +198,7 @@ export default function NavBar() {
                     : <span style={{ width: 22, height: 22, borderRadius: '50%', background: '#2f73e8', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700 }}>{steamUser.name?.slice(0, 1).toUpperCase()}</span>}
                   {steamUser.name?.slice(0, 14)}{steamUser.name?.length > 14 ? '…' : ''}
                 </Link>
-                <button onClick={steamLogout} style={{ padding: '5px 10px', borderRadius: 9, fontSize: 12, background: 'none', border: '1px solid var(--border)', color: 'var(--text-3)', cursor: 'pointer' }}>Çıkış</button>
+                <button onClick={steamLogout} style={{ padding: '5px 10px', borderRadius: 9, fontSize: 12, background: 'none', border: '1px solid var(--border)', color: 'var(--text-3)', cursor: 'pointer' }}>{t('nav.logout')}</button>
               </div>
             ) : user ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -159,12 +209,12 @@ export default function NavBar() {
                   <span style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700 }}>{user.name?.slice(0, 1).toUpperCase()}</span>
                   {user.name?.split(' ')[0]}
                 </Link>
-                <button onClick={handleLogout} style={{ padding: '6px 12px', borderRadius: 9, fontSize: 12, background: 'none', border: '1px solid var(--border)', color: 'var(--text-3)', cursor: 'pointer' }}>Çıkış</button>
+                <button onClick={handleLogout} style={{ padding: '6px 12px', borderRadius: 9, fontSize: 12, background: 'none', border: '1px solid var(--border)', color: 'var(--text-3)', cursor: 'pointer' }}>{t('nav.logout')}</button>
               </div>
             ) : (
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <Link href="/login" style={{ padding: '8px 14px', fontSize: 14, fontWeight: 500, color: 'var(--text-2)', whiteSpace: 'nowrap' }}>Giriş Yap</Link>
-                <Link href="/signup" style={{ padding: '9px 20px', borderRadius: 10, fontSize: 14, fontWeight: 600, background: 'var(--accent)', color: '#fff', whiteSpace: 'nowrap', boxShadow: '0 6px 18px var(--accent-bg)' }}>Üye Ol</Link>
+                <Link href="/login" style={{ padding: '8px 14px', fontSize: 14, fontWeight: 500, color: 'var(--text-2)', whiteSpace: 'nowrap' }}>{t('nav.login')}</Link>
+                <Link href="/signup" style={{ padding: '9px 20px', borderRadius: 10, fontSize: 14, fontWeight: 600, background: 'var(--accent)', color: '#fff', whiteSpace: 'nowrap', boxShadow: '0 6px 18px var(--accent-bg)' }}>{t('nav.signup')}</Link>
               </div>
             )}
           </div>
@@ -246,7 +296,7 @@ export default function NavBar() {
               : <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 14, color: 'var(--text-3)' }}>{viewing?.name?.slice(0, 1)}</span>}
           </span>
           <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15, whiteSpace: 'nowrap', overflow: 'hidden' }}>
-            <span style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-3)' }}>İnceleniyor</span>
+            <span style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-3)' }}>{t('nav.viewing')}</span>
             <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis' }}>{viewing?.name}</span>
           </span>
         </div>

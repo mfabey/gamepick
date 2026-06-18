@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 import { useState, useEffect, useCallback, useRef, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import GameCard from '../components/GameCard';
+import { useLanguage } from '../context/LanguageContext';
 
 const SECTIONS = [
   { label: 'Tümü',          value: '',         icon: '🎮' },
@@ -44,6 +45,40 @@ function GamesList() {
   const searchParams   = useSearchParams();
   const initialSection = searchParams.get('section') || '';
   const initialQuery   = searchParams.get('q') || '';
+  const { lang, t } = useLanguage();
+
+  const localizedSections = [
+    { label: lang === 'tr' ? 'Tümü' : 'All',          value: '',         icon: '🎮' },
+    { label: lang === 'tr' ? 'İndirimde' : 'On Sale',     value: 'sale',     icon: '🏷️' },
+    { label: lang === 'tr' ? 'Ücretsiz' : 'Free',      value: 'free',     icon: '🎁' },
+    { label: lang === 'tr' ? 'Yeni Çıkan' : 'New',    value: 'new',      icon: '🗓️' },
+    { label: lang === 'tr' ? 'En İyi Puan' : 'Top Rated',   value: 'topscore', icon: '⭐' },
+    { label: lang === 'tr' ? 'Popüler' : 'Popular',       value: 'popular',  icon: '💥' },
+  ];
+
+  const localizedCategories = [
+    { label: lang === 'tr' ? 'Tüm Türler' : 'All Genres',   slug: ''                        },
+    { label: lang === 'tr' ? 'Aksiyon' : 'Action',      slug: 'action'                  },
+    { label: lang === 'tr' ? 'RPG' : 'RPG',          slug: 'role-playing-games-rpg'  },
+    { label: lang === 'tr' ? 'Strateji' : 'Strategy',     slug: 'strategy'                },
+    { label: lang === 'tr' ? 'Macera' : 'Adventure',       slug: 'adventure'               },
+    { label: lang === 'tr' ? 'Nişancı' : 'Shooter',     slug: 'shooter'                 },
+    { label: lang === 'tr' ? 'Bulmaca' : 'Puzzle',      slug: 'puzzle'                  },
+    { label: lang === 'tr' ? 'Spor' : 'Sports',         slug: 'sports'                  },
+    { label: lang === 'tr' ? 'Yarış' : 'Racing',        slug: 'racing'                  },
+    { label: lang === 'tr' ? 'Korku' : 'Horror',        slug: 'horror'                  },
+    { label: lang === 'tr' ? 'Platform' : 'Platformer',     slug: 'platformer'              },
+    { label: lang === 'tr' ? 'Kart & Masa' : 'Card & Board',  slug: 'card'                    },
+    { label: lang === 'tr' ? 'Simülasyon' : 'Simulation',   slug: 'simulation'              },
+  ];
+
+  const localizedPriceOptions = [
+    { label: lang === 'tr' ? 'Tüm Fiyatlar' : 'All Prices', value: 'all'  },
+    { label: lang === 'tr' ? 'Ücretsiz' : 'Free',     value: 'free' },
+    { label: lang === 'tr' ? '0 – 100₺' : '0 – $3',    value: '100'  },
+    { label: lang === 'tr' ? '0 – 300₺' : '0 – $9',    value: '300'  },
+    { label: lang === 'tr' ? '0 – 500₺' : '0 – $15',    value: '500'  },
+  ];
 
   const [query,       setQuery]       = useState(initialQuery);
   const [price,       setPrice]       = useState('all');
@@ -199,7 +234,7 @@ function GamesList() {
               onChange={e => { setQuery(e.target.value); setSection(''); setGenre(''); }}
               onFocus={() => setSearchFocus(true)}
               onBlur={() => setSearchFocus(false)}
-              placeholder="Oyun ara… (500.000+ oyun)"
+              placeholder={lang === 'tr' ? 'Oyun ara… (500.000+ oyun)' : 'Search games... (500,000+ games)'}
               style={{
                 flex: 1, border: 'none', outline: 'none',
                 fontSize: 15, color: 'var(--text)', background: 'transparent',
@@ -217,7 +252,7 @@ function GamesList() {
                 background: 'var(--accent-bg)', border: '1px solid var(--accent-border)',
                 color: 'var(--accent)', fontSize: 12, fontWeight: 600, cursor: 'pointer',
               }}>
-                Temizle ({activeCount})
+                {t('games.clearFilters')} ({activeCount})
               </button>
             )}
           </div>
@@ -232,7 +267,7 @@ function GamesList() {
           <div>
             {/* Section chip'leri */}
             <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
-              {SECTIONS.map(s => {
+              {localizedSections.map(s => {
                 const active = section === s.value;
                 return (
                   <button key={s.value} onClick={() => handleSection(s.value)} style={{
@@ -255,11 +290,11 @@ function GamesList() {
             {/* Sonuç bilgisi */}
             <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <p style={{ fontSize: 14, color: 'var(--text-3)' }}>
-                {loading ? 'Yükleniyor…' : (
-                  <><span style={{ fontWeight: 700, color: 'var(--text)' }}>{filteredGames.length}</span> oyun</>
+                {loading ? t('games.loading') : (
+                  <><span style={{ fontWeight: 700, color: 'var(--text)' }}>{filteredGames.length}</span> {lang === 'tr' ? 'oyun' : 'games'}</>
                 )}
-                {genre && <span style={{ color: 'var(--accent)', marginLeft: 6 }}>· {CATEGORIES.find(c => c.slug === genre)?.label}</span>}
-                {section && <span style={{ color: 'var(--accent)', marginLeft: 6 }}>· {SECTIONS.find(s => s.value === section)?.label}</span>}
+                {genre && <span style={{ color: 'var(--accent)', marginLeft: 6 }}>· {localizedCategories.find(c => c.slug === genre)?.label}</span>}
+                {section && <span style={{ color: 'var(--accent)', marginLeft: 6 }}>· {localizedSections.find(s => s.value === section)?.label}</span>}
               </p>
             </div>
 
@@ -279,14 +314,14 @@ function GamesList() {
             ) : filteredGames.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '80px 0' }}>
                 <p style={{ fontSize: 48, marginBottom: 16 }}>🔍</p>
-                <p style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>Sonuç bulunamadı</p>
-                <p style={{ fontSize: 14, color: 'var(--text-3)', marginBottom: 20 }}>Farklı bir arama veya filtre deneyin</p>
+                <p style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>{t('games.noResults')}</p>
+                <p style={{ fontSize: 14, color: 'var(--text-3)', marginBottom: 20 }}>{lang === 'tr' ? 'Farklı bir arama veya filtre deneyin' : 'Try a different search or filter'}</p>
                 <button onClick={resetFilters} style={{
                   padding: '10px 24px', borderRadius: 8,
                   background: 'var(--accent)', color: '#fff',
                   border: 'none', fontSize: 14, fontWeight: 600, cursor: 'pointer',
                 }}>
-                  Filtreleri Temizle
+                  {t('games.clearFilters')}
                 </button>
               </div>
             ) : (
@@ -303,7 +338,7 @@ function GamesList() {
                       borderTopColor: 'var(--accent)',
                       animation: 'spin 0.7s linear infinite',
                     }} />
-                    <span style={{ fontSize: 14, color: 'var(--text-3)' }}>Daha fazla yükleniyor…</span>
+                    <span style={{ fontSize: 14, color: 'var(--text-3)' }}>{t('games.loading')}</span>
                   </div>
                 )}
               </>
@@ -330,10 +365,10 @@ function GamesList() {
                   <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
                   <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
                 </svg>
-                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', letterSpacing: 0.3 }}>KATEGORİLER</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', letterSpacing: 0.3 }}>{lang === 'tr' ? 'KATEGORİLER' : 'CATEGORIES'}</span>
               </div>
               <div style={{ padding: '8px 0' }}>
-                {CATEGORIES.map(c => {
+                {localizedCategories.map(c => {
                   const active = genre === c.slug;
                   return (
                     <button key={c.slug} onClick={() => handleGenre(c.slug)} style={{
@@ -376,10 +411,10 @@ function GamesList() {
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
                 </svg>
-                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', letterSpacing: 0.3 }}>BÜTÇE</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', letterSpacing: 0.3 }}>{lang === 'tr' ? 'BÜTÇE' : 'BUDGET'}</span>
               </div>
               <div style={{ padding: '8px 0' }}>
-                {PRICE_OPTIONS.map(o => {
+                {localizedPriceOptions.map(o => {
                   const active = price === o.value;
                   return (
                     <button key={o.value} onClick={() => setPrice(o.value)} style={{
@@ -424,6 +459,7 @@ function GamesList() {
 }
 
 export default function GamesPage() {
+  const { lang } = useLanguage();
   return (
     <Suspense fallback={
       <div style={{ minHeight: '100vh', background: 'var(--bg-body)' }}>
@@ -431,7 +467,7 @@ export default function GamesPage() {
           <div style={{ height: 50, background: 'var(--bg-input)', borderRadius: 10 }} />
         </div>
         <div className="container" style={{ paddingTop: 60, textAlign: 'center', color: 'var(--text-3)' }}>
-          Yükleniyor…
+          {lang === 'tr' ? 'Yükleniyor…' : 'Loading...'}
         </div>
       </div>
     }>

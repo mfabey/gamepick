@@ -8,6 +8,7 @@ import Image from 'next/image';
 import GameCard from './components/GameCard';
 import GameImage from './components/GameImage';
 import { useAuth } from './context/AuthContext';
+import { useLanguage } from './context/LanguageContext';
 
 const PLACEHOLDER_GAMES = [
   'Elden Ring', 'GTA V', 'Cyberpunk 2077', 'Red Dead Redemption 2',
@@ -17,6 +18,7 @@ const PLACEHOLDER_GAMES = [
 export default function Home() {
   const { user } = useAuth();
   const router   = useRouter();
+  const { t } = useLanguage();
 
   // Arama
   const [query,       setQuery]       = useState('');
@@ -180,14 +182,14 @@ export default function Home() {
         <div style={{ maxWidth: 880, margin: '0 auto', padding: '0 32px', textAlign: 'center' }}>
 
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '6px 14px', borderRadius: 999, background: 'var(--bg-card)', border: '1px solid var(--border)', fontSize: 13, fontWeight: 600, color: 'var(--text-2)', boxShadow: 'var(--shadow)', marginBottom: 26 }}>
-            <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--green)', boxShadow: '0 0 0 3px rgba(47,158,107,0.2)' }} /> Canlı fiyat takibi · 7 mağaza
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--green)', boxShadow: '0 0 0 3px rgba(47,158,107,0.2)' }} /> {t('hero.badge')}
           </span>
 
           <h1 style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 'clamp(40px, 5.6vw, 74px)', lineHeight: 1.02, letterSpacing: '-2px', color: 'var(--text)', marginBottom: 20, textWrap: 'balance' }}>
-            Bir sonraki oyununu keşfet
+            {t('hero.title')}
           </h1>
           <p style={{ fontSize: 18, color: 'var(--text-2)', maxWidth: 560, margin: '0 auto 36px', lineHeight: 1.55 }}>
-            500.000+ oyunu keşfet, Steam · Epic · GOG · Xbox fiyatlarını tek ekranda karşılaştır.
+            {t('hero.subtitle')}
           </p>
 
           <div ref={wrapperRef} style={{ width: '100%', maxWidth: 640, position: 'relative', margin: '0 auto' }}>
@@ -212,7 +214,7 @@ export default function Home() {
                   onChange={e => setQuery(e.target.value)}
                   onFocus={() => { if (suggestions.length) setShowSug(true); }}
                   onKeyDown={e => { if (e.key === 'Escape') setShowSug(false); }}
-                  placeholder={query ? '' : (phText ? phText + '▍' : 'Oyun, tür veya stüdyo ara…')}
+                  placeholder={query ? '' : (phText ? phText + '▍' : t('hero.searchPlaceholder'))}
                   autoComplete="off"
                   style={{
                     flex: 1, border: 'none', outline: 'none', fontSize: 17,
@@ -233,7 +235,7 @@ export default function Home() {
                   onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
                   onMouseLeave={e => e.currentTarget.style.opacity = '1'}
                 >
-                  Ara
+                  {t('hero.search')}
                 </button>
               </div>
             </form>
@@ -249,7 +251,7 @@ export default function Home() {
                 textAlign: 'left',
               }}>
                 {sugLoading ? (
-                  <div style={{ padding: '14px 20px', color: 'var(--text-3)', fontSize: 13 }}>Aranıyor…</div>
+                  <div style={{ padding: '14px 20px', color: 'var(--text-3)', fontSize: 13 }}>{t('hero.searching')}</div>
                 ) : suggestions.map(g => (
                   <button key={g.id} onMouseDown={() => handleSugClick(g)}
                     style={{
@@ -272,12 +274,12 @@ export default function Home() {
                         {g.metacritic ? ` • ⭐ ${g.metacritic}` : ''}
                       </p>
                     </div>
-                    {g.isFree && <span style={{ fontSize: 11, color: 'var(--green)', fontWeight: 700, flexShrink: 0 }}>Ücretsiz</span>}
+                    {g.isFree && <span style={{ fontSize: 11, color: 'var(--green)', fontWeight: 700, flexShrink: 0 }}>{t('card.free')}</span>}
                   </button>
                 ))}
                 <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)' }}>
                   <button onMouseDown={handleSearch} style={{ fontSize: 12, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
-                    "{query}" için tüm sonuçları gör →
+                    "{query}" {t('hero.allResults')}
                   </button>
                 </div>
               </div>
@@ -291,7 +293,7 @@ export default function Home() {
             pointerEvents: query ? 'none' : 'auto',
             transition: 'opacity 0.25s ease',
           }}>
-            {['💥 Popüler', '🏷️ İndirimde', '🗓️ Yeni Çıkan', '⭐ En İyi'].map((label, i) => {
+            {[t('hero.quick.popular'), t('hero.quick.sale'), t('hero.quick.new'), t('hero.quick.best')].map((label, i) => {
               const sections = ['popular', 'sale', 'new', 'topscore'];
               return (
                 <Link key={label} href={`/games?section=${sections[i]}`}
@@ -318,18 +320,18 @@ export default function Home() {
 
         {/* Bu Hafta Trend — Yayıncıların oynadığı popüler oyunlar */}
         <Section
-          title="🔥 Bu Hafta Trend"
-          subtitle="Ünlü yayıncıların en çok oynadığı popüler oyunlar"
+          title={t('section.trending.title')}
+          subtitle={t('section.trending.subtitle')}
           href="/games?section=popular"
           games={trendGames}
           loading={loadingTrend}
-          badge="CANLI"
+          badge={t('section.trending.badge')}
         />
 
         {/* Yeni Çıkanlar */}
         <Section
-          title="🗓️ Yeni Çıkanlar"
-          subtitle="Son dönemde yayınlanan oyunlar"
+          title={t('section.new.title')}
+          subtitle={t('section.new.subtitle')}
           href="/games?section=new"
           games={newGames}
           loading={loadingNew}
@@ -337,8 +339,8 @@ export default function Home() {
 
         {/* İndirimdekiler */}
         <Section
-          title="🏷️ İndirimdekiler"
-          subtitle="En iyi fiyat fırsatları"
+          title={t('section.sale.title')}
+          subtitle={t('section.sale.subtitle')}
           href="/games?section=sale"
           games={saleGames}
           loading={loadingSale}
@@ -355,17 +357,17 @@ export default function Home() {
         }}>
           <div>
             <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>
-              ✦ Tek Kütüphane
+              {t('cta.badge')}
             </p>
             <h3 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>
-              Oyunlarını tek yerden yönet
+              {t('cta.title')}
             </h3>
             <p style={{ fontSize: 14, color: 'var(--text-2)' }}>
-              Steam ve Xbox oyun listenlerini bağla, takip et.
+              {t('cta.desc')}
             </p>
           </div>
           <Link href={user ? '/library' : '/signup'} className="btn btn-red" style={{ whiteSpace: 'nowrap', padding: '12px 24px' }}>
-            {user ? 'Kütüphaneyi Aç →' : 'Hemen Başla →'}
+            {user ? t('cta.open') : t('cta.start')}
           </Link>
         </div>
       </div>
@@ -487,6 +489,7 @@ function ScrollRow({ children }) {
 
 // ── Yatay scroll bölüm ────────────────────────────────────────────────────────
 const Section = memo(function Section({ title, subtitle, href, games, loading, badge }) {
+  const { t } = useLanguage();
   return (
     <div style={{ marginBottom: 56 }}>
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 18 }}>
@@ -507,14 +510,14 @@ const Section = memo(function Section({ title, subtitle, href, games, loading, b
           {subtitle && <p style={{ fontSize: 15, color: 'var(--text-3)', marginTop: 4 }}>{subtitle}</p>}
         </div>
         <Link href={href} style={{ fontSize: 15, color: 'var(--accent)', fontWeight: 600, whiteSpace: 'nowrap' }}>
-          Tümünü gör →
+          {t('section.all')}
         </Link>
       </div>
       <ScrollRow>
         {loading
           ? Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)
           : games.length === 0
-            ? <p style={{ color: 'var(--text-3)', fontSize: 14 }}>Yüklenemedi.</p>
+            ? <p style={{ color: 'var(--text-3)', fontSize: 14 }}>{t('section.failed')}</p>
             : games.map(g => <GameCard key={g.id} game={g} compact />)
         }
       </ScrollRow>
