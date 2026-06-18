@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Image from 'next/image';
+
 
 const GRADIENTS = [
   'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)', // Indigo to Purple
@@ -49,13 +49,13 @@ export default function GameImage({
     }
     if (stage === 1) {
       if (game.logo) return game.logo.replace('capsule_sm_120.jpg', 'capsule_231x87.jpg');
-      const appid = game.rawgId || (typeof game.id === 'string' && game.id.startsWith('rawg_') ? game.id.split('_')[1] : null);
+      const appid = game.appid || game.steamAppId || game.steamAppid || game.rawgId || (typeof game.id === 'string' && game.id.startsWith('rawg_') ? game.id.split('_')[1] : null);
       if (appid) return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/capsule_231x87.jpg`;
       return getImgSrc(2);
     }
     if (stage === 2) {
       if (game.logo) return game.logo;
-      const appid = game.rawgId || (typeof game.id === 'string' && game.id.startsWith('rawg_') ? game.id.split('_')[1] : null);
+      const appid = game.appid || game.steamAppId || game.steamAppid || game.rawgId || (typeof game.id === 'string' && game.id.startsWith('rawg_') ? game.id.split('_')[1] : null);
       if (appid) return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/capsule_sm_120.jpg`;
       return null;
     }
@@ -66,17 +66,19 @@ export default function GameImage({
 
   if (currentImgSrc) {
     return (
-      <Image
+      <img
+        key={`${game.id || game.name}-${imgStage}`}
         src={currentImgSrc}
         alt={alt || game.name || ''}
-        fill={fill}
-        width={width}
-        height={height}
-        sizes={sizes}
-        style={{ objectFit: 'cover', ...style }}
+        style={{
+          objectFit: 'cover',
+          width: fill ? '100%' : width,
+          height: fill ? '100%' : height,
+          position: fill ? 'absolute' : undefined,
+          inset: fill ? 0 : undefined,
+          ...style
+        }}
         className={className}
-        unoptimized={unoptimized}
-        priority={priority}
         onError={() => {
           setImgStage(prev => prev + 1);
         }}

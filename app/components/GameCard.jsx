@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, memo } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
+import GameImage from './GameImage';
 import { useAuth, normalizeName } from '../context/AuthContext';
 
 function SteamIcon({ size = 16 }) {
@@ -32,7 +32,6 @@ function GameCard({ game, compact = false }) {
   const [livePrice,    setLivePrice]    = useState(null);
   const [priceLoading, setPriceLoading] = useState(false);
   const [priceDone,    setPriceDone]    = useState(false);
-  const [imgError,     setImgError]     = useState(false);
   const cardRef = useRef(null);
 
   // Kart görünüme girince Steam fiyatı lazy-load et
@@ -89,20 +88,12 @@ function GameCard({ game, compact = false }) {
       >
         {/* Kapak */}
         <div style={{ aspectRatio: '16/9', width: '100%', background: 'var(--bg-input)', position: 'relative', overflow: 'hidden' }}>
-          {game.image && !imgError ? (
-            <Image
-              src={game.image} alt={game.name} fill
-              sizes="(max-width:640px) 50vw, 200px"
-              style={{ objectFit: 'cover', pointerEvents: 'none' }}
-              draggable={false}
-              unoptimized
-              onError={() => setImgError(true)}
-            />
-          ) : (
-            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 700, color: 'var(--text-3)', background: 'linear-gradient(135deg, var(--bg-input), var(--bg-card))' }}>
-              {game.name?.slice(0, 2).toUpperCase()}
-            </div>
-          )}
+          <GameImage
+            game={game}
+            alt={game.name}
+            fill
+            style={{ objectFit: 'cover', pointerEvents: 'none' }}
+          />
 
           {/* Oyun kutusu parlaklığı */}
           <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'linear-gradient(125deg, rgba(255,255,255,0.32) 0%, rgba(255,255,255,0.09) 22%, rgba(255,255,255,0) 44%), linear-gradient(to top, rgba(0,0,0,0.30), rgba(0,0,0,0) 46%)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.30), inset 0 0 0 1px rgba(255,255,255,0.06)' }} />

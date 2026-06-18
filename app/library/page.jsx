@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
+import GameImage from '../components/GameImage';
 import { useAuth } from '../context/AuthContext';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -483,7 +484,6 @@ function SteamProfileHeader({ steamUser, library, totalValue, pricesLoading, onL
 }
 
 function GameRow({ game, rank, price, pricesLoading }) {
-  const [imgError, setImgError] = useState(false);
   const lastPlayed = game.lastPlayed ? formatLastPlayed(game.lastPlayed) : null;
 
   return (
@@ -499,10 +499,12 @@ function GameRow({ game, rank, price, pricesLoading }) {
       )}
       <a href={game.storeUrl} target="_blank" rel="noopener noreferrer" style={{ flexShrink: 0 }}>
         <div style={{ width: 60, height: 38, borderRadius: 6, overflow: 'hidden', background: 'var(--bg-input)', position: 'relative' }}>
-          {!imgError
-            ? <Image src={game.image} alt={game.name} fill style={{ objectFit: 'cover' }} unoptimized onError={() => setImgError(true)} />
-            : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: 'var(--text-3)' }}>{game.name?.slice(0, 2).toUpperCase()}</div>
-          }
+          <GameImage
+            game={game}
+            alt={game.name}
+            fill
+            style={{ objectFit: 'cover' }}
+          />
         </div>
       </a>
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -617,7 +619,6 @@ function XboxProfileHeader({ xboxUser, library, onLogout }) {
 }
 
 function XboxGameRow({ game }) {
-  const [imgError, setImgError] = useState(false);
   const lastPlayed = game.lastPlayed ? formatLastPlayed(game.lastPlayed) : null;
   const pct = game.totalAchievements > 0
     ? Math.round((game.currentAchievements / game.totalAchievements) * 100)
@@ -632,10 +633,12 @@ function XboxGameRow({ game }) {
       {/* Kapak */}
       <a href={game.storeUrl} target="_blank" rel="noopener noreferrer" style={{ flexShrink: 0 }}>
         <div style={{ width: 60, height: 38, borderRadius: 6, overflow: 'hidden', background: 'var(--bg-input)', position: 'relative' }}>
-          {game.image && !imgError
-            ? <Image src={game.image} alt={game.name} fill style={{ objectFit: 'cover' }} unoptimized onError={() => setImgError(true)} />
-            : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><XboxLogo size={20} color="var(--text-3)" /></div>
-          }
+          <GameImage
+            game={game}
+            alt={game.name}
+            fill
+            style={{ objectFit: 'cover' }}
+          />
         </div>
       </a>
 
