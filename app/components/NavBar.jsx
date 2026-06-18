@@ -77,7 +77,7 @@ export default function NavBar() {
     if (typeof document !== 'undefined' && document.fonts && document.fonts.ready) document.fonts.ready.then(place);
     if (typeof window !== 'undefined') window.addEventListener('resize', place);
     return () => { clearTimeout(t); if (typeof window !== 'undefined') window.removeEventListener('resize', place); };
-  }, [pathname]);
+  }, [pathname, lang]);
 
   return (
     <>
