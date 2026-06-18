@@ -14,6 +14,8 @@ export default function NavBar() {
   const { theme, toggleTheme, mounted } = useTheme();
   const { lang, changeLanguage, t } = useLanguage();
 
+  const hideBottomBar = pathname === '/login' || pathname === '/signup' || pathname === '/forgot-password';
+
   const NAV_LINKS = [
     { href: '/',        label: t('nav.home') },
     { href: '/games',   label: t('nav.games') },
@@ -223,7 +225,7 @@ export default function NavBar() {
 
       {/* ── Alt cam sekme çubuğu ── */}
       {/* İlk ziyaret ipucu: salt görsel — alt bara dikkat çeken ışık + oklar */}
-      {hintOpen && (
+      {!hideBottomBar && hintOpen && (
         <>
           <div onClick={dismissHint} style={{
             position: 'fixed', inset: 0, zIndex: 199, cursor: 'pointer',
@@ -239,68 +241,70 @@ export default function NavBar() {
         </>
       )}
 
-      <nav ref={navRef} style={{
-        position: 'fixed', left: '50%', transform: 'translateX(-50%)', bottom: 28, zIndex: hintOpen ? 201 : 200,
-        display: 'flex', gap: 6,
-        background: 'linear-gradient(180deg, color-mix(in srgb, var(--bg-card) 72%, transparent), color-mix(in srgb, var(--bg-card) 58%, transparent))',
-        backdropFilter: 'blur(28px) saturate(150%)', WebkitBackdropFilter: 'blur(28px) saturate(150%)',
-        borderRadius: 999, padding: 11,
-        boxShadow: '0 2px 6px rgba(74,52,28,0.10), 0 12px 28px rgba(74,52,28,0.16), 0 32px 64px rgba(74,52,28,0.20), inset 0 1px 0 color-mix(in srgb, var(--bg-card) 90%, white), inset 0 0 0 1px color-mix(in srgb, var(--text) 8%, transparent)',
-        animation: hintOpen
-          ? 'navBarIn 0.85s cubic-bezier(0.16,1,0.3,1) both, navBarAttract 1.5s ease-in-out 0.9s 2, navBarRing 1.6s ease-out 1s 2'
-          : 'navBarIn 0.85s cubic-bezier(0.16,1,0.3,1) both',
-      }}>
-        <div aria-hidden style={{
-          position: 'absolute', left: 0, top: pill.top, height: pill.height, width: pill.width,
-          transform: pill.transform, opacity: pill.opacity,
-          background: 'linear-gradient(180deg, color-mix(in srgb, var(--accent) 88%, white), var(--accent))',
-          borderRadius: 999,
-          boxShadow: '0 4px 14px var(--accent-bg), 0 1px 3px rgba(74,52,28,0.3), inset 0 1px 0 rgba(255,255,255,0.4)',
-          transition: 'transform 0.55s cubic-bezier(0.22,1,0.32,1), width 0.55s cubic-bezier(0.22,1,0.32,1)',
-          zIndex: 0, pointerEvents: 'none',
-        }} />
-        {NAV_LINKS.map(l => {
-          const active = isActive(l.href);
-          return (
-            <Link key={l.href} href={l.href} data-tab="t"
-              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; }}
-              style={{
-                position: 'relative', zIndex: 1,
-                padding: '15px 31px', borderRadius: 999,
-                fontSize: 16, letterSpacing: '-0.1px', fontWeight: active ? 600 : 500, whiteSpace: 'nowrap',
-                color: active ? '#fff' : 'var(--text-2)',
-                textShadow: active ? '0 1px 2px rgba(74,52,28,0.25)' : 'none',
-                transition: 'transform 0.18s cubic-bezier(0.2,0.8,0.3,1), color 0.4s ease',
-              }}>{l.label}</Link>
-          );
-        })}
-
-        {/* Şu an incelenen oyun rozeti */}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 9, position: 'relative', zIndex: 1, overflow: 'hidden',
-          maxWidth: viewing ? 260 : 0,
-          opacity: viewing ? 1 : 0,
-          transform: viewing ? 'translateX(0)' : 'translateX(-12px)',
-          marginLeft: viewing ? 2 : 0,
-          paddingRight: viewing ? 8 : 0,
-          transition: 'max-width 0.55s cubic-bezier(0.22,1,0.32,1), opacity 0.4s ease, transform 0.55s cubic-bezier(0.22,1,0.32,1), margin-left 0.55s, padding-right 0.55s',
+      {!hideBottomBar && (
+        <nav ref={navRef} style={{
+          position: 'fixed', left: '50%', transform: 'translateX(-50%)', bottom: 28, zIndex: hintOpen ? 201 : 200,
+          display: 'flex', gap: 6,
+          background: 'linear-gradient(180deg, color-mix(in srgb, var(--bg-card) 72%, transparent), color-mix(in srgb, var(--bg-card) 58%, transparent))',
+          backdropFilter: 'blur(28px) saturate(150%)', WebkitBackdropFilter: 'blur(28px) saturate(150%)',
+          borderRadius: 999, padding: 11,
+          boxShadow: '0 2px 6px rgba(74,52,28,0.10), 0 12px 28px rgba(74,52,28,0.16), 0 32px 64px rgba(74,52,28,0.20), inset 0 1px 0 color-mix(in srgb, var(--bg-card) 90%, white), inset 0 0 0 1px color-mix(in srgb, var(--text) 8%, transparent)',
+          animation: hintOpen
+            ? 'navBarIn 0.85s cubic-bezier(0.16,1,0.3,1) both, navBarAttract 1.5s ease-in-out 0.9s 2, navBarRing 1.6s ease-out 1s 2'
+            : 'navBarIn 0.85s cubic-bezier(0.16,1,0.3,1) both',
         }}>
-          <span style={{ width: 1, height: 24, background: 'var(--border-hover)', margin: '0 3px', flexShrink: 0 }} />
-          <span style={{
-            position: 'relative', width: 30, height: 30, borderRadius: 8, overflow: 'hidden', flexShrink: 0,
-            background: 'var(--bg-input)', boxShadow: '0 2px 6px rgba(74,52,28,0.25), inset 0 1px 0 rgba(255,255,255,0.3)',
+          <div aria-hidden style={{
+            position: 'absolute', left: 0, top: pill.top, height: pill.height, width: pill.width,
+            transform: pill.transform, opacity: pill.opacity,
+            background: 'linear-gradient(180deg, color-mix(in srgb, var(--accent) 88%, white), var(--accent))',
+            borderRadius: 999,
+            boxShadow: '0 4px 14px var(--accent-bg), 0 1px 3px rgba(74,52,28,0.3), inset 0 1px 0 rgba(255,255,255,0.4)',
+            transition: 'transform 0.55s cubic-bezier(0.22,1,0.32,1), width 0.55s cubic-bezier(0.22,1,0.32,1)',
+            zIndex: 0, pointerEvents: 'none',
+          }} />
+          {NAV_LINKS.map(l => {
+            const active = isActive(l.href);
+            return (
+              <Link key={l.href} href={l.href} data-tab="t"
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; }}
+                style={{
+                  position: 'relative', zIndex: 1,
+                  padding: '15px 31px', borderRadius: 999,
+                  fontSize: 16, letterSpacing: '-0.1px', fontWeight: active ? 600 : 500, whiteSpace: 'nowrap',
+                  color: active ? '#fff' : 'var(--text-2)',
+                  textShadow: active ? '0 1px 2px rgba(74,52,28,0.25)' : 'none',
+                  transition: 'transform 0.18s cubic-bezier(0.2,0.8,0.3,1), color 0.4s ease',
+                }}>{l.label}</Link>
+            );
+          })}
+
+          {/* Şu an incelenen oyun rozeti */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 9, position: 'relative', zIndex: 1, overflow: 'hidden',
+            maxWidth: viewing ? 260 : 0,
+            opacity: viewing ? 1 : 0,
+            transform: viewing ? 'translateX(0)' : 'translateX(-12px)',
+            marginLeft: viewing ? 2 : 0,
+            paddingRight: viewing ? 8 : 0,
+            transition: 'max-width 0.55s cubic-bezier(0.22,1,0.32,1), opacity 0.4s ease, transform 0.55s cubic-bezier(0.22,1,0.32,1), margin-left 0.55s, padding-right 0.55s',
           }}>
-            {viewing?.image
-              ? <img src={viewing.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              : <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 14, color: 'var(--text-3)' }}>{viewing?.name?.slice(0, 1)}</span>}
-          </span>
-          <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15, whiteSpace: 'nowrap', overflow: 'hidden' }}>
-            <span style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-3)' }}>{t('nav.viewing')}</span>
-            <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis' }}>{viewing?.name}</span>
-          </span>
-        </div>
-      </nav>
+            <span style={{ width: 1, height: 24, background: 'var(--border-hover)', margin: '0 3px', flexShrink: 0 }} />
+            <span style={{
+              position: 'relative', width: 30, height: 30, borderRadius: 8, overflow: 'hidden', flexShrink: 0,
+              background: 'var(--bg-input)', boxShadow: '0 2px 6px rgba(74,52,28,0.25), inset 0 1px 0 rgba(255,255,255,0.3)',
+            }}>
+              {viewing?.image
+                ? <img src={viewing.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 14, color: 'var(--text-3)' }}>{viewing?.name?.slice(0, 1)}</span>}
+            </span>
+            <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15, whiteSpace: 'nowrap', overflow: 'hidden' }}>
+              <span style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-3)' }}>{t('nav.viewing')}</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis' }}>{viewing?.name}</span>
+            </span>
+          </div>
+        </nav>
+      )}
     </>
   );
 }
