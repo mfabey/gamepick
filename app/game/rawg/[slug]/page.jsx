@@ -22,6 +22,7 @@ export default function RawgGamePage({ params }) {
   const [xboxLoading,  setXboxLoading]  = useState(false);
   const [ai,           setAi]           = useState(null);
   const [aiLoading,    setAiLoading]    = useState(true);
+  const [news,         setNews]         = useState([]);
   const [loading,      setLoading]      = useState(true);
   const [error,        setError]        = useState(null);
   const [imgIdx,       setImgIdx]       = useState(0);
@@ -47,6 +48,7 @@ export default function RawgGamePage({ params }) {
     setGogPrice(null);
     setHumblePrice(null);
     setXboxPrices([]);
+    setNews([]);
 
     fetch('/api/rawg-game?slug=' + slug)
       .then(r => r.json())
@@ -54,6 +56,14 @@ export default function RawgGamePage({ params }) {
         if (gameData.error) { setError(gameData.error); return; }
         const g = gameData.game;
         setGame(g);
+
+        // ── İlgili haberler (Steam News — ücretsiz/anahtarsız) ───────────
+        if (g.steamAppId) {
+          fetch('/api/game-news?appid=' + g.steamAppId + '&count=4')
+            .then(r => r.json())
+            .then(d => setNews(d.results || []))
+            .catch(() => {});
+        }
 
         // ── Steam fiyatı ─────────────────────────────────────────────────
         if (g.steamAppId) {
@@ -355,6 +365,31 @@ export default function RawgGamePage({ params }) {
               {game.tags.slice(0, 12).map(t => (
                 <span key={t} className="badge badge-gray">{t}</span>
               ))}
+            </div>
+          )}
+
+          {/* ── İlgili Haberler (Steam News) ───────────────────────────── */}
+          {news.length > 0 && (
+            <div style={{ marginTop: 26 }}>
+              <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 7 }}>
+                📰 İlgili Haberler
+              </h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {news.map(n => (
+                  <a key={n.id} href={n.url} target="_blank" rel="noopener noreferrer"
+                    style={{ textDecoration: 'none', display: 'block', padding: '13px 15px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg-card)', transition: 'border-color 0.15s, transform 0.1s' }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent-border)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'none'; }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)' }}>{n.source}</span>
+                      {n.date && <span style={{ fontSize: 11, color: 'var(--text-3)' }}>· {new Date(n.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' })}</span>}
+                    </div>
+                    <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', lineHeight: 1.35, marginBottom: n.excerpt ? 5 : 0 }}>{n.title}</p>
+                    {n.excerpt && <p style={{ fontSize: 12.5, color: 'var(--text-2)', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{n.excerpt}</p>}
+                  </a>
+                ))}
+              </div>
             </div>
           )}
         </div>
