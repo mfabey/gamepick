@@ -9,6 +9,7 @@ import { useTheme } from '../context/ThemeContext';
 const NAV_LINKS = [
   { href: '/',        label: 'Anasayfa' },
   { href: '/games',   label: 'Oyunlar'  },
+  { href: '/news',    label: 'Haberler' },
   { href: '/dlc',     label: 'DLC'      },
   { href: '/library', label: 'Kütüphane' },
 ];
@@ -115,8 +116,13 @@ export default function NavBar() {
             }}>GamePick</span>
           </Link>
 
-          {/* Sağ: tema + hesap */}
+          {/* Sağ: destek + tema + hesap */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <Link href="/support" style={{
+              padding: '8px 14px', fontSize: 14, fontWeight: 500, whiteSpace: 'nowrap',
+              color: pathname.startsWith('/support') ? 'var(--accent)' : 'var(--text-2)',
+              transition: 'color 0.15s',
+            }}>Destek</Link>
             <button onClick={toggleTheme} title={theme === 'dark' ? 'Aydınlık Mod' : 'Karanlık Mod'} style={{
               background: 'none', border: '1px solid var(--border)', borderRadius: 9,
               width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center',
