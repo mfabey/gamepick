@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import GameCard from './components/GameCard';
-import GameImage from './components/GameImage';
 import { useAuth } from './context/AuthContext';
 
 const PLACEHOLDER_GAMES = [
@@ -153,14 +152,14 @@ export default function Home() {
       {heroTiles ? heroTiles.map((g, i) => (
         <div key={`${keyPrefix}-${i}`} className="hero-mosaic-tile" style={{ position: 'relative', overflow: 'hidden', background: '#111' }}>
           {g.image && (
-            <GameImage game={g} fill
+            <Image src={g.image} alt="" fill
               sizes="25vw"
               style={{
                 objectFit: 'cover',
                 filter: 'blur(5px)',
                 transform: 'scale(1.12)', // blur kenar boşluğunu gizle
               }}
-            />
+              unoptimized />
           )}
         </div>
       )) : (
@@ -258,13 +257,10 @@ export default function Home() {
                     onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                   >
-                    {g.image ? (
-                      <div style={{ width: 50, height: 32, position: 'relative', borderRadius: 6, overflow: 'hidden', flexShrink: 0 }}>
-                        <GameImage game={g} fill sizes="50px" />
-                      </div>
-                    ) : (
-                      <div style={{ width: 50, height: 32, borderRadius: 6, background: 'var(--bg-input)', flexShrink: 0 }} />
-                    )}
+                    {g.image
+                      ? <img src={g.image} alt="" style={{ width: 50, height: 32, objectFit: 'cover', borderRadius: 6, flexShrink: 0 }} />
+                      : <div style={{ width: 50, height: 32, borderRadius: 6, background: 'var(--bg-input)', flexShrink: 0 }} />
+                    }
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{g.name}</p>
                       <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>
@@ -316,8 +312,8 @@ export default function Home() {
               {[...heroTiles, ...heroTiles].map((g, i) => (
                 <Link key={i} href={g.rawgSlug ? `/game/rawg/${g.rawgSlug}` : `/game/rawg/${g.id}`}
                   style={{ width: 168, aspectRatio: '3 / 4', borderRadius: 16, position: 'relative', overflow: 'hidden', flexShrink: 0, background: 'var(--bg-input)', boxShadow: '0 10px 28px rgba(74,52,28,0.16)' }}>
-                  <GameImage game={g} fill sizes="168px" />
-                  <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'flex-end', padding: 13, background: 'linear-gradient(to top, rgba(8,8,16,0.62), transparent 58%)', zIndex: 2 }}>
+                  {g.image && <Image src={g.image} alt="" fill sizes="168px" style={{ objectFit: 'cover' }} unoptimized />}
+                  <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'flex-end', padding: 13, background: 'linear-gradient(to top, rgba(8,8,16,0.62), transparent 58%)' }}>
                     <span style={{ color: '#fff', fontWeight: 700, fontSize: 13.5, lineHeight: 1.2, textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}>{g.name}</span>
                   </div>
                 </Link>

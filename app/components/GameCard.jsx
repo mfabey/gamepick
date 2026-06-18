@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth, normalizeName } from '../context/AuthContext';
-import GameImage from './GameImage';
 
 function SteamIcon({ size = 16 }) {
   return (
@@ -33,8 +33,6 @@ export default function GameCard({ game, compact = false }) {
   const [priceLoading, setPriceLoading] = useState(false);
   const [priceDone,    setPriceDone]    = useState(false);
   const cardRef = useRef(null);
-
-
 
   // Kart görünüme girince Steam fiyatı lazy-load et
   useEffect(() => {
@@ -90,7 +88,18 @@ export default function GameCard({ game, compact = false }) {
       >
         {/* Kapak */}
         <div style={{ aspectRatio: '16/9', width: '100%', background: 'var(--bg-input)', position: 'relative', overflow: 'hidden' }}>
-          <GameImage game={game} fill sizes="(max-width:640px) 50vw, 200px" />
+          {game.image ? (
+            <Image
+              src={game.image} alt={game.name} fill
+              sizes="(max-width:640px) 50vw, 200px"
+              style={{ objectFit: 'cover' }}
+              unoptimized
+            />
+          ) : (
+            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 700, color: 'var(--text-3)' }}>
+              {game.name?.slice(0, 2).toUpperCase()}
+            </div>
+          )}
 
           {/* Oyun kutusu parlaklığı */}
           <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'linear-gradient(125deg, rgba(255,255,255,0.32) 0%, rgba(255,255,255,0.09) 22%, rgba(255,255,255,0) 44%), linear-gradient(to top, rgba(0,0,0,0.30), rgba(0,0,0,0) 46%)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.30), inset 0 0 0 1px rgba(255,255,255,0.06)' }} />
@@ -179,20 +188,20 @@ export default function GameCard({ game, compact = false }) {
         </div>
 
         {/* Alt bilgi */}
-        <div className="game-card-info" style={{ padding: '13px 15px' }}>
-          <p className="game-card-title" style={{ fontWeight: 600, fontSize: 14, lineHeight: 1.3, color: 'var(--text)', marginBottom: 7, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <div style={{ padding: '13px 15px' }}>
+          <p style={{ fontWeight: 600, fontSize: 14, lineHeight: 1.3, color: 'var(--text)', marginBottom: 7, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {game.name}
           </p>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4, fontFamily: "-apple-system, 'Segoe UI', system-ui, Roboto, 'Helvetica Neue', Arial, sans-serif" }}>
 
             {/* Fiyat */}
             {isFree ? (
-              <span className="game-card-price" style={{ fontSize: 13, fontWeight: 700, color: 'var(--green)' }}>Ücretsiz</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--green)' }}>Ücretsiz</span>
             ) : livePrice?.price != null ? (
               isOnSale ? (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <span className="game-card-price" style={{ fontSize: 13, fontWeight: 700, color: 'var(--amber)' }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--amber)' }}>
                       {livePrice.price}₺
                     </span>
                     {livePrice.storeIcon && (
@@ -207,14 +216,14 @@ export default function GameCard({ game, compact = false }) {
                   </div>
                 </div>
               ) : (
-                <span className="game-card-price" style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
                   {livePrice.price}₺
                 </span>
               )
             ) : priceLoading ? (
               <span style={{ fontSize: 11, color: 'var(--border-hover)', letterSpacing: 3 }}>•••</span>
             ) : (
-              <span className="game-card-meta" style={{ fontSize: 12, color: 'var(--text-3)' }}>
+              <span style={{ fontSize: 12, color: 'var(--text-3)' }}>
                 {game.totalReviews > 0 ? '⭐ ' + game.totalReviews.toLocaleString('tr') : '—'}
               </span>
             )}
@@ -223,7 +232,7 @@ export default function GameCard({ game, compact = false }) {
 
           {/* Tür — sadece geniş kartlarda */}
           {!compact && (game.genres || []).slice(0, 1).map(g => (
-            <span key={g} className="badge badge-gray game-card-genre" style={{ marginTop: 6 }}>{g}</span>
+            <span key={g} className="badge badge-gray" style={{ marginTop: 6 }}>{g}</span>
           ))}
         </div>
       </div>

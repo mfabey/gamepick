@@ -217,7 +217,7 @@ function GamesList() {
 
       {/* ── Ana layout: sol içerik + sağ sidebar ── */}
       <div className="container" style={{ paddingTop: 28, paddingBottom: 60 }}>
-        <div className="games-layout" style={{ display: 'grid', gridTemplateColumns: '1fr 260px', gap: 32, alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 260px', gap: 32, alignItems: 'start' }}>
 
           {/* ── SOL: bölüm filtreleri + oyun grid ── */}
           <div>
@@ -302,7 +302,7 @@ function GamesList() {
           </div>
 
           {/* ── SAĞ: sticky sidebar ── */}
-          <aside className="games-sidebar" style={{ position: 'sticky', top: 130 }}>
+          <aside style={{ position: 'sticky', top: 130 }}>
 
             {/* Kategoriler */}
             <div style={{
