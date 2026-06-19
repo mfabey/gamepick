@@ -282,6 +282,45 @@ function GamesList() {
               })}
             </div>
 
+            {/* Mobil Filtreler (Kategori ve Bütçe) */}
+            <div className="mobile-only" style={{ gap: 10, marginBottom: 20, width: '100%' }}>
+              <div style={{ flex: 1, position: 'relative' }}>
+                <select 
+                  value={genre} 
+                  onChange={e => handleGenre(e.target.value)} 
+                  style={{
+                    width: '100%', height: 42, padding: '0 30px 0 12px',
+                    borderRadius: 9, background: 'var(--bg-card)', border: '1px solid var(--border)',
+                    fontSize: 14, fontWeight: 500, color: 'var(--text)', outline: 'none',
+                    appearance: 'none', WebkitAppearance: 'none', cursor: 'pointer'
+                  }}
+                >
+                  {localizedCategories.map(c => (
+                    <option key={c.slug} value={c.slug}>{c.label}</option>
+                  ))}
+                </select>
+                <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--text-3)', fontSize: 10 }}>▼</span>
+              </div>
+
+              <div style={{ flex: 1, position: 'relative' }}>
+                <select 
+                  value={price} 
+                  onChange={e => setPrice(e.target.value)} 
+                  style={{
+                    width: '100%', height: 42, padding: '0 30px 0 12px',
+                    borderRadius: 9, background: 'var(--bg-card)', border: '1px solid var(--border)',
+                    fontSize: 14, fontWeight: 500, color: 'var(--text)', outline: 'none',
+                    appearance: 'none', WebkitAppearance: 'none', cursor: 'pointer'
+                  }}
+                >
+                  {localizedPriceOptions.map(o => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+                <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--text-3)', fontSize: 10 }}>▼</span>
+              </div>
+            </div>
+
             {/* Sonuç bilgisi */}
             <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <p style={{ fontSize: 14, color: 'var(--text-3)' }}>
