@@ -501,6 +501,11 @@ html[data-theme="dark"] .glass-card {
   .nav-logo-text {
     font-size: 17px;
   }
+  @media (max-width: 480px) {
+    .nav-logo-text {
+      display: none !important;
+    }
+  }
   
   .nav-right-group {
     gap: 8px;
@@ -559,7 +564,11 @@ html[data-theme="dark"] .glass-card {
   }
   
   .nav-signup-btn {
-    display: none !important;
+    display: inline-block !important;
+    padding: 6px 10px !important;
+    font-size: 12.5px !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 10px var(--accent-glow) !important;
   }
   
   .nav-user-badge {
