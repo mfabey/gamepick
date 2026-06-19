@@ -485,6 +485,7 @@ html[data-theme="dark"] .glass-card {
     transform: none;
     gap: 6px;
     margin-right: auto !important;
+    margin-left: 16px;
   }
   
   .nav-logo-icon {
@@ -500,11 +501,6 @@ html[data-theme="dark"] .glass-card {
   
   .nav-logo-text {
     font-size: 17px;
-  }
-  @media (max-width: 480px) {
-    .nav-logo-text {
-      display: none !important;
-    }
   }
   
   .nav-right-group {
