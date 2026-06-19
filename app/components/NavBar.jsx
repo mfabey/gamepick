@@ -86,6 +86,20 @@ export default function NavBar() {
       {/* ── Üst bar: ortalı logo + sağda tema & hesap ── */}
       <header className="nav-header">
         <div className="nav-container">
+          {/* Ortalı logo */}
+          <Link href="/" className="nav-logo">
+            <span className="nav-logo-icon">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff"
+                strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="6" width="20" height="12" rx="3"/>
+                <path d="M6 12h4M8 10v4"/>
+                <circle cx="15.5" cy="11" r="1" fill="#fff" stroke="none"/>
+                <circle cx="18" cy="13.5" r="1" fill="#fff" stroke="none"/>
+              </svg>
+            </span>
+            <span className="nav-logo-text">GamePick</span>
+          </Link>
+
           {/* Sol: Dil seçimi */}
           <div className="nav-lang-selector" style={{
             marginRight: 'auto',
@@ -133,20 +147,6 @@ export default function NavBar() {
               EN
             </button>
           </div>
-
-          {/* Ortalı logo */}
-          <Link href="/" className="nav-logo">
-            <span className="nav-logo-icon">
-              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff"
-                strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="6" width="20" height="12" rx="3"/>
-                <path d="M6 12h4M8 10v4"/>
-                <circle cx="15.5" cy="11" r="1" fill="#fff" stroke="none"/>
-                <circle cx="18" cy="13.5" r="1" fill="#fff" stroke="none"/>
-              </svg>
-            </span>
-            <span className="nav-logo-text">GamePick</span>
-          </Link>
 
           {/* Sağ: destek + tema + hesap */}
           <div className="nav-right-group">
@@ -202,7 +202,10 @@ export default function NavBar() {
               </div>
             ) : (
               <div className="nav-auth-group" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <Link href="/login" className="nav-login-btn" style={{ padding: '8px 14px', fontSize: 14, fontWeight: 500, color: 'var(--text-2)', whiteSpace: 'nowrap' }}>{t('nav.login')}</Link>
+                <Link href="/login" className="nav-login-btn" style={{ padding: '8px 14px', fontSize: 14, fontWeight: 500, color: 'var(--text-2)', whiteSpace: 'nowrap' }}>
+                  <span className="desktop-only">{t('nav.login')}</span>
+                  <span className="mobile-only">{lang === 'tr' ? 'Giriş' : 'Login'}</span>
+                </Link>
                 <Link href="/signup" className="nav-signup-btn" style={{ padding: '9px 20px', borderRadius: 10, fontSize: 14, fontWeight: 600, background: 'var(--accent)', color: '#fff', whiteSpace: 'nowrap', boxShadow: '0 6px 18px var(--accent-bg)' }}>{t('nav.signup')}</Link>
               </div>
             )}

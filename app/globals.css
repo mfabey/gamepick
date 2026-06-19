@@ -484,6 +484,7 @@ html[data-theme="dark"] .glass-card {
     position: static;
     transform: none;
     gap: 6px;
+    margin-right: auto !important;
   }
   
   .nav-logo-icon {
@@ -539,6 +540,7 @@ html[data-theme="dark"] .glass-card {
     padding: 1px !important;
     border-radius: 7px !important;
     gap: 1px !important;
+    margin-right: 0 !important;
   }
   
   .nav-lang-selector button {
@@ -557,10 +559,7 @@ html[data-theme="dark"] .glass-card {
   }
   
   .nav-signup-btn {
-    padding: 7px 12px !important;
-    font-size: 12.5px !important;
-    border-radius: 8px !important;
-    box-shadow: 0 4px 10px var(--accent-glow) !important;
+    display: none !important;
   }
   
   .nav-user-badge {
