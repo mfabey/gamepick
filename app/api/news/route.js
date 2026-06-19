@@ -2,9 +2,14 @@ import { NextResponse } from 'next/server';
 
 export const revalidate = 1800; // 30 dk ISR
 
-// ── Oyun haberleri RSS kaynakları (anahtar gerekmez) ────────────────────────
-// Büyük İngilizce oyun haber siteleri. Vercel'de anında çalışır, kayıt yok.
-const FEEDS = [
+const FEEDS_TR = [
+  { url: 'https://www.merlininkazani.com/feed/',         source: 'Merlin\'in Kazanı' },
+  { url: 'https://frpnet.net/feed',                    source: 'FRPNET' },
+  { url: 'https://geekyapar.com/feed/',                 source: 'Geekyapar' },
+  { url: 'https://www.savebutonu.com/feed',            source: 'SaveButonu' },
+];
+
+const FEEDS_EN = [
   { url: 'https://www.pcgamer.com/rss/',                 source: 'PC Gamer'   },
   { url: 'https://www.eurogamer.net/feed',               source: 'Eurogamer'  },
   { url: 'https://www.rockpapershotgun.com/feed',        source: 'RPS'        },
@@ -12,12 +17,18 @@ const FEEDS = [
   { url: 'https://www.gamespot.com/feeds/news/',         source: 'GameSpot'   },
 ];
 
-// Türkçe kategori — başlık/özet içindeki anahtar kelimelere göre
-const CAT_RULES = [
-  { cat: 'İndirimler',    re: /\b(sale|discount|deal|deals|free|bundle|cheap|% off|price drop|giveaway)\b/i },
-  { cat: 'İncelemeler',   re: /\b(review|hands.on|impressions|preview|verdict)\b/i },
-  { cat: 'Güncellemeler', re: /\b(update|patch|hotfix|version|dlc|expansion|season|content drop)\b/i },
-  { cat: 'Çıkışlar',      re: /\b(release|launch|out now|release date|announced|reveal|trailer|coming)\b/i },
+const CAT_RULES_TR = [
+  { cat: 'İndirimler',    re: /\b(indirim|kampanya|fırsat|ucuz|bedava|ücretsiz|hediye|paket|indirimde|fiyat)\b/i },
+  { cat: 'İncelemeler',   re: /\b(inceleme|değerlendirme|nasıl|bakış|puan|yorum|test)\b/i },
+  { cat: 'Güncellemeler', re: /\b(güncelleme|yama|hotfix|sürüm|dlc|paket|yeni sezon|eklenti)\b/i },
+  { cat: 'Çıkışlar',      re: /\b(çıkış|yayınlandı|geldi|duyuruldu|fragman|tanıtım|tarih|çıkıyor)\b/i },
+];
+
+const CAT_RULES_EN = [
+  { cat: 'Sales',         re: /\b(sale|discount|deal|deals|free|bundle|cheap|% off|price drop|giveaway)\b/i },
+  { cat: 'Reviews',       re: /\b(review|hands.on|impressions|preview|verdict)\b/i },
+  { cat: 'Updates',       re: /\b(update|patch|hotfix|version|dlc|expansion|season|content drop)\b/i },
+  { cat: 'Releases',      re: /\b(release|launch|out now|release date|announced|reveal|trailer|coming)\b/i },
 ];
 
 const ART_PALETTE = [
@@ -48,7 +59,6 @@ function decodeEntities(str = '') {
     .trim();
 }
 
-// indexOf tabanlı — dinamik RegExp + escaping tuzağından kaçınır
 function tag(block, name) {
   const open = block.indexOf('<' + name);
   if (open === -1) return '';
@@ -74,31 +84,47 @@ function extractImage(block) {
   return null;
 }
 
-function categorize(text) {
-  for (const r of CAT_RULES) if (r.re.test(text)) return r.cat;
-  return 'Endüstri';
+function categorize(text, lang = 'tr') {
+  const rules = lang === 'tr' ? CAT_RULES_TR : CAT_RULES_EN;
+  for (const r of rules) if (r.re.test(text)) return r.cat;
+  return lang === 'tr' ? 'Endüstri' : 'Industry';
 }
 
-function formatDate(pubDate) {
+function formatDate(pubDate, lang = 'tr') {
   const d = new Date(pubDate);
   if (isNaN(d)) return '';
-  const months = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+  const monthsTr = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+  const monthsEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const months = lang === 'tr' ? monthsTr : monthsEn;
   return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
 }
 
-function readingTime(text) {
+function readingTime(text, lang = 'tr') {
   const words = text.split(/\s+/).length;
-  return `${Math.max(1, Math.round(words / 200))} dk`;
+  const mins = Math.max(1, Math.round(words / 200));
+  return lang === 'tr' ? `${mins} dk` : `${mins} min`;
 }
 
-async function fetchFeed(feed) {
+async function fetchFeed(feed, lang = 'tr') {
   try {
     const res = await fetch(feed.url, {
       headers: { 'User-Agent': 'Mozilla/5.0 (GamePick News Aggregator)' },
       next: { revalidate: 1800 }, // 30 dk cache
     });
     if (!res.ok) return [];
-    const xml = await res.text();
+
+    const buffer = await res.arrayBuffer();
+    // Default to utf-8, but scan for declared encoding in the XML header
+    const tempDecoder = new TextDecoder('utf-8');
+    const tempText = tempDecoder.decode(buffer.slice(0, 1000));
+    let encoding = 'utf-8';
+    const encMatch = tempText.match(/encoding=["']([^"']+)["']/i);
+    if (encMatch) {
+      encoding = encMatch[1].toLowerCase();
+    }
+
+    const decoder = new TextDecoder(encoding);
+    const xml = decoder.decode(buffer);
     const items = xml.match(/<item[\s\S]*?<\/item>/gi) || [];
 
     return items.slice(0, 12).map((block) => {
@@ -118,7 +144,7 @@ async function fetchFeed(feed) {
         source: feed.source,
         pubDate,
         ts: new Date(pubDate).getTime() || 0,
-        cat: categorize(title + ' ' + excerpt),
+        cat: categorize(title + ' ' + excerpt, lang),
       };
     }).filter(Boolean);
   } catch {
@@ -126,8 +152,12 @@ async function fetchFeed(feed) {
   }
 }
 
-export async function GET() {
-  const settled = await Promise.allSettled(FEEDS.map(fetchFeed));
+export async function GET(request) {
+  const { searchParams } = new URL(request.url);
+  const lang = searchParams.get('lang') || 'tr';
+
+  const feeds = lang === 'tr' ? FEEDS_TR : FEEDS_EN;
+  const settled = await Promise.allSettled(feeds.map(f => fetchFeed(f, lang)));
   let all = settled.flatMap((s) => (s.status === 'fulfilled' ? s.value : []));
 
   // Başlığa göre tekilleştir
@@ -146,8 +176,8 @@ export async function GET() {
   const results = all.map((n, i) => ({
     id:      'news_' + i,
     cat:     n.cat,
-    date:    formatDate(n.pubDate),
-    read:    readingTime(n.excerpt || n.title),
+    date:    formatDate(n.pubDate, lang),
+    read:    readingTime(n.excerpt || n.title, lang),
     title:   n.title,
     excerpt: n.excerpt,
     image:   n.image,
