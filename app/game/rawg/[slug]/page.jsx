@@ -662,6 +662,7 @@ function PriceCard({ store, icon, price, original, discount, isFree: isFreeOverr
 
 // ── Fiyat yok ama link var ───────────────────────────────────────────────────
 function PlaceholderCard({ store, icon, url }) {
+  const { lang } = useLanguage();
   return (
     <a href={url || '#'} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', display: 'block', marginBottom: 8 }}>
       <div className="glass-card" style={{
