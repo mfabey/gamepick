@@ -19,9 +19,7 @@ export default function RootLayout({ children }) {
         <script dangerouslySetInnerHTML={{ __html: `
           (function() {
             try {
-              const savedTheme = localStorage.getItem('theme');
-              const initialTheme = savedTheme || 'light';
-              document.documentElement.setAttribute('data-theme', initialTheme);
+              document.documentElement.setAttribute('data-theme', 'dark');
             } catch (e) {}
           })()
         ` }} />
