@@ -114,17 +114,24 @@ async function fetchFeed(feed, lang = 'tr') {
     if (!res.ok) return [];
 
     const buffer = await res.arrayBuffer();
-    // Default to utf-8, but scan for declared encoding in the XML header
-    const tempDecoder = new TextDecoder('utf-8');
-    const tempText = tempDecoder.decode(buffer.slice(0, 1000));
-    let encoding = 'utf-8';
-    const encMatch = tempText.match(/encoding=["']([^"']+)["']/i);
-    if (encMatch) {
-      encoding = encMatch[1].toLowerCase();
+    
+    // Try to decode as UTF-8 first
+    const decoderUtf8 = new TextDecoder('utf-8', { fatal: true });
+    let xml = '';
+    try {
+      xml = decoderUtf8.decode(buffer);
+    } catch {
+      // Fallback to XML-declared encoding
+      const tempDecoder = new TextDecoder('utf-8');
+      const tempText = tempDecoder.decode(buffer.slice(0, 1000));
+      let encoding = 'utf-8';
+      const encMatch = tempText.match(/encoding=["']([^"']+)["']/i);
+      if (encMatch) {
+        encoding = encMatch[1].toLowerCase();
+      }
+      const decoder = new TextDecoder(encoding);
+      xml = decoder.decode(buffer);
     }
-
-    const decoder = new TextDecoder(encoding);
-    const xml = decoder.decode(buffer);
     const items = xml.match(/<item[\s\S]*?<\/item>/gi) || [];
 
     return items.slice(0, 12).map((block) => {
@@ -152,6 +159,22 @@ async function fetchFeed(feed, lang = 'tr') {
   }
 }
 
+async function resolveOgImage(url) {
+  try {
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' },
+      signal: AbortSignal.timeout(3000)
+    });
+    if (!res.ok) return null;
+    const html = await res.text();
+    const match = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i)
+      || html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["']/i);
+    return match ? match[1].trim() : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const lang = searchParams.get('lang') || 'tr';
@@ -172,6 +195,15 @@ export async function GET(request) {
   // En yeni önce
   all.sort((a, b) => b.ts - a.ts);
   all = all.slice(0, 40);
+
+  // Görüntüsü olmayan haberlerin (özellikle Merlin'in Kazanı) og:image değerlerini paralel olarak çöz
+  all = await Promise.all(all.map(async (n) => {
+    if (!n.image && n.url) {
+      const img = await resolveOgImage(n.url);
+      if (img) n.image = img;
+    }
+    return n;
+  }));
 
   const results = all.map((n, i) => ({
     id:      'news_' + i,
