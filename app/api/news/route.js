@@ -169,7 +169,13 @@ async function resolveOgImage(url) {
     const html = await res.text();
     const match = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i)
       || html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["']/i);
-    return match ? match[1].trim() : null;
+    let img = match ? match[1].trim() : null;
+    
+    // Merlin'in Kazanı resim sunucusu düzeltmesi
+    if (img && img.includes('www.merlininkazani.com/images/games/')) {
+      img = img.replace('www.merlininkazani.com/images/games/', 'img.merlininkazani.com/');
+    }
+    return img;
   } catch {
     return null;
   }
