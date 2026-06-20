@@ -34,9 +34,9 @@ const CATEGORIES = [
 const PRICE_OPTIONS = [
   { label: 'Tüm Fiyatlar', value: 'all'  },
   { label: 'Ücretsiz',     value: 'free' },
-  { label: '0 – 100₺',    value: '100'  },
-  { label: '0 – 300₺',    value: '300'  },
-  { label: '0 – 500₺',    value: '500'  },
+  { label: '0 – 100 TL',    value: '100'  },
+  { label: '0 – 300 TL',    value: '300'  },
+  { label: '0 – 500 TL',    value: '500'  },
 ];
 
 const PAGE_SIZE = 24;
@@ -75,9 +75,9 @@ function GamesList() {
   const localizedPriceOptions = [
     { label: lang === 'tr' ? 'Tüm Fiyatlar' : 'All Prices', value: 'all'  },
     { label: lang === 'tr' ? 'Ücretsiz' : 'Free',     value: 'free' },
-    { label: lang === 'tr' ? '0 – 100₺' : '0 – $3',    value: '100'  },
-    { label: lang === 'tr' ? '0 – 300₺' : '0 – $9',    value: '300'  },
-    { label: lang === 'tr' ? '0 – 500₺' : '0 – $15',    value: '500'  },
+    { label: lang === 'tr' ? '0 – 100 TL' : '0 – $3',    value: '100'  },
+    { label: lang === 'tr' ? '0 – 300 TL' : '0 – $9',    value: '300'  },
+    { label: lang === 'tr' ? '0 – 500 TL' : '0 – $15',    value: '500'  },
   ];
 
   const [query,       setQuery]       = useState(initialQuery);
