@@ -361,7 +361,8 @@ export function LanguageProvider({ children }) {
     if (priceTry === 0) return t('card.free');
 
     if (lang === 'tr') {
-      return `${priceTry} ₺`;
+      const val = Number(priceTry);
+      return `${val % 1 === 0 ? val : val.toFixed(2)} ₺`;
     } else {
       const usdVal = priceTry / rate;
       return `$${usdVal.toFixed(2)}`;
