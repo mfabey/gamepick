@@ -4,9 +4,11 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function SignupPage() {
   const { signup } = useAuth();
+  const { lang } = useLanguage();
   const router = useRouter();
   const [name,            setName]            = useState('');
   const [email,           setEmail]           = useState('');
@@ -31,9 +33,18 @@ export default function SignupPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    if (password.length < 6) { setError('Şifre en az 6 karakter olmalı.'); return; }
-    if (password !== confirmPassword) { setError('Şifreler eşleşmiyor.'); return; }
-    if (!captchaChecked) { setError('Lütfen robot olmadığınızı doğrulayın.'); return; }
+    if (password.length < 6) { 
+      setError(lang === 'tr' ? 'Şifre en az 6 karakter olmalı.' : 'Password must be at least 6 characters.'); 
+      return; 
+    }
+    if (password !== confirmPassword) { 
+      setError(lang === 'tr' ? 'Şifreler eşleşmiyor.' : 'Passwords do not match.'); 
+      return; 
+    }
+    if (!captchaChecked) { 
+      setError(lang === 'tr' ? 'Lütfen robot olmadığınızı doğrulayın.' : 'Please verify that you are not a robot.'); 
+      return; 
+    }
     
     setLoading(true);
     const result = signup({ name, email, password });
@@ -75,9 +86,14 @@ export default function SignupPage() {
               <circle cx="18" cy="13" r="1" fill="#fff" stroke="none"/>
             </svg>
           </div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>GamePick'e Üye Ol</h1>
-          <p style={{ color: 'var(--text-3)', fontSize: 14, marginTop: 4 }}>Zaten hesabın var mı?{' '}
-            <Link href="/login" style={{ color: 'var(--accent)', fontWeight: 600 }}>Giriş Yap</Link>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>
+            {lang === 'tr' ? "GamePick'e Üye Ol" : 'Sign Up for GamePick'}
+          </h1>
+          <p style={{ color: 'var(--text-3)', fontSize: 14, marginTop: 4 }}>
+            {lang === 'tr' ? 'Zaten hesabın var mı? ' : 'Already have an account? '}
+            <Link href="/login" style={{ color: 'var(--accent)', fontWeight: 600 }}>
+              {lang === 'tr' ? 'Giriş Yap' : 'Log In'}
+            </Link>
           </p>
         </div>
 
@@ -87,7 +103,10 @@ export default function SignupPage() {
           borderRadius: 10, padding: '12px 16px', marginBottom: 20,
           display: 'flex', flexDirection: 'column', gap: 6,
         }}>
-          {['Steam, Epic ve Xbox kütüphaneni tek ekranda gör', 'Fiyat alarmı ile en ucuz fiyatı yakala', 'AI ile ruh haline göre oyun önerisi al'].map(t => (
+          {(lang === 'tr'
+            ? ['Steam, Epic ve Xbox kütüphaneni tek ekranda gör', 'Fiyat alarmı ile en ucuz fiyatı yakala', 'AI ile ruh haline göre oyun önerisi al']
+            : ['See your Steam, Epic, and Xbox libraries in one screen', 'Catch the lowest price with price alerts', 'Get mood-based game recommendations with AI']
+          ).map(t => (
             <p key={t} style={{ fontSize: 12, color: 'var(--text-2)', display: 'flex', gap: 8 }}>
               <span style={{ color: 'var(--accent)', fontWeight: 700 }}>✓</span> {t}
             </p>
@@ -108,31 +127,37 @@ export default function SignupPage() {
             )}
 
             <div style={{ marginBottom: 14 }}>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>İsim</label>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>
+                {lang === 'tr' ? 'İsim' : 'Name'}
+              </label>
               <input
                 type="text" required value={name} onChange={e => setName(e.target.value)}
-                placeholder="Adın Soyadın" style={fieldStyle}
+                placeholder={lang === 'tr' ? 'Sana nasıl hitap edelim?' : 'How should we address you?'} style={fieldStyle}
                 onFocus={e => e.target.style.borderColor = 'var(--accent)'}
                 onBlur={e => e.target.style.borderColor = 'var(--border)'}
               />
             </div>
 
             <div style={{ marginBottom: 14 }}>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>E-posta</label>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>
+                {lang === 'tr' ? 'E-posta' : 'Email'}
+              </label>
               <input
                 type="email" required value={email} onChange={e => setEmail(e.target.value)}
-                placeholder="ornek@mail.com" style={fieldStyle}
+                placeholder={lang === 'tr' ? 'ornek@mail.com' : 'example@mail.com'} style={fieldStyle}
                 onFocus={e => e.target.style.borderColor = 'var(--accent)'}
                 onBlur={e => e.target.style.borderColor = 'var(--border)'}
               />
             </div>
 
             <div style={{ marginBottom: 14 }}>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>Şifre</label>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>
+                {lang === 'tr' ? 'Şifre' : 'Password'}
+              </label>
               <div style={{ position: 'relative' }}>
                 <input
                   type={showPassword ? 'text' : 'password'} required value={password} onChange={e => setPassword(e.target.value)}
-                  placeholder="En az 6 karakter" style={{ ...fieldStyle, paddingRight: '40px' }}
+                  placeholder={lang === 'tr' ? 'En az 6 karakter' : 'At least 6 characters'} style={{ ...fieldStyle, paddingRight: '40px' }}
                   onFocus={e => e.target.style.borderColor = 'var(--accent)'}
                   onBlur={e => e.target.style.borderColor = 'var(--border)'}
                 />
@@ -161,11 +186,13 @@ export default function SignupPage() {
             </div>
 
             <div style={{ marginBottom: 18 }}>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>Şifreyi Onayla</label>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>
+                {lang === 'tr' ? 'Şifreyi Onayla' : 'Confirm Password'}
+              </label>
               <div style={{ position: 'relative' }}>
                 <input
                   type={showConfirmPassword ? 'text' : 'password'} required value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
-                  placeholder="Şifrenizi tekrar girin" style={{ ...fieldStyle, paddingRight: '40px' }}
+                  placeholder={lang === 'tr' ? 'Şifrenizi tekrar girin' : 'Re-enter your password'} style={{ ...fieldStyle, paddingRight: '40px' }}
                   onFocus={e => e.target.style.borderColor = 'var(--accent)'}
                   onBlur={e => e.target.style.borderColor = 'var(--border)'}
                 />
@@ -230,7 +257,7 @@ export default function SignupPage() {
                   onClick={handleCaptchaClick}
                   style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-2)', cursor: (captchaChecked || captchaLoading) ? 'default' : 'pointer' }}
                 >
-                  Ben robot değilim
+                  {lang === 'tr' ? 'Ben robot değilim' : "I'm not a robot"}
                 </span>
               </div>
               
@@ -253,7 +280,9 @@ export default function SignupPage() {
                 opacity: loading ? 0.7 : 1,
               }}
             >
-              {loading ? 'Kaydediliyor...' : 'Ücretsiz Kayıt Ol →'}
+              {loading 
+                ? (lang === 'tr' ? 'Kaydediliyor...' : 'Registering...') 
+                : (lang === 'tr' ? 'Ücretsiz Kayıt Ol →' : 'Sign Up for Free →')}
             </button>
 
             <style>{`
@@ -263,7 +292,9 @@ export default function SignupPage() {
             `}</style>
 
             <p style={{ fontSize: 11, color: 'var(--text-3)', textAlign: 'center', marginTop: 14 }}>
-              Kayıt olarak Kullanım Şartlarını kabul etmiş olursunuz.
+              {lang === 'tr' 
+                ? 'Kayıt olarak Kullanım Şartlarını kabul etmiş olursunuz.' 
+                : 'By registering, you accept our Terms of Service.'}
             </p>
           </form>
         </div>

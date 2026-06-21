@@ -4,9 +4,11 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function LoginPage() {
   const { login } = useAuth();
+  const { lang } = useLanguage();
   const router = useRouter();
   const [email,        setEmail]        = useState('');
   const [password,     setPassword]     = useState('');
@@ -49,9 +51,14 @@ export default function LoginPage() {
               <circle cx="18" cy="13" r="1" fill="#fff" stroke="none"/>
             </svg>
           </div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>GamePick'e Giriş Yap</h1>
-          <p style={{ color: 'var(--text-3)', fontSize: 14, marginTop: 4 }}>Hesabın yok mu?{' '}
-            <Link href="/signup" style={{ color: 'var(--accent)', fontWeight: 600 }}>Üye Ol</Link>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>
+            {lang === 'tr' ? "GamePick'e Giriş Yap" : 'Log In to GamePick'}
+          </h1>
+          <p style={{ color: 'var(--text-3)', fontSize: 14, marginTop: 4 }}>
+            {lang === 'tr' ? 'Hesabın yok mu? ' : "Don't have an account? "}
+            <Link href="/signup" style={{ color: 'var(--accent)', fontWeight: 600 }}>
+              {lang === 'tr' ? 'Üye Ol' : 'Sign Up'}
+            </Link>
           </p>
         </div>
 
@@ -70,12 +77,12 @@ export default function LoginPage() {
 
             <div style={{ marginBottom: 16 }}>
               <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>
-                E-posta
+                {lang === 'tr' ? 'E-posta' : 'Email'}
               </label>
               <input
                 type="email" required
                 value={email} onChange={e => setEmail(e.target.value)}
-                placeholder="ornek@mail.com"
+                placeholder={lang === 'tr' ? 'ornek@mail.com' : 'example@mail.com'}
                 style={{
                   width: '100%', padding: '10px 14px',
                   border: '1.5px solid var(--border)', borderRadius: 8,
@@ -91,10 +98,10 @@ export default function LoginPage() {
             <div style={{ marginBottom: 24 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                 <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-2)' }}>
-                  Şifre
+                  {lang === 'tr' ? 'Şifre' : 'Password'}
                 </label>
                 <Link href="/forgot-password" style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 500 }}>
-                  Şifremi Unuttum
+                  {lang === 'tr' ? 'Şifremi Unuttum' : 'Forgot Password?'}
                 </Link>
               </div>
               <div style={{ position: 'relative' }}>
@@ -146,7 +153,9 @@ export default function LoginPage() {
                 opacity: loading ? 0.7 : 1,
               }}
             >
-              {loading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
+              {loading 
+                ? (lang === 'tr' ? 'Giriş yapılıyor...' : 'Logging in...') 
+                : (lang === 'tr' ? 'Giriş Yap' : 'Log In')}
             </button>
           </form>
         </div>

@@ -3,9 +3,11 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function ForgotPasswordPage() {
   const { resetPassword } = useAuth();
+  const { lang } = useLanguage();
   const [step,            setStep]            = useState(1); // 1: Email, 2: Verification Code, 3: New Password, 4: Success
   const [email,           setEmail]           = useState('');
   const [generatedCode,   setGeneratedCode]   = useState('');
@@ -26,7 +28,7 @@ export default function ForgotPasswordPage() {
     const found = users.find(u => u.email.toLowerCase() === email.toLowerCase());
     
     if (!found) {
-      setError('Bu e-posta adresine kayıtlı bir hesap bulunamadı.');
+      setError(lang === 'tr' ? 'Bu e-posta adresine kayıtlı bir hesap bulunamadı.' : 'No account found registered with this email address.');
       return;
     }
 
@@ -48,7 +50,7 @@ export default function ForgotPasswordPage() {
     if (userCode === generatedCode) {
       setStep(3);
     } else {
-      setError('Doğrulama kodu hatalı. Lütfen tekrar deneyin.');
+      setError(lang === 'tr' ? 'Doğrulama kodu hatalı. Lütfen tekrar deneyin.' : 'Incorrect verification code. Please try again.');
     }
   };
 
@@ -64,11 +66,11 @@ export default function ForgotPasswordPage() {
     setError('');
 
     if (password.length < 6) {
-      setError('Yeni şifre en az 6 karakter olmalı.');
+      setError(lang === 'tr' ? 'Yeni şifre en az 6 karakter olmalı.' : 'New password must be at least 6 characters.');
       return;
     }
     if (password !== confirmPassword) {
-      setError('Şifreler eşleşmiyor.');
+      setError(lang === 'tr' ? 'Şifreler eşleşmiyor.' : 'Passwords do not match.');
       return;
     }
 
@@ -76,10 +78,10 @@ export default function ForgotPasswordPage() {
     setTimeout(() => {
       const result = resetPassword(email, password);
       if (result.ok) {
-        setSuccess('Şifreniz başarıyla sıfırlandı. Yeni şifrenizle giriş yapabilirsiniz.');
+        setSuccess(lang === 'tr' ? 'Şifreniz başarıyla sıfırlandı. Yeni şifrenizle giriş yapabilirsiniz.' : 'Your password has been reset successfully. You can now log in with your new password.');
         setStep(4);
       } else {
-        setError(result.error || 'Şifre sıfırlanırken bir hata oluştu.');
+        setError(result.error || (lang === 'tr' ? 'Şifre sıfırlanırken bir hata oluştu.' : 'An error occurred while resetting your password.'));
       }
       setLoading(false);
     }, 800);
@@ -121,13 +123,13 @@ export default function ForgotPasswordPage() {
                 <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
                 <polyline points="22,6 12,13 2,6" />
               </svg>
-              <span>[MOCK E-POSTA SİMÜLASYONU]</span>
+              <span>{lang === 'tr' ? '[MOCK E-POSTA SİMÜLASYONU]' : '[MOCK EMAIL SIMULATION]'}</span>
             </div>
             <p style={{ color: 'var(--text-2)', lineHeight: 1.4 }}>
-              Kayıtlı e-posta adresinize sıfırlama kodu gönderildi!
+              {lang === 'tr' ? 'Kayıtlı e-posta adresinize sıfırlama kodu gönderildi!' : 'A reset code has been sent to your registered email!'}
             </p>
             <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 12, color: 'var(--text-3)' }}>Doğrulama Kodu:</span>
+              <span style={{ fontSize: 12, color: 'var(--text-3)' }}>{lang === 'tr' ? 'Doğrulama Kodu:' : 'Verification Code:'}</span>
               <strong style={{
                 fontSize: 16,
                 letterSpacing: 2,
@@ -155,12 +157,14 @@ export default function ForgotPasswordPage() {
               <circle cx="18" cy="13" r="1" fill="#fff" stroke="none"/>
             </svg>
           </div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>Şifremi Sıfırla</h1>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>
+            {lang === 'tr' ? 'Şifremi Sıfırla' : 'Reset Password'}
+          </h1>
           <p style={{ color: 'var(--text-3)', fontSize: 14, marginTop: 4 }}>
-            {step === 1 && 'Hesabınızı kurtarmak için e-posta adresinizi girin'}
-            {step === 2 && 'E-postanıza gönderilen 6 haneli kodu girin'}
-            {step === 3 && 'Hesabınız için yeni ve güvenli bir şifre belirleyin'}
-            {step === 4 && 'İşlem başarıyla tamamlandı'}
+            {step === 1 && (lang === 'tr' ? 'Hesabınızı kurtarmak için e-posta adresinizi girin' : 'Enter your email address to recover your account')}
+            {step === 2 && (lang === 'tr' ? 'E-postanıza gönderilen 6 haneli kodu girin' : 'Enter the 6-digit code sent to your email')}
+            {step === 3 && (lang === 'tr' ? 'Hesabınız için yeni ve güvenli bir şifre belirleyin' : 'Set a new, secure password for your account')}
+            {step === 4 && (lang === 'tr' ? 'İşlem başarıyla tamamlandı' : 'Process completed successfully')}
           </p>
         </div>
 
@@ -192,11 +196,11 @@ export default function ForgotPasswordPage() {
             <form onSubmit={handleSendCode}>
               <div style={{ marginBottom: 20 }}>
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>
-                  E-posta Adresi
+                  {lang === 'tr' ? 'E-posta Adresi' : 'Email Address'}
                 </label>
                 <input
                   type="email" required value={email} onChange={e => setEmail(e.target.value)}
-                  placeholder="ornek@mail.com" style={fieldStyle}
+                  placeholder={lang === 'tr' ? 'ornek@mail.com' : 'example@mail.com'} style={fieldStyle}
                   onFocus={e => e.target.style.borderColor = 'var(--accent)'}
                   onBlur={e => e.target.style.borderColor = 'var(--border)'}
                 />
@@ -213,12 +217,14 @@ export default function ForgotPasswordPage() {
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
                 }}
               >
-                {loading ? 'Gönderiliyor...' : 'Doğrulama Kodu Gönder →'}
+                {loading 
+                  ? (lang === 'tr' ? 'Gönderiliyor...' : 'Sending...') 
+                  : (lang === 'tr' ? 'Doğrulama Kodu Gönder →' : 'Send Verification Code →')}
               </button>
 
               <div style={{ textAlign: 'center', marginTop: 16 }}>
                 <Link href="/login" style={{ fontSize: 13, color: 'var(--text-3)', fontWeight: 500 }}>
-                  ← Giriş Ekranına Dön
+                  {lang === 'tr' ? '← Giriş Ekranına Dön' : '← Back to Login'}
                 </Link>
               </div>
             </form>
@@ -229,7 +235,7 @@ export default function ForgotPasswordPage() {
             <form onSubmit={handleVerifyCode}>
               <div style={{ marginBottom: 20 }}>
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>
-                  Doğrulama Kodu
+                  {lang === 'tr' ? 'Doğrulama Kodu' : 'Verification Code'}
                 </label>
                 <input
                   type="text" required maxLength={6} value={userCode} onChange={e => setUserCode(e.target.value.replace(/\D/g, ''))}
@@ -248,7 +254,7 @@ export default function ForgotPasswordPage() {
                   fontSize: 14, fontWeight: 600, cursor: 'pointer',
                 }}
               >
-                Kodu Doğrula →
+                {lang === 'tr' ? 'Kodu Doğrula →' : 'Verify Code →'}
               </button>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 16 }}>
@@ -256,13 +262,13 @@ export default function ForgotPasswordPage() {
                   type="button" onClick={() => setStep(1)}
                   style={{ background: 'none', border: 'none', fontSize: 13, color: 'var(--text-3)', cursor: 'pointer', padding: 0 }}
                 >
-                  ← E-postayı Değiştir
+                  {lang === 'tr' ? '← E-postayı Değiştir' : '← Change Email'}
                 </button>
                 <button
                   type="button" onClick={handleResendCode}
                   style={{ background: 'none', border: 'none', fontSize: 13, color: 'var(--accent)', fontWeight: 600, cursor: 'pointer', padding: 0 }}
                 >
-                  Kodu Tekrar Gönder
+                  {lang === 'tr' ? 'Kodu Tekrar Gönder' : 'Resend Code'}
                 </button>
               </div>
             </form>
@@ -273,11 +279,11 @@ export default function ForgotPasswordPage() {
             <form onSubmit={handleResetPassword}>
               <div style={{ marginBottom: 14 }}>
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>
-                  Yeni Şifre
+                  {lang === 'tr' ? 'Yeni Şifre' : 'New Password'}
                 </label>
                 <input
                   type="password" required value={password} onChange={e => setPassword(e.target.value)}
-                  placeholder="En az 6 karakter" style={fieldStyle}
+                  placeholder={lang === 'tr' ? 'En az 6 karakter' : 'At least 6 characters'} style={fieldStyle}
                   onFocus={e => e.target.style.borderColor = 'var(--accent)'}
                   onBlur={e => e.target.style.borderColor = 'var(--border)'}
                 />
@@ -285,11 +291,11 @@ export default function ForgotPasswordPage() {
 
               <div style={{ marginBottom: 20 }}>
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>
-                  Yeni Şifreyi Onayla
+                  {lang === 'tr' ? 'Yeni Şifreyi Onayla' : 'Confirm New Password'}
                 </label>
                 <input
                   type="password" required value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
-                  placeholder="Şifreyi tekrar girin" style={fieldStyle}
+                  placeholder={lang === 'tr' ? 'Şifreyi tekrar girin' : 'Re-enter password'} style={fieldStyle}
                   onFocus={e => e.target.style.borderColor = 'var(--accent)'}
                   onBlur={e => e.target.style.borderColor = 'var(--border)'}
                 />
@@ -305,7 +311,9 @@ export default function ForgotPasswordPage() {
                   opacity: loading ? 0.7 : 1,
                 }}
               >
-                {loading ? 'Şifre Güncelleniyor...' : 'Şifreyi Güncelle ve Tamamla'}
+                {loading 
+                  ? (lang === 'tr' ? 'Şifre Güncelleniyor...' : 'Updating Password...') 
+                  : (lang === 'tr' ? 'Şifreyi Güncelle ve Tamamla' : 'Update Password & Complete')}
               </button>
             </form>
           )}
@@ -322,7 +330,9 @@ export default function ForgotPasswordPage() {
                 </svg>
               </div>
               <p style={{ color: 'var(--text-2)', fontSize: 14, marginBottom: 20, lineHeight: 1.5 }}>
-                Hesap şifreniz başarıyla değiştirilmiştir. Artık yeni şifrenizle giriş yapabilirsiniz.
+                {lang === 'tr' 
+                  ? 'Hesap şifreniz başarıyla değiştirilmiştir. Artık yeni şifrenizle giriş yapabilirsiniz.' 
+                  : 'Your account password has been changed successfully. You can now log in with your new password.'}
               </p>
               <Link href="/login" style={{
                 display: 'block', width: '100%', padding: '12px',
@@ -331,7 +341,7 @@ export default function ForgotPasswordPage() {
                 fontSize: 14, fontWeight: 600, textDecoration: 'none',
                 textAlign: 'center'
               }}>
-                Giriş Yap Ekranına Git →
+                {lang === 'tr' ? 'Giriş Yap Ekranına Git →' : 'Go to Login Screen →'}
               </Link>
             </div>
           )}
