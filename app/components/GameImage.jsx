@@ -46,7 +46,13 @@ const SLUG_TO_STEAM_ID = {
   'nine-sols': '1809540',
   'helldivers-2': '553850',
   'among-us': '945360',
-  'meccha-chameleon': '4704690'
+  'meccha-chameleon': '4704690',
+  'forza-horizon-6': '2483190',
+  'football-manager-26': '3551390',
+  'football-manager-2026': '3551390',
+  'tbh-task-bar-hero': '3678970',
+  'task-bar-hero': '3678970',
+  '007-first-light': '1659040'
 };
 
 const ID_TO_STEAM_ID = {
@@ -106,6 +112,12 @@ export default function GameImage({
       if (nameLower.includes('3')) return '1238820';
       return '1517290'; // default Battlefield 2042 fallback
     }
+
+    // Name-based fallback mapping for unreleased/new games
+    if (nameLower.includes('forza horizon 6')) return '2483190';
+    if (nameLower.includes('football manager 26') || nameLower.includes('football manager 2026')) return '3551390';
+    if (nameLower.includes('task bar hero') || nameLower.startsWith('tbh')) return '3678970';
+    if (nameLower.includes('007 first light')) return '1659040';
 
     if (game.appid) return game.appid;
     if (game.steamAppId) return game.steamAppId;
