@@ -3,6 +3,7 @@ import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { LanguageProvider } from './context/LanguageContext';
 import NavBar from './components/NavBar';
+import Footer from './components/Footer';
 
 export const metadata = {
   title: 'GamePick — Doğru Oyun, Doğru Platform, En İyi Fiyat',
@@ -32,6 +33,7 @@ export default function RootLayout({ children }) {
               <main style={{ minHeight: 'calc(100vh - 64px)' }}>
                 {children}
               </main>
+              <Footer />
             </AuthProvider>
           </LanguageProvider>
         </ThemeProvider>

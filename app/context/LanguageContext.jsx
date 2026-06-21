@@ -160,6 +160,10 @@ const TRANSLATIONS = {
     'library.xbox.connectMockSubmit': 'Bağlantıyı Simüle Et',
     'library.xbox.connectMockSubmitting': 'Bağlanıyor...',
     'library.xbox.connectMockFailed': 'Simüle giriş yapılamadı.',
+    'footer.poweredBy': 'Steam Destekli',
+    'footer.terms': 'Kullanıcı Sözleşmesi',
+    'footer.privacy': 'Gizlilik Politikası',
+    'footer.disclaimer': 'Valve Corporation, Steam, Xbox veya Microsoft ile hiçbir resmi bağımız yoktur. Tüm ticari markalar kendi sahiplerine aittir.'
   },
   en: {
     // Nav links
@@ -316,6 +320,10 @@ const TRANSLATIONS = {
     'library.xbox.connectMockSubmit': 'Simulate Connection',
     'library.xbox.connectMockSubmitting': 'Connecting...',
     'library.xbox.connectMockFailed': 'Failed to simulate login.',
+    'footer.poweredBy': 'Powered by Steam',
+    'footer.terms': 'Terms of Service',
+    'footer.privacy': 'Privacy Policy',
+    'footer.disclaimer': 'We are not affiliated with Valve Corporation, Steam, Xbox, or Microsoft in any way. All trademarks belong to their respective owners.'
   }
 };
 
