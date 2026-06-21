@@ -23,6 +23,57 @@ const getGradient = (name) => {
   return GRADIENTS[index];
 };
 
+const SLUG_TO_STEAM_ID = {
+  'elden-ring': '1245620',
+  'grand-theft-auto-v': '271590',
+  'cyberpunk-2077': '1091500',
+  'lethal-company': '1966720',
+  'palworld': '1623730',
+  'balatro': '2379780',
+  'manor-lords': '1363080',
+  'phasmophobia': '739630',
+  'baldurs-gate-3': '1086940',
+  'counter-strike-2': '730',
+  'battlefield-2042': '1517290',
+  'battlefield-6': '1517290',
+  'rust': '252490',
+  'world-of-warships': '552990',
+  'chained-together': '2833600',
+  'bodycam': '2406770',
+  'content-warning': '2881650',
+  'buckshot-roulette': '2835570',
+  'supermarket-simulator': '2670630',
+  'nine-sols': '1809540',
+  'helldivers-2': '553850',
+  'among-us': '945360',
+  'meccha-chameleon': '4704690'
+};
+
+const ID_TO_STEAM_ID = {
+  326243: '1245620',   // Elden Ring
+  3498: '271590',      // GTA V
+  41494: '1091500',    // Cyberpunk 2077
+  968329: '1966720',   // Lethal Company
+  718135: '1623730',   // Palworld
+  977316: '2379780',   // Balatro
+  496652: '1363080',   // Manor Lords
+  427930: '739630',    // Phasmophobia
+  4970: '1086940',     // Baldur's Gate 3
+  965470: '730',       // CS2
+  643632: '1517290',   // Battlefield 2042
+  10533: '252490',     // Rust
+  50005: '552990',     // World of Warships
+  617010: '2833600',   // Chained Together
+  983289: '2406770',   // Bodycam
+  979524: '2881650',   // Content Warning
+  974482: '2835570',   // Buckshot Roulette
+  977230: '2670630',   // Supermarket Simulator
+  906504: '1809540',   // Nine Sols
+  976564: '553850',    // Helldivers 2
+  356714: '945360',    // Among Us
+  4704690: '4704690'   // Meccha Chameleon
+};
+
 export default function GameImage({
   game,
   alt = '',
@@ -34,6 +85,7 @@ export default function GameImage({
   className = '',
   unoptimized = true,
   priority = false,
+  isVertical = false,
 }) {
   const [imgStage, setImgStage] = useState(0); // 0: game.image, 1: capsule, 2: logo, 3+: initials placeholder
 
@@ -43,21 +95,85 @@ export default function GameImage({
 
   if (!game) return null;
 
+  const getSteamAppId = () => {
+    if (game.appid) return game.appid;
+    if (game.steamAppId) return game.steamAppId;
+    if (game.steamAppid) return game.steamAppid;
+    if (game.steam_appid) return game.steam_appid;
+
+    if (game.image) {
+      const match = game.image.match(/\/apps\/(\d+)\//);
+      if (match) return match[1];
+    }
+    
+    if (game.logo) {
+      const match = game.logo.match(/\/apps\/(\d+)\//);
+      if (match) return match[1];
+    }
+
+    if (game.steamUrl) {
+      const match = game.steamUrl.match(/\/app\/(\d+)/);
+      if (match) return match[1];
+    }
+
+    if (game.storeUrl) {
+      const match = game.storeUrl.match(/\/app\/(\d+)/);
+      if (match) return match[1];
+    }
+
+    const slug = game.rawgSlug || game.slug;
+    const rawgId = game.rawgId || game.id;
+    
+    if (slug && SLUG_TO_STEAM_ID[slug]) {
+      return SLUG_TO_STEAM_ID[slug];
+    }
+    
+    if (rawgId) {
+      const numericId = Number(String(rawgId).replace('rawg_', ''));
+      if (ID_TO_STEAM_ID[numericId]) {
+        return ID_TO_STEAM_ID[numericId];
+      }
+    }
+    
+    return null;
+  };
+
   const getImgSrc = (stage) => {
-    if (stage === 0) {
-      return game.image || getImgSrc(1);
-    }
-    if (stage === 1) {
-      if (game.logo) return game.logo.replace('capsule_sm_120.jpg', 'capsule_231x87.jpg');
-      const appid = game.appid || game.steamAppId || game.steamAppid || game.rawgId || (typeof game.id === 'string' && game.id.startsWith('rawg_') ? game.id.split('_')[1] : null);
-      if (appid) return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/capsule_231x87.jpg`;
-      return getImgSrc(2);
-    }
-    if (stage === 2) {
-      if (game.logo) return game.logo;
-      const appid = game.appid || game.steamAppId || game.steamAppid || game.rawgId || (typeof game.id === 'string' && game.id.startsWith('rawg_') ? game.id.split('_')[1] : null);
-      if (appid) return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/capsule_sm_120.jpg`;
-      return null;
+    if (isVertical) {
+      if (stage === 0) {
+        const appid = getSteamAppId();
+        if (appid) return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/library_600x900.jpg`;
+        return getImgSrc(1);
+      }
+      if (stage === 1) {
+        return game.image || getImgSrc(2);
+      }
+      if (stage === 2) {
+        const appid = getSteamAppId();
+        if (appid) return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/capsule_231x87.jpg`;
+        return getImgSrc(3);
+      }
+      if (stage === 3) {
+        const appid = getSteamAppId();
+        if (appid) return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/capsule_sm_120.jpg`;
+        return null;
+      }
+    } else {
+      if (stage === 0) {
+        return game.image || getImgSrc(1);
+      }
+      if (stage === 1) {
+        if (game.logo) return game.logo.replace('capsule_sm_120.jpg', 'capsule_231x87.jpg');
+        const appid = getSteamAppId();
+        if (appid) return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/capsule_231x87.jpg`;
+        return getImgSrc(2);
+      }
+      if (stage === 2) {
+        if (game.logo) return game.logo;
+        const appid = getSteamAppId();
+        if (appid) return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/capsule_sm_120.jpg`;
+        return null;
+      }
     }
     return null;
   };

@@ -163,7 +163,7 @@ export default function Home() {
           {[...heroTiles, ...heroTiles].map((g, i) => (
             <Link key={i} href={g.rawgSlug ? `/game/rawg/${g.rawgSlug}` : `/game/rawg/${g.id}`}
               style={{ width: 168, aspectRatio: '3 / 4', borderRadius: 16, position: 'relative', overflow: 'hidden', flexShrink: 0, background: 'var(--bg-input)', boxShadow: '0 10px 28px rgba(74,52,28,0.16)' }}>
-              <GameImage game={g} alt="" fill style={{ objectFit: 'cover' }} />
+              <GameImage game={g} alt="" fill style={{ objectFit: 'cover' }} isVertical={true} />
               <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'flex-end', padding: 13, background: 'linear-gradient(to top, rgba(8,8,16,0.62), transparent 58%)' }}>
                 <span style={{ color: '#fff', fontWeight: 700, fontSize: 13.5, lineHeight: 1.2, textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}>{g.name}</span>
               </div>
