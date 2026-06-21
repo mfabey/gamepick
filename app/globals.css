@@ -152,6 +152,7 @@ html[data-theme="dark"] body::before {
     radial-gradient(ellipse 50% 40% at 85% 80%, rgba(61,139,255,0.03) 0%, transparent 70%);
 }
 html[data-theme="dark"] body > * { position: relative; z-index: 1; }
+html[data-theme="dark"] body > main { z-index: auto !important; }
 
 /* ===== BASE ===== */
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -415,13 +416,13 @@ html[data-theme="dark"] .glass-card {
 
 /* ===== NAVBAR RESPONSIVE STYLES ===== */
 .nav-header {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  background: color-mix(in srgb, var(--bg) 82%, transparent);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1px solid var(--border);
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 1000 !important;
+  background: var(--bg) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border-bottom: 1px solid var(--border) !important;
 }
 
 .nav-container {
@@ -629,12 +630,12 @@ html[data-theme="dark"] .glass-card {
 
 /* ===== STICKY SEARCH BAR ===== */
 .sticky-search-bar {
-  position: sticky;
-  top: 64px;
-  z-index: 50;
-  background: var(--bg);
-  border-bottom: 1px solid var(--border);
-  backdrop-filter: blur(12px);
+  position: sticky !important;
+  top: 64px !important;
+  z-index: 900 !important;
+  background: var(--bg) !important;
+  border-bottom: 1px solid var(--border) !important;
+  backdrop-filter: blur(12px) !important;
   transition: top 0.2s ease;
 }
 
