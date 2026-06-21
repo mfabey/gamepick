@@ -380,7 +380,14 @@ function GamesList() {
           </div>
 
           {/* ── SAĞ: sticky sidebar ── */}
-          <aside className="games-sidebar" style={{ position: 'sticky', top: 130 }}>
+          <aside className="games-sidebar" style={{
+            position: 'sticky',
+            top: 130,
+            maxHeight: 'calc(100vh - 150px)',
+            overflowY: 'auto',
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none'
+          }}>
 
             {/* Kategoriler */}
             <div style={{
@@ -443,7 +450,8 @@ function GamesList() {
                 display: 'flex', alignItems: 'center', gap: 8,
               }}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                  <path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2z"/>
+                  <line x1="7" y1="7" x2="7.01" y2="7"/>
                 </svg>
                 <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', letterSpacing: 0.3 }}>{lang === 'tr' ? 'BÜTÇE' : 'BUDGET'}</span>
               </div>
@@ -483,6 +491,9 @@ function GamesList() {
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
+        .games-sidebar::-webkit-scrollbar {
+          display: none;
+        }
         @media (max-width: 768px) {
           .games-layout { grid-template-columns: 1fr !important; }
           .games-sidebar { display: none !important; }
