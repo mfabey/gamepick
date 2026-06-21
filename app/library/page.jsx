@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import GameImage from '../components/GameImage';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -12,8 +13,8 @@ import { useLanguage } from '../context/LanguageContext';
 // ANA SAYFA
 // ─────────────────────────────────────────────────────────────────────────────
 export default function LibraryPage() {
-  const { steamUser, steamLogout, xboxUser, xboxLogout } = useAuth();
-  const { t } = useLanguage();
+  const { user, steamUser, steamLogout, xboxUser, xboxLogout } = useAuth();
+  const { lang, t } = useLanguage();
   const [activeTab, setActiveTab] = useState('steam'); // 'steam' | 'xbox'
   const [showXboxModal, setShowXboxModal] = useState(false);
   const [xboxError, setXboxError] = useState(null);
@@ -39,6 +40,55 @@ export default function LibraryPage() {
       }
     }
   }, []);
+
+  // Önce siteye üye girişi yapılmış olması gerekir
+  if (!user) {
+    return (
+      <div className="container" style={{ paddingTop: 80, paddingBottom: 60, maxWidth: 520, margin: '0 auto', textAlign: 'center' }}>
+        <div style={{ fontSize: 64, marginBottom: 20 }}>🔒</div>
+        <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', marginBottom: 12 }}>
+          {lang === 'tr' ? 'Önce Giriş Yapmalısınız' : 'Please Log In First'}
+        </h1>
+        <p style={{ color: 'var(--text-3)', fontSize: 15, lineHeight: 1.6, marginBottom: 32 }}>
+          {lang === 'tr' 
+            ? 'Steam veya Xbox kütüphanenizi bağlamak ve yönetmek için önce bir GamePick hesabı oluşturmalı veya mevcut hesabınıza giriş yapmalısınız.'
+            : 'To connect and manage your Steam or Xbox library, you must first create a GamePick account or log in to your existing account.'}
+        </p>
+
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+          <Link href="/login" style={{ textDecoration: 'none', flex: 1 }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              padding: '14px 24px', borderRadius: 12,
+              background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)',
+              fontSize: 16, fontWeight: 700, cursor: 'pointer',
+              transition: 'transform 0.15s, background 0.15s',
+            }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.background = 'var(--border)'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.background = 'var(--bg-input)'; }}
+            >
+              {lang === 'tr' ? 'Giriş Yap' : 'Log In'}
+            </div>
+          </Link>
+
+          <Link href="/signup" style={{ textDecoration: 'none', flex: 1 }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              padding: '14px 24px', borderRadius: 12,
+              background: 'var(--accent)', color: '#fff',
+              fontSize: 16, fontWeight: 700, cursor: 'pointer',
+              boxShadow: '0 4px 16px var(--accent-glow)', transition: 'transform 0.15s',
+            }}
+              onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+              onMouseLeave={e => e.currentTarget.style.transform = 'none'}
+            >
+              {lang === 'tr' ? 'Kayıt Ol' : 'Sign Up'}
+            </div>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const hasSteam = !!steamUser;
   const hasXbox  = !!xboxUser;
