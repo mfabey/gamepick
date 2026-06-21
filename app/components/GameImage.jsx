@@ -96,6 +96,17 @@ export default function GameImage({
   if (!game) return null;
 
   const getSteamAppId = () => {
+    // 1. Keyword check for Battlefield games first to return a working version
+    const nameLower = (game.name || '').toLowerCase();
+    if (nameLower.includes('battlefield')) {
+      if (nameLower.includes('2042') || nameLower.includes('6')) return '1517290';
+      if (nameLower.includes('v') || nameLower.includes(' 5')) return '1238810';
+      if (nameLower.includes('1')) return '1238840';
+      if (nameLower.includes('4')) return '1238860';
+      if (nameLower.includes('3')) return '1238820';
+      return '1517290'; // default Battlefield 2042 fallback
+    }
+
     if (game.appid) return game.appid;
     if (game.steamAppId) return game.steamAppId;
     if (game.steamAppid) return game.steamAppid;
@@ -197,6 +208,13 @@ export default function GameImage({
         className={className}
         onError={() => {
           setImgStage(prev => prev + 1);
+        }}
+        onLoad={(e) => {
+          const img = e.currentTarget;
+          if (img.naturalWidth > 0 && (img.naturalWidth < 30 || img.naturalHeight < 30)) {
+            // Steam placeholder image detected! Increment stage to try fallback or initials
+            setImgStage(prev => prev + 1);
+          }
         }}
       />
     );

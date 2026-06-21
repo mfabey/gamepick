@@ -9,6 +9,7 @@ import GameCard from './components/GameCard';
 import GameImage from './components/GameImage';
 import { useAuth } from './context/AuthContext';
 import { useLanguage } from './context/LanguageContext';
+import { FALLBACK_GAMES } from './lib/fallback-games';
 
 const PLACEHOLDER_GAMES = [
   'Elden Ring', 'GTA V', 'Cyberpunk 2077', 'Red Dead Redemption 2',
@@ -132,12 +133,48 @@ export default function Home() {
     router.push(game.rawgSlug ? `/game/rawg/${game.rawgSlug}` : `/game/rawg/${game.id}`);
   };
 
-  // Hero arka plan: trending + popular karışık, her açılışta farklı sıra
+  // Hero arka plan: trending + popular karışık, her açılışta farklı sıra (tekilleştirilmiş)
   const heroPool = useMemo(() => {
     const combined = [...trendGames, ...popularGames];
-    if (combined.length < 4) return null;
-    // Fisher-Yates shuffle — sayfa her açılınca farklı sıra
-    const arr = [...combined];
+    const cleaned = combined.filter(g => g && g.name);
+    const uniqueMap = new Map();
+
+    const addGameToMap = (game) => {
+      const nameKey = game.name
+        .toLowerCase()
+        .replace(/&amp;/g, 'and')
+        .replace(/[™®©]/g, '')
+        .trim()
+        .replace(/[^a-z0-9]/g, '');
+
+      const existing = uniqueMap.get(nameKey);
+      if (existing) {
+        // Eğer aynı isimde oyun varsa, görseli olan/daha zengin olanı tercih et
+        const existingHasImg = existing.image && !existing.image.includes('placeholder') && !existing.image.includes('capsule') && !existing.image.includes('logo');
+        const currentHasImg = game.image && !game.image.includes('placeholder') && !game.image.includes('capsule') && !game.image.includes('logo');
+        if (!existingHasImg && currentHasImg) {
+          uniqueMap.set(nameKey, game);
+        }
+      } else {
+        uniqueMap.set(nameKey, game);
+      }
+    };
+
+    // Önce API'den gelen güncel oyunları ekle
+    for (const game of cleaned) {
+      addGameToMap(game);
+    }
+
+    // Eğer tekil oyun sayısı 24'ten az ise, yerel yüksek kaliteli fallback oyun listesiyle doldur
+    if (uniqueMap.size < 24) {
+      const fallbacks = FALLBACK_GAMES || [];
+      for (const game of fallbacks) {
+        if (uniqueMap.size >= 24) break;
+        addGameToMap(game);
+      }
+    }
+
+    const arr = Array.from(uniqueMap.values());
     for (let i = arr.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [arr[i], arr[j]] = [arr[j], arr[i]];
@@ -145,7 +182,7 @@ export default function Home() {
     return arr;
   }, [trendGames, popularGames]);
 
-  const PANELS = 20;
+  const PANELS = 24;
   const heroTiles = useMemo(
     () => heroPool
       ? Array.from({ length: PANELS }, (_, i) => heroPool[i % heroPool.length])
