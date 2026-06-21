@@ -87,7 +87,7 @@ export default function Footer() {
             {t('footer.poweredBy')}
           </a>
           <span style={{ opacity: 0.3 }}>|</span>
-          <Link href="/support" style={{
+          <Link href="/terms" style={{
             color: 'var(--text-2)',
             textDecoration: 'none',
             transition: 'color 0.2s',
@@ -99,7 +99,7 @@ export default function Footer() {
             {t('footer.terms')}
           </Link>
           <span style={{ opacity: 0.3 }}>|</span>
-          <Link href="/support" style={{
+          <Link href="/privacy" style={{
             color: 'var(--text-2)',
             textDecoration: 'none',
             transition: 'color 0.2s',
