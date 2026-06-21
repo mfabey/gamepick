@@ -227,65 +227,102 @@ export default function NavBar() {
       )}
 
       {!hideBottomBar && (
-        <nav ref={navRef} className="bottom-nav" style={{
-          position: 'fixed', left: '50%', transform: 'translateX(-50%)', bottom: 28, zIndex: hintOpen ? 201 : 200,
-          display: 'flex', gap: 6,
-          background: 'linear-gradient(180deg, color-mix(in srgb, var(--bg-card) 72%, transparent), color-mix(in srgb, var(--bg-card) 58%, transparent))',
-          backdropFilter: 'blur(28px) saturate(150%)', WebkitBackdropFilter: 'blur(28px) saturate(150%)',
-          borderRadius: 999, padding: 11,
-          boxShadow: '0 2px 6px rgba(74,52,28,0.10), 0 12px 28px rgba(74,52,28,0.16), 0 32px 64px rgba(74,52,28,0.20), inset 0 1px 0 color-mix(in srgb, var(--bg-card) 90%, white), inset 0 0 0 1px color-mix(in srgb, var(--text) 8%, transparent)',
-          animation: hintOpen
-            ? 'navBarIn 0.85s cubic-bezier(0.16,1,0.3,1) both, navBarAttract 1.5s ease-in-out 0.9s 2, navBarRing 1.6s ease-out 1s 2'
-            : 'navBarIn 0.85s cubic-bezier(0.16,1,0.3,1) both',
-        }}>
-          <div aria-hidden style={{
-            position: 'absolute', left: 0, top: pill.top, height: pill.height, width: pill.width,
-            transform: pill.transform, opacity: pill.opacity,
-            background: 'linear-gradient(180deg, color-mix(in srgb, var(--accent) 88%, white), var(--accent))',
-            borderRadius: 999,
-            boxShadow: '0 4px 14px var(--accent-bg), 0 1px 3px rgba(74,52,28,0.3), inset 0 1px 0 rgba(255,255,255,0.4)',
-            transition: 'transform 0.55s cubic-bezier(0.22,1,0.32,1), width 0.55s cubic-bezier(0.22,1,0.32,1)',
-            zIndex: 0, pointerEvents: 'none',
-          }} />
-          {NAV_LINKS.map(l => {
-            const active = isActive(l.href);
-            return (
-              <Link key={l.href} href={l.href} data-tab="t"
-                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; }}
-                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; }}
-                className="bottom-nav-link"
-                style={{
-                  color: active ? '#fff' : 'var(--text-2)',
-                  textShadow: active ? '0 1px 2px rgba(74,52,28,0.25)' : 'none',
-                }}>{l.label}</Link>
-            );
-          })}
-
-          {/* Şu an incelenen oyun rozeti */}
-          <div className="bottom-nav-viewing" style={{
-            display: 'flex', alignItems: 'center', gap: 9, position: 'relative', zIndex: 1, overflow: 'hidden',
-            maxWidth: viewing ? 260 : 0,
-            opacity: viewing ? 1 : 0,
-            transform: viewing ? 'translateX(0)' : 'translateX(-12px)',
-            marginLeft: viewing ? 2 : 0,
-            paddingRight: viewing ? 8 : 0,
-            transition: 'max-width 0.55s cubic-bezier(0.22,1,0.32,1), opacity 0.4s ease, transform 0.55s cubic-bezier(0.22,1,0.32,1), margin-left 0.55s, padding-right 0.55s',
-          }}>
-            <span style={{ width: 1, height: 24, background: 'var(--border-hover)', margin: '0 3px', flexShrink: 0 }} />
-            <span style={{
-              position: 'relative', width: 30, height: 30, borderRadius: 8, overflow: 'hidden', flexShrink: 0,
-              background: 'var(--bg-input)', boxShadow: '0 2px 6px rgba(74,52,28,0.25), inset 0 1px 0 rgba(255,255,255,0.3)',
+        <>
+          {/* Mobil için Üstte Yüzen Şu An İnceleniyor Rozeti */}
+          {viewing && (
+            <div className="mobile-only" style={{
+              position: 'fixed',
+              left: '50%',
+              bottom: 82, // Alt bar 12px + ~52px yükseklik = ~64px civarında biter. 82px idealdir.
+              zIndex: hintOpen ? 201 : 200,
+              alignItems: 'center',
+              gap: 8,
+              background: 'linear-gradient(180deg, color-mix(in srgb, var(--bg-card) 95%, transparent), color-mix(in srgb, var(--bg-card) 85%, transparent))',
+              backdropFilter: 'blur(20px) saturate(140%)',
+              WebkitBackdropFilter: 'blur(20px) saturate(140%)',
+              border: '1px solid color-mix(in srgb, var(--text) 10%, transparent)',
+              borderRadius: 20,
+              padding: '6px 12px 6px 6px',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.25), 0 2px 6px rgba(0,0,0,0.15)',
+              animation: 'navBarIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both',
+              whiteSpace: 'nowrap',
+              pointerEvents: 'auto',
             }}>
-              {viewing?.image
-                ? <img src={viewing.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                : <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 14, color: 'var(--text-3)' }}>{viewing?.name?.slice(0, 1)}</span>}
-            </span>
-            <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15, whiteSpace: 'nowrap', overflow: 'hidden' }}>
-              <span style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-3)' }}>{t('nav.viewing')}</span>
-              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis' }}>{viewing?.name}</span>
-            </span>
-          </div>
-        </nav>
+              <span style={{
+                position: 'relative', width: 28, height: 28, borderRadius: 8, overflow: 'hidden', flexShrink: 0,
+                background: 'var(--bg-input)', boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+              }}>
+                {viewing.image
+                  ? <img src={viewing.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 12, color: 'var(--text-3)' }}>{viewing.name?.slice(0, 1)}</span>}
+              </span>
+              <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1 }}>
+                <span style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--accent)' }}>{t('nav.viewing')}</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis' }}>{viewing.name}</span>
+              </div>
+            </div>
+          )}
+
+          <nav ref={navRef} className="bottom-nav" style={{
+            position: 'fixed', left: '50%', transform: 'translateX(-50%)', bottom: 28, zIndex: hintOpen ? 201 : 200,
+            display: 'flex', gap: 6,
+            background: 'linear-gradient(180deg, color-mix(in srgb, var(--bg-card) 72%, transparent), color-mix(in srgb, var(--bg-card) 58%, transparent))',
+            backdropFilter: 'blur(28px) saturate(150%)', WebkitBackdropFilter: 'blur(28px) saturate(150%)',
+            borderRadius: 999, padding: 11,
+            boxShadow: '0 2px 6px rgba(74,52,28,0.10), 0 12px 28px rgba(74,52,28,0.16), 0 32px 64px rgba(74,52,28,0.20), inset 0 1px 0 color-mix(in srgb, var(--bg-card) 90%, white), inset 0 0 0 1px color-mix(in srgb, var(--text) 8%, transparent)',
+            animation: hintOpen
+              ? 'navBarIn 0.85s cubic-bezier(0.16,1,0.3,1) both, navBarAttract 1.5s ease-in-out 0.9s 2, navBarRing 1.6s ease-out 1s 2'
+              : 'navBarIn 0.85s cubic-bezier(0.16,1,0.3,1) both',
+          }}>
+            <div aria-hidden style={{
+              position: 'absolute', left: 0, top: pill.top, height: pill.height, width: pill.width,
+              transform: pill.transform, opacity: pill.opacity,
+              background: 'linear-gradient(180deg, color-mix(in srgb, var(--accent) 88%, white), var(--accent))',
+              borderRadius: 999,
+              boxShadow: '0 4px 14px var(--accent-bg), 0 1px 3px rgba(74,52,28,0.3), inset 0 1px 0 rgba(255,255,255,0.4)',
+              transition: 'transform 0.55s cubic-bezier(0.22,1,0.32,1), width 0.55s cubic-bezier(0.22,1,0.32,1)',
+              zIndex: 0, pointerEvents: 'none',
+            }} />
+            {NAV_LINKS.map(l => {
+              const active = isActive(l.href);
+              return (
+                <Link key={l.href} href={l.href} data-tab="t"
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; }}
+                  className="bottom-nav-link"
+                  style={{
+                    color: active ? '#fff' : 'var(--text-2)',
+                    textShadow: active ? '0 1px 2px rgba(74,52,28,0.25)' : 'none',
+                  }}>{l.label}</Link>
+              );
+            })}
+
+            {/* Şu an incelenen oyun rozeti (Masaüstü) */}
+            <div className="bottom-nav-viewing desktop-only" style={{
+              display: 'flex', alignItems: 'center', gap: 9, position: 'relative', zIndex: 1, overflow: 'hidden',
+              maxWidth: viewing ? 260 : 0,
+              opacity: viewing ? 1 : 0,
+              transform: viewing ? 'translateX(0)' : 'translateX(-12px)',
+              marginLeft: viewing ? 2 : 0,
+              paddingRight: viewing ? 8 : 0,
+              transition: 'max-width 0.55s cubic-bezier(0.22,1,0.32,1), opacity 0.4s ease, transform 0.55s cubic-bezier(0.22,1,0.32,1), margin-left 0.55s, padding-right 0.55s',
+            }}>
+              <span style={{ width: 1, height: 24, background: 'var(--border-hover)', margin: '0 3px', flexShrink: 0 }} />
+              <span style={{
+                position: 'relative', width: 30, height: 30, borderRadius: 8, overflow: 'hidden', flexShrink: 0,
+                background: 'var(--bg-input)', boxShadow: '0 2px 6px rgba(74,52,28,0.25), inset 0 1px 0 rgba(255,255,255,0.3)',
+              }}>
+                {viewing?.image
+                  ? <img src={viewing.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 14, color: 'var(--text-3)' }}>{viewing?.name?.slice(0, 1)}</span>}
+              </span>
+              <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15, whiteSpace: 'nowrap', overflow: 'hidden' }}>
+                <span style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-3)' }}>{t('nav.viewing')}</span>
+                <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis' }}>{viewing?.name}</span>
+              </span>
+            </div>
+          </nav>
+        </>
       )}
     </>
   );
