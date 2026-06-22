@@ -8,10 +8,11 @@ import { useLanguage } from '../../../context/LanguageContext';
 
 export default function RawgGamePage({ params }) {
   const { slug } = params;
-  const { ownedGames, xboxOwnedGames = new Set(), gamePassGames = new Set() } = useAuth();
+  const { user, ownedGames, xboxOwnedGames = new Set(), gamePassGames = new Set() } = useAuth();
   const { lang, t, formatPrice } = useLanguage();
 
   const [game,         setGame]         = useState(null);
+  const [isInWishlist, setIsInWishlist] = useState(false);
   const [steamPrice,   setSteamPrice]   = useState(null);
   const [epicPrice,    setEpicPrice]    = useState(null);
   const [gogPrice,      setGogPrice]      = useState(null);
@@ -39,6 +40,33 @@ export default function RawgGamePage({ params }) {
     }
     return () => { window.dispatchEvent(new CustomEvent('gamepick:viewing', { detail: null })); };
   }, [game]);
+
+  useEffect(() => {
+    if (!game) return;
+    const stored = JSON.parse(localStorage.getItem('gamepick_wishlist') || '[]');
+    const exists = stored.some(item => item.id === game.id);
+    setIsInWishlist(exists);
+  }, [game]);
+
+  const toggleWishlist = () => {
+    if (!game) return;
+    const stored = JSON.parse(localStorage.getItem('gamepick_wishlist') || '[]');
+    let updated;
+    if (isInWishlist) {
+      updated = stored.filter(item => item.id !== game.id);
+      setIsInWishlist(false);
+    } else {
+      const item = {
+        id: game.id,
+        name: game.name,
+        image: game.image,
+        rawgSlug: game.rawgSlug || slug
+      };
+      updated = [...stored, item];
+      setIsInWishlist(true);
+    }
+    localStorage.setItem('gamepick_wishlist', JSON.stringify(updated));
+  };
 
   useEffect(() => {
     if (!slug) return;
@@ -296,6 +324,35 @@ export default function RawgGamePage({ params }) {
             <div style={{ padding: '6px 12px', borderRadius: 8, fontSize: 13, background: 'var(--bg-input)', color: 'var(--text-2)', fontWeight: 600 }}>
               ⭐ {game.rating.toFixed(1)} / 5
             </div>
+          )}
+          {user && (
+            <button
+              onClick={toggleWishlist}
+              style={{
+                padding: '6px 12px',
+                borderRadius: 8,
+                fontWeight: 600,
+                fontSize: 13,
+                background: isInWishlist ? 'var(--accent-bg)' : 'var(--bg-input)',
+                border: isInWishlist ? '1px solid var(--accent-border)' : '1px solid var(--border)',
+                color: isInWishlist ? 'var(--accent)' : 'var(--text-2)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 5,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.borderColor = 'var(--accent-border)';
+                if (!isInWishlist) e.currentTarget.style.background = 'var(--bg-hover)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.borderColor = isInWishlist ? 'var(--accent-border)' : 'var(--border)';
+                if (!isInWishlist) e.currentTarget.style.background = 'var(--bg-input)';
+              }}
+            >
+              {isInWishlist ? '❤️' : '🤍'} {isInWishlist ? t('detail.wishlist.remove') : t('detail.wishlist.add')}
+            </button>
           )}
         </div>
       </div>

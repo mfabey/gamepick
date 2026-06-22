@@ -25,6 +25,84 @@ export default function ProfilePage() {
   
   const [wishlist, setWishlist] = useState([]);
 
+  // Dynamic daily recommendation selector
+  const getDailyRecommendation = () => {
+    const RECOMMENDATIONS = [
+      {
+        name: 'Hades',
+        slug: 'hades',
+        descTr: 'Yorucu bir günün ardından, 20 dakikalık hızlı seanslarıyla mükemmel. Game Pass\'te ücretsiz.',
+        descEn: 'Perfect for quick 20-minute sessions after a long day. Free on Game Pass.'
+      },
+      {
+        name: 'Elden Ring',
+        slug: 'elden-ring',
+        descTr: 'Muhteşem açık dünyası ve derin oynanışıyla son yılların en iyi aksiyon RPG oyunu.',
+        descEn: 'The best action RPG of recent years with its magnificent open world and deep gameplay.'
+      },
+      {
+        name: 'The Witcher 3: Wild Hunt',
+        slug: 'the-witcher-3-wild-hunt',
+        descTr: 'Eşsiz hikaye anlatımı ve unutulmaz karakterleriyle Rivia\'lı Geralt\'ın efsanevi macerası.',
+        descEn: 'The legendary adventure of Geralt of Rivia with unique storytelling and unforgettable characters.'
+      },
+      {
+        name: 'Baldur\'s Gate 3',
+        slug: 'baldurs-gate-3',
+        descTr: 'Dungeons & Dragons evreninde geçen, seçimlerinizin dünyayı şekillendirdiği devasa bir rol yapma oyunu.',
+        descEn: 'A massive role-playing game set in the Dungeons & Dragons universe, where your choices shape the world.'
+      },
+      {
+        name: 'Red Dead Redemption 2',
+        slug: 'red-dead-redemption-2',
+        descTr: 'Vahşi Batı\'nın son dönemlerinde geçen, inanılmaz detay seviyesi ve duygusal hikayesiyle bir başyapıt.',
+        descEn: 'A masterpiece set in the final years of the Wild West, with incredible level of detail and emotional story.'
+      },
+      {
+        name: 'Cyberpunk 2077',
+        slug: 'cyberpunk-2077',
+        descTr: 'Night City\'nin neon ışıklı sokaklarında geçen, etkileyici görselliğe sahip fütüristik bir RPG.',
+        descEn: 'A futuristic RPG set in the neon-lit streets of Night City with impressive visuals.'
+      },
+      {
+        name: 'Hollow Knight',
+        slug: 'hollow-knight',
+        descTr: 'Görsel tasarımı, atmosferi ve zorlu oynanışıyla en beğenilen metroidvania oyunlarından biri.',
+        descEn: 'One of the most acclaimed metroidvania games with its visual design, atmosphere, and challenging gameplay.'
+      },
+      {
+        name: 'Celeste',
+        slug: 'celeste',
+        descTr: 'Zorlu platform bölümleri ve zihinsel sağlık üzerine odaklanan harika hikayesiyle bir bağımsız klasiği.',
+        descEn: 'An indie classic with challenging platform stages and a wonderful story focusing on mental health.'
+      },
+      {
+        name: 'Disco Elysium',
+        slug: 'disco-elysium-the-final-cut',
+        descTr: 'Eşsiz diyalog sistemi ve derin dedektiflik hikayesiyle rol yapma türüne yepyeni bir soluk getiren yapım.',
+        descEn: 'A production that brings a breath of fresh air to the RPG genre with its unique dialogue system and deep detective story.'
+      },
+      {
+        name: 'Portal 2',
+        slug: 'portal-2',
+        descTr: 'Zeka dolu bulmacaları ve harika mizahıyla tüm zamanların en iyi bulmaca oyunlarından biri.',
+        descEn: 'One of the best puzzle games of all time with its clever puzzles and great humor.'
+      }
+    ];
+
+    const today = new Date();
+    let hash = today.getFullYear() * 37 + today.getMonth() * 13 + today.getDate();
+    if (user && user.email) {
+      for (let i = 0; i < user.email.length; i++) {
+        hash += user.email.charCodeAt(i);
+      }
+    }
+    const index = Math.abs(hash) % RECOMMENDATIONS.length;
+    return RECOMMENDATIONS[index];
+  };
+
+  const recommended = getDailyRecommendation();
+
   // Redirect to login if not authenticated
   useEffect(() => {
     if (ready && !user) {
@@ -259,14 +337,12 @@ export default function ProfilePage() {
               <p style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
                 ✦ {lang === 'tr' ? 'Bugün için öneri' : 'Recommendation for today'}
               </p>
-              <p style={{ fontSize: 15, fontWeight: 600, marginBottom: 4, color: 'var(--text)' }}>Hades</p>
+              <p style={{ fontSize: 15, fontWeight: 600, marginBottom: 4, color: 'var(--text)' }}>{recommended.name}</p>
               <p style={{ fontSize: 13, color: 'var(--text-2)' }}>
-                {lang === 'tr'
-                  ? 'Yorucu bir günün ardından, 20 dakikalık hızlı seanslarıyla mükemmel. Game Pass\'te ücretsiz.'
-                  : 'Perfect for quick 20-minute sessions after a long day. Free on Game Pass.'}
+                {lang === 'tr' ? recommended.descTr : recommended.descEn}
               </p>
             </div>
-            <Link href="/game/3612" style={{
+            <Link href={`/game/rawg/${recommended.slug}`} style={{
               padding: '9px 18px', borderRadius: 10,
               background: 'var(--accent)', color: '#fff',
               fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap',
@@ -336,7 +412,7 @@ function WishlistItem({ game, onRemove, lang }) {
         <GameImage game={game} fill sizes="40px" />
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <Link href={`/game/${game.id}`}>
+        <Link href={game.rawgSlug ? `/game/rawg/${game.rawgSlug}` : `/game/rawg/${game.id}`}>
           <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {game.name}
           </p>

@@ -79,6 +79,8 @@ const TRANSLATIONS = {
     'detail.dlc': 'DLC ve Ek Paketler',
     'detail.similar': 'Benzer Oyunlar',
     'detail.about': 'Bu oyun hakkında',
+    'detail.wishlist.add': 'İstek Listesine Ekle',
+    'detail.wishlist.remove': 'İstek Listesinden Çıkar',
 
     // Library
     'library.steam': 'Steam Kütüphanen',
@@ -239,6 +241,8 @@ const TRANSLATIONS = {
     'detail.dlc': 'DLCs & Add-ons',
     'detail.similar': 'Similar Games',
     'detail.about': 'About this game',
+    'detail.wishlist.add': 'Add to Wishlist',
+    'detail.wishlist.remove': 'Remove from Wishlist',
 
     // Library
     'library.steam': 'Steam Library',
