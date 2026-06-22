@@ -123,146 +123,70 @@ export async function GET() {
 
   if (session.isMock) {
     const isGPActive = session.gamepassType === 'ultimate' || session.gamepassType === 'pc';
-    const mockGames = [
-      {
-        titleId: "2532454",
-        name: "Halo Infinite",
-        image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1240440/header.jpg",
-        lastPlayed: Math.floor(Date.now() / 1000) - 3600 * 2, // 2 saat önce
-        currentGamerscore: 650,
-        totalGamerscore: 1000,
-        currentAchievements: 42,
-        totalAchievements: 60,
-        isGamePass: true,
-      },
-      {
-        titleId: "1858582",
-        name: "Forza Horizon 5",
-        image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1551360/header.jpg",
-        lastPlayed: Math.floor(Date.now() / 1000) - 3600 * 24, // 1 gün önce
-        currentGamerscore: 820,
-        totalGamerscore: 1000,
-        currentAchievements: 53,
-        totalAchievements: 70,
-        isGamePass: true,
-      },
-      {
-        titleId: "1738234",
-        name: "Starfield",
-        image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1716740/header.jpg",
-        lastPlayed: Math.floor(Date.now() / 1000) - 3600 * 48, // 2 gün önce
-        currentGamerscore: 400,
-        totalGamerscore: 1000,
-        currentAchievements: 25,
-        totalAchievements: 50,
-        isGamePass: true,
-      },
-      {
-        titleId: "2461850",
-        name: "Senua's Saga: Hellblade II",
-        image: "https://cdn.cloudflare.steamstatic.com/steam/apps/2461850/header.jpg",
-        lastPlayed: Math.floor(Date.now() / 1000) - 3600 * 12, // 12 saat önce
-        currentGamerscore: 1000,
-        totalGamerscore: 1000,
-        currentAchievements: 11,
-        totalAchievements: 11,
-        isGamePass: true,
-      },
-      {
-        titleId: "1932060",
-        name: "Minecraft",
-        image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1932060/header.jpg",
-        lastPlayed: Math.floor(Date.now() / 1000) - 3600 * 120, // 5 gün önce
-        currentGamerscore: 1120,
-        totalGamerscore: 2500,
-        currentAchievements: 85,
-        totalAchievements: 125,
-        isGamePass: false, // Owned
-      },
-      {
-        titleId: "1172620",
-        name: "Sea of Thieves",
-        image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1172620/header.jpg",
-        lastPlayed: Math.floor(Date.now() / 1000) - 3600 * 200, 
-        currentGamerscore: 450,
-        totalGamerscore: 1000,
-        currentAchievements: 30,
-        totalAchievements: 60,
-        isGamePass: true,
-      },
-      {
-        titleId: "1817230",
-        name: "Hi-Fi RUSH",
-        image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1817230/header.jpg",
-        lastPlayed: Math.floor(Date.now() / 1000) - 3600 * 500,
-        currentGamerscore: 750,
-        totalGamerscore: 1000,
-        currentAchievements: 40,
-        totalAchievements: 61,
-        isGamePass: true,
-      },
-      {
-        titleId: "1245620",
-        name: "Elden Ring",
-        image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1245620/header.jpg",
-        lastPlayed: Math.floor(Date.now() / 1000) - 3600 * 72, // 3 gün önce
-        currentGamerscore: 600,
-        totalGamerscore: 1000,
-        currentAchievements: 28,
-        totalAchievements: 42,
-        isGamePass: false, // Owned
-      },
-      {
-        titleId: "2933080",
-        name: "Call of Duty: Black Ops 6",
-        image: "https://cdn.cloudflare.steamstatic.com/steam/apps/2933080/header.jpg",
-        lastPlayed: Math.floor(Date.now() / 1000) - 3600 * 4, // 4 saat önce
-        currentGamerscore: 240,
-        totalGamerscore: 1000,
-        currentAchievements: 15,
-        totalAchievements: 45,
-        isGamePass: true,
-      },
-      {
-        titleId: "782330",
-        name: "Doom Eternal",
-        image: "https://cdn.cloudflare.steamstatic.com/steam/apps/782330/header.jpg",
-        lastPlayed: Math.floor(Date.now() / 1000) - 3600 * 1000,
-        currentGamerscore: 900,
-        totalGamerscore: 1000,
-        currentAchievements: 32,
-        totalAchievements: 34,
-        isGamePass: true,
-      },
-      {
-        titleId: "1097840",
-        name: "Gears 5",
-        image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1097840/header.jpg",
-        lastPlayed: Math.floor(Date.now() / 1000) - 3600 * 1500,
-        currentGamerscore: 150,
-        totalGamerscore: 1000,
-        currentAchievements: 12,
-        totalAchievements: 75,
-        isGamePass: true,
-      },
-      {
-        titleId: "1126810",
-        name: "Grounded",
-        image: "https://cdn.cloudflare.steamstatic.com/steam/apps/962000/header.jpg",
-        lastPlayed: Math.floor(Date.now() / 1000) - 3600 * 2000,
-        currentGamerscore: 380,
-        totalGamerscore: 1000,
-        currentAchievements: 18,
-        totalAchievements: 45,
-        isGamePass: true,
-      }
-    ].map(g => ({
-      ...g,
-      isGamePass: isGPActive ? g.isGamePass : false,
-      storeUrl: `https://www.xbox.com/tr-TR/games/store/-/${g.titleId}`
-    }));
+    const GAME_POOL = [
+      { titleId: "2532454", name: "Halo Infinite", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1240440/header.jpg", baseAchievements: 60, gamerscore: 1000 },
+      { titleId: "1858582", name: "Forza Horizon 5", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1551360/header.jpg", baseAchievements: 70, gamerscore: 1000 },
+      { titleId: "1738234", name: "Starfield", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1716740/header.jpg", baseAchievements: 50, gamerscore: 1000 },
+      { titleId: "2461850", name: "Senua's Saga: Hellblade II", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/2461850/header.jpg", baseAchievements: 11, gamerscore: 1000 },
+      { titleId: "1932060", name: "Minecraft", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1932060/header.jpg", baseAchievements: 125, gamerscore: 2500 },
+      { titleId: "1172620", name: "Sea of Thieves", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1172620/header.jpg", baseAchievements: 60, gamerscore: 1000 },
+      { titleId: "1817230", name: "Hi-Fi RUSH", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1817230/header.jpg", baseAchievements: 61, gamerscore: 1000 },
+      { titleId: "1245620", name: "Elden Ring", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1245620/header.jpg", baseAchievements: 42, gamerscore: 1000 },
+      { titleId: "2933080", name: "Call of Duty: Black Ops 6", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/2933080/header.jpg", baseAchievements: 45, gamerscore: 1000 },
+      { titleId: "782330", name: "Doom Eternal", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/782330/header.jpg", baseAchievements: 34, gamerscore: 1000 },
+      { titleId: "1097840", name: "Gears 5", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1097840/header.jpg", baseAchievements: 75, gamerscore: 1000 },
+      { titleId: "1126810", name: "Grounded", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/962000/header.jpg", baseAchievements: 45, gamerscore: 1000 },
+      { titleId: "3612", name: "Hades", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1145360/header.jpg", baseAchievements: 49, gamerscore: 1000 },
+      { titleId: "1091500", name: "Cyberpunk 2077", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1091500/header.jpg", baseAchievements: 44, gamerscore: 1000 },
+      { titleId: "271590", name: "Grand Theft Auto V", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/271590/header.jpg", baseAchievements: 77, gamerscore: 1250 },
+      { titleId: "1190460", name: "Deathloop", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1252330/header.jpg", baseAchievements: 58, gamerscore: 1000 },
+      { titleId: "501300", name: "Psychonauts 2", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/607080/header.jpg", baseAchievements: 57, gamerscore: 1000 },
+      { titleId: "230410", name: "Gears Tactics", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1184050/header.jpg", baseAchievements: 46, gamerscore: 1000 },
+      { titleId: "582010", name: "Monster Hunter: World", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/582010/header.jpg", baseAchievements: 50, gamerscore: 1000 },
+      { titleId: "219540", name: "Ori and the Blind Forest", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/261570/header.jpg", baseAchievements: 50, gamerscore: 1000 },
+      { titleId: "1057090", name: "Ori and the Will of the Wisps", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1057090/header.jpg", baseAchievements: 37, gamerscore: 1000 }
+    ];
 
-    const games = mockGames.sort((a, b) => b.lastPlayed - a.lastPlayed);
+    let hash = 0;
+    const tag = session.gamertag || 'MasterChief117';
+    for (let i = 0; i < tag.length; i++) {
+      hash = tag.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    hash = Math.abs(hash);
+
+    const gameCount = 6 + (hash % 7); // 6 ile 12 arasında oyun
+    const selectedGames = [];
+    const poolCopy = [...GAME_POOL];
+    
+    for (let i = 0; i < gameCount; i++) {
+      const idx = (hash + i * 17) % poolCopy.length;
+      const baseGame = poolCopy[idx];
+      poolCopy.splice(idx, 1);
+
+      const gameHash = hash + Number(baseGame.titleId.replace(/[^\d]/g, ''));
+      const isGamePassVal = isGPActive && ((gameHash % 3) !== 0);
+      const playedWeeksAgo = (gameHash % 30) + 1;
+      const lastPlayed = Math.floor(Date.now() / 1000) - 3600 * 24 * 7 * playedWeeksAgo;
+      
+      const totalAchievements = baseGame.baseAchievements;
+      const currentAchievements = Math.round(totalAchievements * (0.2 + (gameHash % 70) / 100)); // %20 ile %90 tamamlama oranı
+      const currentGamerscore = Math.round(baseGame.gamerscore * (currentAchievements / totalAchievements));
+
+      selectedGames.push({
+        titleId: baseGame.titleId,
+        name: baseGame.name,
+        image: baseGame.image,
+        lastPlayed,
+        currentGamerscore,
+        totalGamerscore: baseGame.gamerscore,
+        currentAchievements,
+        totalAchievements,
+        isGamePass: isGamePassVal,
+        storeUrl: `https://www.xbox.com/tr-TR/games/store/-/${baseGame.titleId}`
+      });
+    }
+
+    const games = selectedGames.sort((a, b) => b.lastPlayed - a.lastPlayed);
     const gamePassCount = games.filter(g => g.isGamePass).length;
 
     return NextResponse.json({

@@ -115,6 +115,41 @@ export default function ProfilePage() {
     setWishlist(stored);
   }, []);
 
+  const [steamLib, setSteamLib] = useState(null);
+  const [xboxLib, setXboxLib] = useState(null);
+  const [libsLoading, setLibsLoading] = useState(true);
+
+  useEffect(() => {
+    if (!ready || !user) return;
+    
+    setLibsLoading(true);
+    const promises = [];
+    
+    if (steamUser) {
+      promises.push(
+        fetch('/api/oyun')
+          .then(r => r.json())
+          .then(d => setSteamLib(d))
+          .catch(() => {})
+      );
+    } else {
+      setSteamLib(null);
+    }
+    
+    if (xboxUser) {
+      promises.push(
+        fetch('/api/xbox-library')
+          .then(r => r.json())
+          .then(d => setXboxLib(d))
+          .catch(() => {})
+      );
+    } else {
+      setXboxLib(null);
+    }
+    
+    Promise.all(promises).finally(() => setLibsLoading(false));
+  }, [ready, user, steamUser, xboxUser]);
+
   const removeFromWishlist = (id) => {
     const updated = wishlist.filter(w => w.id !== id);
     localStorage.setItem('gamepick_wishlist', JSON.stringify(updated));
@@ -136,14 +171,91 @@ export default function ProfilePage() {
     : user.email.slice(0, 2).toUpperCase();
 
   // Connected accounts game sizes
-  const steamGamesCount = steamUser ? ownedGames.size : 0;
-  const xboxGamesCount = xboxUser ? (xboxOwnedGames.size + gamePassGames.size) : 0;
+  const steamGamesCount = steamUser ? (steamLib?.games?.length || ownedGames.size || 0) : 0;
+  const xboxGamesCount = xboxUser ? (xboxLib?.games?.length || xboxOwnedGames.size + gamePassGames.size || 0) : 0;
 
   const totalConnectedGames = steamGamesCount + xboxGamesCount;
 
-  // Mock genre stats based on connected library
-  const getGenreStats = () => {
-    if (totalConnectedGames === 0) {
+  // Dynamic average playtime calculator
+  const getPlaytimeStat = () => {
+    if (!steamUser) return "0s";
+    if (libsLoading) return lang === 'tr' ? '...' : '...';
+    if (!steamLib || !steamLib.games || steamLib.games.length === 0) return "0s";
+    
+    const played = steamLib.games.filter(g => g.hours > 0).length;
+    const totalHours = steamLib.totalHours || 0;
+    const avg = played > 0 ? (totalHours / played).toFixed(1) : "0.0";
+    return `${avg}${lang === 'tr' ? 's' : 'h'}`;
+  };
+
+  // Dynamic achievement completion calculator
+  const getCompletionStat = () => {
+    if (libsLoading) return lang === 'tr' ? '...' : '...';
+    
+    let totalAch = 0;
+    let currentAch = 0;
+    
+    if (xboxLib && xboxLib.games) {
+      xboxLib.games.forEach(g => {
+        totalAch += g.totalAchievements || 0;
+        currentAch += g.currentAchievements || 0;
+      });
+    }
+    
+    if (totalAch > 0) {
+      return `%${Math.round((currentAch / totalAch) * 100)}`;
+    }
+    
+    if (steamLib && steamLib.games && steamLib.games.length > 0) {
+      const played = steamLib.games.filter(g => g.hours > 0).length;
+      const pct = Math.min(95, Math.max(10, Math.round((played / steamLib.games.length) * 80)));
+      return `%${pct}`;
+    }
+    
+    return "%0";
+  };
+
+  // Dynamic genre statistics generator
+  const getDynamicGenreStats = (steamGamesList, xboxGamesList) => {
+    const counts = { RPG: 0, Action: 0, Strategy: 0, Simulation: 0, Indie: 0 };
+    let matchedCount = 0;
+
+    const processGame = (name) => {
+      const lower = name.toLowerCase();
+      let matched = false;
+      if (lower.includes('elden ring') || lower.includes('witcher') || lower.includes('baldur') || lower.includes('cyberpunk') || lower.includes('starfield') || lower.includes('skyrim') || lower.includes('fallout') || lower.includes('dark souls') || lower.includes('diablo') || lower.includes('persona') || lower.includes('mass effect')) {
+        counts.RPG++;
+        matched = true;
+      }
+      if (lower.includes('gta') || lower.includes('grand theft auto') || lower.includes('red dead') || lower.includes('halo') || lower.includes('doom') || lower.includes('call of duty') || lower.includes('battlefield') || lower.includes('counter-strike') || lower.includes('cs') || lower.includes('pubg') || lower.includes('rust') || lower.includes('sea of thieves') || lower.includes('apex') || lower.includes('tomb raider') || lower.includes('assassin')) {
+        counts.Action++;
+        matched = true;
+      }
+      if (lower.includes('forza') || lower.includes('fifa') || lower.includes('football manager') || lower.includes('euro truck') || lower.includes('assetto') || lower.includes('f1') || lower.includes('flight simulator') || lower.includes('sims') || lower.includes('city')) {
+        counts.Simulation++;
+        matched = true;
+      }
+      if (lower.includes('civilization') || lower.includes('hearts of iron') || lower.includes('europa') || lower.includes('age of') || lower.includes('starcraft') || lower.includes('total war') || lower.includes('stellaris') || lower.includes('crusader kings')) {
+        counts.Strategy++;
+        matched = true;
+      }
+      if (lower.includes('hades') || lower.includes('hollow knight') || lower.includes('celeste') || lower.includes('stardew') || lower.includes('lethal') || lower.includes('balatro') || lower.includes('terraria') || lower.includes('minecraft') || lower.includes('portal') || lower.includes('slay the spire') || lower.includes('dead cells') || lower.includes('vampire survivors')) {
+        counts.Indie++;
+        matched = true;
+      }
+      if (matched) matchedCount++;
+    };
+
+    steamGamesList.forEach(g => processGame(g.name));
+    xboxGamesList.forEach(g => processGame(g.name));
+
+    const total = counts.RPG + counts.Action + counts.Strategy + counts.Simulation + counts.Indie;
+    if (total === 0) {
+      if (libsLoading && (steamUser || xboxUser)) {
+        return [
+          { label: lang === 'tr' ? 'Yükleniyor...' : 'Loading...', pct: 0 }
+        ];
+      }
       return [
         { label: lang === 'tr' ? 'RPG' : 'RPG', pct: 0 },
         { label: lang === 'tr' ? 'Aksiyon' : 'Action', pct: 0 },
@@ -152,16 +264,58 @@ export default function ProfilePage() {
         { label: lang === 'tr' ? 'Bağımsız' : 'Indie', pct: 0 },
       ];
     }
+
     return [
-      { label: lang === 'tr' ? 'RPG' : 'RPG', pct: 38 },
-      { label: lang === 'tr' ? 'Aksiyon' : 'Action', pct: 27 },
-      { label: lang === 'tr' ? 'Strateji' : 'Strategy', pct: 18 },
-      { label: lang === 'tr' ? 'Simülasyon' : 'Simulation', pct: 12 },
-      { label: lang === 'tr' ? 'Bağımsız' : 'Indie', pct: 5  },
-    ];
+      { label: lang === 'tr' ? 'RPG' : 'RPG', pct: Math.round((counts.RPG / total) * 100) },
+      { label: lang === 'tr' ? 'Aksiyon' : 'Action', pct: Math.round((counts.Action / total) * 100) },
+      { label: lang === 'tr' ? 'Strateji' : 'Strategy', pct: Math.round((counts.Strategy / total) * 100) },
+      { label: lang === 'tr' ? 'Simülasyon' : 'Simulation', pct: Math.round((counts.Simulation / total) * 100) },
+      { label: lang === 'tr' ? 'Bağımsız' : 'Indie', pct: Math.round((counts.Indie / total) * 100) },
+    ].filter(g => g.pct > 0).sort((a, b) => b.pct - a.pct);
   };
 
-  const genreStats = getGenreStats();
+  const getDynamicAIComment = (genreStats) => {
+    if (totalConnectedGames === 0) {
+      return lang === 'tr'
+        ? 'Henüz bağlı bir kütüphaneniz yok. Steam veya Xbox hesabınızı bağlayarak AI kütüphane analizinizi alabilirsiniz!'
+        : 'You do not have a connected library yet. Connect your Steam or Xbox account to get your AI library analysis!';
+    }
+    
+    if (libsLoading) {
+      return lang === 'tr' ? 'Kütüphane analiz ediliyor...' : 'Analyzing library...';
+    }
+
+    const topGenre = genreStats[0];
+    if (!topGenre || topGenre.pct === 0) {
+      return lang === 'tr'
+        ? 'Geniş bir oyun yelpazesine sahipsiniz. Farklı türlerdeki deneyimleri keşfetmeyi ve yeni maceralara atılmayı seviyorsunuz.'
+        : 'You have a broad range of games. You enjoy exploring experiences in different genres and embarking on new adventures.';
+    }
+
+    if (topGenre.label === 'RPG') {
+      return lang === 'tr'
+        ? 'Uzun soluklu single-player RPG\'leri tercih eden, hikayeye önem veren bir profil. Derin karakter gelişimleri ve sürükleyici dünyalar tam size göre.'
+        : 'A profile that prefers long-term single-player RPGs, valuing story depth. Deep character progression and immersive worlds are perfect for you.';
+    } else if (topGenre.label === 'Aksiyon' || topGenre.label === 'Action') {
+      return lang === 'tr'
+        ? 'Hızlı refleksler gerektiren, adrenalin dolu aksiyon oyunlarını seviyorsunuz. Rekabetçi arenalar veya sinematik maceralar kütüphanenizin odağında.'
+        : 'You love adrenaline-fueled action games requiring quick reflexes. Competitive arenas or cinematic adventures are the focus of your library.';
+    } else if (topGenre.label === 'Simülasyon' || topGenre.label === 'Simulation') {
+      return lang === 'tr'
+        ? 'Detaylara önem veren, yönetim ve simülasyon oyunlarından keyif alan bir oyuncusunuz. Kendi dünyanızı kurup yönetmek sizin işiniz.'
+        : 'You are a detail-oriented player who enjoys management and simulation games. Building and managing your own world is your specialty.';
+    } else if (topGenre.label === 'Strateji' || topGenre.label === 'Strategy') {
+      return lang === 'tr'
+        ? 'Zekanızı ve taktiksel düşünme yeteneğinizi ön plana çıkaran strateji oyunlarını tercih ediyorsunuz. Planlama ve zafer odaklı bir oyun tarzınız var.'
+        : 'You prefer strategy games that highlight your intellect and tactical thinking. You have a planning and victory-oriented gameplay style.';
+    } else { // Indie / Bağımsız
+      return lang === 'tr'
+        ? 'Yaratıcı tasarımlara sahip, sanatsal yönü güçlü bağımsız oyunları seviyorsunuz. Eşsiz mekanikler ve derin anlatılar sizi cezbediyor.'
+        : 'You love indie games with creative designs and strong artistic aspects. Unique mechanics and deep narratives appeal to you.';
+    }
+  };
+
+  const genreStats = getDynamicGenreStats(steamLib?.games || [], xboxLib?.games || []);
 
   return (
     <div className="container" style={{ paddingTop: 40, paddingBottom: 60 }}>
@@ -204,6 +358,7 @@ export default function ProfilePage() {
               connected={!!steamUser}
               color="#1a9fff"
               initials="STM"
+              profileUrl={steamUser?.profileUrl || (steamUser?.steamId ? `https://steamcommunity.com/profiles/${steamUser.steamId}` : null)}
               onToggle={() => {
                 if (steamUser) {
                   steamLogout();
@@ -224,6 +379,7 @@ export default function ProfilePage() {
               connected={!!xboxUser}
               color="#16a34a"
               initials="XBX"
+              profileUrl={xboxUser?.gamertag ? `https://live.xbox.com/Profile?Gamertag=${encodeURIComponent(xboxUser.gamertag)}` : null}
               onToggle={() => {
                 if (xboxUser) {
                   xboxLogout();
@@ -243,15 +399,15 @@ export default function ProfilePage() {
           </h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginBottom: 16 }}>
             <StatCard 
-              number={steamGamesCount.toString()} 
+              number={steamUser ? (steamLib?.games?.length || ownedGames.size || 0).toString() : "0"} 
               label={lang === 'tr' ? 'Steam Oyunu' : 'Steam Games'} 
             />
             <StatCard 
-              number={steamUser ? "2.4s" : "0s"} 
+              number={getPlaytimeStat()} 
               label={lang === 'tr' ? 'Ort. Oynama' : 'Avg. Playtime'} 
             />
             <StatCard 
-              number={steamUser ? "%78" : "%0"}  
+              number={getCompletionStat()}  
               label={lang === 'tr' ? 'Tamamlama' : 'Completion'} 
             />
           </div>
@@ -277,15 +433,7 @@ export default function ProfilePage() {
               ✦ {lang === 'tr' ? 'AI Yorumu' : 'AI Feedback'}
             </p>
             <p style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.65 }}>
-              {totalConnectedGames === 0 ? (
-                lang === 'tr'
-                  ? 'Henüz bağlı bir kütüphaneniz yok. Steam veya Xbox hesabınızı bağlayarak AI kütüphane analizinizi alabilirsiniz!'
-                  : 'You do not have a connected library yet. Connect your Steam or Xbox account to get your AI library analysis!'
-              ) : (
-                lang === 'tr'
-                  ? 'Uzun soluklu single-player RPG\'leri tercih eden, hikayeye önem veren bir profil. Yüksek zorluk eğilimi var. Multiplayer oranı düşük — solo deneyimlere odaklanıyorsunuz.'
-                  : 'A profile that prefers long-term single-player RPGs, valuing story depth. Tends to enjoy higher difficulty curves. Low multiplayer ratio — focusing heavily on solo experiences.'
-              )}
+              {getDynamicAIComment(genreStats)}
             </p>
           </div>
         </div>
@@ -356,22 +504,32 @@ export default function ProfilePage() {
   );
 }
 
-function AccountCard({ name, status, connected, color, initials, onToggle, lang }) {
+function AccountCard({ name, status, connected, color, initials, onToggle, lang, profileUrl }) {
+  const content = (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div style={{
+        width: 34, height: 34, borderRadius: 8, background: `${color}18`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 11, fontWeight: 700, color, flexShrink: 0,
+      }}>
+        {initials}
+      </div>
+      <div>
+        <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', textDecoration: profileUrl ? 'underline' : 'none' }}>{name}</p>
+        <p style={{ fontSize: 12, color: connected ? 'var(--green)' : 'var(--text-3)' }}>{status}</p>
+      </div>
+    </div>
+  );
+
   return (
     <div className="card" style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{
-          width: 34, height: 34, borderRadius: 8, background: `${color}18`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 11, fontWeight: 700, color, flexShrink: 0,
-        }}>
-          {initials}
-        </div>
-        <div>
-          <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{name}</p>
-          <p style={{ fontSize: 12, color: connected ? 'var(--green)' : 'var(--text-3)' }}>{status}</p>
-        </div>
-      </div>
+      {profileUrl ? (
+        <a href={profileUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', display: 'block' }}>
+          {content}
+        </a>
+      ) : (
+        content
+      )}
       <button onClick={onToggle} style={{
         padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600,
         border: connected ? '1px solid var(--border)' : '1px solid var(--accent-border)',
