@@ -21,7 +21,7 @@ export async function POST(request) {
       response.cookies.set('gp_user_session', JSON.stringify({ uid: 'mock_' + Date.now(), name, email }), {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        sameSite: 'lax',
         maxAge: 60 * 60 * 24 * 7, // 7 days
       });
       return response;
@@ -69,7 +69,7 @@ export async function POST(request) {
     response.cookies.set('gp_user_session', JSON.stringify(userObj), {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 7, // 7 days
     });
 
