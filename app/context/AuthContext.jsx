@@ -30,8 +30,13 @@ export function AuthProvider({ children }) {
       fetch('/api/auth/xbox/me').then(r => r.json()).catch(() => ({ user: null })),
     ]).then(([userData, steamData, xboxData]) => {
       if (userData.user)  setUser(userData.user);
-      if (steamData.user) setSteamUser(steamData.user);
-      if (xboxData.user)  setXboxUser(xboxData.user);
+      
+      // Use Redis-persisted connections if available, otherwise fallback to cookies
+      if (userData.steamUser) setSteamUser(userData.steamUser);
+      else if (steamData.user) setSteamUser(steamData.user);
+      
+      if (userData.xboxUser)  setXboxUser(userData.xboxUser);
+      else if (xboxData.user)  setXboxUser(xboxData.user);
     }).catch(err => {
       console.error('Initial auth fetch error:', err);
     }).finally(() => setReady(true));
