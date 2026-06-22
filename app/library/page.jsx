@@ -290,7 +290,7 @@ function SteamLibrary({ steamUser, onLogout }) {
 
   useEffect(() => {
     setLoading(true); setError(null);
-    fetch('/api/steam-library')
+    fetch('/api/oyun')
       .then(r => r.json())
       .then(d => { if (d.error) { setError(d); return; } setLibrary(d); })
       .catch(e => setError({ error: e.message }))

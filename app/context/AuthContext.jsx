@@ -42,7 +42,7 @@ export function AuthProvider({ children }) {
   // Steam kullanıcısı oturumu açınca kütüphane adlarını arka planda çek
   useEffect(() => {
     if (!steamUser) { setOwnedGames(new Set()); return; }
-    fetch('/api/steam-library')
+    fetch('/api/oyun')
       .then(r => r.json())
       .then(d => {
         if (d.games) {
