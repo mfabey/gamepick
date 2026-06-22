@@ -20,6 +20,8 @@ export default function SignupPage() {
   const [loading,             setLoading]             = useState(false);
   const [captchaChecked,      setCaptchaChecked]      = useState(false);
   const [captchaLoading,      setCaptchaLoading]      = useState(false);
+  const [registered,          setRegistered]          = useState(false);
+  const [isMock,              setIsMock]              = useState(false);
 
   const handleCaptchaClick = () => {
     if (captchaChecked || captchaLoading) return;
@@ -49,7 +51,8 @@ export default function SignupPage() {
     setLoading(true);
     const result = await signup({ name, email, password });
     if (result.ok) {
-      router.push('/library');
+      setIsMock(!!result.mock);
+      setRegistered(true);
     } else {
       setError(result.error);
     }
@@ -63,6 +66,78 @@ export default function SignupPage() {
     background: 'var(--bg-card)',
     transition: 'border-color 0.15s',
   };
+
+  if (registered) {
+    return (
+      <div style={{
+        minHeight: 'calc(100vh - 60px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '40px 20px',
+        background: 'var(--hero-bg)',
+      }}>
+        <div style={{ width: '100%', maxWidth: 420 }}>
+          <div style={{ textAlign: 'center', marginBottom: 32 }}>
+            <div style={{
+              width: 52, height: 52, borderRadius: 14, background: 'var(--accent)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              margin: '0 auto 12px',
+            }}>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                <polyline points="22 4 12 14.01 9 11.01" />
+              </svg>
+            </div>
+            <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>
+              {lang === 'tr' ? 'Kayıt Başarılı!' : 'Registration Successful!'}
+            </h1>
+            <p style={{ color: 'var(--text-3)', fontSize: 14, marginTop: 4 }}>
+              {lang === 'tr' ? 'Lütfen e-posta adresinizi doğrulayın' : 'Please verify your email address'}
+            </p>
+          </div>
+
+          <div className="card" style={{ padding: '28px', textAlign: 'center' }}>
+            <p style={{ color: 'var(--text-2)', fontSize: 14, marginBottom: 20, lineHeight: 1.5 }}>
+              {lang === 'tr' 
+                ? `${email} adresine bir doğrulama bağlantısı gönderildi. Lütfen gelen kutunuzu kontrol edin. E-postanızı doğruladıktan sonra giriş yapabilirsiniz.`
+                : `A verification link has been sent to ${email}. Please check your inbox. You can log in after verifying your email.`}
+            </p>
+
+            {isMock && (
+              <div style={{
+                background: 'rgba(234, 179, 8, 0.15)',
+                border: '1.5px solid rgba(234, 179, 8, 0.4)',
+                borderRadius: 10,
+                padding: '12px 14px',
+                marginBottom: 20,
+                fontSize: 12,
+                color: 'var(--text)',
+                textAlign: 'left',
+              }}>
+                <strong style={{ color: '#eab308', display: 'block', marginBottom: 4 }}>
+                  {lang === 'tr' ? '[MOCK SİMÜLASYONU]' : '[MOCK SIMULATION]'}
+                </strong>
+                <p style={{ color: 'var(--text-2)', margin: 0, lineHeight: 1.4 }}>
+                  {lang === 'tr' 
+                    ? 'Firebase API anahtarı ayarlanmadığı için gerçek bir e-posta gönderilmedi. Mock doğrulama talebi başarıyla simüle edildi.'
+                    : 'Since Firebase API key is not configured, no real email was sent. The mock verification request was simulated successfully.'}
+                </p>
+              </div>
+            )}
+
+            <Link href="/login" style={{
+              display: 'block', width: '100%', padding: '12px',
+              background: 'var(--accent)', color: '#fff',
+              border: 'none', borderRadius: 8,
+              fontSize: 14, fontWeight: 600, textDecoration: 'none',
+              textAlign: 'center'
+            }}>
+              {lang === 'tr' ? 'Giriş Yap Ekranına Git →' : 'Go to Login Screen →'}
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{

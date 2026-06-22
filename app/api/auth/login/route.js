@@ -44,14 +44,41 @@ export async function POST(request) {
       return NextResponse.json({ error: signInData?.error?.message || 'Giriş başarısız.' }, { status: signInRes.status });
     }
 
-    const { localId, displayName } = signInData;
+    const { localId, displayName, idToken } = signInData;
+
+    // 2. Fetch User Account Info to check emailVerified status
+    const lookupRes = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${FIREBASE_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken }),
+      }
+    );
+
+    const lookupData = await lookupRes.json();
+
+    if (!lookupRes.ok || !lookupData.users || lookupData.users.length === 0) {
+      return NextResponse.json({ error: 'Kullanıcı bilgileri doğrulanamadı.' }, { status: 500 });
+    }
+
+    const fbUser = lookupData.users[0];
+
+    // 3. Block login if the email is not verified
+    if (!fbUser.emailVerified) {
+      return NextResponse.json(
+        { error: 'EMAIL_NOT_VERIFIED', message: 'E-posta adresiniz henüz doğrulanmamış.' },
+        { status: 403 }
+      );
+    }
+
     const userObj = {
       uid: localId,
       name: displayName || email.split('@')[0],
       email
     };
 
-    // 2. Set HttpOnly Cookie
+    // 4. Set HttpOnly Cookie for successful verified login
     const response = NextResponse.json({ ok: true, user: userObj });
     response.cookies.set('gp_user_session', JSON.stringify(userObj), {
       httpOnly: true,

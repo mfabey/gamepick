@@ -16,17 +16,54 @@ export default function LoginPage() {
   const [error,        setError]        = useState('');
   const [loading,      setLoading]      = useState(false);
 
+  // Verification resend states
+  const [isUnverified, setIsUnverified] = useState(false);
+  const [resendStatus, setResendStatus] = useState(''); // '' | 'sending' | 'sent' | 'error'
+  const [resendError,  setResendError]  = useState('');
+  const [isMockResend, setIsMockResend] = useState(false);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setIsUnverified(false);
+    setResendStatus('');
+    setResendError('');
     setLoading(true);
     const result = await login({ email, password });
     if (result.ok) {
       router.push('/');
     } else {
-      setError(result.error);
+      if (result.error === 'EMAIL_NOT_VERIFIED') {
+        setIsUnverified(true);
+      } else {
+        setError(result.error);
+      }
     }
     setLoading(false);
+  };
+
+  const handleResend = async () => {
+    if (!email || !password) return;
+    setResendStatus('sending');
+    setResendError('');
+    try {
+      const res = await fetch('/api/auth/resend-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        setIsMockResend(!!data.mock);
+        setResendStatus('sent');
+      } else {
+        setResendError(data.error || (lang === 'tr' ? 'Bağlantı gönderilemedi.' : 'Failed to send link.'));
+        setResendStatus('error');
+      }
+    } catch (err) {
+      setResendError(err.message);
+      setResendStatus('error');
+    }
   };
 
   return (
@@ -72,6 +109,53 @@ export default function LoginPage() {
                 fontSize: 13, color: 'var(--accent)',
               }}>
                 {error}
+              </div>
+            )}
+
+            {isUnverified && (
+              <div style={{
+                background: 'var(--accent-bg)', border: '1.5px solid var(--accent-border)',
+                borderRadius: 8, padding: '12px 14px', marginBottom: 16,
+                fontSize: 13, color: 'var(--text)',
+                textAlign: 'left'
+              }}>
+                <p style={{ fontWeight: 700, color: 'var(--accent)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  ⚠️ {lang === 'tr' ? 'E-posta Doğrulanmamış' : 'Email Not Verified'}
+                </p>
+                <p style={{ fontSize: 12.5, color: 'var(--text-2)', lineHeight: 1.4, marginBottom: 10 }}>
+                  {lang === 'tr' 
+                    ? 'Giriş yapabilmek için e-posta adresinizi doğrulamanız gerekmektedir. Lütfen gelen kutunuza gönderilen bağlantıyı onaylayın.'
+                    : 'You must verify your email address to log in. Please check the link sent to your email.'}
+                </p>
+                
+                {resendStatus === 'sent' ? (
+                  <div style={{ color: '#22c55e', fontWeight: 600, fontSize: 12, marginTop: 4 }}>
+                    ✓ {lang === 'tr' ? 'Doğrulama bağlantısı tekrar gönderildi!' : 'Verification link sent again!'}
+                    {isMockResend && (
+                      <span style={{ display: 'block', fontSize: 11, fontWeight: 400, color: '#eab308', marginTop: 2 }}>
+                        {lang === 'tr' ? '(MOCK SİMÜLASYONU: Gerçek e-posta gitmedi)' : '(MOCK SIMULATION: No real email sent)'}
+                      </span>
+                    )}
+                  </div>
+                ) : resendStatus === 'sending' ? (
+                  <span style={{ fontSize: 12.5, color: 'var(--text-3)' }}>
+                    {lang === 'tr' ? 'Gönderiliyor...' : 'Sending...'}
+                  </span>
+                ) : (
+                  <button type="button" onClick={handleResend} style={{
+                    background: 'none', border: 'none', padding: 0,
+                    color: 'var(--accent)', fontWeight: 700, textDecoration: 'underline',
+                    cursor: 'pointer', fontSize: 12.5
+                  }}>
+                    {lang === 'tr' ? 'Doğrulama e-postasını yeniden gönder' : 'Resend verification email'}
+                  </button>
+                )}
+                
+                {resendError && (
+                  <p style={{ color: 'var(--accent)', fontSize: 12, marginTop: 6, fontWeight: 600 }}>
+                    ⚠️ {resendError}
+                  </p>
+                )}
               </div>
             )}
 

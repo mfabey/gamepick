@@ -13,18 +13,11 @@ export async function POST(request) {
     // Local development fallback if Firebase Key is not set
     if (!FIREBASE_API_KEY) {
       console.warn('FIREBASE_API_KEY is not defined. Falling back to mock registration.');
-      const response = NextResponse.json({
+      return NextResponse.json({
         ok: true,
+        mock: true,
         user: { uid: 'mock_' + Date.now(), name, email }
       });
-      // Set mock session cookie
-      response.cookies.set('gp_user_session', JSON.stringify({ uid: 'mock_' + Date.now(), name, email }), {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 7, // 7 days
-      });
-      return response;
     }
 
     // 1. Sign Up User in Firebase Auth
@@ -62,18 +55,29 @@ export async function POST(request) {
       }
     );
 
+    // 3. Send Verification Email
+    const sendMailRes = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${FIREBASE_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          requestType: 'VERIFY_EMAIL',
+          idToken,
+        }),
+      }
+    );
+
+    if (!sendMailRes.ok) {
+      const sendMailData = await sendMailRes.json();
+      console.error('Firebase sendOobCode Error:', sendMailData?.error?.message);
+      // We still registered the user successfully, so we can proceed but warn
+    }
+
     const userObj = { uid: localId, name, email };
 
-    // 3. Set HttpOnly Cookie
-    const response = NextResponse.json({ ok: true, user: userObj });
-    response.cookies.set('gp_user_session', JSON.stringify(userObj), {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-    });
-
-    return response;
+    // 4. Return success response WITHOUT issuing session cookies
+    return NextResponse.json({ ok: true, user: userObj, mock: false });
 
   } catch (err) {
     console.error('Register API Error:', err.message);

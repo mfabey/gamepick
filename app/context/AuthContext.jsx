@@ -94,8 +94,7 @@ export function AuthProvider({ children }) {
       if (!res.ok || !data.ok) {
         return { error: data.error || 'Kayıt başarısız.' };
       }
-      setUser(data.user);
-      return { ok: true };
+      return { ok: true, mock: data.mock };
     } catch (err) {
       return { error: err.message };
     }
