@@ -10,7 +10,7 @@ import { useLanguage } from '../context/LanguageContext';
 export default function NavBar() {
   const pathname = usePathname();
   const router   = useRouter();
-  const { user, steamUser, logout, steamLogout } = useAuth();
+  const { user, steamUser, xboxUser, logout, steamLogout } = useAuth();
   const { theme, mounted } = useTheme();
   const { lang, changeLanguage, t } = useLanguage();
 
