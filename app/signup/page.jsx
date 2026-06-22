@@ -47,7 +47,7 @@ export default function SignupPage() {
     }
     
     setLoading(true);
-    const result = signup({ name, email, password });
+    const result = await signup({ name, email, password });
     if (result.ok) {
       router.push('/library');
     } else {

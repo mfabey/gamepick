@@ -23,19 +23,17 @@ export function AuthProvider({ children }) {
   const [ready,      setReady]      = useState(false);
 
   useEffect(() => {
-    // Site auth — localStorage
-    try {
-      const stored = localStorage.getItem('gp_user');
-      if (stored) setUser(JSON.parse(stored));
-    } catch {}
-
-    // Steam + Xbox auth paralel çek
+    // Site auth, Steam, and Xbox auth parallel fetch
     Promise.all([
+      fetch('/api/auth/user-me').then(r => r.json()).catch(() => ({ user: null })),
       fetch('/api/auth/me').then(r => r.json()).catch(() => ({ user: null })),
       fetch('/api/auth/xbox/me').then(r => r.json()).catch(() => ({ user: null })),
-    ]).then(([steamData, xboxData]) => {
+    ]).then(([userData, steamData, xboxData]) => {
+      if (userData.user)  setUser(userData.user);
       if (steamData.user) setSteamUser(steamData.user);
       if (xboxData.user)  setXboxUser(xboxData.user);
+    }).catch(err => {
+      console.error('Initial auth fetch error:', err);
     }).finally(() => setReady(true));
   }, []);
 
@@ -80,44 +78,62 @@ export function AuthProvider({ children }) {
   }, [xboxUser]);
 
   // ── Site hesabı işlemleri ────────────────────────────────────────────────
-  const signup = ({ name, email, password }) => {
-    const users = JSON.parse(localStorage.getItem('gp_users') || '[]');
-    if (users.find(u => u.email === email)) {
-      return { error: 'Bu e-posta zaten kayıtlı.' };
+  const signup = async ({ name, email, password }) => {
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        return { error: data.error || 'Kayıt başarısız.' };
+      }
+      setUser(data.user);
+      return { ok: true };
+    } catch (err) {
+      return { error: err.message };
     }
-    const newUser = { id: Date.now().toString(), name, email, password, createdAt: new Date().toISOString() };
-    users.push(newUser);
-    localStorage.setItem('gp_users', JSON.stringify(users));
-    const { password: _, ...safeUser } = newUser;
-    localStorage.setItem('gp_user', JSON.stringify(safeUser));
-    setUser(safeUser);
-    return { ok: true };
   };
 
-  const login = ({ email, password }) => {
-    const users = JSON.parse(localStorage.getItem('gp_users') || '[]');
-    const found = users.find(u => u.email === email && u.password === password);
-    if (!found) return { error: 'E-posta veya şifre hatalı.' };
-    const { password: _, ...safeUser } = found;
-    localStorage.setItem('gp_user', JSON.stringify(safeUser));
-    setUser(safeUser);
-    return { ok: true };
+  const login = async ({ email, password }) => {
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        return { error: data.error || 'Giriş başarısız.' };
+      }
+      setUser(data.user);
+      return { ok: true };
+    } catch (err) {
+      return { error: err.message };
+    }
   };
 
   const logout = () => {
-    localStorage.removeItem('gp_user');
+    fetch('/api/auth/user-logout', { method: 'POST' }).catch(() => {});
     setUser(null);
   };
 
-  const resetPassword = (email, newPassword) => {
-    const users = JSON.parse(localStorage.getItem('gp_users') || '[]');
-    const userIndex = users.findIndex(u => u.email === email);
-    if (userIndex === -1) {
-      return { error: 'Bu e-posta adresine kayıtlı bir hesap bulunamadı.' };
+  const resetPassword = async (email) => {
+    try {
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        return { error: data.error || 'Şifre sıfırlama işlemi başarısız.' };
+      }
+      return { ok: true, mock: data.mock };
+    } catch (err) {
+      return { error: err.message };
     }
-    users[userIndex].password = newPassword;
-    localStorage.setItem('gp_users', JSON.stringify(users));
-    return { ok: true };
   };
 
   // ── Steam işlemleri ──────────────────────────────────────────────────────

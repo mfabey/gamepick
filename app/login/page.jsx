@@ -20,7 +20,7 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
     setLoading(true);
-    const result = login({ email, password });
+    const result = await login({ email, password });
     if (result.ok) {
       router.push('/');
     } else {
