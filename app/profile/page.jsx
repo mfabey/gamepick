@@ -24,7 +24,6 @@ export default function ProfilePage() {
   const router = useRouter();
   
   const [wishlist, setWishlist] = useState([]);
-  const [epicConn, setEpicConn] = useState(false);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -36,19 +35,12 @@ export default function ProfilePage() {
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem('gamepick_wishlist') || '[]');
     setWishlist(stored);
-    setEpicConn(localStorage.getItem('gp_epic') === '1');
   }, []);
 
   const removeFromWishlist = (id) => {
     const updated = wishlist.filter(w => w.id !== id);
     localStorage.setItem('gamepick_wishlist', JSON.stringify(updated));
     setWishlist(updated);
-  };
-
-  const toggleEpic = () => {
-    const next = !epicConn;
-    setEpicConn(next);
-    localStorage.setItem('gp_epic', next ? '1' : '0');
   };
 
   if (!ready || !user) {
@@ -68,9 +60,8 @@ export default function ProfilePage() {
   // Connected accounts game sizes
   const steamGamesCount = steamUser ? ownedGames.size : 0;
   const xboxGamesCount = xboxUser ? (xboxOwnedGames.size + gamePassGames.size) : 0;
-  const epicGamesCount = epicConn ? 32 : 0;
 
-  const totalConnectedGames = steamGamesCount + xboxGamesCount + epicGamesCount;
+  const totalConnectedGames = steamGamesCount + xboxGamesCount;
 
   // Mock genre stats based on connected library
   const getGenreStats = () => {
@@ -142,20 +133,6 @@ export default function ProfilePage() {
                   window.location.href = '/api/auth/steam';
                 }
               }}
-              lang={lang}
-            />
-            {/* Epic Games */}
-            <AccountCard
-              name="Epic Games"
-              status={
-                epicConn 
-                  ? (lang === 'tr' ? `Bağlı — ${epicGamesCount} oyun` : `Connected — ${epicGamesCount} games`) 
-                  : (lang === 'tr' ? 'Bağlı değil' : 'Not connected')
-              }
-              connected={epicConn}
-              color="#DC2626"
-              initials="EPC"
-              onToggle={toggleEpic}
               lang={lang}
             />
             {/* Xbox */}
