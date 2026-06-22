@@ -88,6 +88,28 @@ function GamesList() {
   const [loading,     setLoading]     = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [searchFocus, setSearchFocus] = useState(false);
+  const [scrolled,    setScrolled]    = useState(false);
+  const [isWide,      setIsWide]      = useState(true);
+
+  // Aşağı kaydırınca arama çubuğu cam efektiyle küçülüp oyun alanını kapsar (histerezisli eşik).
+  useEffect(() => {
+    const upd = () => setIsWide(typeof window !== 'undefined' && window.innerWidth > 768);
+    upd();
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        ticking = false;
+        const y = window.scrollY;
+        setScrolled(prev => (prev ? y > 50 : y > 90));
+      });
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', upd, { passive: true });
+    onScroll();
+    return () => { window.removeEventListener('scroll', onScroll); window.removeEventListener('resize', upd); };
+  }, []);
 
   const debounceRef = useRef(null);
   const sentinelRef = useRef(null);
@@ -212,11 +234,15 @@ function GamesList() {
         <div className="container" style={{ paddingTop: 14, paddingBottom: 14 }}>
           <div style={{
             display: 'flex', alignItems: 'center', gap: 12,
-            background: 'var(--bg-input)',
-            border: `1.5px solid ${searchFocus ? 'var(--accent)' : 'var(--border)'}`,
-            borderRadius: 10, padding: '0 18px', height: 50,
-            transition: 'border-color 0.15s, box-shadow 0.15s',
-            boxShadow: searchFocus ? '0 0 0 3px var(--accent-glow)' : 'none',
+            background: scrolled ? 'color-mix(in srgb, var(--bg-card) 72%, transparent)' : 'var(--bg-input)',
+            border: `1.5px solid ${searchFocus ? 'var(--accent)' : (scrolled ? 'var(--border-hover)' : 'var(--border)')}`,
+            borderRadius: scrolled ? 14 : 10, padding: '0 18px', height: scrolled ? 44 : 50,
+            marginLeft: scrolled && isWide ? 292 : 0,
+            backdropFilter: scrolled ? 'blur(14px) saturate(160%)' : 'blur(0px)',
+            WebkitBackdropFilter: scrolled ? 'blur(14px) saturate(160%)' : 'blur(0px)',
+            willChange: 'margin-left, height, backdrop-filter',
+            transition: 'margin-left 0.5s cubic-bezier(.4,0,.18,1), height 0.5s cubic-bezier(.4,0,.18,1), background 0.5s ease, border-color 0.3s ease, backdrop-filter 0.5s ease, -webkit-backdrop-filter 0.5s ease, box-shadow 0.4s ease',
+            boxShadow: scrolled ? '0 10px 30px rgba(20,20,40,0.18)' : (searchFocus ? '0 0 0 3px var(--accent-glow)' : 'none'),
           }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
               stroke={searchFocus ? 'var(--accent)' : 'var(--text-3)'}
@@ -256,7 +282,7 @@ function GamesList() {
 
       {/* ── Ana layout: sol içerik + sağ sidebar ── */}
       <div className="container" style={{ paddingTop: 28, paddingBottom: 60 }}>
-        <div className="games-layout" style={{ display: 'grid', gridTemplateColumns: '1fr 260px', gap: 32, alignItems: 'start' }}>
+        <div className="games-layout" style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 32, alignItems: 'start' }}>
 
           {/* ── SOL: bölüm filtreleri + oyun grid ── */}
           <div>
@@ -382,6 +408,7 @@ function GamesList() {
           {/* ── SAĞ: sticky sidebar ── */}
           <aside className="games-sidebar" style={{
             position: 'sticky',
+            order: -1,
             top: 130,
             maxHeight: 'calc(100vh - 150px)',
             overflowY: 'auto',
