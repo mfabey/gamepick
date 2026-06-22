@@ -373,7 +373,9 @@ export default function ProfilePage() {
               name="Xbox / Game Pass"
               status={
                 xboxUser 
-                  ? (lang === 'tr' ? `Bağlı — ${xboxGamesCount} oyun` : `Connected — ${xboxGamesCount} games`) 
+                  ? (xboxUser.isMock 
+                      ? (lang === 'tr' ? `Simülasyon (Örnek Oyunlar) — ${xboxGamesCount} oyun` : `Simulation (Sample Games) — ${xboxGamesCount} games`) 
+                      : (lang === 'tr' ? `Bağlı — ${xboxGamesCount} oyun` : `Connected — ${xboxGamesCount} games`))
                   : (lang === 'tr' ? 'Bağlı değil' : 'Not connected')
               }
               connected={!!xboxUser}
@@ -389,6 +391,20 @@ export default function ProfilePage() {
               }}
               lang={lang}
             />
+            {xboxUser?.isMock && (
+              <div style={{
+                background: 'var(--accent-bg)', border: '1px solid var(--accent-border)', borderRadius: 10,
+                padding: '10px 14px', marginTop: 12, fontSize: 12, color: 'var(--accent)',
+                display: 'flex', gap: 8, alignItems: 'flex-start', lineHeight: 1.5
+              }}>
+                <span style={{ fontSize: 14 }}>⚠️</span>
+                <div>
+                  {lang === 'tr' 
+                    ? 'Xbox hesabınız Gamertag simülasyonu ile bağlı olduğundan test amaçlı örnek oyunlar ve istatistikler gösterilmektedir. Gerçek kütüphaneniz için resmi Microsoft bağlantısını kullanın.' 
+                    : 'Since your Xbox account is connected via Gamertag simulation, sample games and stats are shown for testing. Use the official Microsoft connection for your real library.'}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

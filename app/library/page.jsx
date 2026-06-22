@@ -398,7 +398,7 @@ function SteamLibrary({ steamUser, onLogout }) {
 // XBOX KÜTÜPHANESİ
 // ─────────────────────────────────────────────────────────────────────────────
 function XboxLibrary({ xboxUser, onLogout }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const [library, setLibrary] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState(null);
@@ -455,6 +455,26 @@ function XboxLibrary({ xboxUser, onLogout }) {
   return (
     <>
       <XboxProfileHeader xboxUser={xboxUser} library={library} onLogout={onLogout} />
+
+      {xboxUser.isMock && (
+        <div style={{
+          background: 'var(--accent-bg)', border: '1px solid var(--accent-border)', borderRadius: 14,
+          padding: '16px 20px', marginTop: 20, display: 'flex', gap: 12, alignItems: 'flex-start',
+          color: 'var(--accent)', fontSize: 13, lineHeight: 1.5
+        }}>
+          <span style={{ fontSize: 18 }}>⚠️</span>
+          <div>
+            <p style={{ fontWeight: 700, marginBottom: 4 }}>
+              {lang === 'tr' ? 'Gamertag Simülasyon Modu' : 'Gamertag Simulation Mode'}
+            </p>
+            <p>
+              {lang === 'tr' 
+                ? 'Microsoft güvenlik protokolleri nedeniyle, şifresiz şekilde (sadece Gamertag yazarak) gerçek kütüphanenize erişilemez. Bu sebeple test amaçlı örnek oyunlar listelenmektedir. Gerçek oyunlarınızı görmek için lütfen çıkış yapıp "Resmi Bağlantı" seçeneğini kullanın.'
+                : 'Due to Microsoft security protocols, your real library cannot be accessed without credentials (by only typing a Gamertag). Therefore, sample games are listed for testing. To see your real games, please log out and use the "Official Connection" option.'}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Filtreler */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 24, marginBottom: 16, flexWrap: 'wrap' }}>
