@@ -743,3 +743,28 @@ html[data-theme="dark"] .glass-card {
   }
 }
 
+/* ===== 2K & 4K MONITOR SCALING ===== */
+@media (min-width: 1921px) {
+  html {
+    zoom: 1.25;
+  }
+}
+
+@media (min-width: 2560px) {
+  html {
+    zoom: 1.3333;
+  }
+}
+
+@media (min-width: 3200px) {
+  html {
+    zoom: 1.6667;
+  }
+}
+
+@media (min-width: 3840px) {
+  html {
+    zoom: 2.0;
+  }
+}
+
