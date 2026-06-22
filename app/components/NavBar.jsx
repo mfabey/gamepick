@@ -167,7 +167,33 @@ export default function NavBar() {
             </Link>
 
 
-            {steamUser ? (
+            {user ? (
+              <div className="nav-auth-group" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Link href="/profile" className="nav-user-badge" style={{
+                  display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 9,
+                  background: 'var(--accent-bg)', border: '1px solid var(--accent-border)', fontSize: 13, fontWeight: 600, color: 'var(--accent)',
+                }}>
+                  {steamUser?.avatar ? (
+                    <img src={steamUser.avatar} className="nav-user-avatar" alt="" style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover' }} />
+                  ) : (
+                    <span className="nav-user-avatar" style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700 }}>
+                      {user.name?.slice(0, 1).toUpperCase()}
+                    </span>
+                  )}
+                  <span className="nav-user-text">{user.name?.split(' ')[0]}</span>
+                  {/* Small Steam/Xbox status dots inside the badge */}
+                  <div style={{ display: 'flex', gap: 4, marginLeft: 2 }}>
+                    {steamUser && (
+                      <span title="Steam Connected" style={{ width: 6, height: 6, borderRadius: '50%', background: '#1a9fff', border: '1px solid var(--bg-card)' }} />
+                    )}
+                    {xboxUser && (
+                      <span title="Xbox Connected" style={{ width: 6, height: 6, borderRadius: '50%', background: '#16a34a', border: '1px solid var(--bg-card)' }} />
+                    )}
+                  </div>
+                </Link>
+                <button onClick={handleLogout} className="nav-logout-btn" style={{ padding: '6px 12px', borderRadius: 9, fontSize: 12, background: 'none', border: '1px solid var(--border)', color: 'var(--text-3)', cursor: 'pointer' }}>{t('nav.logout')}</button>
+              </div>
+            ) : steamUser ? (
               <div className="nav-auth-group" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Link href="/library" className="nav-user-badge" style={{
                   display: 'flex', alignItems: 'center', gap: 8, padding: '5px 10px', borderRadius: 9,
@@ -180,17 +206,6 @@ export default function NavBar() {
                   <span className="nav-user-text">{steamUser.name?.slice(0, 14)}{steamUser.name?.length > 14 ? '…' : ''}</span>
                 </Link>
                 <button onClick={steamLogout} className="nav-logout-btn" style={{ padding: '5px 10px', borderRadius: 9, fontSize: 12, background: 'none', border: '1px solid var(--border)', color: 'var(--text-3)', cursor: 'pointer' }}>{t('nav.logout')}</button>
-              </div>
-            ) : user ? (
-              <div className="nav-auth-group" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <Link href="/profile" className="nav-user-badge" style={{
-                  display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 9,
-                  background: 'var(--accent-bg)', border: '1px solid var(--accent-border)', fontSize: 13, fontWeight: 600, color: 'var(--accent)',
-                }}>
-                  <span className="nav-user-avatar" style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700 }}>{user.name?.slice(0, 1).toUpperCase()}</span>
-                  <span className="nav-user-text">{user.name?.split(' ')[0]}</span>
-                </Link>
-                <button onClick={handleLogout} className="nav-logout-btn" style={{ padding: '6px 12px', borderRadius: 9, fontSize: 12, background: 'none', border: '1px solid var(--border)', color: 'var(--text-3)', cursor: 'pointer' }}>{t('nav.logout')}</button>
               </div>
             ) : (
               <div className="nav-auth-group" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
