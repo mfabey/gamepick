@@ -121,6 +121,11 @@ export function AuthProvider({ children }) {
   const logout = () => {
     fetch('/api/auth/user-logout', { method: 'POST' }).catch(() => {});
     setUser(null);
+    setSteamUser(null);
+    setXboxUser(null);
+    setOwnedGames(new Set());
+    setXboxOwnedGames(new Set());
+    setGamePassGames(new Set());
   };
 
   const resetPassword = async (email) => {
