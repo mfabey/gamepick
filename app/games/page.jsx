@@ -435,29 +435,25 @@ function GamesList() {
                 </svg>
                 <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', letterSpacing: 0.3 }}>{lang === 'tr' ? 'KATEGORİLER' : 'CATEGORIES'}</span>
               </div>
-              <div style={{ padding: '8px 0' }}>
+              <div style={{ padding: '14px 16px 16px', display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {localizedCategories.map(c => {
                   const active = genre === c.slug;
                   return (
                     <button key={c.slug} onClick={() => handleGenre(c.slug)} style={{
-                      width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '10px 18px', border: 'none', cursor: 'pointer',
-                      background: active ? 'var(--accent-bg)' : 'transparent',
-                      color: active ? 'var(--accent)' : 'var(--text-2)',
-                      fontSize: 14, fontWeight: active ? 600 : 400,
-                      transition: 'background 0.12s, color 0.12s',
-                      borderLeft: active ? '3px solid var(--accent)' : '3px solid transparent',
-                      textAlign: 'left',
+                      display: 'inline-flex', alignItems: 'center',
+                      padding: '7px 13px', borderRadius: 999,
+                      border: `1.5px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
+                      background: active ? 'var(--accent)' : 'transparent',
+                      color: active ? '#fff' : 'var(--text-2)',
+                      fontSize: 12.5, fontWeight: active ? 600 : 500,
+                      cursor: 'pointer', whiteSpace: 'nowrap',
+                      boxShadow: active ? '0 4px 12px var(--accent-glow)' : 'none',
+                      transition: 'all 0.15s',
                     }}
-                      onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'var(--bg-hover)'; e.currentTarget.style.color = 'var(--text)'; }}}
-                      onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-2)'; }}}
+                      onMouseEnter={e => { if (!active) { e.currentTarget.style.borderColor = 'var(--border-hover)'; e.currentTarget.style.color = 'var(--text)'; }}}
+                      onMouseLeave={e => { if (!active) { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-2)'; }}}
                     >
-                      <span>{c.label}</span>
-                      {active && (
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="20 6 9 17 4 12"/>
-                        </svg>
-                      )}
+                      {c.label}
                     </button>
                   );
                 })}
