@@ -459,9 +459,17 @@ export default function Home() {
         }
 
         /* Kapak şeridi kayma */
-        .hero-strip { animation: hero-strip-scroll 48s linear infinite; }
-        @keyframes hero-strip-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-        @media (prefers-reduced-motion: reduce) { .hero-strip { animation: none; } }
+        .hero-strip {
+          animation: hero-strip-scroll 48s linear infinite;
+          will-change: transform;
+        }
+        @keyframes hero-strip-scroll {
+          from { transform: translateX(0); }
+          to   { transform: translateX(-4416px); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .hero-strip { animation: none; }
+        }
       `}</style>
     </div>
   );
