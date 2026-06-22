@@ -88,6 +88,28 @@ function GamesList() {
   const [loading,     setLoading]     = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [searchFocus, setSearchFocus] = useState(false);
+  const [scrolled,    setScrolled]    = useState(false);
+  const [isWide,      setIsWide]      = useState(true);
+
+  // Aşağı kaydırınca arama çubuğu cam efektiyle küçülüp oyun alanını kapsar (histerezisli eşik).
+  useEffect(() => {
+    const upd = () => setIsWide(typeof window !== 'undefined' && window.innerWidth > 768);
+    upd();
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        ticking = false;
+        const y = window.scrollY;
+        setScrolled(prev => (prev ? y > 50 : y > 90));
+      });
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', upd, { passive: true });
+    onScroll();
+    return () => { window.removeEventListener('scroll', onScroll); window.removeEventListener('resize', upd); };
+  }, []);
 
   const debounceRef = useRef(null);
   const sentinelRef = useRef(null);
@@ -212,11 +234,15 @@ function GamesList() {
         <div className="container" style={{ paddingTop: 14, paddingBottom: 14 }}>
           <div style={{
             display: 'flex', alignItems: 'center', gap: 12,
-            background: 'var(--bg-input)',
-            border: `1.5px solid ${searchFocus ? 'var(--accent)' : 'var(--border)'}`,
-            borderRadius: 10, padding: '0 18px', height: 50,
-            transition: 'border-color 0.15s, box-shadow 0.15s',
-            boxShadow: searchFocus ? '0 0 0 3px var(--accent-glow)' : 'none',
+            background: scrolled ? 'color-mix(in srgb, var(--bg-card) 72%, transparent)' : 'var(--bg-input)',
+            border: `1.5px solid ${searchFocus ? 'var(--accent)' : (scrolled ? 'var(--border-hover)' : 'var(--border)')}`,
+            borderRadius: scrolled ? 14 : 10, padding: '0 18px', height: scrolled ? 44 : 50,
+            marginLeft: scrolled && isWide ? 292 : 0,
+            backdropFilter: scrolled ? 'blur(14px) saturate(160%)' : 'blur(0px)',
+            WebkitBackdropFilter: scrolled ? 'blur(14px) saturate(160%)' : 'blur(0px)',
+            willChange: 'margin-left, height, backdrop-filter',
+            transition: 'margin-left 0.5s cubic-bezier(.4,0,.18,1), height 0.5s cubic-bezier(.4,0,.18,1), background 0.5s ease, border-color 0.3s ease, backdrop-filter 0.5s ease, -webkit-backdrop-filter 0.5s ease, box-shadow 0.4s ease',
+            boxShadow: scrolled ? '0 10px 30px rgba(20,20,40,0.18)' : (searchFocus ? '0 0 0 3px var(--accent-glow)' : 'none'),
           }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
               stroke={searchFocus ? 'var(--accent)' : 'var(--text-3)'}
@@ -256,7 +282,7 @@ function GamesList() {
 
       {/* ── Ana layout: sol içerik + sağ sidebar ── */}
       <div className="container" style={{ paddingTop: 28, paddingBottom: 60 }}>
-        <div className="games-layout" style={{ display: 'grid', gridTemplateColumns: '1fr 260px', gap: 32, alignItems: 'start' }}>
+        <div className="games-layout" style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 32, alignItems: 'start' }}>
 
           {/* ── SOL: bölüm filtreleri + oyun grid ── */}
           <div>
@@ -382,6 +408,7 @@ function GamesList() {
           {/* ── SAĞ: sticky sidebar ── */}
           <aside className="games-sidebar" style={{
             position: 'sticky',
+            order: -1,
             top: 130,
             maxHeight: 'calc(100vh - 150px)',
             overflowY: 'auto',
@@ -408,29 +435,25 @@ function GamesList() {
                 </svg>
                 <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', letterSpacing: 0.3 }}>{lang === 'tr' ? 'KATEGORİLER' : 'CATEGORIES'}</span>
               </div>
-              <div style={{ padding: '8px 0' }}>
+              <div style={{ padding: '14px 16px 16px', display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {localizedCategories.map(c => {
                   const active = genre === c.slug;
                   return (
                     <button key={c.slug} onClick={() => handleGenre(c.slug)} style={{
-                      width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '10px 18px', border: 'none', cursor: 'pointer',
-                      background: active ? 'var(--accent-bg)' : 'transparent',
-                      color: active ? 'var(--accent)' : 'var(--text-2)',
-                      fontSize: 14, fontWeight: active ? 600 : 400,
-                      transition: 'background 0.12s, color 0.12s',
-                      borderLeft: active ? '3px solid var(--accent)' : '3px solid transparent',
-                      textAlign: 'left',
+                      display: 'inline-flex', alignItems: 'center',
+                      padding: '7px 13px', borderRadius: 999,
+                      border: `1.5px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
+                      background: active ? 'var(--accent)' : 'transparent',
+                      color: active ? '#fff' : 'var(--text-2)',
+                      fontSize: 12.5, fontWeight: active ? 600 : 500,
+                      cursor: 'pointer', whiteSpace: 'nowrap',
+                      boxShadow: active ? '0 4px 12px var(--accent-glow)' : 'none',
+                      transition: 'all 0.15s',
                     }}
-                      onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'var(--bg-hover)'; e.currentTarget.style.color = 'var(--text)'; }}}
-                      onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-2)'; }}}
+                      onMouseEnter={e => { if (!active) { e.currentTarget.style.borderColor = 'var(--border-hover)'; e.currentTarget.style.color = 'var(--text)'; }}}
+                      onMouseLeave={e => { if (!active) { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-2)'; }}}
                     >
-                      <span>{c.label}</span>
-                      {active && (
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="20 6 9 17 4 12"/>
-                        </svg>
-                      )}
+                      {c.label}
                     </button>
                   );
                 })}

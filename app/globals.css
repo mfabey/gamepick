@@ -633,16 +633,14 @@ html[data-theme="dark"] .glass-card {
   position: sticky !important;
   top: 64px !important;
   z-index: 900 !important;
-  background: var(--bg) !important;
-  border-bottom: 1px solid var(--border) !important;
-  backdrop-filter: blur(12px) !important;
+  background: transparent !important;
+  border-bottom: none !important;
+  backdrop-filter: none !important;
   transition: top 0.2s ease;
 }
 
 @media (max-width: 768px) {
-  .sticky-search-bar {
-    top: 56px !important;
-  }
+  .sticky-search-bar { top: 56px !important; }
 }
 
 /* ===== NEWS PAGE RESPONSIVE ===== */
