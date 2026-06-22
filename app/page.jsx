@@ -481,11 +481,13 @@ function ScrollRow({ children }) {
   const drag   = useRef({ active: false, startX: 0, scrollLeft: 0, moved: false });
 
   useEffect(() => {
+    const el = rowRef.current;
+
     const onMove = e => {
       if (!drag.current.active) return;
       const dx = e.clientX - drag.current.startX;
       if (Math.abs(dx) > 3) drag.current.moved = true;
-      rowRef.current.scrollLeft = drag.current.scrollLeft - dx;
+      if (el) el.scrollLeft = drag.current.scrollLeft - dx;
     };
 
     const onUp = () => {
@@ -495,11 +497,33 @@ function ScrollRow({ children }) {
       document.body.style.userSelect = '';
     };
 
+    const onWheel = e => {
+      if (!el) return;
+      const dy = e.deltaY;
+      const dx = e.deltaX;
+
+      // Sadece dikey tekerlek hareketinde yatay kaydırma yap (trackpad yatay kaydırmasını engelleme)
+      if (Math.abs(dy) > Math.abs(dx)) {
+        const isScrollingLeft = dy < 0;
+        const canScrollLeft = el.scrollLeft > 0;
+        const canScrollRight = el.scrollLeft < (el.scrollWidth - el.clientWidth - 2);
+
+        // Satırın en başına veya en sonuna gelinmemişse dikey sayfa kaydırmasını engelle, satırı kaydır
+        if ((isScrollingLeft && canScrollLeft) || (!isScrollingLeft && canScrollRight)) {
+          e.preventDefault();
+          el.scrollLeft += dy;
+        }
+      }
+    };
+
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
+    if (el) el.addEventListener('wheel', onWheel, { passive: false });
+
     return () => {
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
+      if (el) el.removeEventListener('wheel', onWheel);
     };
   }, []);
 
