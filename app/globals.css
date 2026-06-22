@@ -743,35 +743,8 @@ html[data-theme="dark"] .glass-card {
   }
 }
 
-/* ===== 2K & 4K MONITOR SCALING (Standard 16:9 / 16:10 Screens) ===== */
-@media (min-width: 1921px) and (max-aspect-ratio: 2/1) {
-  html {
-    zoom: 1.25;
-  }
-}
-
-@media (min-width: 2560px) and (max-aspect-ratio: 2/1) {
-  html {
-    zoom: 1.3333;
-  }
-}
-
-@media (min-width: 3200px) and (max-aspect-ratio: 2/1) {
-  html {
-    zoom: 1.6667;
-  }
-}
-
-@media (min-width: 3840px) and (max-aspect-ratio: 2/1) {
-  html {
-    zoom: 2.0;
-  }
-}
-
-/* ===== ULTRAWIDE MONITOR SCALING (Aspect ratio > 2:1, e.g. 21:9 or 32:9) ===== */
-@media (min-width: 3400px) and (min-aspect-ratio: 2/1) {
-  html {
-    zoom: 1.15; /* Mild scaling for 3440x1440 or 5120x1440 ultrawide screens */
-  }
-}
+/* Note: Custom media query zooms on high-resolution screens have been removed. 
+   This prevents "double-scaling" on 2K/4K/Ultrawide monitors where the operating system 
+   and browser already apply high-DPI scaling. Removing manual zoom keeps elements 
+   sharp, well-proportioned, and professional (matching modern web standards). */
 
