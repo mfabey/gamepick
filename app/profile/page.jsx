@@ -107,43 +107,7 @@ export default function ProfilePage() {
   const recommended = getDailyRecommendation();
 
 
-  const [aiRecommendations, setAiRecommendations] = useState(null);
-  const [aiRecLoading, setAiRecLoading] = useState(false);
 
-  useEffect(() => {
-    if (!ready || !user || libsLoading) return;
-    
-    const allGames = [];
-    if (steamLib?.games) allGames.push(...steamLib.games.map(g => g.name));
-    if (xboxLib?.games) allGames.push(...xboxLib.games.map(g => g.name));
-    
-    if (allGames.length === 0) return;
-
-    const cacheKey = `gamerisen_ai_recs_${user.email}`;
-    try {
-      const cached = sessionStorage.getItem(cacheKey);
-      if (cached) {
-        setAiRecommendations(JSON.parse(cached));
-        return;
-      }
-    } catch {}
-
-    setAiRecLoading(true);
-    fetch('/api/recommend', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mode: 'library', games: allGames, lang })
-    })
-      .then(r => r.json())
-      .then(d => {
-        if (d.recommendations && d.recommendations.length > 0) {
-          setAiRecommendations(d.recommendations);
-          try { sessionStorage.setItem(cacheKey, JSON.stringify(d.recommendations)); } catch {}
-        }
-      })
-      .catch(() => {})
-      .finally(() => setAiRecLoading(false));
-  }, [ready, user, libsLoading, steamLib, xboxLib, lang]);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -195,6 +159,44 @@ export default function ProfilePage() {
     
     Promise.all(promises).finally(() => setLibsLoading(false));
   }, [ready, user, steamUser, xboxUser]);
+
+  const [aiRecommendations, setAiRecommendations] = useState(null);
+  const [aiRecLoading, setAiRecLoading] = useState(false);
+
+  useEffect(() => {
+    if (!ready || !user || libsLoading) return;
+    
+    const allGames = [];
+    if (steamLib?.games) allGames.push(...steamLib.games.map(g => g.name));
+    if (xboxLib?.games) allGames.push(...xboxLib.games.map(g => g.name));
+    
+    if (allGames.length === 0) return;
+
+    const cacheKey = `gamerisen_ai_recs_${user.email}`;
+    try {
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) {
+        setAiRecommendations(JSON.parse(cached));
+        return;
+      }
+    } catch {}
+
+    setAiRecLoading(true);
+    fetch('/api/recommend', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: 'library', games: allGames, lang })
+    })
+      .then(r => r.json())
+      .then(d => {
+        if (d.recommendations && d.recommendations.length > 0) {
+          setAiRecommendations(d.recommendations);
+          try { sessionStorage.setItem(cacheKey, JSON.stringify(d.recommendations)); } catch {}
+        }
+      })
+      .catch(() => {})
+      .finally(() => setAiRecLoading(false));
+  }, [ready, user, libsLoading, steamLib, xboxLib, lang]);
 
   const removeFromWishlist = (id) => {
     const updated = wishlist.filter(w => w.id !== id);
