@@ -32,46 +32,47 @@ export default function PrivacyPage() {
             </p>
 
             <section>
-              <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>1. Toplanan Veriler ve Saklama Yöntemi</h2>
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>1. Toplanan Veriler ve Güvenli Sunucu Altyapısı (Firebase)</h2>
               <p>
-                Gamerisen, sunucularında (veritabanında) herhangi bir kişisel bilgi, e-posta veya şifre verisi **saklamamaktadır**.
+                Gamerisen, üye kayıt ve giriş işlemlerini gerçekleştirmek amacıyla endüstri standardı güvenlik protokollerine sahip olan **Google Firebase** kimlik doğrulama hizmetini kullanmaktadır.
               </p>
               <p style={{ marginTop: 8 }}>
-                Kayıt oluşturduğunuzda veya giriş yaptığınızda kullandığınız hesap bilgileri (ad, e-posta, şifre) tamamen tarayıcınızın yerel depolama alanında (<code>localStorage</code>) saklanır. Bu veriler sadece tarayıcınız tarafından kontrol edilir. Tarayıcınızın geçmişini veya önbelleğini temizlediğinizde ya da "Çıkış Yap" butonunu kullandığınızda bu veriler cihazınızdan tamamen silinir.
+                Kayıt oluşturduğunuzda veya profilinizi güncellediğinizde kullanılan hesap bilgileri (ad, e-posta adresi, kriptografik olarak hash'lenmiş şifreniz), Google Firebase'in şifrelenmiş güvenli bulut sunucularında saklanır. Şifreleriniz kesinlikle düz metin (plain text) olarak veya yerel depolama alanımızda saklanmaz.
               </p>
             </section>
 
             <section>
               <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>2. Üçüncü Taraf Hesap Bağlantıları (Steam & Xbox)</h2>
               <p>
-                Kütüphanenizi bağladığınızda (Steam & Xbox Live entegrasyonu), ilgili resmi API'ler aracılığıyla yalnızca herkese açık olan oyun listeleriniz ve hesap isimleriniz sorgulanır.
+                Kütüphanenizi bağladığınızda (Steam & Xbox Live entegrasyonu), ilgili resmi API'ler aracılığıyla yalnızca herkese açık olan oyun listeleriniz, başarılarınız ve hesap isimleriniz sorgulanır.
               </p>
               <ul style={{ paddingLeft: 20, marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <li>Hesap şifrelerinize veya ödeme bilgilerinize hiçbir şekilde erişilmez ve görülmez.</li>
+                <li>Hesap şifrelerinize veya ödeme bilgilerinize hiçbir şekilde erişilmez ve bu veriler görülmez.</li>
+                <li>Bağlantı verileriniz (profil bilgileri ve senkronizasyon belirteçleri) Firebase hesap kimliğinizle eşleşecek şekilde güvenli **Upstash Redis** veritabanında saklanır.</li>
                 <li>Giriş işlemleri Steam OpenID veya Microsoft OAuth gibi tamamen resmi ve güvenli sistemler üzerinden gerçekleşir.</li>
-                <li>Bağlantıyı kaldırdığınızda, oturum bilgileri tarayıcınızdan ve ilgili API oturumlarından derhal silinir.</li>
+                <li>Bağlantıyı profil ayarlarından kaldırdığınızda, senkronizasyon verileri veritabanımızdan derhal silinir.</li>
               </ul>
             </section>
 
             <section>
-              <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>3. Çerezler (Cookies) ve Yerel Tercihler</h2>
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>3. Yerel Tercihler ve İstek Listesi</h2>
               <p>
-                Sitemiz, kullanıcı deneyimini iyileştirmek amacıyla yerel tercihleri saklamak için çerezleri ve tarayıcı depolama alanını kullanır. Bu tercihler şunlardır:
+                Sitemiz, kullanıcı deneyimini iyileştirmek amacıyla yerel tercihleri saklamak için tarayıcı depolama alanını (<code>localStorage</code>) kullanır. Bu tercihler şunlardır:
               </p>
               <ul style={{ paddingLeft: 20, marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <li>Seçtiğiniz dil tercihi (TR veya EN),</li>
                 <li>Tema tercihiniz (Koyu veya Açık mod),</li>
-                <li>Oturum durumu bilgisi.</li>
+                <li>Oyun istek listeniz (wishlist verileri).</li>
               </ul>
               <p style={{ marginTop: 8 }}>
-                Bu veriler hiçbir reklam veya pazarlama amacıyla kullanılmaz ve üçüncü şahıslarla paylaşılmaz.
+                Yerel depolamada saklanan istek listeniz ve tercihleriniz hiçbir reklam veya pazarlama amacıyla kullanılmaz ve üçüncü şahıslarla paylaşılmaz. Tarayıcı önbelleğinizi temizlediğinizde veya oturumu kapattığınızda bu yerel ayarlar sıfırlanabilir.
               </p>
             </section>
 
             <section>
-              <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>4. Veri Güvenliği Sorumluluğu</h2>
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>4. Veri Güvenliği ve Kullanıcı Sorumluluğu</h2>
               <p>
-                Hesap bilgileriniz sunucu yerine tarayıcınızın yerel depolama alanında saklandığından, cihazınızın ve tarayıcınızın fiziksel/dijital güvenliği tamamen sizin sorumluluğunuzdadır. Tarayıcı eklentileri, virüsler veya cihazınıza erişimi olan üçüncü şahıslardan kaynaklanabilecek veri ihlallerinde Gamerisen sorumlu tutulamaz. Güvenliğiniz için tanımadığınız cihazlarda hesabınıza giriş yapmamanız tavsiye edilir.
+                Hesap güvenliğiniz için şifrenizin gizliliğini korumak ve güvenli şifreler belirlemek tamamen kullanıcının sorumluluğundadır. Güvenliğiniz için ortak veya güvenilmeyen cihazlarda oturumunuzu açık bırakmamanız, işiniz bittiğinde "Çıkış Yap" butonunu kullanmanız tavsiye edilir.
               </p>
             </section>
 
@@ -89,53 +90,54 @@ export default function PrivacyPage() {
             </p>
 
             <section>
-              <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>1. Collected Data and Storage Method</h2>
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>1. Collected Data and Secure Infrastructure (Firebase)</h2>
               <p>
-                Gamerisen **does not store** any personal credentials, emails, or password data on its servers.
+                Gamerisen uses **Google Firebase** authentication services, featuring industry-standard security protocols, to handle user registration, logins, and password security.
               </p>
               <p style={{ marginTop: 8 }}>
-                The credentials you use when registering or logging in (name, email, password) are stored locally in your browser's local storage (<code>localStorage</code>). This data is controlled entirely by your browser. Clearing your browser cache or clicking "Logout" completely deletes this data from your device.
+                The account details you provide (name, email, and cryptographically hashed passwords) are securely stored on Google Firebase cloud servers. Your passwords are never stored in plain text or in your browser's local storage.
               </p>
             </section>
 
             <section>
               <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>2. Third-Party Connections (Steam & Xbox)</h2>
               <p>
-                When you connect your library (Steam & Xbox Live integration), we query only your public game lists and account names through official APIs.
+                When you connect your library (Steam & Xbox Live integration), we query only your public game lists, achievements, and account names through official APIs.
               </p>
               <ul style={{ paddingLeft: 20, marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <li>We do not access, view, or modify your account passwords or payment details.</li>
+                <li>Your connection metadata and sync tokens are stored securely in our **Upstash Redis** database, mapped to your unique user ID.</li>
                 <li>Authentication is handled entirely via secure official portals like Steam OpenID or Microsoft OAuth.</li>
-                <li>Unlinking your account deletes the connection data from your browser cache instantly.</li>
+                <li>Unlinking your account from your settings page deletes all sync metadata from our database instantly.</li>
               </ul>
             </section>
 
             <section>
               <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>3. Cookies and Local Preferences</h2>
               <p>
-                We use cookies and browser local storage to save your preferences and optimize your experience. This includes:
+                We use browser local storage (<code>localStorage</code>) to save your local preferences and optimize your experience. This includes:
               </p>
               <ul style={{ paddingLeft: 20, marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <li>Language selection (TR or EN),</li>
                 <li>Theme selection (Dark or Light mode),</li>
-                <li>Authentication session states.</li>
+                <li>Your game wishlist.</li>
               </ul>
               <p style={{ marginTop: 8 }}>
-                This data is not used for advertising or marketing, and it is never shared with third parties.
+                Wishlist and preference data stored in your local storage is not used for advertising or marketing, and it is never shared with third parties.
               </p>
             </section>
 
             <section>
-              <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>4. Data Security Disclaimer</h2>
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>4. Data Security and User Responsibility</h2>
               <p>
-                Since your account data is stored locally in your browser, the physical and digital security of your device is entirely your responsibility. Gamerisen is not liable for data breaches arising from browser extensions, device malware, or unauthorized physical access. We recommend avoiding logging in on public or untrusted devices.
+                It is the user's sole responsibility to select a strong password and keep their account credentials confidential. To secure your account, we recommend avoiding leaving your account logged in on public or untrusted devices and clicking "Logout" when you finish your session.
               </p>
             </section>
 
             <section>
               <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>5. Contact and Support</h2>
               <p>
-                If you have any questions or feedback regarding this Privacy Policy or how your local data is handled, feel free to contact us via the form on our Support page.
+                If you have any questions or feedback regarding this Privacy Policy or how your data is handled, feel free to contact us via the form on our Support page.
               </p>
             </section>
           </div>

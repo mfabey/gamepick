@@ -48,7 +48,7 @@ export default function TermsPage() {
             <section>
               <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>3. Üye Hesapları ve Şifre Güvenliği</h2>
               <p>
-                Platformumuzda oluşturduğunuz hesap verileri (ad, e-posta ve şifre), geliştirme ve test aşamalarında kolaylık amacıyla tamamen tarayıcınızın yerel depolama alanında (<code>localStorage</code>) düz metin olarak saklanmaktadır. Şifrelerin sunucu tabanlı hacklenmelerinden veya tarayıcınızda oluşabilecek güvenlik ihlallerinden (XSS saldırıları, tarayıcı eklentileri, fiziksel erişim) kaynaklanan veri kayıplarından Gamerisen ve yöneticileri sorumlu değildir. Kullanıcı, cihazının ve tarayıcısının güvenliğinden bizzat sorumludur.
+                Platformumuzda oluşturduğunuz hesap verileri (ad, e-posta ve şifre), endüstri standardı güvenlik standartlarına uygun olarak Google Firebase altyapısı üzerinde güvenle şifrelenerek saklanmaktadır. Şifreleriniz kesinlikle düz metin (plain text) olarak saklanmaz. Üyeler, hesaplarının giriş bilgilerini gizli tutmakla ve şifrelerinin güvenliğini sağlamakla bizzat yükümlüdür. Yetkisiz girişleri önlemek amacıyla güçlü şifreler belirlenmesi ve ortak cihazlarda oturumların kapatılması önerilir.
               </p>
             </section>
 
@@ -96,7 +96,7 @@ export default function TermsPage() {
             <section>
               <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>3. User Accounts and Password Security</h2>
               <p>
-                For testing and convenience purposes during development, user account details (name, email, and passwords) are stored entirely in your browser's local storage (<code>localStorage</code>) in plain text. Gamerisen and its developers are not responsible for password leaks resulting from browser-based vulnerabilities (XSS, extensions, malware) or unauthorized physical access. Users are solely responsible for securing their own devices and browser environments.
+                Your account credentials (name, email, and passwords) are securely handled and cryptographically hashed using industry-standard Google Firebase authentication services. Passwords are never stored in plain text. Users are entirely responsible for keeping their login credentials confidential and securing their account. We strongly advise using strong passwords and logging out of public or shared devices.
               </p>
             </section>
 
