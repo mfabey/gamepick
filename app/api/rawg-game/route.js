@@ -34,7 +34,14 @@ async function searchSteamGame(slug) {
                || items[0];
     
     const appidMatch = match.logo.match(/\/apps\/(\d+)\//);
-    return appidMatch ? parseInt(appidMatch[1]) : null;
+    const appid = appidMatch ? parseInt(appidMatch[1]) : null;
+    if (!appid) return null;
+
+    return {
+      appid,
+      name: match.name,
+      logo: match.logo
+    };
   } catch (err) {
     console.error("Steam arama hatasi:", err);
     return null;
@@ -89,15 +96,121 @@ async function fetchSteamDetails(appid, slug) {
 
 async function trySteamFallback(slug) {
   // Check local fallback games first
-  const localMatch = FALLBACK_GAMES.find(g => g.rawgSlug === slug || String(g.rawgId) === slug);
-  if (localMatch && localMatch.rawgId) {
-    console.log(`Local fallback database hit for slug: ${slug} -> AppID: ${localMatch.rawgId}`);
-    return fetchSteamDetails(localMatch.rawgId, slug);
+  const localMatch = FALLBACK_GAMES.find(g => g.rawgSlug === slug || String(g.rawgId) === slug || g.id === slug || g.id === `rawg_${slug}`);
+  if (localMatch) {
+    const appid = localMatch.rawgId || parseInt(localMatch.id.replace('rawg_', ''));
+    console.log(`Local fallback database hit for slug: ${slug} -> AppID: ${appid}`);
+    const details = await fetchSteamDetails(appid, slug);
+    if (details) return details;
+    
+    // Return high quality local match directly if details fetch fails
+    return {
+      id:           localMatch.id || `rawg_${appid}`,
+      rawgId:       appid,
+      rawgSlug:     localMatch.rawgSlug || slug,
+      name:         localMatch.name,
+      image:        localMatch.image,
+      description:  'Bu oyunun açıklaması şu anda yüklenemedi. Ancak fiyat ve mağaza bilgilerini aşağıda bulabilirsiniz.',
+      metacritic:   localMatch.metacritic || null,
+      rating:       localMatch.reviewScore ? localMatch.reviewScore / 20 : 4.5,
+      totalReviews: localMatch.totalReviews || 0,
+      developer:    null,
+      publisher:    null,
+      released:     localMatch.released || null,
+      playtime:     null,
+      genres:       localMatch.genres || [],
+      tags:         [],
+      platforms:    ['PC'],
+      screenshots:  [],
+      hasSteam:     true,
+      hasEpic:      localMatch.hasEpic || false,
+      steamAppId:   String(appid),
+      epicUrl:      localMatch.epicUrl || null,
+      steamUrl:     `https://store.steampowered.com/app/${appid}`,
+      xboxUrl:      null,
+      gogUrl:       null,
+      playstationUrl: null,
+      nintendoUrl:  null,
+      officialUrl:  null,
+      source:       'steam',
+    };
   }
 
-  const appid = await searchSteamGame(slug);
-  if (!appid) return null;
-  return fetchSteamDetails(appid, slug);
+  const match = await searchSteamGame(slug);
+  if (match) {
+    console.log(`Steam search match found for slug: ${slug} -> AppID: ${match.appid}`);
+    const details = await fetchSteamDetails(match.appid, slug);
+    if (details) return details;
+
+    // If search succeeded but details failed, build a basic game from the search match!
+    return {
+      id:           `rawg_${match.appid}`,
+      rawgId:       match.appid,
+      rawgSlug:     slug,
+      name:         match.name,
+      image:        `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${match.appid}/header.jpg`,
+      description:  'Bu oyunun açıklaması şu anda yüklenemedi. Ancak güncel fiyat ve mağaza bilgilerini aşağıda bulabilirsiniz.',
+      metacritic:   null,
+      rating:       0,
+      totalReviews: 0,
+      developer:    null,
+      publisher:    null,
+      released:     null,
+      playtime:     null,
+      genres:       [],
+      tags:         [],
+      platforms:    ['PC'],
+      screenshots:  [],
+      hasSteam:     true,
+      hasEpic:      false,
+      steamAppId:   String(match.appid),
+      epicUrl:      null,
+      steamUrl:     `https://store.steampowered.com/app/${match.appid}`,
+      xboxUrl:      null,
+      gogUrl:       null,
+      playstationUrl: null,
+      nintendoUrl:  null,
+      officialUrl:  null,
+      source:       'steam',
+    };
+  }
+
+  // If search also fails, return a basic fallback game using the slug
+  const nameFromSlug = slug
+    .split('-')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+
+  return {
+    id:           `rawg_fallback_${slug}`,
+    rawgId:       null,
+    rawgSlug:     slug,
+    name:         nameFromSlug,
+    image:        'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/0/header.jpg',
+    description:  'Bu oyunun açıklaması şu anda yüklenemedi. Ancak güncel fiyat ve mağaza bilgilerini aşağıda bulabilirsiniz.',
+    metacritic:   null,
+    rating:       0,
+    totalReviews: 0,
+    developer:    null,
+    publisher:    null,
+    released:     null,
+    playtime:     null,
+    genres:       [],
+    tags:         [],
+    platforms:    ['PC'],
+    screenshots:  [],
+    hasSteam:     true,
+    hasEpic:      false,
+    steamAppId:   null,
+    epicUrl:      null,
+    steamUrl:     null,
+    xboxUrl:      null,
+    gogUrl:       null,
+    playstationUrl: null,
+    nintendoUrl:  null,
+    officialUrl:  null,
+    source:       'steam',
+  };
 }
 
 export async function GET(request) {
@@ -115,7 +228,110 @@ export async function GET(request) {
   }
 
   if (directAppId) {
-    console.log(`Direct Steam AppID detected: ${directAppId}`);
+    console.log(`Direct ID detected: ${directAppId}`);
+    
+    // 1. Try RAWG by ID first
+    let rawgDetail = null;
+    let rawgShots = { results: [] };
+    let rawgStores = { results: [] };
+    let rawgAdditions = { results: [] };
+    let rawgSuccess = false;
+
+    try {
+      const [detailRes, shotsRes, storesRes, additionsRes] = await Promise.all([
+        fetch(`${BASE}/games/${directAppId}?key=${RAWG_KEY}`, { next: { revalidate: 3600 } }).then(r => r.json()),
+        fetch(`${BASE}/games/${directAppId}/screenshots?key=${RAWG_KEY}`, { next: { revalidate: 3600 } }).then(r => r.json()).catch(() => ({ results: [] })),
+        fetch(`${BASE}/games/${directAppId}/stores?key=${RAWG_KEY}`, { next: { revalidate: 3600 } }).then(r => r.json()).catch(() => ({ results: [] })),
+        fetch(`${BASE}/games/${directAppId}/additions?key=${RAWG_KEY}&page_size=12`, { next: { revalidate: 3600 } }).then(r => r.json()).catch(() => ({ results: [] })),
+      ]);
+
+      if (detailRes && !detailRes.detail && !detailRes.error && detailRes.id) {
+        rawgDetail = detailRes;
+        rawgShots = shotsRes;
+        rawgStores = storesRes;
+        rawgAdditions = additionsRes;
+        rawgSuccess = true;
+      }
+    } catch (err) {
+      console.error('RAWG by ID fetch failed:', err);
+    }
+
+    if (rawgSuccess && rawgDetail) {
+      if (isAdultContent(rawgDetail)) {
+        return NextResponse.json({ error: 'Bu oyun kütüphanede gösterilmemektedir.' }, { status: 403 });
+      }
+      
+      try {
+        const storeResults = rawgStores.results || [];
+        const detailStores = rawgDetail.stores || [];
+        const storeMap = {};
+        
+        storeResults.forEach(sr => {
+          const storeDetail = detailStores.find(ds => ds.store?.id === sr.store_id);
+          if (storeDetail) {
+            storeMap[storeDetail.store.slug] = sr.url;
+          } else {
+            if (sr.store_id === 1) storeMap['steam'] = sr.url;
+            if (sr.store_id === 11) storeMap['epic-games'] = sr.url;
+            if (sr.store_id === 2) storeMap['xbox-store'] = sr.url;
+            if (sr.store_id === 3) storeMap['playstation-store'] = sr.url;
+            if (sr.store_id === 5) storeMap['gog'] = sr.url;
+            if (sr.store_id === 6) storeMap['nintendo'] = sr.url;
+          }
+        });
+
+        const steamUrl   = storeMap['steam'] || null;
+        const steamAppId = steamUrl?.match(/store\.steampowered\.com\/app\/(\d+)/)?.[1] || null;
+        const epicUrl = storeMap['epic-games'] || null;
+        const hasSteam = !!steamAppId || detailStores.some(s => s.store?.slug === 'steam');
+        const hasEpic  = !!epicUrl  || detailStores.some(s => s.store?.slug === 'epic-games');
+
+        const game = {
+          id:           `rawg_${rawgDetail.id}`,
+          rawgId:       rawgDetail.id,
+          rawgSlug:     rawgDetail.slug,
+          name:         rawgDetail.name,
+          image:        rawgDetail.background_image,
+          description:  rawgDetail.description_raw || '',
+          metacritic:   rawgDetail.metacritic   || null,
+          rating:       rawgDetail.rating       || 0,
+          totalReviews: rawgDetail.ratings_count || 0,
+          developer:    rawgDetail.developers?.[0]?.name || null,
+          publisher:    rawgDetail.publishers?.[0]?.name || null,
+          released:     rawgDetail.released  || null,
+          playtime:     rawgDetail.playtime  || null,
+          genres:       (rawgDetail.genres   || []).map(g => g.name),
+          tags:         (rawgDetail.tags     || []).map(t => t.name).slice(0, 15),
+          platforms:    (rawgDetail.platforms|| []).map(p => p.platform.name),
+          screenshots:  (rawgShots.results   || []).map(s => s.image).filter(Boolean).slice(0, 6),
+          hasSteam,
+          hasEpic,
+          steamAppId:   steamAppId || null,
+          epicUrl:      epicUrl ? epicUrl.replace('/en-US/', '/tr/') : (hasEpic ? `https://store.epicgames.com/tr/p/${rawgDetail.slug}` : null),
+          steamUrl:     steamAppId ? `https://store.steampowered.com/app/${steamAppId}` : null,
+          xboxUrl:      storeMap['xbox-store'] || storeMap['xbox-360-store'] || null,
+          gogUrl:       storeMap['gog'] || null,
+          playstationUrl: storeMap['playstation-store'] || null,
+          nintendoUrl:  storeMap['nintendo'] || null,
+          officialUrl:  rawgDetail.website || null,
+          source:       steamAppId ? 'steam' : hasEpic ? 'epic' : 'rawg',
+          additions:    (rawgAdditions.results || []).filter(a => a.background_image).slice(0, 12).map(a => ({
+            id:       a.id,
+            name:     a.name,
+            slug:     a.slug,
+            image:    a.background_image,
+            released: a.released || null,
+            rating:   a.rating || 0,
+            metacritic: a.metacritic || null,
+          })),
+        };
+        return NextResponse.json({ game });
+      } catch (err) {
+        console.error('RAWG mapping by ID error:', err);
+      }
+    }
+
+    // 2. Try Steam details by AppID direct fallback
     const fallbackGame = await fetchSteamDetails(directAppId, slug);
     if (fallbackGame) {
       if (isAdultTitleOrSlug(fallbackGame.name, fallbackGame.rawgSlug)) {
@@ -123,7 +339,15 @@ export async function GET(request) {
       }
       return NextResponse.json({ game: fallbackGame });
     }
-    return NextResponse.json({ error: 'Oyun bulunamadi' }, { status: 404 });
+
+    // 3. Last resort direct ID fallback
+    const fallbackObj = await trySteamFallback(slug);
+    if (fallbackObj) {
+      if (isAdultTitleOrSlug(fallbackObj.name, fallbackObj.rawgSlug)) {
+        return NextResponse.json({ error: 'Bu oyun kütüphanede gösterilmemektedir.' }, { status: 403 });
+      }
+      return NextResponse.json({ game: fallbackObj });
+    }
   }
 
   let detail;
@@ -171,7 +395,6 @@ export async function GET(request) {
 
   // RAWG'tan başarıyla alındıysa standard eşleme:
   try {
-    // Tüm store URL'lerini eşleştir
     const storeResults = storesData.results || [];
     const detailStores = detail.stores || [];
     const storeMap = {};
@@ -190,14 +413,9 @@ export async function GET(request) {
       }
     });
 
-    // Steam appid — URL'den regex ile çıkar
     const steamUrl   = storeMap['steam'] || null;
     const steamAppId = steamUrl?.match(/store\.steampowered\.com\/app\/(\d+)/)?.[1] || null;
-
-    // Epic URL
     const epicUrl = storeMap['epic-games'] || null;
-
-    // hasSteam/hasEpic için de detail.stores'a fallback (liste endpoint'i bunu zaten veriyor)
     const hasSteam = !!steamAppId || detailStores.some(s => s.store?.slug === 'steam');
     const hasEpic  = !!epicUrl  || detailStores.some(s => s.store?.slug === 'epic-games');
 
