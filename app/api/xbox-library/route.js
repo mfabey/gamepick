@@ -44,14 +44,14 @@ async function getXstsToken(xblToken) {
 }
 
 // ── Oyun geçmişini sayfalı olarak çek ───────────────────────────────────────
-async function fetchAllTitles(authHeader) {
+async function fetchAllTitles(authHeader, xuid) {
   const titles = [];
   let continuationToken = null;
   const MAX_PAGES = 10; // en fazla 1000 oyun
   let page = 0;
 
   do {
-    const url = new URL('https://titlehub.xboxlive.com/users/me/titles/titlehistory/decoration/detail');
+    const url = new URL(`https://titlehub.xboxlive.com/users/xuid(${xuid})/titles/titlehistory/decoration/detail`);
     if (continuationToken) url.searchParams.set('continuationToken', continuationToken);
     url.searchParams.set('maxItems', '100');
 
@@ -215,11 +215,11 @@ export async function GET() {
     const authHeader = `XBL3.0 x=${userHash};${xstsData.Token}`;
 
     // Oyun listesini çek
-    const rawTitles = await fetchAllTitles(authHeader);
+    const rawTitles = await fetchAllTitles(authHeader, session.xuid);
 
     // Sadece gerçek oyunları al (uygulama, medya vs. filtrele)
     const games = rawTitles
-      .filter(t => t.name && t.titleId && t.titleHistory)
+      .filter(t => t.name && t.titleId)
       .map(formatTitle)
       .sort((a, b) => b.lastPlayed - a.lastPlayed);
 
