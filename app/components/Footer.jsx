@@ -104,7 +104,6 @@ export default function Footer() {
           <div style={colHead}>{tr ? 'Keşfet' : 'Explore'}</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
             <Link href="/games" style={linkStyle} onMouseEnter={onEnter} onMouseLeave={onLeave}>{tr ? 'Oyunlar' : 'Games'}</Link>
-            <Link href="/dlc" style={linkStyle} onMouseEnter={onEnter} onMouseLeave={onLeave}>DLC</Link>
             <Link href="/news" style={linkStyle} onMouseEnter={onEnter} onMouseLeave={onLeave}>{tr ? 'Haberler' : 'News'}</Link>
           </div>
         </div>

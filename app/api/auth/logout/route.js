@@ -57,18 +57,24 @@ export async function GET(request) {
     try {
       const user = JSON.parse(userSession.value);
       await removeUserConnection(user.uid, 'steam');
+      await removeUserConnection(user.uid, 'steamAccounts');
     } catch (err) {
       console.error('Failed to remove Steam connection from Redis:', err.message);
     }
   }
 
   const response = NextResponse.redirect(baseUrl + '/library');
-  response.cookies.set('gp_steam_session', '', {
+  
+  const cookieOpts = {
     httpOnly: true,
     maxAge:   0,
     path:     '/',
     secure:   process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-  });
+  };
+  
+  response.cookies.set('gp_steam_session', '', cookieOpts);
+  response.cookies.set('gp_steam_accounts', '', cookieOpts);
+  
   return response;
 }

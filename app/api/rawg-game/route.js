@@ -98,18 +98,21 @@ export async function GET(request) {
   let detail;
   let shots = { results: [] };
   let storesData = { results: [] };
+  let additions = { results: [] };
   let rawgFailed = false;
 
   try {
-    const [detailRes, shotsRes, storesRes] = await Promise.all([
+    const [detailRes, shotsRes, storesRes, additionsRes] = await Promise.all([
       fetch(`${BASE}/games/${slug}?key=${RAWG_KEY}`, { next: { revalidate: 3600 } }).then(r => r.json()),
       fetch(`${BASE}/games/${slug}/screenshots?key=${RAWG_KEY}`, { next: { revalidate: 3600 } }).then(r => r.json()).catch(() => ({ results: [] })),
       fetch(`${BASE}/games/${slug}/stores?key=${RAWG_KEY}`, { next: { revalidate: 3600 } }).then(r => r.json()).catch(() => ({ results: [] })),
+      fetch(`${BASE}/games/${slug}/additions?key=${RAWG_KEY}&page_size=12`, { next: { revalidate: 3600 } }).then(r => r.json()).catch(() => ({ results: [] })),
     ]);
 
     detail = detailRes;
     shots = shotsRes;
     storesData = storesRes;
+    additions = additionsRes;
 
     if (detail.detail === 'Not found.' || detail.error || !detail.id) {
       rawgFailed = true;
@@ -196,6 +199,15 @@ export async function GET(request) {
       nintendoUrl:  storeMap['nintendo'] || null,
       officialUrl:  detail.website || null,
       source:       steamAppId ? 'steam' : hasEpic ? 'epic' : 'rawg',
+      additions:    (additions.results || []).filter(a => a.background_image).slice(0, 12).map(a => ({
+        id:       a.id,
+        name:     a.name,
+        slug:     a.slug,
+        image:    a.background_image,
+        released: a.released || null,
+        rating:   a.rating || 0,
+        metacritic: a.metacritic || null,
+      })),
     };
 
     return NextResponse.json({ game });

@@ -106,27 +106,60 @@ export async function GET(request) {
     } catch { /* profil opsiyonel */ }
   }
 
-  // ── 4. Oturumu veri tabanına (Redis) kaydet ──────────────────────────────
+  // ── 4. Mevcut hesap listesini oku, yeni hesabı ekle ─────────────────────
   const cookieStore = await cookies();
+  let steamAccounts = [];
+  try {
+    const existing = cookieStore.get('gp_steam_accounts');
+    if (existing?.value) {
+      steamAccounts = JSON.parse(existing.value);
+    } else {
+      // Eski tek-hesap cookie'sinden geçiş
+      const oldSession = cookieStore.get('gp_steam_session');
+      if (oldSession?.value) {
+        const oldProfile = JSON.parse(oldSession.value);
+        if (oldProfile?.steamId && oldProfile.steamId !== steamId) {
+          steamAccounts = [oldProfile]; // Mevcut hesabı koru
+        }
+      }
+    }
+  } catch {}
+
+  // Aynı steamId zaten varsa güncelle, yoksa ekle (max 5 hesap)
+  const existingIdx = steamAccounts.findIndex(a => a.steamId === steamId);
+  if (existingIdx >= 0) {
+    steamAccounts[existingIdx] = profile;
+  } else if (steamAccounts.length < 5) {
+    steamAccounts.push(profile);
+  }
+
+  // ── 5. Oturumu Redis'e kaydet ────────────────────────────────────────────
   const userSession = cookieStore.get('gp_user_session');
-  if (userSession && userSession.value) {
+  if (userSession?.value) {
     try {
       const user = JSON.parse(userSession.value);
-      await saveUserConnection(user.uid, 'steam', profile);
+      await saveUserConnection(user.uid, 'steamAccounts', steamAccounts);
+      // Geriye uyumluluk için ilk hesabı 'steam' anahtarına da yaz
+      await saveUserConnection(user.uid, 'steam', steamAccounts[0]);
     } catch (err) {
       console.error('Failed to save Steam connection to Redis:', err.message);
     }
   }
 
-  // ── 5. Oturum cookie'si ayarla ve kütüphaneye yönlendir ─────────────────
+  // ── 6. Cookie'leri ayarla ve kütüphaneye yönlendir ──────────────────────
   const response = NextResponse.redirect(`${baseUrl}/library`);
-  response.cookies.set('gp_steam_session', JSON.stringify(profile), {
+  const cookieOpts = {
     httpOnly: true,
     maxAge:   60 * 60 * 24 * 30,   // 30 gün
     path:     '/',
     secure:   process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-  });
+  };
+
+  // Yeni çoklu hesap cookie'si
+  response.cookies.set('gp_steam_accounts', JSON.stringify(steamAccounts), cookieOpts);
+  // Geriye uyumluluk için ilk hesabı eski cookie'ye de yaz
+  response.cookies.set('gp_steam_session', JSON.stringify(steamAccounts[0]), cookieOpts);
 
   return response;
 }

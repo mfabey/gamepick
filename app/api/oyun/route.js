@@ -47,18 +47,34 @@ async function setCachedData(key, value, expireSeconds = 3600) {
   }
 }
 
-export async function GET() {
+export async function GET(request) {
   const cookieStore = await cookies();
-  const session = cookieStore.get('gp_steam_session');
+  const { searchParams } = new URL(request.url);
+  const requestedSteamId = searchParams.get('steamId');
 
-  if (!session?.value) {
-    return NextResponse.json({ error: 'Giriş yapılmamış', games: [] }, { status: 401 });
+  let steamId = requestedSteamId;
+
+  if (!steamId) {
+    // steamId belirtilmemişse cookie'den al
+    // Önce yeni çoklu hesap cookie'sine bak
+    const accountsCookie = cookieStore.get('gp_steam_accounts');
+    if (accountsCookie?.value) {
+      try {
+        const accounts = JSON.parse(accountsCookie.value);
+        steamId = accounts[0]?.steamId;
+      } catch {}
+    }
+    // Geriye uyumluluk: eski tek hesap cookie'si
+    if (!steamId) {
+      const session = cookieStore.get('gp_steam_session');
+      if (!session?.value) {
+        return NextResponse.json({ error: 'Giriş yapılmamış', games: [] }, { status: 401 });
+      }
+      try {
+        steamId = JSON.parse(session.value).steamId;
+      } catch {}
+    }
   }
-
-  let steamId;
-  try {
-    steamId = JSON.parse(session.value).steamId;
-  } catch {}
 
   if (!steamId) {
     return NextResponse.json({ error: 'Steam ID bulunamadı', games: [] }, { status: 401 });

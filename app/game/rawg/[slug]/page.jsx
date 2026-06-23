@@ -524,6 +524,60 @@ export default function RawgGamePage({ params }) {
               </div>
             </div>
           )}
+
+          {/* ── DLC ve Ek Paketler ──────────────────────────────────── */}
+          {game.additions?.length > 0 && (
+            <div style={{ marginTop: 28 }}>
+              <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 7 }}>
+                🎁 {lang === 'tr' ? 'DLC ve Ek Paketler' : 'DLC & Add-ons'}
+                <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-3)', marginLeft: 4 }}>({game.additions.length})</span>
+              </h2>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 12 }}>
+                {game.additions.map(dlc => (
+                  <a
+                    key={dlc.id}
+                    href={`/game/rawg/${dlc.slug}`}
+                    style={{ textDecoration: 'none', display: 'block', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border)', background: 'var(--bg-card)', transition: 'border-color 0.15s, transform 0.15s, box-shadow 0.15s' }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent-border)'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.12)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}
+                  >
+                    {/* Kapak resmi */}
+                    <div style={{ position: 'relative', width: '100%', aspectRatio: '16/9', background: 'var(--bg-input)', overflow: 'hidden' }}>
+                      {dlc.image ? (
+                        <img src={dlc.image} alt={dlc.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} loading="lazy" />
+                      ) : (
+                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>🎮</div>
+                      )}
+                      {/* DLC rozeti */}
+                      <span style={{
+                        position: 'absolute', top: 6, left: 6,
+                        fontSize: 9, fontWeight: 800, padding: '2px 6px', borderRadius: 5,
+                        background: 'var(--accent)', color: '#fff', letterSpacing: '0.05em',
+                        textTransform: 'uppercase',
+                      }}>DLC</span>
+                      {dlc.metacritic && (
+                        <span style={{
+                          position: 'absolute', top: 6, right: 6,
+                          fontSize: 10, fontWeight: 700, padding: '2px 5px', borderRadius: 5,
+                          background: dlc.metacritic >= 80 ? '#16a34a' : dlc.metacritic >= 60 ? '#d97706' : '#dc2626',
+                          color: '#fff',
+                        }}>{dlc.metacritic}</span>
+                      )}
+                    </div>
+                    {/* İsim ve tarih */}
+                    <div style={{ padding: '10px 12px 12px' }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', lineHeight: 1.35, marginBottom: 4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{dlc.name}</p>
+                      {dlc.released && (
+                        <p style={{ fontSize: 11, color: 'var(--text-3)' }}>
+                          {new Date(dlc.released).toLocaleDateString(lang === 'tr' ? 'tr-TR' : 'en-US', { year: 'numeric', month: 'short' })}
+                        </p>
+                      )}
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* ─── Sağ ───────────────────────────────────────────────────── */}

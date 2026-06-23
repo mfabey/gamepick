@@ -11,6 +11,8 @@ export default function ProfilePage() {
   const { 
     user, 
     steamUser, 
+    steamAccounts = [],
+    steamLogoutAccount,
     xboxUser, 
     ownedGames, 
     xboxOwnedGames, 
@@ -352,27 +354,46 @@ export default function ProfilePage() {
             {lang === 'tr' ? 'Bağlı Hesaplar' : 'Connected Accounts'}
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {/* Steam */}
-            <AccountCard
-              name="Steam"
-              status={
-                steamUser 
-                  ? (lang === 'tr' ? `Bağlı — ${steamGamesCount} oyun` : `Connected — ${steamGamesCount} games`) 
-                  : (lang === 'tr' ? 'Bağlı değil' : 'Not connected')
-              }
-              connected={!!steamUser}
-              color="#1a9fff"
-              initials="STM"
-              profileUrl={steamUser?.profileUrl || (steamUser?.steamId ? `https://steamcommunity.com/profiles/${steamUser.steamId}` : null)}
-              onToggle={() => {
-                if (steamUser) {
-                  steamLogout();
-                } else {
-                  window.location.href = '/api/auth/steam';
-                }
-              }}
-              lang={lang}
-            />
+            {/* Steam Hesapları */}
+            {steamAccounts.length > 0 ? (
+              <>
+                {steamAccounts.map(account => (
+                  <AccountCard
+                    key={account.steamId}
+                    name={\`Steam (\${account.name})\`}
+                    status={lang === 'tr' ? 'Bağlı' : 'Connected'}
+                    connected={true}
+                    color="#1a9fff"
+                    initials="STM"
+                    profileUrl={account.profileUrl || \`https://steamcommunity.com/profiles/\${account.steamId}\`}
+                    onToggle={async () => {
+                      if (steamLogoutAccount) await steamLogoutAccount(account.steamId);
+                    }}
+                    lang={lang}
+                  />
+                ))}
+                {steamAccounts.length < 5 && (
+                  <button onClick={() => window.location.href = '/api/auth/steam'} style={{
+                    padding: '10px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600,
+                    border: '1px dashed #1a9fff', background: 'transparent', color: '#1a9fff',
+                    cursor: 'pointer', textAlign: 'center', marginTop: 4, display: 'block', width: '100%'
+                  }}>
+                    {lang === 'tr' ? '+ Steam Hesabı Ekle' : '+ Add Steam Account'}
+                  </button>
+                )}
+              </>
+            ) : (
+              <AccountCard
+                name="Steam"
+                status={lang === 'tr' ? 'Bağlı değil' : 'Not connected'}
+                connected={false}
+                color="#1a9fff"
+                initials="STM"
+                profileUrl={null}
+                onToggle={() => window.location.href = '/api/auth/steam'}
+                lang={lang}
+              />
+            )}
             {/* Xbox */}
             <AccountCard
               name="Xbox / Game Pass"
@@ -417,9 +438,9 @@ export default function ProfilePage() {
                 <div style={{
                   width: 34, height: 34, borderRadius: 8, background: `#2A2A2A18`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 14, color: '#888', flexShrink: 0,
+                  flexShrink: 0,
                 }}>
-                  ⚡
+                  <EpicLogo size={18} color="#888" />
                 </div>
                 <div>
                   <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>Epic Games</p>
@@ -889,5 +910,13 @@ function ChangePasswordCard({ changePassword, lang }) {
         </button>
       </form>
     </div>
+  );
+}
+
+function EpicLogo({ size = 24, color = '#fff' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={color} xmlns="http://www.w3.org/2000/svg">
+      <path d="M10.82 17.653c-1.503 0-2.812-1.026-3.08-2.476-.492-2.348 1.488-4.364 3.86-4.116 1.107.13 2.052.793 2.564 1.777l1.96-1.157C15.228 10.02 13.565 9 11.59 9c-3.157 0-5.748 2.454-6.027 5.568-.316 3.518 2.705 6.485 6.273 6.136 2.23-.217 4.15-1.534 5.094-3.522l-1.925-1.092c-.67 1.43-2.186 2.37-3.87 2.37M24 12c0 6.627-5.373 12-12 12S0 18.627 0 12 5.373 0 12 0s12 5.373 12 12m-6.49-1.956h-2.19v6.52h2.19z"/>
+    </svg>
   );
 }

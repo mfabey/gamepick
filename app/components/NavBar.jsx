@@ -20,7 +20,6 @@ export default function NavBar() {
     { href: '/',        label: t('nav.home') },
     { href: '/games',   label: t('nav.games') },
     { href: '/news',    label: t('nav.news') },
-    { href: '/dlc',     label: t('nav.dlc') },
     { href: '/library', label: t('nav.library') },
   ];
 

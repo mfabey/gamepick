@@ -1,5 +1,5 @@
 'use client';
-// Gamerisen Library Page - Version 1.1.0 (Xbox & Game Pass Integration)
+// Gamerisen Library Page - Version 2.0.0 (Multi-Steam Account Support)
 export const dynamic = 'force-dynamic';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -13,35 +13,45 @@ import { useLanguage } from '../context/LanguageContext';
 // ANA SAYFA
 // ─────────────────────────────────────────────────────────────────────────────
 export default function LibraryPage() {
-  const { user, steamUser, steamLogout, xboxUser, xboxLogout } = useAuth();
+  const { user, steamAccounts = [], steamUser, steamLogoutAccount, xboxUser, xboxLogout } = useAuth();
   const { lang, t } = useLanguage();
-  const [activeTab, setActiveTab] = useState('steam'); // 'steam' | 'xbox'
+  
+  const [activeTab, setActiveTab] = useState(() => {
+    if (steamAccounts.length > 0) return `steam_${steamAccounts[0].steamId}`;
+    return 'steam';
+  });
   const [showXboxModal, setShowXboxModal] = useState(false);
   const [xboxError, setXboxError] = useState(null);
+  const [removingId, setRemovingId] = useState(null);
 
-  // Xbox bağlandıysa ve Steam yoksa Xbox'a geç
   useEffect(() => {
-    if (!steamUser && xboxUser) setActiveTab('xbox');
-    if (steamUser) setActiveTab('steam');
-  }, [steamUser, xboxUser]);
+    if (steamAccounts.length > 0) {
+      const valid = steamAccounts.some(a => `steam_${a.steamId}` === activeTab);
+      if (!valid && activeTab !== 'merged') setActiveTab(`steam_${steamAccounts[0].steamId}`);
+    } else if (!xboxUser && activeTab !== 'xbox') {
+      setActiveTab('steam');
+    }
+    if (steamAccounts.length === 0 && xboxUser) setActiveTab('xbox');
+  }, [steamAccounts, xboxUser, activeTab]);
 
-  // URL'den Xbox hatasını yakala
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const err = params.get('xbox_error');
       if (err) {
         setXboxError(decodeURIComponent(err));
-        // URL'yi temizle
-        const newUrl = window.location.pathname;
-        window.history.replaceState({}, '', newUrl);
-        // Hatayı göstermek için bağlantı modalını da aç
+        window.history.replaceState({}, '', window.location.pathname);
         setShowXboxModal(true);
       }
     }
   }, []);
 
-  // Önce siteye üye girişi yapılmış olması gerekir
+  const handleRemoveSteamAccount = async (steamId) => {
+    setRemovingId(steamId);
+    if (steamLogoutAccount) await steamLogoutAccount(steamId);
+    setRemovingId(null);
+  };
+
   if (!user) {
     return (
       <div className="container" style={{ paddingTop: 80, paddingBottom: 60, maxWidth: 520, margin: '0 auto', textAlign: 'center' }}>
@@ -50,38 +60,26 @@ export default function LibraryPage() {
           {lang === 'tr' ? 'Önce Giriş Yapmalısınız' : 'Please Log In First'}
         </h1>
         <p style={{ color: 'var(--text-3)', fontSize: 15, lineHeight: 1.6, marginBottom: 32 }}>
-          {lang === 'tr' 
+          {lang === 'tr'
             ? 'Steam veya Xbox kütüphanenizi bağlamak ve yönetmek için önce bir Gamerisen hesabı oluşturmalı veya mevcut hesabınıza giriş yapmalısınız.'
             : 'To connect and manage your Steam or Xbox library, you must first create a Gamerisen account or log in to your existing account.'}
         </p>
-
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
           <Link href="/login" style={{ textDecoration: 'none', flex: 1 }}>
             <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              padding: '14px 24px', borderRadius: 12,
-              background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)',
-              fontSize: 16, fontWeight: 700, cursor: 'pointer',
-              transition: 'transform 0.15s, background 0.15s',
-            }}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.background = 'var(--border)'; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.background = 'var(--bg-input)'; }}
-            >
+              display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '14px 24px', borderRadius: 12,
+              background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: 16, fontWeight: 700, cursor: 'pointer',
+              transition: 'all 0.15s'
+            }}>
               {lang === 'tr' ? 'Giriş Yap' : 'Log In'}
             </div>
           </Link>
-
           <Link href="/signup" style={{ textDecoration: 'none', flex: 1 }}>
             <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              padding: '14px 24px', borderRadius: 12,
-              background: 'var(--accent)', color: '#fff',
-              fontSize: 16, fontWeight: 700, cursor: 'pointer',
-              boxShadow: '0 4px 16px var(--accent-glow)', transition: 'transform 0.15s',
-            }}
-              onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-              onMouseLeave={e => e.currentTarget.style.transform = 'none'}
-            >
+              display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '14px 24px', borderRadius: 12,
+              background: 'var(--accent)', color: '#fff', fontSize: 16, fontWeight: 700, cursor: 'pointer',
+              boxShadow: '0 4px 16px var(--accent-glow)', transition: 'all 0.15s'
+            }}>
               {lang === 'tr' ? 'Kayıt Ol' : 'Sign Up'}
             </div>
           </Link>
@@ -90,11 +88,10 @@ export default function LibraryPage() {
     );
   }
 
-  const hasSteam = !!steamUser;
+  const hasSteam = steamAccounts.length > 0;
   const hasXbox  = !!xboxUser;
   const hasAny   = hasSteam || hasXbox;
 
-  // Hiç bağlı hesap yoksa giriş ekranı
   if (!hasAny) {
     return (
       <div className="container" style={{ paddingTop: 80, paddingBottom: 60, maxWidth: 520, margin: '0 auto', textAlign: 'center' }}>
@@ -106,13 +103,11 @@ export default function LibraryPage() {
           {t('library.connectDesc')}
         </p>
 
-        {/* Xbox Bağlantı Hataları (Modal Kapalıyken Sayfada Göster) */}
         {!showXboxModal && xboxError && (
           <div style={{
-            background: '#FEF2F2', border: '1.5px solid #FECACA', borderRadius: 14,
-            padding: '16px 20px', marginBottom: 24, display: 'flex', gap: 12, alignItems: 'flex-start', textAlign: 'left'
+            background: '#FEF2F2', border: '1.5px solid #FECACA', borderRadius: 14, padding: '16px 20px', marginBottom: 24, display: 'flex', gap: 12, alignItems: 'flex-start', textAlign: 'left'
           }}>
-            <span style={{ fontSize: 18 }}>⚠️</span>
+            <span style={{ fontSize: 18 }}>❌</span>
             <div style={{ flex: 1 }}>
               <p style={{ fontSize: 14, fontWeight: 700, color: '#991b1b', marginBottom: 4 }}>{t('library.xboxError')}</p>
               <p style={{ fontSize: 13, color: '#7f1d1d', lineHeight: 1.5 }}>{xboxError}</p>
@@ -122,46 +117,18 @@ export default function LibraryPage() {
         )}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {/* Steam */}
           <a href="/api/auth/steam" style={{ textDecoration: 'none' }}>
-            <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
-              padding: '14px 32px', borderRadius: 12,
-              background: '#1b2838', color: '#fff',
-              fontSize: 16, fontWeight: 700, cursor: 'pointer',
-              boxShadow: '0 4px 20px rgba(27,40,56,0.4)', transition: 'transform 0.15s',
-            }}
-              onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-              onMouseLeave={e => e.currentTarget.style.transform = 'none'}
-            >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '14px 32px', borderRadius: 12, background: '#1b2838', color: '#fff', fontSize: 16, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 20px rgba(27,40,56,0.4)', transition: 'all 0.15s' }}>
               <SteamLogo size={26} />
               {t('library.steamLogin')}
             </div>
           </a>
-
-          {/* Xbox */}
-          <div onClick={() => setShowXboxModal(true)} style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
-            padding: '14px 32px', borderRadius: 12,
-            background: '#107C10', color: '#fff',
-            fontSize: 16, fontWeight: 700, cursor: 'pointer',
-            boxShadow: '0 4px 20px rgba(16,124,16,0.4)', transition: 'transform 0.15s',
-          }}
-            onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-            onMouseLeave={e => e.currentTarget.style.transform = 'none'}
-          >
+          <div onClick={() => setShowXboxModal(true)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '14px 32px', borderRadius: 12, background: '#107C10', color: '#fff', fontSize: 16, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 20px rgba(16,124,16,0.4)', transition: 'all 0.15s' }}>
             <XboxLogo size={26} />
             {t('library.xboxLogin')}
           </div>
-
-          {/* Epic Games (Coming Soon) */}
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
-            padding: '14px 32px', borderRadius: 12,
-            background: '#2A2A2A', color: '#fff', opacity: 0.6,
-            fontSize: 16, fontWeight: 700, cursor: 'not-allowed',
-          }}>
-            <span style={{ fontSize: 26, lineHeight: 1 }}>⚡</span>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '14px 32px', borderRadius: 12, background: '#2A2A2A', color: '#fff', opacity: 0.6, fontSize: 16, fontWeight: 700, cursor: 'not-allowed' }}>
+            <EpicLogo size={26} />
             Epic Games
             <span style={{ fontSize: 11, background: '#fff', color: '#000', padding: '2px 6px', borderRadius: 6, marginLeft: 4 }}>{lang === 'tr' ? 'Çok Yakında' : 'Coming Soon'}</span>
           </div>
@@ -174,136 +141,86 @@ export default function LibraryPage() {
           <p>{t('library.req.gp')}</p>
         </div>
 
-        {/* Xbox Bağlantı Modalı */}
-        {showXboxModal && (
-          <XboxConnectModal 
-            onClose={() => setShowXboxModal(false)} 
-            xboxError={xboxError} 
-            setXboxError={setXboxError} 
-          />
-        )}
+        {showXboxModal && <XboxConnectModal onClose={() => setShowXboxModal(false)} xboxError={xboxError} setXboxError={setXboxError} />}
       </div>
     );
   }
 
   return (
     <div className="container" style={{ paddingTop: 32, paddingBottom: 60 }}>
-
-      {/* Platform sekmeleri — ikisi de bağlıysa göster */}
-      {hasSteam && hasXbox ? (
-        <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
-          {[
-            { key: 'steam', label: 'Steam', icon: <SteamLogo size={16} color={activeTab === 'steam' ? '#fff' : '#1a9fff'} />, active: '#1b2838' },
-            { key: 'xbox',  label: 'Xbox',  icon: <XboxLogo  size={16} color={activeTab === 'xbox'  ? '#fff' : '#107C10'} />, active: '#107C10' },
-            { key: 'epic',  label: 'Epic Games', icon: <span style={{ fontSize: 14 }}>⚡</span>, active: '#2A2A2A', disabled: true },
-          ].map(tab => (
-            <button key={tab.key} disabled={tab.disabled} onClick={() => setActiveTab(tab.key)} style={{
+      <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
+        {steamAccounts.map(account => (
+          <div key={`steam_${account.steamId}`} style={{ display: 'flex' }}>
+            <button onClick={() => setActiveTab(`steam_${account.steamId}`)} style={{
               display: 'flex', alignItems: 'center', gap: 8,
-              padding: '10px 20px', borderRadius: 10, border: 'none', cursor: tab.disabled ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: 14,
-              background: activeTab === tab.key ? tab.active : 'var(--bg-card)',
-              color:      activeTab === tab.key ? '#fff' : 'var(--text-2)',
-              opacity:    tab.disabled ? 0.6 : 1,
-              transition: 'all 0.15s',
+              padding: '10px 16px', borderTopLeftRadius: 10, borderBottomLeftRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 14,
+              background: activeTab === `steam_${account.steamId}` ? '#1b2838' : 'var(--bg-card)',
+              color:      activeTab === `steam_${account.steamId}` ? '#fff' : 'var(--text-2)',
             }}>
-              {tab.icon}
-              {tab.label}
-              {tab.disabled && (
-                <span style={{ fontSize: 9, background: '#555', color: '#fff', padding: '2px 4px', borderRadius: 4 }}>{lang === 'tr' ? 'Çok Yakında' : 'Soon'}</span>
-              )}
-              {tab.key === 'steam' && steamUser && (
-                <span style={{ fontSize: 11, opacity: 0.75 }}>{steamUser.name?.slice(0, 14)}</span>
-              )}
-              {tab.key === 'xbox' && xboxUser && (
-                <span style={{ fontSize: 11, opacity: 0.75 }}>{xboxUser.gamertag?.slice(0, 14)}</span>
-              )}
+              <SteamLogo size={16} color={activeTab === `steam_${account.steamId}` ? '#fff' : '#1a9fff'} />
+              Steam <span style={{ fontSize: 11, opacity: 0.75 }}>{account.name?.slice(0, 14)}</span>
             </button>
-          ))}
-        </div>
-      ) : (
-        /* Sadece biri bağlıysa, yine de küçük bir sekme gösterelim ve diğerini bağlama butonu sunalım */
-        <div style={{ display: 'flex', gap: 8, marginBottom: 24, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', gap: 8 }}>
-            {hasSteam && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 10, background: '#1b2838', color: '#fff', fontWeight: 700, fontSize: 14 }}>
-                <SteamLogo size={16} />
-                {t('library.steamActive').replace('{name}', steamUser.name)}
-              </div>
-            )}
-            {hasXbox && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 10, background: '#107C10', color: '#fff', fontWeight: 700, fontSize: 14 }}>
-                <XboxLogo size={16} />
-                {t('library.xboxActive').replace('{gamertag}', xboxUser.gamertag)}
-              </div>
-            )}
+            <button onClick={() => handleRemoveSteamAccount(account.steamId)} disabled={removingId === account.steamId} style={{
+              background: activeTab === `steam_${account.steamId}` ? '#1b2838' : 'var(--bg-card)',
+              color: activeTab === `steam_${account.steamId}` ? '#aaa' : 'var(--text-3)',
+              border: 'none', borderTopRightRadius: 10, borderBottomRightRadius: 10, padding: '0 10px',
+              cursor: 'pointer', fontSize: 16, borderLeft: `1px solid ${activeTab === `steam_${account.steamId}` ? '#2a3f5a' : 'var(--border)'}`,
+            }} title="Hesabı Çıkar">
+              {removingId === account.steamId ? '...' : '×'}
+            </button>
           </div>
-          
-          {hasSteam && !hasXbox && (
-            <button onClick={() => setShowXboxModal(true)} style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              padding: '10px 16px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 13,
-              background: 'var(--bg-card)', color: '#107C10', border: '1px solid #107C10',
-              transition: 'all 0.15s',
-            }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#107C10'; e.currentTarget.style.color = '#fff'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-card)'; e.currentTarget.style.color = '#107C10'; }}
-            >
-              <XboxLogo size={14} color="currentColor" />
-              {t('library.connectXbox')}
-            </button>
-          )}
-          
-          {hasXbox && !hasSteam && (
-            <a href="/api/auth/steam" style={{ textDecoration: 'none' }}>
-              <button style={{
-                display: 'flex', alignItems: 'center', gap: 8,
-                padding: '10px 16px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 13,
-                background: 'var(--bg-card)', color: '#1a9fff', border: '1px solid #1a9fff',
-                transition: 'all 0.15s',
-              }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#1a9fff'; e.currentTarget.style.color = '#fff'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-card)'; e.currentTarget.style.color = '#1a9fff'; }}
-              >
-                <SteamLogo size={14} color="currentColor" />
-                {t('library.connectSteam')}
-              </button>
-            </a>
-          )}
-          
-          {/* Epic Games Coming Soon */}
-          <button disabled style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            padding: '10px 16px', borderRadius: 10, border: 'none', cursor: 'not-allowed', fontWeight: 700, fontSize: 13,
-            background: 'var(--bg-card)', color: '#888', border: '1px solid #555', opacity: 0.7
+        ))}
+        
+        <a href="/api/auth/steam" style={{ textDecoration: 'none' }}>
+          <button style={{
+            display: 'flex', alignItems: 'center', gap: 6, padding: '10px 16px', borderRadius: 10, border: '1px dashed #1a9fff', cursor: 'pointer', fontWeight: 600, fontSize: 13, background: 'transparent', color: '#1a9fff',
           }}>
-            <span style={{ fontSize: 14 }}>⚡</span> Epic Games <span style={{ fontSize: 9, background: '#555', color: '#fff', padding: '2px 4px', borderRadius: 4 }}>{lang === 'tr' ? 'Çok Yakında' : 'Soon'}</span>
+            + Hesap Ekle
           </button>
-        </div>
-      )}
+        </a>
 
-      {/* İçerik */}
-      {activeTab === 'steam' && hasSteam && (
-        <SteamLibrary steamUser={steamUser} onLogout={steamLogout} />
-      )}
-      {activeTab === 'xbox' && hasXbox && (
-        <XboxLibrary xboxUser={xboxUser} onLogout={xboxLogout} />
-      )}
+        {steamAccounts.length > 1 && (
+          <button onClick={() => setActiveTab('merged')} style={{
+            display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 14,
+            background: activeTab === 'merged' ? '#6b21a8' : 'var(--bg-card)', color: activeTab === 'merged' ? '#fff' : 'var(--text-2)', marginLeft: 'auto',
+          }}>
+            🌟 Birleşik
+          </button>
+        )}
 
-      {/* Xbox Bağlantı Modalı */}
-      {showXboxModal && (
-        <XboxConnectModal 
-          onClose={() => setShowXboxModal(false)} 
-          xboxError={xboxError} 
-          setXboxError={setXboxError} 
-        />
+        {hasXbox ? (
+          <button onClick={() => setActiveTab('xbox')} style={{
+            display: 'flex', alignItems: 'center', gap: 8, marginLeft: steamAccounts.length <= 1 ? 'auto' : 0,
+            padding: '10px 20px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 14,
+            background: activeTab === 'xbox' ? '#107C10' : 'var(--bg-card)', color: activeTab === 'xbox' ? '#fff' : 'var(--text-2)',
+          }}>
+            <XboxLogo size={16} color={activeTab === 'xbox' ? '#fff' : '#107C10'} />
+            Xbox <span style={{ fontSize: 11, opacity: 0.75 }}>{xboxUser.gamertag?.slice(0, 14)}</span>
+          </button>
+        ) : (
+          <button onClick={() => setShowXboxModal(true)} style={{
+            display: 'flex', alignItems: 'center', gap: 8, marginLeft: steamAccounts.length <= 1 ? 'auto' : 0,
+            padding: '10px 16px', borderRadius: 10, border: '1px dashed #107C10', cursor: 'pointer', fontWeight: 600, fontSize: 13, background: 'transparent', color: '#107C10',
+          }}>
+            + Xbox Bağla
+          </button>
+        )}
+      </div>
+
+      {steamAccounts.map(account => 
+        activeTab === `steam_${account.steamId}` && (
+          <SteamLibrary key={account.steamId} steamAccount={account} />
+        )
       )}
+      
+      {activeTab === 'merged' && steamAccounts.length > 1 && <MergedLibrary />}
+      {activeTab === 'xbox' && hasXbox && <XboxLibrary xboxUser={xboxUser} onLogout={xboxLogout} />}
+      {showXboxModal && <XboxConnectModal onClose={() => setShowXboxModal(false)} xboxError={xboxError} setXboxError={setXboxError} />}
     </div>
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// STEAM KÜTÜPHANESİ
-// ─────────────────────────────────────────────────────────────────────────────
-function SteamLibrary({ steamUser, onLogout }) {
+function SteamLibrary({ steamAccount }) {
   const { t } = useLanguage();
   const [library,       setLibrary]       = useState(null);
   const [loading,       setLoading]       = useState(false);
@@ -315,13 +232,14 @@ function SteamLibrary({ steamUser, onLogout }) {
   const [pricesLoading, setPricesLoading] = useState(false);
 
   useEffect(() => {
+    if (!steamAccount?.steamId) return;
     setLoading(true); setError(null);
-    fetch('/api/oyun')
+    fetch(`/api/oyun?steamId=${steamAccount.steamId}`)
       .then(r => r.json())
       .then(d => { if (d.error) { setError(d); return; } setLibrary(d); })
       .catch(e => setError({ error: e.message }))
       .finally(() => setLoading(false));
-  }, [steamUser]);
+  }, [steamAccount]);
 
   useEffect(() => {
     if (!library?.games?.length) return;
@@ -342,20 +260,8 @@ function SteamLibrary({ steamUser, onLogout }) {
     return counted > 0 ? { sum, counted } : null;
   }, [prices, library]);
 
-  if (loading) return (
-    <>
-      <SteamProfileHeader steamUser={steamUser} library={null} totalValue={null} pricesLoading={false} onLogout={onLogout} />
-      <SkeletonList />
-    </>
-  );
-
-  if (error) return (
-    <>
-      <SteamProfileHeader steamUser={steamUser} library={null} totalValue={null} pricesLoading={false} onLogout={onLogout} />
-      <ErrorBox error={error} />
-    </>
-  );
-
+  if (loading) return <><SteamProfileHeader steamUser={steamAccount} library={null} totalValue={null} pricesLoading={false} /><SkeletonList /></>;
+  if (error) return <><SteamProfileHeader steamUser={steamAccount} library={null} totalValue={null} pricesLoading={false} /><ErrorBox error={error} /></>;
   if (!library) return null;
 
   const filtered = (library.games || [])
@@ -371,22 +277,11 @@ function SteamLibrary({ steamUser, onLogout }) {
 
   return (
     <>
-      <SteamProfileHeader steamUser={steamUser} library={library} totalValue={totalValue} pricesLoading={pricesLoading} onLogout={onLogout} />
-
-      {/* Filtreler */}
+      <SteamProfileHeader steamUser={steamAccount} library={library} totalValue={totalValue} pricesLoading={pricesLoading} />
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 24, marginBottom: 16, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', gap: 6 }}>
-          {[
-            { label: t('library.filter.all'), value: 'all' },
-            { label: t('library.filter.played'), value: 'played' },
-            { label: t('library.filter.unplayed'), value: 'unplayed' }
-          ].map(f => (
-            <button key={f.value} onClick={() => setFilter(f.value)} style={{
-              padding: '7px 14px', borderRadius: 999, fontSize: 12, border: 'none', cursor: 'pointer',
-              background: filter === f.value ? '#1a9fff' : 'var(--bg-input)',
-              color:      filter === f.value ? '#fff'   : 'var(--text-2)',
-              fontWeight: filter === f.value ? 600      : 400,
-            }}>{f.label}</button>
+          {[{ label: t('library.filter.all'), value: 'all' }, { label: t('library.filter.played'), value: 'played' }, { label: t('library.filter.unplayed'), value: 'unplayed' }].map(f => (
+            <button key={f.value} onClick={() => setFilter(f.value)} style={{ padding: '7px 14px', borderRadius: 999, fontSize: 12, border: 'none', cursor: 'pointer', background: filter === f.value ? '#1a9fff' : 'var(--bg-input)', color: filter === f.value ? '#fff' : 'var(--text-2)', fontWeight: filter === f.value ? 600 : 400 }}>{f.label}</button>
           ))}
         </div>
         <select value={sort} onChange={e => setSort(e.target.value)} style={{ padding: '7px 12px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 13, color: 'var(--text)', background: 'var(--bg-card)' }}>
@@ -397,32 +292,80 @@ function SteamLibrary({ steamUser, onLogout }) {
         </select>
         <SearchBox value={search} onChange={setSearch} placeholder={t('library.searchPlaceholder')} />
       </div>
-
       <p style={{ fontSize: 13, color: 'var(--text-3)', marginBottom: 12 }}>
-        {t('library.showingGames').split('{count}').map((part, i) => (
-          <span key={i}>
-            {part}
-            {i === 0 && <span style={{ fontWeight: 600, color: 'var(--text)' }}>{filtered.length}</span>}
-          </span>
-        ))}
+        {t('library.showingGames').split('{count}').map((part, i) => <span key={i}>{part}{i === 0 && <span style={{ fontWeight: 600, color: 'var(--text)' }}>{filtered.length}</span>}</span>)}
         {pricesLoading && <span style={{ marginLeft: 10, color: '#1a9fff', fontStyle: 'italic' }}>{t('library.showingGamesLoading')}</span>}
       </p>
-
-      {filtered.length === 0
-        ? <EmptyState />
-        : <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            {filtered.map((game, i) => (
-              <GameRow key={game.appid} game={game} rank={sort === 'hours' ? i + 1 : null} price={prices[game.appid]} pricesLoading={pricesLoading} />
-            ))}
-          </div>
-      }
+      {filtered.length === 0 ? <EmptyState /> : <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>{filtered.map((game, i) => <GameRow key={game.appid} game={game} rank={sort === 'hours' ? i + 1 : null} price={prices[game.appid]} pricesLoading={pricesLoading} />)}</div>}
     </>
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// XBOX KÜTÜPHANESİ
-// ─────────────────────────────────────────────────────────────────────────────
+function MergedLibrary() {
+  const { lang, t } = useLanguage();
+  const [library, setLibrary] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [search, setSearch] = useState('');
+  const [sort, setSort] = useState('hours');
+  const [filter, setFilter] = useState('all');
+
+  useEffect(() => {
+    setLoading(true); setError(null);
+    fetch('/api/oyun-merged')
+      .then(r => r.json())
+      .then(d => { if (d.error) { setError(d); return; } setLibrary(d); })
+      .catch(e => setError({ error: e.message }))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <><SkeletonList /></>;
+  if (error) return <><ErrorBox error={error} /></>;
+  if (!library) return null;
+
+  const filtered = (library.games || [])
+    .filter(g => filter === 'played' ? g.hours > 0 : filter === 'unplayed' ? g.hours === 0 : true)
+    .filter(g => !search || g.name.toLowerCase().includes(search.toLowerCase()))
+    .sort((a, b) => {
+      if (sort === 'hours') return b.hours - a.hours;
+      if (sort === 'name') return a.name.localeCompare(b.name, 'tr');
+      if (sort === 'recent') return b.lastPlayed - a.lastPlayed;
+      return 0;
+    });
+
+  return (
+    <>
+      <div style={{ background: 'var(--bg-card)', borderRadius: 16, border: '1px solid var(--border)', padding: 24, marginBottom: 24 }}>
+        <h2 style={{ margin: 0, fontSize: 24 }}>🌟 {lang === 'tr' ? 'Birleşik Kütüphane' : 'Merged Library'}</h2>
+        <p style={{ margin: '8px 0 0 0', color: 'var(--text-2)', fontSize: 14 }}>{lang === 'tr' ? 'Tüm Steam hesaplarınızdaki oyunlar ve toplam oyun süreniz.' : 'Games across all your Steam accounts and total playtime.'}</p>
+        <div style={{ display: 'flex', gap: 24, marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
+          <div><span style={{ fontSize: 13, color: 'var(--text-3)' }}>{lang === 'tr' ? 'Toplam Oyun' : 'Total Games'}</span><div style={{ fontSize: 20, fontWeight: 700 }}>{library.total}</div></div>
+          <div><span style={{ fontSize: 13, color: 'var(--text-3)' }}>{lang === 'tr' ? 'Oynanan' : 'Played'}</span><div style={{ fontSize: 20, fontWeight: 700 }}>{library.played}</div></div>
+          <div><span style={{ fontSize: 13, color: 'var(--text-3)' }}>{lang === 'tr' ? 'Toplam Süre' : 'Total Playtime'}</span><div style={{ fontSize: 20, fontWeight: 700 }}>{library.totalHours.toLocaleString('tr-TR')} sa</div></div>
+        </div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 6 }}>
+          {[{ label: t('library.filter.all'), value: 'all' }, { label: t('library.filter.played'), value: 'played' }, { label: t('library.filter.unplayed'), value: 'unplayed' }].map(f => (
+            <button key={f.value} onClick={() => setFilter(f.value)} style={{ padding: '7px 14px', borderRadius: 999, fontSize: 12, border: 'none', cursor: 'pointer', background: filter === f.value ? '#6b21a8' : 'var(--bg-input)', color: filter === f.value ? '#fff' : 'var(--text-2)', fontWeight: filter === f.value ? 600 : 400 }}>{f.label}</button>
+          ))}
+        </div>
+        <select value={sort} onChange={e => setSort(e.target.value)} style={{ padding: '7px 12px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 13, color: 'var(--text)', background: 'var(--bg-card)' }}>
+          <option value="hours">{t('library.sort.hours')}</option>
+          <option value="name">{t('library.sort.name')}</option>
+          <option value="recent">{t('library.sort.recent')}</option>
+        </select>
+        <SearchBox value={search} onChange={setSearch} placeholder={t('library.searchPlaceholder')} />
+      </div>
+      {filtered.length === 0 ? <EmptyState /> : <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+        {filtered.map((game, i) => (
+          <GameRow key={game.appid} game={game} rank={sort === 'hours' ? i + 1 : null} />
+        ))}
+      </div>}
+    </>
+  );
+}
+
 function XboxLibrary({ xboxUser, onLogout }) {
   const { t, lang } = useLanguage();
   const [library, setLibrary] = useState(null);
@@ -550,7 +493,7 @@ function XboxLibrary({ xboxUser, onLogout }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // STEAM BİLEŞENLERİ
 // ─────────────────────────────────────────────────────────────────────────────
-function SteamProfileHeader({ steamUser, library, totalValue, pricesLoading, onLogout }) {
+function SteamProfileHeader({ steamUser, library, totalValue, pricesLoading }) {
   const { t, formatPrice } = useLanguage();
   return (
     <div style={{ background: 'linear-gradient(135deg, #1b2838, #2a475e)', borderRadius: 16, padding: '20px 24px', marginBottom: 4 }}>
@@ -586,7 +529,7 @@ function SteamProfileHeader({ steamUser, library, totalValue, pricesLoading, onL
             </div>
           </div>
         )}
-        <button onClick={onLogout} style={{ padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', flexShrink: 0 }}>{t('nav.logout')}</button>
+        
       </div>
       {totalValue && (
         <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 10 }}>
@@ -1031,5 +974,13 @@ function XboxConnectModal({ onClose, xboxError, setXboxError }) {
         </div>
       </div>
     </div>
+  );
+}
+
+function EpicLogo({ size = 24, color = '#fff' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={color} xmlns="http://www.w3.org/2000/svg">
+      <path d="M10.82 17.653c-1.503 0-2.812-1.026-3.08-2.476-.492-2.348 1.488-4.364 3.86-4.116 1.107.13 2.052.793 2.564 1.777l1.96-1.157C15.228 10.02 13.565 9 11.59 9c-3.157 0-5.748 2.454-6.027 5.568-.316 3.518 2.705 6.485 6.273 6.136 2.23-.217 4.15-1.534 5.094-3.522l-1.925-1.092c-.67 1.43-2.186 2.37-3.87 2.37M24 12c0 6.627-5.373 12-12 12S0 18.627 0 12 5.373 0 12 0s12 5.373 12 12m-6.49-1.956h-2.19v6.52h2.19z"/>
+    </svg>
   );
 }
