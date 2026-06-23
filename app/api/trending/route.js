@@ -31,9 +31,12 @@ const FREE_SLUGS = new Set([
 ]);
 
 function cleanNameForMatch(name) {
-  const trMap = { 'ç': 'c', 'ğ': 'g', 'ı': 'i', 'i': 'i', 'ö': 'o', 'ş': 's', 'ü': 'u', 'Ç': 'c', 'Ğ': 'g', 'I': 'i', 'İ': 'i', 'Ö': 'o', 'Ş': 's', 'Ü': 'u' };
+  const trMap = {
+    '\u00e7': 'c', '\u011f': 'g', '\u0131': 'i', 'i': 'i', '\u00f6': 'o', '\u015f': 's', '\u00fc': 'u',
+    '\u00c7': 'c', '\u011e': 'g', 'I': 'i', '\u0130': 'i', '\u00d6': 'o', '\u015e': 's', '\u00dc': 'u'
+  };
   if (!name) return '';
-  return name.replace(/[çğıiöşüÇĞIİÖŞÜ]/g, m => trMap[m]).toLowerCase().replace(/[^a-z0-9]/g, '');
+  return name.replace(/[\u00e7\u011f\u0131i\u00f6\u015f\u00fc\u00c7\u011eI\u0130\u00d6\u015e\u00dc]/g, m => trMap[m]).toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
 async function searchRawg(name) {

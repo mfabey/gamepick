@@ -4,6 +4,22 @@
  */
 
 export const FALLBACK_GAMES = [
+  {
+    id: 'rawg_4704690',
+    rawgId: 4704690,
+    rawgSlug: 'meccha-chameleon',
+    name: 'Meccha Chameleon',
+    image: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/4704690/163e2a742e5fb8e1f5d1e3a890da98f04ab809d4/header.jpg?t=1781108224',
+    metacritic: null,
+    reviewScore: 92,
+    totalReviews: 1050,
+    isFree: false,
+    genres: ['Gizlilik', 'Parti', 'Aksiyon'],
+    released: '2026-06-10',
+    hasSteam: true,
+    hasEpic: false,
+    hasStores: true
+  },
   // Aksiyon & Macera & RPG
   {
     id: 'rawg_1245620',

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { isAdultContent, isAdultTitleOrSlug } from '../../lib/adult-filter.js';
+import { FALLBACK_GAMES } from '../../lib/fallback-games.js';
 
 const RAWG_KEY = process.env.RAWG_API_KEY;
 const BASE     = 'https://api.rawg.io/api';
@@ -9,9 +10,12 @@ const STEAM_STORE_ID = 1;
 const EPIC_STORE_ID  = 11;
 
 function cleanNameForMatch(name) {
-  const trMap = { 'ç': 'c', 'ğ': 'g', 'ı': 'i', 'i': 'i', 'ö': 'o', 'ş': 's', 'ü': 'u', 'Ç': 'c', 'Ğ': 'g', 'I': 'i', 'İ': 'i', 'Ö': 'o', 'Ş': 's', 'Ü': 'u' };
+  const trMap = {
+    '\u00e7': 'c', '\u011f': 'g', '\u0131': 'i', 'i': 'i', '\u00f6': 'o', '\u015f': 's', '\u00fc': 'u',
+    '\u00c7': 'c', '\u011e': 'g', 'I': 'i', '\u0130': 'i', '\u00d6': 'o', '\u015e': 's', '\u00dc': 'u'
+  };
   if (!name) return '';
-  return name.replace(/[çğıiöşüÇĞIİÖŞÜ]/g, m => trMap[m]).toLowerCase().replace(/[^a-z0-9]/g, '');
+  return name.replace(/[\u00e7\u011f\u0131i\u00f6\u015f\u00fc\u00c7\u011eI\u0130\u00d6\u015e\u00dc]/g, m => trMap[m]).toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
 async function searchSteamGame(slug) {
@@ -84,6 +88,13 @@ async function fetchSteamDetails(appid, slug) {
 }
 
 async function trySteamFallback(slug) {
+  // Check local fallback games first
+  const localMatch = FALLBACK_GAMES.find(g => g.rawgSlug === slug || String(g.rawgId) === slug);
+  if (localMatch && localMatch.rawgId) {
+    console.log(`Local fallback database hit for slug: ${slug} -> AppID: ${localMatch.rawgId}`);
+    return fetchSteamDetails(localMatch.rawgId, slug);
+  }
+
   const appid = await searchSteamGame(slug);
   if (!appid) return null;
   return fetchSteamDetails(appid, slug);
@@ -94,6 +105,26 @@ export async function GET(request) {
   const slug = searchParams.get('slug');
 
   if (!slug) return NextResponse.json({ error: 'slug eksik' }, { status: 400 });
+
+  // Direct Steam AppID check (e.g. rawg_12345 or pure numeric)
+  let directAppId = null;
+  if (slug.startsWith('rawg_')) {
+    directAppId = slug.substring(5);
+  } else if (/^\d+$/.test(slug)) {
+    directAppId = slug;
+  }
+
+  if (directAppId) {
+    console.log(`Direct Steam AppID detected: ${directAppId}`);
+    const fallbackGame = await fetchSteamDetails(directAppId, slug);
+    if (fallbackGame) {
+      if (isAdultTitleOrSlug(fallbackGame.name, fallbackGame.rawgSlug)) {
+        return NextResponse.json({ error: 'Bu oyun kütüphanede gösterilmemektedir.' }, { status: 403 });
+      }
+      return NextResponse.json({ game: fallbackGame });
+    }
+    return NextResponse.json({ error: 'Oyun bulunamadi' }, { status: 404 });
+  }
 
   let detail;
   let shots = { results: [] };

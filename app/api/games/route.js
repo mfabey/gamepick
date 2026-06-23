@@ -199,8 +199,11 @@ async function fetchRawg(path, params = {}) {
 }
 
 function generateSlug(text) {
-  const trMap = { 'ç': 'c', 'ğ': 'g', 'ı': 'i', 'i': 'i', 'ö': 'o', 'ş': 's', 'ü': 'u', 'Ç': 'c', 'Ğ': 'g', 'I': 'i', 'İ': 'i', 'Ö': 'o', 'Ş': 's', 'Ü': 'u' };
-  let slug = text.replace(/[çğıiöşüÇĞIİÖŞÜ]/g, m => trMap[m]).toLowerCase();
+  const trMap = {
+    '\u00e7': 'c', '\u011f': 'g', '\u0131': 'i', 'i': 'i', '\u00f6': 'o', '\u015f': 's', '\u00fc': 'u',
+    '\u00c7': 'c', '\u011e': 'g', 'I': 'i', '\u0130': 'i', '\u00d6': 'o', '\u015e': 's', '\u00dc': 'u'
+  };
+  let slug = text.replace(/[\u00e7\u011f\u0131i\u00f6\u015f\u00fc\u00c7\u011eI\u0130\u00d6\u015e\u00dc]/g, m => trMap[m]).toLowerCase();
   return slug.replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-');
 }
 
