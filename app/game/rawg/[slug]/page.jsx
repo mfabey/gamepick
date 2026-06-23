@@ -29,6 +29,16 @@ export default function RawgGamePage({ params }) {
   const [loading,      setLoading]      = useState(true);
   const [error,        setError]        = useState(null);
   const [imgIdx,       setImgIdx]       = useState(0);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [refreshing,     setRefreshing]     = useState(false);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    try {
+      sessionStorage.removeItem('gamerisen_game_cache_' + slug);
+    } catch (e) {}
+    setRefreshTrigger(prev => prev + 1);
+  };
 
   // Alt bara "şu an incelenen oyun" bilgisini bildir
   useEffect(() => {
@@ -78,6 +88,37 @@ export default function RawgGamePage({ params }) {
 
   useEffect(() => {
     if (!slug) return;
+
+    // Check client-side cache first, bypass if refreshing
+    if (refreshTrigger === 0) {
+      try {
+        const cachedData = sessionStorage.getItem('gamerisen_game_cache_' + slug);
+        if (cachedData) {
+          const cached = JSON.parse(cachedData);
+          if (cached && cached.game) {
+            setGame(cached.game);
+            setNews(cached.news || []);
+            setSteamPrice(cached.steamPrice || null);
+            setEpicPrice(cached.epicPrice || null);
+            setGogPrice(cached.gogPrice || null);
+            setHumblePrice(cached.humblePrice || null);
+            setXboxPrices(cached.xboxPrices || []);
+            setAi(cached.ai || null);
+            setLoading(false);
+            setSteamLoading(false);
+            setEpicLoading(false);
+            setXboxLoading(false);
+            setGogLoading(false);
+            setHumbleLoading(false);
+            setAiLoading(false);
+            return; // Skip fetches completely
+          }
+        }
+      } catch (e) {
+        console.warn('SessionStorage cache read failed:', e);
+      }
+    }
+
     setLoading(true);
     setError(null);
     setAi(null);
@@ -87,6 +128,7 @@ export default function RawgGamePage({ params }) {
     setHumblePrice(null);
     setXboxPrices([]);
     setNews([]);
+    setAiLoading(true);
 
     fetch('/api/rawg-game?slug=' + slug)
       .then(r => r.json())
@@ -95,7 +137,7 @@ export default function RawgGamePage({ params }) {
         const g = gameData.game;
         setGame(g);
 
-        // ── İlgili haberler (Steam News — ücretsiz/anahtarsız) ───────────
+        // ── İlgili haberler (Steam News) ───────────
         if (g.steamAppId) {
           fetch('/api/game-news?appid=' + g.steamAppId + '&count=4')
             .then(r => r.json())
@@ -103,7 +145,7 @@ export default function RawgGamePage({ params }) {
             .catch(() => {});
         }
 
-        // ── Steam fiyatı ─────────────────────────────────────────────────
+        // ── Steam fiyatı ─────────────────────────
         if (g.steamAppId) {
           setSteamLoading(true);
           fetch('/api/steam-price?appid=' + g.steamAppId)
@@ -120,13 +162,12 @@ export default function RawgGamePage({ params }) {
             .finally(() => setSteamLoading(false));
         }
 
-        // ── Epic + Xbox + GOG + Humble — ITAD (appid ile kesin eşleşme) ──
+        // ── Epic + Xbox + GOG + Humble ───────────
         setEpicLoading(true);
         setXboxLoading(true);
         setGogLoading(true);
         setHumbleLoading(true);
 
-        // steamAppId varsa ITAD kesin lookup, her iki paramı gönder (lookup başarısız olursa title ile fallback çalışır)
         const priceParam = g.steamAppId
           ? `appid=${encodeURIComponent(g.steamAppId)}&title=${encodeURIComponent(g.name)}`
           : `title=${encodeURIComponent(g.name)}`;
@@ -136,7 +177,6 @@ export default function RawgGamePage({ params }) {
           .then(d => {
             const stores = d.stores || [];
 
-            // Epic — isimde 'epic' geçen her store
             const itadEpic = stores.find(s =>
               s.name?.toLowerCase().includes('epic') ||
               s.storeId?.toLowerCase().includes('epic')
@@ -151,7 +191,6 @@ export default function RawgGamePage({ params }) {
               });
             }
 
-            // GOG — isimde 'gog' geçen her store
             const itadGog = stores.find(s =>
               s.name?.toLowerCase().includes('gog') ||
               s.storeId === '35'
@@ -166,7 +205,6 @@ export default function RawgGamePage({ params }) {
               });
             }
 
-            // Humble — isimde 'humble' geçen her store
             const itadHumble = stores.find(s =>
               s.name?.toLowerCase().includes('humble') ||
               s.storeId === '37'
@@ -181,7 +219,6 @@ export default function RawgGamePage({ params }) {
               });
             }
 
-            // Xbox — isimde 'xbox' veya 'microsoft' geçen store
             const xboxList = stores.filter(s =>
               s.name?.toLowerCase().includes('xbox') ||
               s.name?.toLowerCase().includes('microsoft') ||
@@ -197,7 +234,7 @@ export default function RawgGamePage({ params }) {
             setHumbleLoading(false);
           });
 
-        // ── AI özeti ─────────────────────────────────────────────────────
+        // ── AI özeti ─────────────────────────────
         const desc = (g.description || '').replace(/<[^>]+>/g, '').slice(0, 1500);
         const aiId = g.steamAppId || ('rawg_' + g.rawgId);
         setAiLoading(true);
@@ -212,8 +249,31 @@ export default function RawgGamePage({ params }) {
           .finally(() => setAiLoading(false));
       })
       .catch(e => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [slug]);
+      .finally(() => {
+        setLoading(false);
+        setRefreshing(false);
+      });
+  }, [slug, refreshTrigger]);
+
+  // Caches state into sessionStorage whenever they update
+  useEffect(() => {
+    if (!game) return;
+    const cacheData = {
+      game,
+      news,
+      steamPrice,
+      epicPrice,
+      gogPrice,
+      humblePrice,
+      xboxPrices,
+      ai
+    };
+    try {
+      sessionStorage.setItem('gamerisen_game_cache_' + slug, JSON.stringify(cacheData));
+    } catch (e) {
+      console.warn('SessionStorage cache write failed:', e);
+    }
+  }, [game, news, steamPrice, epicPrice, gogPrice, humblePrice, xboxPrices, ai, slug]);
 
   if (loading) return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
@@ -483,7 +543,42 @@ export default function RawgGamePage({ params }) {
 
           {/* ── Platform Fiyatları ──────────────────────────────────── */}
           <div>
-            <h2 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 10 }}>{t('detail.priceComparison')}</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              <h2 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', margin: 0 }}>{t('detail.priceComparison')}</h2>
+              <button 
+                onClick={handleRefresh}
+                disabled={refreshing}
+                style={{
+                  background: 'none', border: 'none', color: 'var(--text-3)', fontSize: 12,
+                  display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer',
+                  padding: '4px 8px', borderRadius: 6, transition: 'color 0.15s, background-color 0.15s'
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.color = 'var(--accent)';
+                  e.currentTarget.style.backgroundColor = 'var(--accent-bg)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.color = 'var(--text-3)';
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+                title={lang === 'tr' ? 'Verileri ve fiyatları yenile' : 'Refresh prices and data'}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" 
+                  style={{ 
+                    animation: refreshing ? 'spin-refresh 1s linear infinite' : 'none',
+                    display: 'block'
+                  }}
+                >
+                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                </svg>
+                <style>{`
+                  @keyframes spin-refresh {
+                    to { transform: rotate(360deg); }
+                  }
+                `}</style>
+                <span>{lang === 'tr' ? 'Yenile' : 'Refresh'}</span>
+              </button>
+            </div>
 
             {/* Steam */}
             {game.hasSteam ? (
