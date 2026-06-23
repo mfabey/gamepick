@@ -1,4 +1,4 @@
-# GamePick — Kurulum ve Deploy Rehberi
+# Gamerisen — Kurulum ve Deploy Rehberi
 
 Bu rehberi adım adım takip ederek sitenizi internete açabilirsiniz.
 Teknik bilgi gerekmez — her adım detaylı açıklanmıştır.
@@ -29,8 +29,8 @@ Teknik bilgi gerekmez — her adım detaylı açıklanmıştır.
 
 1. https://github.com adresinde ücretsiz hesap açın
 2. Sağ üstteki "+" → "New repository" tıklayın
-3. Repository adı: `gamepick`, herkese açık (Public) seçin → "Create"
-4. Bilgisayarınızdaki `gamepick` klasörünü bu repoya yükleyin:
+3. Repository adı: `gamerisen`, herkese açık (Public) seçin → "Create"
+4. Bilgisayarınızdaki `gamerisen` klasörünü bu repoya yükleyin:
    - GitHub sayfasında "uploading an existing file" linkine tıklayın
    - Tüm dosyaları sürükleyip bırakın (klasörler dahil)
    - "Commit changes" tıklayın
@@ -39,7 +39,7 @@ Teknik bilgi gerekmez — her adım detaylı açıklanmıştır.
 
 ## Adım 3: .env.local Dosyasını Oluşturun
 
-`gamepick` klasörünüzde `.env.local.example` dosyasını kopyalayıp `.env.local` olarak adlandırın.
+`gamerisen` klasörünüzde `.env.local.example` dosyasını kopyalayıp `.env.local` olarak adlandırın.
 İçindeki değerleri kendi API anahtarlarınızla doldurun:
 
 ```
@@ -64,8 +64,8 @@ NOT: `.env.local` dosyasını GitHub'a yüklemeyin! Bu dosya özel bilgiler içe
 5. "Deploy" butonuna tıklayın
 6. 2-3 dakika bekleyin — siteniz yayında!
 
-Vercel size `gamepick.vercel.app` gibi ücretsiz bir alan adı verecek.
-İstersen kendi alan adınızı (örn: gamepick.com) bağlayabilirsiniz.
+Vercel size `gamerisen.vercel.app` gibi ücretsiz bir alan adı verecek.
+İstersen kendi alan adınızı (örn: gamerisen.com) bağlayabilirsiniz.
 
 ---
 
@@ -74,9 +74,9 @@ Vercel size `gamepick.vercel.app` gibi ücretsiz bir alan adı verecek.
 Siteyi bilgisayarınızda test etmek isterseniz:
 
 1. Node.js'i yükleyin: https://nodejs.org (LTS versiyonu)
-2. Terminal/Komut İstemi açın, `gamepick` klasörüne gidin:
+2. Terminal/Komut İstemi açın, `gamerisen` klasörüne gidin:
    ```
-   cd gamepick
+   cd gamerisen
    npm install
    npm run dev
    ```

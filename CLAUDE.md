@@ -1,4 +1,4 @@
-# GamePick — Claude Code Proje Rehberi
+# Gamerisen — Claude Code Proje Rehberi
 
 ## Proje Özeti
 Next.js 14 (App Router) tabanlı oyun keşif platformu. Kullanıcılar PC oyunlarını keşfedebilir, Steam/Epic fiyatlarını görebilir, kütüphanelerini bağlayabilir.
