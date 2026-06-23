@@ -66,6 +66,38 @@ tags örnekleri: "Sakin tempo", "Yüksek adrenalin", "Solo deneyim", "Açık dü
       }
     }
 
+    // ── Mod 3: Kütüphane bazlı öneri üretimi ────────────────────────
+    if (body.mode === 'library') {
+      const { games, lang } = body;
+      const gameList = (games || []).slice(0, 30).join(', '); // En fazla 30 oyun al
+      
+      const prompt = \`Sen üst düzey bir oyun küratörüsün. Kullanıcının daha önce oynadığı bazı oyunlar şunlar: \${gameList}. 
+Bu listeye bakarak kullanıcının zevklerini analiz et ve kullanıcının BÜYÜK İHTİMALLE SEVECEĞİ ancak BU LİSTEDE OLMAYAN 3 farklı oyun öner.
+
+Yanıtı YALNIZCA şu JSON formatında ver:
+{
+  "recommendations": [
+    {
+      "name": "Oyunun Tam Adı",
+      "slug": "oyunun-slug-hali",
+      "reason": "\${lang === 'tr' ? 'Neden bu oyunu oynamalı? (Kullanıcının kütüphanesindeki x, y oyunlarına benziyor gibi bir Türkçe açıklama yap, 2 cümle)' : 'Why should they play this? (English explanation referring to their library, 2 sentences)'}"
+    }
+  ]
+}\`;
+
+      const text = await groq([
+        { role: 'system', content: 'Her zaman geçerli JSON döndür.' },
+        { role: 'user',   content: prompt },
+      ], 600);
+
+      try {
+        const jsonMatch = text.match(/\\{[\\s\\S]*\\}/);
+        return NextResponse.json(jsonMatch ? JSON.parse(jsonMatch[0]) : { recommendations: [] });
+      } catch {
+        return NextResponse.json({ recommendations: [] });
+      }
+    }
+
     // ── Mod 2: Ruh hali bazlı arama sorgusu üretimi ────────────────────────
     const prompt = `Bir oyun platformu asistanısın. Kullanıcının ruh haline ve bütçesine göre en uygun oyun türünü belirle.
 

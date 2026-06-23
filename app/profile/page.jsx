@@ -106,6 +106,45 @@ export default function ProfilePage() {
 
   const recommended = getDailyRecommendation();
 
+
+  const [aiRecommendations, setAiRecommendations] = useState(null);
+  const [aiRecLoading, setAiRecLoading] = useState(false);
+
+  useEffect(() => {
+    if (!ready || !user || libsLoading) return;
+    
+    const allGames = [];
+    if (steamLib?.games) allGames.push(...steamLib.games.map(g => g.name));
+    if (xboxLib?.games) allGames.push(...xboxLib.games.map(g => g.name));
+    
+    if (allGames.length === 0) return;
+
+    const cacheKey = `gamerisen_ai_recs_${user.email}`;
+    try {
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) {
+        setAiRecommendations(JSON.parse(cached));
+        return;
+      }
+    } catch {}
+
+    setAiRecLoading(true);
+    fetch('/api/recommend', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: 'library', games: allGames, lang })
+    })
+      .then(r => r.json())
+      .then(d => {
+        if (d.recommendations && d.recommendations.length > 0) {
+          setAiRecommendations(d.recommendations);
+          try { sessionStorage.setItem(cacheKey, JSON.stringify(d.recommendations)); } catch {}
+        }
+      })
+      .catch(() => {})
+      .finally(() => setAiRecLoading(false));
+  }, [ready, user, libsLoading, steamLib, xboxLib, lang]);
+
   // Redirect to login if not authenticated
   useEffect(() => {
     if (ready && !user) {
@@ -481,7 +520,7 @@ export default function ProfilePage() {
             />
           </div>
 
-          <div className="card" style={{ padding: '14px 16px', marginBottom: 12 }}>
+          <div className="card" style={{ padding: '16px 20px', marginBottom: 12, border: '1px solid var(--accent-border)', boxShadow: '0 8px 24px var(--accent-glow)', transform: 'translateY(-2px)', transition: 'transform 0.2s' }}>
             <p style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-3)', fontWeight: 600, marginBottom: 10 }}>
               {lang === 'tr' ? 'En çok oynadığın türler' : 'Your top played genres'}
             </p>
