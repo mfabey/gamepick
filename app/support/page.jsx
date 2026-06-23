@@ -251,13 +251,19 @@ export default function SupportPage() {
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 7 }}>
                   {lang === 'tr' ? 'Mesajınız' : 'Your Message'}
                 </label>
-                <textarea 
-                  value={msg} 
-                  onChange={e => setMsg(e.target.value)} 
-                  placeholder={lang === 'tr' ? 'Sorununu veya sorunu olabildiğince ayrıntılı anlat…' : 'Describe your issue or question in as much detail as possible...'} 
-                  style={{ ...inputBase, height: 'auto', minHeight: 130, padding: '13px 15px', lineHeight: 1.5, resize: 'vertical' }}
-                  onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'var(--border-hover)'} 
-                />
+                <div style={{ position: 'relative' }}>
+                  <textarea 
+                    value={msg} 
+                    onChange={e => setMsg(e.target.value)} 
+                    maxLength={1000}
+                    placeholder={lang === 'tr' ? 'Sorununuzu veya sorunuzu olabildiğince ayrıntılı anlatın…' : 'Describe your issue or question in as much detail as possible...'} 
+                    style={{ ...inputBase, height: 'auto', minHeight: 130, padding: '13px 15px', lineHeight: 1.5, resize: 'vertical' }}
+                    onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'var(--border-hover)'} 
+                  />
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', fontSize: 11.5, color: msg.length >= 900 ? 'var(--accent)' : 'var(--text-3)', marginTop: 5 }}>
+                    {msg.length} / 1000
+                  </div>
+                </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                 <button type="submit" className="btn btn-red" style={{ height: 50 }}>
