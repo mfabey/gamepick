@@ -53,14 +53,14 @@ export default function SupportPage() {
     { value: 'general', label: 'Genel Soru' },
     { value: 'account', label: 'Hesap & Üyelik' },
     { value: 'price', label: 'Fiyat & Mağaza' },
-    { value: 'payment', label: 'Premium & Ödeme' },
+    { value: 'wishlist', label: 'İstek Listesi & Takip' },
     { value: 'bug', label: 'Hata Bildirimi' },
     { value: 'collab', label: 'İş Birliği' }
   ] : [
     { value: 'general', label: 'General Inquiry' },
     { value: 'account', label: 'Account & Membership' },
     { value: 'price', label: 'Prices & Stores' },
-    { value: 'payment', label: 'Premium & Payment' },
+    { value: 'wishlist', label: 'Wishlist & Tracking' },
     { value: 'bug', label: 'Bug Report' },
     { value: 'collab', label: 'Partnership' }
   ];
@@ -128,7 +128,10 @@ export default function SupportPage() {
 
         {/* ── İletişim kanalları ── */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))', gap: 18, marginBottom: 52 }}>
-          <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 15, padding: 20 }}>
+          <a href="mailto:destek@gamerisen.com" className="card" style={{ display: 'flex', alignItems: 'center', gap: 15, padding: 20, textDecoration: 'none', transition: 'transform 0.2s ease, box-shadow 0.2s ease' }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 14px 30px rgba(74,52,28,0.1)'; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
+          >
             <span style={{ display: 'flex', width: 44, height: 44, flexShrink: 0, borderRadius: 12, background: 'var(--accent-bg)', alignItems: 'center', justifyContent: 'center' }}><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="2.5" /><path d="m3 7 9 6 9-6" /></svg></span>
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--text-3)', marginBottom: 3 }}>
@@ -139,7 +142,8 @@ export default function SupportPage() {
                 {lang === 'tr' ? '~24 saat içinde yanıt' : '~24 hour response time'}
               </div>
             </div>
-          </div>
+          </a>
+
           <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 15, padding: 20 }}>
             <span style={{ display: 'flex', width: 44, height: 44, flexShrink: 0, borderRadius: 12, background: 'var(--accent-bg)', alignItems: 'center', justifyContent: 'center' }}><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4L3 21l1.1-9A8.4 8.4 0 1 1 21 11.5z" /></svg></span>
             <div>
@@ -155,7 +159,11 @@ export default function SupportPage() {
               </div>
             </div>
           </div>
-          <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 15, padding: 20 }}>
+
+          <a href="https://discord.gg/nsmrWT7Bat" target="_blank" rel="noopener noreferrer" className="card" style={{ display: 'flex', alignItems: 'center', gap: 15, padding: 20, textDecoration: 'none', transition: 'transform 0.2s ease, box-shadow 0.2s ease' }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 14px 30px rgba(74,52,28,0.1)'; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
+          >
             <span style={{ display: 'flex', width: 44, height: 44, flexShrink: 0, borderRadius: 12, background: 'var(--accent-bg)', alignItems: 'center', justifyContent: 'center' }}><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 8a5 5 0 0 0-10 0v3l-2 4h14l-2-4z" /><circle cx="9" cy="9" r="1" /><circle cx="15" cy="9" r="1" /></svg></span>
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--text-3)', marginBottom: 3 }}>
@@ -163,10 +171,10 @@ export default function SupportPage() {
               </div>
               <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>Discord sunucusu</div>
               <div style={{ fontSize: 12.5, color: 'var(--text-3)', marginTop: 2 }}>
-                {lang === 'tr' ? 'Binlerce oyuncuyla anında' : 'Instantly with thousands of players'}
+                {lang === 'tr' ? 'Binlerce oyuncuyla anında yardımlaşın ve sohbet edin.' : 'Chat and get help instantly with thousands of players.'}
               </div>
             </div>
-          </div>
+          </a>
         </div>
 
         {/* ── Form + SSS ── */}
