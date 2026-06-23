@@ -17,6 +17,6 @@ export async function GET(request) {
   });
 
   return NextResponse.redirect(
-    `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?${params}`
+    `https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize?${params}`
   );
 }
