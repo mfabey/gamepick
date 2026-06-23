@@ -592,6 +592,36 @@ html[data-theme="dark"] .glass-card {
 /* ===== BOTTOM NAVIGATION BAR RESPONSIVE ===== */
 .bottom-nav {
   transition: bottom 0.25s ease, padding 0.25s ease, gap 0.25s ease;
+  isolation: isolate;
+}
+/* Apple Liquid Glass — Fresnel cam kenarı (rim) + specular parıltı (yalnızca alt bar) */
+.bottom-nav::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 4;
+  padding: 1.25px;
+  background: linear-gradient(135deg,
+    rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.08) 24%,
+    rgba(255,255,255,0) 50%, rgba(255,255,255,0.06) 76%, rgba(255,255,255,0.42) 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+          mask-composite: exclude;
+  opacity: 0.72;
+}
+.bottom-nav::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(130% 100% at 50% -15%, rgba(255,255,255,0.12), rgba(255,255,255,0) 52%);
+  opacity: 0.45;
+  mix-blend-mode: screen;
 }
 .bottom-nav-link {
   position: relative;

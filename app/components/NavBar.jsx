@@ -281,10 +281,10 @@ export default function NavBar() {
           <nav ref={navRef} className="bottom-nav" style={{
             position: 'fixed', left: '50%', transform: 'translateX(-50%)', bottom: 28, zIndex: hintOpen ? 201 : 200,
             display: 'flex', gap: 6,
-            background: 'linear-gradient(180deg, color-mix(in srgb, var(--bg-card) 72%, transparent), color-mix(in srgb, var(--bg-card) 58%, transparent))',
-            backdropFilter: 'blur(28px) saturate(150%)', WebkitBackdropFilter: 'blur(28px) saturate(150%)',
+            background: 'linear-gradient(180deg, color-mix(in srgb, var(--bg-card) 46%, transparent), color-mix(in srgb, var(--bg-card) 30%, transparent))',
+            backdropFilter: 'blur(22px) saturate(185%)', WebkitBackdropFilter: 'blur(22px) saturate(185%)',
             borderRadius: 999, padding: 11,
-            boxShadow: '0 2px 6px rgba(74,52,28,0.10), 0 12px 28px rgba(74,52,28,0.16), 0 32px 64px rgba(74,52,28,0.20), inset 0 1px 0 color-mix(in srgb, var(--bg-card) 90%, white), inset 0 0 0 1px color-mix(in srgb, var(--text) 8%, transparent)',
+            boxShadow: 'inset 0 1px 0.5px rgba(255,255,255,0.5), inset 0 -1px 0.5px rgba(255,255,255,0.12), inset 0 0 0 1px color-mix(in srgb, var(--text) 7%, transparent), 0 8px 22px -12px rgba(0,0,0,0.26), 0 24px 60px -18px rgba(0,0,0,0.34)',
             animation: hintOpen
               ? 'navBarIn 0.85s cubic-bezier(0.16,1,0.3,1) both, navBarAttract 1.5s ease-in-out 0.9s 2, navBarRing 1.6s ease-out 1s 2'
               : 'navBarIn 0.85s cubic-bezier(0.16,1,0.3,1) both',

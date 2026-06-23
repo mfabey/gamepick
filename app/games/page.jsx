@@ -90,6 +90,8 @@ function GamesList() {
   const [searchFocus, setSearchFocus] = useState(false);
   const [scrolled,    setScrolled]    = useState(false);
   const [isWide,      setIsWide]      = useState(true);
+  const [store,       setStore]       = useState('all');
+  const [mcMin,       setMcMin]       = useState(0);
 
   // Aşağı kaydırınca arama çubuğu cam efektiyle küçülüp oyun alanını kapsar (histerezisli eşik).
   useEffect(() => {
@@ -206,12 +208,18 @@ function GamesList() {
   }, [loadMore]);
 
   const filteredGames = useMemo(() => games.filter(g => {
-    if (price === 'free') return g.isFree;
-    if (price !== 'all' && g.price != null && !g.isFree && g.price > parseInt(price)) return false;
+    // Bütçe
+    if (price === 'free' && !g.isFree) return false;
+    if (price !== 'all' && price !== 'free' && g.price != null && !g.isFree && g.price > parseInt(price)) return false;
+    // Mağaza
+    if (store === 'steam' && !g.hasSteam) return false;
+    if (store === 'epic'  && !g.hasEpic)  return false;
+    // Metacritic
+    if (mcMin > 0 && !(g.metacritic >= mcMin)) return false;
     return true;
-  }), [games, price]);
+  }), [games, price, store, mcMin]);
 
-  const resetFilters = () => { setQuery(''); setPrice('all'); setSection(''); setGenre(''); };
+  const resetFilters = () => { setQuery(''); setPrice('all'); setSection(''); setGenre(''); setStore('all'); setMcMin(0); };
 
   const handleGenre = (slug) => {
     setGenre(prev => prev === slug ? '' : slug);
@@ -224,7 +232,7 @@ function GamesList() {
     setQuery('');
   };
 
-  const activeCount = [query, section, price !== 'all' ? price : '', genre].filter(Boolean).length;
+  const activeCount = [query, section, price !== 'all' ? price : '', genre, store !== 'all' ? store : '', mcMin > 0 ? 'mc' : ''].filter(Boolean).length;
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-body)' }}>
@@ -347,16 +355,8 @@ function GamesList() {
               </div>
             </div>
 
-            {/* Sonuç bilgisi */}
-            <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <p style={{ fontSize: 14, color: 'var(--text-3)' }}>
-                {loading ? t('games.loading') : (
-                  <><span style={{ fontWeight: 700, color: 'var(--text)' }}>{filteredGames.length}</span> {lang === 'tr' ? 'oyun' : 'games'}</>
-                )}
-                {genre && <span style={{ color: 'var(--accent)', marginLeft: 6 }}>· {localizedCategories.find(c => c.slug === genre)?.label}</span>}
-                {section && <span style={{ color: 'var(--accent)', marginLeft: 6 }}>· {localizedSections.find(s => s.value === section)?.label}</span>}
-              </p>
-            </div>
+            {/* Sonuç bilgisi (prototiple eşleşmesi için sayaç kaldırıldı) */}
+            <div style={{ marginBottom: 16 }} />
 
             {/* Oyun grid */}
             {loading ? (
@@ -433,7 +433,7 @@ function GamesList() {
                   <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
                   <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
                 </svg>
-                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', letterSpacing: 0.3 }}>{lang === 'tr' ? 'KATEGORİLER' : 'CATEGORIES'}</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', letterSpacing: 0.3 }}>{lang === 'tr' ? 'TÜRLER' : 'GENRES'}</span>
               </div>
               <div style={{ padding: '14px 16px 16px', display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {localizedCategories.map(c => {
@@ -454,6 +454,47 @@ function GamesList() {
                       onMouseLeave={e => { if (!active) { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-2)'; }}}
                     >
                       {c.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Mağaza filtresi */}
+            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', marginBottom: 16 }}>
+              <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 9h18M3 9l1.5-5h15L21 9M4 9v11a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9"/>
+                </svg>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', letterSpacing: 0.3 }}>{lang === 'tr' ? 'MAĞAZA' : 'STORE'}</span>
+              </div>
+              <div style={{ padding: '8px 0' }}>
+                {[
+                  { v: 'all',   label: lang === 'tr' ? 'Tüm Mağazalar' : 'All Stores' },
+                  { v: 'steam', label: 'Steam' },
+                  { v: 'epic',  label: 'Epic Games' },
+                ].map(o => {
+                  const active = store === o.v;
+                  return (
+                    <button key={o.v} onClick={() => setStore(o.v)} style={{
+                      width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '10px 18px', border: 'none', cursor: 'pointer',
+                      background: active ? 'var(--accent-bg)' : 'transparent',
+                      color: active ? 'var(--accent)' : 'var(--text-2)',
+                      fontSize: 14, fontWeight: active ? 600 : 400,
+                      transition: 'background 0.12s, color 0.12s',
+                      borderLeft: active ? '3px solid var(--accent)' : '3px solid transparent',
+                      textAlign: 'left',
+                    }}
+                      onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'var(--bg-hover)'; e.currentTarget.style.color = 'var(--text)'; }}}
+                      onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-2)'; }}}
+                    >
+                      <span>{o.label}</span>
+                      {active && (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                      )}
                     </button>
                   );
                 })}
@@ -502,6 +543,37 @@ function GamesList() {
                           <polyline points="20 6 9 17 4 12"/>
                         </svg>
                       )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            {/* Metacritic filtresi */}
+            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', marginTop: 16 }}>
+              <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                </svg>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', letterSpacing: 0.3 }}>METACRITIC</span>
+              </div>
+              <div style={{ display: 'flex', gap: 6, padding: '14px 16px 16px' }}>
+                {[
+                  { v: 0,  label: lang === 'tr' ? 'Tümü' : 'All' },
+                  { v: 70, label: '70+' },
+                  { v: 80, label: '80+' },
+                  { v: 90, label: '90+' },
+                ].map(o => {
+                  const active = mcMin === o.v;
+                  return (
+                    <button key={o.v} onClick={() => setMcMin(o.v)} style={{
+                      flex: 1, padding: '8px 0', borderRadius: 9,
+                      border: `1.5px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
+                      background: active ? 'var(--accent)' : 'transparent',
+                      color: active ? '#fff' : 'var(--text-2)',
+                      fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                      transition: 'all 0.15s',
+                    }}>
+                      {o.label}
                     </button>
                   );
                 })}
