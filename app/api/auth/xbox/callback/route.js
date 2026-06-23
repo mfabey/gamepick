@@ -101,9 +101,11 @@ export async function GET(request) {
   const { searchParams, origin } = request.nextUrl;
   const code  = searchParams.get('code');
   const error = searchParams.get('error');
+  const errorDesc = searchParams.get('error_description');
 
   if (error || !code) {
-    return NextResponse.redirect(`${origin}/library?xbox_error=cancelled`);
+    const errorMsg = errorDesc || error || 'cancelled';
+    return NextResponse.redirect(`${origin}/library?xbox_error=${encodeURIComponent(errorMsg)}`);
   }
 
   const redirectUri = `${origin}/api/auth/xbox/callback`;
