@@ -360,12 +360,12 @@ export default function ProfilePage() {
                 {steamAccounts.map(account => (
                   <AccountCard
                     key={account.steamId}
-                    name={\`Steam (\${account.name})\`}
+                    name={`Steam (${account.name})`}
                     status={lang === 'tr' ? 'Bağlı' : 'Connected'}
                     connected={true}
                     color="#1a9fff"
                     initials="STM"
-                    profileUrl={account.profileUrl || \`https://steamcommunity.com/profiles/\${account.steamId}\`}
+                    profileUrl={account.profileUrl || `https://steamcommunity.com/profiles/${account.steamId}`}
                     onToggle={async () => {
                       if (steamLogoutAccount) await steamLogoutAccount(account.steamId);
                     }}
