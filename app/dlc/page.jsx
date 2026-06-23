@@ -228,7 +228,12 @@ export default function DlcPage() {
 // DLC'ye özel kart — oyun sayfasına yönlendir, üstüne "DLC" rozeti ekle
 function DlcCard({ dlc }) {
   const [hovered, setHovered] = useState(false);
-  const href = `/game/rawg/${dlc.rawgSlug || dlc.id}`;
+  // Steam'den gelen DLC'ler için Steam mağaza sayfasına, RAWG'dan gelenler için detay sayfasına yönlendir
+  const href = dlc.steamUrl
+    ? dlc.steamUrl
+    : dlc.rawgSlug
+      ? `/game/rawg/${dlc.rawgSlug}`
+      : `#`;
 
   return (
     <a href={href} style={{ textDecoration: 'none' }}>
@@ -281,7 +286,18 @@ function DlcCard({ dlc }) {
             <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
               {dlc.totalReviews > 0 ? '⭐ ' + dlc.totalReviews.toLocaleString('tr') : dlc.released?.slice(0, 4) || '—'}
             </span>
-            {(dlc.genres || []).slice(0, 1).map(g => (
+            {dlc.isFree ? (
+              <span style={{ fontSize: 10, fontWeight: 700, color: '#4ade80' }}>Ücretsiz</span>
+            ) : dlc.price != null ? (
+              <span style={{ fontSize: 10, fontWeight: 700, color: dlc.onSale ? '#f87171' : 'var(--text-2)' }}>
+                {dlc.onSale && dlc.originalPrice && (
+                  <span style={{ textDecoration: 'line-through', color: 'var(--text-3)', marginRight: 3 }}>
+                    {dlc.originalPrice.toFixed(2).replace('.', ',')} ₺
+                  </span>
+                )}
+                {dlc.price.toFixed(2).replace('.', ',')} ₺
+              </span>
+            ) : (dlc.genres || []).slice(0, 1).map(g => (
               <span key={g} className="badge badge-gray" style={{ fontSize: 10 }}>{g}</span>
             ))}
           </div>
