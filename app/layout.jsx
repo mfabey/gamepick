@@ -20,8 +20,11 @@ export default function RootLayout({ children }) {
         <script dangerouslySetInnerHTML={{ __html: `
           (function() {
             try {
+              var saved = localStorage.getItem('gp_theme') || 'dark';
+              document.documentElement.setAttribute('data-theme', saved);
+            } catch (e) {
               document.documentElement.setAttribute('data-theme', 'dark');
-            } catch (e) {}
+            }
           })()
         ` }} />
       </head>

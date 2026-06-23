@@ -5,16 +5,23 @@ import { createContext, useContext, useState, useEffect } from 'react';
 const ThemeContext = createContext(null);
 
 export function ThemeProvider({ children }) {
-  const theme = 'dark';
+  const [theme, setTheme] = useState('dark');
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', 'dark');
+    try {
+      const saved = localStorage.getItem('gp_theme') || 'dark';
+      setTheme(saved);
+      document.documentElement.setAttribute('data-theme', saved);
+    } catch (e) {}
     setMounted(true);
   }, []);
 
   const toggleTheme = () => {
-    // No-op
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    document.documentElement.setAttribute('data-theme', next);
+    try { localStorage.setItem('gp_theme', next); } catch (e) {}
   };
 
   return (
