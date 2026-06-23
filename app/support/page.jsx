@@ -74,7 +74,16 @@ export default function SupportPage() {
 
   const submit = e => {
     e.preventDefault();
-    if (name && email && msg) setSent(true);
+    if (name && email && msg) {
+      const selectedSubject = SUBJECTS.find(s => s.value === subject)?.label || subject;
+      const mailtoUrl = `mailto:support@gamerisen.com?subject=${encodeURIComponent(
+        `[Gamerisen Destek] ${selectedSubject}`
+      )}&body=${encodeURIComponent(
+        `Ad Soyad / Full Name: ${name}\nE-posta / Email: ${email}\nKonu / Subject: ${selectedSubject}\n\nMesaj / Message:\n${msg}`
+      )}`;
+      window.location.href = mailtoUrl;
+      setSent(true);
+    }
   };
   const reset = () => { setSent(false); setName(''); setEmail(''); setMsg(''); setSubject('general'); };
 
