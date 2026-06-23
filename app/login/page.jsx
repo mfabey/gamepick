@@ -89,7 +89,7 @@ export default function LoginPage() {
             </svg>
           </div>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>
-            {lang === 'tr' ? "GamePick'e Giriş Yap" : 'Log In to GamePick'}
+            {lang === 'tr' ? "Gamerisen'e Giriş Yap" : 'Log In to Gamerisen'}
           </h1>
           <p style={{ color: 'var(--text-3)', fontSize: 14, marginTop: 4 }}>
             {lang === 'tr' ? 'Hesabın yok mu? ' : "Don't have an account? "}

@@ -6,7 +6,7 @@ import NavBar from './components/NavBar';
 import Footer from './components/Footer';
 
 export const metadata = {
-  title: 'GamePick — Doğru Oyun, Doğru Platform, En İyi Fiyat',
+  title: 'Gamerisen — Doğru Oyun, Doğru Platform, En İyi Fiyat',
   description: 'Yapay zekanın hissiyat bazlı önerdiği oyunları; canlı fiyatlar ve abonelik durumlarıyla tek ekranda görün.',
 };
 

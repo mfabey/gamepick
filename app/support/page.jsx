@@ -134,7 +134,7 @@ export default function SupportPage() {
               <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--text-3)', marginBottom: 3 }}>
                 {lang === 'tr' ? 'E-posta' : 'Email'}
               </div>
-              <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>destek@gamepick.com</div>
+              <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>destek@gamerisen.com</div>
               <div style={{ fontSize: 12.5, color: 'var(--text-3)', marginTop: 2 }}>
                 {lang === 'tr' ? '~24 saat içinde yanıt' : '~24 hour response time'}
               </div>

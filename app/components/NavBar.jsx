@@ -32,8 +32,8 @@ export default function NavBar() {
   const [viewing, setViewing] = useState(null);
   useEffect(() => {
     const onView = (e) => setViewing(e.detail);
-    window.addEventListener('gamepick:viewing', onView);
-    return () => window.removeEventListener('gamepick:viewing', onView);
+    window.addEventListener('gamerisen:viewing', onView);
+    return () => window.removeEventListener('gamerisen:viewing', onView);
   }, []);
   // Sayfa değişince (oyun sayfasından çıkınca) rozet kaybolsun
   useEffect(() => {
@@ -145,7 +145,7 @@ export default function NavBar() {
                 <circle cx="18" cy="13.5" r="1" fill="#fff" stroke="none"/>
               </svg>
             </span>
-            <span className="nav-logo-text">GamePick</span>
+            <span className="nav-logo-text">Gamerisen</span>
           </Link>
 
           {/* Sağ: destek + tema + hesap */}

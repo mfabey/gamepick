@@ -1,5 +1,5 @@
 'use client';
-// GamePick Library Page - Version 1.1.0 (Xbox & Game Pass Integration)
+// Gamerisen Library Page - Version 1.1.0 (Xbox & Game Pass Integration)
 export const dynamic = 'force-dynamic';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -51,8 +51,8 @@ export default function LibraryPage() {
         </h1>
         <p style={{ color: 'var(--text-3)', fontSize: 15, lineHeight: 1.6, marginBottom: 32 }}>
           {lang === 'tr' 
-            ? 'Steam veya Xbox kütüphanenizi bağlamak ve yönetmek için önce bir GamePick hesabı oluşturmalı veya mevcut hesabınıza giriş yapmalısınız.'
-            : 'To connect and manage your Steam or Xbox library, you must first create a GamePick account or log in to your existing account.'}
+            ? 'Steam veya Xbox kütüphanenizi bağlamak ve yönetmek için önce bir Gamerisen hesabı oluşturmalı veya mevcut hesabınıza giriş yapmalısınız.'
+            : 'To connect and manage your Steam or Xbox library, you must first create a Gamerisen account or log in to your existing account.'}
         </p>
 
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
@@ -606,10 +606,10 @@ function GameRow({ game, rank, price, pricesLoading }) {
           {lastPlayed && !game.hoursRecent && <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t('library.lastPlayedLabel').replace('{date}', lastPlayed)}</span>}
         </div>
       </div>
-      <a href={`/api/game-lookup?name=${encodeURIComponent(game.name)}`} title="GamePick'te görüntüle" style={{ flexShrink: 0, padding: '4px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text-3)', textDecoration: 'none', whiteSpace: 'nowrap' }}
+      <a href={`/api/game-lookup?name=${encodeURIComponent(game.name)}`} title="Gamerisen'de görüntüle" style={{ flexShrink: 0, padding: '4px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text-3)', textDecoration: 'none', whiteSpace: 'nowrap' }}
         onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'}
         onMouseLeave={e => e.currentTarget.style.color = 'var(--text-3)'}
-      >🎮 GamePick</a>
+      >🎮 Gamerisen</a>
       <div style={{ textAlign: 'right', flexShrink: 0, minWidth: 80 }}>
         {pricesLoading && !price
           ? <p style={{ fontSize: 11, color: 'var(--text-3)', fontStyle: 'italic' }}>…</p>
@@ -747,12 +747,12 @@ function XboxGameRow({ game }) {
         {lastPlayed && <span style={{ fontSize: 11, color: 'var(--text-3)' }}>Son: {lastPlayed}</span>}
       </div>
 
-      {/* GamePick */}
-      <a href={`/api/game-lookup?name=${encodeURIComponent(game.name)}`} title="GamePick'te görüntüle"
+      {/* Gamerisen */}
+      <a href={`/api/game-lookup?name=${encodeURIComponent(game.name)}`} title="Gamerisen'de görüntüle"
         style={{ flexShrink: 0, padding: '4px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text-3)', textDecoration: 'none', whiteSpace: 'nowrap' }}
         onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'}
         onMouseLeave={e => e.currentTarget.style.color = 'var(--text-3)'}
-      >🎮 GamePick</a>
+      >🎮 Gamerisen</a>
 
       {/* Başarımlar */}
       {game.totalAchievements > 0 && (

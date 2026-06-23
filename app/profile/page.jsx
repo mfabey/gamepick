@@ -112,7 +112,11 @@ export default function ProfilePage() {
   }, [ready, user, router]);
 
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem('gamepick_wishlist') || '[]');
+    const stored = JSON.parse(
+      localStorage.getItem('gamerisen_wishlist') || 
+      localStorage.getItem('gamepick_wishlist') || 
+      '[]'
+    );
     setWishlist(stored);
   }, []);
 
@@ -153,7 +157,7 @@ export default function ProfilePage() {
 
   const removeFromWishlist = (id) => {
     const updated = wishlist.filter(w => w.id !== id);
-    localStorage.setItem('gamepick_wishlist', JSON.stringify(updated));
+    localStorage.setItem('gamerisen_wishlist', JSON.stringify(updated));
     setWishlist(updated);
   };
 
@@ -335,7 +339,7 @@ export default function ProfilePage() {
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>{user.name}</h1>
           <p style={{ color: 'var(--text-3)', fontSize: 13 }}>
-            {lang === 'tr' ? 'GamePick Üyesi' : 'GamePick Member'}
+            {lang === 'tr' ? 'Gamerisen Üyesi' : 'Gamerisen Member'}
           </p>
         </div>
       </div>

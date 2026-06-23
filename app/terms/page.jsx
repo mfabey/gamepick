@@ -27,27 +27,27 @@ export default function TermsPage() {
         {lang === 'tr' ? (
           <div style={{ color: 'var(--text-2)', lineHeight: 1.7, fontSize: 15, display: 'flex', flexDirection: 'column', gap: 24 }}>
             <p>
-              GamePick platformuna hoş geldiniz. Bu sözleşme, sitemizi ziyaret eden ve hizmetlerimizi kullanan tüm bireyler için geçerlidir. Sitemizi kullanarak bu sayfadaki koşulları peşinen kabul etmiş sayılırsınız.
+              Gamerisen platformuna hoş geldiniz. Bu sözleşme, sitemizi ziyaret eden ve hizmetlerimizi kullanan tüm bireyler için geçerlidir. Sitemizi kullanarak bu sayfadaki koşulları peşinen kabul etmiş sayılırsınız.
             </p>
 
             <section>
               <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>1. Hizmetin Tanımı ve Kapsamı</h2>
               <p>
-                GamePick, farklı dijital oyun mağazalarından (Steam, Epic Games Store, GOG, Humble Bundle, Xbox Store vb.) veri sağlayıcılar aracılığıyla anlık oyun fiyatlarını derleyen ve kullanıcıya karşılaştırma hizmeti sunan bağımsız bir platformdur. GamePick kendisi bir oyun mağazası değildir ve doğrudan satış yapmaz.
+                Gamerisen, farklı dijital oyun mağazalarından (Steam, Epic Games Store, GOG, Humble Bundle, Xbox Store vb.) veri sağlayıcılar aracılığıyla anlık oyun fiyatlarını derleyen ve kullanıcıya karşılaştırma hizmeti sunan bağımsız bir platformdur. Gamerisen kendisi bir oyun mağazası değildir ve doğrudan satış yapmaz.
               </p>
             </section>
 
             <section>
               <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>2. Fiyat ve Stok Sorumluluğu Reddi</h2>
               <p>
-                Sitemizde yer alan tüm fiyatlar, indirim oranları, kampanya bilgileri ve stok durumları üçüncü taraf API'ler (RAWG, IsThereAnyDeal, Steam vb.) aracılığıyla otomatik olarak çekilmektedir. Fiyatların anlık güncelliği veya doğruluğu konusunda hiçbir garanti verilmez. Satın alım esnasında yönlendirildiğiniz mağazadaki nihai fiyat geçerlidir. GamePick, mağaza fiyatlarındaki hatalardan veya yanlış yönlendirmelerden yasal olarak sorumlu tutulamaz.
+                Sitemizde yer alan tüm fiyatlar, indirim oranları, kampanya bilgileri ve stok durumları üçüncü taraf API'ler (RAWG, IsThereAnyDeal, Steam vb.) aracılığıyla otomatik olarak çekilmektedir. Fiyatların anlık güncelliği veya doğruluğu konusunda hiçbir garanti verilmez. Satın alım esnasında yönlendirildiğiniz mağazadaki nihai fiyat geçerlidir. Gamerisen, mağaza fiyatlarındaki hatalardan veya yanlış yönlendirmelerden yasal olarak sorumlu tutulamaz.
               </p>
             </section>
 
             <section>
               <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>3. Üye Hesapları ve Şifre Güvenliği</h2>
               <p>
-                Platformumuzda oluşturduğunuz hesap verileri (ad, e-posta ve şifre), geliştirme ve test aşamalarında kolaylık amacıyla tamamen tarayıcınızın yerel depolama alanında (<code>localStorage</code>) düz metin olarak saklanmaktadır. Şifrelerin sunucu tabanlı hacklenmelerinden veya tarayıcınızda oluşabilecek güvenlik ihlallerinden (XSS saldırıları, tarayıcı eklentileri, fiziksel erişim) kaynaklanan veri kayıplarından GamePick ve yöneticileri sorumlu değildir. Kullanıcı, cihazının ve tarayıcısının güvenliğinden bizzat sorumludur.
+                Platformumuzda oluşturduğunuz hesap verileri (ad, e-posta ve şifre), geliştirme ve test aşamalarında kolaylık amacıyla tamamen tarayıcınızın yerel depolama alanında (<code>localStorage</code>) düz metin olarak saklanmaktadır. Şifrelerin sunucu tabanlı hacklenmelerinden veya tarayıcınızda oluşabilecek güvenlik ihlallerinden (XSS saldırıları, tarayıcı eklentileri, fiziksel erişim) kaynaklanan veri kayıplarından Gamerisen ve yöneticileri sorumlu değildir. Kullanıcı, cihazının ve tarayıcısının güvenliğinden bizzat sorumludur.
               </p>
             </section>
 
@@ -61,41 +61,41 @@ export default function TermsPage() {
             <section>
               <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>5. Telif Hakları ve Marka Bildirimi</h2>
               <p>
-                Sitede gösterilen oyun isimleri, kapak görselleri, markalar ve logolar ilgili yayıncı ve geliştirici şirketlerin mülkiyetindedir. GamePick, Valve Corporation (Steam), Microsoft (Xbox), Epic Games veya GOG ile hiçbir resmi veya ticari ortaklığa sahip değildir. Tüm ticari markalar hak sahiplerine aittir.
+                Sitede gösterilen oyun isimleri, kapak görselleri, markalar ve logolar ilgili yayıncı ve geliştirici şirketlerin mülkiyetindedir. Gamerisen, Valve Corporation (Steam), Microsoft (Xbox), Epic Games veya GOG ile hiçbir resmi veya ticari ortaklığa sahip değildir. Tüm ticari markalar hak sahiplerine aittir.
               </p>
             </section>
 
             <section>
               <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>6. Sorumluluğun Sınırlandırılması</h2>
               <p>
-                GamePick platformu "olduğu gibi" sunulmaktadır. Sitenin kesintisiz çalışması, veri kayıplarının yaşanmaması veya fiyat alarmlarının gecikmesiz iletilmesi konusunda yasal bir taahhüt verilmemektedir. Sitedeki hizmetlerin kullanımından doğabilecek hiçbir doğrudan veya dolaylı maddi/manevi zarardan platform sahipleri sorumlu tutulamaz.
+                Gamerisen platformu "olduğu gibi" sunulmaktadır. Sitenin kesintisiz çalışması, veri kayıplarının yaşanmaması veya fiyat alarmlarının gecikmesiz iletilmesi konusunda yasal bir taahhüt verilmemektedir. Sitedeki hizmetlerin kullanımından doğabilecek hiçbir doğrudan veya dolaylı maddi/manevi zarardan platform sahipleri sorumlu tutulamaz.
               </p>
             </section>
           </div>
         ) : (
           <div style={{ color: 'var(--text-2)', lineHeight: 1.7, fontSize: 15, display: 'flex', flexDirection: 'column', gap: 24 }}>
             <p>
-              Welcome to GamePick. These Terms of Service govern your access to and use of our platform. By accessing or using our services, you agree to be bound by these terms.
+              Welcome to Gamerisen. These Terms of Service govern your access to and use of our platform. By accessing or using our services, you agree to be bound by these terms.
             </p>
 
             <section>
               <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>1. Description of Service</h2>
               <p>
-                GamePick is an independent platform that aggregates live game prices from various digital stores (Steam, Epic Games Store, GOG, Humble Bundle, Xbox Store, etc.) via data APIs, providing price comparison services to users. GamePick is not a store and does not sell games directly.
+                Gamerisen is an independent platform that aggregates live game prices from various digital stores (Steam, Epic Games Store, GOG, Humble Bundle, Xbox Store, etc.) via data APIs, providing price comparison services to users. Gamerisen is not a store and does not sell games directly.
               </p>
             </section>
 
             <section>
               <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>2. Price and Information Disclaimer</h2>
               <p>
-                All prices, discount rates, promotions, and availability shown on our site are fetched automatically via third-party APIs (RAWG, IsThereAnyDeal, Steam, etc.). We do not guarantee the instantaneous accuracy of store prices. The final price displayed on the store at the time of purchase is always binding. GamePick is not legally liable for store pricing errors or incorrect redirects.
+                All prices, discount rates, promotions, and availability shown on our site are fetched automatically via third-party APIs (RAWG, IsThereAnyDeal, Steam, etc.). We do not guarantee the instantaneous accuracy of store prices. The final price displayed on the store at the time of purchase is always binding. Gamerisen is not legally liable for store pricing errors or incorrect redirects.
               </p>
             </section>
 
             <section>
               <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>3. User Accounts and Password Security</h2>
               <p>
-                For testing and convenience purposes during development, user account details (name, email, and passwords) are stored entirely in your browser's local storage (<code>localStorage</code>) in plain text. GamePick and its developers are not responsible for password leaks resulting from browser-based vulnerabilities (XSS, extensions, malware) or unauthorized physical access. Users are solely responsible for securing their own devices and browser environments.
+                For testing and convenience purposes during development, user account details (name, email, and passwords) are stored entirely in your browser's local storage (<code>localStorage</code>) in plain text. Gamerisen and its developers are not responsible for password leaks resulting from browser-based vulnerabilities (XSS, extensions, malware) or unauthorized physical access. Users are solely responsible for securing their own devices and browser environments.
               </p>
             </section>
 
@@ -109,14 +109,14 @@ export default function TermsPage() {
             <section>
               <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>5. Copyrights and Trademarks</h2>
               <p>
-                All game titles, images, brands, and logos displayed on this site belong to their respective owners. GamePick is not affiliated with Valve Corporation (Steam), Microsoft (Xbox), Epic Games, or GOG in any official or commercial way. All trademarks belong to their respective owners.
+                All game titles, images, brands, and logos displayed on this site belong to their respective owners. Gamerisen is not affiliated with Valve Corporation (Steam), Microsoft (Xbox), Epic Games, or GOG in any official or commercial way. All trademarks belong to their respective owners.
               </p>
             </section>
 
             <section>
               <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>6. Limitation of Liability</h2>
               <p>
-                GamePick is provided on an "as is" and "as available" basis. We make no warranty that the service will be uninterrupted or error-free. The platform owners shall not be held liable for any direct or indirect damages arising out of your use of our platform.
+                Gamerisen is provided on an "as is" and "as available" basis. We make no warranty that the service will be uninterrupted or error-free. The platform owners shall not be held liable for any direct or indirect damages arising out of your use of our platform.
               </p>
             </section>
           </div>

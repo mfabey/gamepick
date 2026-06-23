@@ -108,7 +108,7 @@ function readingTime(text, lang = 'tr') {
 async function fetchFeed(feed, lang = 'tr') {
   try {
     const res = await fetch(feed.url, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (GamePick News Aggregator)' },
+      headers: { 'User-Agent': 'Mozilla/5.0 (Gamerisen News Aggregator)' },
       next: { revalidate: 1800 }, // 30 dk cache
     });
     if (!res.ok) return [];

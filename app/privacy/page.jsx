@@ -27,13 +27,13 @@ export default function PrivacyPage() {
         {lang === 'tr' ? (
           <div style={{ color: 'var(--text-2)', lineHeight: 1.7, fontSize: 15, display: 'flex', flexDirection: 'column', gap: 24 }}>
             <p>
-              Gizliliğiniz bizim için son derece önemlidir. GamePick olarak, sitemizi ziyaret ederken veya hizmetlerimizi kullanırken kişisel verilerinizin nasıl toplandığı, saklandığı ve kullanıldığına dair sizi bilgilendirmek isteriz.
+              Gizliliğiniz bizim için son derece önemlidir. Gamerisen olarak, sitemizi ziyaret ederken veya hizmetlerimizi kullanırken kişisel verilerinizin nasıl toplandığı, saklandığı ve kullanıldığına dair sizi bilgilendirmek isteriz.
             </p>
 
             <section>
               <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>1. Toplanan Veriler ve Saklama Yöntemi</h2>
               <p>
-                GamePick, sunucularında (veritabanında) herhangi bir kişisel bilgi, e-posta veya şifre verisi **saklamamaktadır**.
+                Gamerisen, sunucularında (veritabanında) herhangi bir kişisel bilgi, e-posta veya şifre verisi **saklamamaktadır**.
               </p>
               <p style={{ marginTop: 8 }}>
                 Kayıt oluşturduğunuzda veya giriş yaptığınızda kullandığınız hesap bilgileri (ad, e-posta, şifre) tamamen tarayıcınızın yerel depolama alanında (<code>localStorage</code>) saklanır. Bu veriler sadece tarayıcınız tarafından kontrol edilir. Tarayıcınızın geçmişini veya önbelleğini temizlediğinizde ya da "Çıkış Yap" butonunu kullandığınızda bu veriler cihazınızdan tamamen silinir.
@@ -70,7 +70,7 @@ export default function PrivacyPage() {
             <section>
               <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>4. Veri Güvenliği Sorumluluğu</h2>
               <p>
-                Hesap bilgileriniz sunucu yerine tarayıcınızın yerel depolama alanında saklandığından, cihazınızın ve tarayıcınızın fiziksel/dijital güvenliği tamamen sizin sorumluluğunuzdadır. Tarayıcı eklentileri, virüsler veya cihazınıza erişimi olan üçüncü şahıslardan kaynaklanabilecek veri ihlallerinde GamePick sorumlu tutulamaz. Güvenliğiniz için tanımadığınız cihazlarda hesabınıza giriş yapmamanız tavsiye edilir.
+                Hesap bilgileriniz sunucu yerine tarayıcınızın yerel depolama alanında saklandığından, cihazınızın ve tarayıcınızın fiziksel/dijital güvenliği tamamen sizin sorumluluğunuzdadır. Tarayıcı eklentileri, virüsler veya cihazınıza erişimi olan üçüncü şahıslardan kaynaklanabilecek veri ihlallerinde Gamerisen sorumlu tutulamaz. Güvenliğiniz için tanımadığınız cihazlarda hesabınıza giriş yapmamanız tavsiye edilir.
               </p>
             </section>
 
@@ -84,13 +84,13 @@ export default function PrivacyPage() {
         ) : (
           <div style={{ color: 'var(--text-2)', lineHeight: 1.7, fontSize: 15, display: 'flex', flexDirection: 'column', gap: 24 }}>
             <p>
-              Your privacy is extremely important to us. This Privacy Policy describes how GamePick processes, stores, and handles your data when you visit or use our services.
+              Your privacy is extremely important to us. This Privacy Policy describes how Gamerisen processes, stores, and handles your data when you visit or use our services.
             </p>
 
             <section>
               <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>1. Collected Data and Storage Method</h2>
               <p>
-                GamePick **does not store** any personal credentials, emails, or password data on its servers.
+                Gamerisen **does not store** any personal credentials, emails, or password data on its servers.
               </p>
               <p style={{ marginTop: 8 }}>
                 The credentials you use when registering or logging in (name, email, password) are stored locally in your browser's local storage (<code>localStorage</code>). This data is controlled entirely by your browser. Clearing your browser cache or clicking "Logout" completely deletes this data from your device.
@@ -127,7 +127,7 @@ export default function PrivacyPage() {
             <section>
               <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>4. Data Security Disclaimer</h2>
               <p>
-                Since your account data is stored locally in your browser, the physical and digital security of your device is entirely your responsibility. GamePick is not liable for data breaches arising from browser extensions, device malware, or unauthorized physical access. We recommend avoiding logging in on public or untrusted devices.
+                Since your account data is stored locally in your browser, the physical and digital security of your device is entirely your responsibility. Gamerisen is not liable for data breaches arising from browser extensions, device malware, or unauthorized physical access. We recommend avoiding logging in on public or untrusted devices.
               </p>
             </section>
 

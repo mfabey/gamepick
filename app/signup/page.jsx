@@ -162,7 +162,7 @@ export default function SignupPage() {
             </svg>
           </div>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>
-            {lang === 'tr' ? "GamePick'e Üye Ol" : 'Sign Up for GamePick'}
+            {lang === 'tr' ? "Gamerisen'e Üye Ol" : 'Sign Up for Gamerisen'}
           </h1>
           <p style={{ color: 'var(--text-3)', fontSize: 14, marginTop: 4 }}>
             {lang === 'tr' ? 'Zaten hesabın var mı? ' : 'Already have an account? '}

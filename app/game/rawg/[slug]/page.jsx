@@ -34,23 +34,31 @@ export default function RawgGamePage({ params }) {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (game) {
-      window.dispatchEvent(new CustomEvent('gamepick:viewing', {
+      window.dispatchEvent(new CustomEvent('gamerisen:viewing', {
         detail: { name: game.name, image: game.image || null },
       }));
     }
-    return () => { window.dispatchEvent(new CustomEvent('gamepick:viewing', { detail: null })); };
+    return () => { window.dispatchEvent(new CustomEvent('gamerisen:viewing', { detail: null })); };
   }, [game]);
 
   useEffect(() => {
     if (!game) return;
-    const stored = JSON.parse(localStorage.getItem('gamepick_wishlist') || '[]');
+    const stored = JSON.parse(
+      localStorage.getItem('gamerisen_wishlist') || 
+      localStorage.getItem('gamepick_wishlist') || 
+      '[]'
+    );
     const exists = stored.some(item => item.id === game.id);
     setIsInWishlist(exists);
   }, [game]);
 
   const toggleWishlist = () => {
     if (!game) return;
-    const stored = JSON.parse(localStorage.getItem('gamepick_wishlist') || '[]');
+    const stored = JSON.parse(
+      localStorage.getItem('gamerisen_wishlist') || 
+      localStorage.getItem('gamepick_wishlist') || 
+      '[]'
+    );
     let updated;
     if (isInWishlist) {
       updated = stored.filter(item => item.id !== game.id);
@@ -65,7 +73,7 @@ export default function RawgGamePage({ params }) {
       updated = [...stored, item];
       setIsInWishlist(true);
     }
-    localStorage.setItem('gamepick_wishlist', JSON.stringify(updated));
+    localStorage.setItem('gamerisen_wishlist', JSON.stringify(updated));
   };
 
   useEffect(() => {

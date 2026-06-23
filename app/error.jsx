@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 
 export default function GlobalError({ error, reset }) {
   useEffect(() => {
-    console.error('GamePick hata:', error);
+    console.error('Gamerisen hata:', error);
   }, [error]);
 
   return (
