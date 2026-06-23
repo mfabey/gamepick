@@ -202,12 +202,14 @@ export default function SupportPage() {
                 <span style={{ flexShrink: 0, width: 24, height: 24, borderRadius: '50%', background: 'var(--green)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800 }}>✓</span>
                 <div>
                   <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--green)', marginBottom: 2 }}>
-                    {lang === 'tr' ? 'Mesajın bize ulaştı!' : 'We received your message!'}
+                    {lang === 'tr' ? 'E-posta uygulamanız açıldı!' : 'Email application opened!'}
                   </div>
                   <div style={{ fontSize: 13.5, color: 'var(--text-2)', lineHeight: 1.5 }}>
-                    {lang === 'tr' ? 'En kısa sürede e-posta ile döneceğiz. ' : 'We will get back to you via email as soon as possible. '}
+                    {lang === 'tr' 
+                      ? 'Mesaj taslağınız e-posta uygulamanıza aktarıldı. Lütfen açılan pencereden gönderim işlemini tamamlayın. ' 
+                      : 'Your message draft has been transferred to your email application. Please complete sending the message from there. '}
                     <span onClick={reset} style={{ color: 'var(--accent)', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 2 }}>
-                      {lang === 'tr' ? 'Yeni mesaj gönder' : 'Send a new message'}
+                      {lang === 'tr' ? 'Yeni mesaj oluştur' : 'Create a new message'}
                     </span>
                   </div>
                 </div>
