@@ -145,6 +145,23 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const changePassword = async ({ currentPassword, newPassword }) => {
+    try {
+      const res = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        return { error: data.error || 'Şifre değiştirme işlemi başarısız.' };
+      }
+      return { ok: true, mock: data.mock };
+    } catch (err) {
+      return { error: err.message };
+    }
+  };
+
   // ── Steam işlemleri ──────────────────────────────────────────────────────
   const steamLogout = () => {
     setSteamUser(null);
@@ -161,7 +178,7 @@ export function AuthProvider({ children }) {
   return (
     <AuthContext.Provider value={{ 
       user, steamUser, xboxUser, ownedGames, xboxOwnedGames, gamePassGames, 
-      ready, signup, login, logout, steamLogout, xboxLogout, resetPassword 
+      ready, signup, login, logout, steamLogout, xboxLogout, resetPassword, changePassword 
     }}>
       {children}
     </AuthContext.Provider>

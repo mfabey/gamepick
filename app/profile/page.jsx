@@ -17,7 +17,8 @@ export default function ProfilePage() {
     gamePassGames, 
     ready, 
     steamLogout, 
-    xboxLogout 
+    xboxLogout,
+    changePassword
   } = useAuth();
   
   const { lang } = useLanguage();
@@ -406,6 +407,7 @@ export default function ProfilePage() {
               </div>
             )}
           </div>
+          <ChangePasswordCard changePassword={changePassword} lang={lang} />
         </div>
 
         {/* AI analiz */}
@@ -602,6 +604,260 @@ function WishlistItem({ game, onRemove, lang }) {
       }} title={lang === 'tr' ? 'Kaldır' : 'Remove'}>
         ×
       </button>
+    </div>
+  );
+}
+
+function ChangePasswordCard({ changePassword, lang }) {
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setError(lang === 'tr' ? 'Lütfen tüm alanları doldurun.' : 'Please fill in all fields.');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setError(lang === 'tr' ? 'Yeni şifre en az 6 karakter olmalıdır.' : 'New password must be at least 6 characters.');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setError(lang === 'tr' ? 'Yeni şifreler eşleşmiyor.' : 'New passwords do not match.');
+      return;
+    }
+
+    setLoading(true);
+    const res = await changePassword({ currentPassword, newPassword });
+    setLoading(false);
+
+    if (res.ok) {
+      setSuccess(
+        res.mock
+          ? (lang === 'tr' ? 'Şifre başarıyla değiştirildi (Simülasyon Modu).' : 'Password successfully changed (Simulation Mode).')
+          : (lang === 'tr' ? 'Şifreniz başarıyla değiştirildi!' : 'Your password has been successfully changed!')
+      );
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } else {
+      setError(res.error);
+    }
+  };
+
+  const inputStyle = {
+    width: '100%',
+    padding: '10px 40px 10px 14px',
+    border: '1.5px solid var(--border)',
+    borderRadius: 8,
+    fontSize: 14,
+    color: 'var(--text)',
+    outline: 'none',
+    background: 'var(--bg-card)',
+    transition: 'border-color 0.15s',
+  };
+
+  const labelStyle = {
+    display: 'block',
+    fontSize: 13,
+    fontWeight: 600,
+    color: 'var(--text-2)',
+    marginBottom: 6,
+  };
+
+  const eyeButtonStyle = {
+    position: 'absolute',
+    right: 12,
+    top: '50%',
+    transform: 'translateY(-50%)',
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    color: 'var(--text-3)',
+    display: 'flex',
+    alignItems: 'center',
+    padding: 0,
+  };
+
+  const EyeIcon = ({ show }) => (
+    show ? (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+        <line x1="1" y1="1" x2="23" y2="23"/>
+      </svg>
+    ) : (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+        <circle cx="12" cy="12" r="3"/>
+      </svg>
+    )
+  );
+
+  return (
+    <div className="card" style={{ marginTop: 24, padding: '20px' }}>
+      <h3 style={{
+        fontSize: 15,
+        fontWeight: 700,
+        marginBottom: 16,
+        color: 'var(--text)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+      }}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+        {lang === 'tr' ? 'Şifre Değiştir' : 'Change Password'}
+      </h3>
+
+      <form onSubmit={handleSubmit}>
+        {error && (
+          <div style={{
+            background: 'var(--accent-bg)',
+            border: '1px solid var(--accent-border)',
+            borderRadius: 8,
+            padding: '10px 14px',
+            marginBottom: 16,
+            fontSize: 13,
+            color: 'var(--accent)',
+          }}>
+            {error}
+          </div>
+        )}
+
+        {success && (
+          <div style={{
+            background: 'var(--green-bg)',
+            border: '1px solid var(--green-border)',
+            borderRadius: 8,
+            padding: '10px 14px',
+            marginBottom: 16,
+            fontSize: 13,
+            color: 'var(--green)',
+          }}>
+            {success}
+          </div>
+        )}
+
+        {/* Mevcut Şifre */}
+        <div style={{ marginBottom: 14 }}>
+          <label style={labelStyle}>
+            {lang === 'tr' ? 'Mevcut Şifre' : 'Current Password'}
+          </label>
+          <div style={{ position: 'relative' }}>
+            <input
+              type={showCurrent ? 'text' : 'password'}
+              required
+              value={currentPassword}
+              onChange={e => setCurrentPassword(e.target.value)}
+              placeholder="••••••••"
+              style={inputStyle}
+              onFocus={e => e.target.style.borderColor = 'var(--accent)'}
+              onBlur={e => e.target.style.borderColor = 'var(--border)'}
+              disabled={loading}
+            />
+            <button
+              type="button"
+              onClick={() => setShowCurrent(!showCurrent)}
+              style={eyeButtonStyle}
+              tabIndex="-1"
+            >
+              <EyeIcon show={showCurrent} />
+            </button>
+          </div>
+        </div>
+
+        {/* Yeni Şifre */}
+        <div style={{ marginBottom: 14 }}>
+          <label style={labelStyle}>
+            {lang === 'tr' ? 'Yeni Şifre' : 'New Password'}
+          </label>
+          <div style={{ position: 'relative' }}>
+            <input
+              type={showNew ? 'text' : 'password'}
+              required
+              value={newPassword}
+              onChange={e => setNewPassword(e.target.value)}
+              placeholder="••••••••"
+              style={inputStyle}
+              onFocus={e => e.target.style.borderColor = 'var(--accent)'}
+              onBlur={e => e.target.style.borderColor = 'var(--border)'}
+              disabled={loading}
+            />
+            <button
+              type="button"
+              onClick={() => setShowNew(!showNew)}
+              style={eyeButtonStyle}
+              tabIndex="-1"
+            >
+              <EyeIcon show={showNew} />
+            </button>
+          </div>
+        </div>
+
+        {/* Yeni Şifre Tekrar */}
+        <div style={{ marginBottom: 20 }}>
+          <label style={labelStyle}>
+            {lang === 'tr' ? 'Yeni Şifre Tekrar' : 'Confirm New Password'}
+          </label>
+          <div style={{ position: 'relative' }}>
+            <input
+              type={showConfirm ? 'text' : 'password'}
+              required
+              value={confirmPassword}
+              onChange={e => setConfirmPassword(e.target.value)}
+              placeholder="••••••••"
+              style={inputStyle}
+              onFocus={e => e.target.style.borderColor = 'var(--accent)'}
+              onBlur={e => e.target.style.borderColor = 'var(--border)'}
+              disabled={loading}
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirm(!showConfirm)}
+              style={eyeButtonStyle}
+              tabIndex="-1"
+            >
+              <EyeIcon show={showConfirm} />
+            </button>
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          style={{
+            width: '100%',
+            padding: '11px',
+            background: 'var(--accent)',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 8,
+            fontSize: 13.5,
+            fontWeight: 600,
+            cursor: 'pointer',
+            opacity: loading ? 0.7 : 1,
+            transition: 'opacity 0.15s',
+          }}
+        >
+          {loading
+            ? (lang === 'tr' ? 'Güncelleniyor...' : 'Updating...')
+            : (lang === 'tr' ? 'Şifreyi Güncelle' : 'Update Password')}
+        </button>
+      </form>
     </div>
   );
 }
