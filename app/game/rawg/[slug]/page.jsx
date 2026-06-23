@@ -37,7 +37,7 @@ export default function RawgGamePage({ params }) {
   const handleRefresh = () => {
     setRefreshing(true);
     try {
-      sessionStorage.removeItem('gamerisen_game_cache_' + slug);
+      sessionStorage.removeItem('gamerisen_game_cache_v2_' + slug);
     } catch (e) {}
     setRefreshTrigger(prev => prev + 1);
   };
@@ -94,7 +94,7 @@ export default function RawgGamePage({ params }) {
     // Check client-side cache first, bypass if refreshing
     if (refreshTrigger === 0) {
       try {
-        const cachedData = sessionStorage.getItem('gamerisen_game_cache_' + slug);
+        const cachedData = sessionStorage.getItem('gamerisen_game_cache_v2_' + slug);
         if (cachedData) {
           const cached = JSON.parse(cachedData);
           if (cached && cached.game) {
@@ -271,7 +271,7 @@ export default function RawgGamePage({ params }) {
       ai
     };
     try {
-      sessionStorage.setItem('gamerisen_game_cache_' + slug, JSON.stringify(cacheData));
+      sessionStorage.setItem('gamerisen_game_cache_v2_' + slug, JSON.stringify(cacheData));
     } catch (e) {
       console.warn('SessionStorage cache write failed:', e);
     }

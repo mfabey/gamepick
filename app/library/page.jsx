@@ -27,7 +27,7 @@ export default function LibraryPage() {
   useEffect(() => {
     if (steamAccounts.length > 0) {
       const valid = steamAccounts.some(a => `steam_${a.steamId}` === activeTab);
-      if (!valid && activeTab !== 'merged') setActiveTab(`steam_${steamAccounts[0].steamId}`);
+      if (!valid && activeTab !== 'merged' && activeTab !== 'xbox') setActiveTab(`steam_${steamAccounts[0].steamId}`);
     } else if (!xboxUser && activeTab !== 'xbox') {
       setActiveTab('steam');
     }
