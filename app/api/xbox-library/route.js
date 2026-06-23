@@ -8,7 +8,7 @@ async function refreshAccessToken(refreshToken) {
     client_secret: process.env.XBOX_CLIENT_SECRET,
     refresh_token: refreshToken,
     grant_type:    'refresh_token',
-    scope:         'XboxLive.signin XboxLive.read offline_access',
+    scope:         'XboxLive.signin offline_access',
   });
   const res = await fetch(
     'https://login.microsoftonline.com/consumers/oauth2/v2.0/token',

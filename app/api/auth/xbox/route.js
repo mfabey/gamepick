@@ -11,7 +11,7 @@ export async function GET(request) {
     client_id:     process.env.XBOX_CLIENT_ID,
     response_type: 'code',
     redirect_uri:  `${origin}/api/auth/xbox/callback`,
-    scope:         'XboxLive.signin XboxLive.read offline_access',
+    scope:         'XboxLive.signin offline_access',
     response_mode: 'query',
     prompt:        'select_account',
   });
