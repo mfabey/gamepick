@@ -128,7 +128,7 @@ export default function SupportPage() {
 
         {/* ── İletişim kanalları ── */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))', gap: 18, marginBottom: 52 }}>
-          <a href="mailto:destek@gamerisen.com" className="card" style={{ display: 'flex', alignItems: 'center', gap: 15, padding: 20, textDecoration: 'none', transition: 'transform 0.2s ease, box-shadow 0.2s ease' }}
+          <a href="mailto:support@gamerisen.com" className="card" style={{ display: 'flex', alignItems: 'center', gap: 15, padding: 20, textDecoration: 'none', transition: 'transform 0.2s ease, box-shadow 0.2s ease' }}
             onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 14px 30px rgba(74,52,28,0.1)'; }}
             onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
           >
@@ -137,7 +137,7 @@ export default function SupportPage() {
               <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--text-3)', marginBottom: 3 }}>
                 {lang === 'tr' ? 'E-posta' : 'Email'}
               </div>
-              <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>destek@gamerisen.com</div>
+              <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>support@gamerisen.com</div>
               <div style={{ fontSize: 12.5, color: 'var(--text-3)', marginTop: 2 }}>
                 {lang === 'tr' ? '~24 saat içinde yanıt' : '~24 hour response time'}
               </div>
