@@ -3,11 +3,13 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAuth, normalizeName } from '../../../context/AuthContext';
 import { useLanguage } from '../../../context/LanguageContext';
 
 export default function RawgGamePage({ params }) {
   const { slug } = params;
+  const router = useRouter();
   const { user, ownedGames, xboxOwnedGames = new Set(), gamePassGames = new Set() } = useAuth();
   const { lang, t, formatPrice } = useLanguage();
 
@@ -286,13 +288,13 @@ export default function RawgGamePage({ params }) {
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 'calc(100vh - 64px)', background: 'var(--bg-body)' }}>
       <p style={{ fontSize: 48, marginBottom: 12 }}>🔍</p>
       <p style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>{t('detail.notFound')}</p>
-      <Link href="/games" style={{
+      <button onClick={() => router.back()} style={{
         padding: '10px 24px', borderRadius: 8,
         background: 'var(--accent)', color: '#fff',
-        textDecoration: 'none', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+        border: 'none', fontSize: 14, fontWeight: 600, cursor: 'pointer',
       }}>
         {t('detail.goBack')}
-      </Link>
+      </button>
     </div>
   );
 
@@ -343,9 +345,9 @@ export default function RawgGamePage({ params }) {
       )}
 
       <div className="container" style={{ paddingTop: 28, paddingBottom: 60, maxWidth: 960, position: 'relative', zIndex: 1 }}>
-        <Link href="/games" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--text-3)', fontSize: 13, textDecoration: 'none', marginBottom: 20 }}>
-          ← {lang === 'tr' ? 'Oyunlara Dön' : 'Back to Games'}
-        </Link>
+        <button onClick={() => router.back()} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--text-3)', fontSize: 13, textDecoration: 'none', marginBottom: 20, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+          ← {lang === 'tr' ? 'Geri Dön' : 'Go Back'}
+        </button>
 
       {/* Başlık ve Rozetler (Mobil Uyumlu) */}
       <div style={{ marginBottom: 24 }}>

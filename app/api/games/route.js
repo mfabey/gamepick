@@ -204,6 +204,13 @@ function generateSlug(text) {
   return slug.replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-');
 }
 
+function isDlc(game) {
+  const name = (game.name || '').toLowerCase();
+  if (name.includes(' dlc') || name.endsWith(' dlc') || name.includes('expansion pass') || name.includes('season pass') || name.includes(' soundtrack') || name.includes(' add-on') || name.includes(' addon') || name.includes(' upgrade') || name.includes(' deluxe edition upgrade') || name.includes(' artbook')) return true;
+  if (game.tags && game.tags.some(t => t.slug === 'dlc' || t.slug === 'soundtrack')) return true;
+  return false;
+}
+
 const STATIC_FREE_GAMES = [
   { id: 'rawg_730', rawgId: 730, rawgSlug: 'counter-strike-2', name: 'Counter-Strike 2', image: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/730/header.jpg', metacritic: null, reviewScore: 88, totalReviews: 76400, isFree: true, onSale: false, price: null, noData: false, platforms: ['pc'], source: 'steam', hasSteam: true, hasEpic: false, hasStores: true, genres: ['Aksiyon', 'Nişancı'], released: '2023-09-27' },
   { id: 'rawg_570', rawgId: 570, rawgSlug: 'dota-2', name: 'Dota 2', image: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/570/header.jpg', metacritic: 90, reviewScore: 82, totalReviews: 32000, isFree: true, onSale: false, price: null, noData: false, platforms: ['pc'], source: 'steam', hasSteam: true, hasEpic: false, hasStores: true, genres: ['Strateji'], released: '2013-07-09' },
@@ -413,7 +420,7 @@ export async function GET(request) {
             fetchSteamNewReleases()
           ]);
 
-          const rawgResults = (rawgData.results || []).filter(g => !isAdultContent(g)).map(formatRawgGame);
+          const rawgResults = (rawgData.results || []).filter(g => !isAdultContent(g) && !isDlc(g)).map(formatRawgGame);
           total = (rawgData.count || 0) + steamResults.length;
 
           // Temizleme: hasStores olanları ve silinenleri filtrele
@@ -435,14 +442,14 @@ export async function GET(request) {
           // page > 1 ise sadece RAWG
           const data = await fetchRawg('/games', params);
           total = data.count || 0;
-          const rawgResults = (data.results || []).filter(g => !isAdultContent(g)).map(formatRawgGame);
+          const rawgResults = (data.results || []).filter(g => !isAdultContent(g) && !isDlc(g)).map(formatRawgGame);
           results = rawgResults.filter(g => g.hasStores && !KNOWN_DELISTED_SLUGS.has(g.rawgSlug));
         }
       } else {
         // Diğer tüm bölümler/aramalar için normal RAWG
         const data = await fetchRawg('/games', params);
         total = data.count || 0;
-        results = (data.results || []).filter(g => !isAdultContent(g)).map(formatRawgGame);
+        results = (data.results || []).filter(g => !isAdultContent(g) && !isDlc(g)).map(formatRawgGame);
         results = results.filter(g => g.hasStores && !KNOWN_DELISTED_SLUGS.has(g.rawgSlug));
       }
     } catch (err) {
@@ -533,7 +540,7 @@ export async function GET(request) {
             }
 
             return g;
-          }).filter(g => !isAdultTitleOrSlug(g.name, g.rawgSlug));
+          }).filter(g => !isAdultTitleOrSlug(g.name, g.rawgSlug) && !isDlc(g));
         } catch (err) {
           console.error("Steam search fallback failed:", err);
           return [];
@@ -545,11 +552,11 @@ export async function GET(request) {
       let fetchedDynamically = false;
 
       if (q.trim()) {
-        const url = `https://store.steampowered.com/search/results/?term=${encodeURIComponent(q.trim())}&cc=tr&l=tr&json=1&start=${(page-1)*num}&count=${num}`;
+        const url = `https://store.steampowered.com/search/results/?term=${encodeURIComponent(q.trim())}&category1=998&cc=tr&l=tr&json=1&start=${(page-1)*num}&count=${num}`;
         dynamicResults = await fetchSteamSearchPaginated(url, false, false);
         fetchedDynamically = true;
       } else if (section === 'sale') {
-        let url = `https://store.steampowered.com/search/results/?specials=1&cc=tr&l=tr&json=1&start=${(page-1)*num}&count=${num}`;
+        let url = `https://store.steampowered.com/search/results/?specials=1&category1=998&cc=tr&l=tr&json=1&start=${(page-1)*num}&count=${num}`;
         if (genres) {
           if (STEAM_GENRE_MAP[genres]) url += `&genre=${STEAM_GENRE_MAP[genres]}`;
           if (STEAM_TAG_MAP[genres]) url += `&tags=${STEAM_TAG_MAP[genres]}`;
@@ -557,7 +564,7 @@ export async function GET(request) {
         dynamicResults = await fetchSteamSearchPaginated(url, false, true);
         fetchedDynamically = true;
       } else if (section === 'free') {
-        let url = `https://store.steampowered.com/search/results/?genre=Free+to+Play&cc=tr&l=tr&json=1&start=${(page-1)*num}&count=${num}`;
+        let url = `https://store.steampowered.com/search/results/?genre=Free+to+Play&category1=998&cc=tr&l=tr&json=1&start=${(page-1)*num}&count=${num}`;
         if (genres) {
           if (STEAM_GENRE_MAP[genres]) url += `&genre=${STEAM_GENRE_MAP[genres]}`;
           if (STEAM_TAG_MAP[genres]) url += `&tags=${STEAM_TAG_MAP[genres]}`;
@@ -565,7 +572,7 @@ export async function GET(request) {
         dynamicResults = await fetchSteamSearchPaginated(url, true, false);
         fetchedDynamically = true;
       } else if (section === 'popular') {
-        let url = `https://store.steampowered.com/search/results/?filter=topsellers&cc=tr&l=tr&json=1&start=${(page-1)*num}&count=${num}`;
+        let url = `https://store.steampowered.com/search/results/?filter=topsellers&category1=998&cc=tr&l=tr&json=1&start=${(page-1)*num}&count=${num}`;
         if (genres) {
           if (STEAM_GENRE_MAP[genres]) url += `&genre=${STEAM_GENRE_MAP[genres]}`;
           if (STEAM_TAG_MAP[genres]) url += `&tags=${STEAM_TAG_MAP[genres]}`;
@@ -573,7 +580,7 @@ export async function GET(request) {
         dynamicResults = await fetchSteamSearchPaginated(url, false, false);
         fetchedDynamically = true;
       } else if (section === 'new') {
-        let url = `https://store.steampowered.com/search/results/?filter=popularnew&cc=tr&l=tr&json=1&start=${(page-1)*num}&count=${num}`;
+        let url = `https://store.steampowered.com/search/results/?filter=popularnew&category1=998&cc=tr&l=tr&json=1&start=${(page-1)*num}&count=${num}`;
         if (genres) {
           if (STEAM_GENRE_MAP[genres]) url += `&genre=${STEAM_GENRE_MAP[genres]}`;
           if (STEAM_TAG_MAP[genres]) url += `&tags=${STEAM_TAG_MAP[genres]}`;

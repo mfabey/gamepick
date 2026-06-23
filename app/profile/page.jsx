@@ -410,6 +410,32 @@ export default function ProfilePage() {
                 </div>
               </div>
             )}
+
+            {/* Epic Games (Coming Soon) */}
+            <div className="card" style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, opacity: 0.7, marginTop: 4 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{
+                  width: 34, height: 34, borderRadius: 8, background: `#2A2A2A18`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 14, color: '#888', flexShrink: 0,
+                }}>
+                  ⚡
+                </div>
+                <div>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>Epic Games</p>
+                  <p style={{ fontSize: 12, color: 'var(--text-3)' }}>{lang === 'tr' ? 'Bağlı değil' : 'Not connected'}</p>
+                </div>
+              </div>
+              <button disabled style={{
+                padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600,
+                border: '1px solid var(--border)',
+                background: 'var(--bg-input)',
+                color: 'var(--text-3)',
+                cursor: 'not-allowed',
+              }}>
+                {lang === 'tr' ? 'Çok Yakında' : 'Coming Soon'}
+              </button>
+            </div>
           </div>
           <ChangePasswordCard changePassword={changePassword} lang={lang} />
         </div>

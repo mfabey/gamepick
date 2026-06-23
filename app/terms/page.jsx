@@ -1,10 +1,11 @@
 'use client';
 
 import { useLanguage } from '../context/LanguageContext';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function TermsPage() {
   const { lang } = useLanguage();
+  const router = useRouter();
 
   return (
     <div className="page-transition" style={{ minHeight: '100vh', background: 'var(--bg-body)', padding: '120px 24px 80px 24px' }}>
@@ -12,9 +13,9 @@ export default function TermsPage() {
         
         {/* Header */}
         <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 24, marginBottom: 32 }}>
-          <Link href="/" style={{ color: 'var(--accent)', textDecoration: 'none', fontWeight: 600, fontSize: 14, display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 16 }}>
-            <span>←</span> {lang === 'tr' ? 'Ana Sayfaya Dön' : 'Back to Home'}
-          </Link>
+          <button onClick={() => router.back()} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--accent)', textDecoration: 'none', fontWeight: 600, fontSize: 14, display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 16 }}>
+            <span>←</span> {lang === 'tr' ? 'Geri Dön' : 'Go Back'}
+          </button>
           <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: 32, fontWeight: 800, color: 'var(--text)', marginBottom: 8 }}>
             {lang === 'tr' ? 'Kullanıcı Sözleşmesi' : 'Terms of Service'}
           </h1>

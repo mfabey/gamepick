@@ -153,6 +153,18 @@ export default function LibraryPage() {
             <XboxLogo size={26} />
             {t('library.xboxLogin')}
           </div>
+
+          {/* Epic Games (Coming Soon) */}
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
+            padding: '14px 32px', borderRadius: 12,
+            background: '#2A2A2A', color: '#fff', opacity: 0.6,
+            fontSize: 16, fontWeight: 700, cursor: 'not-allowed',
+          }}>
+            <span style={{ fontSize: 26, lineHeight: 1 }}>⚡</span>
+            Epic Games
+            <span style={{ fontSize: 11, background: '#fff', color: '#000', padding: '2px 6px', borderRadius: 6, marginLeft: 4 }}>{lang === 'tr' ? 'Çok Yakında' : 'Coming Soon'}</span>
+          </div>
         </div>
 
         <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 20px', textAlign: 'left', fontSize: 13, color: 'var(--text-3)', marginTop: 24 }}>
@@ -183,16 +195,21 @@ export default function LibraryPage() {
           {[
             { key: 'steam', label: 'Steam', icon: <SteamLogo size={16} color={activeTab === 'steam' ? '#fff' : '#1a9fff'} />, active: '#1b2838' },
             { key: 'xbox',  label: 'Xbox',  icon: <XboxLogo  size={16} color={activeTab === 'xbox'  ? '#fff' : '#107C10'} />, active: '#107C10' },
+            { key: 'epic',  label: 'Epic Games', icon: <span style={{ fontSize: 14 }}>⚡</span>, active: '#2A2A2A', disabled: true },
           ].map(tab => (
-            <button key={tab.key} onClick={() => setActiveTab(tab.key)} style={{
+            <button key={tab.key} disabled={tab.disabled} onClick={() => setActiveTab(tab.key)} style={{
               display: 'flex', alignItems: 'center', gap: 8,
-              padding: '10px 20px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 14,
+              padding: '10px 20px', borderRadius: 10, border: 'none', cursor: tab.disabled ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: 14,
               background: activeTab === tab.key ? tab.active : 'var(--bg-card)',
               color:      activeTab === tab.key ? '#fff' : 'var(--text-2)',
+              opacity:    tab.disabled ? 0.6 : 1,
               transition: 'all 0.15s',
             }}>
               {tab.icon}
               {tab.label}
+              {tab.disabled && (
+                <span style={{ fontSize: 9, background: '#555', color: '#fff', padding: '2px 4px', borderRadius: 4 }}>{lang === 'tr' ? 'Çok Yakında' : 'Soon'}</span>
+              )}
               {tab.key === 'steam' && steamUser && (
                 <span style={{ fontSize: 11, opacity: 0.75 }}>{steamUser.name?.slice(0, 14)}</span>
               )}
@@ -251,6 +268,15 @@ export default function LibraryPage() {
               </button>
             </a>
           )}
+          
+          {/* Epic Games Coming Soon */}
+          <button disabled style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '10px 16px', borderRadius: 10, border: 'none', cursor: 'not-allowed', fontWeight: 700, fontSize: 13,
+            background: 'var(--bg-card)', color: '#888', border: '1px solid #555', opacity: 0.7
+          }}>
+            <span style={{ fontSize: 14 }}>⚡</span> Epic Games <span style={{ fontSize: 9, background: '#555', color: '#fff', padding: '2px 4px', borderRadius: 4 }}>{lang === 'tr' ? 'Çok Yakında' : 'Soon'}</span>
+          </button>
         </div>
       )}
 
