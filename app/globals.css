@@ -568,7 +568,21 @@ html[data-theme="dark"] .glass-card {
 }
 
 .nav-logo-icon {
-  display: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-logo-icon img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 10px rgba(201,133,10,0.4));
+  transition: filter 0.2s;
+}
+
+.nav-logo:hover .nav-logo-icon img {
+  filter: drop-shadow(0 0 16px rgba(201,133,10,0.6));
 }
 
 .nav-logo-text {
@@ -604,14 +618,14 @@ html[data-theme="dark"] .glass-card {
   }
   
   .nav-logo-icon {
-    width: 28px;
-    height: 28px;
-    border-radius: 8px;
+    width: 26px;
+    height: 26px;
+    border-radius: 0;
   }
   
-  .nav-logo-icon svg {
-    width: 15px;
-    height: 15px;
+  .nav-logo-icon img {
+    width: 26px;
+    height: 26px;
   }
   
   .nav-logo-text {
