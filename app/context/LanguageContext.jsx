@@ -83,6 +83,8 @@ const TRANSLATIONS = {
     'detail.wishlist.remove': 'İstek Listesinden Çıkar',
 
     // Library
+    'library.title': 'Kütüphanen',
+    'library.subtitle': 'Tüm platformlardaki oyunların tek bir yerde.',
     'library.steam': 'Steam Kütüphanen',
     'library.xbox': 'Xbox Kütüphanen',
     'library.value': 'Kütüphane Değeri',
@@ -245,6 +247,8 @@ const TRANSLATIONS = {
     'detail.wishlist.remove': 'Remove from Wishlist',
 
     // Library
+    'library.title': 'Your Library',
+    'library.subtitle': 'Games from all your platforms in one place.',
     'library.steam': 'Steam Library',
     'library.xbox': 'Xbox Library',
     'library.value': 'Library Value',
