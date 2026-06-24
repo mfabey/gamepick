@@ -607,6 +607,8 @@ export default function ProfilePage() {
             </p>
           </div>
           
+          </div>
+          
           {/* Ayarlar (Settings) */}
           <div>
             <h2 className="section-title" style={{ fontSize: 16 }}>
@@ -699,6 +701,7 @@ export default function ProfilePage() {
             >
               {lang === 'tr' ? 'İncele →' : 'View →'}
             </Link>
+            </div>
           </div>
         </div>
       </div>
