@@ -688,11 +688,7 @@ function GameRow({ game, rank, price, pricesLoading }) {
   const hourSymbol = lang === 'tr' ? 's' : 'h';
 
   return (
-    <div
-      className="game-row"
-      onMouseEnter={e => e.currentTarget.style.borderColor = '#1a9fff'}
-      onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
-    >
+    <div className="game-row">
       {rank && (
         <span className="game-row-rank">
           {rank <= 3 ? ['🥇','🥈','🥉'][rank - 1] : rank}
@@ -717,10 +713,7 @@ function GameRow({ game, rank, price, pricesLoading }) {
           {lastPlayed && !game.hoursRecent && <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t('library.lastPlayedLabel').replace('{date}', lastPlayed)}</span>}
         </div>
       </div>
-      <a href={`/api/game-lookup?name=${encodeURIComponent(game.name)}`} title="Gamerisen'de görüntüle" className="game-row-actions"
-        onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'}
-        onMouseLeave={e => e.currentTarget.style.color = 'var(--text-3)'}
-      >🎮 Gamerisen</a>
+      <a href={`/api/game-lookup?name=${encodeURIComponent(game.name)}`} title="Gamerisen'de görüntüle" className="game-row-actions">🎮 Gamerisen</a>
       <div className="game-row-price-score">
         {pricesLoading && !price
           ? <p style={{ fontSize: 11, color: 'var(--text-3)', fontStyle: 'italic' }}>…</p>

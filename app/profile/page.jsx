@@ -404,7 +404,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <div className="profile-main-grid">
+      <div className="profile-two-column">
 
         {/* Bağlı hesaplar */}
         <div>
@@ -530,12 +530,12 @@ export default function ProfilePage() {
               </button>
             </div>
           </div>
-          <ChangePasswordCard changePassword={changePassword} lang={lang} />
-          <DeleteAccountCard deleteAccount={deleteAccount} lang={lang} />
         </div>
 
-        {/* AI analiz */}
-        <div>
+        {/* Sağ Sütun */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+          {/* AI analiz */}
+          <div>
           <h2 className="section-title" style={{ fontSize: 16 }}>
             {lang === 'tr' ? 'AI Oyuncu Analizi' : 'AI Player Analysis'}
           </h2>
@@ -575,26 +575,9 @@ export default function ProfilePage() {
             }}>
               {lang === 'tr' ? 'En Çok Oynanan Türler' : 'Your Top Played Genres'}
             </p>
-            {genreStats.map(g => (
-              <div key={g.label} style={{ marginBottom: 12 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, marginBottom: 6, color: 'var(--text-2)', fontWeight: 500 }}>
-                  <span>{g.label}</span>
-                  <span style={{ color: 'var(--text)', fontWeight: 600 }}>{g.pct}%</span>
-                </div>
-                <div style={{ height: 6, background: 'var(--bg-input)', borderRadius: 4, overflow: 'hidden', border: '1px solid var(--border)' }}>
-                  <div 
-                    className="animated-progress-fill" 
-                    style={{ 
-                      height: '100%', 
-                      width: `${g.pct}%`, 
-                      background: 'linear-gradient(90deg, var(--accent) 0%, #ff8066 100%)', 
-                      borderRadius: 4,
-                      boxShadow: '0 0 8px var(--accent-glow)'
-                    }} 
-                  />
-                </div>
-              </div>
-            ))}
+            <div style={{ marginTop: 24, padding: '0 10px' }}>
+              <DonutChart data={genreStats} lang={lang} />
+            </div>
           </div>
 
           <div 
@@ -622,6 +605,17 @@ export default function ProfilePage() {
             <p style={{ fontSize: 13.5, color: 'var(--text-2)', lineHeight: 1.7, fontWeight: 500 }}>
               {getDynamicAIComment(genreStats)}
             </p>
+          </div>
+          
+          {/* Ayarlar (Settings) */}
+          <div>
+            <h2 className="section-title" style={{ fontSize: 16 }}>
+              {lang === 'tr' ? 'Ayarlar' : 'Settings'}
+            </h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <ChangePasswordCard changePassword={changePassword} lang={lang} />
+              <DeleteAccountCard deleteAccount={deleteAccount} lang={lang} />
+            </div>
           </div>
         </div>
       </div>
@@ -1466,3 +1460,73 @@ function EpicLogo({ size = 24, color = '#fff' }) {
     </svg>
   );
 }
+
+function DonutChart({ data, lang }) {
+  if (!data || data.length === 0 || data.every(d => d.pct === 0)) {
+    return <div style={{ textAlign: 'center', padding: 20, color: 'var(--text-3)' }}>{lang === 'tr' ? 'Veri Yok' : 'No Data'}</div>;
+  }
+
+  const radius = 50;
+  const circumference = 2 * Math.PI * radius;
+  let currentOffset = 0;
+
+  const colors = [
+    'var(--accent)',        // Gold
+    '#22c55e',              // Green
+    '#3b82f6',              // Blue
+    '#a855f7',              // Purple
+    '#ef4444'               // Red
+  ];
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 32, flexWrap: 'wrap', justifyContent: 'center' }}>
+      <div className="donut-chart-container" style={{ flexShrink: 0 }}>
+        <svg viewBox="0 0 120 120" className="donut-chart-svg">
+          <circle cx="60" cy="60" r={radius} className="donut-chart-circle donut-chart-bg" />
+          
+          {data.map((item, i) => {
+            if (item.pct === 0) return null;
+            const strokeDasharray = `${(item.pct / 100) * circumference} ${circumference}`;
+            const strokeDashoffset = -currentOffset;
+            currentOffset += (item.pct / 100) * circumference;
+
+            return (
+              <circle
+                key={item.label}
+                cx="60"
+                cy="60"
+                r={radius}
+                className="donut-chart-circle"
+                style={{
+                  stroke: colors[i % colors.length],
+                  strokeDasharray: strokeDasharray,
+                  strokeDashoffset: strokeDashoffset,
+                }}
+              />
+            );
+          })}
+        </svg>
+        <div className="donut-chart-center">
+          <span className="donut-chart-value">{data[0]?.pct || 0}%</span>
+          <span className="donut-chart-label" style={{ maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{data[0]?.label || ''}</span>
+        </div>
+      </div>
+
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12, minWidth: 120 }}>
+        {data.slice(0, 4).map((item, i) => {
+          if (item.pct === 0) return null;
+          return (
+            <div key={item.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 13, fontWeight: 600 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: colors[i % colors.length], boxShadow: `0 0 8px ${colors[i % colors.length]}80` }} />
+                <span style={{ color: 'var(--text-2)' }}>{item.label}</span>
+              </div>
+              <span style={{ color: 'var(--text)' }}>{item.pct}%</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
