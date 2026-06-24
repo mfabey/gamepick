@@ -345,9 +345,9 @@ export default function NavBar() {
             <div aria-hidden style={{
               position: 'absolute', left: 0, top: pill.top, height: pill.height, width: pill.width,
               transform: pill.transform, opacity: pill.opacity,
-              background: 'linear-gradient(180deg, color-mix(in srgb, var(--accent) 88%, white), var(--accent))',
+              background: 'linear-gradient(135deg, #C9850A, #f0a020)',
               borderRadius: 999,
-              boxShadow: '0 4px 14px var(--accent-bg), 0 1px 3px rgba(74,52,28,0.3), inset 0 1px 0 rgba(255,255,255,0.4)',
+              boxShadow: '0 4px 20px rgba(201,133,10,0.5), 0 1px 3px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.25)',
               transition: 'transform 0.55s cubic-bezier(0.22,1,0.32,1), width 0.55s cubic-bezier(0.22,1,0.32,1)',
               zIndex: 0, pointerEvents: 'none',
             }} />

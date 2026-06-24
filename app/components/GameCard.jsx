@@ -76,12 +76,14 @@ function GameCard({ game, compact = false }) {
         onMouseLeave={() => setHovered(false)}
         style={{
           background:   'var(--bg-card)',
-          border:       `1.5px solid ${hovered ? 'var(--accent-border)' : 'var(--border)'}`,
+          border:       `1.5px solid ${hovered ? 'rgba(201,133,10,0.45)' : 'var(--border)'}`,
           borderRadius: 16,
           overflow:     'hidden',
-          transition:   'border-color 0.2s, transform 0.2s, box-shadow 0.2s',
-          transform:    hovered ? 'translateY(-5px)' : 'translateY(0)',
-          boxShadow:    hovered ? '0 18px 42px rgba(74,52,28,0.17)' : '0 1px 2px rgba(74,52,28,0.05)',
+          transition:   'border-color 0.22s, transform 0.22s, box-shadow 0.22s',
+          transform:    hovered ? 'translateY(-6px) scale(1.01)' : 'translateY(0) scale(1)',
+          boxShadow:    hovered
+            ? '0 20px 50px rgba(0,0,0,0.5), 0 0 30px rgba(201,133,10,0.15), 0 0 0 1px rgba(201,133,10,0.2)'
+            : '0 2px 8px rgba(0,0,0,0.3)',
           cursor:       'pointer',
           width:        compact ? imgH * 1.78 : undefined,
           position:     'relative',
@@ -97,8 +99,8 @@ function GameCard({ game, compact = false }) {
             style={{ objectFit: 'cover', pointerEvents: 'none' }}
           />
 
-          {/* Oyun kutusu parlaklığı */}
-          <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'linear-gradient(125deg, rgba(255,255,255,0.32) 0%, rgba(255,255,255,0.09) 22%, rgba(255,255,255,0) 44%), linear-gradient(to top, rgba(0,0,0,0.30), rgba(0,0,0,0) 46%)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.30), inset 0 0 0 1px rgba(255,255,255,0.06)' }} />
+          {/* Oyun kutusu sinematik overlay */}
+          <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'linear-gradient(125deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 22%, rgba(255,255,255,0) 44%), linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0) 55%)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.06)' }} />
 
           {/* Sol üst: indirim / ücretsiz badge */}
           <div style={{ position: 'absolute', top: 8, left: 8, display: 'flex', gap: 4 }}>
