@@ -3,7 +3,6 @@
 export const dynamic = 'force-dynamic';
 
 import { useState, useEffect, useMemo } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import GameImage from '../components/GameImage';
 import { useAuth } from '../context/AuthContext';
@@ -612,6 +611,7 @@ function SteamProfileHeader({ steamUser, library, totalValue, pricesLoading }) {
             position: 'relative', width: 68, height: 68, borderRadius: 14, overflow: 'hidden',
             border: '2px solid rgba(26, 159, 255, 0.5)', boxShadow: '0 0 16px rgba(26, 159, 255, 0.3)', flexShrink: 0
           }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={steamUser.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
         ) : (
@@ -762,6 +762,7 @@ function XboxProfileHeader({ xboxUser, library, onLogout }) {
             position: 'relative', width: 68, height: 68, borderRadius: 14, overflow: 'hidden',
             border: '2px solid rgba(16, 124, 16, 0.5)', boxShadow: '0 0 16px rgba(16, 124, 16, 0.3)', flexShrink: 0
           }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={xboxUser.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
         ) : (

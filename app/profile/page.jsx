@@ -217,11 +217,11 @@ export default function ProfilePage() {
   const nameParts = user.name ? user.name.split(' ') : [];
   const initials = nameParts.length > 0 
     ? nameParts.map(n => n[0]).join('').toUpperCase().slice(0, 2)
-    : user.email.slice(0, 2).toUpperCase();
+    : (user.email || '').slice(0, 2).toUpperCase();
 
   // Connected accounts game sizes
-  const steamGamesCount = steamUser ? (steamLib?.games?.length || ownedGames.size || 0) : 0;
-  const xboxGamesCount = xboxUser ? (xboxLib?.games?.length || xboxOwnedGames.size + gamePassGames.size || 0) : 0;
+  const steamGamesCount = steamUser ? (steamLib?.games?.length || (ownedGames?.size || 0) || 0) : 0;
+  const xboxGamesCount = xboxUser ? (xboxLib?.games?.length || ((xboxOwnedGames?.size || 0) + (gamePassGames?.size || 0)) || 0) : 0;
 
   const totalConnectedGames = steamGamesCount + xboxGamesCount;
 
@@ -402,6 +402,7 @@ export default function ProfilePage() {
             flexShrink: 0,
             transition: 'transform 0.3s ease'
           }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img 
               src={steamUser.avatar} 
               alt={user.name} 
@@ -577,7 +578,7 @@ export default function ProfilePage() {
           </h2>
           <div className="profile-stats-grid">
             <StatCard 
-              number={steamUser ? (steamLib?.games?.length || ownedGames.size || 0).toString() : "0"} 
+              number={steamUser ? (steamLib?.games?.length || (ownedGames?.size || 0) || 0).toString() : "0"} 
               label={lang === 'tr' ? 'Steam Oyunu' : 'Steam Games'} 
             />
             <StatCard 
@@ -765,6 +766,7 @@ function AccountCard({ name, status, connected, color, initials, onToggle, lang,
         overflow: 'hidden'
       }}>
         {avatar ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
           <img src={avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         ) : (
           initials
