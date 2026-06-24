@@ -238,7 +238,13 @@ function GamesList() {
     <div style={{ minHeight: '100vh', background: 'var(--bg-body)' }}>
 
       {/* ── Sticky üst arama çubuğu ── */}
-      <div className="sticky-search-bar" style={{ paddingTop: 14, paddingBottom: 14 }}>
+      <div className="sticky-search-bar" style={{
+        paddingTop: scrolled ? (isWide ? 10 : 8) : 14,
+        paddingBottom: scrolled ? (isWide ? 10 : 8) : 14,
+        background: scrolled && !isWide ? 'var(--bg-body)' : 'transparent',
+        borderBottom: scrolled && !isWide ? '1px solid var(--border)' : 'none',
+        transition: 'all 0.3s ease',
+      }}>
         <div className="container">
           <div style={{
             display: 'flex', alignItems: 'center', gap: 12,
@@ -411,8 +417,8 @@ function GamesList() {
           <aside className="games-sidebar" style={{
             position: 'sticky',
             order: -1,
-            top: 130,
-            maxHeight: 'calc(100vh - 150px)',
+            top: 152,
+            maxHeight: 'calc(100vh - 172px)',
             overflowY: 'auto',
             scrollbarWidth: 'none',
             msOverflowStyle: 'none'

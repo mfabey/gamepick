@@ -64,20 +64,44 @@ export default function NavBar() {
   const navRef = useRef(null);
   const [pill, setPill] = useState({ width: 0, top: 0, height: 0, transform: 'translateX(0)', opacity: 0 });
   useEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+
     const place = () => {
-      const nav = navRef.current;
-      if (!nav) return;
       const tabs = nav.querySelectorAll('[data-tab]');
       const idx = NAV_LINKS.findIndex(l => isActive(l.href));
       const el = idx >= 0 ? tabs[idx] : null;
       if (!el) { setPill(p => ({ ...p, opacity: 0 })); return; }
       setPill({ opacity: 1, width: el.offsetWidth, top: el.offsetTop, height: el.offsetHeight, transform: `translateX(${el.offsetLeft}px)` });
     };
+
     place();
     const t = setTimeout(place, 0);
-    if (typeof document !== 'undefined' && document.fonts && document.fonts.ready) document.fonts.ready.then(place);
-    if (typeof window !== 'undefined') window.addEventListener('resize', place);
-    return () => { clearTimeout(t); if (typeof window !== 'undefined') window.removeEventListener('resize', place); };
+    const t2 = setTimeout(place, 150);
+
+    let observer;
+    if (typeof ResizeObserver !== 'undefined') {
+      observer = new ResizeObserver(() => {
+        place();
+      });
+      observer.observe(nav);
+      const tabs = nav.querySelectorAll('[data-tab]');
+      tabs.forEach(tab => observer.observe(tab));
+    }
+
+    if (typeof document !== 'undefined' && document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(place);
+    }
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', place);
+    }
+
+    return () => {
+      clearTimeout(t);
+      clearTimeout(t2);
+      if (observer) observer.disconnect();
+      if (typeof window !== 'undefined') window.removeEventListener('resize', place);
+    };
   }, [pathname, lang]);
 
   return (
@@ -309,7 +333,6 @@ export default function NavBar() {
 
           <nav ref={navRef} className="bottom-nav" style={{
             position: 'fixed', left: '50%', transform: 'translateX(-50%)', bottom: 28, zIndex: hintOpen ? 201 : 200,
-            display: 'flex', gap: 6,
             background: 'linear-gradient(180deg, color-mix(in srgb, var(--bg-card) 46%, transparent), color-mix(in srgb, var(--bg-card) 30%, transparent))',
             backdropFilter: 'blur(22px) saturate(185%)', WebkitBackdropFilter: 'blur(22px) saturate(185%)',
             borderRadius: 999, padding: 11,
@@ -327,19 +350,27 @@ export default function NavBar() {
               transition: 'transform 0.55s cubic-bezier(0.22,1,0.32,1), width 0.55s cubic-bezier(0.22,1,0.32,1)',
               zIndex: 0, pointerEvents: 'none',
             }} />
-            {NAV_LINKS.map(l => {
-              const active = isActive(l.href);
-              return (
-                <Link key={l.href} href={l.href} data-tab="t"
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; }}
-                  className="bottom-nav-link"
-                  style={{
-                    color: active ? '#fff' : 'var(--text-2)',
-                    textShadow: active ? '0 1px 2px rgba(74,52,28,0.25)' : 'none',
-                  }}>{l.label}</Link>
-              );
-            })}
+            <div className="bottom-nav-links-wrapper" style={{
+              display: 'flex',
+              gap: 'inherit',
+              width: '100%',
+              justifyContent: 'inherit',
+              alignItems: 'center',
+            }}>
+              {NAV_LINKS.map(l => {
+                const active = isActive(l.href);
+                return (
+                  <Link key={l.href} href={l.href} data-tab="t"
+                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; }}
+                    className="bottom-nav-link"
+                    style={{
+                      color: active ? '#fff' : 'var(--text-2)',
+                      textShadow: active ? '0 1px 2px rgba(74,52,28,0.25)' : 'none',
+                    }}>{l.label}</Link>
+                );
+              })}
+            </div>
 
             {/* Şu an incelenen oyun rozeti (Masaüstü) */}
             <div className="bottom-nav-viewing desktop-only" style={{
