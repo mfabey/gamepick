@@ -295,25 +295,27 @@ function GamesList() {
           {/* ── SOL: bölüm filtreleri + oyun grid ── */}
           <div>
             {/* Section chip'leri */}
-            <div className="category-scroll-chips" style={{ marginBottom: 24 }}>
-              {localizedSections.map(s => {
-                const active = section === s.value;
-                return (
-                  <button key={s.value} onClick={() => handleSection(s.value)} style={{
-                    display: 'flex', alignItems: 'center', gap: 6,
-                    padding: '8px 18px', borderRadius: 999,
-                    border: active ? '1.5px solid var(--accent)' : '1.5px solid var(--border)',
-                    background: active ? 'var(--accent)' : 'var(--bg-card)',
-                    color: active ? '#fff' : 'var(--text-2)',
-                    fontSize: 13, fontWeight: active ? 600 : 400,
-                    cursor: 'pointer', transition: 'all 0.15s',
-                    boxShadow: active ? '0 4px 12px var(--accent-glow)' : 'none',
-                  }}>
-                    <span>{s.icon}</span>
-                    <span>{s.label}</span>
-                  </button>
-                );
-              })}
+            <div className="scroll-chips-wrapper">
+              <div className="category-scroll-chips" style={{ marginBottom: 24 }}>
+                {localizedSections.map(s => {
+                  const active = section === s.value;
+                  return (
+                    <button key={s.value} onClick={() => handleSection(s.value)} style={{
+                      display: 'flex', alignItems: 'center', gap: 6,
+                      padding: '8px 18px', borderRadius: 999,
+                      border: active ? '1.5px solid var(--accent)' : '1.5px solid var(--border)',
+                      background: active ? 'var(--accent)' : 'var(--bg-card)',
+                      color: active ? '#fff' : 'var(--text-2)',
+                      fontSize: 13, fontWeight: active ? 600 : 400,
+                      cursor: 'pointer', transition: 'all 0.15s',
+                      boxShadow: active ? '0 4px 12px var(--accent-glow)' : 'none',
+                    }}>
+                      <span>{s.icon}</span>
+                      <span>{s.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Mobil Filtreler (Kategori ve Bütçe) */}

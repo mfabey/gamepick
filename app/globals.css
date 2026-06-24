@@ -162,8 +162,6 @@ html, body {
   font-family: var(--font-body);
   font-size: 16px; line-height: 1.65; min-height: 100vh;
   -webkit-font-smoothing: antialiased;
-  max-width: 100vw;
-  overflow-x: hidden;
 }
 
 /* Headings use the gaming font */
@@ -874,12 +872,11 @@ html[data-theme="dark"] .glass-card {
   }
 }
 
-/* Trap horizontal overflow on iOS and prevent slithering */
-main {
-  width: 100%;
-  max-width: 100vw;
-  overflow-x: hidden;
-  position: relative;
+/* Contain scroll chips negative margin bleed to prevent horizontal page scrolling */
+.scroll-chips-wrapper {
+  overflow: hidden !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 /* Defensive Grid Item sizing to prevent card overflow */

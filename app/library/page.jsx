@@ -148,63 +148,65 @@ export default function LibraryPage() {
 
   return (
     <div className="container" style={{ paddingTop: 32, paddingBottom: 60 }}>
-      <div className="category-scroll-chips" style={{ marginBottom: 24 }}>
-        {steamAccounts.map(account => (
-          <div key={`steam_${account.steamId}`} style={{ display: 'flex' }}>
-            <button onClick={() => setActiveTab(`steam_${account.steamId}`)} style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              padding: '10px 16px', borderTopLeftRadius: 10, borderBottomLeftRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 14,
-              background: activeTab === `steam_${account.steamId}` ? '#1b2838' : 'var(--bg-card)',
-              color:      activeTab === `steam_${account.steamId}` ? '#fff' : 'var(--text-2)',
+      <div className="scroll-chips-wrapper">
+        <div className="category-scroll-chips" style={{ marginBottom: 24 }}>
+          {steamAccounts.map(account => (
+            <div key={`steam_${account.steamId}`} style={{ display: 'flex' }}>
+              <button onClick={() => setActiveTab(`steam_${account.steamId}`)} style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                padding: '10px 16px', borderTopLeftRadius: 10, borderBottomLeftRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 14,
+                background: activeTab === `steam_${account.steamId}` ? '#1b2838' : 'var(--bg-card)',
+                color:      activeTab === `steam_${account.steamId}` ? '#fff' : 'var(--text-2)',
+              }}>
+                <SteamLogo size={16} color={activeTab === `steam_${account.steamId}` ? '#fff' : '#1a9fff'} />
+                Steam <span style={{ fontSize: 11, opacity: 0.75 }}>{account.name?.slice(0, 14)}</span>
+              </button>
+              <button onClick={() => handleRemoveSteamAccount(account.steamId)} disabled={removingId === account.steamId} style={{
+                background: activeTab === `steam_${account.steamId}` ? '#1b2838' : 'var(--bg-card)',
+                color: activeTab === `steam_${account.steamId}` ? '#aaa' : 'var(--text-3)',
+                border: 'none', borderTopRightRadius: 10, borderBottomRightRadius: 10, padding: '0 10px',
+                cursor: 'pointer', fontSize: 16, borderLeft: `1px solid ${activeTab === `steam_${account.steamId}` ? '#2a3f5a' : 'var(--border)'}`,
+              }} title="Hesabı Çıkar">
+                {removingId === account.steamId ? '...' : '×'}
+              </button>
+            </div>
+          ))}
+          
+          <a href="/api/auth/steam" style={{ textDecoration: 'none' }}>
+            <button style={{
+              display: 'flex', alignItems: 'center', gap: 6, padding: '10px 16px', borderRadius: 10, border: '1px dashed #1a9fff', cursor: 'pointer', fontWeight: 600, fontSize: 13, background: 'transparent', color: '#1a9fff',
             }}>
-              <SteamLogo size={16} color={activeTab === `steam_${account.steamId}` ? '#fff' : '#1a9fff'} />
-              Steam <span style={{ fontSize: 11, opacity: 0.75 }}>{account.name?.slice(0, 14)}</span>
+              + Hesap Ekle
             </button>
-            <button onClick={() => handleRemoveSteamAccount(account.steamId)} disabled={removingId === account.steamId} style={{
-              background: activeTab === `steam_${account.steamId}` ? '#1b2838' : 'var(--bg-card)',
-              color: activeTab === `steam_${account.steamId}` ? '#aaa' : 'var(--text-3)',
-              border: 'none', borderTopRightRadius: 10, borderBottomRightRadius: 10, padding: '0 10px',
-              cursor: 'pointer', fontSize: 16, borderLeft: `1px solid ${activeTab === `steam_${account.steamId}` ? '#2a3f5a' : 'var(--border)'}`,
-            }} title="Hesabı Çıkar">
-              {removingId === account.steamId ? '...' : '×'}
+          </a>
+
+          {steamAccounts.length > 1 && (
+            <button onClick={() => setActiveTab('merged')} style={{
+              display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 14,
+              background: activeTab === 'merged' ? '#6b21a8' : 'var(--bg-card)', color: activeTab === 'merged' ? '#fff' : 'var(--text-2)', marginLeft: 'auto',
+            }}>
+              🌟 Birleşik
             </button>
-          </div>
-        ))}
-        
-        <a href="/api/auth/steam" style={{ textDecoration: 'none' }}>
-          <button style={{
-            display: 'flex', alignItems: 'center', gap: 6, padding: '10px 16px', borderRadius: 10, border: '1px dashed #1a9fff', cursor: 'pointer', fontWeight: 600, fontSize: 13, background: 'transparent', color: '#1a9fff',
-          }}>
-            + Hesap Ekle
-          </button>
-        </a>
+          )}
 
-        {steamAccounts.length > 1 && (
-          <button onClick={() => setActiveTab('merged')} style={{
-            display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 14,
-            background: activeTab === 'merged' ? '#6b21a8' : 'var(--bg-card)', color: activeTab === 'merged' ? '#fff' : 'var(--text-2)', marginLeft: 'auto',
-          }}>
-            🌟 Birleşik
-          </button>
-        )}
-
-        {hasXbox ? (
-          <button onClick={() => setActiveTab('xbox')} style={{
-            display: 'flex', alignItems: 'center', gap: 8, marginLeft: steamAccounts.length <= 1 ? 'auto' : 0,
-            padding: '10px 20px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 14,
-            background: activeTab === 'xbox' ? '#107C10' : 'var(--bg-card)', color: activeTab === 'xbox' ? '#fff' : 'var(--text-2)',
-          }}>
-            <XboxLogo size={16} color={activeTab === 'xbox' ? '#fff' : '#107C10'} />
-            Xbox <span style={{ fontSize: 11, opacity: 0.75 }}>{xboxUser.gamertag?.slice(0, 14)}</span>
-          </button>
-        ) : (
-          <button onClick={() => setShowXboxModal(true)} style={{
-            display: 'flex', alignItems: 'center', gap: 8, marginLeft: steamAccounts.length <= 1 ? 'auto' : 0,
-            padding: '10px 16px', borderRadius: 10, border: '1px dashed #107C10', cursor: 'pointer', fontWeight: 600, fontSize: 13, background: 'transparent', color: '#107C10',
-          }}>
-            + Xbox Bağla
-          </button>
-        )}
+          {hasXbox ? (
+            <button onClick={() => setActiveTab('xbox')} style={{
+              display: 'flex', alignItems: 'center', gap: 8, marginLeft: steamAccounts.length <= 1 ? 'auto' : 0,
+              padding: '10px 20px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 14,
+              background: activeTab === 'xbox' ? '#107C10' : 'var(--bg-card)', color: activeTab === 'xbox' ? '#fff' : 'var(--text-2)',
+            }}>
+              <XboxLogo size={16} color={activeTab === 'xbox' ? '#fff' : '#107C10'} />
+              Xbox <span style={{ fontSize: 11, opacity: 0.75 }}>{xboxUser.gamertag?.slice(0, 14)}</span>
+            </button>
+          ) : (
+            <button onClick={() => setShowXboxModal(true)} style={{
+              display: 'flex', alignItems: 'center', gap: 8, marginLeft: steamAccounts.length <= 1 ? 'auto' : 0,
+              padding: '10px 16px', borderRadius: 10, border: '1px dashed #107C10', cursor: 'pointer', fontWeight: 600, fontSize: 13, background: 'transparent', color: '#107C10',
+            }}>
+              + Xbox Bağla
+            </button>
+          )}
+        </div>
       </div>
 
       {steamAccounts.map(account => 
