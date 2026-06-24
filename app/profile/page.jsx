@@ -459,6 +459,7 @@ export default function ProfilePage() {
                     connected={true}
                     color="#1a9fff"
                     initials="STM"
+                    avatar={account.avatar}
                     profileUrl={account.profileUrl || `https://steamcommunity.com/profiles/${account.steamId}`}
                     onToggle={async () => {
                       if (steamLogoutAccount) await steamLogoutAccount(account.steamId);
@@ -489,7 +490,7 @@ export default function ProfilePage() {
               />
             )}
             {/* Xbox */}
-            <AccountCard
+             <AccountCard
               name="Xbox / Game Pass"
               status={
                 xboxUser 
@@ -501,6 +502,7 @@ export default function ProfilePage() {
               connected={!!xboxUser}
               color="#16a34a"
               initials="XBX"
+              avatar={xboxUser?.avatar}
               profileUrl={xboxUser?.gamertag ? `https://live.xbox.com/Profile?Gamertag=${encodeURIComponent(xboxUser.gamertag)}` : null}
               onToggle={() => {
                 if (xboxUser) {
@@ -746,7 +748,7 @@ export default function ProfilePage() {
   );
 }
 
-function AccountCard({ name, status, connected, color, initials, onToggle, lang, profileUrl }) {
+function AccountCard({ name, status, connected, color, initials, onToggle, lang, profileUrl, avatar }) {
   const [hovered, setHovered] = useState(false);
 
   const content = (
@@ -759,9 +761,14 @@ function AccountCard({ name, status, connected, color, initials, onToggle, lang,
         fontSize: 11, fontWeight: 800, color: connected ? color : 'var(--text-3)', 
         flexShrink: 0,
         boxShadow: connected ? `0 0 10px ${color}15` : 'none',
-        transition: 'all 0.25s'
+        transition: 'all 0.25s',
+        overflow: 'hidden'
       }}>
-        {initials}
+        {avatar ? (
+          <img src={avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        ) : (
+          initials
+        )}
       </div>
       <div style={{ minWidth: 0, flex: 1 }}>
         <p style={{ 
@@ -838,8 +845,9 @@ function AccountCard({ name, status, connected, color, initials, onToggle, lang,
             e.currentTarget.style.background = color;
             e.currentTarget.style.color = '#fff';
           } else {
-            e.currentTarget.style.borderColor = 'var(--accent)';
-            e.currentTarget.style.color = 'var(--accent)';
+            e.currentTarget.style.borderColor = '#ef4444';
+            e.currentTarget.style.color = '#ef4444';
+            e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)';
           }
         }}
         onMouseLeave={(e) => {
@@ -849,11 +857,12 @@ function AccountCard({ name, status, connected, color, initials, onToggle, lang,
           } else {
             e.currentTarget.style.borderColor = 'var(--border)';
             e.currentTarget.style.color = 'var(--text-2)';
+            e.currentTarget.style.background = 'var(--bg-input)';
           }
         }}
       >
         {connected 
-          ? (lang === 'tr' ? 'Kes' : 'Disconnect') 
+          ? (lang === 'tr' ? 'Bağlantıyı Kes' : 'Disconnect') 
           : (lang === 'tr' ? 'Bağla' : 'Connect')}
       </button>
     </div>
