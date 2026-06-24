@@ -238,8 +238,8 @@ function GamesList() {
     <div style={{ minHeight: '100vh', background: 'var(--bg-body)' }}>
 
       {/* ── Sticky üst arama çubuğu ── */}
-      <div className="sticky-search-bar">
-        <div className="container" style={{ paddingTop: 14, paddingBottom: 14 }}>
+      <div className="sticky-search-bar" style={{ paddingTop: 14, paddingBottom: 14 }}>
+        <div className="container">
           <div style={{
             display: 'flex', alignItems: 'center', gap: 12,
             background: scrolled ? 'color-mix(in srgb, var(--bg-card) 72%, transparent)' : 'var(--bg-input)',
