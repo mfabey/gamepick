@@ -388,7 +388,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 32 }}>
+      <div className="profile-main-grid">
 
         {/* Bağlı hesaplar */}
         <div>
@@ -509,7 +509,7 @@ export default function ProfilePage() {
           <h2 className="section-title" style={{ fontSize: 16 }}>
             {lang === 'tr' ? 'AI Oyuncu Analizi' : 'AI Player Analysis'}
           </h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginBottom: 16 }}>
+          <div className="profile-stats-grid">
             <StatCard 
               number={steamUser ? (steamLib?.games?.length || ownedGames.size || 0).toString() : "0"} 
               label={lang === 'tr' ? 'Steam Oyunu' : 'Steam Games'} 
@@ -659,9 +659,9 @@ function AccountCard({ name, status, connected, color, initials, onToggle, lang,
 
 function StatCard({ number, label }) {
   return (
-    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px', textAlign: 'center' }}>
-      <p style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>{number}</p>
-      <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>{label}</p>
+    <div className="profile-stat-card">
+      <p className="profile-stat-number">{number}</p>
+      <p className="profile-stat-label">{label}</p>
     </div>
   );
 }

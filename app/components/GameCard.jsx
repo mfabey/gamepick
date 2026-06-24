@@ -184,20 +184,20 @@ function GameCard({ game, compact = false }) {
         </div>
 
         {/* Alt bilgi */}
-        <div style={{ padding: '13px 15px' }}>
-          <p style={{ fontWeight: 600, fontSize: 14, lineHeight: 1.3, color: 'var(--text)', marginBottom: 7, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <div className="game-card-body">
+          <p className="game-card-title">
             {game.name}
           </p>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4, fontFamily: "-apple-system, 'Segoe UI', system-ui, Roboto, 'Helvetica Neue', Arial, sans-serif" }}>
 
             {/* Fiyat */}
             {isFree ? (
-              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--green)' }}>{t('card.free')}</span>
+              <span className="game-card-price" style={{ color: 'var(--green)' }}>{t('card.free')}</span>
             ) : livePrice?.price != null ? (
               isOnSale ? (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--amber)' }}>
+                    <span className="game-card-price" style={{ color: 'var(--amber)' }}>
                       {formatPrice(livePrice.price)}
                     </span>
                     {livePrice.storeIcon && (
@@ -212,7 +212,7 @@ function GameCard({ game, compact = false }) {
                   </div>
                 </div>
               ) : (
-                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
+                <span className="game-card-price">
                   {formatPrice(livePrice.price)}
                 </span>
               )

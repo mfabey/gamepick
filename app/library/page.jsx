@@ -148,7 +148,7 @@ export default function LibraryPage() {
 
   return (
     <div className="container" style={{ paddingTop: 32, paddingBottom: 60 }}>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
+      <div className="category-scroll-chips" style={{ marginBottom: 24 }}>
         {steamAccounts.map(account => (
           <div key={`steam_${account.steamId}`} style={{ display: 'flex' }}>
             <button onClick={() => setActiveTab(`steam_${account.steamId}`)} style={{
@@ -508,7 +508,7 @@ function SteamProfileHeader({ steamUser, library, totalValue, pricesLoading }) {
           <a href={steamUser.profileUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: '#1a9fff', textDecoration: 'none' }}>{t('library.viewProfile')}</a>
         </div>
         {library && (
-          <div style={{ display: 'flex', gap: 20, flexShrink: 0, flexWrap: 'wrap' }}>
+          <div className="library-profile-stats">
             {[
               { label: t('library.stats.totalGames'), value: library.total },
               { label: t('library.stats.played'),     value: library.played },
@@ -547,17 +547,17 @@ function GameRow({ game, rank, price, pricesLoading }) {
 
   return (
     <div
-      style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '10px 14px', borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', transition: 'border-color 0.1s' }}
+      className="game-row"
       onMouseEnter={e => e.currentTarget.style.borderColor = '#1a9fff'}
       onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
     >
       {rank && (
-        <span style={{ width: 24, textAlign: 'center', fontSize: 12, color: 'var(--text-3)', fontWeight: 600, flexShrink: 0 }}>
+        <span className="game-row-rank">
           {rank <= 3 ? ['🥇','🥈','🥉'][rank - 1] : rank}
         </span>
       )}
       <a href={game.storeUrl} target="_blank" rel="noopener noreferrer" style={{ flexShrink: 0 }}>
-        <div style={{ width: 60, height: 38, borderRadius: 6, overflow: 'hidden', background: 'var(--bg-input)', position: 'relative' }}>
+        <div className="game-row-cover">
           <GameImage
             game={game}
             alt={game.name}
@@ -566,7 +566,7 @@ function GameRow({ game, rank, price, pricesLoading }) {
           />
         </div>
       </a>
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div className="game-row-details">
         <a href={game.storeUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
           <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{game.name}</p>
         </a>
@@ -575,11 +575,11 @@ function GameRow({ game, rank, price, pricesLoading }) {
           {lastPlayed && !game.hoursRecent && <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t('library.lastPlayedLabel').replace('{date}', lastPlayed)}</span>}
         </div>
       </div>
-      <a href={`/api/game-lookup?name=${encodeURIComponent(game.name)}`} title="Gamerisen'de görüntüle" style={{ flexShrink: 0, padding: '4px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text-3)', textDecoration: 'none', whiteSpace: 'nowrap' }}
+      <a href={`/api/game-lookup?name=${encodeURIComponent(game.name)}`} title="Gamerisen'de görüntüle" className="game-row-actions"
         onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'}
         onMouseLeave={e => e.currentTarget.style.color = 'var(--text-3)'}
       >🎮 Gamerisen</a>
-      <div style={{ textAlign: 'right', flexShrink: 0, minWidth: 80 }}>
+      <div className="game-row-price-score">
         {pricesLoading && !price
           ? <p style={{ fontSize: 11, color: 'var(--text-3)', fontStyle: 'italic' }}>…</p>
           : price?.isFree
@@ -597,7 +597,7 @@ function GameRow({ game, rank, price, pricesLoading }) {
                 : null
         }
       </div>
-      <div style={{ textAlign: 'right', flexShrink: 0, minWidth: 60 }}>
+      <div className="game-row-hours">
         {game.hours > 0
           ? <><p style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{game.hours}{hourSymbol}</p><p style={{ fontSize: 11, color: 'var(--text-3)' }}>{t('library.hoursPlayed')}</p></>
           : <p style={{ fontSize: 12, color: 'var(--text-3)', fontStyle: 'italic' }}>{t('library.notPlayed')}</p>
@@ -654,7 +654,7 @@ function XboxProfileHeader({ xboxUser, library, onLogout }) {
           <a href={`https://www.xbox.com/${lang === 'tr' ? 'tr-TR' : 'en-US'}/play/user/${xboxUser.gamertag}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', textDecoration: 'none', display: 'inline-block', marginTop: 6 }}>{t('library.viewProfile')}</a>
         </div>
         {library && (
-          <div style={{ display: 'flex', gap: 20, flexShrink: 0, flexWrap: 'wrap' }}>
+          <div className="library-profile-stats">
             {[
               { label: t('library.stats.played') + ' ' + t('library.games'),   value: library.total },
               { label: 'Game Pass',      value: library.gamePassCount },
@@ -687,13 +687,13 @@ function XboxGameRow({ game }) {
 
   return (
     <div
-      style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '10px 14px', borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', transition: 'border-color 0.1s' }}
+      className="game-row"
       onMouseEnter={e => e.currentTarget.style.borderColor = '#107C10'}
       onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
     >
       {/* Kapak */}
       <a href={game.storeUrl} target="_blank" rel="noopener noreferrer" style={{ flexShrink: 0 }}>
-        <div style={{ width: 60, height: 38, borderRadius: 6, overflow: 'hidden', background: 'var(--bg-input)', position: 'relative' }}>
+        <div className="game-row-cover">
           <GameImage
             game={game}
             alt={game.name}
@@ -704,7 +704,7 @@ function XboxGameRow({ game }) {
       </a>
 
       {/* İsim + son oynanma */}
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div className="game-row-details">
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
           <a href={game.storeUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
             <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 220 }}>{game.name}</p>
@@ -718,14 +718,14 @@ function XboxGameRow({ game }) {
 
       {/* Gamerisen */}
       <a href={`/api/game-lookup?name=${encodeURIComponent(game.name)}`} title="Gamerisen'de görüntüle"
-        style={{ flexShrink: 0, padding: '4px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text-3)', textDecoration: 'none', whiteSpace: 'nowrap' }}
+        className="game-row-actions"
         onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'}
         onMouseLeave={e => e.currentTarget.style.color = 'var(--text-3)'}
       >🎮 Gamerisen</a>
 
       {/* Başarımlar */}
       {game.totalAchievements > 0 && (
-        <div style={{ textAlign: 'right', flexShrink: 0, minWidth: 80 }}>
+        <div className="game-row-price-score">
           <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
             {game.currentGamerscore}G
           </p>

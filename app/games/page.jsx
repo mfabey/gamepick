@@ -295,7 +295,7 @@ function GamesList() {
           {/* ── SOL: bölüm filtreleri + oyun grid ── */}
           <div>
             {/* Section chip'leri */}
-            <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
+            <div className="category-scroll-chips" style={{ marginBottom: 24 }}>
               {localizedSections.map(s => {
                 const active = section === s.value;
                 return (
