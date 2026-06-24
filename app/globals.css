@@ -852,9 +852,15 @@ html[data-theme="dark"] .glass-card {
   padding-bottom: 4px;
   -webkit-overflow-scrolling: touch !important;
   flex-wrap: nowrap !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
 }
 .category-scroll-chips::-webkit-scrollbar {
   display: none !important; /* Chrome, Safari, Opera */
+}
+.category-scroll-chips > * {
+  flex-shrink: 0 !important;
 }
 
 @media (max-width: 768px) {
@@ -863,7 +869,25 @@ html[data-theme="dark"] .glass-card {
     margin-right: -16px !important;
     padding-left: 16px !important;
     padding-right: 16px !important;
+    width: calc(100% + 32px) !important;
+    max-width: calc(100% + 32px) !important;
   }
+}
+
+/* Trap horizontal overflow on iOS and prevent slithering */
+main {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Defensive Grid Item sizing to prevent card overflow */
+.grid-auto > a,
+.grid-auto > div {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 /* Profile Main Grid */
@@ -1071,8 +1095,26 @@ html[data-theme="dark"] .glass-card {
   
   .category-scroll-chips button,
   .category-scroll-chips a {
-    padding: 8px 12px !important;
+    padding: 6px 12px !important;
     font-size: 12px !important;
+    border-radius: 8px !important;
+  }
+  .category-scroll-chips div > button:first-child {
+    border-top-left-radius: 8px !important;
+    border-bottom-left-radius: 8px !important;
+  }
+  .category-scroll-chips div > button:last-child {
+    border-top-right-radius: 8px !important;
+    border-bottom-right-radius: 8px !important;
+    padding: 0 8px !important;
+    font-size: 14px !important;
+  }
+  .category-scroll-chips span {
+    font-size: 10px !important;
+  }
+  .category-scroll-chips svg {
+    width: 14px !important;
+    height: 14px !important;
   }
 }
 
