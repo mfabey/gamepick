@@ -12,7 +12,7 @@ import { useLanguage } from '../context/LanguageContext';
 // ANA SAYFA
 // ─────────────────────────────────────────────────────────────────────────────
 export default function LibraryPage() {
-  const { user, steamAccounts = [], steamUser, steamLogoutAccount, xboxUser, xboxLogout } = useAuth();
+  const { user, steamAccounts = [], steamLogoutAccount, xboxUser, xboxLogout } = useAuth();
   const { lang, t } = useLanguage();
   
   const [activeTab, setActiveTab] = useState(() => {
