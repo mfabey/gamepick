@@ -333,6 +333,7 @@ export default function NavBar() {
 
           <nav ref={navRef} className="bottom-nav" style={{
             position: 'fixed', left: '50%', transform: 'translateX(-50%)', bottom: 28, zIndex: hintOpen ? 201 : 200,
+            display: 'flex', gap: 6,
             background: 'linear-gradient(180deg, color-mix(in srgb, var(--bg-card) 46%, transparent), color-mix(in srgb, var(--bg-card) 30%, transparent))',
             backdropFilter: 'blur(22px) saturate(185%)', WebkitBackdropFilter: 'blur(22px) saturate(185%)',
             borderRadius: 999, padding: 11,
