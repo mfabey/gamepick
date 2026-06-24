@@ -475,8 +475,8 @@ export default function ProfilePage() {
             )}
 
             {/* Epic Games (Coming Soon) */}
-            <div className="card" style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, opacity: 0.7, marginTop: 4 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div className="card" style={{ padding: '10px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, opacity: 0.7, marginTop: 4, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
                 <div style={{
                   width: 34, height: 34, borderRadius: 8, background: `#2A2A2A18`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -484,17 +484,18 @@ export default function ProfilePage() {
                 }}>
                   <EpicLogo size={18} color="#888" />
                 </div>
-                <div>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>Epic Games</p>
-                  <p style={{ fontSize: 12, color: 'var(--text-3)' }}>{lang === 'tr' ? 'Bağlı değil' : 'Not connected'}</p>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Epic Games</p>
+                  <p style={{ fontSize: 12, color: 'var(--text-3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{lang === 'tr' ? 'Bağlı değil' : 'Not connected'}</p>
                 </div>
               </div>
               <button disabled style={{
-                padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600,
+                padding: '6px 12px', borderRadius: 8, fontSize: 11.5, fontWeight: 600,
                 border: '1px solid var(--border)',
                 background: 'var(--bg-input)',
                 color: 'var(--text-3)',
                 cursor: 'not-allowed',
+                flexShrink: 0,
               }}>
                 {lang === 'tr' ? 'Çok Yakında' : 'Coming Soon'}
               </button>
@@ -618,7 +619,7 @@ export default function ProfilePage() {
 
 function AccountCard({ name, status, connected, color, initials, onToggle, lang, profileUrl }) {
   const content = (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
       <div style={{
         width: 34, height: 34, borderRadius: 8, background: `${color}18`,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -626,28 +627,29 @@ function AccountCard({ name, status, connected, color, initials, onToggle, lang,
       }}>
         {initials}
       </div>
-      <div>
-        <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', textDecoration: profileUrl ? 'underline' : 'none' }}>{name}</p>
-        <p style={{ fontSize: 12, color: connected ? 'var(--green)' : 'var(--text-3)' }}>{status}</p>
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', textDecoration: profileUrl ? 'underline' : 'none', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</p>
+        <p style={{ fontSize: 12, color: connected ? 'var(--green)' : 'var(--text-3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{status}</p>
       </div>
     </div>
   );
 
   return (
-    <div className="card" style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+    <div className="card" style={{ padding: '10px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, minWidth: 0 }}>
       {profileUrl ? (
-        <a href={profileUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', display: 'block' }}>
+        <a href={profileUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', display: 'flex', minWidth: 0, flex: 1, alignItems: 'center' }}>
           {content}
         </a>
       ) : (
         content
       )}
       <button onClick={onToggle} style={{
-        padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600,
+        padding: '6px 12px', borderRadius: 8, fontSize: 11.5, fontWeight: 600,
         border: connected ? '1px solid var(--border)' : '1px solid var(--accent-border)',
         background: connected ? 'var(--bg-input)' : 'var(--accent-bg)',
         color: connected ? 'var(--text-3)' : 'var(--accent)',
         cursor: 'pointer',
+        flexShrink: 0,
       }}>
         {connected 
           ? (lang === 'tr' ? 'Kes' : 'Disconnect') 
