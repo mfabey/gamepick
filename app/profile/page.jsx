@@ -370,21 +370,73 @@ export default function ProfilePage() {
     <div className="container" style={{ paddingTop: 40, paddingBottom: 60 }}>
 
       {/* Başlık / User Card */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 36 }}>
+      <div className="premium-dashboard-card" style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 20,
+        padding: '24px 28px',
+        marginBottom: 36,
+        background: 'linear-gradient(135deg, rgba(201, 133, 10, 0.08), rgba(255, 255, 255, 0.01))',
+        border: '1px solid rgba(201, 133, 10, 0.25)',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        {/* Subtle ambient light behind avatar */}
         <div style={{
-          width: 56, height: 56, borderRadius: '50%',
-          background: 'var(--accent-bg)',
-          border: '1px solid var(--accent-border)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 20, fontWeight: 700, color: 'var(--accent)',
-        }}>
-          {initials}
-        </div>
-        <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>{user.name}</h1>
-          <p style={{ color: 'var(--text-3)', fontSize: 13 }}>
-            {lang === 'tr' ? 'Gamerisen Üyesi' : 'Gamerisen Member'}
-          </p>
+          position: 'absolute',
+          top: -20, left: -20,
+          width: 120, height: 120,
+          background: 'radial-gradient(circle, var(--accent-glow) 0%, transparent 70%)',
+          pointerEvents: 'none',
+          opacity: 0.5
+        }} />
+
+        {steamUser && steamUser.avatar ? (
+          <div style={{
+            position: 'relative',
+            width: 64, height: 64,
+            borderRadius: '50%',
+            overflow: 'hidden',
+            border: '2px solid var(--accent)',
+            boxShadow: '0 0 16px var(--accent-glow)',
+            flexShrink: 0,
+            transition: 'transform 0.3s ease'
+          }}>
+            <img 
+              src={steamUser.avatar} 
+              alt={user.name} 
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          </div>
+        ) : (
+          <div style={{
+            width: 64, height: 64, borderRadius: '50%',
+            background: 'linear-gradient(135deg, var(--accent-bg), rgba(201, 133, 10, 0.2))',
+            border: '1px solid var(--accent-border)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 22, fontWeight: 800, color: 'var(--accent)',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            flexShrink: 0,
+            letterSpacing: '0.5px'
+          }}>
+            {initials}
+          </div>
+        )}
+
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.5px', marginBottom: 2 }}>{user.name}</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{
+              display: 'inline-block',
+              width: 6, height: 6,
+              borderRadius: '50%',
+              background: '#22c55e',
+              boxShadow: '0 0 8px rgba(34, 197, 94, 0.6)'
+            }} />
+            <p style={{ color: 'var(--text-3)', fontSize: 13, fontWeight: 500 }}>
+              {lang === 'tr' ? 'Gamerisen Üyesi' : 'Gamerisen Member'}
+            </p>
+          </div>
         </div>
       </div>
 
@@ -475,22 +527,33 @@ export default function ProfilePage() {
             )}
 
             {/* Epic Games (Coming Soon) */}
-            <div className="card" style={{ padding: '10px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, opacity: 0.7, marginTop: 4, minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
+            <div className="premium-dashboard-card" style={{ 
+              padding: '12px 14px', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between', 
+              gap: 12, 
+              opacity: 0.6, 
+              marginTop: 4, 
+              minWidth: 0,
+              cursor: 'not-allowed'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
                 <div style={{
-                  width: 34, height: 34, borderRadius: 8, background: `#2A2A2A18`,
+                  width: 36, height: 36, borderRadius: 8, background: `rgba(255,255,255,0.02)`,
+                  border: '1px solid var(--border)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   flexShrink: 0,
                 }}>
-                  <EpicLogo size={18} color="#888" />
+                  <EpicLogo size={18} color="#666" />
                 </div>
                 <div style={{ minWidth: 0, flex: 1 }}>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Epic Games</p>
+                  <p style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text-3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Epic Games</p>
                   <p style={{ fontSize: 12, color: 'var(--text-3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{lang === 'tr' ? 'Bağlı değil' : 'Not connected'}</p>
                 </div>
               </div>
               <button disabled style={{
-                padding: '6px 12px', borderRadius: 8, fontSize: 11.5, fontWeight: 600,
+                padding: '6px 14px', borderRadius: 8, fontSize: 11, fontWeight: 700,
                 border: '1px solid var(--border)',
                 background: 'var(--bg-input)',
                 color: 'var(--text-3)',
@@ -522,30 +585,75 @@ export default function ProfilePage() {
             <StatCard 
               number={getCompletionStat()}  
               label={lang === 'tr' ? 'Tamamlama' : 'Completion'} 
+              isAccent={true}
             />
           </div>
 
-          <div className="card" style={{ padding: '16px 20px', marginBottom: 12, border: '1px solid var(--accent-border)', boxShadow: '0 8px 24px var(--accent-glow)', transform: 'translateY(-2px)', transition: 'transform 0.2s' }}>
-            <p style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-3)', fontWeight: 600, marginBottom: 10 }}>
-              {lang === 'tr' ? 'En çok oynadığın türler' : 'Your top played genres'}
+          <div 
+            className="premium-dashboard-card" 
+            style={{ 
+              padding: '20px 24px', 
+              marginBottom: 16, 
+              border: '1px solid rgba(201, 133, 10, 0.2)', 
+              boxShadow: '0 8px 32px var(--accent-glow)',
+              position: 'relative'
+            }}
+          >
+            <p style={{ 
+              fontSize: 11, 
+              textTransform: 'uppercase', 
+              letterSpacing: '0.08em', 
+              color: 'var(--text-3)', 
+              fontWeight: 700, 
+              marginBottom: 14 
+            }}>
+              {lang === 'tr' ? 'En Çok Oynanan Türler' : 'Your Top Played Genres'}
             </p>
             {genreStats.map(g => (
-              <div key={g.label} style={{ marginBottom: 8 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4, color: 'var(--text-2)' }}>
-                  <span>{g.label}</span><span>{g.pct}%</span>
+              <div key={g.label} style={{ marginBottom: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, marginBottom: 6, color: 'var(--text-2)', fontWeight: 500 }}>
+                  <span>{g.label}</span>
+                  <span style={{ color: 'var(--text)', fontWeight: 600 }}>{g.pct}%</span>
                 </div>
-                <div style={{ height: 5, background: 'var(--bg-input)', borderRadius: 3, overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${g.pct}%`, background: 'var(--accent)', borderRadius: 3 }} />
+                <div style={{ height: 6, background: 'var(--bg-input)', borderRadius: 4, overflow: 'hidden', border: '1px solid var(--border)' }}>
+                  <div 
+                    className="animated-progress-fill" 
+                    style={{ 
+                      height: '100%', 
+                      width: `${g.pct}%`, 
+                      background: 'linear-gradient(90deg, var(--accent) 0%, #ff8066 100%)', 
+                      borderRadius: 4,
+                      boxShadow: '0 0 8px var(--accent-glow)'
+                    }} 
+                  />
                 </div>
               </div>
             ))}
           </div>
 
-          <div className="card" style={{ padding: '14px 16px' }}>
-            <p style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-3)', fontWeight: 600, marginBottom: 8 }}>
-              ✦ {lang === 'tr' ? 'AI Yorumu' : 'AI Feedback'}
+          <div 
+            className="premium-dashboard-card" 
+            style={{ 
+              padding: '18px 20px',
+              borderLeft: '3px solid #8b5cf6', // Soft purple intelligence vibe
+              background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.05), rgba(255, 255, 255, 0.01))'
+            }}
+          >
+            <p style={{ 
+              fontSize: 11, 
+              textTransform: 'uppercase', 
+              letterSpacing: '0.08em', 
+              color: '#a78bfa', // Purple tint text for AI
+              fontWeight: 700, 
+              marginBottom: 8,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6
+            }}>
+              <span style={{ fontSize: 12 }}>✦</span>
+              {lang === 'tr' ? 'AI Oyuncu Yorumu' : 'AI Player Feedback'}
             </p>
-            <p style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.65 }}>
+            <p style={{ fontSize: 13.5, color: 'var(--text-2)', lineHeight: 1.7, fontWeight: 500 }}>
               {getDynamicAIComment(genreStats)}
             </p>
           </div>
@@ -562,15 +670,25 @@ export default function ProfilePage() {
         </h2>
 
         {wishlist.length === 0 ? (
-          <div className="card" style={{ padding: '32px', textAlign: 'center' }}>
-            <p style={{ color: 'var(--text-3)', fontSize: 14, marginBottom: 12 }}>
-              {lang === 'tr' ? 'Henüz istek listesinde oyun yok.' : 'No games in your wishlist yet.'}
+          <div className="premium-dashboard-card" style={{ padding: '40px 32px', textAlign: 'center' }}>
+            <p style={{ color: 'var(--text-3)', fontSize: 14, marginBottom: 16 }}>
+              {lang === 'tr' ? 'Henüz istek listenizde oyun yok.' : 'No games in your wishlist yet.'}
             </p>
             <Link href="/" style={{
-              display: 'inline-block', padding: '9px 20px', borderRadius: 10,
+              display: 'inline-block', padding: '10px 22px', borderRadius: 10,
               background: 'var(--accent-bg)', border: '1px solid var(--accent-border)',
-              color: 'var(--accent)', fontSize: 13, fontWeight: 600,
-            }}>
+              color: 'var(--accent)', fontSize: 13.5, fontWeight: 700,
+              transition: 'all 0.2s'
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.transform = 'translateY(-1px)';
+              e.currentTarget.style.boxShadow = '0 4px 12px var(--accent-glow)';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.transform = 'none';
+              e.currentTarget.style.boxShadow = 'none';
+            }}
+            >
               {lang === 'tr' ? 'Oyun Keşfet →' : 'Explore Games →'}
             </Link>
           </div>
@@ -588,26 +706,37 @@ export default function ProfilePage() {
         <h2 className="section-title" style={{ fontSize: 16 }}>
           {lang === 'tr' ? 'Günlük Öneri' : 'Daily Recommendation'}
         </h2>
-        <div className="card" style={{
-          padding: '16px 20px',
-          background: 'var(--accent-bg)',
-          border: '1px solid var(--accent-border)',
+        <div className="premium-dashboard-card" style={{
+          padding: '20px 24px',
+          background: 'linear-gradient(135deg, rgba(201, 133, 10, 0.08), rgba(255, 255, 255, 0.01))',
+          border: '1px solid rgba(201, 133, 10, 0.25)',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
             <div>
-              <p style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
-                ✦ {lang === 'tr' ? 'Bugün için öneri' : 'Recommendation for today'}
+              <p style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>
+                ✦ {lang === 'tr' ? 'Bugün İçin Öneri' : 'Recommendation for Today'}
               </p>
-              <p style={{ fontSize: 15, fontWeight: 600, marginBottom: 4, color: 'var(--text)' }}>{recommended.name}</p>
-              <p style={{ fontSize: 13, color: 'var(--text-2)' }}>
+              <p style={{ fontSize: 16, fontWeight: 700, marginBottom: 6, color: 'var(--text)' }}>{recommended.name}</p>
+              <p style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.6 }}>
                 {lang === 'tr' ? recommended.descTr : recommended.descEn}
               </p>
             </div>
             <Link href={`/game/rawg/${recommended.slug}`} style={{
               padding: '9px 18px', borderRadius: 10,
               background: 'var(--accent)', color: '#fff',
-              fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap',
-            }}>
+              fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap',
+              boxShadow: '0 4px 12px var(--accent-glow)',
+              transition: 'all 0.2s'
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.transform = 'translateY(-1px)';
+              e.currentTarget.style.boxShadow = '0 6px 16px var(--accent-glow)';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.transform = 'none';
+              e.currentTarget.style.boxShadow = '0 4px 12px var(--accent-glow)';
+            }}
+            >
               {lang === 'tr' ? 'İncele →' : 'View →'}
             </Link>
           </div>
@@ -618,24 +747,70 @@ export default function ProfilePage() {
 }
 
 function AccountCard({ name, status, connected, color, initials, onToggle, lang, profileUrl }) {
+  const [hovered, setHovered] = useState(false);
+
   const content = (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
       <div style={{
-        width: 34, height: 34, borderRadius: 8, background: `${color}18`,
+        width: 36, height: 36, borderRadius: 8, 
+        background: connected ? `${color}18` : 'rgba(255,255,255,0.03)',
+        border: `1px solid ${connected ? `${color}40` : 'var(--border)'}`,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 11, fontWeight: 700, color, flexShrink: 0,
+        fontSize: 11, fontWeight: 800, color: connected ? color : 'var(--text-3)', 
+        flexShrink: 0,
+        boxShadow: connected ? `0 0 10px ${color}15` : 'none',
+        transition: 'all 0.25s'
       }}>
         {initials}
       </div>
       <div style={{ minWidth: 0, flex: 1 }}>
-        <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', textDecoration: profileUrl ? 'underline' : 'none', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</p>
-        <p style={{ fontSize: 12, color: connected ? 'var(--green)' : 'var(--text-3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{status}</p>
+        <p style={{ 
+          fontSize: 13.5, 
+          fontWeight: 600, 
+          color: 'var(--text)', 
+          textDecoration: 'none', 
+          whiteSpace: 'nowrap', 
+          overflow: 'hidden', 
+          textOverflow: 'ellipsis',
+          transition: 'color 0.2s'
+        }} className="account-card-title">
+          {name}
+        </p>
+        <p style={{ 
+          fontSize: 12, 
+          color: connected ? 'var(--green)' : 'var(--text-3)', 
+          whiteSpace: 'nowrap', 
+          overflow: 'hidden', 
+          textOverflow: 'ellipsis',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6
+        }}>
+          {connected && <span style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--green)', display: 'inline-block' }} />}
+          {status}
+        </p>
       </div>
     </div>
   );
 
   return (
-    <div className="card" style={{ padding: '10px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, minWidth: 0 }}>
+    <div 
+      className="premium-dashboard-card" 
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{ 
+        padding: '12px 14px', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'space-between', 
+        gap: 12, 
+        minWidth: 0,
+        borderColor: hovered ? (connected ? color : 'var(--accent)') : 'var(--border)',
+        boxShadow: hovered ? `0 8px 24px -6px rgba(0,0,0,0.4), 0 0 0 1px ${connected ? `${color}30` : 'var(--accent-glow)'}` : 'none',
+        transform: hovered ? 'translateY(-2px)' : 'none',
+        transition: 'all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1)'
+      }}
+    >
       {profileUrl ? (
         <a href={profileUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', display: 'flex', minWidth: 0, flex: 1, alignItems: 'center' }}>
           {content}
@@ -643,14 +818,40 @@ function AccountCard({ name, status, connected, color, initials, onToggle, lang,
       ) : (
         content
       )}
-      <button onClick={onToggle} style={{
-        padding: '6px 12px', borderRadius: 8, fontSize: 11.5, fontWeight: 600,
-        border: connected ? '1px solid var(--border)' : '1px solid var(--accent-border)',
-        background: connected ? 'var(--bg-input)' : 'var(--accent-bg)',
-        color: connected ? 'var(--text-3)' : 'var(--accent)',
-        cursor: 'pointer',
-        flexShrink: 0,
-      }}>
+      <button 
+        onClick={onToggle} 
+        style={{
+          padding: '6px 14px', 
+          borderRadius: 8, 
+          fontSize: 11.5, 
+          fontWeight: 700,
+          border: connected ? '1px solid var(--border)' : `1px solid ${color}`,
+          background: connected ? 'var(--bg-input)' : `linear-gradient(135deg, ${color}15, ${color}05)`,
+          color: connected ? 'var(--text-2)' : color,
+          cursor: 'pointer',
+          flexShrink: 0,
+          transition: 'all 0.2s',
+          boxShadow: !connected && hovered ? `0 0 12px ${color}30` : 'none'
+        }}
+        onMouseEnter={(e) => {
+          if (!connected) {
+            e.currentTarget.style.background = color;
+            e.currentTarget.style.color = '#fff';
+          } else {
+            e.currentTarget.style.borderColor = 'var(--accent)';
+            e.currentTarget.style.color = 'var(--accent)';
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!connected) {
+            e.currentTarget.style.background = `linear-gradient(135deg, ${color}15, ${color}05)`;
+            e.currentTarget.style.color = color;
+          } else {
+            e.currentTarget.style.borderColor = 'var(--border)';
+            e.currentTarget.style.color = 'var(--text-2)';
+          }
+        }}
+      >
         {connected 
           ? (lang === 'tr' ? 'Kes' : 'Disconnect') 
           : (lang === 'tr' ? 'Bağla' : 'Connect')}
@@ -659,45 +860,96 @@ function AccountCard({ name, status, connected, color, initials, onToggle, lang,
   );
 }
 
-function StatCard({ number, label }) {
+function StatCard({ number, label, isAccent = false }) {
+  const [hovered, setHovered] = useState(false);
   return (
-    <div className="profile-stat-card">
-      <p className="profile-stat-number">{number}</p>
-      <p className="profile-stat-label">{label}</p>
+    <div 
+      className="premium-dashboard-card" 
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        padding: '16px 12px',
+        textAlign: 'center',
+        flex: 1,
+        minWidth: 90,
+        transform: hovered ? 'translateY(-3px)' : 'none',
+        boxShadow: hovered ? '0 12px 28px -8px rgba(0,0,0,0.4)' : 'none',
+        transition: 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)'
+      }}
+    >
+      <p className={isAccent ? "glowing-accent-stat-number" : "glowing-stat-number"}>
+        {number}
+      </p>
+      <p style={{
+        fontSize: 11,
+        fontWeight: 700,
+        textTransform: 'uppercase',
+        letterSpacing: '0.04em',
+        color: 'var(--text-3)',
+        marginTop: 6,
+        whiteSpace: 'nowrap',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis'
+      }}>
+        {label}
+      </p>
     </div>
   );
 }
 
 function WishlistItem({ game, onRemove, lang }) {
+  const [hovered, setHovered] = useState(false);
   return (
     <div style={{
-      display: 'flex', alignItems: 'center', gap: 12,
-      padding: '12px 0',
+      display: 'flex', alignItems: 'center', gap: 14,
+      padding: '14px 0',
       borderBottom: '1px solid var(--border)',
     }}>
       <div style={{
-        width: 40, height: 40, borderRadius: 8, background: 'var(--bg-input)',
+        width: 44, height: 44, borderRadius: 8, background: 'var(--bg-input)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         fontSize: 14, fontWeight: 700, color: 'var(--text-3)',
         flexShrink: 0, overflow: 'hidden', position: 'relative',
+        border: '1px solid var(--border)',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
       }}>
-        <GameImage game={game} fill sizes="40px" />
+        <GameImage game={game} fill sizes="44px" />
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <Link href={game.rawgSlug ? `/game/rawg/${game.rawgSlug}` : `/game/rawg/${game.id}`}>
-          <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <p 
+            onMouseEnter={() => setHovered(true)}
+            onMouseLeave={() => setHovered(false)}
+            style={{ 
+              fontSize: 14, 
+              fontWeight: 600, 
+              color: hovered ? 'var(--accent)' : 'var(--text)', 
+              overflow: 'hidden', 
+              textOverflow: 'ellipsis', 
+              whiteSpace: 'nowrap',
+              transition: 'color 0.2s'
+            }}
+          >
             {game.name}
           </p>
         </Link>
-        <p style={{ fontSize: 12, color: 'var(--text-3)' }}>
-          {lang === 'tr' ? 'Fiyat alarmı aktif' : 'Price alert active'}
+        <p style={{ fontSize: 12, color: 'var(--text-3)', display: 'flex', alignItems: 'center', gap: 4 }}>
+          <span style={{ color: 'var(--accent)', fontSize: 10 }}>🔔</span>
+          {lang === 'tr' ? 'Fiyat Alarmı Aktif' : 'Price Alert Active'}
         </p>
       </div>
-      <button onClick={onRemove} style={{
-        background: 'none', border: 'none',
-        color: 'var(--text-3)', fontSize: 18, cursor: 'pointer',
-        flexShrink: 0, padding: '4px 8px',
-      }} title={lang === 'tr' ? 'Kaldır' : 'Remove'}>
+      <button 
+        onClick={onRemove} 
+        style={{
+          background: 'none', border: 'none',
+          color: 'var(--text-3)', fontSize: 20, cursor: 'pointer',
+          flexShrink: 0, padding: '4px 8px',
+          transition: 'all 0.2s',
+        }} 
+        onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.transform = 'scale(1.2)'; }}
+        onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-3)'; e.currentTarget.style.transform = 'scale(1)'; }}
+        title={lang === 'tr' ? 'Kaldır' : 'Remove'}
+      >
         ×
       </button>
     </div>
@@ -771,6 +1023,7 @@ function ChangePasswordCard({ changePassword, lang }) {
     fontWeight: 600,
     color: 'var(--text-2)',
     marginBottom: 6,
+    letterSpacing: '0.2px'
   };
 
   const eyeButtonStyle = {
@@ -802,7 +1055,7 @@ function ChangePasswordCard({ changePassword, lang }) {
   );
 
   return (
-    <div className="card" style={{ marginTop: 24, padding: '20px' }}>
+    <div className="premium-dashboard-card" style={{ marginTop: 24, padding: '24px' }}>
       <h3 style={{
         fontSize: 15,
         fontWeight: 700,
@@ -860,9 +1113,7 @@ function ChangePasswordCard({ changePassword, lang }) {
               value={currentPassword}
               onChange={e => setCurrentPassword(e.target.value)}
               placeholder="••••••••"
-              style={inputStyle}
-              onFocus={e => e.target.style.borderColor = 'var(--accent)'}
-              onBlur={e => e.target.style.borderColor = 'var(--border)'}
+              className="premium-glass-input"
               disabled={loading}
             />
             <button
@@ -888,9 +1139,7 @@ function ChangePasswordCard({ changePassword, lang }) {
               value={newPassword}
               onChange={e => setNewPassword(e.target.value)}
               placeholder="••••••••"
-              style={inputStyle}
-              onFocus={e => e.target.style.borderColor = 'var(--accent)'}
-              onBlur={e => e.target.style.borderColor = 'var(--border)'}
+              className="premium-glass-input"
               disabled={loading}
             />
             <button
@@ -916,9 +1165,7 @@ function ChangePasswordCard({ changePassword, lang }) {
               value={confirmPassword}
               onChange={e => setConfirmPassword(e.target.value)}
               placeholder="••••••••"
-              style={inputStyle}
-              onFocus={e => e.target.style.borderColor = 'var(--accent)'}
-              onBlur={e => e.target.style.borderColor = 'var(--border)'}
+              className="premium-glass-input"
               disabled={loading}
             />
             <button
@@ -937,16 +1184,27 @@ function ChangePasswordCard({ changePassword, lang }) {
           disabled={loading}
           style={{
             width: '100%',
-            padding: '11px',
+            padding: '12px',
             background: 'var(--accent)',
             color: '#fff',
             border: 'none',
-            borderRadius: 8,
-            fontSize: 13.5,
-            fontWeight: 600,
+            borderRadius: 10,
+            fontSize: 14,
+            fontWeight: 700,
             cursor: 'pointer',
             opacity: loading ? 0.7 : 1,
-            transition: 'opacity 0.15s',
+            transition: 'all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1)',
+            boxShadow: '0 4px 12px var(--accent-glow)',
+          }}
+          onMouseEnter={e => {
+            if (!loading) {
+              e.currentTarget.style.transform = 'translateY(-1px)';
+              e.currentTarget.style.boxShadow = '0 6px 20px var(--accent-glow)';
+            }
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.transform = 'none';
+            e.currentTarget.style.boxShadow = '0 4px 12px var(--accent-glow)';
           }}
         >
           {loading
@@ -1006,7 +1264,7 @@ function DeleteAccountCard({ deleteAccount, lang }) {
   };
 
   return (
-    <div className="card" style={{ marginTop: 20, padding: '20px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+    <div className="premium-dashboard-card" style={{ marginTop: 20, padding: '24px', border: '1px solid rgba(239, 68, 68, 0.25)', background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.02), rgba(255, 255, 255, 0.01))' }}>
       <h3 style={{
         fontSize: 15,
         fontWeight: 700,
@@ -1030,18 +1288,28 @@ function DeleteAccountCard({ deleteAccount, lang }) {
         onClick={() => setIsOpen(true)}
         style={{
           width: '100%',
-          padding: '10px',
+          padding: '11px',
           background: 'transparent',
           color: '#ef4444',
-          border: '1px solid #ef4444',
-          borderRadius: 8,
-          fontSize: 13,
-          fontWeight: 600,
+          border: '1.5px solid #ef4444',
+          borderRadius: 10,
+          fontSize: 13.5,
+          fontWeight: 700,
           cursor: 'pointer',
-          transition: 'background 0.2s, color 0.2s',
+          transition: 'all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1)',
         }}
-        onMouseEnter={e => { e.currentTarget.style.background = '#ef4444'; e.currentTarget.style.color = '#fff'; }}
-        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#ef4444'; }}
+        onMouseEnter={e => { 
+          e.currentTarget.style.background = '#ef4444'; 
+          e.currentTarget.style.color = '#fff'; 
+          e.currentTarget.style.boxShadow = '0 4px 16px rgba(239, 68, 68, 0.3)';
+          e.currentTarget.style.transform = 'translateY(-1px)';
+        }}
+        onMouseLeave={e => { 
+          e.currentTarget.style.background = 'transparent'; 
+          e.currentTarget.style.color = '#ef4444'; 
+          e.currentTarget.style.boxShadow = 'none';
+          e.currentTarget.style.transform = 'none';
+        }}
       >
         {lang === 'tr' ? 'Hesabımı Sil' : 'Delete My Account'}
       </button>
@@ -1053,11 +1321,13 @@ function DeleteAccountCard({ deleteAccount, lang }) {
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           zIndex: 9999, padding: 20,
         }}>
-          <div className="card" style={{
-            width: '100%', maxWidth: 400, padding: 28,
-            boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
-            border: '1px solid var(--border)',
-            animation: 'fadeIn 0.2s ease-out'
+          <div className="premium-dashboard-card" style={{
+            width: '100%', maxWidth: 400, padding: 32,
+            boxShadow: '0 24px 64px rgba(0,0,0,0.5)',
+            border: '1px solid rgba(239, 68, 68, 0.3)',
+            background: 'var(--bg-card)',
+            animation: 'fadeIn 0.25s cubic-bezier(0.25, 0.8, 0.25, 1)',
+            position: 'relative'
           }}>
             {stage === 1 ? (
               <div>
@@ -1082,17 +1352,30 @@ function DeleteAccountCard({ deleteAccount, lang }) {
                   <button
                     onClick={handleClose}
                     style={{
-                      flex: 1, padding: '11px', borderRadius: 8, border: '1px solid var(--border)',
-                      background: 'var(--bg-input)', color: 'var(--text)', fontSize: 13.5, fontWeight: 600, cursor: 'pointer'
+                      flex: 1, padding: '11px', borderRadius: 10, border: '1px solid var(--border)',
+                      background: 'var(--bg-input)', color: 'var(--text-2)', fontSize: 13.5, fontWeight: 700, cursor: 'pointer',
+                      transition: 'all 0.2s'
                     }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'var(--bg-input)'}
                   >
                     {lang === 'tr' ? 'Vazgeç' : 'Cancel'}
                   </button>
                   <button
                     onClick={() => setStage(2)}
                     style={{
-                      flex: 1, padding: '11px', borderRadius: 8, border: 'none',
-                      background: '#ef4444', color: '#fff', fontSize: 13.5, fontWeight: 600, cursor: 'pointer'
+                      flex: 1, padding: '11px', borderRadius: 10, border: 'none',
+                      background: '#ef4444', color: '#fff', fontSize: 13.5, fontWeight: 700, cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)'
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.background = '#dc2626';
+                      e.currentTarget.style.boxShadow = '0 6px 16px rgba(239, 68, 68, 0.4)';
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.background = '#ef4444';
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(239, 68, 68, 0.3)';
                     }}
                   >
                     {lang === 'tr' ? 'Devam Et' : 'Continue'}
@@ -1127,7 +1410,7 @@ function DeleteAccountCard({ deleteAccount, lang }) {
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    style={inputStyle}
+                    className="premium-glass-input"
                     disabled={loading}
                     autoFocus
                   />
@@ -1161,10 +1444,13 @@ function DeleteAccountCard({ deleteAccount, lang }) {
                     onClick={handleClose}
                     disabled={loading}
                     style={{
-                      flex: 1, padding: '11px', borderRadius: 8, border: '1px solid var(--border)',
-                      background: 'var(--bg-input)', color: 'var(--text)', fontSize: 13.5, fontWeight: 600, cursor: 'pointer',
-                      opacity: loading ? 0.7 : 1
+                      flex: 1, padding: '11px', borderRadius: 10, border: '1px solid var(--border)',
+                      background: 'var(--bg-input)', color: 'var(--text-2)', fontSize: 13.5, fontWeight: 700, cursor: 'pointer',
+                      opacity: loading ? 0.7 : 1,
+                      transition: 'all 0.2s'
                     }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'var(--bg-input)'}
                   >
                     {lang === 'tr' ? 'İptal' : 'Cancel'}
                   </button>
@@ -1172,9 +1458,19 @@ function DeleteAccountCard({ deleteAccount, lang }) {
                     type="submit"
                     disabled={loading}
                     style={{
-                      flex: 1, padding: '11px', borderRadius: 8, border: 'none',
-                      background: '#ef4444', color: '#fff', fontSize: 13.5, fontWeight: 600, cursor: 'pointer',
-                      opacity: loading ? 0.7 : 1
+                      flex: 1, padding: '11px', borderRadius: 10, border: 'none',
+                      background: '#ef4444', color: '#fff', fontSize: 13.5, fontWeight: 700, cursor: 'pointer',
+                      opacity: loading ? 0.7 : 1,
+                      transition: 'all 0.2s',
+                      boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)'
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.background = '#dc2626';
+                      e.currentTarget.style.boxShadow = '0 6px 16px rgba(239, 68, 68, 0.4)';
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.background = '#ef4444';
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(239, 68, 68, 0.3)';
                     }}
                   >
                     {loading ? (lang === 'tr' ? 'Siliniyor...' : 'Deleting...') : (lang === 'tr' ? 'Hesabı Sil' : 'Delete')}
