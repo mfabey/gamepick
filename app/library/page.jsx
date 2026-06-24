@@ -185,8 +185,22 @@ export default function LibraryPage() {
   }
 
   return (
-      <div className="scroll-chips-wrapper">
-        <div className="category-scroll-chips" style={{ marginBottom: 28, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+    <div className="container" style={{ padding: '40px 20px', maxWidth: 1200 }}>
+      <div className="premium-dashboard-card" style={{ padding: '24px', marginBottom: 32 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+          <div>
+            <h1 style={{ fontSize: 32, fontWeight: 800, margin: 0, letterSpacing: '-1px' }}>
+              <span className="premium-gradient-text">{t('library.title')}</span>
+            </h1>
+            <p style={{ margin: '8px 0 0 0', color: 'var(--text-3)', fontSize: 14 }}>{t('library.subtitle')}</p>
+          </div>
+          <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 700, color: 'var(--text-3)' }}>
+            {lang === 'tr' ? '← Profile Dön' : '← Back to Profile'}
+          </Link>
+        </div>
+
+        <div className="scroll-chips-wrapper">
+          <div className="category-scroll-chips" style={{ marginBottom: 28, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
           {steamAccounts.map(account => {
             const isActive = activeTab === `steam_${account.steamId}`;
             return (
@@ -307,6 +321,7 @@ export default function LibraryPage() {
             </button>
           )}
         </div>
+      </div>
       </div>
 
       {steamAccounts.map(account => 
