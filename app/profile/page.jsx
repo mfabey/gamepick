@@ -701,7 +701,6 @@ export default function ProfilePage() {
             >
               {lang === 'tr' ? 'İncele →' : 'View →'}
             </Link>
-            </div>
           </div>
         </div>
       </div>
