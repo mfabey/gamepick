@@ -638,7 +638,7 @@ function SteamProfileHeader({ steamUser, library, totalValue, pricesLoading }) {
           <p style={{ fontSize: 10.5, color: '#1a9fff', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
             {t('library.steam')}
           </p>
-          <h2 style={{ fontSize: 22, fontWeight: 800, color: '#fff', letterSpacing: '-0.5px', marginBottom: 4 }}>{steamUser.name}</h2>
+          <h2 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.5px', marginBottom: 4 }}>{steamUser.name}</h2>
           <a href={steamUser.profileUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12.5, color: '#5eb7ff', textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
             {t('library.viewProfile')} <span>↗</span>
           </a>
@@ -651,22 +651,22 @@ function SteamProfileHeader({ steamUser, library, totalValue, pricesLoading }) {
               { label: t('library.stats.totalHours'), value: `${library.totalHours.toLocaleString()}${t('library.hours').toLowerCase().slice(0, 1)}` },
             ].map(s => (
               <div key={s.label} style={{ textAlign: 'center', minWidth: 70 }}>
-                <p className="glowing-stat-number" style={{ fontSize: 24, color: '#fff' }}>{s.value}</p>
-                <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{s.label}</p>
+                <p className="glowing-stat-number" style={{ fontSize: 24, color: 'var(--text)' }}>{s.value}</p>
+                <p style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600, marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{s.label}</p>
               </div>
             ))}
             <div style={{ textAlign: 'center', minWidth: 70 }}>
               {pricesLoading && !totalValue ? (
                 <>
                   <p className="glowing-stat-number" style={{ fontSize: 24, color: '#4ade80', fontStyle: 'italic' }}>…</p>
-                  <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t('library.value')}</p>
+                  <p style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600, marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t('library.value')}</p>
                 </>
               ) : totalValue ? (
                 <>
                   <p className="glowing-stat-number" style={{ fontSize: 24, color: '#4ade80', background: 'linear-gradient(135deg, #4ade80 30%, #22c55e 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                     {formatPrice(totalValue.sum)}
                   </p>
-                  <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t('library.value')}</p>
+                  <p style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600, marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t('library.value')}</p>
                 </>
               ) : null}
             </div>
@@ -674,7 +674,7 @@ function SteamProfileHeader({ steamUser, library, totalValue, pricesLoading }) {
         )}
       </div>
       {totalValue && (
-        <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 10 }}>
+        <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 12, borderTop: '1px solid var(--border)', paddingTop: 10 }}>
           ⚠️ {t('library.disclaimer').replace('{count}', totalValue.counted)}
         </p>
       )}
@@ -781,7 +781,7 @@ function XboxProfileHeader({ xboxUser, library, onLogout }) {
             <img src={xboxUser.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
         ) : (
-          <div style={{ width: 68, height: 68, borderRadius: 14, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <div style={{ width: 68, height: 68, borderRadius: 14, background: 'var(--bg-input)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <XboxLogo size={36} color="#fff" />
           </div>
         )}
@@ -790,7 +790,7 @@ function XboxProfileHeader({ xboxUser, library, onLogout }) {
             {t('library.xbox')}
           </p>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <h2 style={{ fontSize: 22, fontWeight: 800, color: '#fff', letterSpacing: '-0.5px' }}>{xboxUser.gamertag}</h2>
+            <h2 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.5px' }}>{xboxUser.gamertag}</h2>
             {hasGamePass ? (
               <span style={{
                 fontSize: 10, fontWeight: 800, padding: '3px 8px', borderRadius: 6,
@@ -810,7 +810,7 @@ function XboxProfileHeader({ xboxUser, library, onLogout }) {
               </span>
             )}
           </div>
-          <a href={`https://www.xbox.com/${lang === 'tr' ? 'tr-TR' : 'en-US'}/play/user/${xboxUser.gamertag}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontWeight: 600, display: 'inline-block', marginTop: 6 }}>
+          <a href={`https://www.xbox.com/${lang === 'tr' ? 'tr-TR' : 'en-US'}/play/user/${xboxUser.gamertag}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12.5, color: 'var(--text-2)', textDecoration: 'none', fontWeight: 600, display: 'inline-block', marginTop: 6 }}>
             {t('library.viewProfile')} ↗
           </a>
         </div>
@@ -822,8 +822,8 @@ function XboxProfileHeader({ xboxUser, library, onLogout }) {
               { label: 'Gamerscore',     value: library.totalGamerscore?.toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US') },
             ].map(s => (
               <div key={s.label} style={{ textAlign: 'center', minWidth: 70 }}>
-                <p className="glowing-stat-number" style={{ fontSize: 24, color: '#fff' }}>{s.value}</p>
-                <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: 600, marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{s.label}</p>
+                <p className="glowing-stat-number" style={{ fontSize: 24, color: 'var(--text)' }}>{s.value}</p>
+                <p style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600, marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{s.label}</p>
               </div>
             ))}
           </div>
@@ -843,7 +843,7 @@ function XboxProfileHeader({ xboxUser, library, onLogout }) {
         </button>
       </div>
       {library && (
-        <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 10 }}>
+        <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 12, borderTop: '1px solid var(--border)', paddingTop: 10 }}>
           {t('library.xbox.disclaimer')}
         </p>
       )}
@@ -924,7 +924,7 @@ function XboxGameRow({ game }) {
           fontWeight: 700,
           background: hovered ? 'linear-gradient(135deg, var(--accent) 0%, #ff8066 100%)' : 'var(--bg-input)',
           border: '1px solid var(--border)',
-          color: hovered ? '#fff' : 'var(--text-3)',
+          color: hovered ? 'var(--text)' : 'var(--text-3)',
           transition: 'all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1)',
           boxShadow: hovered ? '0 4px 12px var(--accent-glow)' : 'none'
         }}
