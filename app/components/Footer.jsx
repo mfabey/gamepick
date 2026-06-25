@@ -74,16 +74,9 @@ export default function Footer() {
         <div>
           <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none', marginBottom: 14, width: 'fit-content' }}>
             <span style={{
-              width: 32, height: 32, borderRadius: 9, background: 'var(--accent)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 4px 12px color-mix(in srgb, var(--accent) 35%, transparent)',
+              width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center'
             }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="6" width="20" height="12" rx="3" />
-                <path d="M6 12h4M8 10v4" />
-                <circle cx="15.5" cy="11" r="1" fill="#fff" stroke="none" />
-                <circle cx="18" cy="13.5" r="1" fill="#fff" stroke="none" />
-              </svg>
+              <img src="/logo.png" alt="Gamerisen" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             </span>
             <span style={{ fontFamily: 'var(--font-heading, var(--font-body))', fontWeight: 700, fontSize: 19, letterSpacing: '-0.5px', color: 'var(--text)' }}>Gamerisen</span>
           </Link>
