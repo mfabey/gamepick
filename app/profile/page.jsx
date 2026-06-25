@@ -492,6 +492,18 @@ export default function ProfilePage() {
               </div>
             )}
 
+            {/* PlayStation Network */}
+            <AccountCard
+              name="PlayStation Network"
+              status={lang === 'tr' ? 'Bağlı değil' : 'Not connected'}
+              connected={false}
+              color="#00439c"
+              initials="PSN"
+              profileUrl={null}
+              onToggle={() => window.location.href = '/api/auth/playstation'}
+              lang={lang}
+            />
+
             {/* Epic Games (Coming Soon) */}
             <div className="premium-dashboard-card" style={{ 
               padding: '12px 14px', 
