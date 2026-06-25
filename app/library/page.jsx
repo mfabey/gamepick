@@ -413,7 +413,7 @@ function SteamLibrary({ steamAccount }) {
         {t('library.showingGames').split('{count}').map((part, i) => <span key={i}>{part}{i === 0 && <span style={{ fontWeight: 600, color: 'var(--text)' }}>{filtered.length}</span>}</span>)}
         {pricesLoading && <span style={{ marginLeft: 10, color: '#1a9fff', fontStyle: 'italic' }}>{t('library.showingGamesLoading')}</span>}
       </p>
-      {filtered.length === 0 ? <EmptyState /> : <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>{filtered.map((game, i) => <GameRow key={game.appid} game={game} rank={sort === 'hours' ? i + 1 : null} price={prices[game.appid]} pricesLoading={pricesLoading} />)}</div>}
+      {filtered.length === 0 ? <EmptyState /> : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '24px' }}>{filtered.map((game, i) => <GameRow key={game.appid} game={game} rank={sort === 'hours' ? i + 1 : null} price={prices[game.appid]} pricesLoading={pricesLoading} />)}</div>}
     </>
   );
 }
@@ -474,7 +474,7 @@ function MergedLibrary() {
         </select>
         <SearchBox value={search} onChange={setSearch} placeholder={t('library.searchPlaceholder')} />
       </div>
-      {filtered.length === 0 ? <EmptyState /> : <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      {filtered.length === 0 ? <EmptyState /> : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '24px' }}>
         {filtered.map((game, i) => (
           <GameRow key={game.appid} game={game} rank={sort === 'hours' ? i + 1 : null} />
         ))}
@@ -597,7 +597,7 @@ function XboxLibrary({ xboxUser, onLogout }) {
 
       {filtered.length === 0
         ? <EmptyState />
-        : <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+        : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '24px' }}>
             {filtered.map(game => (
               <XboxGameRow key={game.titleId} game={game} />
             ))}
@@ -688,55 +688,120 @@ function GameRow({ game, rank, price, pricesLoading }) {
   const hourSymbol = lang === 'tr' ? 's' : 'h';
 
   return (
-    <div className="game-row">
-      {rank && (
-        <span className="game-row-rank">
-          {rank <= 3 ? ['🥇','🥈','🥉'][rank - 1] : rank}
-        </span>
-      )}
-      <a href={game.storeUrl} target="_blank" rel="noopener noreferrer" style={{ flexShrink: 0 }}>
-        <div className="game-row-cover">
-          <GameImage
-            game={game}
-            alt={game.name}
-            fill
-            style={{ objectFit: 'cover' }}
-          />
-        </div>
+    <div className="premium-game-card" style={{
+      position: 'relative',
+      borderRadius: '16px',
+      overflow: 'hidden',
+      background: 'var(--bg-card)',
+      border: '1px solid rgba(255,255,255,0.05)',
+      aspectRatio: '3/4',
+      cursor: 'pointer',
+      boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+      transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+    }}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.transform = 'translateY(-6px)';
+      e.currentTarget.style.boxShadow = '0 16px 40px rgba(139, 92, 246, 0.4)';
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.transform = 'none';
+      e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.2)';
+    }}>
+      {/* Background Cover */}
+      <a href={game.storeUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'block', width: '100%', height: '100%' }}>
+        <GameImage
+          game={game}
+          alt={game.name}
+          fill
+          style={{ objectFit: 'cover', transition: 'transform 0.5s' }}
+          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+        />
+        {/* Gradient Overlay for Text Readability */}
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.3) 50%, transparent 100%)',
+          pointerEvents: 'none'
+        }} />
       </a>
-      <div className="game-row-details">
-        <a href={game.storeUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
-          <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{game.name}</p>
-        </a>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 3, flexWrap: 'wrap' }}>
-          {game.hoursRecent > 0 && <span style={{ fontSize: 11, color: '#1a9fff' }}>{t('library.playedRecent').replace('{hours}', game.hoursRecent)}</span>}
-          {lastPlayed && !game.hoursRecent && <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t('library.lastPlayedLabel').replace('{date}', lastPlayed)}</span>}
+
+      {/* Rank Badge */}
+      {rank && (
+        <div style={{
+          position: 'absolute', top: 12, left: 12,
+          background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(10px)',
+          padding: '4px 10px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)',
+          fontSize: 14, fontWeight: 800, color: '#fff',
+          display: 'flex', alignItems: 'center', gap: 4,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+          zIndex: 2
+        }}>
+          {rank <= 3 ? ['🥇','🥈','🥉'][rank - 1] : `#${rank}`}
         </div>
-      </div>
-      <a href={`/api/game-lookup?name=${encodeURIComponent(game.name)}`} title="Gamerisen'de görüntüle" className="game-row-actions">🎮 Gamerisen</a>
-      <div className="game-row-price-score">
+      )}
+
+      {/* Price Badge */}
+      <div style={{
+          position: 'absolute', top: 12, right: 12,
+          background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(10px)',
+          padding: '4px 10px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)',
+          display: 'flex', flexDirection: 'column', alignItems: 'flex-end',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+          zIndex: 2
+      }}>
         {pricesLoading && !price
-          ? <p style={{ fontSize: 11, color: 'var(--text-3)', fontStyle: 'italic' }}>…</p>
+          ? <span style={{ fontSize: 11, color: 'var(--text-3)' }}>…</span>
           : price?.isFree
-            ? <p style={{ fontSize: 12, color: '#4ade80', fontWeight: 700 }}>{t('library.free')}</p>
+            ? <span style={{ fontSize: 13, color: '#4ade80', fontWeight: 800 }}>{t('library.free')}</span>
             : price?.unavailable
-              ? <p style={{ fontSize: 11, color: 'var(--text-3)', fontStyle: 'italic' }}>{t('library.noPrice')}</p>
+              ? <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{t('library.noPrice')}</span>
               : price
-                ? <>
-                    {price.discount > 0 && <p style={{ fontSize: 10, color: 'var(--text-3)', textDecoration: 'line-through', marginBottom: 1 }}>{formatPrice(price.original)}</p>}
-                    <p style={{ fontSize: 13, fontWeight: 700, color: price.discount > 0 ? '#4ade80' : 'var(--text)' }}>
-                      {formatPrice(price.current)}
-                      {price.discount > 0 && <span style={{ marginLeft: 4, fontSize: 10, background: '#16a34a', color: '#fff', borderRadius: 4, padding: '1px 4px' }}>-{price.discount}%</span>}
-                    </p>
-                  </>
+                ? <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    {price.discount > 0 && <span style={{ fontSize: 11, background: '#16a34a', color: '#fff', borderRadius: 4, padding: '2px 4px', fontWeight: 800 }}>-{price.discount}%</span>}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                      {price.discount > 0 && <span style={{ fontSize: 10, color: 'var(--text-3)', textDecoration: 'line-through', lineHeight: 1 }}>{formatPrice(price.original)}</span>}
+                      <span style={{ fontSize: 14, fontWeight: 800, color: price.discount > 0 ? '#4ade80' : '#fff', lineHeight: 1, marginTop: price.discount > 0 ? 2 : 0 }}>{formatPrice(price.current)}</span>
+                    </div>
+                  </div>
                 : null
         }
       </div>
-      <div className="game-row-hours">
-        {game.hours > 0
-          ? <><p style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{game.hours}{hourSymbol}</p><p style={{ fontSize: 11, color: 'var(--text-3)' }}>{t('library.hoursPlayed')}</p></>
-          : <p style={{ fontSize: 12, color: 'var(--text-3)', fontStyle: 'italic' }}>{t('library.notPlayed')}</p>
-        }
+
+      {/* Bottom Content */}
+      <div style={{
+        position: 'absolute', bottom: 0, left: 0, right: 0,
+        padding: '24px 16px 16px', pointerEvents: 'none',
+        display: 'flex', flexDirection: 'column', gap: 8,
+        zIndex: 2
+      }}>
+        <h3 style={{ 
+          fontSize: 16, fontWeight: 800, color: '#fff', margin: 0, lineHeight: 1.2, 
+          textShadow: '0 2px 4px rgba(0,0,0,0.8)', 
+          display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' 
+        }}>
+          {game.name}
+        </h3>
+        
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 4 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {game.hours > 0 ? (
+               <>
+                 <span style={{ fontSize: 20, fontWeight: 800, color: 'var(--accent)', textShadow: '0 2px 10px rgba(139,92,246,0.6)', lineHeight: 1 }}>
+                   {game.hours}<span style={{ fontSize: 12, marginLeft: 2 }}>{hourSymbol}</span>
+                 </span>
+                 <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600 }}>{t('library.hoursPlayed')}</span>
+               </>
+            ) : (
+               <span style={{ fontSize: 12, color: 'var(--text-3)', fontStyle: 'italic', marginTop: 12 }}>{t('library.notPlayed')}</span>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+            {game.hoursRecent > 0 && <span style={{ fontSize: 11, color: '#1a9fff', fontWeight: 700 }}>{t('library.playedRecent').replace('{hours}', game.hoursRecent)}</span>}
+            {lastPlayed && !game.hoursRecent && <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 500 }}>{t('library.lastPlayedLabel').replace('{date}', lastPlayed)}</span>}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -845,99 +910,80 @@ function XboxProfileHeader({ xboxUser, library, onLogout }) {
 }
 
 function XboxGameRow({ game }) {
-  const { t } = useLanguage();
-  const [hovered, setHovered] = useState(false);
+  const { lang, t } = useLanguage();
+  const hourSymbol = lang === 'tr' ? 's' : 'h';
   const lastPlayed = game.lastPlayed ? formatLastPlayed(game.lastPlayed, t) : null;
-  const pct = game.totalAchievements > 0
-    ? Math.round((game.currentAchievements / game.totalAchievements) * 100)
-    : 0;
-
+  
   return (
-    <div
-      className="premium-dashboard-card"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 16,
-        padding: '12px 18px',
-        borderRadius: 12,
-        borderColor: hovered ? '#107C10' : 'var(--border)',
-        boxShadow: hovered ? '0 8px 24px -8px rgba(16, 124, 16, 0.25), 0 0 0 1px rgba(16, 124, 16, 0.15)' : 'none',
-        transform: hovered ? 'translateY(-1px)' : 'none',
-        transition: 'all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1)',
-        background: hovered ? 'linear-gradient(135deg, rgba(16, 124, 16, 0.02), rgba(255, 255, 255, 0.01))' : 'var(--bg-card)'
-      }}
-    >
-      <a href={game.storeUrl} target="_blank" rel="noopener noreferrer" style={{ flexShrink: 0 }}>
-        <div className="game-row-cover" style={{ 
-          border: '1px solid var(--border)', 
-          transform: hovered ? 'scale(1.04)' : 'none', 
-          transition: 'transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1)' 
+    <div className="premium-game-card" style={{
+      position: 'relative',
+      borderRadius: '16px',
+      overflow: 'hidden',
+      background: 'var(--bg-card)',
+      border: '1px solid rgba(255,255,255,0.05)',
+      aspectRatio: '3/4',
+      cursor: 'pointer',
+      boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+      transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+    }}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.transform = 'translateY(-6px)';
+      e.currentTarget.style.boxShadow = '0 16px 40px rgba(22, 163, 74, 0.4)'; // Xbox green glow
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.transform = 'none';
+      e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.2)';
+    }}>
+      <a href={`https://www.xbox.com/games/store/p/${game.titleId}`} target="_blank" rel="noopener noreferrer" style={{ display: 'block', width: '100%', height: '100%' }}>
+        {game.displayImage ? (
+           <img src={game.displayImage} alt={game.name} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s' }} onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'} />
+        ) : (
+           <div style={{ width: '100%', height: '100%', background: 'var(--bg-input)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+             <XboxLogo size={48} color="var(--text-3)" />
+           </div>
+        )}
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.3) 50%, transparent 100%)',
+          pointerEvents: 'none'
+        }} />
+      </a>
+
+      {game.isGamePass && (
+        <div style={{
+          position: 'absolute', top: 12, right: 12,
+          background: '#107c10', color: '#fff',
+          padding: '4px 10px', borderRadius: '10px', fontSize: 11, fontWeight: 800,
+          boxShadow: '0 4px 12px rgba(16, 124, 16, 0.5)', zIndex: 2
         }}>
-          <GameImage
-            game={game}
-            alt={game.name}
-            fill
-            style={{ objectFit: 'cover' }}
-          />
-        </div>
-      </a>
-
-      <div className="game-row-details">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          <a href={game.storeUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
-            <p style={{ 
-              fontSize: 14.5, 
-              fontWeight: 600, 
-              color: hovered ? '#107C10' : 'var(--text)', 
-              whiteSpace: 'nowrap', 
-              overflow: 'hidden', 
-              textOverflow: 'ellipsis', 
-              maxWidth: 220,
-              transition: 'color 0.2s'
-            }}>{game.name}</p>
-          </a>
-          {game.isGamePass && (
-            <span style={{ fontSize: 9.5, fontWeight: 800, padding: '2px 6px', borderRadius: 4, background: '#107C10', color: '#fff', whiteSpace: 'nowrap' }}>Game Pass</span>
-          )}
-        </div>
-        {lastPlayed && <span style={{ fontSize: 11.5, color: 'var(--text-3)' }}>Son: {lastPlayed}</span>}
-      </div>
-
-      <a 
-        href={`/api/game-lookup?name=${encodeURIComponent(game.name)}`} 
-        title="Gamerisen'de görüntüle"
-        className="game-row-actions"
-        style={{
-          padding: '6px 12px',
-          borderRadius: 8,
-          fontSize: 11.5,
-          fontWeight: 700,
-          background: hovered ? 'linear-gradient(135deg, var(--accent) 0%, #ff8066 100%)' : 'var(--bg-input)',
-          border: '1px solid var(--border)',
-          color: hovered ? 'var(--text)' : 'var(--text-3)',
-          transition: 'all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1)',
-          boxShadow: hovered ? '0 4px 12px var(--accent-glow)' : 'none'
-        }}
-      >
-        🎮 Gamerisen
-      </a>
-
-      {game.totalAchievements > 0 && (
-        <div className="game-row-price-score" style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
-          <p style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--text)' }}>
-            {game.currentGamerscore}G
-          </p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }}>
-            <div style={{ width: 48, height: 4, borderRadius: 2, background: 'var(--bg-input)', border: '1px solid var(--border)', overflow: 'hidden' }}>
-              <div style={{ width: `${pct}%`, height: '100%', background: '#107C10', borderRadius: 2 }} />
-            </div>
-            <p style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 600 }}>{pct}%</p>
-          </div>
+          GAME PASS
         </div>
       )}
+
+      <div style={{
+        position: 'absolute', bottom: 0, left: 0, right: 0,
+        padding: '24px 16px 16px', pointerEvents: 'none',
+        display: 'flex', flexDirection: 'column', gap: 8, zIndex: 2
+      }}>
+        <h3 style={{ 
+          fontSize: 16, fontWeight: 800, color: '#fff', margin: 0, lineHeight: 1.2, 
+          textShadow: '0 2px 4px rgba(0,0,0,0.8)', 
+          display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' 
+        }}>
+          {game.name}
+        </h3>
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 4 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <span style={{ fontSize: 20, fontWeight: 800, color: '#4ade80', textShadow: '0 2px 10px rgba(74,222,128,0.4)', lineHeight: 1 }}>
+              {game.hours} <span style={{ fontSize: 12, marginLeft: 2 }}>{hourSymbol}</span>
+            </span>
+            <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600 }}>{lang === 'tr' ? 'saat oynandı' : 'hours played'}</span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+            <span style={{ fontSize: 12, color: 'var(--text-3)', fontWeight: 700, background: 'rgba(0,0,0,0.4)', padding: '2px 6px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.1)' }}>{game.platform}</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -957,9 +1003,9 @@ function SearchBox({ value, onChange, placeholder }) {
 
 function SkeletonList() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 24 }}>
-      {Array.from({ length: 10 }).map((_, i) => (
-        <div key={i} style={{ height: 68, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', animation: 'pulse 1.5s ease-in-out infinite' }} />
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '24px', marginTop: 24 }}>
+      {Array.from({ length: 12 }).map((_, i) => (
+        <div key={i} style={{ aspectRatio: '3/4', borderRadius: '16px', background: 'var(--bg-card)', border: '1px solid rgba(255,255,255,0.05)', animation: 'pulse 1.5s ease-in-out infinite' }} />
       ))}
       <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }`}</style>
     </div>
