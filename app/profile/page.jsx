@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import GameImage from '../components/GameImage';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import ActivityHeatmap from '../components/ActivityHeatmap';
 
 export default function ProfilePage() {
   const { 
@@ -17,10 +18,8 @@ export default function ProfilePage() {
     ownedGames, 
     xboxOwnedGames, 
     gamePassGames, 
-    playstationUser,
     ready, 
     xboxLogout,
-    psnLogout,
     changePassword,
     deleteAccount
   } = useAuth();
@@ -406,6 +405,11 @@ export default function ProfilePage() {
         </div>
       </div>
 
+      {/* Activity Heatmap - Tam Genişlik */}
+      <div style={{ marginBottom: 32 }}>
+        <ActivityHeatmap lang={lang} userEmail={user.email || user.name || "default"} />
+      </div>
+
       <div className="profile-two-column">
 
         {/* Bağlı hesaplar */}
@@ -490,44 +494,6 @@ export default function ProfilePage() {
                   {lang === 'tr' 
                     ? 'Xbox hesabınız Gamertag simülasyonu ile bağlı olduğundan test amaçlı örnek oyunlar ve istatistikler gösterilmektedir. Gerçek kütüphaneniz için resmi Microsoft bağlantısını kullanın.' 
                     : 'Since your Xbox account is connected via Gamertag simulation, sample games and stats are shown for testing. Use the official Microsoft connection for your real library.'}
-                </div>
-              </div>
-            )}
-
-            {/* PlayStation Network */}
-            <AccountCard
-              name="PlayStation Network"
-              status={
-                playstationUser 
-                  ? (lang === 'tr' ? 'Bağlı (Simülasyon)' : 'Connected (Simulation)')
-                  : (lang === 'tr' ? 'Bağlı değil' : 'Not connected')
-              }
-              connected={!!playstationUser}
-              color="#00439c"
-              initials="PSN"
-              avatar={playstationUser?.avatar}
-              profileUrl={null}
-              onToggle={async () => {
-                if (playstationUser) {
-                  await psnLogout();
-                } else {
-                  window.location.href = '/api/auth/playstation';
-                }
-              }}
-              lang={lang}
-            />
-
-            {playstationUser?.isMock && (
-              <div style={{
-                background: 'var(--accent-bg)', border: '1px solid var(--accent-border)', borderRadius: 10,
-                padding: '10px 14px', marginTop: 12, fontSize: 12, color: 'var(--accent)',
-                display: 'flex', gap: 8, alignItems: 'flex-start', lineHeight: 1.5
-              }}>
-                <span style={{ fontSize: 14 }}>⚠️</span>
-                <div>
-                  {lang === 'tr' 
-                    ? 'PlayStation Network API\'si genel erişime kapalı olduğundan bağlantı geçici simülasyon olarak sağlanmıştır.' 
-                    : 'Since the PlayStation Network API is closed to public access, the connection is provided as a temporary simulation.'}
                 </div>
               </div>
             )}

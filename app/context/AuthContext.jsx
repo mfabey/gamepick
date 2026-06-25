@@ -21,7 +21,6 @@ export function AuthProvider({ children }) {
   const [ownedGames,     setOwnedGames]     = useState(new Set()); // İlk Steam hesabının oyunları
   const [xboxOwnedGames, setXboxOwnedGames] = useState(new Set());
   const [gamePassGames,  setGamePassGames]  = useState(new Set());
-  const [playstationUser, setPlaystationUser] = useState(null); // PlayStation oturumu
   const [ready,          setReady]          = useState(false);
 
   useEffect(() => {
@@ -29,8 +28,7 @@ export function AuthProvider({ children }) {
       fetch('/api/auth/user-me').then(r => r.json()).catch(() => ({ user: null })),
       fetch('/api/auth/me').then(r => r.json()).catch(() => ({ user: null, accounts: [] })),
       fetch('/api/auth/xbox/me').then(r => r.json()).catch(() => ({ user: null })),
-      fetch('/api/auth/playstation/me').then(r => r.json()).catch(() => ({ user: null })),
-    ]).then(([userData, steamData, xboxData, psnData]) => {
+    ]).then(([userData, steamData, xboxData]) => {
       if (userData.user) setUser(userData.user);
 
       // Çoklu Steam hesapları
@@ -46,8 +44,6 @@ export function AuthProvider({ children }) {
 
       if (userData.xboxUser) setXboxUser(userData.xboxUser);
       else if (xboxData.user) setXboxUser(xboxData.user);
-
-      if (psnData?.user) setPlaystationUser(psnData.user);
     }).catch(err => {
       console.error('Initial auth fetch error:', err);
     }).finally(() => setReady(true));
@@ -121,7 +117,6 @@ export function AuthProvider({ children }) {
     setSteamUser(null);
     setSteamAccounts([]);
     setXboxUser(null);
-    setPlaystationUser(null);
     setOwnedGames(new Set());
     setXboxOwnedGames(new Set());
     setGamePassGames(new Set());
@@ -168,7 +163,6 @@ export function AuthProvider({ children }) {
       setSteamUser(null);
       setSteamAccounts([]);
       setXboxUser(null);
-      setPlaystationUser(null);
       setOwnedGames(new Set());
       setXboxOwnedGames(new Set());
       setGamePassGames(new Set());
@@ -204,17 +198,11 @@ export function AuthProvider({ children }) {
     window.location.href = '/api/auth/xbox/logout';
   };
 
-  // ── PlayStation işlemleri ────────────────────────────────────────────────
-  const psnLogout = async () => {
-    setPlaystationUser(null);
-    await fetch('/api/auth/playstation/logout', { method: 'POST' });
-  };
-
   return (
     <AuthContext.Provider value={{
-      user, steamUser, steamAccounts, xboxUser, playstationUser,
+      user, steamUser, steamAccounts, xboxUser,
       ownedGames, xboxOwnedGames, gamePassGames,
-      ready, signup, login, logout, steamLogout, steamLogoutAccount, xboxLogout, psnLogout,
+      ready, signup, login, logout, steamLogout, steamLogoutAccount, xboxLogout,
       resetPassword, changePassword, deleteAccount,
     }}>
       {children}
