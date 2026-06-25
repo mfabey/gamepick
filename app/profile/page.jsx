@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import GameImage from '../components/GameImage';
@@ -1199,6 +1200,11 @@ function DeleteAccountCard({ deleteAccount, lang }) {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleDelete = async (e) => {
     e.preventDefault();
@@ -1290,12 +1296,12 @@ function DeleteAccountCard({ deleteAccount, lang }) {
         {lang === 'tr' ? 'Hesabımı Sil' : 'Delete My Account'}
       </button>
 
-      {isOpen && (
+      {isOpen && mounted && createPortal(
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
           background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 9999, padding: 20,
+          zIndex: 99999, padding: 20,
         }}>
           <div className="premium-dashboard-card" style={{
             width: '100%', maxWidth: 400, padding: 32,
@@ -1455,7 +1461,8 @@ function DeleteAccountCard({ deleteAccount, lang }) {
               </form>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
