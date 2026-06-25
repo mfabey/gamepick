@@ -49,10 +49,18 @@ export async function POST(request) {
 
       const response = NextResponse.json({ ok: true, mock: true });
       
-      // Clear cookies
-      response.cookies.delete('gp_user_session');
-      response.cookies.delete('gp_steam_session');
-      response.cookies.delete('gp_xbox_session');
+      const cookieOptions = {
+        httpOnly: true,
+        maxAge: 0,
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+      };
+
+      // Clear cookies reliably
+      response.cookies.set('gp_user_session', '', cookieOptions);
+      response.cookies.set('gp_steam_session', '', { ...cookieOptions, sameSite: 'lax' });
+      response.cookies.set('gp_xbox_session', '', { ...cookieOptions, sameSite: 'lax' });
       
       return response;
     }
@@ -103,9 +111,17 @@ export async function POST(request) {
 
     // 4. Clear all cookies and return success
     const response = NextResponse.json({ ok: true, mock: false });
-    response.cookies.delete('gp_user_session');
-    response.cookies.delete('gp_steam_session');
-    response.cookies.delete('gp_xbox_session');
+    const cookieOptions = {
+      httpOnly: true,
+      maxAge: 0,
+      path: '/',
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+    };
+
+    response.cookies.set('gp_user_session', '', cookieOptions);
+    response.cookies.set('gp_steam_session', '', { ...cookieOptions, sameSite: 'lax' });
+    response.cookies.set('gp_xbox_session', '', { ...cookieOptions, sameSite: 'lax' });
 
     return response;
 
