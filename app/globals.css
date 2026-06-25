@@ -1418,13 +1418,19 @@ html[data-theme="dark"] .premium-dashboard-card {
 
 /* ===== AGGRESSIVE MOBILE OVERRIDES FOR WEBVIEW ===== */
 @media (max-width: 768px) {
-  body { overflow-x: hidden; }
-  .page-content, .container, main { padding-left: 16px !important; padding-right: 16px !important; width: 100% !important; box-sizing: border-box !important; overflow-x: hidden; }
-  .grid-auto { grid-template-columns: repeat(2, 1fr) !important; gap: 12px !important; }
-  .profile-main-grid, .profile-two-column, .game-detail-grid { grid-template-columns: 1fr !important; gap: 16px !important; width: 100% !important; }
-  .profile-stats-grid { grid-template-columns: 1fr 1fr 1fr !important; gap: 6px !important; }
-  .game-row { display: flex !important; flex-direction: column !important; height: auto !important; padding: 12px !important; gap: 8px !important; }
-  .game-row-details { width: 100% !important; }
-  .game-row-price-score, .game-row-hours, .game-row-actions { text-align: left !important; width: 100% !important; flex-direction: row !important; justify-content: flex-start !important; }
+  html, body { overflow-x: hidden !important; width: 100vw !important; max-width: 100vw !important; }
+  .page-content, .container, main { padding-left: 12px !important; padding-right: 12px !important; width: 100% !important; max-width: 100vw !important; box-sizing: border-box !important; overflow-x: hidden !important; }
+  .grid-auto { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 8px !important; }
+  .profile-main-grid, .profile-two-column, .game-detail-grid { grid-template-columns: minmax(0, 1fr) !important; gap: 12px !important; width: 100% !important; box-sizing: border-box !important; }
+  .profile-stats-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 4px !important; }
+  .game-row { display: flex !important; flex-direction: column !important; height: auto !important; padding: 10px !important; gap: 6px !important; }
+  .game-row-details { width: 100% !important; min-width: 0 !important; }
+  .game-row-price-score, .game-row-hours, .game-row-actions { text-align: left !important; width: 100% !important; justify-content: flex-start !important; }
+  .bottom-nav { width: 95vw !important; max-width: 400px !important; left: 50% !important; transform: translateX(-50%) !important; padding: 4px !important; box-sizing: border-box !important; }
+  .bottom-nav-links-wrapper { padding: 4px !important; gap: 2px !important; }
+  .library-profile-stats { flex-wrap: wrap !important; gap: 12px !important; justify-content: space-between !important; }
+  .library-profile-stats > div { flex: 0 0 45% !important; min-width: 0 !important; }
+  .search-container, .premium-glass-input { width: 100% !important; max-width: 100% !important; box-sizing: border-box !important; }
+  .nav-right-group, .glass-card, .profile-stat-card { max-width: 100% !important; min-width: 0 !important; box-sizing: border-box !important; }
 }
 
