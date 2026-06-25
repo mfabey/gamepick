@@ -713,6 +713,7 @@ function GameRow({ game, rank, price, pricesLoading }) {
           game={game}
           alt={game.name}
           fill
+          isVertical
           style={{ objectFit: 'cover', transition: 'transform 0.5s' }}
           onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
           onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
