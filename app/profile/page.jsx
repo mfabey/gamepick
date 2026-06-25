@@ -17,8 +17,10 @@ export default function ProfilePage() {
     ownedGames, 
     xboxOwnedGames, 
     gamePassGames, 
+    playstationUser,
     ready, 
     xboxLogout,
+    psnLogout,
     changePassword,
     deleteAccount
   } = useAuth();
@@ -495,14 +497,40 @@ export default function ProfilePage() {
             {/* PlayStation Network */}
             <AccountCard
               name="PlayStation Network"
-              status={lang === 'tr' ? 'Bağlı değil' : 'Not connected'}
-              connected={false}
+              status={
+                playstationUser 
+                  ? (lang === 'tr' ? 'Bağlı (Simülasyon)' : 'Connected (Simulation)')
+                  : (lang === 'tr' ? 'Bağlı değil' : 'Not connected')
+              }
+              connected={!!playstationUser}
               color="#00439c"
               initials="PSN"
+              avatar={playstationUser?.avatar}
               profileUrl={null}
-              onToggle={() => window.location.href = '/api/auth/playstation'}
+              onToggle={async () => {
+                if (playstationUser) {
+                  await psnLogout();
+                } else {
+                  window.location.href = '/api/auth/playstation';
+                }
+              }}
               lang={lang}
             />
+
+            {playstationUser?.isMock && (
+              <div style={{
+                background: 'var(--accent-bg)', border: '1px solid var(--accent-border)', borderRadius: 10,
+                padding: '10px 14px', marginTop: 12, fontSize: 12, color: 'var(--accent)',
+                display: 'flex', gap: 8, alignItems: 'flex-start', lineHeight: 1.5
+              }}>
+                <span style={{ fontSize: 14 }}>⚠️</span>
+                <div>
+                  {lang === 'tr' 
+                    ? 'PlayStation Network API\'si genel erişime kapalı olduğundan bağlantı geçici simülasyon olarak sağlanmıştır.' 
+                    : 'Since the PlayStation Network API is closed to public access, the connection is provided as a temporary simulation.'}
+                </div>
+              </div>
+            )}
 
             {/* Epic Games (Coming Soon) */}
             <div className="premium-dashboard-card" style={{ 
