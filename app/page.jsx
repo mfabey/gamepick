@@ -214,17 +214,12 @@ export default function Home() {
   return (
     <div style={{ paddingBottom: 60 }}>
 
-      {/* ══ HERO ════════════════════════════════════════════════════════════ */}
-      <section style={{ position: 'relative', overflow: 'hidden', padding: '80px 0 8px', background: 'var(--hero-bg)' }}>
-        {/* Ambient orbs */}
-        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
-          <div style={{ position: 'absolute', top: '-10%', left: '10%', width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, rgba(201,133,10,0.12) 0%, transparent 70%)', filter: 'blur(40px)' }} />
-          <div style={{ position: 'absolute', top: '20%', right: '5%', width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(229,57,53,0.08) 0%, transparent 70%)', filter: 'blur(50px)' }} />
-        </div>
-        <div style={{ maxWidth: 880, margin: '0 auto', padding: '0 32px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
+      {/* ══ HERO: tam ekran blurlu oyun mozaiği ════════════════════════════ */}
+      <section style={{ position: 'relative', overflow: 'hidden', padding: '72px 0 8px', background: 'var(--hero-bg)' }}>
+        <div style={{ maxWidth: 880, margin: '0 auto', padding: '0 32px', textAlign: 'center' }}>
 
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '6px 16px', borderRadius: 999, background: 'rgba(201,133,10,0.12)', border: '1px solid rgba(201,133,10,0.3)', fontSize: 13, fontWeight: 700, color: '#f0a020', backdropFilter: 'blur(12px)', marginBottom: 26, letterSpacing: '0.03em' }}>
-            <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 0 3px rgba(34,197,94,0.25)', animation: 'pulse-badge 2s ease-in-out infinite' }} /> {t('hero.badge')}
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '6px 14px', borderRadius: 999, background: 'var(--bg-card)', border: '1px solid var(--border)', fontSize: 13, fontWeight: 600, color: 'var(--text-2)', boxShadow: 'var(--shadow)', marginBottom: 26 }}>
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--green)', boxShadow: '0 0 0 3px rgba(47,158,107,0.2)' }} /> {t('hero.badge')}
           </span>
 
           <h1 style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 'clamp(40px, 5.6vw, 74px)', lineHeight: 1.02, letterSpacing: '-2px', color: 'var(--text)', marginBottom: 20, textWrap: 'balance' }}>
@@ -238,16 +233,14 @@ export default function Home() {
             <form onSubmit={handleSearch}>
               <div style={{
                 display: 'flex', alignItems: 'center', gap: 10,
-                background: 'rgba(30, 30, 50, 0.75)',
-                backdropFilter: 'blur(20px) saturate(160%)',
-                WebkitBackdropFilter: 'blur(20px) saturate(160%)',
-                border: '1.5px solid rgba(201,133,10,0.25)',
-                borderRadius: 18, height: 68, padding: '0 8px 0 22px',
-                boxShadow: '0 8px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06)',
+                background: 'var(--bg-card)',
+                border: '1.5px solid var(--border-hover)',
+                borderRadius: 16, height: 66, padding: '0 8px 0 22px',
+                boxShadow: '0 12px 40px rgba(74,52,28,0.10)',
                 transition: 'border-color 0.2s, box-shadow 0.2s',
               }}
-                onFocusCapture={e => { e.currentTarget.style.borderColor = 'rgba(201,133,10,0.6)'; e.currentTarget.style.boxShadow = '0 8px 40px rgba(0,0,0,0.45), 0 0 0 3px rgba(201,133,10,0.12), inset 0 1px 0 rgba(255,255,255,0.06)'; }}
-                onBlurCapture={e => { e.currentTarget.style.borderColor = 'rgba(201,133,10,0.25)'; e.currentTarget.style.boxShadow = '0 8px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06)'; }}
+                onFocusCapture={e => { e.currentTarget.style.borderColor = 'var(--accent)'; }}
+                onBlurCapture={e => { e.currentTarget.style.borderColor = 'var(--border-hover)'; }}
               >
                 <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)"
                   strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
@@ -272,13 +265,12 @@ export default function Home() {
                   </button>
                 )}
                 <button type="submit" style={{
-                  flexShrink: 0, height: 52, padding: '0 28px', borderRadius: 13,
-                  border: 'none', background: 'linear-gradient(135deg, #C9850A, #f0a020)', color: '#fff',
-                  fontSize: 15, fontWeight: 700, cursor: 'pointer', transition: 'opacity 0.15s, transform 0.15s, box-shadow 0.15s',
-                  boxShadow: '0 4px 16px rgba(201,133,10,0.4)',
+                  flexShrink: 0, height: 50, padding: '0 26px', borderRadius: 11,
+                  border: 'none', background: 'var(--accent)', color: '#fff',
+                  fontSize: 15, fontWeight: 600, cursor: 'pointer', transition: 'opacity 0.15s',
                 }}
-                  onMouseEnter={e => { e.currentTarget.style.opacity = '0.9'; e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(201,133,10,0.55)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(201,133,10,0.4)'; }}
+                  onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
+                  onMouseLeave={e => e.currentTarget.style.opacity = '1'}
                 >
                   {t('hero.search')}
                 </button>
@@ -288,13 +280,11 @@ export default function Home() {
             {/* Autocomplete */}
             {showSug && (
               <div style={{
-                position: 'absolute', top: 'calc(100% + 10px)', left: 0, right: 0,
-                background: 'rgba(20, 20, 36, 0.92)',
-                backdropFilter: 'blur(24px) saturate(160%)',
-                WebkitBackdropFilter: 'blur(24px) saturate(160%)',
-                border: '1px solid rgba(201,133,10,0.2)',
-                borderRadius: 18, overflow: 'hidden', zIndex: 100,
-                boxShadow: '0 24px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05)',
+                position: 'absolute', top: 'calc(100% + 8px)', left: 0, right: 0,
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border)',
+                borderRadius: 16, overflow: 'hidden', zIndex: 100,
+                boxShadow: 'var(--shadow-lg)',
                 textAlign: 'left',
               }}>
                 {sugLoading ? (
@@ -335,7 +325,7 @@ export default function Home() {
 
           {/* Hızlı linkler */}
           <div style={{
-            display: 'flex', gap: 9, marginTop: 24, flexWrap: 'wrap', justifyContent: 'center',
+            display: 'flex', gap: 9, marginTop: 22, flexWrap: 'wrap', justifyContent: 'center',
             opacity: query ? 0 : 1,
             pointerEvents: query ? 'none' : 'auto',
             transition: 'opacity 0.25s ease',
@@ -345,15 +335,11 @@ export default function Home() {
               return (
                 <Link key={label} href={`/games?section=${sections[i]}`}
                   style={{
-                    padding: '8px 18px', borderRadius: 999, fontSize: 13, fontWeight: 600,
-                    background: 'rgba(255,255,255,0.04)',
-                    backdropFilter: 'blur(12px)',
-                    WebkitBackdropFilter: 'blur(12px)',
-                    color: 'var(--text-2)', border: '1px solid rgba(255,255,255,0.08)',
-                    transition: 'background 0.18s, border-color 0.18s, color 0.18s',
+                    padding: '8px 16px', borderRadius: 999, fontSize: 13, fontWeight: 600,
+                    background: 'var(--bg-card)',
+                    color: 'var(--text-2)', border: '1px solid var(--border)',
+                    boxShadow: '0 1px 4px rgba(74,52,28,0.04)',
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(201,133,10,0.12)'; e.currentTarget.style.borderColor = 'rgba(201,133,10,0.3)'; e.currentTarget.style.color = '#f0a020'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'var(--text-2)'; }}
                 >
                   {label}
                 </Link>
@@ -400,20 +386,14 @@ export default function Home() {
         {/* CTA */}
         <div style={{
           marginTop: 16, marginBottom: 8,
-          background: 'rgba(201,133,10,0.06)',
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
-          border: '1px solid rgba(201,133,10,0.2)',
-          borderRadius: 20, padding: '32px 36px',
+          background: 'var(--cta-bg)',
+          border: '1px solid var(--accent-border)',
+          borderRadius: 16, padding: '28px 32px',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           gap: 20, flexWrap: 'wrap',
-          boxShadow: '0 8px 40px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04)',
-          position: 'relative', overflow: 'hidden',
         }}>
-          {/* CTA gold orb */}
-          <div style={{ position: 'absolute', right: -60, top: -60, width: 200, height: 200, borderRadius: '50%', background: 'radial-gradient(circle, rgba(201,133,10,0.15) 0%, transparent 70%)', pointerEvents: 'none' }} />
           <div>
-            <p style={{ fontSize: 11, fontWeight: 700, color: '#f0a020', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>
               {t('cta.badge')}
             </p>
             <h3 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>
@@ -580,26 +560,25 @@ function ScrollRow({ children }) {
 const Section = memo(function Section({ title, subtitle, href, games, loading, badge }) {
   const { t } = useLanguage();
   return (
-    <div style={{ marginBottom: 60 }}>
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 20 }}>
+    <div style={{ marginBottom: 56 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 18 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <h2 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.3px' }}>{title}</h2>
+            <h2 style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)' }}>{title}</h2>
             {badge && (
               <span style={{
-                fontSize: 10, fontWeight: 800, padding: '3px 9px', borderRadius: 999,
-                background: 'rgba(229,57,53,0.15)', color: '#ff6b6b',
-                border: '1px solid rgba(229,57,53,0.3)',
-                letterSpacing: '0.08em', animation: 'pulse-badge 2s ease-in-out infinite',
-                backdropFilter: 'blur(8px)',
+                fontSize: 10, fontWeight: 800, padding: '2px 7px', borderRadius: 999,
+                background: 'rgba(220,60,60,0.15)', color: 'var(--accent)',
+                border: '1px solid rgba(220,60,60,0.3)',
+                letterSpacing: '0.05em', animation: 'pulse-badge 2s ease-in-out infinite',
               }}>
                 ● {badge}
               </span>
             )}
           </div>
-          {subtitle && <p style={{ fontSize: 14, color: 'var(--text-3)', marginTop: 4 }}>{subtitle}</p>}
+          {subtitle && <p style={{ fontSize: 15, color: 'var(--text-3)', marginTop: 4 }}>{subtitle}</p>}
         </div>
-        <Link href={href} style={{ fontSize: 14, color: 'var(--accent)', fontWeight: 700, whiteSpace: 'nowrap', padding: '6px 14px', borderRadius: 8, border: '1px solid var(--accent-border)', background: 'var(--accent-bg)', transition: 'opacity 0.15s' }}>
+        <Link href={href} style={{ fontSize: 15, color: 'var(--accent)', fontWeight: 600, whiteSpace: 'nowrap' }}>
           {t('section.all')}
         </Link>
       </div>
@@ -614,7 +593,6 @@ const Section = memo(function Section({ title, subtitle, href, games, loading, b
     </div>
   );
 });
-
 
 function SkeletonCard() {
   return (

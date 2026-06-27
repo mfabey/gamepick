@@ -238,14 +238,8 @@ function GamesList() {
     <div style={{ minHeight: '100vh', background: 'var(--bg-body)' }}>
 
       {/* ── Sticky üst arama çubuğu ── */}
-      <div className="sticky-search-bar" style={{
-        paddingTop: scrolled ? (isWide ? 10 : 8) : 14,
-        paddingBottom: scrolled ? (isWide ? 10 : 8) : 14,
-        background: scrolled && !isWide ? 'var(--bg-body)' : 'transparent',
-        borderBottom: scrolled && !isWide ? '1px solid var(--border)' : 'none',
-        transition: 'all 0.3s ease',
-      }}>
-        <div className="container">
+      <div className="sticky-search-bar">
+        <div className="container" style={{ paddingTop: 14, paddingBottom: 14 }}>
           <div style={{
             display: 'flex', alignItems: 'center', gap: 12,
             background: scrolled ? 'color-mix(in srgb, var(--bg-card) 72%, transparent)' : 'var(--bg-input)',
@@ -301,27 +295,25 @@ function GamesList() {
           {/* ── SOL: bölüm filtreleri + oyun grid ── */}
           <div>
             {/* Section chip'leri */}
-            <div className="scroll-chips-wrapper">
-              <div className="category-scroll-chips" style={{ marginBottom: 24 }}>
-                {localizedSections.map(s => {
-                  const active = section === s.value;
-                  return (
-                    <button key={s.value} onClick={() => handleSection(s.value)} style={{
-                      display: 'flex', alignItems: 'center', gap: 6,
-                      padding: '8px 18px', borderRadius: 999,
-                      border: active ? '1.5px solid var(--accent)' : '1.5px solid var(--border)',
-                      background: active ? 'var(--accent)' : 'var(--bg-card)',
-                      color: active ? '#fff' : 'var(--text-2)',
-                      fontSize: 13, fontWeight: active ? 600 : 400,
-                      cursor: 'pointer', transition: 'all 0.15s',
-                      boxShadow: active ? '0 4px 12px var(--accent-glow)' : 'none',
-                    }}>
-                      <span>{s.icon}</span>
-                      <span>{s.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
+              {localizedSections.map(s => {
+                const active = section === s.value;
+                return (
+                  <button key={s.value} onClick={() => handleSection(s.value)} style={{
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    padding: '8px 18px', borderRadius: 999,
+                    border: active ? '1.5px solid var(--accent)' : '1.5px solid var(--border)',
+                    background: active ? 'var(--accent)' : 'var(--bg-card)',
+                    color: active ? '#fff' : 'var(--text-2)',
+                    fontSize: 13, fontWeight: active ? 600 : 400,
+                    cursor: 'pointer', transition: 'all 0.15s',
+                    boxShadow: active ? '0 4px 12px var(--accent-glow)' : 'none',
+                  }}>
+                    <span>{s.icon}</span>
+                    <span>{s.label}</span>
+                  </button>
+                );
+              })}
             </div>
 
             {/* Mobil Filtreler (Kategori ve Bütçe) */}
@@ -417,17 +409,15 @@ function GamesList() {
           <aside className="games-sidebar" style={{
             position: 'sticky',
             order: -1,
-            top: 152,
-            maxHeight: 'calc(100vh - 172px)',
+            top: 130,
+            maxHeight: 'calc(100vh - 150px)',
             overflowY: 'auto',
             scrollbarWidth: 'none',
             msOverflowStyle: 'none'
           }}>
 
             {/* Kategoriler */}
-            <div style={{
-              background: 'var(--bg-card)',
-              border: '1px solid var(--border)',
+            <div className="gr-glass" style={{
               borderRadius: 12,
               overflow: 'hidden',
               marginBottom: 16,
@@ -469,7 +459,7 @@ function GamesList() {
             </div>
 
             {/* Mağaza filtresi */}
-            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', marginBottom: 16 }}>
+            <div className="gr-glass" style={{ borderRadius: 12, overflow: 'hidden', marginBottom: 16 }}>
               <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 8 }}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M3 9h18M3 9l1.5-5h15L21 9M4 9v11a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9"/>
@@ -485,7 +475,7 @@ function GamesList() {
                   const active = store === o.v;
                   return (
                     <button key={o.v} onClick={() => setStore(o.v)} style={{
-                      width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      width: '100%', display: 'flex', alignItems: 'center', gap: 10,
                       padding: '10px 18px', border: 'none', cursor: 'pointer',
                       background: active ? 'var(--accent-bg)' : 'transparent',
                       color: active ? 'var(--accent)' : 'var(--text-2)',
@@ -497,7 +487,10 @@ function GamesList() {
                       onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'var(--bg-hover)'; e.currentTarget.style.color = 'var(--text)'; }}}
                       onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-2)'; }}}
                     >
-                      <span>{o.label}</span>
+                      {o.v === 'steam' && <span style={{ width:24, height:24, borderRadius:6, background:'rgba(18,28,42,.9)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}><svg width="13" height="13" viewBox="0 0 24 24" fill="#c7d5e0"><path d="M11.979 0C5.678 0 .511 4.86.022 11.037l6.432 2.658c.545-.371 1.203-.59 1.912-.59.063 0 .125.004.188.006l2.861-4.142V8.91c0-2.495 2.028-4.524 4.524-4.524 2.494 0 4.524 2.031 4.524 4.527s-2.03 4.525-4.524 4.525h-.105l-4.076 2.909c0 .052.004.105.004.159 0 1.875-1.515 3.396-3.39 3.396-1.635 0-3.016-1.173-3.331-2.727L.436 15.27C1.862 20.307 6.486 24 11.979 24c6.627 0 11.999-5.373 11.999-12S18.605 0 11.979 0z"/></svg></span>}
+                      {o.v === 'epic'  && <span style={{ width:24, height:24, borderRadius:6, background:'rgba(8,8,10,.88)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}><svg width="12" height="12" viewBox="0 0 24 24" fill="#fff"><path d="M3.623 0v18.954l2.507 1.597V3.207h9.123v3.21H9.118v2.674h5.628v3.21H9.118v3.474h6.231v3.21H6.23V24l14.148-4.625V0z"/></svg></span>}
+                      {o.v === 'all'   && <span style={{ width:24, flexShrink:0 }} />}
+                      <span style={{ flex:1 }}>{o.label}</span>
                       {active && (
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                           <polyline points="20 6 9 17 4 12"/>
@@ -510,9 +503,7 @@ function GamesList() {
             </div>
 
             {/* Bütçe filtresi */}
-            <div style={{
-              background: 'var(--bg-card)',
-              border: '1px solid var(--border)',
+            <div className="gr-glass" style={{
               borderRadius: 12,
               overflow: 'hidden',
             }}>
@@ -557,7 +548,7 @@ function GamesList() {
               </div>
             </div>
             {/* Metacritic filtresi */}
-            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', marginTop: 16 }}>
+            <div className="gr-glass" style={{ borderRadius: 12, overflow: 'hidden', marginTop: 16 }}>
               <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 8 }}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>

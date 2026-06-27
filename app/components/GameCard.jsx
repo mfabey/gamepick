@@ -35,6 +35,25 @@ function GameCard({ game, compact = false }) {
   const [priceLoading, setPriceLoading] = useState(false);
   const [priceDone,    setPriceDone]    = useState(false);
   const cardRef = useRef(null);
+  const tiltRef = useRef(null);
+
+  // 3B eğilme (mouse takipli) + üzerine gelince yükselme
+  const handleTilt = (e) => {
+    const el = tiltRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const px = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+    const py = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
+    el.style.setProperty('--rx', ((0.5 - py) * 8).toFixed(2) + 'deg');
+    el.style.setProperty('--ry', ((px - 0.5) * 10).toFixed(2) + 'deg');
+    el.style.setProperty('--mx', (px * 100).toFixed(1) + '%');
+    el.style.setProperty('--my', (py * 100).toFixed(1) + '%');
+  };
+  const resetTilt = () => {
+    setHovered(false);
+    const el = tiltRef.current;
+    if (el) { el.style.setProperty('--rx', '0deg'); el.style.setProperty('--ry', '0deg'); }
+  };
 
   // Kart görünüme girince Steam fiyatı lazy-load et
   useEffect(() => {
@@ -69,25 +88,26 @@ function GameCard({ game, compact = false }) {
   const href     = game.rawgSlug ? `/game/rawg/${game.rawgSlug}` : `/game/rawg/${game.id}`;
 
   return (
-    <Link href={href} style={{ flexShrink: 0, width: compact ? imgH * 1.78 : undefined }}>
+    <Link href={href} style={{ flexShrink: 0, width: compact ? imgH * 1.78 : undefined, perspective: 1100 }}>
       <div
-        ref={cardRef}
+        ref={el => { cardRef.current = el; tiltRef.current = el; }}
         onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
+        onMouseMove={handleTilt}
+        onMouseLeave={resetTilt}
         style={{
           background:   'var(--bg-card)',
-          border:       `1.5px solid ${hovered ? 'rgba(201,133,10,0.45)' : 'var(--border)'}`,
+          border:       `1.5px solid ${hovered ? 'var(--accent-border)' : 'var(--border)'}`,
           borderRadius: 16,
           overflow:     'hidden',
-          transition:   'border-color 0.22s, transform 0.22s, box-shadow 0.22s',
-          transform:    hovered ? 'translateY(-6px) scale(1.01)' : 'translateY(0) scale(1)',
-          boxShadow:    hovered
-            ? '0 20px 50px rgba(0,0,0,0.5), 0 0 30px rgba(201,133,10,0.15), 0 0 0 1px rgba(201,133,10,0.2)'
-            : '0 2px 8px rgba(0,0,0,0.3)',
+          transition:   'border-color 0.2s, box-shadow 0.35s, transform 0.14s ease-out',
+          transform:    `rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)) translateY(${hovered ? -8 : 0}px) scale(${hovered ? 1.035 : 1})`,
+          transformStyle: 'preserve-3d',
+          boxShadow:    hovered ? '0 34px 70px -22px var(--accent-glow), 0 0 0 1px var(--accent-border)' : '0 1px 2px rgba(0,0,0,0.2)',
           cursor:       'pointer',
           width:        compact ? imgH * 1.78 : undefined,
           position:     'relative',
           zIndex:       hovered ? 10 : 1,
+          willChange:   'transform',
         }}
       >
         {/* Kapak */}
@@ -99,8 +119,9 @@ function GameCard({ game, compact = false }) {
             style={{ objectFit: 'cover', pointerEvents: 'none' }}
           />
 
-          {/* Oyun kutusu sinematik overlay */}
-          <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'linear-gradient(125deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 22%, rgba(255,255,255,0) 44%), linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0) 55%)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.06)' }} />
+          {/* Oyun kutusu parlaklığı + mouse takipli ışık */}
+          <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'linear-gradient(125deg, rgba(255,255,255,0.32) 0%, rgba(255,255,255,0.09) 22%, rgba(255,255,255,0) 44%), linear-gradient(to top, rgba(0,0,0,0.30), rgba(0,0,0,0) 46%)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.30), inset 0 0 0 1px rgba(255,255,255,0.06)' }} />
+          <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: hovered ? 1 : 0, transition: 'opacity 0.35s ease', mixBlendMode: 'soft-light', background: 'radial-gradient(180px circle at var(--mx,50%) var(--my,40%), rgba(255,255,255,0.22), transparent 60%)' }} />
 
           {/* Sol üst: indirim / ücretsiz badge */}
           <div style={{ position: 'absolute', top: 8, left: 8, display: 'flex', gap: 4 }}>
@@ -186,20 +207,20 @@ function GameCard({ game, compact = false }) {
         </div>
 
         {/* Alt bilgi */}
-        <div className="game-card-body">
-          <p className="game-card-title">
+        <div style={{ padding: '13px 15px' }}>
+          <p style={{ fontWeight: 600, fontSize: 14, lineHeight: 1.3, color: 'var(--text)', marginBottom: 7, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {game.name}
           </p>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4, fontFamily: "-apple-system, 'Segoe UI', system-ui, Roboto, 'Helvetica Neue', Arial, sans-serif" }}>
 
             {/* Fiyat */}
             {isFree ? (
-              <span className="game-card-price" style={{ color: 'var(--green)' }}>{t('card.free')}</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--green)' }}>{t('card.free')}</span>
             ) : livePrice?.price != null ? (
               isOnSale ? (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <span className="game-card-price" style={{ color: 'var(--amber)' }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--amber)' }}>
                       {formatPrice(livePrice.price)}
                     </span>
                     {livePrice.storeIcon && (
@@ -214,7 +235,7 @@ function GameCard({ game, compact = false }) {
                   </div>
                 </div>
               ) : (
-                <span className="game-card-price">
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
                   {formatPrice(livePrice.price)}
                 </span>
               )

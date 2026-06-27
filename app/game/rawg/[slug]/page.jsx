@@ -3,18 +3,13 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useAuth, normalizeName } from '../../../context/AuthContext';
-import { useLanguage } from '../../../context/LanguageContext';
 
 export default function RawgGamePage({ params }) {
   const { slug } = params;
-  const router = useRouter();
-  const { user, ownedGames, xboxOwnedGames = new Set(), gamePassGames = new Set() } = useAuth();
-  const { lang, t, formatPrice } = useLanguage();
+  const { ownedGames, xboxOwnedGames = new Set(), gamePassGames = new Set() } = useAuth();
 
   const [game,         setGame]         = useState(null);
-  const [isInWishlist, setIsInWishlist] = useState(false);
   const [steamPrice,   setSteamPrice]   = useState(null);
   const [epicPrice,    setEpicPrice]    = useState(null);
   const [gogPrice,      setGogPrice]      = useState(null);
@@ -27,100 +22,23 @@ export default function RawgGamePage({ params }) {
   const [xboxLoading,  setXboxLoading]  = useState(false);
   const [ai,           setAi]           = useState(null);
   const [aiLoading,    setAiLoading]    = useState(true);
-  const [news,         setNews]         = useState([]);
   const [loading,      setLoading]      = useState(true);
   const [error,        setError]        = useState(null);
   const [imgIdx,       setImgIdx]       = useState(0);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [refreshing,     setRefreshing]     = useState(false);
-
-  const handleRefresh = () => {
-    setRefreshing(true);
-    try {
-      sessionStorage.removeItem('gamerisen_game_cache_v2_' + slug);
-    } catch (e) {}
-    setRefreshTrigger(prev => prev + 1);
-  };
 
   // Alt bara "şu an incelenen oyun" bilgisini bildir
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (game) {
-      window.dispatchEvent(new CustomEvent('gamerisen:viewing', {
+      window.dispatchEvent(new CustomEvent('gamepick:viewing', {
         detail: { name: game.name, image: game.image || null },
       }));
     }
-    return () => { window.dispatchEvent(new CustomEvent('gamerisen:viewing', { detail: null })); };
+    return () => { window.dispatchEvent(new CustomEvent('gamepick:viewing', { detail: null })); };
   }, [game]);
-
-  useEffect(() => {
-    if (!game) return;
-    const stored = JSON.parse(
-      localStorage.getItem('gamerisen_wishlist') || 
-      localStorage.getItem('gamepick_wishlist') || 
-      '[]'
-    );
-    const exists = stored.some(item => item.id === game.id);
-    setIsInWishlist(exists);
-  }, [game]);
-
-  const toggleWishlist = () => {
-    if (!game) return;
-    const stored = JSON.parse(
-      localStorage.getItem('gamerisen_wishlist') || 
-      localStorage.getItem('gamepick_wishlist') || 
-      '[]'
-    );
-    let updated;
-    if (isInWishlist) {
-      updated = stored.filter(item => item.id !== game.id);
-      setIsInWishlist(false);
-    } else {
-      const item = {
-        id: game.id,
-        name: game.name,
-        image: game.image,
-        rawgSlug: game.rawgSlug || slug
-      };
-      updated = [...stored, item];
-      setIsInWishlist(true);
-    }
-    localStorage.setItem('gamerisen_wishlist', JSON.stringify(updated));
-  };
 
   useEffect(() => {
     if (!slug) return;
-
-    // Check client-side cache first, bypass if refreshing
-    if (refreshTrigger === 0) {
-      try {
-        const cachedData = sessionStorage.getItem('gamerisen_game_cache_v2_' + slug);
-        if (cachedData) {
-          const cached = JSON.parse(cachedData);
-          if (cached && cached.game) {
-            setGame(cached.game);
-            setNews(cached.news || []);
-            setSteamPrice(cached.steamPrice || null);
-            setEpicPrice(cached.epicPrice || null);
-            setGogPrice(cached.gogPrice || null);
-            setHumblePrice(cached.humblePrice || null);
-            setXboxPrices(cached.xboxPrices || []);
-            setAi(cached.ai || null);
-            setLoading(false);
-            setSteamLoading(false);
-            setEpicLoading(false);
-            setXboxLoading(false);
-            setGogLoading(false);
-            setHumbleLoading(false);
-            setAiLoading(false);
-            return; // Skip fetches completely
-          }
-        }
-      } catch (e) {
-        console.warn('SessionStorage cache read failed:', e);
-      }
-    }
-
     setLoading(true);
     setError(null);
     setAi(null);
@@ -129,8 +47,6 @@ export default function RawgGamePage({ params }) {
     setGogPrice(null);
     setHumblePrice(null);
     setXboxPrices([]);
-    setNews([]);
-    setAiLoading(true);
 
     fetch('/api/rawg-game?slug=' + slug)
       .then(r => r.json())
@@ -139,15 +55,7 @@ export default function RawgGamePage({ params }) {
         const g = gameData.game;
         setGame(g);
 
-        // ── İlgili haberler (Steam News) ───────────
-        if (g.steamAppId) {
-          fetch('/api/game-news?appid=' + g.steamAppId + '&count=4')
-            .then(r => r.json())
-            .then(d => setNews(d.results || []))
-            .catch(() => {});
-        }
-
-        // ── Steam fiyatı ─────────────────────────
+        // ── Steam fiyatı ─────────────────────────────────────────────────
         if (g.steamAppId) {
           setSteamLoading(true);
           fetch('/api/steam-price?appid=' + g.steamAppId)
@@ -164,12 +72,13 @@ export default function RawgGamePage({ params }) {
             .finally(() => setSteamLoading(false));
         }
 
-        // ── Epic + Xbox + GOG + Humble ───────────
+        // ── Epic + Xbox + GOG + Humble — ITAD (appid ile kesin eşleşme) ──
         setEpicLoading(true);
         setXboxLoading(true);
         setGogLoading(true);
         setHumbleLoading(true);
 
+        // steamAppId varsa ITAD kesin lookup, her iki paramı gönder (lookup başarısız olursa title ile fallback çalışır)
         const priceParam = g.steamAppId
           ? `appid=${encodeURIComponent(g.steamAppId)}&title=${encodeURIComponent(g.name)}`
           : `title=${encodeURIComponent(g.name)}`;
@@ -179,6 +88,7 @@ export default function RawgGamePage({ params }) {
           .then(d => {
             const stores = d.stores || [];
 
+            // Epic — isimde 'epic' geçen her store
             const itadEpic = stores.find(s =>
               s.name?.toLowerCase().includes('epic') ||
               s.storeId?.toLowerCase().includes('epic')
@@ -193,6 +103,7 @@ export default function RawgGamePage({ params }) {
               });
             }
 
+            // GOG — isimde 'gog' geçen her store
             const itadGog = stores.find(s =>
               s.name?.toLowerCase().includes('gog') ||
               s.storeId === '35'
@@ -207,6 +118,7 @@ export default function RawgGamePage({ params }) {
               });
             }
 
+            // Humble — isimde 'humble' geçen her store
             const itadHumble = stores.find(s =>
               s.name?.toLowerCase().includes('humble') ||
               s.storeId === '37'
@@ -221,6 +133,7 @@ export default function RawgGamePage({ params }) {
               });
             }
 
+            // Xbox — isimde 'xbox' veya 'microsoft' geçen store
             const xboxList = stores.filter(s =>
               s.name?.toLowerCase().includes('xbox') ||
               s.name?.toLowerCase().includes('microsoft') ||
@@ -236,7 +149,7 @@ export default function RawgGamePage({ params }) {
             setHumbleLoading(false);
           });
 
-        // ── AI özeti ─────────────────────────────
+        // ── AI özeti ─────────────────────────────────────────────────────
         const desc = (g.description || '').replace(/<[^>]+>/g, '').slice(0, 1500);
         const aiId = g.steamAppId || ('rawg_' + g.rawgId);
         setAiLoading(true);
@@ -251,31 +164,8 @@ export default function RawgGamePage({ params }) {
           .finally(() => setAiLoading(false));
       })
       .catch(e => setError(e.message))
-      .finally(() => {
-        setLoading(false);
-        setRefreshing(false);
-      });
-  }, [slug, refreshTrigger]);
-
-  // Caches state into sessionStorage whenever they update
-  useEffect(() => {
-    if (!game) return;
-    const cacheData = {
-      game,
-      news,
-      steamPrice,
-      epicPrice,
-      gogPrice,
-      humblePrice,
-      xboxPrices,
-      ai
-    };
-    try {
-      sessionStorage.setItem('gamerisen_game_cache_v2_' + slug, JSON.stringify(cacheData));
-    } catch (e) {
-      console.warn('SessionStorage cache write failed:', e);
-    }
-  }, [game, news, steamPrice, epicPrice, gogPrice, humblePrice, xboxPrices, ai, slug]);
+      .finally(() => setLoading(false));
+  }, [slug]);
 
   if (loading) return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
@@ -285,16 +175,13 @@ export default function RawgGamePage({ params }) {
   );
 
   if (error || !game) return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 'calc(100vh - 64px)', background: 'var(--bg-body)' }}>
-      <p style={{ fontSize: 48, marginBottom: 12 }}>🔍</p>
-      <p style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>{t('detail.notFound')}</p>
-      <button onClick={() => router.back()} style={{
-        padding: '10px 24px', borderRadius: 8,
-        background: 'var(--accent)', color: '#fff',
-        border: 'none', fontSize: 14, fontWeight: 600, cursor: 'pointer',
-      }}>
-        {t('detail.goBack')}
-      </button>
+    <div style={{ textAlign: 'center', padding: '80px 20px' }}>
+      <p style={{ fontSize: 48, marginBottom: 12 }}>😕</p>
+      <p style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>Oyun bulunamadı</p>
+      <p style={{ color: 'var(--text-3)', marginBottom: 24 }}>{error || 'Bilinmeyen hata'}</p>
+      <Link href="/games" style={{ padding: '10px 24px', background: 'var(--accent)', color: '#fff', borderRadius: 10, textDecoration: 'none', fontWeight: 600 }}>
+        ← Oyunlara Dön
+      </Link>
     </div>
   );
 
@@ -345,9 +232,9 @@ export default function RawgGamePage({ params }) {
       )}
 
       <div className="container" style={{ paddingTop: 28, paddingBottom: 60, maxWidth: 960, position: 'relative', zIndex: 1 }}>
-        <button onClick={() => router.back()} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--text-3)', fontSize: 13, textDecoration: 'none', marginBottom: 20, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-          ← {lang === 'tr' ? 'Geri Dön' : 'Go Back'}
-        </button>
+        <Link href="/games" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--text-3)', fontSize: 13, textDecoration: 'none', marginBottom: 20 }}>
+          ← Oyunlara Dön
+        </Link>
 
       {/* Başlık ve Rozetler (Mobil Uyumlu) */}
       <div style={{ marginBottom: 24 }}>
@@ -359,7 +246,7 @@ export default function RawgGamePage({ params }) {
               background: 'rgba(26,159,255,0.12)', border: '1px solid rgba(26,159,255,0.35)',
               color: '#1a9fff', display: 'flex', alignItems: 'center', gap: 5,
             }}>
-              ✓ {lang === 'tr' ? 'Steam Kütüphanende var' : 'In your Steam Library'}
+              ✓ Steam Kütüphanende var
             </div>
           )}
           {xboxOwnedGames.size > 0 && xboxOwnedGames.has(normalizeName(game.name)) && (
@@ -368,7 +255,7 @@ export default function RawgGamePage({ params }) {
               background: 'rgba(16,124,16,0.12)', border: '1px solid rgba(16,124,16,0.35)',
               color: '#107C10', display: 'flex', alignItems: 'center', gap: 5,
             }}>
-              ✓ {lang === 'tr' ? 'Xbox Kütüphanende var' : 'In your Xbox Library'}
+              ✓ Xbox Kütüphanende var
             </div>
           )}
           {gamePassGames.size > 0 && gamePassGames.has(normalizeName(game.name)) && (
@@ -377,7 +264,7 @@ export default function RawgGamePage({ params }) {
               background: 'rgba(16,124,16,0.12)', border: '1px solid rgba(16,124,16,0.35)',
               color: '#107C10', display: 'flex', alignItems: 'center', gap: 5,
             }}>
-              🎮 {lang === 'tr' ? 'Game Pass Kütüphanende var' : 'In your Game Pass Library'}
+              🎮 Game Pass Kütüphanende var
             </div>
           )}
           {game.metacritic && (
@@ -394,35 +281,6 @@ export default function RawgGamePage({ params }) {
             <div style={{ padding: '6px 12px', borderRadius: 8, fontSize: 13, background: 'var(--bg-input)', color: 'var(--text-2)', fontWeight: 600 }}>
               ⭐ {game.rating.toFixed(1)} / 5
             </div>
-          )}
-          {user && (
-            <button
-              onClick={toggleWishlist}
-              style={{
-                padding: '6px 12px',
-                borderRadius: 8,
-                fontWeight: 600,
-                fontSize: 13,
-                background: isInWishlist ? 'var(--accent-bg)' : 'var(--bg-input)',
-                border: isInWishlist ? '1px solid var(--accent-border)' : '1px solid var(--border)',
-                color: isInWishlist ? 'var(--accent)' : 'var(--text-2)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 5,
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.borderColor = 'var(--accent-border)';
-                if (!isInWishlist) e.currentTarget.style.background = 'var(--bg-hover)';
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.borderColor = isInWishlist ? 'var(--accent-border)' : 'var(--border)';
-                if (!isInWishlist) e.currentTarget.style.background = 'var(--bg-input)';
-              }}
-            >
-              {isInWishlist ? '❤️' : '🤍'} {isInWishlist ? t('detail.wishlist.remove') : t('detail.wishlist.add')}
-            </button>
           )}
         </div>
       </div>
@@ -453,9 +311,9 @@ export default function RawgGamePage({ params }) {
           {/* AI Özeti */}
           {ai && (
             <div className="glass-ai-panel" style={{ marginBottom: 20 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                <span style={{ fontSize: 18 }}>💡</span>
-                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)' }}>{lang === 'tr' ? 'AI Özeti' : 'AI Summary'}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <span style={{ fontSize: 18 }}>✨</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)' }}>AI Özeti</span>
               </div>
               {ai.ozet && <p style={{ fontSize: 14, lineHeight: 1.7, color: 'var(--text)', marginBottom: ai.duygu ? 10 : 0, wordBreak: 'break-word', overflowWrap: 'break-word' }}>{ai.ozet}</p>}
               {ai.duygu && (
@@ -484,7 +342,7 @@ export default function RawgGamePage({ params }) {
                   {game.description.length > 1200 ? '…' : ''}
                   {aiLoading && (
                     <span style={{ display: 'inline-block', marginLeft: 6, fontSize: 11, color: 'var(--text-3)' }}>
-                      ({lang === 'tr' ? 'Türkçe çeviri yükleniyor…' : 'Translating...'})
+                      (Türkçe çeviri yükleniyor…)
                     </span>
                   )}
                 </>
@@ -499,85 +357,6 @@ export default function RawgGamePage({ params }) {
               ))}
             </div>
           )}
-
-          {/* ── İlgili Haberler (Steam News) ───────────────────────────── */}
-          {news.length > 0 && (
-            <div style={{ marginTop: 26 }}>
-              <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 7 }}>
-                📰 {t('detail.news')}
-              </h2>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {news.map(n => (
-                  <a key={n.id} href={n.url} target="_blank" rel="noopener noreferrer"
-                    style={{ textDecoration: 'none', display: 'block', padding: '13px 15px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg-card)', transition: 'border-color 0.15s, transform 0.1s' }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent-border)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'none'; }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)' }}>{n.source}</span>
-                      {n.date && <span style={{ fontSize: 11, color: 'var(--text-3)' }}>· {new Date(n.date).toLocaleDateString(lang === 'tr' ? 'tr-TR' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</span>}
-                    </div>
-                    <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', lineHeight: 1.35, marginBottom: n.excerpt ? 5 : 0 }}>{n.title}</p>
-                    {n.excerpt && <p style={{ fontSize: 12.5, color: 'var(--text-2)', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{n.excerpt}</p>}
-                  </a>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ── DLC ve Ek Paketler ──────────────────────────────────── */}
-          {game.additions?.length > 0 && (
-            <div style={{ marginTop: 28 }}>
-              <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 7 }}>
-                🎁 {lang === 'tr' ? 'DLC ve Ek Paketler' : 'DLC & Add-ons'}
-                <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-3)', marginLeft: 4 }}>({game.additions.length})</span>
-              </h2>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 12 }}>
-                {game.additions.map(dlc => (
-                  <a
-                    key={dlc.id}
-                    href={`/game/rawg/${dlc.slug}`}
-                    style={{ textDecoration: 'none', display: 'block', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border)', background: 'var(--bg-card)', transition: 'border-color 0.15s, transform 0.15s, box-shadow 0.15s' }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent-border)'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.12)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}
-                  >
-                    {/* Kapak resmi */}
-                    <div style={{ position: 'relative', width: '100%', aspectRatio: '16/9', background: 'var(--bg-input)', overflow: 'hidden' }}>
-                      {dlc.image ? (
-                        <img src={dlc.image} alt={dlc.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} loading="lazy" />
-                      ) : (
-                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>🎮</div>
-                      )}
-                      {/* DLC rozeti */}
-                      <span style={{
-                        position: 'absolute', top: 6, left: 6,
-                        fontSize: 9, fontWeight: 800, padding: '2px 6px', borderRadius: 5,
-                        background: 'var(--accent)', color: '#fff', letterSpacing: '0.05em',
-                        textTransform: 'uppercase',
-                      }}>DLC</span>
-                      {dlc.metacritic && (
-                        <span style={{
-                          position: 'absolute', top: 6, right: 6,
-                          fontSize: 10, fontWeight: 700, padding: '2px 5px', borderRadius: 5,
-                          background: dlc.metacritic >= 80 ? '#16a34a' : dlc.metacritic >= 60 ? '#d97706' : '#dc2626',
-                          color: '#fff',
-                        }}>{dlc.metacritic}</span>
-                      )}
-                    </div>
-                    {/* İsim ve tarih */}
-                    <div style={{ padding: '10px 12px 12px' }}>
-                      <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', lineHeight: 1.35, marginBottom: 4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{dlc.name}</p>
-                      {dlc.released && (
-                        <p style={{ fontSize: 11, color: 'var(--text-3)' }}>
-                          {new Date(dlc.released).toLocaleDateString(lang === 'tr' ? 'tr-TR' : 'en-US', { year: 'numeric', month: 'short' })}
-                        </p>
-                      )}
-                    </div>
-                  </a>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
 
         {/* ─── Sağ ───────────────────────────────────────────────────── */}
@@ -585,10 +364,10 @@ export default function RawgGamePage({ params }) {
           {/* Detay tablosu */}
           <div className="glass-panel" style={{ marginBottom: 20, fontSize: 13 }}>
             {[
-              { label: lang === 'tr' ? 'Geliştirici' : 'Developer', value: game.developer },
-              { label: lang === 'tr' ? 'Yayıncı' : 'Publisher',    value: game.publisher  },
-              { label: lang === 'tr' ? 'Çıkış' : 'Release',      value: game.released   },
-              { label: lang === 'tr' ? 'Türler' : 'Genres',     value: (game.genres || []).join(', ') },
+              { label: 'Geliştirici', value: game.developer },
+              { label: 'Yayıncı',    value: game.publisher  },
+              { label: 'Çıkış',      value: game.released   },
+              { label: 'Türler',     value: (game.genres || []).join(', ') },
             ].filter(r => r.value).map(row => (
               <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid var(--border)', gap: 12 }}>
                 <span style={{ color: 'var(--text-3)', flexShrink: 0 }}>{row.label}</span>
@@ -599,42 +378,7 @@ export default function RawgGamePage({ params }) {
 
           {/* ── Platform Fiyatları ──────────────────────────────────── */}
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-              <h2 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', margin: 0 }}>{t('detail.priceComparison')}</h2>
-              <button 
-                onClick={handleRefresh}
-                disabled={refreshing}
-                style={{
-                  background: 'none', border: 'none', color: 'var(--text-3)', fontSize: 12,
-                  display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer',
-                  padding: '4px 8px', borderRadius: 6, transition: 'color 0.15s, background-color 0.15s'
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.color = 'var(--accent)';
-                  e.currentTarget.style.backgroundColor = 'var(--accent-bg)';
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.color = 'var(--text-3)';
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                }}
-                title={lang === 'tr' ? 'Verileri ve fiyatları yenile' : 'Refresh prices and data'}
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" 
-                  style={{ 
-                    animation: refreshing ? 'spin-refresh 1s linear infinite' : 'none',
-                    display: 'block'
-                  }}
-                >
-                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
-                </svg>
-                <style>{`
-                  @keyframes spin-refresh {
-                    to { transform: rotate(360deg); }
-                  }
-                `}</style>
-                <span>{lang === 'tr' ? 'Yenile' : 'Refresh'}</span>
-              </button>
-            </div>
+            <h2 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 10 }}>Platform Fiyatları</h2>
 
             {/* Steam */}
             {game.hasSteam ? (
@@ -732,11 +476,11 @@ export default function RawgGamePage({ params }) {
 
             {/* Resmi Web Sitesi (Minecraft vb. özel oyunlar için) */}
             {game.officialUrl && (
-              <PlaceholderCard store={lang === 'tr' ? 'Resmi Web Sitesi' : 'Official Website'} icon="🌐" url={game.officialUrl} />
+              <PlaceholderCard store="Resmi Web Sitesi" icon="🌐" url={game.officialUrl} />
             )}
 
             <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 10, lineHeight: 1.5 }}>
-              {lang === 'tr' ? 'Fiyatlar Steam & ITAD üzerinden alınmaktadır. Anlık değişiklikler yansımayabilir.' : 'Prices are fetched via Steam & ITAD. Real-time changes may not be reflected immediately.'}
+              Fiyatlar Steam & ITAD üzerinden alınmaktadır. Anlık değişiklikler yansımayabilir.
             </p>
           </div>
         </div>
@@ -801,7 +545,6 @@ function LoadingPriceRow() {
 
 // ── Fiyatlı platform kartı ───────────────────────────────────────────────────
 function PriceCard({ store, icon, price, original, discount, isFree: isFreeOverride, url, highlight = false }) {
-  const { lang, t, formatPrice } = useLanguage();
   const isFree   = isFreeOverride || price === 0;
   const isOnSale = discount > 0 && !isFree;
 
@@ -852,19 +595,19 @@ function PriceCard({ store, icon, price, original, discount, isFree: isFreeOverr
               background: 'var(--gold-badge-bg)', color: 'var(--gold-badge-text)', border: '1px solid var(--gold-border)',
               whiteSpace: 'nowrap'
             }}>
-              👑 {t('detail.cheapest')}
+              👑 En Ucuz
             </span>
           )}
         </span>
         <div style={{ textAlign: 'right', flexShrink: 0, fontFamily: "-apple-system, 'Segoe UI', system-ui, Roboto, 'Helvetica Neue', Arial, sans-serif" }}>
           {isFree ? (
-            <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--green)' }}>{t('card.free')}</span>
+            <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--green)' }}>Ücretsiz</span>
           ) : (
             <>
-              <span style={{ fontWeight: 700, fontSize: 15, color: isOnSale ? 'var(--amber)' : 'var(--text)' }}>{formatPrice(price)}</span>
+              <span style={{ fontWeight: 700, fontSize: 15, color: isOnSale ? 'var(--amber)' : 'var(--text)' }}>{price}₺</span>
               {isOnSale && (
                 <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
-                  <span style={{ textDecoration: 'line-through' }}>{formatPrice(original)}</span>
+                  <span style={{ textDecoration: 'line-through' }}>{original}₺</span>
                   {' '}<span style={{ color: 'var(--amber)' }}>-%{discount}</span>
                 </div>
               )}
@@ -878,7 +621,6 @@ function PriceCard({ store, icon, price, original, discount, isFree: isFreeOverr
 
 // ── Fiyat yok ama link var ───────────────────────────────────────────────────
 function PlaceholderCard({ store, icon, url }) {
-  const { lang } = useLanguage();
   return (
     <a href={url || '#'} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', display: 'block', marginBottom: 8 }}>
       <div className="glass-card" style={{
@@ -902,7 +644,7 @@ function PlaceholderCard({ store, icon, url }) {
           <StoreLogo store={store} />
           <span style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>{store}</span>
         </span>
-        <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 500, flexShrink: 0 }}>{lang === 'tr' ? 'Mağazaya Git →' : 'Go to Store →'}</span>
+        <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 500, flexShrink: 0 }}>Mağazaya Git →</span>
       </div>
     </a>
   );
@@ -910,14 +652,13 @@ function PlaceholderCard({ store, icon, url }) {
 
 // ── Oyun bu platformda yok ───────────────────────────────────────────────────
 function MissingCard({ platform }) {
-  const { lang } = useLanguage();
   return (
     <div className="glass-card" style={{
       padding: '12px 14px', borderRadius: 10, marginBottom: 8,
       borderStyle: 'dashed', opacity: 0.7,
       fontSize: 13, color: 'var(--text-3)', textAlign: 'center',
     }}>
-      {lang === 'tr' ? `Bu oyun ${platform}'te bulunmuyor` : `This game is not available on ${platform}`}
+      Bu oyun {platform}&apos;te bulunmuyor
     </div>
   );
 }

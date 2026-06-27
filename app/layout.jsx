@@ -4,6 +4,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import { LanguageProvider } from './context/LanguageContext';
 import NavBar from './components/NavBar';
 import Footer from './components/Footer';
+import IntroSplash from './components/IntroSplash';
 
 export const metadata = {
   title: 'Gamerisen — Doğru Oyun, Doğru Platform, En İyi Fiyat',
@@ -29,6 +30,7 @@ export default function RootLayout({ children }) {
         ` }} />
       </head>
       <body>
+        <IntroSplash />
         <ThemeProvider>
           <LanguageProvider>
             <AuthProvider>

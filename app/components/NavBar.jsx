@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { LOGO_SRC } from '../lib/logo';
 
 export default function NavBar() {
   const pathname = usePathname();
@@ -64,44 +65,20 @@ export default function NavBar() {
   const navRef = useRef(null);
   const [pill, setPill] = useState({ width: 0, top: 0, height: 0, transform: 'translateX(0)', opacity: 0 });
   useEffect(() => {
-    const nav = navRef.current;
-    if (!nav) return;
-
     const place = () => {
+      const nav = navRef.current;
+      if (!nav) return;
       const tabs = nav.querySelectorAll('[data-tab]');
       const idx = NAV_LINKS.findIndex(l => isActive(l.href));
       const el = idx >= 0 ? tabs[idx] : null;
       if (!el) { setPill(p => ({ ...p, opacity: 0 })); return; }
       setPill({ opacity: 1, width: el.offsetWidth, top: el.offsetTop, height: el.offsetHeight, transform: `translateX(${el.offsetLeft}px)` });
     };
-
     place();
     const t = setTimeout(place, 0);
-    const t2 = setTimeout(place, 150);
-
-    let observer;
-    if (typeof ResizeObserver !== 'undefined') {
-      observer = new ResizeObserver(() => {
-        place();
-      });
-      observer.observe(nav);
-      const tabs = nav.querySelectorAll('[data-tab]');
-      tabs.forEach(tab => observer.observe(tab));
-    }
-
-    if (typeof document !== 'undefined' && document.fonts && document.fonts.ready) {
-      document.fonts.ready.then(place);
-    }
-    if (typeof window !== 'undefined') {
-      window.addEventListener('resize', place);
-    }
-
-    return () => {
-      clearTimeout(t);
-      clearTimeout(t2);
-      if (observer) observer.disconnect();
-      if (typeof window !== 'undefined') window.removeEventListener('resize', place);
-    };
+    if (typeof document !== 'undefined' && document.fonts && document.fonts.ready) document.fonts.ready.then(place);
+    if (typeof window !== 'undefined') window.addEventListener('resize', place);
+    return () => { clearTimeout(t); if (typeof window !== 'undefined') window.removeEventListener('resize', place); };
   }, [pathname, lang]);
 
   return (
@@ -159,9 +136,7 @@ export default function NavBar() {
 
           {/* Ortalı logo */}
           <Link href="/" className="nav-logo">
-            <span className="nav-logo-icon">
-              <img src="/logo.png" alt="Gamerisen Logo" />
-            </span>
+            <img src={LOGO_SRC} alt="" className="nav-logo-img" width={36} height={36} style={{ display: 'block', filter: 'drop-shadow(0 4px 12px var(--accent-glow))' }} />
             <span className="nav-logo-text">Gamerisen</span>
           </Link>
 
@@ -339,33 +314,25 @@ export default function NavBar() {
             <div aria-hidden style={{
               position: 'absolute', left: 0, top: pill.top, height: pill.height, width: pill.width,
               transform: pill.transform, opacity: pill.opacity,
-              background: 'linear-gradient(135deg, #C9850A, #f0a020)',
+              background: 'linear-gradient(180deg, color-mix(in srgb, var(--accent) 88%, white), var(--accent))',
               borderRadius: 999,
-              boxShadow: '0 4px 20px rgba(201,133,10,0.5), 0 1px 3px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.25)',
+              boxShadow: '0 4px 14px var(--accent-bg), 0 1px 3px rgba(74,52,28,0.3), inset 0 1px 0 rgba(255,255,255,0.4)',
               transition: 'transform 0.55s cubic-bezier(0.22,1,0.32,1), width 0.55s cubic-bezier(0.22,1,0.32,1)',
               zIndex: 0, pointerEvents: 'none',
             }} />
-            <div className="bottom-nav-links-wrapper" style={{
-              display: 'flex',
-              gap: 'inherit',
-              width: '100%',
-              justifyContent: 'inherit',
-              alignItems: 'center',
-            }}>
-              {NAV_LINKS.map(l => {
-                const active = isActive(l.href);
-                return (
-                  <Link key={l.href} href={l.href} data-tab="t"
-                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; }}
-                    className="bottom-nav-link"
-                    style={{
-                      color: active ? '#fff' : 'var(--text-2)',
-                      textShadow: active ? '0 1px 2px rgba(74,52,28,0.25)' : 'none',
-                    }}>{l.label}</Link>
-                );
-              })}
-            </div>
+            {NAV_LINKS.map(l => {
+              const active = isActive(l.href);
+              return (
+                <Link key={l.href} href={l.href} data-tab="t"
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; }}
+                  className="bottom-nav-link"
+                  style={{
+                    color: active ? '#fff' : 'var(--text-2)',
+                    textShadow: active ? '0 1px 2px rgba(74,52,28,0.25)' : 'none',
+                  }}>{l.label}</Link>
+              );
+            })}
 
             {/* Şu an incelenen oyun rozeti (Masaüstü) */}
             <div className="bottom-nav-viewing desktop-only" style={{
