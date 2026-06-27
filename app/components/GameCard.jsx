@@ -237,6 +237,18 @@ function GameCard({ game, compact = false, cardWidth }) {
         {/* Üzerine gelince: detay + fiyat + mağaza (ve yeni dinamik screenshot) */}
         <div style={{ position: 'absolute', left: 14, right: 14, bottom: 14, zIndex: 5, opacity: hovered ? 1 : 0, transform: hovered ? 'translateY(0)' : 'translateY(14px)', pointerEvents: hovered ? 'auto' : 'none', transition: 'opacity 0.3s ease, transform 0.34s cubic-bezier(0.2,0.9,0.3,1)', display: 'flex', flexDirection: 'column' }}>
           
+          {/* Preload screenshots (gizli) */}
+          {ssUrls.map((url, i) => (
+            <img
+              key={url}
+              src={url}
+              alt=""
+              style={{ display: 'none' }}
+              onLoad={() => setSsLoaded(prev => new Set([...prev, i]))}
+              onError={() => {/* yüklenemedi, geç */}}
+            />
+          ))}
+
           {/* Dinamik Screenshot (Oyun adının hemen üstünde yer alır) */}
           {hovered && activeScreenshot && (
             <div
