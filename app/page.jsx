@@ -537,24 +537,6 @@ function ScrollRow({ children }) {
       decel();
     };
 
-    const onWheel = e => {
-      if (!el) return;
-      const dy = e.deltaY;
-      const dx = e.deltaX;
-
-      if (Math.abs(dy) > Math.abs(dx)) {
-        const isScrollingLeft = dy < 0;
-        const canScrollLeft = el.scrollLeft > 0;
-        const canScrollRight = el.scrollLeft < (el.scrollWidth - el.clientWidth - 2);
-
-        if ((isScrollingLeft && canScrollLeft) || (!isScrollingLeft && canScrollRight)) {
-          e.preventDefault();
-          el.scrollLeft += dy;
-        }
-      }
-    };
-
-    // Orta tıkla (middle mouse) auto-scroll'u engelle
     const onAuxClick = e => {
       if (e.button === 1) { e.preventDefault(); }
     };
@@ -565,7 +547,6 @@ function ScrollRow({ children }) {
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
     if (el) {
-      el.addEventListener('wheel', onWheel, { passive: false });
       el.addEventListener('auxclick', onAuxClick);
       el.addEventListener('mousedown', onMidDown);
     }
@@ -574,7 +555,6 @@ function ScrollRow({ children }) {
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
       if (el) {
-        el.removeEventListener('wheel', onWheel);
         el.removeEventListener('auxclick', onAuxClick);
         el.removeEventListener('mousedown', onMidDown);
       }
@@ -711,6 +691,23 @@ function CinematicShowcase({ games }) {
 // ── Anasayfa haber bölmesi ───────────────────────────────────────────────────
 function HomeNews() {
   const { t } = useLanguage();
+  const [newsList, setNewsList] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/news')
+      .then(r => r.json())
+      .then(d => {
+        if (d.items && Array.isArray(d.items)) {
+          setNewsList(d.items.slice(0, 4));
+        } else {
+          setNewsList(HOME_NEWS);
+        }
+      })
+      .catch(() => setNewsList(HOME_NEWS))
+      .finally(() => setLoading(false));
+  }, []);
+
   return (
     <div style={{ marginTop: 8, marginBottom: 48, paddingTop: 34, borderTop: '1px solid var(--border)' }}>
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 20, gap: 12 }}>
@@ -721,19 +718,19 @@ function HomeNews() {
         <Link href="/news" style={{ fontSize: 15, color: 'var(--accent)', fontWeight: 600, whiteSpace: 'nowrap' }}>Tümünü gör →</Link>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: 20 }}>
-        {HOME_NEWS.map((n, i) => (
-          <Link key={i} href="/news" className="gr-glass" style={{ borderRadius: 18, overflow: 'hidden', cursor: 'pointer', transition: 'transform 0.3s, box-shadow 0.3s', display: 'block' }}
+        {(loading ? HOME_NEWS : newsList).map((n, i) => (
+          <a key={i} href={n.url || "/news"} target={n.url ? "_blank" : "_self"} rel="noopener noreferrer" className="gr-glass" style={{ borderRadius: 18, overflow: 'hidden', cursor: 'pointer', transition: 'transform 0.3s, box-shadow 0.3s', display: 'block' }}
             onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-5px)'; }}
             onMouseLeave={e => { e.currentTarget.style.transform = 'none'; }}>
-            <div style={{ position: 'relative', height: 148, background: n.art }}>
+            <div style={{ position: 'relative', height: 148, background: n.art, backgroundSize: 'cover', backgroundPosition: 'center' }}>
               <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(6,7,9,0.6), transparent 60%)' }} />
-              <span style={{ position: 'absolute', left: 13, top: 13, padding: '4px 11px', borderRadius: 999, background: 'rgba(8,10,14,0.65)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.16)', fontSize: 11, fontWeight: 700, color: '#fff' }}>{n.cat}</span>
+              <span style={{ position: 'absolute', left: 13, top: 13, padding: '4px 11px', borderRadius: 999, background: 'rgba(8,10,14,0.65)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.16)', fontSize: 11, fontWeight: 700, color: '#fff' }}>{n.cat || 'Haberler'}</span>
             </div>
             <div style={{ padding: '16px 18px 18px' }}>
-              <p style={{ fontSize: 11.5, color: 'var(--text-3)', marginBottom: 7 }}>{n.date}</p>
+              <p style={{ fontSize: 11.5, color: 'var(--text-3)', marginBottom: 7 }}>{n.date} {n.source ? `• ${n.source}` : ''}</p>
               <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: 17, fontWeight: 700, lineHeight: 1.22, letterSpacing: '-0.3px', color: 'var(--text)', textWrap: 'balance' }}>{n.title}</h3>
             </div>
-          </Link>
+          </a>
         ))}
       </div>
     </div>

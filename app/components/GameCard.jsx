@@ -211,11 +211,12 @@ function GameCard({ game, compact = false, cardWidth }) {
           <div
             key={activeScreenshot}
             style={{
-              position: 'absolute', inset: 0, zIndex: 0,
+              position: 'absolute', top: '50%', left: 0, right: 0, transform: 'translateY(-50%)', aspectRatio: '16/9', zIndex: 10,
               backgroundImage: `url(${activeScreenshot})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
-              animation: 'ssReveal 0.6s ease-out forwards',
+              animation: 'ssReveal 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards',
+              boxShadow: '0 8px 30px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.1)',
             }}
           />
         )}
