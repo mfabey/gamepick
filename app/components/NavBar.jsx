@@ -311,13 +311,11 @@ export default function NavBar() {
               ? 'navBarIn 0.85s cubic-bezier(0.16,1,0.3,1) both, navBarAttract 1.5s ease-in-out 0.9s 2, navBarRing 1.6s ease-out 1s 2'
               : 'navBarIn 0.85s cubic-bezier(0.16,1,0.3,1) both',
           }}>
-            <div aria-hidden style={{
+            <div aria-hidden className="bottom-nav-pill" style={{
               position: 'absolute', left: 0, top: pill.top, height: pill.height, width: pill.width,
               transform: pill.transform, opacity: pill.opacity,
-              background: 'linear-gradient(180deg, color-mix(in srgb, var(--accent) 88%, white), var(--accent))',
               borderRadius: 999,
-              boxShadow: '0 4px 14px var(--accent-bg), 0 1px 3px rgba(74,52,28,0.3), inset 0 1px 0 rgba(255,255,255,0.4)',
-              transition: 'transform 0.55s cubic-bezier(0.22,1,0.32,1), width 0.55s cubic-bezier(0.22,1,0.32,1)',
+              transition: 'transform 0.62s cubic-bezier(0.34,1.32,0.46,1), width 0.62s cubic-bezier(0.34,1.32,0.46,1), opacity 0.4s ease',
               zIndex: 0, pointerEvents: 'none',
             }} />
             {NAV_LINKS.map(l => {
@@ -328,8 +326,9 @@ export default function NavBar() {
                   onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; }}
                   className="bottom-nav-link"
                   style={{
-                    color: active ? '#fff' : 'var(--text-2)',
-                    textShadow: active ? '0 1px 2px rgba(74,52,28,0.25)' : 'none',
+                    color: active ? 'var(--text)' : 'var(--text-2)',
+                    fontWeight: active ? 700 : 500,
+                    textShadow: active ? '0 1px 6px rgba(0,0,0,0.35)' : 'none',
                   }}>{l.label}</Link>
               );
             })}
