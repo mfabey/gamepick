@@ -16,6 +16,14 @@ const PLACEHOLDER_GAMES = [
   'The Witcher 3', "Baldur's Gate 3", 'God of War', 'Hollow Knight',
 ];
 
+// Anasayfa haber özeti (tam liste /news sayfasında)
+const HOME_NEWS = [
+  { cat: 'İndirimler', date: '27 Haz 2026', art: 'linear-gradient(145deg,#6b4f1d 0%,#b8860b 55%,#1c1407 100%)', title: 'Steam Yaz İndirimleri başladı: 13.000+ oyunda dev fırsatlar' },
+  { cat: 'Çıkışlar', date: '26 Haz 2026', art: 'linear-gradient(145deg,#0d2b4a 0%,#1f8a8f 65%,#06121f 100%)', title: 'Hollow Knight: Silksong için çıkış tarihi nihayet doğrulandı' },
+  { cat: 'Güncellemeler', date: '24 Haz 2026', art: 'linear-gradient(145deg,#0f5e63 0%,#c0286b 60%,#1a0a24 100%)', title: 'Cyberpunk 2077’ye sürpriz 2.3 yaması: yeni araçlar ve foto modu' },
+  { cat: 'Endüstri', date: '22 Haz 2026', art: 'linear-gradient(145deg,#6b1a1a 0%,#3a4654 70%,#160a0a 100%)', title: 'FromSoftware yeni IP’sini duyurdu: George R. R. Martin yine sahnede' },
+];
+
 export default function Home() {
   const { user } = useAuth();
   const router   = useRouter();
@@ -355,6 +363,9 @@ export default function Home() {
       {/* ══ İÇERİK BÖLÜMLERİ ══════════════════════════════════════════════════ */}
       <div className="container" style={{ paddingTop: 48 }}>
 
+        {/* Sinematik vitrin */}
+        <CinematicShowcase games={(trendGames.length ? trendGames : popularGames).slice(0, 6)} />
+
         {/* Bu Hafta Trend — Yayıncıların oynadığı popüler oyunlar */}
         <Section
           title={t('section.trending.title')}
@@ -382,6 +393,9 @@ export default function Home() {
           games={saleGames}
           loading={loadingSale}
         />
+
+        {/* Haberler — oyunların altında ayrı bölme */}
+        <HomeNews />
 
         {/* CTA */}
         <div style={{
@@ -469,6 +483,10 @@ export default function Home() {
         }
         @media (prefers-reduced-motion: reduce) {
           .hero-strip { animation: none; }
+        }
+        @media (max-width: 860px) {
+          .showcase-grid { grid-template-columns: 1fr !important; }
+          .showcase-thumbs { display: none !important; }
         }
       `}</style>
     </div>
@@ -593,6 +611,94 @@ const Section = memo(function Section({ title, subtitle, href, games, loading, b
     </div>
   );
 });
+
+// ── Sinematik vitrin (oyun afişinden atmosfer) ───────────────────────────────
+function CinematicShowcase({ games }) {
+  const { t } = useLanguage();
+  const [active, setActive] = useState(0);
+  const list = (games || []).filter(g => g && g.name).slice(0, 6);
+
+  useEffect(() => {
+    if (list.length < 2) return;
+    const iv = setInterval(() => setActive(a => (a + 1) % list.length), 6000);
+    return () => clearInterval(iv);
+  }, [list.length]);
+
+  if (list.length === 0) {
+    return <div style={{ height: 454, borderRadius: 26, background: 'var(--bg-card)', border: '1px solid var(--border)', marginBottom: 40 }} />;
+  }
+
+  const g = list[active] || list[0];
+  const href = g.rawgSlug ? `/game/rawg/${g.rawgSlug}` : `/game/rawg/${g.id}`;
+  const mcColor = g.metacritic >= 80 ? '#4ade80' : g.metacritic >= 60 ? '#fbbf24' : '#f87171';
+
+  return (
+    <section style={{ display: 'grid', gridTemplateColumns: '1fr 226px', gap: 18, alignItems: 'stretch', marginBottom: 44 }} className="showcase-grid">
+      {/* Ana sahne */}
+      <Link href={href} style={{ position: 'relative', borderRadius: 26, overflow: 'hidden', minHeight: 454, boxShadow: '0 40px 90px -36px rgba(0,0,0,0.8), inset 0 0 0 1px rgba(255,255,255,0.08)' }}>
+        <GameImage key={g.id} game={g} alt={g.name} fill style={{ objectFit: 'cover' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(105deg, rgba(6,7,9,0.94) 8%, rgba(6,7,9,0.6) 42%, rgba(6,7,9,0.12) 78%)' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(6,7,9,0.85), transparent 46%)' }} />
+        <div style={{ position: 'absolute', left: 0, bottom: 0, padding: '40px 44px', maxWidth: 620 }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '6px 13px', borderRadius: 999, background: 'color-mix(in srgb, var(--accent) 26%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 55%, transparent)', fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', color: '#fff', marginBottom: 16 }}>✦ {t('section.trending.badge') || 'ÖNE ÇIKAN'}</span>
+          <h2 style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 'clamp(30px,4vw,52px)', lineHeight: 1.02, letterSpacing: '-1.4px', color: '#fff', marginBottom: 14, textWrap: 'balance' }}>{g.name}</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 18 }}>
+            {g.metacritic ? <span style={{ fontSize: 12.5, fontWeight: 800, padding: '4px 9px', borderRadius: 8, background: 'rgba(8,10,14,0.6)', border: '1px solid rgba(255,255,255,0.14)', color: mcColor }}>{g.metacritic} Metacritic</span> : null}
+            <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.62)' }}>{(g.genres || []).slice(0, 3).join(' · ')}</span>
+          </div>
+          <span className="btn btn-red" style={{ padding: '13px 26px', fontSize: 15 }}>{t('section.all') || 'İncele'} →</span>
+        </div>
+      </Link>
+      {/* Dikey küçük resimler */}
+      <div className="showcase-thumbs" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {list.map((it, i) => {
+          const on = i === active;
+          return (
+            <button key={it.id} onClick={() => setActive(i)} style={{ position: 'relative', flex: 1, minHeight: 0, border: 'none', padding: 0, borderRadius: 16, overflow: 'hidden', cursor: 'pointer', background: 'var(--bg-input)', opacity: on ? 1 : 0.62, boxShadow: on ? '0 14px 30px -12px var(--accent-glow)' : '0 8px 18px -12px rgba(0,0,0,0.6)', transition: 'opacity 0.25s, box-shadow 0.25s, transform 0.25s', outline: on ? '2px solid var(--accent)' : 'none', outlineOffset: -2 }}
+              onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-3px) scale(1.04)'}
+              onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
+              <GameImage game={it} alt="" fill style={{ objectFit: 'cover' }} />
+              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(6,7,9,0.85), transparent 60%)' }} />
+              <span style={{ position: 'absolute', left: 12, right: 12, bottom: 10, fontSize: 12.5, fontWeight: 700, lineHeight: 1.15, color: '#fff', textAlign: 'left', textShadow: '0 1px 5px rgba(0,0,0,0.6)' }}>{it.name}</span>
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+// ── Anasayfa haber bölmesi ───────────────────────────────────────────────────
+function HomeNews() {
+  const { t } = useLanguage();
+  return (
+    <div style={{ marginTop: 8, marginBottom: 48, paddingTop: 34, borderTop: '1px solid var(--border)' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 20, gap: 12 }}>
+        <div>
+          <h2 style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)' }}>{t('nav.news') || 'Oyun Haberleri'}</h2>
+          <p style={{ fontSize: 15, color: 'var(--text-3)', marginTop: 4 }}>İndirimler, çıkışlar ve sektörden son gelişmeler</p>
+        </div>
+        <Link href="/news" style={{ fontSize: 15, color: 'var(--accent)', fontWeight: 600, whiteSpace: 'nowrap' }}>{t('section.all') || 'Tümünü gör'} →</Link>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: 20 }}>
+        {HOME_NEWS.map((n, i) => (
+          <Link key={i} href="/news" className="gr-glass" style={{ borderRadius: 18, overflow: 'hidden', cursor: 'pointer', transition: 'transform 0.3s, box-shadow 0.3s', display: 'block' }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-5px)'; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'none'; }}>
+            <div style={{ position: 'relative', height: 148, background: n.art }}>
+              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(6,7,9,0.6), transparent 60%)' }} />
+              <span style={{ position: 'absolute', left: 13, top: 13, padding: '4px 11px', borderRadius: 999, background: 'rgba(8,10,14,0.65)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.16)', fontSize: 11, fontWeight: 700, color: '#fff' }}>{n.cat}</span>
+            </div>
+            <div style={{ padding: '16px 18px 18px' }}>
+              <p style={{ fontSize: 11.5, color: 'var(--text-3)', marginBottom: 7 }}>{n.date}</p>
+              <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: 17, fontWeight: 700, lineHeight: 1.22, letterSpacing: '-0.3px', color: 'var(--text)', textWrap: 'balance' }}>{n.title}</h3>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function SkeletonCard() {
   return (
