@@ -498,7 +498,8 @@ export default function Home() {
 // ── Sürükleyerek kaydırma satırı ─────────────────────────────────────────────
 function ScrollRow({ children }) {
   const rowRef = useRef(null);
-  const drag   = useRef({ active: false, startX: 0, scrollLeft: 0, moved: false });
+  const drag   = useRef({ active: false, startX: 0, scrollLeft: 0, moved: false, velX: 0, lastX: 0, lastT: 0 });
+  const raf    = useRef(null);
 
   useEffect(() => {
     const el = rowRef.current;
@@ -508,6 +509,15 @@ function ScrollRow({ children }) {
       const dx = e.clientX - drag.current.startX;
       if (Math.abs(dx) > 3) drag.current.moved = true;
       if (el) el.scrollLeft = drag.current.scrollLeft - dx;
+
+      // Momentum için hız hesapla
+      const now = Date.now();
+      const dt = now - drag.current.lastT;
+      if (dt > 0) {
+        drag.current.velX = (e.clientX - drag.current.lastX) / dt;
+      }
+      drag.current.lastX = e.clientX;
+      drag.current.lastT = now;
     };
 
     const onUp = () => {
@@ -515,6 +525,16 @@ function ScrollRow({ children }) {
       drag.current.active = false;
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
+
+      // Momentum kaydırma
+      let velocity = drag.current.velX * 12;
+      const decel = () => {
+        if (Math.abs(velocity) < 0.3 || !el) return;
+        el.scrollLeft -= velocity;
+        velocity *= 0.92;
+        raf.current = requestAnimationFrame(decel);
+      };
+      decel();
     };
 
     const onWheel = e => {
@@ -522,13 +542,11 @@ function ScrollRow({ children }) {
       const dy = e.deltaY;
       const dx = e.deltaX;
 
-      // Sadece dikey tekerlek hareketinde yatay kaydırma yap (trackpad yatay kaydırmasını engelleme)
       if (Math.abs(dy) > Math.abs(dx)) {
         const isScrollingLeft = dy < 0;
         const canScrollLeft = el.scrollLeft > 0;
         const canScrollRight = el.scrollLeft < (el.scrollWidth - el.clientWidth - 2);
 
-        // Satırın en başına veya en sonuna gelinmemişse dikey sayfa kaydırmasını engelle, satırı kaydır
         if ((isScrollingLeft && canScrollLeft) || (!isScrollingLeft && canScrollRight)) {
           e.preventDefault();
           el.scrollLeft += dy;
@@ -536,21 +554,41 @@ function ScrollRow({ children }) {
       }
     };
 
+    // Orta tıkla (middle mouse) auto-scroll'u engelle
+    const onAuxClick = e => {
+      if (e.button === 1) { e.preventDefault(); }
+    };
+    const onMidDown = e => {
+      if (e.button === 1) { e.preventDefault(); }
+    };
+
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
-    if (el) el.addEventListener('wheel', onWheel, { passive: false });
+    if (el) {
+      el.addEventListener('wheel', onWheel, { passive: false });
+      el.addEventListener('auxclick', onAuxClick);
+      el.addEventListener('mousedown', onMidDown);
+    }
 
     return () => {
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
-      if (el) el.removeEventListener('wheel', onWheel);
+      if (el) {
+        el.removeEventListener('wheel', onWheel);
+        el.removeEventListener('auxclick', onAuxClick);
+        el.removeEventListener('mousedown', onMidDown);
+      }
+      if (raf.current) cancelAnimationFrame(raf.current);
     };
   }, []);
 
   const onMouseDown = e => {
+    // Sadece sol tıkla sürükleme (button 0)
+    if (e.button !== 0) return;
+    if (raf.current) cancelAnimationFrame(raf.current);
     const el = rowRef.current;
     if (!el) return;
-    drag.current = { active: true, startX: e.clientX, scrollLeft: el.scrollLeft, moved: false };
+    drag.current = { active: true, startX: e.clientX, scrollLeft: el.scrollLeft, moved: false, velX: 0, lastX: e.clientX, lastT: Date.now() };
     document.body.style.cursor = 'grabbing';
     document.body.style.userSelect = 'none';
   };

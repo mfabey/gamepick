@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, memo } from 'react';
+import { useState, useEffect, useRef, memo, useCallback } from 'react';
 import Link from 'next/link';
 import GameImage from './GameImage';
 import { useAuth, normalizeName } from '../context/AuthContext';
@@ -22,7 +22,40 @@ function EpicIcon({ size = 16 }) {
   );
 }
 
-// Dikey (3:4) oyun kartı — prototip GxCard: 3B eğilme, üzerine gelince bilgi + kırmızı glow
+// Steam App ID çözümleme (GameImage'dan bağımsız, kart içi kullanım)
+const SLUG_TO_STEAM = {
+  'elden-ring': '1245620', 'grand-theft-auto-v': '271590', 'cyberpunk-2077': '1091500',
+  'lethal-company': '1966720', 'palworld': '1623730', 'balatro': '2379780',
+  'manor-lords': '1363080', 'phasmophobia': '739630', 'baldurs-gate-3': '1086940',
+  'counter-strike-2': '730', 'rust': '252490', 'helldivers-2': '553850',
+  'among-us': '945360', 'supermarket-simulator': '2670630',
+};
+
+function getSteamAppId(game) {
+  if (game.appid) return game.appid;
+  if (game.steamAppId) return game.steamAppId;
+  if (game.steamAppid) return game.steamAppid;
+  if (game.steam_appid) return game.steam_appid;
+  // URL'den çıkar
+  const urls = [game.image, game.logo, game.steamUrl, game.storeUrl].filter(Boolean);
+  for (const u of urls) {
+    const m = u.match(/\/apps?\/([\d]+)/);
+    if (m) return m[1];
+  }
+  // Slug eşleştirmesi
+  const slug = game.rawgSlug || game.slug;
+  if (slug && SLUG_TO_STEAM[slug]) return SLUG_TO_STEAM[slug];
+  // rawgId'den çıkar (Steam'e doğrudan eşleşen oyunlar)
+  const rawgId = game.rawgId || game.id;
+  if (rawgId) {
+    const numId = Number(String(rawgId).replace('rawg_', ''));
+    // Eğer numId 6 hane ve üzeri ise, Steam AppID olma ihtimali yüksek
+    if (numId > 100000) return String(numId);
+  }
+  return null;
+}
+
+// Dikey (3:4) oyun kartı — prototip GxCard: 3B eğilme, üzerine gelince bilgi + kırmızı glow + screenshot slideshow
 function GameCard({ game, compact = false, cardWidth }) {
   const { ownedGames, xboxOwnedGames = new Set(), gamePassGames = new Set() } = useAuth();
   const { lang, t, formatPrice } = useLanguage();
@@ -35,6 +68,48 @@ function GameCard({ game, compact = false, cardWidth }) {
   const [priceLoading, setPriceLoading] = useState(false);
   const [priceDone,    setPriceDone]    = useState(false);
   const cardRef = useRef(null);
+
+  // ── Screenshot slideshow state ──
+  const [ssIndex, setSsIndex] = useState(0);
+  const [ssUrls, setSsUrls] = useState([]);
+  const [ssLoaded, setSsLoaded] = useState(new Set());
+  const ssInterval = useRef(null);
+
+  // Steam screenshot URL'lerini oluştur
+  useEffect(() => {
+    const appid = getSteamAppId(game);
+    if (!appid) { setSsUrls([]); return; }
+    // Steam ekran görüntüleri genellikle ss_<hash>.jpg olur, ama
+    // header + screenshot_0..4 pattern'i daha güvenilir
+    const urls = [];
+    for (let i = 0; i < 5; i++) {
+      urls.push(`https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/ss_${i}.jpg`);
+    }
+    // Ayrıca bilinen Steam screenshot pattern'leri
+    urls.push(`https://cdn.akamai.steamstatic.com/steam/apps/${appid}/ss_1.jpg`);
+    setSsUrls(urls);
+  }, [game]);
+
+  // Hover başladığında slideshow'u başlat
+  const startSlideshow = useCallback(() => {
+    if (ssInterval.current) clearInterval(ssInterval.current);
+    setSsIndex(0);
+    ssInterval.current = setInterval(() => {
+      setSsIndex(prev => prev + 1);
+    }, 1200);
+  }, []);
+
+  const stopSlideshow = useCallback(() => {
+    if (ssInterval.current) {
+      clearInterval(ssInterval.current);
+      ssInterval.current = null;
+    }
+    setSsIndex(0);
+  }, []);
+
+  useEffect(() => {
+    return () => { if (ssInterval.current) clearInterval(ssInterval.current); };
+  }, []);
 
   // 3B eğilme (mouse takipli)
   const handleTilt = (e) => {
@@ -50,6 +125,7 @@ function GameCard({ game, compact = false, cardWidth }) {
   };
   const resetTilt = () => {
     setHovered(false);
+    stopSlideshow();
     const el = cardRef.current;
     if (el) { el.style.setProperty('--rx', '0deg'); el.style.setProperty('--ry', '0deg'); }
   };
@@ -86,11 +162,15 @@ function GameCard({ game, compact = false, cardWidth }) {
   const mcColor  = game.metacritic >= 80 ? '#4ade80' : game.metacritic >= 60 ? '#fbbf24' : '#f87171';
   const genres   = (game.genres || []).slice(0, 2).join(' · ');
 
+  // Aktif screenshot URL'si (döngüsel)
+  const validSsUrls = ssUrls.filter((_, i) => ssLoaded.has(i));
+  const activeScreenshot = validSsUrls.length > 0 ? validSsUrls[ssIndex % validSsUrls.length] : null;
+
   return (
     <Link href={href} style={{ flexShrink: 0, width: compact ? (cardWidth || 220) : '100%', perspective: 1100, display: 'block' }}>
       <div
         ref={cardRef}
-        onMouseEnter={() => setHovered(true)}
+        onMouseEnter={() => { setHovered(true); startSlideshow(); }}
         onMouseMove={handleTilt}
         onMouseLeave={resetTilt}
         style={{
@@ -114,6 +194,51 @@ function GameCard({ game, compact = false, cardWidth }) {
         <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
           <GameImage game={game} alt={game.name} fill isVertical style={{ objectFit: 'cover', pointerEvents: 'none' }} />
         </div>
+
+        {/* ── Hover screenshot slideshow ── */}
+        {hovered && activeScreenshot && (
+          <div
+            key={activeScreenshot}
+            style={{
+              position: 'absolute', inset: 0, zIndex: 0,
+              backgroundImage: `url(${activeScreenshot})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              animation: 'ssReveal 0.6s ease-out forwards',
+            }}
+          />
+        )}
+
+        {/* Preload screenshots (gizli) */}
+        {ssUrls.map((url, i) => (
+          <img
+            key={url}
+            src={url}
+            alt=""
+            style={{ display: 'none' }}
+            onLoad={() => setSsLoaded(prev => new Set([...prev, i]))}
+            onError={() => {/* yüklenemedi, geç */}}
+          />
+        ))}
+
+        {/* Slideshow ilerleme çubuğu (hover'da görünür) */}
+        {hovered && validSsUrls.length > 1 && (
+          <div style={{
+            position: 'absolute', top: 0, left: 0, right: 0, zIndex: 6,
+            display: 'flex', gap: 3, padding: '6px 8px',
+          }}>
+            {validSsUrls.map((_, i) => (
+              <div key={i} style={{
+                flex: 1, height: 3, borderRadius: 2,
+                background: i === (ssIndex % validSsUrls.length)
+                  ? 'rgba(255,255,255,0.9)'
+                  : 'rgba(255,255,255,0.25)',
+                transition: 'background 0.3s',
+                boxShadow: i === (ssIndex % validSsUrls.length) ? '0 0 6px rgba(255,255,255,0.5)' : 'none',
+              }} />
+            ))}
+          </div>
+        )}
 
         {/* Mouse takipli ışık */}
         <div style={{ position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none', opacity: hovered ? 1 : 0, transition: 'opacity 0.35s ease', mixBlendMode: 'soft-light', background: 'radial-gradient(190px circle at var(--mx,50%) var(--my,40%), rgba(255,255,255,0.22), transparent 60%)' }} />
@@ -181,3 +306,4 @@ export default memo(GameCard, (prev, next) =>
   prev.compact === next.compact &&
   prev.cardWidth === next.cardWidth
 );
+
