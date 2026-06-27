@@ -238,11 +238,11 @@ function GameCard({ game, compact = false, cardWidth }) {
         <div style={{ position: 'absolute', left: 14, right: 14, bottom: 14, zIndex: 5, opacity: hovered ? 1 : 0, transform: hovered ? 'translateY(0)' : 'translateY(14px)', pointerEvents: hovered ? 'auto' : 'none', transition: 'opacity 0.3s ease, transform 0.34s cubic-bezier(0.2,0.9,0.3,1)', display: 'flex', flexDirection: 'column' }}>
           
           {/* Dinamik Screenshot (Oyun adının hemen üstünde yer alır) */}
-          {activeScreenshot && (
+          {hovered && activeScreenshot && (
             <div
               key={activeScreenshot}
               style={{
-                width: '100%', aspectRatio: '16/9', marginBottom: 12, borderRadius: 10, position: 'relative',
+                flexShrink: 0, width: '100%', aspectRatio: '16/9', marginBottom: 12, borderRadius: 10, position: 'relative',
                 backgroundImage: `url(${activeScreenshot})`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
