@@ -23,7 +23,7 @@ function EpicIcon({ size = 16 }) {
 }
 
 // Dikey (3:4) oyun kartı — prototip GxCard: 3B eğilme, üzerine gelince bilgi + kırmızı glow
-function GameCard({ game, compact = false }) {
+function GameCard({ game, compact = false, cardWidth }) {
   const { ownedGames, xboxOwnedGames = new Set(), gamePassGames = new Set() } = useAuth();
   const { lang, t, formatPrice } = useLanguage();
   const normalizedNameStr = normalizeName(game.name);
@@ -87,7 +87,7 @@ function GameCard({ game, compact = false }) {
   const genres   = (game.genres || []).slice(0, 2).join(' · ');
 
   return (
-    <Link href={href} style={{ flexShrink: 0, width: compact ? 220 : '100%', perspective: 1100, display: 'block' }}>
+    <Link href={href} style={{ flexShrink: 0, width: compact ? (cardWidth || 220) : '100%', perspective: 1100, display: 'block' }}>
       <div
         ref={cardRef}
         onMouseEnter={() => setHovered(true)}
@@ -178,5 +178,6 @@ function GameCard({ game, compact = false }) {
 
 export default memo(GameCard, (prev, next) =>
   prev.game.id === next.game.id &&
-  prev.compact === next.compact
+  prev.compact === next.compact &&
+  prev.cardWidth === next.cardWidth
 );

@@ -564,10 +564,14 @@ html[data-theme="dark"] .glass-card {
   position: sticky !important;
   top: 0 !important;
   z-index: 1000 !important;
-  background: var(--bg) !important;
-  backdrop-filter: blur(16px) !important;
-  -webkit-backdrop-filter: blur(16px) !important;
-  border-bottom: 1px solid var(--border) !important;
+  background: linear-gradient(150deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03)) !important;
+  backdrop-filter: blur(20px) saturate(165%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(165%) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.10) !important;
+}
+html[data-theme="light"] .nav-header {
+  background: rgba(255,255,255,0.6) !important;
+  border-bottom: 1px solid var(--border-hover) !important;
 }
 
 .nav-container {

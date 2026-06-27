@@ -373,6 +373,7 @@ export default function Home() {
           games={trendGames}
           loading={loadingTrend}
           badge="CANLI"
+          cardWidth={200}
         />
 
         {/* Yeni Çıkanlar */}
@@ -382,6 +383,7 @@ export default function Home() {
           href="/games?section=new"
           games={newGames}
           loading={loadingNew}
+          cardWidth={200}
         />
 
         {/* İndirimdekiler */}
@@ -391,6 +393,7 @@ export default function Home() {
           href="/games?section=sale"
           games={saleGames}
           loading={loadingSale}
+          cardWidth={248}
         />
 
         {/* Haberler — oyunların altında ayrı bölme */}
@@ -574,7 +577,7 @@ function ScrollRow({ children }) {
 }
 
 // ── Yatay scroll bölüm ────────────────────────────────────────────────────────
-const Section = memo(function Section({ title, subtitle, href, games, loading, badge }) {
+const Section = memo(function Section({ title, subtitle, href, games, loading, badge, cardWidth }) {
   const { t } = useLanguage();
   return (
     <div style={{ marginBottom: 56 }}>
@@ -604,7 +607,7 @@ const Section = memo(function Section({ title, subtitle, href, games, loading, b
           ? Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)
           : games.length === 0
             ? <p style={{ color: 'var(--text-3)', fontSize: 14 }}>{t('section.failed')}</p>
-            : games.map(g => <GameCard key={g.id} game={g} compact />)
+            : games.map(g => <GameCard key={g.id} game={g} compact cardWidth={cardWidth} />)
         }
       </ScrollRow>
     </div>
