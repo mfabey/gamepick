@@ -206,53 +206,6 @@ function GameCard({ game, compact = false, cardWidth }) {
           <GameImage game={game} alt={game.name} fill isVertical style={{ objectFit: 'cover', pointerEvents: 'none' }} />
         </div>
 
-        {/* ── Hover screenshot slideshow ── */}
-        {hovered && activeScreenshot && (
-          <div
-            key={activeScreenshot}
-            style={{
-              position: 'absolute', top: 12, left: 12, right: 12, aspectRatio: '16/9', zIndex: 4,
-              borderRadius: 10,
-              backgroundImage: `url(${activeScreenshot})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              animation: 'ssReveal 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards',
-              boxShadow: '0 8px 30px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.1)',
-            }}
-          />
-        )}
-
-        {/* Preload screenshots (gizli) */}
-        {ssUrls.map((url, i) => (
-          <img
-            key={url}
-            src={url}
-            alt=""
-            style={{ display: 'none' }}
-            onLoad={() => setSsLoaded(prev => new Set([...prev, i]))}
-            onError={() => {/* yüklenemedi, geç */}}
-          />
-        ))}
-
-        {/* Slideshow ilerleme çubuğu (hover'da görünür) */}
-        {hovered && validSsUrls.length > 1 && (
-          <div style={{
-            position: 'absolute', top: 12, left: 12, right: 12, zIndex: 12,
-            display: 'flex', gap: 3, padding: '6px 8px',
-          }}>
-            {validSsUrls.map((_, i) => (
-              <div key={i} style={{
-                flex: 1, height: 3, borderRadius: 2,
-                background: i === (ssIndex % validSsUrls.length)
-                  ? 'rgba(255,255,255,0.9)'
-                  : 'rgba(255,255,255,0.25)',
-                transition: 'background 0.3s',
-                boxShadow: i === (ssIndex % validSsUrls.length) ? '0 0 6px rgba(255,255,255,0.5)' : 'none',
-              }} />
-            ))}
-          </div>
-        )}
-
         {/* Mouse takipli ışık */}
         <div style={{ position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none', opacity: hovered ? 1 : 0, transition: 'opacity 0.35s ease', mixBlendMode: 'soft-light', background: 'radial-gradient(190px circle at var(--mx,50%) var(--my,40%), rgba(255,255,255,0.22), transparent 60%)' }} />
 
@@ -281,8 +234,43 @@ function GameCard({ game, compact = false, cardWidth }) {
           {genres && <p style={{ fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.66)', marginTop: 4 }}>{genres}</p>}
         </div>
 
-        {/* Üzerine gelince: detay + fiyat + mağaza */}
-        <div style={{ position: 'absolute', left: 14, right: 14, bottom: 14, zIndex: 5, opacity: hovered ? 1 : 0, transform: hovered ? 'translateY(0)' : 'translateY(14px)', pointerEvents: hovered ? 'auto' : 'none', transition: 'opacity 0.3s ease, transform 0.34s cubic-bezier(0.2,0.9,0.3,1)' }}>
+        {/* Üzerine gelince: detay + fiyat + mağaza (ve yeni dinamik screenshot) */}
+        <div style={{ position: 'absolute', left: 14, right: 14, bottom: 14, zIndex: 5, opacity: hovered ? 1 : 0, transform: hovered ? 'translateY(0)' : 'translateY(14px)', pointerEvents: hovered ? 'auto' : 'none', transition: 'opacity 0.3s ease, transform 0.34s cubic-bezier(0.2,0.9,0.3,1)', display: 'flex', flexDirection: 'column' }}>
+          
+          {/* Dinamik Screenshot (Oyun adının hemen üstünde yer alır) */}
+          {activeScreenshot && (
+            <div
+              key={activeScreenshot}
+              style={{
+                width: '100%', aspectRatio: '16/9', marginBottom: 12, borderRadius: 10, position: 'relative',
+                backgroundImage: `url(${activeScreenshot})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                animation: 'ssReveal 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards',
+                boxShadow: '0 8px 30px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.1)',
+              }}
+            >
+              {/* Slideshow ilerleme çubuğu */}
+              {validSsUrls.length > 1 && (
+                <div style={{
+                  position: 'absolute', top: 0, left: 0, right: 0, zIndex: 12,
+                  display: 'flex', gap: 3, padding: '6px 8px',
+                }}>
+                  {validSsUrls.map((_, i) => (
+                    <div key={i} style={{
+                      flex: 1, height: 3, borderRadius: 2,
+                      background: i === (ssIndex % validSsUrls.length)
+                        ? 'rgba(255,255,255,0.9)'
+                        : 'rgba(255,255,255,0.25)',
+                      transition: 'background 0.3s',
+                      boxShadow: i === (ssIndex % validSsUrls.length) ? '0 0 6px rgba(255,255,255,0.5)' : 'none',
+                    }} />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           <p style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 16, lineHeight: 1.1, letterSpacing: '-0.3px', color: '#fff', marginBottom: 8 }}>{game.name}</p>
           {genres && <p style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.6)', marginBottom: 10 }}>{genres}</p>}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 12 }}>
