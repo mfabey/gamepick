@@ -211,12 +211,13 @@ function GameCard({ game, compact = false, cardWidth }) {
           <div
             key={activeScreenshot}
             style={{
-              position: 'absolute', top: 0, left: 0, right: 0, aspectRatio: '16/9', zIndex: 4,
+              position: 'absolute', top: 12, left: 12, right: 12, aspectRatio: '16/9', zIndex: 4,
+              borderRadius: 10,
               backgroundImage: `url(${activeScreenshot})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               animation: 'ssReveal 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards',
-              boxShadow: '0 8px 30px rgba(0,0,0,0.9), 0 1px 0 rgba(255,255,255,0.1)',
+              boxShadow: '0 8px 30px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.1)',
             }}
           />
         )}
@@ -236,7 +237,7 @@ function GameCard({ game, compact = false, cardWidth }) {
         {/* Slideshow ilerleme çubuğu (hover'da görünür) */}
         {hovered && validSsUrls.length > 1 && (
           <div style={{
-            position: 'absolute', top: 0, left: 0, right: 0, zIndex: 12,
+            position: 'absolute', top: 12, left: 12, right: 12, zIndex: 12,
             display: 'flex', gap: 3, padding: '6px 8px',
           }}>
             {validSsUrls.map((_, i) => (
