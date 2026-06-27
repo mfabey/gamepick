@@ -701,7 +701,7 @@ function GameRow({ game, rank, price, pricesLoading }) {
     }}
     onMouseEnter={(e) => {
       e.currentTarget.style.transform = 'translateY(-6px)';
-      e.currentTarget.style.boxShadow = '0 16px 40px rgba(139, 92, 246, 0.4)';
+      e.currentTarget.style.boxShadow = '0 16px 40px var(--accent-glow)';
     }}
     onMouseLeave={(e) => {
       e.currentTarget.style.transform = 'none';
@@ -788,7 +788,7 @@ function GameRow({ game, rank, price, pricesLoading }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {game.hours > 0 ? (
                <>
-                 <span style={{ fontSize: 20, fontWeight: 800, color: 'var(--accent)', textShadow: '0 2px 10px rgba(139,92,246,0.6)', lineHeight: 1 }}>
+                 <span style={{ fontSize: 20, fontWeight: 800, color: 'var(--accent)', textShadow: '0 2px 10px var(--accent-glow)', lineHeight: 1 }}>
                    {game.hours}<span style={{ fontSize: 12, marginLeft: 2 }}>{hourSymbol}</span>
                  </span>
                  <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600 }}>{t('library.hoursPlayed')}</span>

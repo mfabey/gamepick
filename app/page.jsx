@@ -222,18 +222,18 @@ export default function Home() {
   return (
     <div style={{ paddingBottom: 60 }}>
 
-      {/* ══ HERO: tam ekran blurlu oyun mozaiği ════════════════════════════ */}
-      <section style={{ position: 'relative', overflow: 'hidden', padding: '72px 0 8px', background: 'var(--hero-bg)' }}>
+      {/* ══ HERO: arama ══ */}
+      <section style={{ position: 'relative', overflow: 'hidden', padding: '52px 0 12px', background: 'var(--hero-bg)' }}>
         <div style={{ maxWidth: 880, margin: '0 auto', padding: '0 32px', textAlign: 'center' }}>
 
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '6px 14px', borderRadius: 999, background: 'var(--bg-card)', border: '1px solid var(--border)', fontSize: 13, fontWeight: 600, color: 'var(--text-2)', boxShadow: 'var(--shadow)', marginBottom: 26 }}>
             <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--green)', boxShadow: '0 0 0 3px rgba(47,158,107,0.2)' }} /> {t('hero.badge')}
           </span>
 
-          <h1 style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 'clamp(40px, 5.6vw, 74px)', lineHeight: 1.02, letterSpacing: '-2px', color: 'var(--text)', marginBottom: 20, textWrap: 'balance' }}>
+          <h1 style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 'clamp(32px, 4.4vw, 54px)', lineHeight: 1.04, letterSpacing: '-1.5px', color: 'var(--text)', marginBottom: 16, textWrap: 'balance' }}>
             {t('hero.title')}
           </h1>
-          <p style={{ fontSize: 18, color: 'var(--text-2)', maxWidth: 560, margin: '0 auto 36px', lineHeight: 1.55 }}>
+          <p style={{ fontSize: 17, color: 'var(--text-2)', maxWidth: 540, margin: '0 auto 28px', lineHeight: 1.55 }}>
             {t('hero.subtitle')}
           </p>
 
@@ -356,8 +356,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Kapak şeridi — yatay kayan (memo'lanmış) */}
-        {heroStrip}
+        {/* Kapak şeridi kaldırıldı — sayfa doğrudan sinematik vitrinle başlıyor (prototip düzeni) */}
       </section>
 
       {/* ══ İÇERİK BÖLÜMLERİ ══════════════════════════════════════════════════ */}
