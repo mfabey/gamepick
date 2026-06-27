@@ -75,19 +75,30 @@ function GameCard({ game, compact = false, cardWidth }) {
   const [ssLoaded, setSsLoaded] = useState(new Set());
   const ssInterval = useRef(null);
 
-  // Steam screenshot URL'lerini oluştur
+  // Steam screenshot URL'lerini fetch et
   useEffect(() => {
+    // RAWG'dan halihazırda gelmişse onu kullan
+    if (game.short_screenshots && game.short_screenshots.length > 0) {
+      setSsUrls(game.short_screenshots.map(s => s.image || s).slice(0, 5));
+      return;
+    }
+    if (game.screenshots && game.screenshots.length > 0) {
+      setSsUrls(game.screenshots.slice(0, 5));
+      return;
+    }
+
     const appid = getSteamAppId(game);
     if (!appid) { setSsUrls([]); return; }
-    // Steam ekran görüntüleri genellikle ss_<hash>.jpg olur, ama
-    // header + screenshot_0..4 pattern'i daha güvenilir
-    const urls = [];
-    for (let i = 0; i < 5; i++) {
-      urls.push(`https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/ss_${i}.jpg`);
-    }
-    // Ayrıca bilinen Steam screenshot pattern'leri
-    urls.push(`https://cdn.akamai.steamstatic.com/steam/apps/${appid}/ss_1.jpg`);
-    setSsUrls(urls);
+    
+    fetch(`/api/game-screenshots?appid=${appid}`)
+      .then(r => r.json())
+      .then(d => {
+        if (d.screenshots && d.screenshots.length > 0) {
+          // İlk 5 ekran görüntüsü
+          setSsUrls(d.screenshots.slice(0, 5));
+        }
+      })
+      .catch(() => {});
   }, [game]);
 
   // Hover başladığında slideshow'u başlat
@@ -167,7 +178,7 @@ function GameCard({ game, compact = false, cardWidth }) {
   const activeScreenshot = validSsUrls.length > 0 ? validSsUrls[ssIndex % validSsUrls.length] : null;
 
   return (
-    <Link href={href} style={{ flexShrink: 0, width: compact ? (cardWidth || 220) : '100%', perspective: 1100, display: 'block' }}>
+    <Link draggable={false} onDragStart={(e) => e.preventDefault()} href={href} style={{ flexShrink: 0, width: compact ? (cardWidth || 220) : '100%', perspective: 1100, display: 'block' }}>
       <div
         ref={cardRef}
         onMouseEnter={() => { setHovered(true); startSlideshow(); }}

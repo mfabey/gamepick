@@ -209,6 +209,8 @@ export default function GameImage({
         key={`${game.id || game.name}-${imgStage}`}
         src={currentImgSrc}
         alt={alt || game.name || ''}
+        draggable={false}
+        onDragStart={(e) => e.preventDefault()}
         style={{
           objectFit: 'cover',
           width: fill ? '100%' : width,
