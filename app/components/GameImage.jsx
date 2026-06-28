@@ -190,7 +190,7 @@ export default function GameImage({
       }
       if (stage === 1) {
         const appid = getSteamAppId();
-        if (appid && game.image && !game.image.includes('header.jpg') && !game.image.includes('capsule')) {
+        if (appid && game.image) {
           return game.image;
         }
         return getImgSrc(2);
