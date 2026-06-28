@@ -560,6 +560,50 @@ export default function ProfilePage() {
       </div>
 
       <style>{`
+        .donut-chart-container {
+          position: relative;
+          width: 110px;
+          height: 110px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .donut-chart-svg {
+          width: 100%;
+          height: 100%;
+          transform: rotate(-90deg);
+        }
+        .donut-chart-circle {
+          fill: none;
+          stroke-width: 12;
+        }
+        .donut-chart-bg {
+          stroke: var(--bg-input);
+        }
+        .donut-chart-center {
+          position: absolute;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          pointer-events: none;
+        }
+        .donut-chart-value {
+          font-size: 17px;
+          font-weight: 800;
+          color: var(--text);
+          line-height: 1.1;
+          letter-spacing: -0.5px;
+        }
+        .donut-chart-label {
+          font-size: 9.5px;
+          color: var(--text-3);
+          font-weight: 700;
+          text-transform: uppercase;
+          margin-top: 2px;
+          letter-spacing: 0.05em;
+        }
         @media (max-width: 768px) {
           .profile-two-column { grid-template-columns: 1fr !important; }
         }
