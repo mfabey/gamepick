@@ -92,6 +92,7 @@ export default function GameImage({
   unoptimized = true,
   priority = false,
   isVertical = false,
+  isHero = false,
 }) {
   const [imgStage, setImgStage] = useState(0); // 0: game.image, 1: capsule, 2: logo, 3+: initials placeholder
 
@@ -177,6 +178,36 @@ export default function GameImage({
         return getImgSrc(3);
       }
       if (stage === 3) {
+        const appid = getSteamAppId();
+        if (appid) return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/capsule_sm_120.jpg`;
+        return null;
+      }
+    } else if (isHero) {
+      if (stage === 0) {
+        const appid = getSteamAppId();
+        if (appid) return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/library_hero.jpg`;
+        return game.image || getImgSrc(2);
+      }
+      if (stage === 1) {
+        const appid = getSteamAppId();
+        if (appid && game.image && !game.image.includes('header.jpg') && !game.image.includes('capsule')) {
+          return game.image;
+        }
+        return getImgSrc(2);
+      }
+      if (stage === 2) {
+        const appid = getSteamAppId();
+        if (appid) return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/header.jpg`;
+        return game.image || getImgSrc(3);
+      }
+      if (stage === 3) {
+        if (game.logo) return game.logo.replace('capsule_sm_120.jpg', 'capsule_231x87.jpg');
+        const appid = getSteamAppId();
+        if (appid) return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/capsule_231x87.jpg`;
+        return getImgSrc(4);
+      }
+      if (stage === 4) {
+        if (game.logo) return game.logo;
         const appid = getSteamAppId();
         if (appid) return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/capsule_sm_120.jpg`;
         return null;

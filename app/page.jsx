@@ -656,7 +656,7 @@ function CinematicShowcase({ games }) {
     <section style={{ display: 'grid', gridTemplateColumns: '1fr 226px', gap: 18, alignItems: 'stretch', marginBottom: 44 }} className="showcase-grid">
       {/* Ana sahne */}
       <Link href={href} style={{ position: 'relative', borderRadius: 26, overflow: 'hidden', minHeight: 454, boxShadow: '0 40px 90px -36px rgba(0,0,0,0.8), inset 0 0 0 1px rgba(255,255,255,0.08)' }}>
-        <GameImage key={g.id} game={g} alt={g.name} fill style={{ objectFit: 'cover' }} />
+        <GameImage key={g.id} game={g} alt={g.name} fill isHero style={{ objectFit: 'cover' }} />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(105deg, rgba(6,7,9,0.94) 8%, rgba(6,7,9,0.6) 42%, rgba(6,7,9,0.12) 78%)' }} />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(6,7,9,0.85), transparent 46%)' }} />
         <div style={{ position: 'absolute', left: 0, bottom: 0, padding: '40px 44px', maxWidth: 620 }}>
