@@ -382,8 +382,7 @@ export async function GET(request) {
         params.ordering = '-metacritic';
         params.metacritic = '70,100';
       } else if (section === 'popular') {
-        params.ordering = '-rating';
-        params.metacritic = '60,100';
+        params.ordering = '-added';
       } else if (section === 'free') {
         if (params.tags) {
           params.tags = params.tags + ',free-to-play';
@@ -453,7 +452,18 @@ export async function GET(request) {
         const data = await fetchRawg('/games', params);
         total = data.count || 0;
         results = (data.results || []).filter(g => !isAdultContent(g) && !isDlc(g)).map(formatRawgGame);
-        results = results.filter(g => g.hasStores && !KNOWN_DELISTED_SLUGS.has(g.rawgSlug));
+        if (section === 'free') {
+          // Ücretsiz oyunlar RAWG'da çoğunlukla mağaza linki olmaz, hasStores şartı arama
+          results = results.filter(g => !KNOWN_DELISTED_SLUGS.has(g.rawgSlug));
+          if (page === 1) {
+            const seenRawgIds = new Set(results.map(g => g.id));
+            const extra = STATIC_FREE_GAMES.filter(g => !seenRawgIds.has(g.id));
+            results = [...extra, ...results];
+            total = total + extra.length;
+          }
+        } else {
+          results = results.filter(g => g.hasStores && !KNOWN_DELISTED_SLUGS.has(g.rawgSlug));
+        }
       }
     } catch (err) {
       console.warn('RAWG API fetch failed, proceeding to fallback:', err.message);
