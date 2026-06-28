@@ -131,7 +131,7 @@ export default function SupportPage() {
             <span style={{ display: 'flex', width: 44, height: 44, flexShrink: 0, borderRadius: 12, background: 'var(--accent-bg)', alignItems: 'center', justifyContent: 'center' }}><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="2.5" /><path d="m3 7 9 6 9-6" /></svg></span>
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--text-3)', marginBottom: 3 }}>{lang === 'tr' ? 'E-posta' : 'Email'}</div>
-              <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>destek@gamepick.com</div>
+              <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>support@gamerisen.com</div>
               <div style={{ fontSize: 12.5, color: 'var(--text-3)', marginTop: 2 }}>{lang === 'tr' ? '~24 saat içinde yanıt' : '~24 hours response time'}</div>
             </div>
           </div>
