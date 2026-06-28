@@ -223,7 +223,7 @@ export default function Home() {
     <div style={{ paddingBottom: 60 }}>
 
       {/* ══ HERO: arama ══ */}
-      <section style={{ position: 'relative', overflow: 'hidden', padding: '52px 0 12px', background: 'var(--hero-bg)' }}>
+      <section style={{ position: 'relative', overflow: 'visible', padding: '52px 0 12px', background: 'var(--hero-bg)' }}>
         <div style={{ maxWidth: 880, margin: '0 auto', padding: '0 32px', textAlign: 'center' }}>
 
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '6px 14px', borderRadius: 999, background: 'var(--bg-card)', border: '1px solid var(--border)', fontSize: 13, fontWeight: 600, color: 'var(--text-2)', boxShadow: 'var(--shadow)', marginBottom: 26 }}>
