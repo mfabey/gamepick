@@ -690,41 +690,52 @@ function CinematicShowcase({ games }) {
 
 // ── Anasayfa haber bölmesi ───────────────────────────────────────────────────
 function HomeNews() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const [newsList, setNewsList] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/news')
+    setLoading(true);
+    fetch(`/api/news?lang=${lang}`)
       .then(r => r.json())
       .then(d => {
-        if (d.items && Array.isArray(d.items)) {
-          setNewsList(d.items.slice(0, 4));
+        if (d.results && Array.isArray(d.results)) {
+          setNewsList(d.results.slice(0, 4));
         } else {
           setNewsList(HOME_NEWS);
         }
       })
       .catch(() => setNewsList(HOME_NEWS))
       .finally(() => setLoading(false));
-  }, []);
+  }, [lang]);
 
   return (
     <div style={{ marginTop: 8, marginBottom: 48, paddingTop: 34, borderTop: '1px solid var(--border)' }}>
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 20, gap: 12 }}>
         <div>
-          <h2 style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)' }}>Oyun Haberleri</h2>
-          <p style={{ fontSize: 15, color: 'var(--text-3)', marginTop: 4 }}>İndirimler, çıkışlar ve sektörden son gelişmeler</p>
+          <h2 style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)' }}>
+            {lang === 'tr' ? 'Oyun Haberleri' : 'Gaming News'}
+          </h2>
+          <p style={{ fontSize: 15, color: 'var(--text-3)', marginTop: 4 }}>
+            {lang === 'tr' ? 'İndirimler, çıkışlar ve sektörden son gelişmeler' : 'Sales, releases and the latest from the industry'}
+          </p>
         </div>
-        <Link href="/news" style={{ fontSize: 15, color: 'var(--accent)', fontWeight: 600, whiteSpace: 'nowrap' }}>Tümünü gör →</Link>
+        <Link href="/news" style={{ fontSize: 15, color: 'var(--accent)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+          {lang === 'tr' ? 'Tümünü gör →' : 'See all →'}
+        </Link>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: 20 }}>
         {(loading ? HOME_NEWS : newsList).map((n, i) => (
           <a key={i} href={n.url || "/news"} target={n.url ? "_blank" : "_self"} rel="noopener noreferrer" className="gr-glass" style={{ borderRadius: 18, overflow: 'hidden', cursor: 'pointer', transition: 'transform 0.3s, box-shadow 0.3s', display: 'block' }}
             onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-5px)'; }}
             onMouseLeave={e => { e.currentTarget.style.transform = 'none'; }}>
-            <div style={{ position: 'relative', height: 148, background: n.art, backgroundSize: 'cover', backgroundPosition: 'center' }}>
-              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(6,7,9,0.6), transparent 60%)' }} />
-              <span style={{ position: 'absolute', left: 13, top: 13, padding: '4px 11px', borderRadius: 999, background: 'rgba(8,10,14,0.65)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.16)', fontSize: 11, fontWeight: 700, color: '#fff' }}>{n.cat || 'Haberler'}</span>
+            <div style={{ position: 'relative', height: 148, background: n.art, backgroundSize: 'cover', backgroundPosition: 'center', overflow: 'hidden' }}>
+              {n.image && (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img src={n.image} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.85 }} />
+              )}
+              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(6,7,9,0.6), transparent 60%)', zIndex: 1 }} />
+              <span style={{ position: 'absolute', left: 13, top: 13, padding: '4px 11px', borderRadius: 999, background: 'rgba(8,10,14,0.65)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.16)', fontSize: 11, fontWeight: 700, color: '#fff', zIndex: 2 }}>{n.cat || 'Haberler'}</span>
             </div>
             <div style={{ padding: '16px 18px 18px' }}>
               <p style={{ fontSize: 11.5, color: 'var(--text-3)', marginBottom: 7 }}>{n.date} {n.source ? `• ${n.source}` : ''}</p>
