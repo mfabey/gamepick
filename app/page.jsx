@@ -27,7 +27,7 @@ const HOME_NEWS = [
 export default function Home() {
   const { user } = useAuth();
   const router   = useRouter();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
 
   // Arama
   const [query,       setQuery]       = useState('');
@@ -231,10 +231,16 @@ export default function Home() {
           </span>
 
           <h1 style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 'clamp(32px, 4.4vw, 54px)', lineHeight: 1.04, letterSpacing: '-1.5px', color: 'var(--text)', marginBottom: 16, textWrap: 'balance' }}>
-            Aradığın oyunu, <span style={{ color: 'var(--accent)' }}>en iyi fiyata</span> bul
+            {lang === 'tr' ? (
+              <>Aradığın oyunu, <span style={{ color: 'var(--accent)' }}>en iyi fiyata</span> bul</>
+            ) : (
+              <>Find your next game at the <span style={{ color: 'var(--accent)' }}>best price</span></>
+            )}
           </h1>
           <p style={{ fontSize: 17, color: 'var(--text-2)', maxWidth: 540, margin: '0 auto 28px', lineHeight: 1.55 }}>
-            Tek aramada 7 mağazada fiyat karşılaştır — Steam, Epic, GOG ve daha fazlası
+            {lang === 'tr' 
+              ? 'Tek aramada 7 mağazada fiyat karşılaştır — Steam, Epic, GOG ve daha fazlası' 
+              : 'Compare prices across 7 stores in one search — Steam, Epic, GOG, and more'}
           </p>
 
           <div ref={wrapperRef} style={{ width: '100%', maxWidth: 640, position: 'relative', margin: '0 auto' }}>
@@ -367,19 +373,19 @@ export default function Home() {
 
         {/* Bu Hafta Trend — Yayıncıların oynadığı popüler oyunlar */}
         <Section
-          title="Bu Hafta Trend"
-          subtitle="Yayıncıların en çok oynadığı yapımlar"
+          title={lang === 'tr' ? 'Bu Hafta Trend' : 'Trending This Week'}
+          subtitle={lang === 'tr' ? 'Yayıncıların en çok oynadığı yapımlar' : 'Popular games played by streamers'}
           href="/games?section=popular"
           games={trendGames}
           loading={loadingTrend}
-          badge="CANLI"
+          badge={lang === 'tr' ? 'CANLI' : 'LIVE'}
           cardWidth={200}
         />
 
         {/* Yeni Çıkanlar */}
         <Section
-          title="Yeni Çıkanlar"
-          subtitle="Taze çıkmış, denemeye değer"
+          title={lang === 'tr' ? 'Yeni Çıkanlar' : 'New Releases'}
+          subtitle={lang === 'tr' ? 'Taze çıkmış, denemeye değer' : 'Freshly released, worth a try'}
           href="/games?section=new"
           games={newGames}
           loading={loadingNew}
@@ -388,8 +394,8 @@ export default function Home() {
 
         {/* İndirimdekiler */}
         <Section
-          title="İndirimde"
-          subtitle="Şu an en iyi fırsatlar"
+          title={lang === 'tr' ? 'İndirimde' : 'On Sale'}
+          subtitle={lang === 'tr' ? 'Şu an en iyi fırsatlar' : 'Best deals right now'}
           href="/games?section=sale"
           games={saleGames}
           loading={loadingSale}
@@ -596,7 +602,7 @@ function ScrollRow({ children }) {
 
 // ── Yatay scroll bölüm ────────────────────────────────────────────────────────
 const Section = memo(function Section({ title, subtitle, href, games, loading, badge, cardWidth }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   return (
     <div style={{ marginBottom: 56 }}>
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 18 }}>
@@ -617,7 +623,7 @@ const Section = memo(function Section({ title, subtitle, href, games, loading, b
           {subtitle && <p style={{ fontSize: 15, color: 'var(--text-3)', marginTop: 4 }}>{subtitle}</p>}
         </div>
         <Link href={href} style={{ fontSize: 15, color: 'var(--accent)', fontWeight: 600, whiteSpace: 'nowrap' }}>
-          Tümünü gör →
+          {lang === 'tr' ? 'Tümünü gör →' : 'See all →'}
         </Link>
       </div>
       <ScrollRow>
@@ -634,7 +640,7 @@ const Section = memo(function Section({ title, subtitle, href, games, loading, b
 
 // ── Sinematik vitrin (oyun afişinden atmosfer) ───────────────────────────────
 function CinematicShowcase({ games }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const [active, setActive] = useState(0);
   const list = (games || []).filter(g => g && g.name).slice(0, 6);
 
@@ -660,13 +666,17 @@ function CinematicShowcase({ games }) {
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(105deg, rgba(6,7,9,0.94) 8%, rgba(6,7,9,0.6) 42%, rgba(6,7,9,0.12) 78%)' }} />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(6,7,9,0.85), transparent 46%)' }} />
         <div style={{ position: 'absolute', left: 0, bottom: 0, padding: '40px 44px', maxWidth: 620 }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '6px 13px', borderRadius: 999, background: 'color-mix(in srgb, var(--accent) 26%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 55%, transparent)', fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', color: '#fff', marginBottom: 16 }}>✦ ÖNE ÇIKAN</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '6px 13px', borderRadius: 999, background: 'color-mix(in srgb, var(--accent) 26%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 55%, transparent)', fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', color: '#fff', marginBottom: 16 }}>
+            {lang === 'tr' ? '✦ ÖNE ÇIKAN' : '✦ FEATURED'}
+          </span>
           <h2 style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 'clamp(30px,4vw,52px)', lineHeight: 1.02, letterSpacing: '-1.4px', color: '#fff', marginBottom: 14, textWrap: 'balance' }}>{g.name}</h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 18 }}>
             {g.metacritic ? <span style={{ fontSize: 12.5, fontWeight: 800, padding: '4px 9px', borderRadius: 8, background: 'rgba(8,10,14,0.6)', border: '1px solid rgba(255,255,255,0.14)', color: mcColor }}>{g.metacritic} Metacritic</span> : null}
             <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.62)' }}>{(g.genres || []).slice(0, 3).join(' · ')}</span>
           </div>
-          <span className="btn btn-red" style={{ padding: '13px 26px', fontSize: 15 }}>İncele →</span>
+          <span className="btn btn-red" style={{ padding: '13px 26px', fontSize: 15 }}>
+            {lang === 'tr' ? 'İncele →' : 'View →'}
+          </span>
         </div>
       </Link>
       {/* Dikey küçük resimler */}

@@ -303,11 +303,13 @@ function GameCard({ game, compact = false, cardWidth }) {
                   <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 16, color: isOnSale ? '#fbbf24' : '#fff' }}>{formatPrice(livePrice.price)}</span>
                 </span>
               ) : (
-                <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>{game.totalReviews > 0 ? '⭐ ' + game.totalReviews.toLocaleString('tr') : '—'}</span>
+                <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>{game.totalReviews > 0 ? '⭐ ' + game.totalReviews.toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US') : '—'}</span>
               )}
             </span>
           </div>
-          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 38, borderRadius: 11, background: 'var(--accent)', color: '#fff', fontSize: 13, fontWeight: 700, boxShadow: '0 8px 20px -8px var(--accent-glow)' }}>İncele</span>
+          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 38, borderRadius: 11, background: 'var(--accent)', color: '#fff', fontSize: 13, fontWeight: 700, boxShadow: '0 8px 20px -8px var(--accent-glow)' }}>
+            {lang === 'tr' ? 'İncele' : 'View'}
+          </span>
         </div>
       </div>
     </Link>

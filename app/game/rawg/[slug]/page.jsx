@@ -4,10 +4,12 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth, normalizeName } from '../../../context/AuthContext';
+import { useLanguage } from '../../../context/LanguageContext';
 
 export default function RawgGamePage({ params }) {
   const { slug } = params;
   const { ownedGames, xboxOwnedGames = new Set(), gamePassGames = new Set() } = useAuth();
+  const { lang, t, formatPrice } = useLanguage();
 
   const [game,         setGame]         = useState(null);
   const [steamPrice,   setSteamPrice]   = useState(null);
@@ -378,7 +380,7 @@ export default function RawgGamePage({ params }) {
 
           {/* ── Platform Fiyatları ──────────────────────────────────── */}
           <div>
-            <h2 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 10 }}>Platform Fiyatları</h2>
+            <h2 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 10 }}>{t('detail.priceComparison')}</h2>
 
             {/* Steam */}
             {game.hasSteam ? (
@@ -476,11 +478,13 @@ export default function RawgGamePage({ params }) {
 
             {/* Resmi Web Sitesi (Minecraft vb. özel oyunlar için) */}
             {game.officialUrl && (
-              <PlaceholderCard store="Resmi Web Sitesi" icon="🌐" url={game.officialUrl} />
+              <PlaceholderCard store={lang === 'tr' ? 'Resmi Web Sitesi' : 'Official Website'} icon="🌐" url={game.officialUrl} />
             )}
 
             <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 10, lineHeight: 1.5 }}>
-              Fiyatlar Steam & ITAD üzerinden alınmaktadır. Anlık değişiklikler yansımayabilir.
+              {lang === 'tr' 
+                ? 'Fiyatlar Steam & ITAD üzerinden alınmaktadır. Anlık değişiklikler yansımayabilir.' 
+                : 'Prices are sourced from Steam & ITAD. Real-time updates may not be reflected.'}
             </p>
           </div>
         </div>
@@ -545,6 +549,7 @@ function LoadingPriceRow() {
 
 // ── Fiyatlı platform kartı ───────────────────────────────────────────────────
 function PriceCard({ store, icon, price, original, discount, isFree: isFreeOverride, url, highlight = false }) {
+  const { lang, t, formatPrice } = useLanguage();
   const isFree   = isFreeOverride || price === 0;
   const isOnSale = discount > 0 && !isFree;
 
@@ -595,19 +600,19 @@ function PriceCard({ store, icon, price, original, discount, isFree: isFreeOverr
               background: 'var(--gold-badge-bg)', color: 'var(--gold-badge-text)', border: '1px solid var(--gold-border)',
               whiteSpace: 'nowrap'
             }}>
-              👑 En Ucuz
+              {lang === 'tr' ? '👑 En Ucuz' : '👑 Cheapest'}
             </span>
           )}
         </span>
         <div style={{ textAlign: 'right', flexShrink: 0, fontFamily: "-apple-system, 'Segoe UI', system-ui, Roboto, 'Helvetica Neue', Arial, sans-serif" }}>
           {isFree ? (
-            <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--green)' }}>Ücretsiz</span>
+            <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--green)' }}>{lang === 'tr' ? 'Ücretsiz' : 'Free'}</span>
           ) : (
             <>
-              <span style={{ fontWeight: 700, fontSize: 15, color: isOnSale ? 'var(--amber)' : 'var(--text)' }}>{price}₺</span>
+              <span style={{ fontWeight: 700, fontSize: 15, color: isOnSale ? 'var(--amber)' : 'var(--text)' }}>{formatPrice(price)}</span>
               {isOnSale && (
                 <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
-                  <span style={{ textDecoration: 'line-through' }}>{original}₺</span>
+                  <span style={{ textDecoration: 'line-through' }}>{formatPrice(original)}</span>
                   {' '}<span style={{ color: 'var(--amber)' }}>-%{discount}</span>
                 </div>
               )}
@@ -621,6 +626,7 @@ function PriceCard({ store, icon, price, original, discount, isFree: isFreeOverr
 
 // ── Fiyat yok ama link var ───────────────────────────────────────────────────
 function PlaceholderCard({ store, icon, url }) {
+  const { lang } = useLanguage();
   return (
     <a href={url || '#'} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', display: 'block', marginBottom: 8 }}>
       <div className="glass-card" style={{
@@ -644,7 +650,9 @@ function PlaceholderCard({ store, icon, url }) {
           <StoreLogo store={store} />
           <span style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>{store}</span>
         </span>
-        <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 500, flexShrink: 0 }}>Mağazaya Git →</span>
+        <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 500, flexShrink: 0 }}>
+          {lang === 'tr' ? 'Mağazaya Git →' : 'Go to Store →'}
+        </span>
       </div>
     </a>
   );
@@ -652,13 +660,14 @@ function PlaceholderCard({ store, icon, url }) {
 
 // ── Oyun bu platformda yok ───────────────────────────────────────────────────
 function MissingCard({ platform }) {
+  const { lang } = useLanguage();
   return (
     <div className="glass-card" style={{
       padding: '12px 14px', borderRadius: 10, marginBottom: 8,
       borderStyle: 'dashed', opacity: 0.7,
       fontSize: 13, color: 'var(--text-3)', textAlign: 'center',
     }}>
-      Bu oyun {platform}&apos;te bulunmuyor
+      {lang === 'tr' ? `Bu oyun ${platform}'te bulunmuyor` : `This game is not available on ${platform}`}
     </div>
   );
 }
