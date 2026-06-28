@@ -356,7 +356,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <div className="container">
+      <div className="container" style={{ position: 'relative', zIndex: 2 }}>
 
         {/* ── Avatar + Name (overlaps banner) ── */}
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 18, marginTop: -48, marginBottom: 28 }}>
