@@ -332,385 +332,241 @@ export default function ProfilePage() {
   const genreStats = getDynamicGenreStats(steamLib?.games || [], xboxLib?.games || []);
 
   return (
-    <div className="container" style={{ paddingTop: 40, paddingBottom: 60 }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-body)', paddingBottom: 80 }}>
 
-      {/* Başlık / User Card */}
-      <div className="premium-dashboard-card" style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 20,
-        padding: '24px 28px',
-        marginBottom: 36,
-        background: 'linear-gradient(135deg, rgba(201, 133, 10, 0.08), rgba(255, 255, 255, 0.01))',
-        border: '1px solid rgba(201, 133, 10, 0.25)',
-        position: 'relative',
-        overflow: 'hidden'
-      }}>
-        {/* Subtle ambient light behind avatar */}
-        <div style={{
-          position: 'absolute',
-          top: -20, left: -20,
-          width: 120, height: 120,
-          background: 'radial-gradient(circle, var(--accent-glow) 0%, transparent 70%)',
-          pointerEvents: 'none',
-          opacity: 0.5
-        }} />
-
-        {steamUser && steamUser.avatar ? (
-          <div style={{
-            position: 'relative',
-            width: 64, height: 64,
-            borderRadius: '50%',
-            overflow: 'hidden',
-            border: '2px solid var(--accent)',
-            boxShadow: '0 0 16px var(--accent-glow)',
-            flexShrink: 0,
-            transition: 'transform 0.3s ease'
-          }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img 
-              src={steamUser.avatar} 
-              alt={user.name} 
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            />
-          </div>
-        ) : (
-          <div style={{
-            width: 64, height: 64, borderRadius: '50%',
-            background: 'linear-gradient(135deg, var(--accent-bg), rgba(201, 133, 10, 0.2))',
-            border: '1px solid var(--accent-border)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 22, fontWeight: 800, color: 'var(--accent)',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            flexShrink: 0,
-            letterSpacing: '0.5px'
-          }}>
-            {initials}
-          </div>
-        )}
-
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.5px', marginBottom: 2 }}>{user.name}</h1>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{
-              display: 'inline-block',
-              width: 6, height: 6,
-              borderRadius: '50%',
-              background: '#22c55e',
-              boxShadow: '0 0 8px rgba(34, 197, 94, 0.6)'
-            }} />
-            <p style={{ color: 'var(--text-3)', fontSize: 13, fontWeight: 500 }}>
-              {lang === 'tr' ? 'Gamerisen Üyesi' : 'Gamerisen Member'}
-            </p>
-          </div>
+      {/* ── Cover Banner ── */}
+      <div style={{ height: 196, position: 'relative', overflow: 'hidden', background: 'linear-gradient(135deg, #080d18 0%, #14102a 50%, #091825 100%)' }}>
+        <div style={{ position: 'absolute', top: -70, left: -50, width: 340, height: 340, borderRadius: '50%', background: 'radial-gradient(circle, rgba(201,133,10,0.16) 0%, transparent 65%)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', bottom: -70, right: 80, width: 280, height: 280, borderRadius: '50%', background: 'radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 65%)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', top: '50%', right: '25%', transform: 'translateY(-50%)', width: 200, height: 200, borderRadius: '50%', background: 'radial-gradient(circle, rgba(26,159,255,0.07) 0%, transparent 65%)', pointerEvents: 'none' }} />
+        {/* Platform badges */}
+        <div style={{ position: 'absolute', top: 18, right: 24, display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          {steamAccounts.map(a => (
+            <span key={a.steamId} style={{ padding: '5px 12px', borderRadius: 20, background: 'rgba(26,159,255,0.12)', border: '1px solid rgba(26,159,255,0.25)', fontSize: 11.5, color: '#5eb7ff', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5 }}>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="#5eb7ff"><path d="M11.979 0C5.678 0 .511 4.86.022 11.037l6.432 2.658c.545-.371 1.203-.59 1.912-.59.063 0 .125.004.188.006l2.861-4.142V8.91c0-2.495 2.028-4.524 4.524-4.524 2.494 0 4.524 2.031 4.524 4.527s-2.03 4.525-4.524 4.525h-.105l-4.076 2.909c0 .052.004.105.004.159 0 1.875-1.515 3.396-3.39 3.396-1.635 0-3.016-1.173-3.331-2.727L.436 15.27C1.862 20.307 6.486 24 11.979 24c6.627 0 11.999-5.373 11.999-12S18.605 0 11.979 0z"/></svg>
+              {a.name?.slice(0, 12)}
+            </span>
+          ))}
+          {xboxUser && (
+            <span style={{ padding: '5px 12px', borderRadius: 20, background: 'rgba(16,124,16,0.15)', border: '1px solid rgba(16,124,16,0.3)', fontSize: 11.5, color: '#4ade80', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5 }}>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="#4ade80"><path d="M5.26 3.31C6.93 2.14 9.02 1.5 12 1.5s5.07.64 6.74 1.81c.41.28.45.87.08 1.2C17.49 5.65 15.6 8.38 12 12c-3.6-3.62-5.49-6.35-6.82-7.49-.37-.33-.33-.92.08-1.2zM2.09 6.44C.79 8.12 0 10.2 0 12.5 0 17.75 4.28 22 9.5 22c1.95 0 3.76-.6 5.25-1.62-1.58-1.34-4.74-4.56-7.98-8.7-1.34-1.73-2.9-3.84-4.68-5.24zm19.82 0c-1.78 1.4-3.34 3.51-4.68 5.24-3.24 4.14-6.4 7.36-7.98 8.7C10.74 21.4 12.55 22 14.5 22 19.72 22 24 17.75 24 12.5c0-2.3-.79-4.38-2.09-6.06z"/></svg>
+              {xboxUser.gamertag?.slice(0, 10)}
+            </span>
+          )}
         </div>
       </div>
 
-      {/* Activity Heatmap - Tam Genişlik */}
-      <div style={{ marginBottom: 32 }}>
-        <ActivityHeatmap lang={lang} userEmail={user.email || user.name || "default"} />
-      </div>
+      <div className="container">
 
-      <div className="profile-two-column">
-
-        {/* Bağlı hesaplar */}
-        <div>
-          <h2 className="section-title" style={{ fontSize: 16 }}>
-            {lang === 'tr' ? 'Bağlı Hesaplar' : 'Connected Accounts'}
-          </h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {/* Steam Hesapları */}
-            {steamAccounts.length > 0 ? (
-              <>
-                {steamAccounts.map(account => (
-                  <AccountCard
-                    key={account.steamId}
-                    name={`Steam (${account.name})`}
-                    status={lang === 'tr' ? 'Bağlı' : 'Connected'}
-                    connected={true}
-                    color="#1a9fff"
-                    initials="STM"
-                    avatar={account.avatar}
-                    profileUrl={account.profileUrl || `https://steamcommunity.com/profiles/${account.steamId}`}
-                    onToggle={async () => {
-                      if (steamLogoutAccount) await steamLogoutAccount(account.steamId);
-                    }}
-                    lang={lang}
-                  />
-                ))}
-                {steamAccounts.length < 5 && (
-                  <button onClick={() => window.location.href = '/api/auth/steam'} style={{
-                    padding: '10px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600,
-                    border: '1px dashed #1a9fff', background: 'transparent', color: '#1a9fff',
-                    cursor: 'pointer', textAlign: 'center', marginTop: 4, display: 'block', width: '100%'
-                  }}>
-                    {lang === 'tr' ? '+ Steam Hesabı Ekle' : '+ Add Steam Account'}
-                  </button>
-                )}
-              </>
+        {/* ── Avatar + Name (overlaps banner) ── */}
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 18, marginTop: -48, marginBottom: 28 }}>
+          <div style={{ width: 92, height: 92, borderRadius: '50%', border: '4px solid var(--bg-body)', overflow: 'hidden', flexShrink: 0, boxShadow: '0 8px 24px rgba(0,0,0,0.5)', background: 'var(--bg-card)' }}>
+            {steamUser?.avatar ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img src={steamUser.avatar} alt={user.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             ) : (
+              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, rgba(201,133,10,0.25), rgba(201,133,10,0.05))', fontSize: 30, fontWeight: 800, color: 'var(--accent)' }}>
+                {initials}
+              </div>
+            )}
+          </div>
+          <div style={{ paddingBottom: 6, flex: 1, minWidth: 0 }}>
+            <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.5px', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {user.name}
+            </h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 8px rgba(34,197,94,0.7)', display: 'inline-block', flexShrink: 0 }} />
+              <span style={{ fontSize: 13, color: 'var(--text-3)', fontWeight: 500 }}>{lang === 'tr' ? 'Gamerisen Üyesi' : 'Gamerisen Member'}</span>
+            </div>
+          </div>
+          <Link href="/library" style={{ padding: '9px 18px', borderRadius: 10, fontSize: 13, fontWeight: 700, background: 'var(--accent)', color: '#fff', textDecoration: 'none', boxShadow: '0 4px 12px var(--accent-glow)', flexShrink: 0, marginBottom: 4, display: 'inline-block' }}>
+            {lang === 'tr' ? 'Kütüphanem →' : 'My Library →'}
+          </Link>
+        </div>
+
+        {/* ── Stats Row ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 32 }}>
+          {[
+            { value: totalConnectedGames > 0 ? totalConnectedGames.toString() : (libsLoading && (steamUser || xboxUser) ? '...' : '0'), label: lang === 'tr' ? 'Toplam Oyun' : 'Total Games', color: 'var(--accent)' },
+            { value: getPlaytimeStat(), label: lang === 'tr' ? 'Ort. Oynama' : 'Avg. Playtime', color: '#3b82f6' },
+            { value: getCompletionStat(), label: lang === 'tr' ? 'Tamamlama' : 'Completion', color: '#a855f7' },
+            { value: wishlist.length.toString(), label: lang === 'tr' ? 'İstek Listesi' : 'Wishlist', color: '#22c55e' },
+          ].map(s => (
+            <div key={s.label} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: '20px 16px', textAlign: 'center' }}>
+              <div style={{ fontSize: 30, fontWeight: 800, color: s.color, letterSpacing: '-1px', lineHeight: 1, marginBottom: 7 }}>{s.value}</div>
+              <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* ── Activity Heatmap ── */}
+        <div style={{ marginBottom: 32 }}>
+          <ActivityHeatmap lang={lang} userEmail={user.email || user.name || 'default'} />
+        </div>
+
+        {/* ── Main: 2 columns ── */}
+        <div className="profile-two-column" style={{ marginBottom: 32 }}>
+
+          {/* Left: Connected Accounts */}
+          <div>
+            <p style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-3)', marginBottom: 14 }}>
+              {lang === 'tr' ? 'Bağlı Hesaplar' : 'Connected Accounts'}
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {steamAccounts.length > 0 ? (
+                <>
+                  {steamAccounts.map(account => (
+                    <AccountCard
+                      key={account.steamId}
+                      name={`Steam — ${account.name}`}
+                      status={lang === 'tr' ? (libsLoading ? 'Yükleniyor...' : `Bağlı · ${steamLib?.games?.length ?? 0} oyun`) : (libsLoading ? 'Loading...' : `Connected · ${steamLib?.games?.length ?? 0} games`)}
+                      connected={true}
+                      color="#1a9fff"
+                      initials="STM"
+                      avatar={account.avatar}
+                      profileUrl={account.profileUrl || `https://steamcommunity.com/profiles/${account.steamId}`}
+                      onToggle={async () => { if (steamLogoutAccount) await steamLogoutAccount(account.steamId); }}
+                      lang={lang}
+                    />
+                  ))}
+                  {steamAccounts.length < 5 && (
+                    <button onClick={() => window.location.href = '/api/auth/steam'} style={{ padding: '10px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600, border: '1px dashed rgba(26,159,255,0.4)', background: 'transparent', color: '#1a9fff', cursor: 'pointer', width: '100%' }}>
+                      {lang === 'tr' ? '+ Steam Hesabı Ekle' : '+ Add Steam Account'}
+                    </button>
+                  )}
+                </>
+              ) : (
+                <AccountCard name="Steam" status={lang === 'tr' ? 'Bağlı değil' : 'Not connected'} connected={false} color="#1a9fff" initials="STM" profileUrl={null} onToggle={() => window.location.href = '/api/auth/steam'} lang={lang} />
+              )}
+
               <AccountCard
-                name="Steam"
-                status={lang === 'tr' ? 'Bağlı değil' : 'Not connected'}
-                connected={false}
-                color="#1a9fff"
-                initials="STM"
-                profileUrl={null}
-                onToggle={() => window.location.href = '/api/auth/steam'}
+                name="Xbox / Game Pass"
+                status={xboxUser ? (xboxUser.isMock ? (lang === 'tr' ? `Simülasyon — ${xboxGamesCount} oyun` : `Simulation — ${xboxGamesCount} games`) : (lang === 'tr' ? `Bağlı — ${xboxGamesCount} oyun` : `Connected — ${xboxGamesCount} games`)) : (lang === 'tr' ? 'Bağlı değil' : 'Not connected')}
+                connected={!!xboxUser}
+                color="#16a34a"
+                initials="XBX"
+                avatar={xboxUser?.avatar}
+                profileUrl={xboxUser?.gamertag ? `https://live.xbox.com/Profile?Gamertag=${encodeURIComponent(xboxUser.gamertag)}` : null}
+                onToggle={() => { if (xboxUser) xboxLogout(); else window.location.href = '/api/auth/xbox'; }}
                 lang={lang}
               />
-            )}
-            {/* Xbox */}
-             <AccountCard
-              name="Xbox / Game Pass"
-              status={
-                xboxUser 
-                  ? (xboxUser.isMock 
-                      ? (lang === 'tr' ? `Simülasyon (Örnek Oyunlar) — ${xboxGamesCount} oyun` : `Simulation (Sample Games) — ${xboxGamesCount} games`) 
-                      : (lang === 'tr' ? `Bağlı — ${xboxGamesCount} oyun` : `Connected — ${xboxGamesCount} games`))
-                  : (lang === 'tr' ? 'Bağlı değil' : 'Not connected')
-              }
-              connected={!!xboxUser}
-              color="#16a34a"
-              initials="XBX"
-              avatar={xboxUser?.avatar}
-              profileUrl={xboxUser?.gamertag ? `https://live.xbox.com/Profile?Gamertag=${encodeURIComponent(xboxUser.gamertag)}` : null}
-              onToggle={() => {
-                if (xboxUser) {
-                  xboxLogout();
-                } else {
-                  window.location.href = '/api/auth/xbox';
-                }
-              }}
-              lang={lang}
-            />
-            {xboxUser?.isMock && (
-              <div style={{
-                background: 'var(--accent-bg)', border: '1px solid var(--accent-border)', borderRadius: 10,
-                padding: '10px 14px', marginTop: 12, fontSize: 12, color: 'var(--accent)',
-                display: 'flex', gap: 8, alignItems: 'flex-start', lineHeight: 1.5
-              }}>
-                <span style={{ fontSize: 14 }}>⚠️</span>
-                <div>
-                  {lang === 'tr' 
-                    ? 'Xbox hesabınız Gamertag simülasyonu ile bağlı olduğundan test amaçlı örnek oyunlar ve istatistikler gösterilmektedir. Gerçek kütüphaneniz için resmi Microsoft bağlantısını kullanın.' 
-                    : 'Since your Xbox account is connected via Gamertag simulation, sample games and stats are shown for testing. Use the official Microsoft connection for your real library.'}
-                </div>
-              </div>
-            )}
 
-            {/* Epic Games (Coming Soon) */}
-            <div className="premium-dashboard-card" style={{ 
-              padding: '12px 14px', 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'space-between', 
-              gap: 12, 
-              opacity: 0.6, 
-              marginTop: 4, 
-              minWidth: 0,
-              cursor: 'not-allowed'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
-                <div style={{
-                  width: 36, height: 36, borderRadius: 8, background: `rgba(255,255,255,0.02)`,
-                  border: '1px solid var(--border)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0,
-                }}>
+              {xboxUser?.isMock && (
+                <div style={{ background: 'var(--accent-bg)', border: '1px solid var(--accent-border)', borderRadius: 10, padding: '10px 14px', fontSize: 12, color: 'var(--accent)', display: 'flex', gap: 8, alignItems: 'flex-start', lineHeight: 1.5 }}>
+                  <span>⚠️</span>
+                  <div>{lang === 'tr' ? 'Xbox hesabınız Gamertag simülasyonu ile bağlı olduğundan test amaçlı örnek oyunlar gösterilmektedir.' : 'Xbox account connected via Gamertag simulation — sample games shown for testing.'}</div>
+                </div>
+              )}
+
+              <div style={{ padding: '12px 14px', borderRadius: 12, background: 'var(--bg-card)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 12, opacity: 0.5, cursor: 'not-allowed' }}>
+                <div style={{ width: 36, height: 36, borderRadius: 8, background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <EpicLogo size={18} color="#666" />
                 </div>
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <p style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text-3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Epic Games</p>
-                  <p style={{ fontSize: 12, color: 'var(--text-3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{lang === 'tr' ? 'Bağlı değil' : 'Not connected'}</p>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text-3)' }}>Epic Games</p>
+                  <p style={{ fontSize: 12, color: 'var(--text-3)' }}>{lang === 'tr' ? 'Bağlı değil' : 'Not connected'}</p>
                 </div>
+                <span style={{ padding: '4px 10px', borderRadius: 6, background: 'var(--bg-input)', border: '1px solid var(--border)', fontSize: 11, color: 'var(--text-3)', fontWeight: 600, flexShrink: 0 }}>
+                  {lang === 'tr' ? 'Çok Yakında' : 'Coming Soon'}
+                </span>
               </div>
-              <button disabled style={{
-                padding: '6px 14px', borderRadius: 8, fontSize: 11, fontWeight: 700,
-                border: '1px solid var(--border)',
-                background: 'var(--bg-input)',
-                color: 'var(--text-3)',
-                cursor: 'not-allowed',
-                flexShrink: 0,
-              }}>
-                {lang === 'tr' ? 'Çok Yakında' : 'Coming Soon'}
-              </button>
             </div>
           </div>
-        </div>
 
-        {/* Sağ Sütun */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
-          {/* AI analiz */}
-          <div>
-          <h2 className="section-title" style={{ fontSize: 16 }}>
-            {lang === 'tr' ? 'AI Oyuncu Analizi' : 'AI Player Analysis'}
-          </h2>
-          <div className="profile-stats-grid">
-            <StatCard 
-              number={steamUser ? (steamLib?.games?.length || (ownedGames?.size || 0) || 0).toString() : "0"} 
-              label={lang === 'tr' ? 'Steam Oyunu' : 'Steam Games'} 
-            />
-            <StatCard 
-              number={getPlaytimeStat()} 
-              label={lang === 'tr' ? 'Ort. Oynama' : 'Avg. Playtime'} 
-            />
-            <StatCard 
-              number={getCompletionStat()}  
-              label={lang === 'tr' ? 'Tamamlama' : 'Completion'} 
-              isAccent={true}
-            />
-          </div>
-
-          <div 
-            className="premium-dashboard-card" 
-            style={{ 
-              padding: '20px 24px', 
-              marginBottom: 16, 
-              border: '1px solid rgba(201, 133, 10, 0.2)', 
-              boxShadow: '0 8px 32px var(--accent-glow)',
-              position: 'relative'
-            }}
-          >
-            <p style={{ 
-              fontSize: 11, 
-              textTransform: 'uppercase', 
-              letterSpacing: '0.08em', 
-              color: 'var(--text-3)', 
-              fontWeight: 700, 
-              marginBottom: 14 
-            }}>
-              {lang === 'tr' ? 'En Çok Oynanan Türler' : 'Your Top Played Genres'}
+          {/* Right: AI Analysis */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <p style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-3)', marginBottom: 0 }}>
+              {lang === 'tr' ? 'AI Oyuncu Analizi' : 'AI Player Analysis'}
             </p>
-            <div style={{ marginTop: 24, padding: '0 10px' }}>
+
+            {/* Mini stats */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+              <StatCard number={steamUser ? (steamLib?.games?.length || (ownedGames?.size || 0) || 0).toString() : '0'} label={lang === 'tr' ? 'Steam' : 'Steam'} />
+              <StatCard number={getPlaytimeStat()} label={lang === 'tr' ? 'Ort. Süre' : 'Avg. Time'} />
+              <StatCard number={getCompletionStat()} label={lang === 'tr' ? 'Tamaml.' : 'Completion'} isAccent={true} />
+            </div>
+
+            {/* Genre chart */}
+            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, padding: '18px 20px' }}>
+              <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-3)', marginBottom: 18 }}>
+                {lang === 'tr' ? 'En Çok Oynanan Türler' : 'Your Top Played Genres'}
+              </p>
               <DonutChart data={genreStats} lang={lang} />
             </div>
-          </div>
 
-          <div 
-            className="premium-dashboard-card" 
-            style={{ 
-              padding: '18px 20px',
-              borderLeft: '3px solid #8b5cf6', // Soft purple intelligence vibe
-              background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.05), rgba(255, 255, 255, 0.01))'
-            }}
-          >
-            <p style={{ 
-              fontSize: 11, 
-              textTransform: 'uppercase', 
-              letterSpacing: '0.08em', 
-              color: '#a78bfa', // Purple tint text for AI
-              fontWeight: 700, 
-              marginBottom: 8,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6
-            }}>
-              <span style={{ fontSize: 12 }}>✦</span>
-              {lang === 'tr' ? 'AI Oyuncu Yorumu' : 'AI Player Feedback'}
-            </p>
-            <p style={{ fontSize: 13.5, color: 'var(--text-2)', lineHeight: 1.7, fontWeight: 500 }}>
-              {getDynamicAIComment(genreStats)}
-            </p>
-          </div>
-          
-          </div>
-          
-          {/* Ayarlar (Settings) */}
-          <div>
-            <h2 className="section-title" style={{ fontSize: 16 }}>
-              {lang === 'tr' ? 'Ayarlar' : 'Settings'}
-            </h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <ChangePasswordCard changePassword={changePassword} lang={lang} />
-              <DeleteAccountCard deleteAccount={deleteAccount} lang={lang} />
+            {/* AI Comment */}
+            <div style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.06), rgba(255,255,255,0.01))', border: '1px solid rgba(139,92,246,0.18)', borderRadius: 16, padding: '16px 18px', borderLeft: '3px solid #8b5cf6' }}>
+              <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#a78bfa', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 5 }}>
+                ✦ {lang === 'tr' ? 'AI Oyuncu Yorumu' : 'AI Player Feedback'}
+              </p>
+              <p style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.7 }}>{getDynamicAIComment(genreStats)}</p>
+            </div>
+
+            {/* Daily Rec */}
+            <div style={{ background: 'linear-gradient(135deg, rgba(201,133,10,0.07), rgba(255,255,255,0.01))', border: '1px solid rgba(201,133,10,0.2)', borderRadius: 16, padding: '16px 18px' }}>
+              <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--accent)', marginBottom: 10 }}>
+                ✦ {lang === 'tr' ? 'Günlük Öneri' : 'Daily Pick'}
+              </p>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>{recommended.name}</p>
+                  <p style={{ fontSize: 12.5, color: 'var(--text-2)', lineHeight: 1.55 }}>{lang === 'tr' ? recommended.descTr : recommended.descEn}</p>
+                </div>
+                <Link href={`/game/rawg/${recommended.slug}`} style={{ padding: '8px 14px', borderRadius: 9, background: 'var(--accent)', color: '#fff', fontSize: 12.5, fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0, boxShadow: '0 4px 12px var(--accent-glow)', textDecoration: 'none' }}>
+                  {lang === 'tr' ? 'İncele →' : 'View →'}
+                </Link>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* İstek listesi */}
-      <div>
-        <h2 className="section-title" style={{ fontSize: 16 }}>
-          {lang === 'tr' ? 'İstek Listesi' : 'Wishlist'}{' '}
-          <span style={{ fontSize: 14, fontWeight: 400, color: 'var(--text-3)' }}>
-            — {wishlist.length} {lang === 'tr' ? 'oyun takip ediliyor' : 'games tracked'}
-          </span>
-        </h2>
-
-        {wishlist.length === 0 ? (
-          <div className="premium-dashboard-card" style={{ padding: '40px 32px', textAlign: 'center' }}>
-            <p style={{ color: 'var(--text-3)', fontSize: 14, marginBottom: 16 }}>
-              {lang === 'tr' ? 'Henüz istek listenizde oyun yok.' : 'No games in your wishlist yet.'}
-            </p>
-            <Link href="/" style={{
-              display: 'inline-block', padding: '10px 22px', borderRadius: 10,
-              background: 'var(--accent-bg)', border: '1px solid var(--accent-border)',
-              color: 'var(--accent)', fontSize: 13.5, fontWeight: 700,
-              transition: 'all 0.2s'
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.transform = 'translateY(-1px)';
-              e.currentTarget.style.boxShadow = '0 4px 12px var(--accent-glow)';
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.transform = 'none';
-              e.currentTarget.style.boxShadow = 'none';
-            }}
-            >
-              {lang === 'tr' ? 'Oyun Keşfet →' : 'Explore Games →'}
-            </Link>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-            {wishlist.map(game => (
-              <WishlistItem key={game.id} game={game} onRemove={() => removeFromWishlist(game.id)} lang={lang} />
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Günlük öneri */}
-      <div style={{ marginTop: 32 }}>
-        <h2 className="section-title" style={{ fontSize: 16 }}>
-          {lang === 'tr' ? 'Günlük Öneri' : 'Daily Recommendation'}
-        </h2>
-        <div className="premium-dashboard-card" style={{
-          padding: '20px 24px',
-          background: 'linear-gradient(135deg, rgba(201, 133, 10, 0.08), rgba(255, 255, 255, 0.01))',
-          border: '1px solid rgba(201, 133, 10, 0.25)',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
-            <div>
-              <p style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>
-                ✦ {lang === 'tr' ? 'Bugün İçin Öneri' : 'Recommendation for Today'}
+        {/* ── Wishlist ── */}
+        <div style={{ marginBottom: 32 }}>
+          <p style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-3)', marginBottom: 14 }}>
+            {lang === 'tr' ? 'İstek Listesi' : 'Wishlist'}
+            <span style={{ fontSize: 12, fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: 'var(--text-3)', marginLeft: 8 }}>— {wishlist.length} {lang === 'tr' ? 'oyun' : 'games'}</span>
+          </p>
+          {wishlist.length === 0 ? (
+            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: '32px', textAlign: 'center' }}>
+              <p style={{ color: 'var(--text-3)', fontSize: 14, marginBottom: 16 }}>
+                {lang === 'tr' ? 'Henüz istek listenizde oyun yok.' : 'No games in your wishlist yet.'}
               </p>
-              <p style={{ fontSize: 16, fontWeight: 700, marginBottom: 6, color: 'var(--text)' }}>{recommended.name}</p>
-              <p style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.6 }}>
-                {lang === 'tr' ? recommended.descTr : recommended.descEn}
-              </p>
+              <Link href="/" style={{ display: 'inline-block', padding: '9px 20px', borderRadius: 9, background: 'var(--accent-bg)', border: '1px solid var(--accent-border)', color: 'var(--accent)', fontSize: 13.5, fontWeight: 700, textDecoration: 'none' }}>
+                {lang === 'tr' ? 'Oyun Keşfet →' : 'Explore Games →'}
+              </Link>
             </div>
-            <Link href={`/game/rawg/${recommended.slug}`} style={{
-              padding: '9px 18px', borderRadius: 10,
-              background: 'var(--accent)', color: '#fff',
-              fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap',
-              boxShadow: '0 4px 12px var(--accent-glow)',
-              transition: 'all 0.2s'
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.transform = 'translateY(-1px)';
-              e.currentTarget.style.boxShadow = '0 6px 16px var(--accent-glow)';
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.transform = 'none';
-              e.currentTarget.style.boxShadow = '0 4px 12px var(--accent-glow)';
-            }}
-            >
-              {lang === 'tr' ? 'İncele →' : 'View →'}
-            </Link>
+          ) : (
+            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
+              {wishlist.map((game, i) => (
+                <div key={game.id} style={{ borderBottom: i < wishlist.length - 1 ? '1px solid var(--border)' : 'none', padding: '0 20px' }}>
+                  <WishlistItem game={game} onRemove={() => removeFromWishlist(game.id)} lang={lang} />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ── Settings ── */}
+        <div>
+          <p style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-3)', marginBottom: 14 }}>
+            {lang === 'tr' ? 'Ayarlar' : 'Settings'}
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <ChangePasswordCard changePassword={changePassword} lang={lang} />
+            <DeleteAccountCard deleteAccount={deleteAccount} lang={lang} />
           </div>
         </div>
+
       </div>
+
+      <style>{`
+        @media (max-width: 768px) {
+          .profile-two-column { grid-template-columns: 1fr !important; }
+        }
+        @media (max-width: 600px) {
+          .profile-settings-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
     </div>
   );
 }

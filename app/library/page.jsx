@@ -185,154 +185,136 @@ export default function LibraryPage() {
   }
 
   return (
-    <div className="container" style={{ padding: '40px 20px', maxWidth: 1200 }}>
-      <div className="premium-dashboard-card" style={{ padding: '24px', marginBottom: 32 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-          <div>
-            <h1 style={{ fontSize: 32, fontWeight: 800, margin: 0, letterSpacing: '-1px' }}>
-              <span className="premium-gradient-text">{t('library.title')}</span>
-            </h1>
-            <p style={{ margin: '8px 0 0 0', color: 'var(--text-3)', fontSize: 14 }}>{t('library.subtitle')}</p>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-body)', paddingBottom: 80 }}>
+
+      {/* ── Top tab bar ── */}
+      <div style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border)' }}>
+        <div className="container" style={{ maxWidth: 1200 }}>
+
+          {/* Page title row */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 28, paddingBottom: 20 }}>
+            <div>
+              <h1 style={{ fontSize: 28, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.8px', marginBottom: 3 }}>
+                {t('library.title')}
+              </h1>
+              <p style={{ fontSize: 13, color: 'var(--text-3)' }}>{t('library.subtitle')}</p>
+            </div>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+              <a href="/api/auth/steam" style={{ textDecoration: 'none' }}>
+                <button style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 9, border: '1px dashed rgba(26,159,255,0.4)', background: 'transparent', color: '#1a9fff', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}>
+                  <SteamLogo size={13} color="#1a9fff" />
+                  + {lang === 'tr' ? 'Steam Ekle' : 'Add Steam'}
+                </button>
+              </a>
+              <Link href="/profile" style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-3)', textDecoration: 'none', padding: '8px 0' }}>
+                {lang === 'tr' ? '← Profil' : '← Profile'}
+              </Link>
+            </div>
           </div>
-          <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 700, color: 'var(--text-3)' }}>
-            {lang === 'tr' ? '← Profile Dön' : '← Back to Profile'}
-          </Link>
-        </div>
 
-        <div className="scroll-chips-wrapper">
-          <div className="category-scroll-chips" style={{ marginBottom: 28, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-          {steamAccounts.map(account => {
-            const isActive = activeTab === `steam_${account.steamId}`;
-            return (
-              <div key={`steam_${account.steamId}`} style={{ 
-                display: 'flex', 
-                alignItems: 'stretch',
-                borderRadius: 12,
-                overflow: 'hidden',
-                border: `1.5px solid ${isActive ? 'rgba(26, 159, 255, 0.4)' : 'var(--border)'}`,
-                boxShadow: isActive ? '0 4px 16px rgba(26, 159, 255, 0.15)' : 'none',
-                background: isActive ? 'linear-gradient(135deg, rgba(26, 159, 255, 0.1), rgba(255,255,255,0.01))' : 'var(--bg-card)',
-                transition: 'all 0.25s'
-              }}>
-                <button 
-                  onClick={() => setActiveTab(`steam_${account.steamId}`)} 
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 8,
-                    padding: '8px 14px', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 13.5,
-                    background: 'transparent',
-                    color: isActive ? 'var(--text)' : 'var(--text-3)',
-                    transition: 'color 0.2s'
-                  }}
-                  onMouseEnter={e => { if(!isActive) e.currentTarget.style.color = 'var(--text-2)'; }}
-                  onMouseLeave={e => { if(!isActive) e.currentTarget.style.color = 'var(--text-3)'; }}
-                >
-                  <SteamLogo size={15} color={isActive ? '#1a9fff' : 'var(--text-3)'} />
-                  Steam <span style={{ fontSize: 11, color: isActive ? '#1a9fff' : 'var(--text-3)', fontWeight: 500 }}>{account.name?.slice(0, 12)}</span>
-                </button>
-                <button 
-                  onClick={() => handleRemoveSteamAccount(account.steamId)} 
-                  disabled={removingId === account.steamId} 
-                  style={{
-                    background: 'transparent',
-                    color: isActive ? '#1a9fff' : 'var(--text-3)',
-                    border: 'none', padding: '0 10px',
-                    cursor: 'pointer', fontSize: 16, 
-                    borderLeft: `1px solid ${isActive ? 'rgba(26, 159, 255, 0.2)' : 'var(--border)'}`,
-                    transition: 'all 0.2s',
-                  }} 
-                  onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = 'rgba(239, 68, 68, 0.06)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.color = isActive ? '#1a9fff' : 'var(--text-3)'; e.currentTarget.style.background = 'transparent'; }}
-                  title={lang === 'tr' ? "Hesabı Kaldır" : "Remove Account"}
-                >
-                  {removingId === account.steamId ? '...' : '×'}
-                </button>
-              </div>
-            );
-          })}
-          
-          <a href="/api/auth/steam" style={{ textDecoration: 'none' }}>
-            <button 
-              style={{
-                display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 12, 
-                border: '1.5px dashed rgba(26, 159, 255, 0.4)', cursor: 'pointer', fontWeight: 700, fontSize: 13, 
-                background: 'transparent', color: '#1a9fff',
-                transition: 'all 0.25s'
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(26, 159, 255, 0.06)'; e.currentTarget.style.borderColor = '#1a9fff'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(26, 159, 255, 0.4)'; }}
-            >
-              + {lang === 'tr' ? 'Hesap Ekle' : 'Add Account'}
-            </button>
-          </a>
+          {/* Platform tab strip */}
+          <div style={{ display: 'flex', gap: 0, overflowX: 'auto' }}>
+            {steamAccounts.map(account => {
+              const isActive = activeTab === `steam_${account.steamId}`;
+              return (
+                <div key={`steam_${account.steamId}`} style={{ display: 'flex', alignItems: 'stretch', flexShrink: 0 }}>
+                  <button
+                    onClick={() => setActiveTab(`steam_${account.steamId}`)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 7, padding: '10px 18px',
+                      border: 'none', borderBottom: `2px solid ${isActive ? '#1a9fff' : 'transparent'}`,
+                      background: 'transparent', cursor: 'pointer',
+                      color: isActive ? '#1a9fff' : 'var(--text-3)',
+                      fontSize: 13.5, fontWeight: isActive ? 700 : 500,
+                      transition: 'all 0.18s',
+                    }}
+                    onMouseEnter={e => { if (!isActive) e.currentTarget.style.color = 'var(--text-2)'; }}
+                    onMouseLeave={e => { if (!isActive) e.currentTarget.style.color = 'var(--text-3)'; }}
+                  >
+                    <SteamLogo size={14} color={isActive ? '#1a9fff' : 'currentColor'} />
+                    {account.name?.slice(0, 14)}
+                  </button>
+                  <button
+                    onClick={() => handleRemoveSteamAccount(account.steamId)}
+                    disabled={removingId === account.steamId}
+                    title={lang === 'tr' ? 'Hesabı Kaldır' : 'Remove Account'}
+                    style={{ border: 'none', borderBottom: `2px solid ${isActive ? '#1a9fff' : 'transparent'}`, background: 'transparent', color: 'var(--text-3)', padding: '10px 8px 10px 2px', cursor: 'pointer', fontSize: 16, transition: 'all 0.18s' }}
+                    onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; }}
+                    onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-3)'; }}
+                  >
+                    {removingId === account.steamId ? '…' : '×'}
+                  </button>
+                </div>
+              );
+            })}
 
-          {steamAccounts.length > 1 && (
-            <button 
-              onClick={() => setActiveTab('merged')} 
-              style={{
-                display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px', borderRadius: 12, 
-                border: `1.5px solid ${activeTab === 'merged' ? 'rgba(139, 92, 246, 0.4)' : 'var(--border)'}`, 
-                cursor: 'pointer', fontWeight: 700, fontSize: 13.5,
-                background: activeTab === 'merged' ? 'linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(255,255,255,0.01))' : 'var(--bg-card)', 
-                color: activeTab === 'merged' ? '#a78bfa' : 'var(--text-3)', 
-                marginLeft: 'auto',
-                boxShadow: activeTab === 'merged' ? '0 4px 16px rgba(139, 92, 246, 0.15)' : 'none',
-                transition: 'all 0.25s'
-              }}
-              onMouseEnter={e => { if(activeTab !== 'merged') e.currentTarget.style.color = 'var(--text-2)'; }}
-              onMouseLeave={e => { if(activeTab !== 'merged') e.currentTarget.style.color = 'var(--text-3)'; }}
-            >
-              🌟 {lang === 'tr' ? 'Birleşik Kütüphane' : 'Merged Library'}
-            </button>
-          )}
+            {steamAccounts.length > 1 && (
+              <button
+                onClick={() => setActiveTab('merged')}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 7, padding: '10px 18px', flexShrink: 0,
+                  border: 'none', borderBottom: `2px solid ${activeTab === 'merged' ? '#a78bfa' : 'transparent'}`,
+                  background: 'transparent', cursor: 'pointer',
+                  color: activeTab === 'merged' ? '#a78bfa' : 'var(--text-3)',
+                  fontSize: 13.5, fontWeight: activeTab === 'merged' ? 700 : 500,
+                  transition: 'all 0.18s',
+                }}
+                onMouseEnter={e => { if (activeTab !== 'merged') e.currentTarget.style.color = 'var(--text-2)'; }}
+                onMouseLeave={e => { if (activeTab !== 'merged') e.currentTarget.style.color = 'var(--text-3)'; }}
+              >
+                ✦ {lang === 'tr' ? 'Birleşik' : 'Merged'}
+              </button>
+            )}
 
-          {hasXbox ? (
-            <button 
-              onClick={() => setActiveTab('xbox')} 
-              style={{
-                display: 'flex', alignItems: 'center', gap: 8, marginLeft: steamAccounts.length <= 1 ? 'auto' : 0,
-                padding: '8px 16px', borderRadius: 12, 
-                border: `1.5px solid ${activeTab === 'xbox' ? 'rgba(16, 124, 16, 0.4)' : 'var(--border)'}`, 
-                cursor: 'pointer', fontWeight: 700, fontSize: 13.5,
-                background: activeTab === 'xbox' ? 'linear-gradient(135deg, rgba(16, 124, 16, 0.1), rgba(255,255,255,0.01))' : 'var(--bg-card)', 
-                color: activeTab === 'xbox' ? 'var(--green)' : 'var(--text-3)',
-                boxShadow: activeTab === 'xbox' ? '0 4px 16px rgba(16, 124, 16, 0.15)' : 'none',
-                transition: 'all 0.25s'
-              }}
-              onMouseEnter={e => { if(activeTab !== 'xbox') e.currentTarget.style.color = 'var(--text-2)'; }}
-              onMouseLeave={e => { if(activeTab !== 'xbox') e.currentTarget.style.color = 'var(--text-3)'; }}
-            >
-              <XboxLogo size={14} color={activeTab === 'xbox' ? '#107C10' : 'var(--text-3)'} />
-              Xbox <span style={{ fontSize: 11, opacity: 0.75, fontWeight: 500 }}>{xboxUser.gamertag?.slice(0, 12)}</span>
-            </button>
-          ) : (
-            <button 
-              onClick={() => setShowXboxModal(true)} 
-              style={{
-                display: 'flex', alignItems: 'center', gap: 8, marginLeft: steamAccounts.length <= 1 ? 'auto' : 0,
-                padding: '8px 14px', borderRadius: 12, 
-                border: '1.5px dashed rgba(16, 124, 16, 0.4)', cursor: 'pointer', fontWeight: 700, fontSize: 13, 
-                background: 'transparent', color: '#107C10',
-                transition: 'all 0.25s'
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(16, 124, 16, 0.06)'; e.currentTarget.style.borderColor = '#107C10'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(16, 124, 16, 0.4)'; }}
-            >
-              + {lang === 'tr' ? 'Xbox Bağla' : 'Connect Xbox'}
-            </button>
-          )}
+            {hasXbox ? (
+              <button
+                onClick={() => setActiveTab('xbox')}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 7, padding: '10px 18px', flexShrink: 0,
+                  border: 'none', borderBottom: `2px solid ${activeTab === 'xbox' ? '#4ade80' : 'transparent'}`,
+                  background: 'transparent', cursor: 'pointer',
+                  color: activeTab === 'xbox' ? '#4ade80' : 'var(--text-3)',
+                  fontSize: 13.5, fontWeight: activeTab === 'xbox' ? 700 : 500,
+                  transition: 'all 0.18s',
+                }}
+                onMouseEnter={e => { if (activeTab !== 'xbox') e.currentTarget.style.color = 'var(--text-2)'; }}
+                onMouseLeave={e => { if (activeTab !== 'xbox') e.currentTarget.style.color = 'var(--text-3)'; }}
+              >
+                <XboxLogo size={14} color={activeTab === 'xbox' ? '#4ade80' : 'currentColor'} />
+                {xboxUser.gamertag?.slice(0, 14)}
+              </button>
+            ) : (
+              <button
+                onClick={() => setShowXboxModal(true)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 7, padding: '10px 18px', flexShrink: 0,
+                  border: 'none', borderBottom: '2px solid transparent',
+                  background: 'transparent', cursor: 'pointer', color: 'var(--text-3)',
+                  fontSize: 13.5, fontWeight: 500, transition: 'all 0.18s',
+                }}
+                onMouseEnter={e => e.currentTarget.style.color = '#4ade80'}
+                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-3)'}
+              >
+                <XboxLogo size={14} color="currentColor" />
+                + {lang === 'tr' ? 'Xbox Bağla' : 'Connect Xbox'}
+              </button>
+            )}
+          </div>
+
         </div>
       </div>
-      </div>
 
-      {steamAccounts.map(account => 
-        activeTab === `steam_${account.steamId}` && (
-          <SteamLibrary key={account.steamId} steamAccount={account} />
-        )
-      )}
-      
-      {activeTab === 'merged' && steamAccounts.length > 1 && <MergedLibrary />}
-      {activeTab === 'xbox' && hasXbox && <XboxLibrary xboxUser={xboxUser} onLogout={xboxLogout} />}
-      {showXboxModal && <XboxConnectModal onClose={() => setShowXboxModal(false)} xboxError={xboxError} setXboxError={setXboxError} />}
+      {/* ── Content ── */}
+      <div className="container" style={{ maxWidth: 1200, paddingTop: 32 }}>
+        {steamAccounts.map(account =>
+          activeTab === `steam_${account.steamId}` && (
+            <SteamLibrary key={account.steamId} steamAccount={account} />
+          )
+        )}
+        {activeTab === 'merged' && steamAccounts.length > 1 && <MergedLibrary />}
+        {activeTab === 'xbox' && hasXbox && <XboxLibrary xboxUser={xboxUser} onLogout={xboxLogout} />}
+        {showXboxModal && <XboxConnectModal onClose={() => setShowXboxModal(false)} xboxError={xboxError} setXboxError={setXboxError} />}
+      </div>
     </div>
   );
 }
@@ -613,71 +595,68 @@ function XboxLibrary({ xboxUser, onLogout }) {
 function SteamProfileHeader({ steamUser, library, totalValue, pricesLoading }) {
   const { t, formatPrice } = useLanguage();
   return (
-    <div className="premium-dashboard-card" style={{ 
-      background: 'linear-gradient(135deg, rgba(27, 40, 56, 0.7), rgba(42, 71, 94, 0.3))', 
-      border: '1px solid rgba(26, 159, 255, 0.25)', 
-      padding: '24px 28px', 
-      marginBottom: 20,
-      boxShadow: '0 8px 32px rgba(27, 40, 56, 0.3)'
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
-        {steamUser.avatar ? (
-          <div style={{
-            position: 'relative', width: 68, height: 68, borderRadius: 14, overflow: 'hidden',
-            border: '2px solid rgba(26, 159, 255, 0.5)', boxShadow: '0 0 16px rgba(26, 159, 255, 0.3)', flexShrink: 0
-          }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={steamUser.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          </div>
-        ) : (
-          <div style={{ width: 68, height: 68, borderRadius: 14, background: '#1a9fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, fontWeight: 800, color: '#fff', flexShrink: 0 }}>
-            {steamUser.name?.slice(0, 1).toUpperCase()}
-          </div>
-        )}
-        <div style={{ flex: 1, minWidth: 220 }}>
-          <p style={{ fontSize: 10.5, color: '#1a9fff', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
-            {t('library.steam')}
-          </p>
-          <h2 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.5px', marginBottom: 4 }}>{steamUser.name}</h2>
-          <a href={steamUser.profileUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12.5, color: '#5eb7ff', textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-            {t('library.viewProfile')} <span>↗</span>
-          </a>
-        </div>
-        {library && (
-          <div className="library-profile-stats" style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
-            {[
-              { label: t('library.stats.totalGames'), value: library.total },
-              { label: t('library.stats.played'),     value: library.played },
-              { label: t('library.stats.totalHours'), value: `${library.totalHours.toLocaleString()}${t('library.hours').toLowerCase().slice(0, 1)}` },
-            ].map(s => (
-              <div key={s.label} style={{ textAlign: 'center', minWidth: 70 }}>
-                <p className="glowing-stat-number" style={{ fontSize: 24, color: 'var(--text)' }}>{s.value}</p>
-                <p style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600, marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{s.label}</p>
-              </div>
-            ))}
-            <div style={{ textAlign: 'center', minWidth: 70 }}>
-              {pricesLoading && !totalValue ? (
-                <>
-                  <p className="glowing-stat-number" style={{ fontSize: 24, color: '#4ade80', fontStyle: 'italic' }}>…</p>
-                  <p style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600, marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t('library.value')}</p>
-                </>
-              ) : totalValue ? (
-                <>
-                  <p className="glowing-stat-number" style={{ fontSize: 24, color: '#4ade80', background: 'linear-gradient(135deg, #4ade80 30%, #22c55e 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                    {formatPrice(totalValue.sum)}
-                  </p>
-                  <p style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600, marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t('library.value')}</p>
-                </>
-              ) : null}
+    <div style={{ marginBottom: 24, borderRadius: 18, overflow: 'hidden', border: '1px solid rgba(26,159,255,0.18)', boxShadow: '0 4px 24px rgba(27,40,56,0.25)' }}>
+      {/* Accent bar */}
+      <div style={{ height: 3, background: 'linear-gradient(90deg, #1a9fff 0%, #5eb7ff 50%, transparent 100%)' }} />
+      <div style={{ background: 'linear-gradient(135deg, rgba(27,40,56,0.85) 0%, rgba(15,20,30,0.6) 100%)', padding: '22px 26px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap' }}>
+          {/* Avatar */}
+          {steamUser.avatar ? (
+            <div style={{ width: 60, height: 60, borderRadius: 12, overflow: 'hidden', border: '2px solid rgba(26,159,255,0.5)', boxShadow: '0 0 14px rgba(26,159,255,0.25)', flexShrink: 0 }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={steamUser.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
+          ) : (
+            <div style={{ width: 60, height: 60, borderRadius: 12, background: '#1a9fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 800, color: '#fff', flexShrink: 0 }}>
+              {steamUser.name?.slice(0, 1).toUpperCase()}
+            </div>
+          )}
+          {/* Name */}
+          <div style={{ flex: 1, minWidth: 180 }}>
+            <p style={{ fontSize: 10, color: '#1a9fff', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 3 }}>
+              {t('library.steam')}
+            </p>
+            <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff', letterSpacing: '-0.4px', marginBottom: 5 }}>{steamUser.name}</h2>
+            <a href={steamUser.profileUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: 'rgba(94,183,255,0.85)', textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+              {t('library.viewProfile')} ↗
+            </a>
           </div>
+          {/* Stats */}
+          {library && (
+            <div style={{ display: 'flex', gap: 0, flexWrap: 'wrap' }}>
+              {[
+                { label: t('library.stats.totalGames'), value: library.total, color: '#fff' },
+                { label: t('library.stats.played'), value: library.played, color: '#fff' },
+                { label: t('library.stats.totalHours'), value: `${library.totalHours.toLocaleString()}${t('library.hours').toLowerCase().slice(0, 1)}`, color: 'var(--accent)' },
+              ].map((s, i) => (
+                <div key={s.label} style={{ textAlign: 'center', minWidth: 76, padding: '0 16px', borderLeft: i > 0 ? '1px solid rgba(255,255,255,0.1)' : 'none' }}>
+                  <p style={{ fontSize: 26, fontWeight: 800, color: s.color, letterSpacing: '-1px', lineHeight: 1, marginBottom: 5 }}>{s.value}</p>
+                  <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{s.label}</p>
+                </div>
+              ))}
+              {/* Library value */}
+              <div style={{ textAlign: 'center', minWidth: 76, padding: '0 16px', borderLeft: '1px solid rgba(255,255,255,0.1)' }}>
+                {pricesLoading && !totalValue ? (
+                  <>
+                    <p style={{ fontSize: 26, fontWeight: 800, color: '#4ade80', letterSpacing: '-1px', lineHeight: 1, marginBottom: 5, fontStyle: 'italic' }}>…</p>
+                    <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('library.value')}</p>
+                  </>
+                ) : totalValue ? (
+                  <>
+                    <p style={{ fontSize: 22, fontWeight: 800, color: '#4ade80', letterSpacing: '-0.5px', lineHeight: 1, marginBottom: 5 }}>{formatPrice(totalValue.sum)}</p>
+                    <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('library.value')}</p>
+                  </>
+                ) : null}
+              </div>
+            </div>
+          )}
+        </div>
+        {totalValue && (
+          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 14, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+            ⚠️ {t('library.disclaimer').replace('{count}', totalValue.counted)}
+          </p>
         )}
       </div>
-      {totalValue && (
-        <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 12, borderTop: '1px solid var(--border)', paddingTop: 10 }}>
-          ⚠️ {t('library.disclaimer').replace('{count}', totalValue.counted)}
-        </p>
-      )}
     </div>
   );
 }
@@ -814,8 +793,8 @@ function GameRow({ game, rank, price, pricesLoading }) {
 function XboxProfileHeader({ xboxUser, library, onLogout }) {
   const { t, lang } = useLanguage();
   const hasGamePass = xboxUser.gamepassType === 'ultimate' || xboxUser.gamepassType === 'pc' || (library && library.gamePassCount > 0);
-  const gpText = xboxUser.gamepassType === 'ultimate' 
-    ? t('library.xbox.ultimate') 
+  const gpText = xboxUser.gamepassType === 'ultimate'
+    ? t('library.xbox.ultimate')
     : xboxUser.gamepassType === 'pc'
       ? t('library.xbox.pc')
       : (library && library.gamePassCount > 0)
@@ -823,89 +802,74 @@ function XboxProfileHeader({ xboxUser, library, onLogout }) {
         : t('library.xbox.member');
 
   return (
-    <div className="premium-dashboard-card" style={{ 
-      background: 'linear-gradient(135deg, rgba(14, 77, 14, 0.7), rgba(16, 124, 16, 0.3))', 
-      border: '1px solid rgba(16, 124, 16, 0.3)', 
-      padding: '24px 28px', 
-      marginBottom: 20,
-      boxShadow: '0 8px 32px rgba(16, 124, 16, 0.2)'
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
-        {xboxUser.avatar ? (
-          <div style={{
-            position: 'relative', width: 68, height: 68, borderRadius: 14, overflow: 'hidden',
-            border: '2px solid rgba(16, 124, 16, 0.5)', boxShadow: '0 0 16px rgba(16, 124, 16, 0.3)', flexShrink: 0
-          }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={xboxUser.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+    <div style={{ marginBottom: 24, borderRadius: 18, overflow: 'hidden', border: '1px solid rgba(16,124,16,0.22)', boxShadow: '0 4px 24px rgba(16,124,16,0.12)' }}>
+      {/* Accent bar */}
+      <div style={{ height: 3, background: 'linear-gradient(90deg, #107C10 0%, #4ade80 50%, transparent 100%)' }} />
+      <div style={{ background: 'linear-gradient(135deg, rgba(14,50,14,0.85) 0%, rgba(10,25,10,0.6) 100%)', padding: '22px 26px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap' }}>
+          {/* Avatar */}
+          {xboxUser.avatar ? (
+            <div style={{ width: 60, height: 60, borderRadius: 12, overflow: 'hidden', border: '2px solid rgba(16,124,16,0.5)', boxShadow: '0 0 14px rgba(16,124,16,0.25)', flexShrink: 0 }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={xboxUser.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </div>
+          ) : (
+            <div style={{ width: 60, height: 60, borderRadius: 12, background: 'rgba(16,124,16,0.3)', border: '2px solid rgba(16,124,16,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <XboxLogo size={32} color="#4ade80" />
+            </div>
+          )}
+          {/* Name */}
+          <div style={{ flex: 1, minWidth: 180 }}>
+            <p style={{ fontSize: 10, color: '#4ade80', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 3 }}>
+              {t('library.xbox')}
+            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 5 }}>
+              <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff', letterSpacing: '-0.4px' }}>{xboxUser.gamertag}</h2>
+              {hasGamePass ? (
+                <span style={{ fontSize: 10, fontWeight: 800, padding: '3px 8px', borderRadius: 6, background: '#107C10', color: '#fff', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                  ● {gpText}
+                </span>
+              ) : (
+                <span style={{ fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 6, background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.7)', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                  {gpText}
+                </span>
+              )}
+            </div>
+            <a href={`https://www.xbox.com/${lang === 'tr' ? 'tr-TR' : 'en-US'}/play/user/${xboxUser.gamertag}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: 'rgba(74,222,128,0.75)', textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+              {t('library.viewProfile')} ↗
+            </a>
           </div>
-        ) : (
-          <div style={{ width: 68, height: 68, borderRadius: 14, background: 'var(--bg-input)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <XboxLogo size={36} color="#fff" />
-          </div>
-        )}
-        <div style={{ flex: 1, minWidth: 220 }}>
-          <p style={{ fontSize: 10.5, color: '#107C10', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
-            {t('library.xbox')}
-          </p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <h2 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.5px' }}>{xboxUser.gamertag}</h2>
-            {hasGamePass ? (
-              <span style={{
-                fontSize: 10, fontWeight: 800, padding: '3px 8px', borderRadius: 6,
-                background: '#fff', color: '#107C10',
-                boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
-                display: 'inline-flex', alignItems: 'center', gap: 4
-              }}>
-                🟢 {gpText}
-              </span>
-            ) : (
-              <span style={{
-                fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 6,
-                background: 'rgba(255,255,255,0.15)', color: '#fff',
-                display: 'inline-flex', alignItems: 'center', gap: 4
-              }}>
-                ⚪ {gpText}
-              </span>
-            )}
-          </div>
-          <a href={`https://www.xbox.com/${lang === 'tr' ? 'tr-TR' : 'en-US'}/play/user/${xboxUser.gamertag}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12.5, color: 'var(--text-2)', textDecoration: 'none', fontWeight: 600, display: 'inline-block', marginTop: 6 }}>
-            {t('library.viewProfile')} ↗
-          </a>
+          {/* Stats */}
+          {library && (
+            <div style={{ display: 'flex', gap: 0, flexWrap: 'wrap' }}>
+              {[
+                { label: t('library.stats.played') + ' ' + t('library.games'), value: library.total, color: '#fff' },
+                { label: 'Game Pass', value: library.gamePassCount, color: '#4ade80' },
+                { label: 'Gamerscore', value: library.totalGamerscore?.toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US'), color: '#fff' },
+              ].map((s, i) => (
+                <div key={s.label} style={{ textAlign: 'center', minWidth: 76, padding: '0 16px', borderLeft: i > 0 ? '1px solid rgba(255,255,255,0.08)' : 'none' }}>
+                  <p style={{ fontSize: 26, fontWeight: 800, color: s.color, letterSpacing: '-1px', lineHeight: 1, marginBottom: 5 }}>{s.value}</p>
+                  <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{s.label}</p>
+                </div>
+              ))}
+            </div>
+          )}
+          {/* Logout */}
+          <button
+            onClick={onLogout}
+            style={{ padding: '8px 14px', borderRadius: 9, fontSize: 12, fontWeight: 700, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.75)', cursor: 'pointer', flexShrink: 0, transition: 'all 0.2s' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.22)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }}
+          >
+            {t('nav.logout')}
+          </button>
         </div>
         {library && (
-          <div className="library-profile-stats" style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
-            {[
-              { label: t('library.stats.played') + ' ' + t('library.games'),   value: library.total },
-              { label: 'Game Pass',      value: library.gamePassCount },
-              { label: 'Gamerscore',     value: library.totalGamerscore?.toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US') },
-            ].map(s => (
-              <div key={s.label} style={{ textAlign: 'center', minWidth: 70 }}>
-                <p className="glowing-stat-number" style={{ fontSize: 24, color: 'var(--text)' }}>{s.value}</p>
-                <p style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600, marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{s.label}</p>
-              </div>
-            ))}
-          </div>
+          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.28)', marginTop: 14, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+            {t('library.xbox.disclaimer')}
+          </p>
         )}
-        <button 
-          onClick={onLogout} 
-          style={{ 
-            padding: '8px 16px', borderRadius: 10, fontSize: 12.5, fontWeight: 700, 
-            background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', 
-            color: 'rgba(255,255,255,0.85)', cursor: 'pointer', flexShrink: 0,
-            transition: 'all 0.2s'
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; }}
-        >
-          {t('nav.logout')}
-        </button>
       </div>
-      {library && (
-        <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 12, borderTop: '1px solid var(--border)', paddingTop: 10 }}>
-          {t('library.xbox.disclaimer')}
-        </p>
-      )}
     </div>
   );
 }
