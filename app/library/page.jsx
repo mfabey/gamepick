@@ -1015,7 +1015,7 @@ function PriceValue({ tryAmount, size = 26, weight = 800, color = '#4ade80' }) {
     const fr = Math.round((tryAmount - intPart) * 100);
     intStr = intPart.toLocaleString('tr-TR');
     fracStr = ',' + String(fr).padStart(2, '0');
-    suffix = ' T\u200CL';
+    suffix = '\u20BA';
   } else {
     const usd = tryAmount / (rate || 1);
     const intPart = Math.floor(usd);

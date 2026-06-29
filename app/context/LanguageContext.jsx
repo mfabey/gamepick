@@ -379,7 +379,7 @@ export function LanguageProvider({ children }) {
     if (lang === 'tr') {
       const val = Number(priceTry);
       const formattedVal = val.toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
-      return `${formattedVal} T\u200CL`;
+      return `${formattedVal}\u20BA`;
     } else {
       const usdVal = priceTry / rate;
       const formattedVal = usdVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
