@@ -650,32 +650,37 @@ export async function GET(request) {
       }
     }
 
-    // İndirim köşesinde (sale) ücretsiz oyunları kaldır, ayrıca gerçek indirim kontrolü yap
-    if (section === 'sale' && results.length > 0 && results[0]?.source !== 'steam') {
-      results = results.filter(g => !g.isFree);
-      
-      const saleCheckedResults = await Promise.all(
+    // Dönen tüm sonuçların fiyat bilgilerini ve indirim durumlarını arka planda sorgulayıp eşitleyelim
+    if (results.length > 0) {
+      results = await Promise.all(
         results.map(async (g) => {
           try {
             const appid = await getSteamAppIdBySlug(g.rawgSlug);
-            // ITAD veya Steam üzerinden en ucuz teklifi bul (kartta gösterilen isme göre)
             let priceInfo = await fetchLowestPriceFromITAD(appid, g.name);
             if (!priceInfo && appid) {
               priceInfo = await fetchPriceByAppId(appid);
             }
-            
-            // Eğer en ucuz teklif indirimdeyse (discount > 0) ve ücretsiz değilse tut
-            if (priceInfo && priceInfo.discount > 0 && priceInfo.price > 0) {
-              return g;
+            if (priceInfo) {
+              g.price = priceInfo.price;
+              g.original = priceInfo.original;
+              g.discount = priceInfo.discount;
+              g.isFree = priceInfo.isFree;
+              g.onSale = priceInfo.discount > 0;
+              g.noData = false;
             }
-            return null;
-          } catch {
-            return null;
+          } catch (e) {
+            console.warn('Enrichment failed for game:', g.name, e.message);
           }
+          return g;
         })
       );
-      
-      results = saleCheckedResults.filter(Boolean);
+    }
+
+    // Kategorilere göre tam doğruluk filtresi uygulayalım
+    if (section === 'sale') {
+      results = results.filter(g => g.onSale && !g.isFree);
+    } else if (section === 'free') {
+      results = results.filter(g => g.isFree);
     }
 
     // Eğer rotate parametresi aktifse, listeyi zaman tabanlı (her 3 saatte bir) kaydırarak farklı oyunlar gösterelim

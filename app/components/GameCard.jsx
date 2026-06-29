@@ -143,6 +143,17 @@ function GameCard({ game, compact = false, cardWidth }) {
 
   // Kart görünüme girince Steam fiyatı lazy-load et
   useEffect(() => {
+    // Eğer sunucu API'sinden fiyat bilgisi zaten gelmişse (örn. indirimde/ücretsiz sayfalarında) lazy-load yapma
+    if (game.price !== null && game.price !== undefined) {
+      setLivePrice({
+        price: game.price,
+        original: game.original !== undefined ? game.original : game.price,
+        discount: game.discount || 0,
+        isFree: !!game.isFree,
+      });
+      setPriceDone(true);
+      return;
+    }
     if (priceDone || priceLoading) return;
     const el = cardRef.current;
     if (!el) return;
@@ -165,9 +176,11 @@ function GameCard({ game, compact = false, cardWidth }) {
 
     obs.observe(el);
     return () => obs.disconnect();
-  }, [game.name, game.rawgSlug, game.hasSteam, priceLoading, priceDone]);
+  }, [game.name, game.rawgSlug, game.hasSteam, priceLoading, priceDone, game.price, game.original, game.discount, game.isFree]);
 
-  const isFree   = livePrice?.isFree || game.isFree || game.gamePass;
+  const isFree = (livePrice && livePrice.price !== null)
+    ? livePrice.isFree
+    : !!game.isFree;
   const isOnSale = (livePrice?.discount > 0) && !isFree;
   const href     = game.rawgSlug ? `/game/rawg/${game.rawgSlug}` : `/game/rawg/${game.id}`;
   const mcColor  = game.metacritic >= 80 ? '#4ade80' : game.metacritic >= 60 ? '#fbbf24' : '#f87171';
