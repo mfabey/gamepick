@@ -15,9 +15,9 @@ async function getUsdToTry() {
   }
 }
 
-// Sayıyı TL formatına çevir
+// Sayıyı ₺ formatına çevir
 function fmtTRY(n) {
-  return n.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' TL';
+  return n.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '₺';
 }
 
 export async function GET(request) {
