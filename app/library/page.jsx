@@ -1009,13 +1009,13 @@ function PriceValue({ tryAmount, size = 26, weight = 800, color = '#4ade80' }) {
   const { lang, rate } = useLanguage();
   if (tryAmount == null) return <span style={{ fontSize: size, fontWeight: weight, color }}>—</span>;
 
-  let intStr, fracStr, prefix = '', suffix = '';
+  let intStr, fracStr, prefix = '', suffix = null;
   if (lang === 'tr') {
     const intPart = Math.floor(tryAmount);
     const fr = Math.round((tryAmount - intPart) * 100);
     intStr = intPart.toLocaleString('tr-TR');
     fracStr = ',' + String(fr).padStart(2, '0');
-    suffix = '\u20BA';
+    suffix = <span style={{ fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', marginLeft: '2px' }}>₺</span>;
   } else {
     const usd = tryAmount / (rate || 1);
     const intPart = Math.floor(usd);

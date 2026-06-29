@@ -379,7 +379,12 @@ export function LanguageProvider({ children }) {
     if (lang === 'tr') {
       const val = Number(priceTry);
       const formattedVal = val.toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
-      return `${formattedVal}\u20BA`;
+      return (
+        <span style={{ whiteSpace: 'nowrap' }}>
+          {formattedVal}
+          <span style={{ fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', marginLeft: '2px' }}>₺</span>
+        </span>
+      );
     } else {
       const usdVal = priceTry / rate;
       const formattedVal = usdVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
