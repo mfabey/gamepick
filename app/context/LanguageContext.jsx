@@ -378,7 +378,10 @@ export function LanguageProvider({ children }) {
 
     if (lang === 'tr') {
       const val = Number(priceTry);
-      return `${val % 1 === 0 ? val : val.toFixed(2)} TL`;
+      const formatted = val % 1 === 0
+        ? val.toLocaleString('tr-TR')
+        : val.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      return `${formatted}₺`;
     } else {
       const usdVal = priceTry / rate;
       return `$${usdVal.toFixed(2)}`;
