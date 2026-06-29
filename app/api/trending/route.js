@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { isAdultContent } from '../../lib/adult-filter.js';
+import { isAdultContent, isAdultTitleOrSlug } from '../../lib/adult-filter.js';
+import { FALLBACK_GAMES } from '../../lib/fallback-games.js';
 
 const RAWG_KEY = process.env.RAWG_API_KEY;
 const BASE     = 'https://api.rawg.io/api';
@@ -138,9 +139,11 @@ const CUSTOM_MECCHA_CHAMELEON = {
   reviewScore:   92,
   totalReviews:  1050,
   isFree:        false,
-  onSale:        false,
-  price:         null,
-  noData:        true,
+  onSale:        true,
+  price:         24,
+  original:      48,
+  discount:      50,
+  noData:        false,
   platforms:     ['pc'],
   hasSteam:      true,
   hasEpic:       false,
@@ -387,42 +390,102 @@ const STATIC_FALLBACK_GAMES = [
   }
 ];
 
+function generateSlug(text) {
+  const trMap = {
+    '\u00e7': 'c', '\u011f': 'g', '\u0131': 'i', 'i': 'i', '\u00f6': 'o', '\u015f': 's', '\u00fc': 'u',
+    '\u00c7': 'c', '\u011e': 'g', 'I': 'i', '\u0130': 'i', '\u00d6': 'o', '\u015e': 's', '\u00dc': 'u'
+  };
+  let slug = text.replace(/[\u00e7\u011f\u0131i\u00f6\u015f\u00fc\u00c7\u011eI\u0130\u00d6\u015e\u00dc]/g, m => trMap[m]).toLowerCase();
+  return slug.replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-');
+}
+
+async function fetchSteamSpecials() {
+  try {
+    const res = await fetch('https://store.steampowered.com/api/featuredcategories/?cc=tr&l=tr', { next: { revalidate: 1800 } });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const items = data.specials?.items || [];
+
+    // Filtrelenmiş adult öğeleri
+    const cleanItems = items.filter(item => !isAdultTitleOrSlug(item.name, item.name));
+
+    return cleanItems.map(item => {
+      const slug = generateSlug(item.name);
+      const isFree = item.final_price === 0 || (!item.final_price && !item.original_price);
+
+      const g = {
+        id:           'rawg_' + item.id,
+        rawgId:       item.id,
+        rawgSlug:     slug,
+        name:         item.name,
+        image:        item.header_image || item.large_capsule_image || item.small_capsule_image,
+        metacritic:   null,
+        reviewScore:  0,
+        totalReviews: 0,
+        isFree,
+        onSale:       item.discounted || false,
+        price:        item.final_price ? item.final_price / 100 : null,
+        original:     item.original_price ? item.original_price / 100 : null,
+        discount:     item.discount_percent || 0,
+        noData:       false,
+        platforms:    ['pc'],
+        source:       'steam',
+        hasSteam:     true,
+        hasEpic:      false,
+        hasStores:    true,
+        hasMultipleStores: false,
+        epicUrl:      null,
+        steamUrl:     `https://store.steampowered.com/app/${item.id}`,
+        genres:       [],
+        released:     new Date().toISOString().slice(0, 10),
+      };
+
+      // Fallback_games ile eşleştirip detayları (tür, metacritic vb.) doldur
+      const dbMatch = FALLBACK_GAMES.find(dg => dg.rawgId === item.id);
+      if (dbMatch) {
+        g.genres = dbMatch.genres || [];
+        g.metacritic = dbMatch.metacritic || null;
+        g.reviewScore = dbMatch.reviewScore || 0;
+        g.totalReviews = dbMatch.totalReviews || 0;
+      }
+      return g;
+    });
+  } catch (err) {
+    console.error(`Failed to fetch Steam specials:`, err);
+    return [];
+  }
+}
+
 export async function GET() {
   try {
-    if (!RAWG_KEY) throw new Error('RAWG_API_KEY eksik');
+    let results = await fetchSteamSpecials();
 
-    const idsStr = STREAMER_GAME_IDS.join(',');
-    const url = `${BASE}/games?key=${RAWG_KEY}&ids=${idsStr}&page_size=20`;
-    const res = await fetch(url, { next: { revalidate: 21600 } });
-    if (!res.ok) throw new Error(`RAWG ${res.status}`);
-    const data = await res.json();
+    if (results.length > 0) {
+      // Listeyi her 6 saatte bir kaydırarak güncelliğini koruyalım (6-hour rotation)
+      const hoursSinceEpoch = Math.floor(Date.now() / (1000 * 60 * 60));
+      const seed = Math.floor(hoursSinceEpoch / 6);
+      const offset = (seed * 3) % results.length;
+      results = [...results.slice(offset), ...results.slice(0, offset)];
+    }
 
-    let results = (data.results || []).filter(g => !isAdultContent(g)).map(g => formatGame(g, null));
-
-    // Listeyi biraz çeşitlendirmek/zamanla değiştirmek için her 3 saatte bir kaydıralım (rotate)
-    const hoursSinceEpoch = Math.floor(Date.now() / (1000 * 60 * 60));
-    const seed = Math.floor(hoursSinceEpoch / 3);
-    const offset = (seed * 3) % results.length;
-    results = [...results.slice(offset), ...results.slice(0, offset)];
-
-    // Meccha Chameleon'u en başa (her zaman görünür) ekleyelim ve listeyi 16 adetle sınırlandıralım
-    results = [CUSTOM_MECCHA_CHAMELEON, ...results.slice(0, 15)];
+    // Meccha Chameleon'u en başa ekleyelim ve listeyi 6 adetle sınırlayalım
+    results = [CUSTOM_MECCHA_CHAMELEON, ...results.filter(g => g.rawgSlug !== 'meccha-chameleon').slice(0, 5)];
 
     return NextResponse.json({
       results,
       total:  results.length,
-      source: 'curated-streamers',
-      label:  'Yayıncıların Gözdesi',
+      source: 'steam-specials',
+      label:  'İndirim Fırsatları',
     });
 
   } catch (err) {
     console.warn('Trending fetch error, fallback to static popular list:', err.message);
-    const results = [CUSTOM_MECCHA_CHAMELEON, ...STATIC_FALLBACK_GAMES];
+    const results = [CUSTOM_MECCHA_CHAMELEON, ...STATIC_FALLBACK_GAMES.slice(0, 5)];
     return NextResponse.json({
       results,
       total:  results.length,
       source: 'static-fallback',
-      label:  'Yayıncıların Gözdesi',
+      label:  'İndirim Fırsatları',
     });
   }
 }

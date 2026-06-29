@@ -639,8 +639,9 @@ const Section = memo(function Section({ title, subtitle, href, games, loading, b
 });
 
 // ── Sinematik vitrin (oyun afişinden atmosfer) ───────────────────────────────
+// ── Sinematik vitrin (oyun afişinden atmosfer) ───────────────────────────────
 function CinematicShowcase({ games }) {
-  const { t, lang } = useLanguage();
+  const { t, lang, formatPrice } = useLanguage();
   const [active, setActive] = useState(0);
   const list = (games || []).filter(g => g && g.name).slice(0, 6);
 
@@ -648,7 +649,7 @@ function CinematicShowcase({ games }) {
     if (list.length < 2) return;
     const iv = setInterval(() => setActive(a => (a + 1) % list.length), 6000);
     return () => clearInterval(iv);
-  }, [list.length]);
+  }, [list.length, active]); // Reset timer when active game changes manually
 
   if (list.length === 0) {
     return <div style={{ height: 454, borderRadius: 26, background: 'var(--bg-card)', border: '1px solid var(--border)', marginBottom: 40 }} />;
@@ -660,6 +661,13 @@ function CinematicShowcase({ games }) {
 
   return (
     <section style={{ display: 'grid', gridTemplateColumns: '1fr 226px', gap: 18, alignItems: 'stretch', marginBottom: 44 }} className="showcase-grid">
+      <style>{`
+        @keyframes showcaseProgress {
+          from { transform: scaleX(0); }
+          to   { transform: scaleX(1); }
+        }
+      `}</style>
+
       {/* Ana sahne */}
       <Link href={href} style={{ position: 'relative', borderRadius: 26, overflow: 'hidden', minHeight: 454, boxShadow: '0 40px 90px -36px rgba(0,0,0,0.8), inset 0 0 0 1px rgba(255,255,255,0.08)' }}>
         <GameImage key={g.id} game={g} alt={g.name} fill isHero style={{ objectFit: 'cover' }} />
@@ -667,18 +675,29 @@ function CinematicShowcase({ games }) {
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(6,7,9,0.85), transparent 46%)' }} />
         <div style={{ position: 'absolute', left: 0, bottom: 0, padding: '40px 44px', maxWidth: 620 }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '6px 13px', borderRadius: 999, background: 'color-mix(in srgb, var(--accent) 26%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 55%, transparent)', fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', color: '#fff', marginBottom: 16 }}>
-            {lang === 'tr' ? '✦ ÖNE ÇIKAN' : '✦ FEATURED'}
+            {lang === 'tr' ? '✦ ÖNE ÇIKAN FIRSAT' : '✦ FEATURED DEAL'}
           </span>
           <h2 style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 'clamp(30px,4vw,52px)', lineHeight: 1.02, letterSpacing: '-1.4px', color: '#fff', marginBottom: 14, textWrap: 'balance' }}>{g.name}</h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 18 }}>
             {g.metacritic ? <span style={{ fontSize: 12.5, fontWeight: 800, padding: '4px 9px', borderRadius: 8, background: 'rgba(8,10,14,0.6)', border: '1px solid rgba(255,255,255,0.14)', color: mcColor }}>{g.metacritic} Metacritic</span> : null}
             <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.62)' }}>{(g.genres || []).slice(0, 3).join(' · ')}</span>
           </div>
-          <span className="btn btn-red" style={{ padding: '13px 26px', fontSize: 15 }}>
-            {lang === 'tr' ? 'İncele →' : 'View →'}
-          </span>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <span className="btn btn-red" style={{ padding: '13px 26px', fontSize: 15 }}>
+              {lang === 'tr' ? 'İncele →' : 'View →'}
+            </span>
+            {g.price !== null && g.discount > 0 && (
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(8,10,14,0.85)', border: '1px solid rgba(255,255,255,0.16)', padding: '8px 16px', borderRadius: 14, backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}>
+                <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', textDecoration: 'line-through' }}>{formatPrice(g.original)}</span>
+                <span style={{ fontSize: 17, fontWeight: 900, color: '#fbbf24' }}>{formatPrice(g.price)}</span>
+                <span style={{ fontSize: 12, fontWeight: 800, padding: '3px 7px', borderRadius: 6, background: '#fbbf24', color: '#000', boxShadow: '0 2px 10px rgba(251,191,36,0.3)' }}>-%{g.discount}</span>
+              </div>
+            )}
+          </div>
         </div>
       </Link>
+
       {/* Dikey küçük resimler */}
       <div className="showcase-thumbs" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {list.map((it, i) => {
@@ -690,6 +709,23 @@ function CinematicShowcase({ games }) {
               <GameImage game={it} alt="" fill style={{ objectFit: 'cover' }} />
               <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(6,7,9,0.85), transparent 60%)' }} />
               <span style={{ position: 'absolute', left: 12, right: 12, bottom: 10, fontSize: 12.5, fontWeight: 700, lineHeight: 1.15, color: '#fff', textAlign: 'left', textShadow: '0 1px 5px rgba(0,0,0,0.6)' }}>{it.name}</span>
+              
+              {/* İndirim yüzdesi rozeti */}
+              {it.discount > 0 && (
+                <span style={{ position: 'absolute', right: 8, top: 8, fontSize: 10, fontWeight: 800, padding: '2px 5px', borderRadius: 4, background: '#fbbf24', color: '#000', zIndex: 5, boxShadow: '0 2px 5px rgba(0,0,0,0.4)' }}>
+                  -%{it.discount}
+                </span>
+              )}
+
+              {/* Ekran kalma süresine eşdeğer ilerleme çizgisi */}
+              {on && (
+                <div style={{
+                  position: 'absolute', left: 0, bottom: 0, right: 0, height: 3, background: 'var(--accent)',
+                  animation: 'showcaseProgress 6s linear forwards',
+                  zIndex: 10,
+                  transformOrigin: 'left',
+                }} />
+              )}
             </button>
           );
         })}
