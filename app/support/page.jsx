@@ -66,7 +66,14 @@ export default function SupportPage() {
 
   const submit = e => {
     e.preventDefault();
-    if (name && email && msg) setSent(true);
+    if (name && email && msg) {
+      const emailTo = 'support@gamerisen.com';
+      const emailSubject = encodeURIComponent(`[Gamerisen Destek] ${subject} - ${name}`);
+      const emailBody = encodeURIComponent(`Ad Soyad: ${name}\nE-posta: ${email}\nKonu: ${subject}\n\nMesaj:\n${msg}`);
+      
+      window.location.href = `mailto:${emailTo}?subject=${emailSubject}&body=${emailBody}`;
+      setSent(true);
+    }
   };
   
   const reset = () => {
