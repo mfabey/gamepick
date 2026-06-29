@@ -1,3 +1,15 @@
+/* Fix Turkish Lira symbol rendering as Pound in custom fonts */
+@font-face {
+  font-family: 'Bricolage Grotesque';
+  src: local('Segoe UI'), local('Arial'), local('Helvetica'), local('sans-serif');
+  unicode-range: U+20BA;
+}
+@font-face {
+  font-family: 'Schibsted Grotesk';
+  src: local('Segoe UI'), local('Arial'), local('Helvetica'), local('sans-serif');
+  unicode-range: U+20BA;
+}
+
 /* ===== PAGE TRANSITION ===== */
 .page-transition {
   animation: pageTransitionIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
