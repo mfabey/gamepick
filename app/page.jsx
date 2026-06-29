@@ -666,6 +666,31 @@ function CinematicShowcase({ games }) {
           from { transform: scaleX(0); }
           to   { transform: scaleX(1); }
         }
+        .showcase-price-tag {
+          position: absolute;
+          right: 44px;
+          bottom: 40px;
+          display: inline-flex;
+          align-items: center;
+          gap: 10px;
+          background: rgba(8, 10, 14, 0.85);
+          border: 1px solid rgba(255, 255, 255, 0.16);
+          padding: 10px 18px;
+          border-radius: 16px;
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+          z-index: 5;
+        }
+        @media (max-width: 640px) {
+          .showcase-price-tag {
+            right: 20px;
+            top: 20px;
+            bottom: auto;
+            padding: 8px 14px;
+            border-radius: 12px;
+          }
+        }
       `}</style>
 
       {/* Ana sahne */}
@@ -687,15 +712,17 @@ function CinematicShowcase({ games }) {
             <span className="btn btn-red" style={{ padding: '13px 26px', fontSize: 15 }}>
               {lang === 'tr' ? 'İncele →' : 'View →'}
             </span>
-            {g.price !== null && g.discount > 0 && (
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(8,10,14,0.85)', border: '1px solid rgba(255,255,255,0.16)', padding: '8px 16px', borderRadius: 14, backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}>
-                <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', textDecoration: 'line-through' }}>{formatPrice(g.original)}</span>
-                <span style={{ fontSize: 17, fontWeight: 900, color: '#fbbf24' }}>{formatPrice(g.price)}</span>
-                <span style={{ fontSize: 12, fontWeight: 800, padding: '3px 7px', borderRadius: 6, background: '#fbbf24', color: '#000', boxShadow: '0 2px 10px rgba(251,191,36,0.3)' }}>-%{g.discount}</span>
-              </div>
-            )}
           </div>
         </div>
+
+        {/* Sağ alta konumlandırılmış Fiyat Paneli (Mobil uyumlu) */}
+        {g.price !== null && g.discount > 0 && (
+          <div className="showcase-price-tag">
+            <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', textDecoration: 'line-through' }}>{formatPrice(g.original)}</span>
+            <span style={{ fontSize: 18, fontWeight: 900, color: '#fbbf24' }}>{formatPrice(g.price)}</span>
+            <span style={{ fontSize: 12, fontWeight: 800, padding: '3px 8px', borderRadius: 6, background: '#fbbf24', color: '#000', boxShadow: '0 2px 10px rgba(251,191,36,0.3)' }}>-%{g.discount}</span>
+          </div>
+        )}
       </Link>
 
       {/* Dikey küçük resimler */}

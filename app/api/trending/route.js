@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { isAdultContent, isAdultTitleOrSlug } from '../../lib/adult-filter.js';
 import { FALLBACK_GAMES } from '../../lib/fallback-games.js';
+import { getUsdToTry } from '../../lib/exchange.js';
 
 const RAWG_KEY = process.env.RAWG_API_KEY;
 const BASE     = 'https://api.rawg.io/api';
@@ -140,8 +141,8 @@ const CUSTOM_MECCHA_CHAMELEON = {
   totalReviews:  1050,
   isFree:        false,
   onSale:        true,
-  price:         24,
-  original:      48,
+  price:         149,
+  original:      298,
   discount:      50,
   noData:        false,
   platforms:     ['pc'],
@@ -401,6 +402,7 @@ function generateSlug(text) {
 
 async function fetchSteamSpecials() {
   try {
+    const rate = await getUsdToTry();
     const res = await fetch('https://store.steampowered.com/api/featuredcategories/?cc=tr&l=tr', { next: { revalidate: 1800 } });
     if (!res.ok) return [];
     const data = await res.json();
@@ -413,6 +415,12 @@ async function fetchSteamSpecials() {
       const slug = generateSlug(item.name);
       const isFree = item.final_price === 0 || (!item.final_price && !item.original_price);
 
+      const priceUSD = item.final_price ? item.final_price / 100 : null;
+      const originalUSD = item.original_price ? item.original_price / 100 : null;
+
+      const price = priceUSD ? Math.round(priceUSD * rate) : null;
+      const original = originalUSD ? Math.round(originalUSD * rate) : null;
+
       const g = {
         id:           'rawg_' + item.id,
         rawgId:       item.id,
@@ -424,8 +432,8 @@ async function fetchSteamSpecials() {
         totalReviews: 0,
         isFree,
         onSale:       item.discounted || false,
-        price:        item.final_price ? item.final_price / 100 : null,
-        original:     item.original_price ? item.original_price / 100 : null,
+        price,
+        original,
         discount:     item.discount_percent || 0,
         noData:       false,
         platforms:    ['pc'],
