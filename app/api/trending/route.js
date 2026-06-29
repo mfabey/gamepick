@@ -411,7 +411,26 @@ async function fetchSteamSpecials() {
     // Filtrelenmiş adult öğeleri
     const cleanItems = items.filter(item => !isAdultTitleOrSlug(item.name, item.name));
 
-    return cleanItems.map(item => {
+    // Tekilleştirme: Aynı oyunun farklı edisyonlarını ve mükerrer paketlerini filtrele
+    const seenNames = new Set();
+    const uniqueItems = [];
+
+    function normalizeForDedupe(name) {
+      return name.toLowerCase()
+        .replace(/[:\-–]/g, ' ')
+        .replace(/\b(premium|edition|deluxe|goty|complete|enhanced|bundle|pack|remastered|remaster|standard|ultimate|gold|director's cut|directors cut)\b/gi, '')
+        .replace(/\s+/g, '')
+        .replace(/[^a-z0-9]/g, '');
+    }
+
+    for (const item of cleanItems) {
+      const norm = normalizeForDedupe(item.name);
+      if (seenNames.has(norm)) continue;
+      seenNames.add(norm);
+      uniqueItems.push(item);
+    }
+
+    return uniqueItems.map(item => {
       const slug = generateSlug(item.name);
       const isFree = item.final_price === 0 || (!item.final_price && !item.original_price);
 
