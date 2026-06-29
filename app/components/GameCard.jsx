@@ -325,6 +325,33 @@ function GameCard({ game, compact = false, cardWidth }) {
           </span>
         </div>
       </div>
+
+      {/* Kart altı kalıcı fiyat satırı (hover olmadan her zaman görünür) */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '10px 4px 2px' }}>
+        <div style={{ display: 'flex', gap: 4, alignItems: 'center', minWidth: 0 }}>
+          {(game.hasSteam || livePrice?.storeName === 'Steam') && (
+            <span title="Steam" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20, borderRadius: 5, background: 'rgba(23,42,61,0.9)', color: '#c7d5e0', flexShrink: 0 }}><SteamIcon size={11} /></span>
+          )}
+          {(game.hasEpic || livePrice?.storeName === 'Epic Games') && (
+            <span title="Epic Games" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20, borderRadius: 5, background: 'rgba(0,0,0,0.8)', color: '#fff', flexShrink: 0 }}><EpicIcon size={10} /></span>
+          )}
+        </div>
+        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+          {isFree ? (
+            <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 15, color: '#19f0a0' }}>{t('card.free')}</span>
+          ) : livePrice?.price != null ? (
+            <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 6 }}>
+              {isOnSale && <span style={{ fontSize: 11, fontWeight: 700, color: '#fff', background: 'var(--accent)', borderRadius: 5, padding: '1px 5px' }}>-%{livePrice.discount}</span>}
+              {isOnSale && <span style={{ fontSize: 11.5, color: 'var(--text-3)', textDecoration: 'line-through' }}>{formatPrice(livePrice.original)}</span>}
+              <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 15, color: isOnSale ? '#fbbf24' : 'var(--text)' }}>{formatPrice(livePrice.price)}</span>
+            </span>
+          ) : priceLoading ? (
+            <span style={{ fontSize: 12, color: 'var(--text-3)' }}>…</span>
+          ) : (
+            <span style={{ fontSize: 12, color: 'var(--text-3)' }}>{lang === 'tr' ? 'Fiyat yok' : 'No price'}</span>
+          )}
+        </div>
+      </div>
     </Link>
   );
 }
