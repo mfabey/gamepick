@@ -359,6 +359,7 @@ export async function GET(request) {
   const page    = parseInt(searchParams.get('page') || '1');
   const num     = parseInt(searchParams.get('num')  || '24');
   const rotate  = searchParams.get('rotate')  === 'true';
+  const mode    = searchParams.get('mode')    || '';   // singleplayer | multiplayer | coop
 
   if (!RAWG_KEY) {
     return NextResponse.json({ error: 'RAWG_API_KEY eksik', results: [] }, { status: 500 });
@@ -426,6 +427,12 @@ export async function GET(request) {
         params.ordering = '-rating';
         params.metacritic = '60,100';
       }
+    }
+
+    // Oyun modu filtresi (tek oyunculu / çok oyunculu / co-op) — RAWG tag'leri ile sunucu tarafında
+    const MODE_TAG = { singleplayer: 'singleplayer', multiplayer: 'multiplayer', coop: 'co-op' };
+    if (mode && MODE_TAG[mode]) {
+      params.tags = params.tags ? `${params.tags},${MODE_TAG[mode]}` : MODE_TAG[mode];
     }
 
     let results = [];
