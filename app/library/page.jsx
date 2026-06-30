@@ -35,8 +35,6 @@ export default function LibraryPage() {
   const [xboxLib, setXboxLib]                 = useState(null);
   const [xboxLoading, setXboxLoading]         = useState(false);
   const [xboxErr, setXboxErr]                 = useState(null);
-  const [xboxValue, setXboxValue]             = useState(null);   // {sum, counted}
-  const [xboxValueLoading, setXboxValueLoading] = useState(false);
 
   const steamIdsKey = steamAccounts.map(a => a.steamId).join(',');
 
@@ -108,24 +106,7 @@ export default function LibraryPage() {
     return () => { cancelled = true; };
   }, [xboxUser]);
 
-  // Xbox değeri: sahip olunan (Game Pass olmayan) oyunlar için mağaza fiyatı (isim eşleşmesi, sınırlı)
-  useEffect(() => {
-    const owned = (xboxLib?.games || []).filter(g => !g.isGamePass);
-    if (owned.length === 0) { setXboxValue(null); return; }
-    let cancelled = false;
-    setXboxValueLoading(true);
-    const capped = owned.slice(0, 50);
-    Promise.all(capped.map(g =>
-      fetch(`/api/card-price?name=${encodeURIComponent(g.name)}&hasSteam=true`)
-        .then(r => r.json()).catch(() => null)
-    )).then(results => {
-      if (cancelled) return;
-      let sum = 0, counted = 0;
-      results.forEach(p => { if (p && p.price != null && !p.isFree && p.original > 0) { sum += p.original; counted++; } });
-      setXboxValue(counted > 0 ? { sum, counted } : null);
-    }).finally(() => { if (!cancelled) setXboxValueLoading(false); });
-    return () => { cancelled = true; };
-  }, [xboxLib]);
+
 
   // Steam birleşik istatistikler (benzersiz oyunlar, toplam saat, toplam değer)
   const steamCombined = useMemo(() => {
@@ -155,14 +136,13 @@ export default function LibraryPage() {
   // Genel toplam (tüm platformlar)
   const grand = useMemo(() => {
     const steamVal = steamCombined.value?.sum || 0;
-    const xboxVal  = xboxValue?.sum || 0;
     return {
       games: steamCombined.totalGames + (xboxLib?.total || 0),
       hours: steamCombined.totalHours,
-      value: steamVal + xboxVal,
-      hasValue: (steamCombined.value != null) || (xboxValue != null),
+      value: steamVal,
+      hasValue: steamCombined.value != null,
     };
-  }, [steamCombined, xboxLib, xboxValue]);
+  }, [steamCombined, xboxLib]);
 
   const handleRemoveSteamAccount = async (steamId) => {
     setRemovingId(steamId);
@@ -285,14 +265,14 @@ export default function LibraryPage() {
         {platform === 'xbox' && (
           !hasXbox
             ? <ConnectPrompt platform="xbox" lang={lang} t={t} onConnect={() => setShowXboxModal(true)} />
-            : <XboxLibrary xboxUser={xboxUser} library={xboxLib} loading={xboxLoading} error={xboxErr} value={xboxValue} valueLoading={xboxValueLoading} onLogout={xboxLogout} />
+            : <XboxLibrary xboxUser={xboxUser} library={xboxLib} loading={xboxLoading} error={xboxErr} onLogout={xboxLogout} />
         )}
 
         {/* ── EPIC ── */}
         {platform === 'epic' && <ConnectPrompt platform="epic" lang={lang} t={t} />}
 
         {/* ── Genel Toplam ── */}
-        {hasAny && <GrandTotalSummary grand={grand} loading={steamLoading || steamPricesLoading || xboxLoading || xboxValueLoading} />}
+        {hasAny && <GrandTotalSummary grand={grand} loading={steamLoading || steamPricesLoading || xboxLoading} />}
       </div>
 
       {showXboxModal && <XboxConnectModal onClose={() => setShowXboxModal(false)} xboxError={xboxError} setXboxError={setXboxError} />}
@@ -714,7 +694,7 @@ function GameRow({ game, rank, price, pricesLoading, accountLabel }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // XBOX BİLEŞENLERİ
 // ─────────────────────────────────────────────────────────────────────────────
-function XboxLibrary({ xboxUser, library, loading, error, value, valueLoading, onLogout }) {
+function XboxLibrary({ xboxUser, library, loading, error, onLogout }) {
   const { t, lang } = useLanguage();
   const [search, setSearch] = useState('');
   const [sort, setSort]     = useState('recent');
@@ -722,14 +702,14 @@ function XboxLibrary({ xboxUser, library, loading, error, value, valueLoading, o
 
   if (loading) return (
     <>
-      <XboxProfileHeader xboxUser={xboxUser} library={null} value={null} valueLoading={false} onLogout={onLogout} />
+      <XboxProfileHeader xboxUser={xboxUser} library={null} onLogout={onLogout} />
       <SkeletonList />
     </>
   );
 
   if (error) return (
     <>
-      <XboxProfileHeader xboxUser={xboxUser} library={null} value={null} valueLoading={false} onLogout={onLogout} />
+      <XboxProfileHeader xboxUser={xboxUser} library={null} onLogout={onLogout} />
       <div style={{ marginTop: 24, background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 14, padding: '24px 28px', textAlign: 'center' }}>
         <p style={{ fontSize: 36, marginBottom: 12 }}>⚠️</p>
         <p style={{ fontSize: 15, fontWeight: 700, color: '#991b1b', marginBottom: 8 }}>
@@ -759,7 +739,7 @@ function XboxLibrary({ xboxUser, library, loading, error, value, valueLoading, o
 
   return (
     <>
-      <XboxProfileHeader xboxUser={xboxUser} library={library} value={value} valueLoading={valueLoading} onLogout={onLogout} />
+      <XboxProfileHeader xboxUser={xboxUser} library={library} onLogout={onLogout} />
 
       {xboxUser.isMock && (
         <div style={{
@@ -826,7 +806,7 @@ function XboxLibrary({ xboxUser, library, loading, error, value, valueLoading, o
   );
 }
 
-function XboxProfileHeader({ xboxUser, library, value, valueLoading, onLogout }) {
+function XboxProfileHeader({ xboxUser, library, onLogout }) {
   const { t, lang } = useLanguage();
   const hasGamePass = xboxUser.gamepassType === 'ultimate' || xboxUser.gamepassType === 'pc' || (library && library.gamePassCount > 0);
   const gpText = xboxUser.gamepassType === 'ultimate'
@@ -888,13 +868,6 @@ function XboxProfileHeader({ xboxUser, library, value, valueLoading, onLogout })
                   <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{s.label}</p>
                 </div>
               ))}
-              {/* Kütüphane değeri (sahip olunan oyunların tahmini mağaza değeri) */}
-              <div style={{ textAlign: 'center', minWidth: 100, padding: '0 16px', borderLeft: '1px solid rgba(255,255,255,0.08)' }}>
-                {valueLoading && !value
-                  ? <p style={{ fontSize: 26, fontWeight: 800, color: '#4ade80', lineHeight: 1, marginBottom: 5, fontStyle: 'italic' }}>…</p>
-                  : <p style={{ lineHeight: 1, marginBottom: 5 }}><PriceValue tryAmount={value?.sum ?? null} size={22} color="#4ade80" /></p>}
-                <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('library.value')}</p>
-              </div>
             </div>
           )}
           {/* Logout */}
@@ -907,13 +880,9 @@ function XboxProfileHeader({ xboxUser, library, value, valueLoading, onLogout })
             {t('nav.logout')}
           </button>
         </div>
-        {(library || value) && (
+        {library && (
           <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.28)', marginTop: 14, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-            {value
-              ? (lang === 'tr'
-                  ? `≈ Değer, eşleşen ${value.counted} oyunun mağaza fiyatına göre tahminidir. ${t('library.xbox.disclaimer')}`
-                  : `≈ Value is estimated from store prices of ${value.counted} matched games. ${t('library.xbox.disclaimer')}`)
-              : t('library.xbox.disclaimer')}
+            {t('library.xbox.disclaimer')}
           </p>
         )}
       </div>
