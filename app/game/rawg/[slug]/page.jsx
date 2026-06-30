@@ -151,23 +151,29 @@ export default function RawgGamePage({ params }) {
             setHumbleLoading(false);
           });
 
-        // ── AI özeti ─────────────────────────────────────────────────────
-        const desc = (g.description || '').replace(/<[^>]+>/g, '').slice(0, 1500);
-        const aiId = g.steamAppId || ('rawg_' + g.rawgId);
-        setAiLoading(true);
-        fetch(
-          '/api/ai-game?appid=' + encodeURIComponent(aiId) +
-          '&name='              + encodeURIComponent(g.name) +
-          '&description='       + encodeURIComponent(desc)
-        )
-          .then(r => r.json())
-          .then(d => { if (d && d.ozet) setAi(d); })
-          .catch(() => {})
-          .finally(() => setAiLoading(false));
       })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false));
   }, [slug]);
+
+  // ── AI özeti ─────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!game) return;
+    setAi(null);
+    const aiId = game.steamAppId || ('rawg_' + game.rawgId);
+    const desc = (game.description || '').replace(/<[^>]+>/g, '').slice(0, 1500);
+    setAiLoading(true);
+    fetch(
+      '/api/ai-game?appid=' + encodeURIComponent(aiId) +
+      '&name='              + encodeURIComponent(game.name) +
+      '&description='       + encodeURIComponent(desc) +
+      '&lang='              + encodeURIComponent(lang)
+    )
+      .then(r => r.json())
+      .then(d => { if (d && d.ozet) setAi(d); })
+      .catch(() => {})
+      .finally(() => setAiLoading(false));
+  }, [game, lang]);
 
   if (loading) return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
@@ -179,10 +185,14 @@ export default function RawgGamePage({ params }) {
   if (error || !game) return (
     <div style={{ textAlign: 'center', padding: '80px 20px' }}>
       <p style={{ fontSize: 48, marginBottom: 12 }}>😕</p>
-      <p style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>Oyun bulunamadı</p>
-      <p style={{ color: 'var(--text-3)', marginBottom: 24 }}>{error || 'Bilinmeyen hata'}</p>
+      <p style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
+        {lang === 'tr' ? 'Oyun bulunamadı' : 'Game not found'}
+      </p>
+      <p style={{ color: 'var(--text-3)', marginBottom: 24 }}>
+        {error || (lang === 'tr' ? 'Bilinmeyen hata' : 'Unknown error')}
+      </p>
       <Link href="/games" style={{ padding: '10px 24px', background: 'var(--accent)', color: '#fff', borderRadius: 10, textDecoration: 'none', fontWeight: 600 }}>
-        ← Oyunlara Dön
+        {lang === 'tr' ? '← Oyunlara Dön' : '← Back to Games'}
       </Link>
     </div>
   );
@@ -235,7 +245,7 @@ export default function RawgGamePage({ params }) {
 
       <div className="container" style={{ paddingTop: 28, paddingBottom: 60, maxWidth: 960, position: 'relative', zIndex: 1 }}>
         <Link href="/games" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--text-3)', fontSize: 13, textDecoration: 'none', marginBottom: 20 }}>
-          ← Oyunlara Dön
+          {lang === 'tr' ? '← Oyunlara Dön' : '← Back to Games'}
         </Link>
 
       {/* Başlık ve Rozetler (Mobil Uyumlu) */}
@@ -248,7 +258,7 @@ export default function RawgGamePage({ params }) {
               background: 'rgba(26,159,255,0.12)', border: '1px solid rgba(26,159,255,0.35)',
               color: '#1a9fff', display: 'flex', alignItems: 'center', gap: 5,
             }}>
-              ✓ Steam Kütüphanende var
+              {lang === 'tr' ? '✓ Steam Kütüphanende var' : '✓ In your Steam library'}
             </div>
           )}
           {xboxOwnedGames.size > 0 && xboxOwnedGames.has(normalizeName(game.name)) && (
@@ -257,7 +267,7 @@ export default function RawgGamePage({ params }) {
               background: 'rgba(16,124,16,0.12)', border: '1px solid rgba(16,124,16,0.35)',
               color: '#107C10', display: 'flex', alignItems: 'center', gap: 5,
             }}>
-              ✓ Xbox Kütüphanende var
+              {lang === 'tr' ? '✓ Xbox Kütüphanende var' : '✓ In your Xbox library'}
             </div>
           )}
           {gamePassGames.size > 0 && gamePassGames.has(normalizeName(game.name)) && (
@@ -266,7 +276,7 @@ export default function RawgGamePage({ params }) {
               background: 'rgba(16,124,16,0.12)', border: '1px solid rgba(16,124,16,0.35)',
               color: '#107C10', display: 'flex', alignItems: 'center', gap: 5,
             }}>
-              🎮 Game Pass Kütüphanende var
+              {lang === 'tr' ? '🎮 Game Pass Kütüphanende var' : '🎮 In your Game Pass library'}
             </div>
           )}
           {game.metacritic && (
@@ -315,7 +325,9 @@ export default function RawgGamePage({ params }) {
             <div className="glass-ai-panel" style={{ marginBottom: 20 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                 <span style={{ fontSize: 18 }}>✨</span>
-                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)' }}>AI Özeti</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)' }}>
+                  {lang === 'tr' ? 'AI Özeti' : 'AI Summary'}
+                </span>
               </div>
               {ai.ozet && <p style={{ fontSize: 14, lineHeight: 1.7, color: 'var(--text)', marginBottom: ai.duygu ? 10 : 0, wordBreak: 'break-word', overflowWrap: 'break-word' }}>{ai.ozet}</p>}
               {ai.duygu && (
@@ -333,24 +345,22 @@ export default function RawgGamePage({ params }) {
             </div>
           )}
 
-          {/* Açıklama — AI yüklenince Türkçe, yoksa İngilizce */}
-          {(ai?.aciklama || game.description) && (
+          {/* Açıklama — Türkçe modda iken varsa AI çevirisi, yoksa orijinal İngilizce */}
+          {(lang === 'tr' && ai?.aciklama) ? (
             <div style={{ fontSize: 14, lineHeight: 1.75, color: 'var(--text-2)', marginBottom: 20, wordBreak: 'break-word', overflowWrap: 'break-word' }}>
-              {ai?.aciklama ? (
-                ai.aciklama
-              ) : (
-                <>
-                  {game.description.replace(/<[^>]+>/g, '').slice(0, 1200)}
-                  {game.description.length > 1200 ? '…' : ''}
-                  {aiLoading && (
-                    <span style={{ display: 'inline-block', marginLeft: 6, fontSize: 11, color: 'var(--text-3)' }}>
-                      (Türkçe çeviri yükleniyor…)
-                    </span>
-                  )}
-                </>
+              {ai.aciklama}
+            </div>
+          ) : (game.description) ? (
+            <div style={{ fontSize: 14, lineHeight: 1.75, color: 'var(--text-2)', marginBottom: 20, wordBreak: 'break-word', overflowWrap: 'break-word' }}>
+              {game.description.replace(/<[^>]+>/g, '').slice(0, 1200)}
+              {game.description.length > 1200 ? '…' : ''}
+              {lang === 'tr' && aiLoading && (
+                <span style={{ display: 'inline-block', marginLeft: 6, fontSize: 11, color: 'var(--text-3)' }}>
+                  (Türkçe çeviri yükleniyor…)
+                </span>
               )}
             </div>
-          )}
+          ) : null}
 
           {game.tags?.length > 0 && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -366,10 +376,10 @@ export default function RawgGamePage({ params }) {
           {/* Detay tablosu */}
           <div className="glass-panel" style={{ marginBottom: 20, fontSize: 13 }}>
             {[
-              { label: 'Geliştirici', value: game.developer },
-              { label: 'Yayıncı',    value: game.publisher  },
-              { label: 'Çıkış',      value: game.released   },
-              { label: 'Türler',     value: (game.genres || []).join(', ') },
+              { label: lang === 'tr' ? 'Geliştirici' : 'Developer', value: game.developer },
+              { label: lang === 'tr' ? 'Yayıncı' : 'Publisher',    value: game.publisher  },
+              { label: lang === 'tr' ? 'Çıkış' : 'Release Date',      value: game.released   },
+              { label: lang === 'tr' ? 'Türler' : 'Genres',     value: (game.genres || []).join(', ') },
             ].filter(r => r.value).map(row => (
               <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid var(--border)', gap: 12 }}>
                 <span style={{ color: 'var(--text-3)', flexShrink: 0 }}>{row.label}</span>

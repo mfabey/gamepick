@@ -11,66 +11,79 @@ function isValidApiKey(key) {
   return key && key.trim() !== '' && !key.startsWith('buraya_') && key !== 'placeholder';
 }
 
-async function getFallbackAiData(name, description) {
+async function getFallbackAiData(name, description, lang = 'tr') {
   let translatedDesc = '';
-  try {
-    const cleanDesc = description.replace(/<[^>]+>/g, '').trim();
-    if (cleanDesc) {
-      // Split into chunks of maximum 450 characters to stay within MyMemory's 500-char limit
-      const sentences = cleanDesc.match(/[^.!?]+[.!?]+(?:\s+|$)/g) || [cleanDesc];
-      const chunks = [];
-      let currentChunk = "";
-      
-      for (const sentence of sentences) {
-        if ((currentChunk + sentence).length > 450) {
-          if (currentChunk.trim()) {
-            chunks.push(currentChunk.trim());
-          }
-          currentChunk = sentence;
-        } else {
-          currentChunk += sentence;
-        }
-      }
-      if (currentChunk.trim()) {
-        chunks.push(currentChunk.trim());
-      }
+  const isTr = lang === 'tr';
 
-      // Limit fallback translation to top 3 chunks (approx 1200-1350 chars max) to avoid API spamming
-      const activeChunks = chunks.slice(0, 3);
-      const promises = activeChunks.map(async (chunk) => {
-        try {
-          const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(chunk)}&langpair=en|tr`;
-          const res = await fetch(url);
-          if (res.ok) {
-            const data = await res.json();
-            const translatedText = data?.responseData?.translatedText;
-            // Ensure the result is valid and doesn't contain limit warning messages
-            if (translatedText && 
-                !translatedText.includes("LIMIT EXCEEDED") && 
-                !translatedText.includes("MYMEMORY WARNING")) {
-              return translatedText;
+  // Sadece Türkçe ise çeviri yap
+  if (isTr) {
+    try {
+      const cleanDesc = description.replace(/<[^>]+>/g, '').trim();
+      if (cleanDesc) {
+        // Split into chunks of maximum 450 characters to stay within MyMemory's 500-char limit
+        const sentences = cleanDesc.match(/[^.!?]+[.!?]+(?:\s+|$)/g) || [cleanDesc];
+        const chunks = [];
+        let currentChunk = "";
+        
+        for (const sentence of sentences) {
+          if ((currentChunk + sentence).length > 450) {
+            if (currentChunk.trim()) {
+              chunks.push(currentChunk.trim());
             }
+            currentChunk = sentence;
+          } else {
+            currentChunk += sentence;
           }
-        } catch (e) {
-          console.error("Chunk translation fetch error:", e.message);
         }
-        return chunk; // fallback to original chunk text
-      });
+        if (currentChunk.trim()) {
+          chunks.push(currentChunk.trim());
+        }
 
-      const translatedChunks = await Promise.all(promises);
-      translatedDesc = translatedChunks.join(' ');
+        // Limit fallback translation to top 3 chunks (approx 1200-1350 chars max) to avoid API spamming
+        const activeChunks = chunks.slice(0, 3);
+        const promises = activeChunks.map(async (chunk) => {
+          try {
+            const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(chunk)}&langpair=en|tr`;
+            const res = await fetch(url);
+            if (res.ok) {
+              const data = await res.json();
+              const translatedText = data?.responseData?.translatedText;
+              // Ensure the result is valid and doesn't contain limit warning messages
+              if (translatedText && 
+                  !translatedText.includes("LIMIT EXCEEDED") && 
+                  !translatedText.includes("MYMEMORY WARNING")) {
+                return translatedText;
+              }
+            }
+          } catch (e) {
+            console.error("Chunk translation fetch error:", e.message);
+          }
+          return chunk; // fallback to original chunk text
+        });
+
+        const translatedChunks = await Promise.all(promises);
+        translatedDesc = translatedChunks.join(' ');
+      }
+    } catch (err) {
+      console.error("Fallback translation error:", err);
     }
-  } catch (err) {
-    console.error("Fallback translation error:", err);
   }
 
   if (!translatedDesc) {
     translatedDesc = description.replace(/<[^>]+>/g, '').trim().slice(0, 1000);
   }
 
-  const ozet = `${name}, sürükleyici hikayesi, etkileyici atmosferi ve derin oynanış dinamikleriyle dikkat çeken popüler bir yapımdır. Kendi türünün başarılı örneklerinden biri olarak kabul edilir.`;
-  const duygu = `Oyuncular genel olarak yapımın tasarımını, atmosferini ve sunduğu deneyimi oldukça olumlu karşılıyor. Toplulukta beğeni toplamış bir oyundur.`;
-  const etiketler = ['macera', 'aksiyon', 'hikaye-odaklı', 'popüler', 'sürükleyici'];
+  const ozet = isTr
+    ? `${name}, sürükleyici hikayesi, etkileyici atmosferi ve derin oynanış dinamikleriyle dikkat çeken popüler bir yapımdır. Kendi türünün başarılı örneklerinden biri olarak kabul edilir.`
+    : `${name} is a popular game known for its immersive story, impressive atmosphere, and deep gameplay mechanics. It is considered one of the successful examples of its genre.`;
+    
+  const duygu = isTr
+    ? `Oyuncular genel olarak yapımın tasarımını, atmosferini ve sunduğu deneyimi oldukça olumlu karşılıyor. Toplulukta beğeni toplamış bir oyundur.`
+    : `Players generally receive the design, atmosphere, and overall experience of the game very positively. It is a highly acclaimed title in the community.`;
+    
+  const etiketler = isTr
+    ? ['macera', 'aksiyon', 'hikaye-odaklı', 'popüler', 'sürükleyici']
+    : ['adventure', 'action', 'story-rich', 'popular', 'immersive'];
 
   return {
     ozet,
@@ -80,24 +93,27 @@ async function getFallbackAiData(name, description) {
   };
 }
 
-// GET /api/ai-game?appid=271590&name=GTA+V&description=...
+// GET /api/ai-game?appid=271590&name=GTA+V&description=...&lang=tr
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const appid       = searchParams.get('appid');
   const name        = searchParams.get('name')        || '';
   const description = searchParams.get('description') || '';
+  const lang        = searchParams.get('lang')        || 'tr';
 
   if (!appid || !name) {
     return NextResponse.json({ error: 'appid ve name gerekli' }, { status: 400 });
   }
 
+  const cacheKey = `${appid}_${lang}`;
+
   // Cache'den döndür
-  if (_cache.has(appid)) return NextResponse.json(_cache.get(appid));
+  if (_cache.has(cacheKey)) return NextResponse.json(_cache.get(cacheKey));
 
   // API anahtarı yoksa veya placeholder ise doğrudan fallback çalıştır
   if (!isValidApiKey(GROQ_KEY)) {
-    const fallbackData = await getFallbackAiData(name, description);
-    _cache.set(appid, fallbackData);
+    const fallbackData = await getFallbackAiData(name, description, lang);
+    _cache.set(cacheKey, fallbackData);
     return NextResponse.json(fallbackData);
   }
 
@@ -105,7 +121,6 @@ export async function GET(request) {
     // ── Steam yorumlarını al (opsiyonel) ────────────────────────────────────
     let reviewText = '';
     try {
-      // Sadece sayısal appid için Steam reviews çek
       if (/^\d+$/.test(appid)) {
         const rRes  = await fetch(
           `https://store.steampowered.com/appreviews/${appid}?json=1&num_per_page=12&language=all&filter=helpful`,
@@ -127,7 +142,12 @@ export async function GET(request) {
       .trim()
       .slice(0, 600);
 
-    const userPrompt = `
+    const isTr = lang === 'tr';
+    const systemContent = isTr
+      ? 'Sen bir oyun eleştirmenisin. Her zaman geçerli JSON formatında, sade Türkçe yanıt ver.'
+      : 'You are a video game critic. Always reply in valid JSON format only, in simple English.';
+
+    const userPrompt = isTr ? `
 Oyun: ${name}
 Açıklama (İngilizce): ${cleanDesc}
 ${reviewText ? `\nOyuncu Yorumları: ${reviewText}` : ''}
@@ -150,10 +170,21 @@ Listede olmayan ama oyuna çok uygun özgün etiketler de ekleyebilirsin:
 • OYNANŞ: açık-dünya, çok-oyunculu, hikaye-odaklı, rekabetçi, co-op, sandbox, roguelike, hayatta-kalma, yapım, crafting, keşif, gizlilik, at-binme, uçuş, iki-boyutlu, üst-görünüş, sinematik, gerilim, gizem, dedektif, atmosferik, retro, piksel, indie
 
 Oyunun arka plan bilgilerine göre özellikle ÖZGÜn, AYIRT EDİCİ etiketler seç.
-Örnek: Red Dead Redemption → kovboy, western, at-binme, açık-dünya, suç, vahşi-doğa
-Örnek: Sekiro → samuray, ninja, soulslike, japon, dövüş, hikaye-odaklı
+Sadece JSON döndür. Başka hiçbir metin ekleme.`.trim() : `
+Game: ${name}
+Description: ${cleanDesc}
+${reviewText ? `\nPlayer Reviews: ${reviewText}` : ''}
 
-Sadece JSON döndür. Başka hiçbir metin ekleme.`.trim();
+Generate a response in the following JSON format in English:
+{
+  "ozet": "A 2-3 sentence engaging summary of the game in English",
+  "aciklama": "Leave this field empty",
+  "duygu": "General player consensus based on reviews - what they liked and disliked (1-2 sentences in English)",
+  "etiketler": ["tag1","tag2",...,"tag12"]
+}
+
+Select appropriate tags in English (8-15 tags, lowercase). You can choose from standard tags (action, adventure, rpg, strategy, shooter, cowboy, sci-fi, horror, survival, open-world, rich-story, multiplayer, co-op) or custom ones. Only return JSON. Do not add any other text.
+`.trim();
 
     const aiRes = await fetch(GROQ_URL, {
       method:  'POST',
@@ -166,7 +197,7 @@ Sadece JSON döndür. Başka hiçbir metin ekleme.`.trim();
         max_tokens:  800,
         temperature: 0.7,
         messages: [
-          { role: 'system',  content: 'Sen bir oyun eleştirmenisin. Her zaman geçerli JSON formatında, sade Türkçe yanıt ver.' },
+          { role: 'system',  content: systemContent },
           { role: 'user',    content: userPrompt },
         ],
       }),
@@ -193,17 +224,17 @@ Sadece JSON döndür. Başka hiçbir metin ekleme.`.trim();
       etiketler: Array.isArray(parsed.etiketler) ? parsed.etiketler.slice(0, 15) : [],
     };
 
-    if (!result.ozet || !result.aciklama) {
+    if (!result.ozet) {
       throw new Error('Dönen AI verisi geçersiz veya eksik.');
     }
 
-    _cache.set(appid, result);
+    _cache.set(cacheKey, result);
     return NextResponse.json(result);
 
   } catch (err) {
     console.error('AI-game hatası, yerel fallback çalıştırılıyor:', err.message);
-    const fallbackData = await getFallbackAiData(name, description);
-    _cache.set(appid, fallbackData);
+    const fallbackData = await getFallbackAiData(name, description, lang);
+    _cache.set(cacheKey, fallbackData);
     return NextResponse.json(fallbackData);
   }
 }
