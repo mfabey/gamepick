@@ -351,6 +351,79 @@ async function fetchSteamNewReleases() {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// OYUN MODU FİLTRESİ — Steam mağaza kategorileri (otoriter veri)
+// RAWG etiketleri oyun modu için güvenilmez (ör. Witcher 3 yanlışlıkla "multiplayer"
+// etiketli olabilir). Steam'in category2 değeri ise resmî/doğru veridir.
+//   2 = Tek Oyunculu, 1 = Çok Oyunculu, 9 = Co-op
+// ─────────────────────────────────────────────────────────────────────────────
+const STEAM_MODE_CAT = { singleplayer: 2, multiplayer: 1, coop: 9 };
+const STEAM_MODE_GENRE = {
+  'action': 'Action', 'role-playing-games-rpg': 'RPG', 'strategy': 'Strategy',
+  'adventure': 'Adventure', 'sports': 'Sports', 'racing': 'Racing', 'simulation': 'Simulation',
+};
+
+async function fetchSteamByMode(mode, { genres = '', q = '', section = '', page = 1 } = {}) {
+  const cat2 = STEAM_MODE_CAT[mode];
+  // Steam mağaza araması iç sayfa boyutu olarak 25 kullanır ve `start` değerini 25'in
+  // katlarına yuvarlar. Bu yüzden sayfalamayı 25'lik bloklarla yapmalıyız (24 değil),
+  // aksi halde her sayfa aynı bloğu döndürür.
+  const STEAM_PAGE = 25;
+  const offset = (page - 1) * STEAM_PAGE;
+  let url = `https://store.steampowered.com/search/results/?category1=998&category2=${cat2}&cc=tr&l=tr&json=1&start=${offset}&count=${STEAM_PAGE}`;
+
+  // Sıralama / bölüm
+  if (section === 'new')        url += '&filter=popularnew';
+  else if (section === 'sale')  url += '&specials=1';
+  else                          url += '&filter=topsellers';
+
+  // Tür
+  const sg = STEAM_MODE_GENRE[genres];
+  if (sg) url += `&genre=${encodeURIComponent(sg)}`;
+
+  // Arama terimi
+  if (q) url += `&term=${encodeURIComponent(q)}`;
+
+  try {
+    const res = await fetch(url, { next: { revalidate: 1800 } });
+    if (!res.ok) return { results: [], total: 0 };
+    const data  = await res.json();
+    const items = data.items || [];
+    // Steam total_count döndürmediğinden tahmini bir toplam: tam dolu sayfa geldiyse
+    // paging açık kalsın (sonraki bloğu da varsay), kısa sayfa geldiyse burada bitsin.
+    const total = data.total_count || (offset + items.length + (items.length >= STEAM_PAGE ? STEAM_PAGE : 0));
+
+    const results = items.map(item => {
+      const appidMatch = (item.logo || '').match(/\/apps\/(\d+)\//);
+      const appid = appidMatch ? parseInt(appidMatch[1]) : null;
+      const slug  = generateSlug(item.name);
+      return {
+        id: 'rawg_' + appid, rawgId: appid, rawgSlug: slug, name: item.name,
+        image: appid ? `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/header.jpg` : item.logo,
+        logo: item.logo, metacritic: null, reviewScore: 0, totalReviews: 0,
+        isFree: section === 'free', onSale: section === 'sale', price: null, noData: false,
+        platforms: ['pc'], source: 'steam', hasSteam: true, hasEpic: false, hasStores: true,
+        genres: [], released: null,
+      };
+    }).filter(g => g.rawgId && !isAdultTitleOrSlug(g.name, g.rawgSlug));
+
+    // Fallback veritabanından zengin meta veriyi eşle
+    results.forEach(g => {
+      const dbMatch = FALLBACK_GAMES.find(dg => dg.rawgId === g.rawgId);
+      if (dbMatch) {
+        g.genres = dbMatch.genres || [];
+        g.metacritic = dbMatch.metacritic || null;
+        g.reviewScore = dbMatch.reviewScore || 0;
+        g.totalReviews = dbMatch.totalReviews || 0;
+      }
+    });
+
+    return { results, total };
+  } catch {
+    return { results: [], total: 0 };
+  }
+}
+
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const section = searchParams.get('section') || '';
@@ -359,6 +432,17 @@ export async function GET(request) {
   const page    = parseInt(searchParams.get('page') || '1');
   const num     = parseInt(searchParams.get('num')  || '24');
   const rotate  = searchParams.get('rotate')  === 'true';
+  const mode    = searchParams.get('mode')    || '';   // singleplayer | multiplayer | coop
+
+  // ── Oyun modu filtresi: Steam mağaza kategorileri (otoriter veri) ──
+  // RAWG etiketleri oyun modu için güvenilmez olduğundan, mod seçiliyse Steam araması
+  // önceliklidir ve RAWG anahtarı gerektirmez.
+  if (mode && STEAM_MODE_CAT[mode]) {
+    const { results: modeResults, total: modeTotal } = await fetchSteamByMode(mode, { genres, q: q.trim(), section, page, num });
+    if (modeResults.length > 0) {
+      return NextResponse.json({ results: modeResults, total: modeTotal, source: 'steam-mode' });
+    }
+  }
 
   if (!RAWG_KEY) {
     return NextResponse.json({ error: 'RAWG_API_KEY eksik', results: [] }, { status: 500 });
@@ -426,6 +510,12 @@ export async function GET(request) {
         params.ordering = '-rating';
         params.metacritic = '60,100';
       }
+    }
+
+    // Oyun modu filtresi (tek oyunculu / çok oyunculu / co-op) — RAWG tag'leri ile sunucu tarafında
+    const MODE_TAG = { singleplayer: 'singleplayer', multiplayer: 'multiplayer', coop: 'co-op' };
+    if (mode && MODE_TAG[mode]) {
+      params.tags = params.tags ? `${params.tags},${MODE_TAG[mode]}` : MODE_TAG[mode];
     }
 
     let results = [];
