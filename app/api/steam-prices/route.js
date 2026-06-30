@@ -98,20 +98,30 @@ export async function GET(request) {
           continue;
         }
 
-        // 3. Ücretli ama price_overview yok (Paket/Bundle satılan oyunlar, örn: GTA V)
+        // 3. Ücretli ama price_overview yok (Paket/Bundle satılan oyunlar veya ücretsiz oyunlar)
         if (!d.price_overview) {
-          // İsmini almak için filtre olmadan tekil istek at
+          // Detayları (isim ve ücretsiz durumunu) almak için filtre olmadan tekil istek at
           let gameName = d.name;
-          if (!gameName) {
-            try {
-              const singleRes = await fetch(`https://store.steampowered.com/api/appdetails?appids=${appid}&cc=tr&l=tr`, { signal: AbortSignal.timeout(5000) });
-              if (singleRes.ok) {
-                const singleJson = await singleRes.json();
-                gameName = singleJson?.[appid]?.data?.name;
+          let isFree = false;
+
+          try {
+            const singleRes = await fetch(`https://store.steampowered.com/api/appdetails?appids=${appid}&cc=tr&l=tr`, { signal: AbortSignal.timeout(5000) });
+            if (singleRes.ok) {
+              const singleJson = await singleRes.json();
+              const singleData = singleJson?.[appid]?.data;
+              if (singleData) {
+                gameName = singleData.name;
+                isFree = singleData.is_free === true;
               }
-            } catch {
-              // Hata durumunda geç
             }
+          } catch {
+            // Hata durumunda geç
+          }
+
+          // Eğer oyun aslında ücretsiz bir oyunsa
+          if (isFree) {
+            priceMap[appid] = { isFree: true, current: 0, original: 0, discount: 0 };
+            continue;
           }
 
           if (gameName) {
