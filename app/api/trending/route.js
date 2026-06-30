@@ -493,10 +493,8 @@ export async function GET() {
       const seed = Math.floor(hoursSinceEpoch / 6);
       const offset = (seed * 3) % results.length;
       results = [...results.slice(offset), ...results.slice(0, offset)];
+      results = results.slice(0, 6);
     }
-
-    // Meccha Chameleon'u en başa ekleyelim ve listeyi 6 adetle sınırlayalım
-    results = [CUSTOM_MECCHA_CHAMELEON, ...results.filter(g => g.rawgSlug !== 'meccha-chameleon').slice(0, 5)];
 
     return NextResponse.json({
       results,
@@ -507,7 +505,7 @@ export async function GET() {
 
   } catch (err) {
     console.warn('Trending fetch error, fallback to static popular list:', err.message);
-    const results = [CUSTOM_MECCHA_CHAMELEON, ...STATIC_FALLBACK_GAMES.slice(0, 5)];
+    const results = STATIC_FALLBACK_GAMES.slice(0, 6);
     return NextResponse.json({
       results,
       total:  results.length,
