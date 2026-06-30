@@ -148,6 +148,26 @@ export function AuthProvider({ children }) {
     } catch (err) { return { error: err.message }; }
   };
 
+  const deleteAccount = async (password) => {
+    try {
+      const res = await fetch('/api/auth/delete-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) return { error: data.error || 'Hesap silme başarısız.' };
+      setUser(null);
+      setSteamUser(null);
+      setSteamAccounts([]);
+      setXboxUser(null);
+      setOwnedGames(new Set());
+      setXboxOwnedGames(new Set());
+      setGamePassGames(new Set());
+      return { ok: true };
+    } catch (err) { return { error: err.message }; }
+  };
+
   // ── Steam işlemleri ──────────────────────────────────────────────────────
 
   // Belirli bir Steam hesabını çıkar
@@ -180,7 +200,7 @@ export function AuthProvider({ children }) {
       user, steamUser, steamAccounts, xboxUser,
       ownedGames, xboxOwnedGames, gamePassGames,
       ready, signup, login, logout, steamLogout, steamLogoutAccount, xboxLogout,
-      resetPassword, changePassword,
+      resetPassword, changePassword, deleteAccount,
     }}>
       {children}
     </AuthContext.Provider>
