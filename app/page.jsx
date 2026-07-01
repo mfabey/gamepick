@@ -369,7 +369,7 @@ export default function Home() {
       <div className="container" style={{ paddingTop: 48 }}>
 
         {/* Sinematik vitrin */}
-        <CinematicShowcase games={(trendGames.length ? trendGames : popularGames).slice(0, 6)} />
+        <CinematicShowcase games={(saleGames.length ? saleGames : popularGames).slice(0, 6)} />
 
         {/* Bu Hafta Trend — Yayıncıların oynadığı popüler oyunlar */}
         <Section
