@@ -288,16 +288,19 @@ async function fetchSteamNewReleases() {
     const data = await res.json();
     const newReleases = data.new_releases?.items || [];
 
-    // DLC'leri, Expansion'ları, Soundtrack'leri filtrelemek için paralel appdetails kontrolü
+    // DLC'leri, Expansion'ları, Soundtrack'leri filtrelemek ve çıkış tarihini almak için paralel appdetails kontrolü
     const detailedItems = await Promise.all(
       newReleases.map(async (item) => {
         try {
-          const detailRes = await fetch(`https://store.steampowered.com/api/appdetails?appids=${item.id}&cc=tr&filters=basic`, { next: { revalidate: 1800 } });
+          const detailRes = await fetch(`https://store.steampowered.com/api/appdetails?appids=${item.id}&cc=tr`, { next: { revalidate: 1800 } });
           if (!detailRes.ok) return null;
           const detailData = await detailRes.json();
           const entry = detailData[item.id];
           if (entry && entry.success && entry.data?.type === 'game') {
-            return item;
+            return {
+              item,
+              released: entry.data.release_date?.date || null,
+            };
           }
           return null;
         } catch {
@@ -306,9 +309,10 @@ async function fetchSteamNewReleases() {
       })
     );
 
-    const gamesOnly = detailedItems.filter(Boolean).filter(item => !isAdultTitleOrSlug(item.name, item.name));
+    const gamesOnly = detailedItems.filter(Boolean).filter(d => !isAdultTitleOrSlug(d.item.name, d.item.name));
 
-    return gamesOnly.map(item => {
+    return gamesOnly.map(d => {
+      const item = d.item;
       const slug = generateSlug(item.name);
       
       const isFree = item.final_price === 0 && !item.original_price;
@@ -342,7 +346,7 @@ async function fetchSteamNewReleases() {
         epicUrl:      null,
         steamUrl:     `https://store.steampowered.com/app/${item.id}`,
         genres:       [],
-        released:     new Date().toISOString().slice(0, 10),
+        released:     d.released,
       };
     });
   } catch (err) {
