@@ -617,43 +617,62 @@ export async function GET(request) {
       };
 
       // Helper to fetch and format search results from Steam
-      async function fetchSteamSearchPaginated(searchUrl, isFree = false, isOnSale = false) {
+      async function fetchSteamSearchPaginated(searchUrl, isFree = false, isOnSale = false, fetchReleaseDates = false) {
         try {
           const res = await fetch(searchUrl, { next: { revalidate: 1800 } });
           if (!res.ok) return [];
           const data = await res.json();
           const items = data.items || [];
           
-          return items.map(item => {
-            const appidMatch = item.logo.match(/\/apps\/(\d+)\//);
-            const appid = appidMatch ? parseInt(appidMatch[1]) : null;
-            const slug = generateSlug(item.name);
-            
-            const g = {
-              id: 'rawg_' + appid,
-              rawgId: appid,
-              rawgSlug: slug,
-              name: item.name,
-              image: appid ? `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/header.jpg` : item.logo,
-              logo: item.logo,
-              metacritic: null,
-              reviewScore: 0,
-              totalReviews: 0,
-              isFree,
-              onSale: isOnSale,
-              price: null,
-              noData: false,
-              platforms: ['pc'],
-              source: 'steam',
-              hasSteam: true,
-              hasEpic: false,
-              hasStores: true,
-              genres: [],
-              released: null
-            };
+          const detailedItems = await Promise.all(
+            items.map(async (item) => {
+              const appidMatch = item.logo.match(/\/apps\/(\d+)\//);
+              const appid = appidMatch ? parseInt(appidMatch[1]) : null;
+              if (!appid) return null;
 
-            // Cross-reference with our fallback database for rich metadata
-            if (appid) {
+              let releasedDate = null;
+              if (fetchReleaseDates) {
+                try {
+                  const detailRes = await fetch(`https://store.steampowered.com/api/appdetails?appids=${appid}&cc=tr`, { next: { revalidate: 1800 } });
+                  if (detailRes.ok) {
+                    const detailData = await detailRes.json();
+                    const entry = detailData[appid];
+                    if (entry && entry.success && entry.data) {
+                      // Filter out coming soon / unreleased games
+                      if (entry.data.release_date?.coming_soon) {
+                        return null;
+                      }
+                      releasedDate = entry.data.release_date?.date || null;
+                    }
+                  }
+                } catch {}
+              }
+
+              const slug = generateSlug(item.name);
+              const g = {
+                id: 'rawg_' + appid,
+                rawgId: appid,
+                rawgSlug: slug,
+                name: item.name,
+                image: appid ? `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/header.jpg` : item.logo,
+                logo: item.logo,
+                metacritic: null,
+                reviewScore: 0,
+                totalReviews: 0,
+                isFree,
+                onSale: isOnSale,
+                price: null,
+                noData: false,
+                platforms: ['pc'],
+                source: 'steam',
+                hasSteam: true,
+                hasEpic: false,
+                hasStores: true,
+                genres: [],
+                released: releasedDate
+              };
+
+              // Cross-reference with our fallback database for rich metadata
               const dbMatch = FALLBACK_GAMES.find(dg => dg.rawgId === appid);
               if (dbMatch) {
                 g.genres = dbMatch.genres || [];
@@ -662,10 +681,21 @@ export async function GET(request) {
                 g.totalReviews = dbMatch.totalReviews || 0;
                 g.isFree = dbMatch.isFree ?? isFree;
               }
-            }
 
-            return g;
-          }).filter(g => !isAdultTitleOrSlug(g.name, g.rawgSlug) && !isDlc(g));
+              return g;
+            })
+          );
+
+          const filtered = detailedItems
+            .filter(Boolean)
+            .filter(g => !isAdultTitleOrSlug(g.name, g.rawgSlug) && !isDlc(g));
+
+          // Sort by release date locally if requested
+          if (fetchReleaseDates) {
+            filtered.sort((a, b) => new Date(b.released || 0) - new Date(a.released || 0));
+          }
+
+          return filtered;
         } catch (err) {
           console.error("Steam search fallback failed:", err);
           return [];
@@ -705,12 +735,12 @@ export async function GET(request) {
         dynamicResults = await fetchSteamSearchPaginated(url, false, false);
         fetchedDynamically = true;
       } else if (section === 'new') {
-        let url = `https://store.steampowered.com/search/results/?filter=popularnew&category1=998&cc=tr&l=tr&json=1&start=${(page-1)*num}&count=${num}`;
+        let url = `https://store.steampowered.com/search/results/?sort_by=Released_DESC&category1=998&cc=tr&l=tr&json=1&start=${(page-1)*num}&count=${num}`;
         if (genres) {
           if (STEAM_GENRE_MAP[genres]) url += `&genre=${STEAM_GENRE_MAP[genres]}`;
           if (STEAM_TAG_MAP[genres]) url += `&tags=${STEAM_TAG_MAP[genres]}`;
         }
-        dynamicResults = await fetchSteamSearchPaginated(url, false, false);
+        dynamicResults = await fetchSteamSearchPaginated(url, false, false, true);
         fetchedDynamically = true;
       }
 
