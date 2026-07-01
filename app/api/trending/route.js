@@ -483,34 +483,209 @@ async function fetchSteamSpecials() {
   }
 }
 
+const STREAMER_CHANNELS = [
+  { name: 'Elraenn',          id: 'UCoW90c81k-cojkMAQroguhA' },
+  { name: 'Kendine Müzisyen', id: 'UCTPyakN5CEST9lgz-Q6p8uA' },
+  { name: 'RRaenee',          id: 'UCrPI0WAd0Z75CrkDLxCF14w' },
+  { name: 'ERAY',             id: 'UC8ELKVhAl1X6CbENloo8uUQ' },
+  { name: 'ERAY',             id: 'UCv1quKbtp1HLqoBbv3g2oIQ' }
+];
+
+const GAME_ALIASES = {
+  'meccha-chameleon': ['meccha', 'chameleon', 'bukalemun'],
+  'chained-together': ['chained', 'zincir'],
+  'lethal-company': ['lethal', 'telsizli'],
+  'supermarket-simulator': ['market', 'supermarket'],
+  'tcg-card-shop-simulator': ['kart dükkanı', 'card shop', 'tcg card'],
+  'liars-bar': ['liar', 'yalancı'],
+  'buckshot-roulette': ['buckshot', 'rus ruleti', 'şeytanla'],
+  'bodycam': ['body cam'],
+  'phasmophobia': ['hayalet', 'phasmo'],
+  'content-warning': ['content', 'kamera'],
+};
+
+const IGNORED_POPULAR_GAMES = new Set([
+  'grand-theft-auto-v',
+  'counter-strike-2',
+  'valorant',
+  'minecraft',
+  'fortnite',
+  'league-of-legends',
+  'dota-2',
+  'apex-legends',
+  'pubg-battlegrounds'
+]);
+
+// Streamer viral fallback games (AppIDs)
+const VIRAL_FALLBACK_APPIDS = [
+  4704690, // Meccha Chameleon
+  617010,  // Chained Together
+  983289,  // Bodycam
+  1966720, // Lethal Company
+  739630,  // Phasmophobia
+  2379780, // Balatro
+  979524,  // Content Warning
+  974482,  // Buckshot Roulette
+  2670630, // Supermarket Simulator
+  1363080, // Manor Lords
+  906504,  // Nine Sols
+  553850,  // Helldivers 2
+  1623730, // Palworld
+  945360,  // Among Us
+  252490,  // Rust
+  1326470, // Sons of the Forest
+  3081340, // Liar's Bar
+  3074090  // Card Shop Simulator
+];
+
+function cleanStringForMatch(str) {
+  if (!str) return '';
+  return str.toLowerCase()
+    .replace(/[üğışçöÜĞIŞÇÖ]/g, m => {
+      const map = { 'ü': 'u', 'ğ': 'g', 'ı': 'i', 'ş': 's', 'ç': 'c', 'ö': 'o', 'Ü': 'u', 'Ğ': 'g', 'I': 'i', 'Ş': 's', 'Ç': 'c', 'Ö': 'o' };
+      return map[m];
+    })
+    .replace(/[^a-z0-9]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 export async function GET() {
   try {
-    let results = await fetchSteamSpecials();
+    // 1. Streamer'ların RSS beslemelerinden son videoları paralel olarak çek
+    const feedPromises = STREAMER_CHANNELS.map(async (ch) => {
+      try {
+        const url = `https://www.youtube.com/feeds/videos.xml?channel_id=${ch.id}`;
+        const res = await fetch(url, { next: { revalidate: 3600 } });
+        if (!res.ok) return [];
+        const xml = await res.text();
+        
+        const entryRegex = /<entry>([\s\S]*?)<\/entry>/g;
+        let match;
+        const videos = [];
+        
+        while ((match = entryRegex.exec(xml)) !== null) {
+          const entryContent = match[1];
+          const titleMatch = entryContent.match(/<title>([^<]+)<\/title>/);
+          const dateMatch = entryContent.match(/<published>([^<]+)<\/published>/);
+          
+          if (titleMatch) {
+            videos.push({
+              streamer: ch.name,
+              title: titleMatch[1],
+              published: dateMatch ? new Date(dateMatch[1]) : new Date()
+            });
+          }
+        }
+        return videos;
+      } catch (err) {
+        return [];
+      }
+    });
 
-    if (results.length > 0) {
-      // Listeyi her 6 saatte bir kaydırarak güncelliğini koruyalım (6-hour rotation)
-      const hoursSinceEpoch = Math.floor(Date.now() / (1000 * 60 * 60));
-      const seed = Math.floor(hoursSinceEpoch / 6);
-      const offset = (seed * 3) % results.length;
-      results = [...results.slice(offset), ...results.slice(0, offset)];
-      results = results.slice(0, 6);
+    const feedResults = await Promise.all(feedPromises);
+    const allVideos = feedResults.flat().sort((a, b) => b.published - a.published);
+
+    const matchedGames = [];
+    const matchedSlugs = new Set();
+
+    // 2. Video başlıkları ile veritabanımızdaki oyunları eşleştir
+    for (const video of allVideos) {
+      const cleanTitle = cleanStringForMatch(video.title);
+      
+      for (const game of FALLBACK_GAMES) {
+        if (IGNORED_POPULAR_GAMES.has(game.rawgSlug)) continue;
+        if (matchedSlugs.has(game.rawgSlug)) continue;
+
+        const cleanName = cleanStringForMatch(game.name);
+        
+        let isMatch = false;
+        if (cleanName.length >= 3 && cleanTitle.includes(cleanName)) {
+          isMatch = true;
+        } else {
+          const aliases = GAME_ALIASES[game.rawgSlug];
+          if (aliases) {
+            for (const alias of aliases) {
+              if (cleanTitle.includes(cleanStringForMatch(alias))) {
+                isMatch = true;
+                break;
+              }
+            }
+          }
+        }
+
+        if (isMatch) {
+          matchedSlugs.add(game.rawgSlug);
+          matchedGames.push({
+            ...game,
+            streamer: video.streamer,
+            price: null,
+            original: null,
+            discount: 0,
+            onSale: false,
+            trendSource: 'youtube-match'
+          });
+          break;
+        }
+      }
     }
+
+    // 3. Fallback dolgusu: Eğer eşleşen oyun sayısı 12'den azsa, listeyi yayıncıların viral oyunları ile tamamla
+    const streamers = ['Elraenn', 'Kendine Müzisyen', 'RRaenee', 'ERAY'];
+    let streamerIdx = 0;
+
+    for (const appid of VIRAL_FALLBACK_APPIDS) {
+      if (matchedGames.length >= 12) break;
+      
+      const game = FALLBACK_GAMES.find(g => g.rawgId === appid);
+      if (game && !matchedSlugs.has(game.rawgSlug)) {
+        matchedSlugs.add(game.rawgSlug);
+        
+        const assignedStreamer = streamers[streamerIdx % streamers.length];
+        streamerIdx++;
+
+        matchedGames.push({
+          ...game,
+          streamer: assignedStreamer,
+          price: null,
+          original: null,
+          discount: 0,
+          onSale: false,
+          trendSource: 'viral-fallback'
+        });
+      }
+    }
+
+    const results = matchedGames.slice(0, 12);
 
     return NextResponse.json({
       results,
       total:  results.length,
-      source: 'steam-specials',
-      label:  'İndirim Fırsatları',
+      source: 'youtube-feed',
+      label:  'Haftanın Trendleri',
     });
 
   } catch (err) {
-    console.warn('Trending fetch error, fallback to static popular list:', err.message);
-    const results = STATIC_FALLBACK_GAMES.slice(0, 6);
+    console.error('Trending fetch error, fallback to curated viral list:', err);
+    const streamers = ['Elraenn', 'Kendine Müzisyen', 'RRaenee', 'ERAY'];
+    const results = VIRAL_FALLBACK_APPIDS.slice(0, 8).map((appid, idx) => {
+      const game = FALLBACK_GAMES.find(g => g.rawgId === appid);
+      return {
+        ...game,
+        streamer: streamers[idx % streamers.length],
+        price: null,
+        original: null,
+        discount: 0,
+        onSale: false,
+        trendSource: 'error-fallback'
+      };
+    });
+
     return NextResponse.json({
       results,
       total:  results.length,
-      source: 'static-fallback',
-      label:  'İndirim Fırsatları',
+      source: 'error-fallback',
+      label:  'Haftanın Trendleri',
     });
   }
 }

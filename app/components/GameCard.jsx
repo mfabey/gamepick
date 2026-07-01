@@ -230,6 +230,15 @@ function GameCard({ game, compact = false, cardWidth }) {
         {/* Üst rozetler */}
         <div style={{ position: 'absolute', top: 12, left: 12, right: 12, zIndex: 10, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5, alignItems: 'flex-start' }}>
+            {game.streamer && (
+              <span style={{
+                fontSize: 10, fontWeight: 800, padding: '4px 9px', borderRadius: 8,
+                color: '#fff', background: 'rgba(220, 38, 38, 0.95)', border: '1px solid rgba(255, 255, 255, 0.15)',
+                boxShadow: '0 4px 12px rgba(220, 38, 38, 0.25)', textTransform: 'uppercase', letterSpacing: '0.02em'
+              }}>
+                🔴 {game.streamer}
+              </span>
+            )}
             {isFree && <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.03em', padding: '4px 9px', borderRadius: 8, color: '#04130d', background: '#19f0a0' }}>{t('card.free')}</span>}
             {isOnSale && <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.03em', padding: '4px 9px', borderRadius: 8, color: '#fff', background: 'var(--accent)', boxShadow: '0 6px 16px -6px var(--accent-glow)' }}>{livePrice.storeIcon} -%{livePrice.discount}</span>}
             {isOwnedSteam && <span style={{ fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 6, background: 'rgba(26,159,255,0.92)', color: '#fff', backdropFilter: 'blur(4px)' }}>✓ {t('card.owned')}</span>}
