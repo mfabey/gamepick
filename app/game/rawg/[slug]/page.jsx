@@ -28,6 +28,27 @@ export default function RawgGamePage({ params }) {
   const [error,        setError]        = useState(null);
   const [imgIdx,       setImgIdx]       = useState(0);
 
+  const formatReleaseDate = (dateStr) => {
+    if (!dateStr) return '';
+    try {
+      // Prevent UTC timezone shift for YYYY-MM-DD ISO format
+      const sanitized = (typeof dateStr === 'string' && dateStr.includes('-')) 
+        ? dateStr.replace(/-/g, '/') 
+        : dateStr;
+      const parsedDate = new Date(sanitized);
+      if (!isNaN(parsedDate.getTime())) {
+        return parsedDate.toLocaleDateString(lang === 'tr' ? 'tr-TR' : 'en-US', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric'
+        });
+      }
+    } catch (e) {
+      console.warn("Date formatting error:", e);
+    }
+    return dateStr;
+  };
+
   // Alt bara "şu an incelenen oyun" bilgisini bildir
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -378,7 +399,7 @@ export default function RawgGamePage({ params }) {
             {[
               { label: lang === 'tr' ? 'Geliştirici' : 'Developer', value: game.developer },
               { label: lang === 'tr' ? 'Yayıncı' : 'Publisher',    value: game.publisher  },
-              { label: lang === 'tr' ? 'Çıkış' : 'Release Date',      value: game.released   },
+              { label: lang === 'tr' ? 'Çıkış' : 'Release Date',      value: formatReleaseDate(game.released) },
               { label: lang === 'tr' ? 'Türler' : 'Genres',     value: (game.genres || []).join(', ') },
             ].filter(r => r.value).map(row => (
               <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid var(--border)', gap: 12 }}>
