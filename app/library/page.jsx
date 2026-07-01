@@ -151,7 +151,7 @@ export default function LibraryPage() {
   };
 
   // ── Giriş yapılmamış ──
-  if (!user) {
+  if (!user && steamAccounts.length === 0 && !xboxUser) {
     return (
       <div className="container" style={{ paddingTop: 80, paddingBottom: 60, maxWidth: 520, margin: '0 auto', textAlign: 'center' }}>
         <div style={{ fontSize: 64, marginBottom: 20 }}>🔒</div>
