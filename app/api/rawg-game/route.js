@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { isAdultContent, isAdultTitleOrSlug } from '../../lib/adult-filter.js';
 import { FALLBACK_GAMES } from '../../lib/fallback-games.js';
+import { getSteamDetailsCached } from '../../lib/steam-cache.js';
 
 const RAWG_KEY = process.env.RAWG_API_KEY;
 const BASE     = 'https://api.rawg.io/api';
@@ -50,13 +51,8 @@ async function searchSteamGame(slug) {
 
 async function fetchSteamDetails(appid, slug) {
   try {
-    const res = await fetch(`https://store.steampowered.com/api/appdetails?appids=${appid}&cc=tr&l=tr`);
-    if (!res.ok) return null;
-    const data = await res.json();
-    const entry = data[appid];
-    if (!entry || !entry.success || !entry.data) return null;
-    
-    const d = entry.data;
+    const d = await getSteamDetailsCached(appid);
+    if (!d) return null;
     
     return {
       id:           `rawg_${appid}`,

@@ -3,6 +3,7 @@ import { getSteamAppIdBySlug, fetchLowestPriceFromITAD, fetchPriceByAppId } from
 import { isAdultContent, isAdultTitleOrSlug } from '../../lib/adult-filter.js';
 import { FALLBACK_GAMES } from '../../lib/fallback-games.js';
 import { getUsdToTry } from '../../lib/exchange.js';
+import { getSteamDetailsCached } from '../../lib/steam-cache.js';
 
 const RAWG_KEY = process.env.RAWG_API_KEY;
 const BASE     = 'https://api.rawg.io/api';
@@ -288,18 +289,15 @@ async function fetchSteamNewReleases() {
     const data = await res.json();
     const newReleases = data.new_releases?.items || [];
 
-    // DLC'leri, Expansion'ları, Soundtrack'leri filtrelemek ve çıkış tarihini almak için paralel appdetails kontrolü
+    // DLC'leri, Expansion'ları, Soundtrack'leri filtrelemek ve çıkış tarihini almak için paralel cached appdetails kontrolü
     const detailedItems = await Promise.all(
       newReleases.map(async (item) => {
         try {
-          const detailRes = await fetch(`https://store.steampowered.com/api/appdetails?appids=${item.id}&cc=tr`, { next: { revalidate: 1800 } });
-          if (!detailRes.ok) return null;
-          const detailData = await detailRes.json();
-          const entry = detailData[item.id];
-          if (entry && entry.success && entry.data?.type === 'game') {
+          const data = await getSteamDetailsCached(item.id);
+          if (data && data.type === 'game') {
             return {
               item,
-              released: entry.data.release_date?.date || null,
+              released: data.release_date?.date || null,
             };
           }
           return null;
@@ -633,17 +631,13 @@ export async function GET(request) {
               let releasedDate = null;
               if (fetchReleaseDates) {
                 try {
-                  const detailRes = await fetch(`https://store.steampowered.com/api/appdetails?appids=${appid}&cc=tr`, { next: { revalidate: 1800 } });
-                  if (detailRes.ok) {
-                    const detailData = await detailRes.json();
-                    const entry = detailData[appid];
-                    if (entry && entry.success && entry.data) {
-                      // Filter out coming soon / unreleased games
-                      if (entry.data.release_date?.coming_soon) {
-                        return null;
-                      }
-                      releasedDate = entry.data.release_date?.date || null;
+                  const data = await getSteamDetailsCached(appid);
+                  if (data) {
+                    // Filter out coming soon / unreleased games
+                    if (data.release_date?.coming_soon) {
+                      return null;
                     }
+                    releasedDate = data.release_date?.date || null;
                   }
                 } catch {}
               }
