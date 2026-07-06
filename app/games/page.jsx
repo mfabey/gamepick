@@ -227,17 +227,6 @@ function GamesList() {
     return () => { window.removeEventListener('scroll', handleScroll); clearTimeout(t); };
   }, [loadMore]);
 
-  // Auto-loading for filtered lists
-  useEffect(() => {
-    if (loading || loadingMore) return;
-    const ref = scrollRef.current;
-    if (!ref.canMore) return;
-
-    if (filteredGames.length < 8 && games.length > 0) {
-      loadMore();
-    }
-  }, [filteredGames.length, games.length, loading, loadingMore, loadMore]);
-
   const filteredGames = useMemo(() => games.filter(g => {
     // Bütçe
     if (price === 'free' && !g.isFree) return false;
@@ -249,6 +238,17 @@ function GamesList() {
     if (mcMin > 0 && !(g.metacritic >= mcMin)) return false;
     return true;
   }), [games, price, store, mcMin]);
+
+  // Auto-loading for filtered lists
+  useEffect(() => {
+    if (loading || loadingMore) return;
+    const ref = scrollRef.current;
+    if (!ref.canMore) return;
+
+    if (filteredGames.length < 8 && games.length > 0) {
+      loadMore();
+    }
+  }, [filteredGames.length, games.length, loading, loadingMore, loadMore]);
 
   const resetFilters = () => { setQuery(''); setPrice('all'); setSection(''); setGenre(''); setStore('all'); setMcMin(0); setMode('all'); };
 
