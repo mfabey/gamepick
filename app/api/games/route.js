@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getSteamAppIdBySlug, fetchLowestPriceFromITAD, fetchPriceByAppId } from '../card-price/route.js';
 import { isAdultContent, isAdultTitleOrSlug } from '../../lib/adult-filter.js';
 import { FALLBACK_GAMES } from '../../lib/fallback-games.js';
-import { getUsdToTry } from '../../lib/exchange.js';
+import { getUsdToTry, amountToTRY } from '../../lib/exchange.js';
 import { getSteamDetailsCached } from '../../lib/steam-cache.js';
 
 const RAWG_KEY = process.env.RAWG_API_KEY;
@@ -243,11 +243,8 @@ async function fetchSteamFeatured(category) {
       
       const isFree = item.final_price === 0 || (!item.final_price && !item.original_price);
 
-      const priceUSD = item.final_price ? item.final_price / 100 : null;
-      const originalUSD = item.original_price ? item.original_price / 100 : null;
-
-      const price = priceUSD ? Math.round(priceUSD * rate) : null;
-      const original = originalUSD ? Math.round(originalUSD * rate) : null;
+      const price = item.final_price != null ? amountToTRY(item.final_price, item.currency || 'USD', rate) : null;
+      const original = item.original_price != null ? amountToTRY(item.original_price, item.currency || 'USD', rate) : null;
 
       return {
         id:           'rawg_' + item.id,
@@ -285,7 +282,7 @@ async function fetchSteamFeatured(category) {
 async function fetchSteamNewReleases() {
   try {
     const rate = await getUsdToTry();
-    const res = await fetch('https://store.steampowered.com/api/featuredcategories/', { next: { revalidate: 1800 } });
+    const res = await fetch('https://store.steampowered.com/api/featuredcategories/?cc=tr&l=tr', { next: { revalidate: 1800 } });
     if (!res.ok) return [];
     const data = await res.json();
     const newReleases = data.new_releases?.items || [];
@@ -316,10 +313,8 @@ async function fetchSteamNewReleases() {
       
       const isFree = item.final_price === 0 && !item.original_price;
 
-      const priceUSD = item.final_price ? item.final_price / 100 : null;
-      const originalUSD = item.original_price ? item.original_price / 100 : null;
-      const price = priceUSD ? Math.round(priceUSD * rate) : null;
-      const original = originalUSD ? Math.round(originalUSD * rate) : null;
+      const price = item.final_price != null ? amountToTRY(item.final_price, item.currency || 'USD', rate) : null;
+      const original = item.original_price != null ? amountToTRY(item.original_price, item.currency || 'USD', rate) : null;
 
       return {
         id:           'rawg_' + item.id,
