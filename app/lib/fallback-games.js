@@ -20,6 +20,22 @@ export const FALLBACK_GAMES = [
     hasEpic: false,
     hasStores: true
   },
+  {
+    id: 'rawg_4656000',
+    rawgId: 4656000,
+    rawgSlug: 'bombanana',
+    name: 'BOMBANANA!',
+    image: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/4656000/header.jpg?t=1783021639',
+    metacritic: null,
+    reviewScore: 0,
+    totalReviews: 0,
+    isFree: false,
+    genres: ['Basit Eğlence', 'Bağımsız Yapım'],
+    released: '2026-08-01',
+    hasSteam: true,
+    hasEpic: false,
+    hasStores: true
+  },
   // Aksiyon & Macera & RPG
   {
     id: 'rawg_1245620',

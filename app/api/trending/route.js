@@ -492,6 +492,7 @@ const STREAMER_CHANNELS = [
 ];
 
 const GAME_ALIASES = {
+  'bombanana': ['bombanana', 'bomba'],
   'meccha-chameleon': ['meccha', 'chameleon', 'bukalemun'],
   'chained-together': ['chained', 'zincir'],
   'lethal-company': ['lethal', 'telsizli'],
@@ -519,6 +520,7 @@ const IGNORED_POPULAR_GAMES = new Set([
 // Streamer viral fallback games (AppIDs)
 const VIRAL_FALLBACK_APPIDS = [
   4704690, // Meccha Chameleon
+  4656000, // BOMBANANA
   617010,  // Chained Together
   983289,  // Bodycam
   1966720, // Lethal Company
