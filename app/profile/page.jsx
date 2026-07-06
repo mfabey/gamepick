@@ -9,6 +9,83 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import ActivityHeatmap from '../components/ActivityHeatmap';
 
+// Dynamic Spotlight Stat Card Component
+function ProfileStatCard({ value, label, color }) {
+  const [coords, setCoords] = useState({ x: 0, y: 0 });
+  const [hovered, setHovered] = useState(false);
+
+  const handleMouseMove = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    setCoords({ x, y });
+  };
+
+  return (
+    <div
+      onMouseMove={handleMouseMove}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        position: 'relative',
+        background: hovered 
+          ? `radial-gradient(120px circle at ${coords.x}px ${coords.y}px, rgba(255, 255, 255, 0.08), transparent 80%), rgba(20, 26, 38, 0.65)` 
+          : 'rgba(20, 26, 38, 0.4)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        border: '1px solid rgba(255, 255, 255, 0.06)',
+        borderRadius: 16,
+        padding: '24px 16px',
+        textAlign: 'center',
+        boxShadow: hovered 
+          ? '0 10px 30px -10px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.08)' 
+          : '0 4px 20px -5px rgba(0,0,0,0.3)',
+        transform: hovered ? 'translateY(-2px)' : 'none',
+        transition: 'background 0.15s, border-color 0.15s, box-shadow 0.2s, transform 0.2s',
+        overflow: 'hidden',
+        cursor: 'default'
+      }}
+    >
+      {/* Dynamic spotlight border overlay */}
+      {hovered && (
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          borderRadius: 16,
+          padding: 1, // acts as border width
+          background: `radial-gradient(100px circle at ${coords.x}px ${coords.y}px, ${color}55, transparent 70%)`,
+          WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+          WebkitMaskComposite: 'xor',
+          maskComposite: 'exclude',
+          pointerEvents: 'none',
+          zIndex: 3
+        }} />
+      )}
+      
+      <div style={{ 
+        fontSize: 32, 
+        fontWeight: 900, 
+        color: color, 
+        letterSpacing: '-1px', 
+        lineHeight: 1, 
+        marginBottom: 8,
+        textShadow: `0 2px 12px ${color}25`
+      }}>
+        {value}
+      </div>
+      <div style={{ 
+        fontSize: 10.5, 
+        fontWeight: 800, 
+        color: 'var(--text-3)', 
+        textTransform: 'uppercase', 
+        letterSpacing: '0.08em' 
+      }}>
+        {label}
+      </div>
+    </div>
+  );
+}
+
 export default function ProfilePage() {
   const { 
     user, 
@@ -333,12 +410,29 @@ export default function ProfilePage() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-body)', paddingBottom: 80 }}>
+      <style>{`
+        @keyframes floatGlow1 {
+          0% { transform: translate(0, 0) scale(1); }
+          50% { transform: translate(60px, 40px) scale(1.15); opacity: 0.8; }
+          100% { transform: translate(0, 0) scale(1); }
+        }
+        @keyframes floatGlow2 {
+          0% { transform: translate(0, 0) scale(1.1); }
+          50% { transform: translate(-50px, 30px) scale(0.9); opacity: 0.7; }
+          100% { transform: translate(0, 0) scale(1.1); }
+        }
+        @keyframes floatGlow3 {
+          0% { transform: translate(0, 0) scale(0.95); }
+          50% { transform: translate(40px, -50px) scale(1.1); opacity: 0.6; }
+          100% { transform: translate(0, 0) scale(0.95); }
+        }
+      `}</style>
 
       {/* ── Cover Banner ── */}
-      <div style={{ height: 196, position: 'relative', overflow: 'hidden', background: 'linear-gradient(135deg, #080d18 0%, #14102a 50%, #091825 100%)' }}>
-        <div style={{ position: 'absolute', top: -70, left: -50, width: 340, height: 340, borderRadius: '50%', background: 'radial-gradient(circle, rgba(201,133,10,0.16) 0%, transparent 65%)', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', bottom: -70, right: 80, width: 280, height: 280, borderRadius: '50%', background: 'radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 65%)', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', top: '50%', right: '25%', transform: 'translateY(-50%)', width: 200, height: 200, borderRadius: '50%', background: 'radial-gradient(circle, rgba(26,159,255,0.07) 0%, transparent 65%)', pointerEvents: 'none' }} />
+      <div style={{ height: 196, position: 'relative', overflow: 'hidden', background: 'linear-gradient(135deg, #050811 0%, #0d0a1b 50%, #06111a 100%)', borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
+        <div style={{ position: 'absolute', top: -70, left: -50, width: 340, height: 340, borderRadius: '50%', background: 'radial-gradient(circle, rgba(201,133,10,0.16) 0%, transparent 65%)', pointerEvents: 'none', animation: 'floatGlow1 16s ease-in-out infinite' }} />
+        <div style={{ position: 'absolute', bottom: -70, right: 80, width: 280, height: 280, borderRadius: '50%', background: 'radial-gradient(circle, rgba(99,102,241,0.14) 0%, transparent 65%)', pointerEvents: 'none', animation: 'floatGlow2 14s ease-in-out infinite' }} />
+        <div style={{ position: 'absolute', top: '20%', right: '35%', width: 220, height: 220, borderRadius: '50%', background: 'radial-gradient(circle, rgba(26,159,255,0.08) 0%, transparent 65%)', pointerEvents: 'none', animation: 'floatGlow3 18s ease-in-out infinite' }} />
         {/* Platform badges */}
         <div style={{ position: 'absolute', top: 18, right: 24, display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           {steamAccounts.map(a => (
@@ -386,17 +480,26 @@ export default function ProfilePage() {
 
         {/* ── Stats Row ── */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 32 }}>
-          {[
-            { value: totalConnectedGames > 0 ? totalConnectedGames.toString() : (libsLoading && (steamUser || xboxUser) ? '...' : '0'), label: lang === 'tr' ? 'Toplam Oyun' : 'Total Games', color: 'var(--accent)' },
-            { value: getPlaytimeStat(), label: lang === 'tr' ? 'Ort. Oynama' : 'Avg. Playtime', color: '#3b82f6' },
-            { value: getCompletionStat(), label: lang === 'tr' ? 'Tamamlama' : 'Completion', color: '#a855f7' },
-            { value: wishlist.length.toString(), label: lang === 'tr' ? 'İstek Listesi' : 'Wishlist', color: '#22c55e' },
-          ].map(s => (
-            <div key={s.label} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: '20px 16px', textAlign: 'center' }}>
-              <div style={{ fontSize: 30, fontWeight: 800, color: s.color, letterSpacing: '-1px', lineHeight: 1, marginBottom: 7 }}>{s.value}</div>
-              <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>{s.label}</div>
-            </div>
-          ))}
+          <ProfileStatCard
+            value={totalConnectedGames > 0 ? totalConnectedGames.toString() : (libsLoading && (steamUser || xboxUser) ? '...' : '0')}
+            label={lang === 'tr' ? 'Toplam Oyun' : 'Total Games'}
+            color="var(--accent)"
+          />
+          <ProfileStatCard
+            value={getPlaytimeStat()}
+            label={lang === 'tr' ? 'Ort. Oynama' : 'Avg. Playtime'}
+            color="#3b82f6"
+          />
+          <ProfileStatCard
+            value={getCompletionStat()}
+            label={lang === 'tr' ? 'Tamamlama' : 'Completion'}
+            color="#a855f7"
+          />
+          <ProfileStatCard
+            value={wishlist.length.toString()}
+            label={lang === 'tr' ? 'İstek Listesi' : 'Wishlist'}
+            color="#22c55e"
+          />
         </div>
 
         {/* ── Activity Heatmap ── */}
