@@ -436,12 +436,25 @@ export async function GET(request) {
   const num     = parseInt(searchParams.get('num')  || '24');
   const rotate  = searchParams.get('rotate')  === 'true';
   const mode    = searchParams.get('mode')    || '';   // singleplayer | multiplayer | coop
+  const store   = searchParams.get('store')   || '';   // steam | epic
+  const mc      = searchParams.get('metacritic') || ''; // min metacritic score e.g. "80"
+  const price   = searchParams.get('price')   || '';
 
   // ── Oyun modu filtresi: Steam mağaza kategorileri (otoriter veri) ──
   // RAWG etiketleri oyun modu için güvenilmez olduğundan, mod seçiliyse Steam araması
   // önceliklidir ve RAWG anahtarı gerektirmez.
   if (mode && STEAM_MODE_CAT[mode]) {
-    const { results: modeResults, total: modeTotal } = await fetchSteamByMode(mode, { genres, q: q.trim(), section, page, num });
+    let { results: modeResults, total: modeTotal } = await fetchSteamByMode(mode, { genres, q: q.trim(), section, page, num });
+    if (store === 'epic') {
+      modeResults = [];
+    }
+    if (mc) {
+      const minScore = parseInt(mc);
+      modeResults = modeResults.filter(g => g.metacritic >= minScore);
+    }
+    if (price === 'free') {
+      modeResults = modeResults.filter(g => g.isFree);
+    }
     if (modeResults.length > 0) {
       return NextResponse.json({ results: modeResults, total: modeTotal, source: 'steam-mode' });
     }
@@ -456,6 +469,20 @@ export async function GET(request) {
     const fetchNum = section === 'sale' ? 60 : (section && section !== '') ? 40 : num;
     const base = { platforms: 4, page, page_size: fetchNum, exclude_additions: true };
     let params = { ...base };
+
+    if (store === 'steam') {
+      params.stores = '1';
+    } else if (store === 'epic') {
+      params.stores = '11';
+    }
+
+    if (mc) {
+      params.metacritic = `${mc},100`;
+    }
+
+    if (price === 'free') {
+      params.tags = 'free-to-play';
+    }
 
     const trimmedQ = q.trim();
     if (trimmedQ) {
@@ -533,15 +560,24 @@ export async function GET(request) {
             fetchSteamNewReleases()
           ]);
 
+          let filteredSteam = steamResults;
+          if (store === 'epic') {
+            filteredSteam = [];
+          }
+          if (mc) {
+            const minScore = parseInt(mc);
+            filteredSteam = filteredSteam.filter(g => g.metacritic >= minScore);
+          }
+
           const rawgResults = (rawgData.results || []).filter(g => !isAdultContent(g) && !isDlc(g)).map(formatRawgGame);
-          total = (rawgData.count || 0) + steamResults.length;
+          total = (rawgData.count || 0) + filteredSteam.length;
 
           // Temizleme: hasStores olanları ve silinenleri filtrele
           const filteredRawg = rawgResults.filter(g => g.hasStores && !KNOWN_DELISTED_SLUGS.has(g.rawgSlug));
 
           // Tekilleştirme: Hem Steam AppId hem de isim bazlı kontrol et
-          const seenAppIds = new Set(steamResults.map(g => g.rawgId));
-          const seenNames = new Set(steamResults.map(g => g.name.toLowerCase().replace(/[^a-z0-9]/g, '')));
+          const seenAppIds = new Set(filteredSteam.map(g => g.rawgId));
+          const seenNames = new Set(filteredSteam.map(g => g.name.toLowerCase().replace(/[^a-z0-9]/g, '')));
 
           const uniqueRawg = filteredRawg.filter(g => {
             const cleanName = g.name.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -550,7 +586,7 @@ export async function GET(request) {
           });
 
           // Steam en yeni çıkanlar en üstte olacak şekilde birleştir
-          results = [...steamResults, ...uniqueRawg];
+          results = [...filteredSteam, ...uniqueRawg];
         } else {
           // page > 1 ise sadece RAWG
           const data = await fetchRawg('/games', params);

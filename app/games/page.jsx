@@ -123,7 +123,7 @@ function GamesList() {
 
   const debounceRef = useRef(null);
   const sentinelRef = useRef(null);
-  const scrollRef   = useRef({ page: 1, fetching: false, canMore: false, seenIds: new Set(), section: '', query: '', genre: '', mode: '' });
+  const scrollRef   = useRef({ page: 1, fetching: false, canMore: false, seenIds: new Set(), section: '', query: '', genre: '', mode: '', store: '', mc: '', price: '' });
 
   useEffect(() => {
     const sec = searchParams.get('section') || '';
@@ -131,15 +131,22 @@ function GamesList() {
     setSection(sec);
     setQuery(q);
     setGenre('');
+    setPrice('all');
+    setStore('all');
+    setMcMin(0);
+    setMode('all');
   }, [searchParams]);
 
   const buildUrl = useCallback((pageNum) => {
-    const { section: s, query: q, genre: g, mode: m } = scrollRef.current;
+    const { section: s, query: q, genre: g, mode: m, store: st, mc: mcScore, price: pr } = scrollRef.current;
     const p = new URLSearchParams({ page: pageNum, num: PAGE_SIZE });
     if (s) p.set('section', s);
     if (q) p.set('q', q);
     if (g) p.set('genres', g);
     if (m) p.set('mode', m);
+    if (st && st !== 'all') p.set('store', st);
+    if (mcScore > 0) p.set('metacritic', mcScore);
+    if (pr) p.set('price', pr);
     return '/api/games?' + p.toString();
   }, []);
 
@@ -153,6 +160,9 @@ function GamesList() {
     ref.query    = query;
     ref.genre    = genre;
     ref.mode     = mode === 'all' ? '' : mode;
+    ref.store    = store;
+    ref.mc       = mcMin;
+    ref.price    = price;
     setLoading(true);
     try {
       const data    = await fetch(buildUrl(1)).then(r => r.json());
@@ -162,7 +172,7 @@ function GamesList() {
       ref.canMore = (data.total || 0) > PAGE_SIZE;
     } catch {}
     finally { setLoading(false); }
-  }, [section, query, genre, mode, buildUrl]);
+  }, [section, query, genre, mode, store, mcMin, price, buildUrl]);
 
   const loadMore = useCallback(async () => {
     const ref = scrollRef.current;
@@ -216,6 +226,17 @@ function GamesList() {
     const t = setTimeout(check, 800);
     return () => { window.removeEventListener('scroll', handleScroll); clearTimeout(t); };
   }, [loadMore]);
+
+  // Auto-loading for filtered lists
+  useEffect(() => {
+    if (loading || loadingMore) return;
+    const ref = scrollRef.current;
+    if (!ref.canMore) return;
+
+    if (filteredGames.length < 8 && games.length > 0) {
+      loadMore();
+    }
+  }, [filteredGames.length, games.length, loading, loadingMore, loadMore]);
 
   const filteredGames = useMemo(() => games.filter(g => {
     // Bütçe
@@ -415,7 +436,15 @@ function GamesList() {
             ) : (
               <>
                 <div className="grid-auto">
-                  {filteredGames.map(game => <GameCard key={game.id} game={game} />)}
+                  {filteredGames.map(game => (
+                    <GameCard 
+                      key={game.id} 
+                      game={game} 
+                      onPriceUpdate={(id, priceVal, isFree) => {
+                        setGames(prev => prev.map(g => g.id === id ? { ...g, price: priceVal, isFree } : g));
+                      }} 
+                    />
+                  ))}
                 </div>
                 <div ref={sentinelRef} style={{ height: 1 }} />
                 {loadingMore && (

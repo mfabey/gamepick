@@ -169,14 +169,21 @@ function GameCard({ game, compact = false, cardWidth }) {
 
       fetch('/api/card-price?' + params)
         .then(r => r.json())
-        .then(d => { if (d.price != null) setLivePrice(d); })
+        .then(d => {
+          if (d.price != null) {
+            setLivePrice(d);
+            if (onPriceUpdate) {
+              onPriceUpdate(game.id, d.price, d.isFree);
+            }
+          }
+        })
         .catch(() => {})
         .finally(() => { setPriceLoading(false); setPriceDone(true); });
     }, { rootMargin: '300px' });
 
     obs.observe(el);
     return () => obs.disconnect();
-  }, [game.name, game.rawgSlug, game.hasSteam, priceLoading, priceDone, game.price, game.original, game.discount, game.isFree]);
+  }, [game.name, game.rawgSlug, game.hasSteam, priceLoading, priceDone, game.price, game.original, game.discount, game.isFree, onPriceUpdate]);
 
   const isFree = (livePrice && livePrice.price !== null)
     ? livePrice.isFree
