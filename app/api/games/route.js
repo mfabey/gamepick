@@ -212,6 +212,7 @@ function generateSlug(text) {
 function isDlc(game) {
   const name = (game.name || '').toLowerCase();
   if (name.includes(' dlc') || name.endsWith(' dlc') || name.includes('expansion pass') || name.includes('season pass') || name.includes(' soundtrack') || name.includes(' add-on') || name.includes(' addon') || name.includes(' upgrade') || name.includes(' deluxe edition upgrade') || name.includes(' artbook')) return true;
+  if (name.includes(' sdk') || name.endsWith(' sdk') || name.includes('modding') || name.includes('tool') || name.includes('server') || name.includes('playtest') || name.includes('demo')) return true;
   if (game.tags && game.tags.some(t => t.slug === 'dlc' || t.slug === 'soundtrack')) return true;
   return false;
 }

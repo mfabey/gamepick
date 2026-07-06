@@ -25,7 +25,7 @@ export const FALLBACK_GAMES = [
     rawgId: 4656000,
     rawgSlug: 'bombanana',
     name: 'BOMBANANA!',
-    image: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/4656000/header.jpg?t=1783021639',
+    image: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/4656000/99c086faba625a8d3bc459bab444087d257ccbe1/header.jpg?t=1783021639',
     metacritic: null,
     reviewScore: 0,
     totalReviews: 0,
