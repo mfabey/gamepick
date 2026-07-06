@@ -29,11 +29,11 @@ function ProfileStatCard({ value, label, color }) {
       style={{
         position: 'relative',
         background: hovered 
-          ? `radial-gradient(120px circle at ${coords.x}px ${coords.y}px, rgba(255, 255, 255, 0.08), transparent 80%), rgba(20, 26, 38, 0.65)` 
-          : 'rgba(20, 26, 38, 0.4)',
+          ? `radial-gradient(120px circle at ${coords.x}px ${coords.y}px, rgba(255, 255, 255, 0.08), transparent 80%), var(--profile-stat-hover-bg)` 
+          : 'var(--profile-stat-bg)',
         backdropFilter: 'blur(16px)',
         WebkitBackdropFilter: 'blur(16px)',
-        border: '1px solid rgba(255, 255, 255, 0.06)',
+        border: '1px solid var(--profile-stat-border)',
         borderRadius: 16,
         padding: '24px 16px',
         textAlign: 'center',
@@ -429,10 +429,10 @@ export default function ProfilePage() {
       `}</style>
 
       {/* ── Cover Banner ── */}
-      <div style={{ height: 196, position: 'relative', overflow: 'hidden', background: 'linear-gradient(135deg, #050811 0%, #0d0a1b 50%, #06111a 100%)', borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
-        <div style={{ position: 'absolute', top: -70, left: -50, width: 340, height: 340, borderRadius: '50%', background: 'radial-gradient(circle, rgba(201,133,10,0.16) 0%, transparent 65%)', pointerEvents: 'none', animation: 'floatGlow1 16s ease-in-out infinite' }} />
-        <div style={{ position: 'absolute', bottom: -70, right: 80, width: 280, height: 280, borderRadius: '50%', background: 'radial-gradient(circle, rgba(99,102,241,0.14) 0%, transparent 65%)', pointerEvents: 'none', animation: 'floatGlow2 14s ease-in-out infinite' }} />
-        <div style={{ position: 'absolute', top: '20%', right: '35%', width: 220, height: 220, borderRadius: '50%', background: 'radial-gradient(circle, rgba(26,159,255,0.08) 0%, transparent 65%)', pointerEvents: 'none', animation: 'floatGlow3 18s ease-in-out infinite' }} />
+      <div style={{ height: 196, position: 'relative', overflow: 'hidden', background: 'var(--profile-banner-bg)', borderBottom: '1px solid var(--profile-banner-border)' }}>
+        <div style={{ position: 'absolute', top: -70, left: -50, width: 340, height: 340, borderRadius: '50%', background: 'var(--profile-glow-1)', pointerEvents: 'none', animation: 'floatGlow1 16s ease-in-out infinite' }} />
+        <div style={{ position: 'absolute', bottom: -70, right: 80, width: 280, height: 280, borderRadius: '50%', background: 'var(--profile-glow-2)', pointerEvents: 'none', animation: 'floatGlow2 14s ease-in-out infinite' }} />
+        <div style={{ position: 'absolute', top: '20%', right: '35%', width: 220, height: 220, borderRadius: '50%', background: 'var(--profile-glow-3)', pointerEvents: 'none', animation: 'floatGlow3 18s ease-in-out infinite' }} />
         {/* Platform badges */}
         <div style={{ position: 'absolute', top: 18, right: 24, display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           {steamAccounts.map(a => (
