@@ -56,7 +56,7 @@ function getSteamAppId(game) {
 }
 
 // Dikey (3:4) oyun kartı — prototip GxCard: 3B eğilme, üzerine gelince bilgi + kırmızı glow + screenshot slideshow
-function GameCard({ game, compact = false, cardWidth }) {
+function GameCard({ game, compact = false, cardWidth, onPriceUpdate }) {
   const { ownedGames, xboxOwnedGames = new Set(), gamePassGames = new Set() } = useAuth();
   const { lang, t, formatPrice } = useLanguage();
   const normalizedNameStr = normalizeName(game.name);
