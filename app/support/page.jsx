@@ -142,14 +142,17 @@ export default function SupportPage() {
               <div style={{ fontSize: 12.5, color: 'var(--text-3)', marginTop: 2 }}>{lang === 'tr' ? '~24 saat içinde yanıt' : '~24 hours response time'}</div>
             </div>
           </div>
-          <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 15, padding: 20 }}>
+          <a href="https://discord.gg/nsmrWT7Bat" target="_blank" rel="noopener noreferrer" className="card" style={{ display: 'flex', alignItems: 'center', gap: 15, padding: 20, textDecoration: 'none', cursor: 'pointer', transition: 'transform 0.2s ease, box-shadow 0.2s ease' }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'none'; }}
+          >
             <span style={{ display: 'flex', width: 44, height: 44, flexShrink: 0, borderRadius: 12, background: 'var(--accent-bg)', alignItems: 'center', justifyContent: 'center' }}><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 8a5 5 0 0 0-10 0v3l-2 4h14l-2-4z" /><circle cx="9" cy="9" r="1" /><circle cx="15" cy="9" r="1" /></svg></span>
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--text-3)', marginBottom: 3 }}>{lang === 'tr' ? 'Topluluk' : 'Community'}</div>
               <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{lang === 'tr' ? 'Discord sunucusu' : 'Discord server'}</div>
               <div style={{ fontSize: 12.5, color: 'var(--text-3)', marginTop: 2 }}>{lang === 'tr' ? 'Binlerce oyuncuyla anında' : 'Instantly with thousands of players'}</div>
             </div>
-          </div>
+          </a>
         </div>
 
         {/* ── Form + SSS ── */}
