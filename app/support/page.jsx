@@ -143,17 +143,6 @@ export default function SupportPage() {
             </div>
           </div>
           <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 15, padding: 20 }}>
-            <span style={{ display: 'flex', width: 44, height: 44, flexShrink: 0, borderRadius: 12, background: 'var(--accent-bg)', alignItems: 'center', justifyContent: 'center' }}><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4L3 21l1.1-9A8.4 8.4 0 1 1 21 11.5z" /></svg></span>
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--text-3)', marginBottom: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
-                {lang === 'tr' ? 'Canlı Destek' : 'Live Support'}{' '}
-                <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--green)', boxShadow: '0 0 0 3px rgba(47,158,107,0.2)' }} />
-              </div>
-              <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{lang === 'tr' ? 'Şu an çevrimiçi' : 'Online now'}</div>
-              <div style={{ fontSize: 12.5, color: 'var(--text-3)', marginTop: 2 }}>{lang === 'tr' ? 'Hafta içi 09:00 – 18:00' : 'Weekdays 09:00 – 18:00'}</div>
-            </div>
-          </div>
-          <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 15, padding: 20 }}>
             <span style={{ display: 'flex', width: 44, height: 44, flexShrink: 0, borderRadius: 12, background: 'var(--accent-bg)', alignItems: 'center', justifyContent: 'center' }}><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 8a5 5 0 0 0-10 0v3l-2 4h14l-2-4z" /><circle cx="9" cy="9" r="1" /><circle cx="15" cy="9" r="1" /></svg></span>
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--text-3)', marginBottom: 3 }}>{lang === 'tr' ? 'Topluluk' : 'Community'}</div>
