@@ -69,7 +69,7 @@ export default function SupportPage() {
     if (name && email && msg) {
       const emailTo = 'support@gamerisen.com';
       const emailSubject = encodeURIComponent(`[Gamerisen Destek] ${subject} - ${name}`);
-      const emailBody = encodeURIComponent(`Ad Soyad: ${name}\nE-posta: ${email}\nKonu: ${subject}\n\nMesaj:\n${msg}`);
+      const emailBody = encodeURIComponent(`Ad Soyad: ${name}\r\nE-posta: ${email}\r\nKonu: ${subject}\r\n\r\nMesaj:\r\n${msg}`);
       
       window.location.href = `mailto:${emailTo}?subject=${emailSubject}&body=${emailBody}`;
       setSent(true);
@@ -178,13 +178,15 @@ export default function SupportPage() {
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, background: 'var(--green-bg)', border: '1px solid var(--green-border)', borderRadius: 13, padding: '16px 18px', marginBottom: 22 }}>
                 <span style={{ flexShrink: 0, width: 24, height: 24, borderRadius: '50%', background: 'var(--green)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800 }}>✓</span>
                 <div>
-                  <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--green)', marginBottom: 2 }}>
-                    {lang === 'tr' ? 'Mesajın bize ulaştı!' : 'Message received!'}
+                  <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--green)', marginBottom: 4 }}>
+                    {lang === 'tr' ? 'E-posta Uygulaması Açıldı!' : 'Email Client Opened!'}
                   </div>
-                  <div style={{ fontSize: 13.5, color: 'var(--text-2)', lineHeight: 1.5 }}>
-                    {lang === 'tr' ? 'En kısa sürede e-posta ile döneceğiz.' : 'We will respond via email as soon as possible.'}{' '}
+                  <div style={{ fontSize: 13.5, color: 'var(--text-2)', lineHeight: 1.55 }}>
+                    {lang === 'tr' 
+                      ? 'Lütfen açılan e-posta uygulamasında "Gönder" butonuna basarak mesajınızı tamamlayın. Eğer uygulama otomatik açılmadıysa, mesajınızı doğrudan support@gamerisen.com adresine gönderebilirsiniz.' 
+                      : 'Please press the "Send" button in your opened email app to complete your message. If the app did not open automatically, you can send it directly to support@gamerisen.com.'}{' '}
                     <span onClick={reset} style={{ color: 'var(--accent)', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 2 }}>
-                      {lang === 'tr' ? 'Yeni mesaj gönder' : 'Send another message'}
+                      {lang === 'tr' ? 'Formu sıfırla' : 'Reset form'}
                     </span>
                   </div>
                 </div>
