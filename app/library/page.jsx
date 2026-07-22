@@ -192,6 +192,35 @@ export default function LibraryPage() {
       <style>{`
         .pv-wrap .pv-kurus { display:inline-block; max-width:0; overflow:hidden; opacity:0; transition: max-width .45s cubic-bezier(.2,.8,.2,1), opacity .45s ease; vertical-align:baseline; white-space:nowrap; }
         .pv-wrap:hover .pv-kurus { max-width:6ch; opacity:.4; }
+        .library-games-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+          gap: 24px;
+        }
+        .library-game-card-content {
+          position: absolute; bottom: 0; left: 0; right: 0;
+          padding: 20px 14px 12px;
+          display: flex; flex-direction: column; gap: 6px;
+          z-index: 2;
+        }
+        .library-game-card-title {
+          font-size: 15px; font-weight: 800; color: #fff; margin: 0; line-height: 1.2;
+          text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+          display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+        }
+        @media (max-width: 640px) {
+          .library-games-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 12px !important;
+          }
+          .library-game-card-content {
+            padding: 12px 10px 8px !important;
+            gap: 4px !important;
+          }
+          .library-game-card-title {
+            font-size: 12.5px !important;
+          }
+        }
       `}</style>
 
       {/* Üst başlık + platform sekmeleri */}
@@ -492,7 +521,7 @@ function SteamGamesGrid({ games, prices, pricesLoading, showOwner }) {
         {pricesLoading && <span style={{ marginLeft: 10, color: '#1a9fff', fontStyle: 'italic' }}>{t('library.showingGamesLoading')}</span>}
       </p>
       {filtered.length === 0 ? <EmptyState /> : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '24px' }}>
+        <div className="library-games-grid">
           {filtered.map((game, i) => <GameRow key={game.appid} game={game} rank={sort === 'hours' ? i + 1 : null} price={prices[game.appid]} pricesLoading={pricesLoading} accountLabel={showOwner ? game._owner : null} />)}
         </div>
       )}
@@ -648,22 +677,13 @@ function GameRow({ game, rank, price, pricesLoading, accountLabel }) {
       </div>
 
       {/* Bottom Content */}
-      <div style={{
-        position: 'absolute', bottom: 0, left: 0, right: 0,
-        padding: '24px 16px 16px', pointerEvents: 'none',
-        display: 'flex', flexDirection: 'column', gap: 8,
-        zIndex: 2
-      }}>
+      <div className="library-game-card-content" style={{ pointerEvents: 'none' }}>
         {accountLabel && (
           <span style={{ alignSelf: 'flex-start', fontSize: 10, fontWeight: 700, color: '#cfe8ff', background: 'rgba(26,159,255,0.28)', border: '1px solid rgba(26,159,255,0.45)', padding: '2px 8px', borderRadius: 6, backdropFilter: 'blur(4px)', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {accountLabel}
           </span>
         )}
-        <h3 style={{
-          fontSize: 16, fontWeight: 800, color: '#fff', margin: 0, lineHeight: 1.2,
-          textShadow: '0 2px 4px rgba(0,0,0,0.8)',
-          display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'
-        }}>
+        <h3 className="library-game-card-title">
           {game.name}
         </h3>
 
@@ -796,7 +816,7 @@ function XboxLibrary({ xboxUser, library, loading, error, onLogout }) {
 
       {filtered.length === 0
         ? <EmptyState />
-        : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '24px' }}>
+        : <div className="library-games-grid">
             {filtered.map(game => (
               <XboxGameRow key={game.titleId} game={game} />
             ))}
@@ -942,16 +962,8 @@ function XboxGameRow({ game }) {
         </div>
       )}
 
-      <div style={{
-        position: 'absolute', bottom: 0, left: 0, right: 0,
-        padding: '24px 16px 16px', pointerEvents: 'none',
-        display: 'flex', flexDirection: 'column', gap: 8, zIndex: 2
-      }}>
-        <h3 style={{
-          fontSize: 16, fontWeight: 800, color: '#fff', margin: 0, lineHeight: 1.2,
-          textShadow: '0 2px 4px rgba(0,0,0,0.8)',
-          display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'
-        }}>
+      <div className="library-game-card-content" style={{ pointerEvents: 'none' }}>
+        <h3 className="library-game-card-title">
           {game.name}
         </h3>
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 4 }}>
@@ -1061,7 +1073,7 @@ function SearchBox({ value, onChange, placeholder }) {
 
 function SkeletonList() {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '24px', marginTop: 24 }}>
+    <div className="library-games-grid" style={{ marginTop: 24 }}>
       {Array.from({ length: 12 }).map((_, i) => (
         <div key={i} style={{ aspectRatio: '3/4', borderRadius: '16px', background: 'var(--bg-card)', border: '1px solid rgba(255,255,255,0.05)', animation: 'pulse 1.5s ease-in-out infinite' }} />
       ))}
