@@ -29,6 +29,7 @@ export const viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({ children }) {
@@ -54,6 +55,18 @@ export default function RootLayout({ children }) {
             document.addEventListener('gestureend', function(e) {
               e.preventDefault();
             });
+            
+            // Multi-touch touchstart & touchmove zoom block
+            document.addEventListener('touchstart', function(e) {
+              if (e.touches.length > 1) {
+                e.preventDefault();
+              }
+            }, { passive: false });
+            document.addEventListener('touchmove', function(e) {
+              if (e.scale !== undefined && e.scale !== 1) {
+                e.preventDefault();
+              }
+            }, { passive: false });
             
             // Double-tap zoom block backup
             var lastTouchEnd = 0;

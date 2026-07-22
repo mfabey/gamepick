@@ -1020,3 +1020,10 @@ html[data-theme="light"] .bottom-nav-pill {
    and browser already apply high-DPI scaling. Removing manual zoom keeps elements 
    sharp, well-proportioned, and professional (matching modern web standards). */
 
+/* Prevent iOS Safari auto-zoom on input focus (requires font-size: 16px+) */
+@media (max-width: 768px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
