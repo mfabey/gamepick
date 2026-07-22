@@ -23,13 +23,19 @@ export function AuthProvider({ children }) {
   const [gamePassGames,  setGamePassGames]  = useState(new Set());
   const [ready,          setReady]          = useState(false);
 
-  useEffect(() => {
-    Promise.all([
-      fetch('/api/auth/user-me').then(r => r.json()).catch(() => ({ user: null })),
-      fetch('/api/auth/me').then(r => r.json()).catch(() => ({ user: null, accounts: [] })),
-      fetch('/api/auth/xbox/me').then(r => r.json()).catch(() => ({ user: null })),
-    ]).then(([userData, steamData, xboxData]) => {
-      if (userData.user) setUser(userData.user);
+  const refreshAuth = async () => {
+    try {
+      const [userData, steamData, xboxData] = await Promise.all([
+        fetch('/api/auth/user-me').then(r => r.json()).catch(() => ({ user: null })),
+        fetch('/api/auth/me').then(r => r.json()).catch(() => ({ user: null, accounts: [] })),
+        fetch('/api/auth/xbox/me').then(r => r.json()).catch(() => ({ user: null })),
+      ]);
+
+      if (userData.user) {
+        setUser(userData.user);
+      } else {
+        setUser(null);
+      }
 
       // Çoklu Steam hesapları
       const accounts = steamData.accounts || (steamData.user ? [steamData.user] : []);
@@ -40,13 +46,25 @@ export function AuthProvider({ children }) {
       } else if (accounts.length > 0) {
         setSteamAccounts(accounts);
         setSteamUser(accounts[0]);
+      } else {
+        setSteamAccounts([]);
+        setSteamUser(null);
       }
 
-      if (userData.xboxUser) setXboxUser(userData.xboxUser);
-      else if (xboxData.user) setXboxUser(xboxData.user);
-    }).catch(err => {
-      console.error('Initial auth fetch error:', err);
-    }).finally(() => setReady(true));
+      if (userData.xboxUser) {
+        setXboxUser(userData.xboxUser);
+      } else if (xboxData.user) {
+        setXboxUser(xboxData.user);
+      } else {
+        setXboxUser(null);
+      }
+    } catch (err) {
+      console.error('refreshAuth error:', err);
+    }
+  };
+
+  useEffect(() => {
+    refreshAuth().finally(() => setReady(true));
   }, []);
 
   // İlk Steam hesabı değişince sahip olunan oyunları çek
@@ -106,7 +124,7 @@ export function AuthProvider({ children }) {
       });
       const data = await res.json();
       if (!res.ok || !data.ok) return { error: data.error || 'Giriş başarısız.' };
-      setUser(data.user);
+      await refreshAuth();
       return { ok: true };
     } catch (err) { return { error: err.message }; }
   };
@@ -200,7 +218,7 @@ export function AuthProvider({ children }) {
       user, steamUser, steamAccounts, xboxUser,
       ownedGames, xboxOwnedGames, gamePassGames,
       ready, signup, login, logout, steamLogout, steamLogoutAccount, xboxLogout,
-      resetPassword, changePassword, deleteAccount,
+      resetPassword, changePassword, deleteAccount, refreshAuth,
     }}>
       {children}
     </AuthContext.Provider>
