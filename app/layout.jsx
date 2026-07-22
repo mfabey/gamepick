@@ -43,6 +43,27 @@ export default function RootLayout({ children }) {
             } catch (e) {
               document.documentElement.setAttribute('data-theme', 'dark');
             }
+            
+            // iOS Safari pinch-to-zoom block
+            document.addEventListener('gesturestart', function(e) {
+              e.preventDefault();
+            });
+            document.addEventListener('gesturechange', function(e) {
+              e.preventDefault();
+            });
+            document.addEventListener('gestureend', function(e) {
+              e.preventDefault();
+            });
+            
+            // Double-tap zoom block backup
+            var lastTouchEnd = 0;
+            document.addEventListener('touchend', function(e) {
+              var now = new Date().getTime();
+              if (now - lastTouchEnd <= 300) {
+                e.preventDefault();
+              }
+              lastTouchEnd = now;
+            }, false);
           })()
         ` }} />
       </head>
