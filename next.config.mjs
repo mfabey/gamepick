@@ -1,5 +1,5 @@
 /** @type {import('next').NextConfig} */
-const cspHeader = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' blob: data: https://media.rawg.io https://*.steamstatic.com https://store.steampowered.com https://shared.akamai.steamstatic.com https://cdn.akamai.steamstatic.com https://cdn.cloudflare.steamstatic.com; connect-src 'self' https://api.rawg.io https://*.steampowered.com https://discord.gg; frame-ancestors 'none'; form-action 'self'; base-uri 'self'; object-src 'none';";
+const cspHeader = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' blob: data: https:; connect-src 'self' https://api.rawg.io https://*.steampowered.com https://discord.gg; frame-ancestors 'none'; form-action 'self'; base-uri 'self'; object-src 'none';";
 
 const nextConfig = {
   poweredByHeader: false,
