@@ -125,12 +125,49 @@ export default function NewsPage() {
         {/* ── Content ── */}
         {!loading && !error && (
           <>
+            <style>{`
+              .news-featured-card {
+                display: grid;
+                grid-template-columns: 1.08fr 1fr;
+                border: 1px solid var(--border);
+                border-radius: 22px;
+                overflow: hidden;
+                background: var(--bg-card);
+                margin-bottom: 38px;
+                box-shadow: var(--shadow-lg);
+                cursor: pointer;
+              }
+              .news-featured-image-wrapper {
+                position: relative;
+                min-height: 312px;
+                overflow: hidden;
+              }
+              .news-featured-content {
+                padding: 40px 42px;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+              }
+              @media (max-width: 768px) {
+                .news-featured-card {
+                  grid-template-columns: 1fr !important;
+                }
+                .news-featured-image-wrapper {
+                  min-height: 200px !important;
+                  height: 200px !important;
+                }
+                .news-featured-content {
+                  padding: 24px 20px !important;
+                }
+              }
+            `}</style>
+
             {/* ── Öne çıkan ── */}
             {featured && (
-              <article style={{ display: 'grid', gridTemplateColumns: '1.08fr 1fr', border: '1px solid var(--border)', borderRadius: 22, overflow: 'hidden', background: 'var(--bg-card)', marginBottom: 38, boxShadow: 'var(--shadow-lg)', cursor: 'pointer' }}
+              <article className="news-featured-card"
                 onClick={() => featured.url && window.open(featured.url, '_blank')}
               >
-                <div style={{ position: 'relative', minHeight: 312, background: featured.art, overflow: 'hidden' }}>
+                <div className="news-featured-image-wrapper" style={{ background: featured.art }}>
                   {featured.image && (
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img src={featured.image} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.85 }} />
@@ -145,7 +182,7 @@ export default function NewsPage() {
                     </span>
                   )}
                 </div>
-                <div style={{ padding: '40px 42px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <div className="news-featured-content">
                   <div style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 13, color: 'var(--text-3)', marginBottom: 14 }}>
                     <span style={{ padding: '4px 11px', borderRadius: 999, background: 'var(--accent-bg)', color: 'var(--accent)', fontWeight: 700, fontSize: 12 }}>{featured.cat}</span>
                     <span>{featured.date}</span><span style={{ width: 3, height: 3, borderRadius: '50%', background: 'var(--text-3)' }} /><span>{featured.read} {lang === 'tr' ? 'okuma' : 'read'}</span>
