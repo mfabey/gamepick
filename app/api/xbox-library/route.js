@@ -107,16 +107,25 @@ function formatTitle(t) {
 }
 
 // ── Ana handler ──────────────────────────────────────────────────────────────
-export async function GET() {
+export async function GET(request) {
   const cookieStore = await cookies();
-  const sessionCookie = cookieStore.get('gp_xbox_session');
-  if (!sessionCookie?.value) {
+  let sessionRaw = cookieStore.get('gp_xbox_session')?.value || null;
+
+  // Mobil: httpOnly cookie olmadığından session'ı header ile kabul et (base64 JSON)
+  if (!sessionRaw) {
+    const hdr = request?.headers?.get('x-xbox-session');
+    if (hdr) {
+      try { sessionRaw = Buffer.from(hdr, 'base64').toString('utf8'); } catch { /* geçersiz */ }
+    }
+  }
+
+  if (!sessionRaw) {
     return NextResponse.json({ error: 'Oturum yok' }, { status: 401 });
   }
 
   let session;
   try {
-    session = JSON.parse(sessionCookie.value);
+    session = JSON.parse(sessionRaw);
   } catch {
     return NextResponse.json({ error: 'Geçersiz oturum' }, { status: 401 });
   }

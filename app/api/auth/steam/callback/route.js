@@ -1,6 +1,18 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
+// Mobil deep-link güvenliği: yalnızca uygulama şemalarına yönlendirmeye izin ver
+// (açık yönlendirme / token sızıntısı engeli).
+export function isAllowedAppRedirect(url) {
+  if (!url) return false;
+  return /^(gamerisen:\/\/|exp(\+[\w-]+)?:\/\/|https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/)/i.test(url);
+}
+
+// Verinin app'e URL üzerinden güvenli aktarımı için base64
+function encodeMobilePayload(obj) {
+  return Buffer.from(JSON.stringify(obj), 'utf8').toString('base64');
+}
+
 const STEAM_API_KEY = process.env.STEAM_API_KEY;
 const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL;
 const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
@@ -104,6 +116,18 @@ export async function GET(request) {
         };
       }
     } catch { /* profil opsiyonel */ }
+  }
+
+  // ── 3.5 Mobil akış: cookie yerine uygulamanın deep link'ine dön ─────────
+  const isMobile = searchParams.get('mobile') === '1';
+  if (isMobile) {
+    const appRedirect = searchParams.get('app_redirect') || 'gamerisen://auth';
+    if (!isAllowedAppRedirect(appRedirect)) {
+      return NextResponse.redirect(`${baseUrl}/?steam_error=gecersiz_yonlendirme`);
+    }
+    const sep = appRedirect.includes('?') ? '&' : '?';
+    const payload = encodeMobilePayload({ platform: 'steam', account: profile });
+    return NextResponse.redirect(`${appRedirect}${sep}data=${encodeURIComponent(payload)}`);
   }
 
   // ── 4. Mevcut hesap listesini oku, yeni hesabı ekle ─────────────────────

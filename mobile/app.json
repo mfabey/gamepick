@@ -1,0 +1,49 @@
+{
+  "expo": {
+    "name": "Gamerisen",
+    "slug": "gamerisen",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "gamerisen",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "backgroundColor": "#0b0d10",
+      "resizeMode": "contain"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.gamerisen.app"
+    },
+    "android": {
+      "package": "com.gamerisen.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0b0d10",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-image",
+      "expo-web-browser",
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "color": "#e0a72e"
+        }
+      ]
+    ],
+    "extra": {
+      "router": {},
+      "apiBase": "https://www.gamerisen.com"
+    }
+  }
+}

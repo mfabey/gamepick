@@ -4,6 +4,24 @@ import { cookies } from 'next/headers';
 const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL;
 const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
 
+// Mobil deep-link güvenliği: yalnızca uygulama şemalarına yönlendir
+function isAllowedAppRedirect(url) {
+  if (!url) return false;
+  return /^(gamerisen:\/\/|exp(\+[\w-]+)?:\/\/|https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/)/i.test(url);
+}
+function parseMobileState(stateRaw) {
+  if (!stateRaw) return null;
+  try {
+    const obj = JSON.parse(Buffer.from(stateRaw, 'base64url').toString('utf8'));
+    return obj?.mobile ? obj : null;
+  } catch { return null; }
+}
+function mobileRedirect(appRedirect, obj) {
+  const sep = appRedirect.includes('?') ? '&' : '?';
+  const payload = Buffer.from(JSON.stringify(obj), 'utf8').toString('base64');
+  return NextResponse.redirect(`${appRedirect}${sep}data=${encodeURIComponent(payload)}`);
+}
+
 async function getUserConnections(uid) {
   if (!REDIS_URL || !REDIS_TOKEN) return {};
   try {
@@ -103,8 +121,13 @@ export async function GET(request) {
   const error = searchParams.get('error');
   const errorDesc = searchParams.get('error_description');
 
+  // Mobil bağlamı (varsa) state'ten çöz
+  const mobileState = parseMobileState(searchParams.get('state'));
+  const mobileRedirectOk = mobileState && isAllowedAppRedirect(mobileState.appRedirect);
+
   if (error || !code) {
     const errorMsg = errorDesc || error || 'cancelled';
+    if (mobileRedirectOk) return mobileRedirect(mobileState.appRedirect, { platform: 'xbox', error: errorMsg });
     return NextResponse.redirect(`${origin}/library?xbox_error=${encodeURIComponent(errorMsg)}`);
   }
 
@@ -158,7 +181,12 @@ export async function GET(request) {
 
     // Oturumu cookie'ye kaydet (refreshToken ile yeniden token alınabilir)
     const session = { xuid, gamertag, avatar, refreshToken: msTokens.refresh_token };
-    
+
+    // Mobil akış: cookie yerine uygulamanın deep link'ine session ile dön
+    if (mobileRedirectOk) {
+      return mobileRedirect(mobileState.appRedirect, { platform: 'xbox', session });
+    }
+
     // ── 5. Oturumu veri tabanına (Redis) kaydet ──────────────────────────────
     const cookieStore = await cookies();
     const userSession = cookieStore.get('gp_user_session');
@@ -182,6 +210,7 @@ export async function GET(request) {
     return NextResponse.redirect(`${origin}/library`);
   } catch (err) {
     console.error('Xbox auth error:', err.message);
+    if (mobileRedirectOk) return mobileRedirect(mobileState.appRedirect, { platform: 'xbox', error: err.message });
     return NextResponse.redirect(`${origin}/library?xbox_error=${encodeURIComponent(err.message)}`);
   }
 }
