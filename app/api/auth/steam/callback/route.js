@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { redisCmd, redisGetJSON, redisSetJSON } from '../../../../lib/redis';
 
 // Mobil deep-link güvenliği: yalnızca uygulama şemalarına yönlendirmeye izin ver
 // (açık yönlendirme / token sızıntısı engeli).
@@ -157,16 +158,55 @@ export async function GET(request) {
     steamAccounts.push(profile);
   }
 
-  // ── 5. Oturumu Redis'e kaydet ────────────────────────────────────────────
+  // ── 5. Oturumu Redis'e kaydet ve auto-login'i tetikle ────────────────────
+  let loggedInUser = null;
   const userSession = cookieStore.get('gp_user_session');
   if (userSession?.value) {
     try {
       const user = JSON.parse(userSession.value);
+      loggedInUser = user;
       await saveUserConnection(user.uid, 'steamAccounts', steamAccounts);
       // Geriye uyumluluk için ilk hesabı 'steam' anahtarına da yaz
       await saveUserConnection(user.uid, 'steam', steamAccounts[0]);
+
+      // Cache user profile and reverse mapping for auto-login
+      await redisSetJSON(`user_profile:${user.uid}`, user);
+      for (const acc of steamAccounts) {
+        if (acc.steamId) {
+          await redisCmd(['SET', `steam_to_uid:${acc.steamId}`, user.uid]);
+        }
+      }
     } catch (err) {
       console.error('Failed to save Steam connection to Redis:', err.message);
+    }
+  } else {
+    // Try to auto-resolve site account if they log in directly via Steam
+    try {
+      let uid = await redisCmd(['GET', `steam_to_uid:${steamId}`]);
+      if (!uid) {
+        // Fallback scan
+        const keys = await redisCmd(['KEYS', 'user_connections:*']);
+        if (keys && keys.length > 0) {
+          for (const key of keys) {
+            const conn = await redisGetJSON(key);
+            const accounts = conn?.steamAccounts || (conn?.steam ? [conn.steam] : []);
+            if (accounts.some(a => a.steamId === steamId)) {
+              uid = key.replace('user_connections:', '');
+              await redisCmd(['SET', `steam_to_uid:${steamId}`, uid]);
+              break;
+            }
+          }
+        }
+      }
+
+      if (uid) {
+        const cachedUser = await redisGetJSON(`user_profile:${uid}`);
+        if (cachedUser) {
+          loggedInUser = cachedUser;
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to auto-login via Steam callback:', e.message);
     }
   }
 
@@ -184,6 +224,16 @@ export async function GET(request) {
   response.cookies.set('gp_steam_accounts', JSON.stringify(steamAccounts), cookieOpts);
   // Geriye uyumluluk için ilk hesabı eski cookie'ye de yaz
   response.cookies.set('gp_steam_session', JSON.stringify(steamAccounts[0]), cookieOpts);
+
+  if (loggedInUser) {
+    response.cookies.set('gp_user_session', JSON.stringify(loggedInUser), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: '/',
+    });
+  }
 
   return response;
 }

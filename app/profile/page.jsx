@@ -729,6 +729,34 @@ export default function ProfilePage() {
 
       <div className="container" style={{ position: 'relative', zIndex: 2 }}>
 
+        {/* ── Steam-only/Xbox-only Session warning banner ── */}
+        {!user && (
+          <div style={{
+            marginTop: 16, marginBottom: 24,
+            background: 'rgba(201,133,10,0.08)', border: '1px solid rgba(201,133,10,0.22)',
+            borderRadius: 14, padding: '12px 18px', display: 'flex', alignItems: 'center',
+            justifyContent: 'space-between', gap: 14, flexWrap: 'wrap',
+            animation: 'fadeIn 0.4s ease'
+          }}>
+            <p style={{ fontSize: 13, color: 'var(--accent)', margin: 0, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span>⚠️</span>
+              {lang === 'tr'
+                ? 'Gamerisen profil adınızı ve hesap ayarlarınızı görmek için lütfen giriş yapın.'
+                : 'Please log in to see your Gamerisen profile name and account settings.'}
+            </p>
+            <Link href="/login" style={{
+              padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 700,
+              background: 'var(--accent)', color: '#fff', textDecoration: 'none', transition: 'all 0.18s',
+              boxShadow: '0 4px 12px var(--accent-glow)'
+            }}
+              onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-1px)'}
+              onMouseLeave={e => e.currentTarget.style.transform = 'none'}
+            >
+              {lang === 'tr' ? 'Giriş Yap' : 'Log In'}
+            </Link>
+          </div>
+        )}
+
         {/* ── Avatar + Name row ── */}
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 20, marginTop: -56, marginBottom: 32 }}>
           {/* Avatar with ring */}

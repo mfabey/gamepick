@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { redisSetJSON } from '../../../lib/redis';
 
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
 
@@ -75,6 +76,13 @@ export async function POST(request) {
     }
 
     const userObj = { uid: localId, name, email };
+
+    // Cache profile in Redis
+    try {
+      await redisSetJSON(`user_profile:${localId}`, userObj);
+    } catch (e) {
+      console.warn('Failed to cache user profile in register:', e.message);
+    }
 
     // 4. Return success response WITHOUT issuing session cookies
     return NextResponse.json({ ok: true, user: userObj, mock: false });

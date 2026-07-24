@@ -1,26 +1,13 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { redisCmd, redisGetJSON, redisSetJSON } from '../../../lib/redis';
 
 export const dynamic = 'force-dynamic';
 
-const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL;
-const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
-
 async function getUserConnections(uid) {
-  if (!REDIS_URL || !REDIS_TOKEN) return {};
   try {
-    const res = await fetch(REDIS_URL, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${REDIS_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(['GET', `user_connections:${uid}`]),
-      cache: 'no-store',
-    });
-    if (!res.ok) return {};
-    const data = await res.json();
-    return data.result ? JSON.parse(data.result) : {};
+    const data = await redisGetJSON(`user_connections:${uid}`);
+    return data || {};
   } catch (err) {
     console.warn('Redis read user connections error:', err.message);
     return {};
@@ -31,13 +18,80 @@ export async function GET() {
   try {
     const cookieStore = await cookies();
     const session = cookieStore.get('gp_user_session');
+    let user = null;
 
-    if (!session || !session.value) {
+    if (session?.value) {
+      try {
+        user = JSON.parse(session.value);
+      } catch {}
+    }
+
+    // Auto-login fallback if user session cookie has expired but they are still logged into Steam
+    if (!user) {
+      const steamSession = cookieStore.get('gp_steam_session');
+      if (steamSession?.value) {
+        try {
+          const steamUser = JSON.parse(steamSession.value);
+          const steamId = steamUser.steamId;
+          
+          let uid = await redisCmd(['GET', `steam_to_uid:${steamId}`]);
+          if (!uid) {
+            // Fallback scan for existing users
+            const keys = await redisCmd(['KEYS', 'user_connections:*']);
+            if (keys && keys.length > 0) {
+              for (const key of keys) {
+                const conn = await redisGetJSON(key);
+                const accounts = conn?.steamAccounts || (conn?.steam ? [conn.steam] : []);
+                if (accounts.some(a => a.steamId === steamId)) {
+                  uid = key.replace('user_connections:', '');
+                  await redisCmd(['SET', `steam_to_uid:${steamId}`, uid]);
+                  break;
+                }
+              }
+            }
+          }
+
+          if (uid) {
+            const cachedUser = await redisGetJSON(`user_profile:${uid}`);
+            if (cachedUser) {
+              user = cachedUser;
+              // Sync user session back to cookie
+              cookieStore.set('gp_user_session', JSON.stringify(user), {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'lax',
+                maxAge: 60 * 60 * 24 * 7, // 7 days
+                path: '/',
+              });
+            }
+          }
+        } catch {}
+      }
+    }
+
+    if (!user) {
       return NextResponse.json({ user: null });
     }
 
-    const user = JSON.parse(session.value);
     const connections = await getUserConnections(user.uid);
+
+    // Auto-cache profile and links to Redis
+    try {
+      await redisSetJSON(`user_profile:${user.uid}`, user);
+      if (connections.steam && connections.steam.steamId) {
+        await redisCmd(['SET', `steam_to_uid:${connections.steam.steamId}`, user.uid]);
+      }
+      if (connections.steamAccounts && Array.isArray(connections.steamAccounts)) {
+        for (const acc of connections.steamAccounts) {
+          if (acc.steamId) {
+            await redisCmd(['SET', `steam_to_uid:${acc.steamId}`, user.uid]);
+          }
+        }
+      }
+      if (connections.xbox && connections.xbox.gamertag) {
+        await redisCmd(['SET', `xbox_to_uid:${connections.xbox.gamertag}`, user.uid]);
+      }
+    } catch {}
 
     const response = NextResponse.json({
       user,

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { redisCmd, redisSetJSON } from '../../../lib/redis';
 
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
 
@@ -21,6 +22,9 @@ export async function POST(request) {
         sameSite: 'lax',
         maxAge: 60 * 60 * 24 * 7, // 7 days
       });
+      try {
+        await redisSetJSON(`user_profile:mock_user`, userObj);
+      } catch {}
       return response;
     }
 
@@ -86,6 +90,27 @@ export async function POST(request) {
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 7, // 7 days
     });
+
+    // Cache profile and map connections in Redis
+    try {
+      await redisSetJSON(`user_profile:${localId}`, userObj);
+
+      const connRes = await redisCmd(['GET', `user_connections:${localId}`]);
+      if (connRes) {
+        const connections = JSON.parse(connRes);
+        const steamAccounts = connections.steamAccounts || (connections.steam ? [connections.steam] : []);
+        for (const acc of steamAccounts) {
+          if (acc.steamId) {
+            await redisCmd(['SET', `steam_to_uid:${acc.steamId}`, localId]);
+          }
+        }
+        if (connections.xbox && connections.xbox.gamertag) {
+          await redisCmd(['SET', `xbox_to_uid:${connections.xbox.gamertag}`, localId]);
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to cache user profile or connections in login:', e.message);
+    }
 
     return response;
 
