@@ -26,6 +26,8 @@ export async function GET() {
       } catch {}
     }
 
+    let userWasRestored = false;
+
     // Auto-login fallback if user session cookie has expired but they are still logged into Steam
     if (!user) {
       const steamSession = cookieStore.get('gp_steam_session');
@@ -55,14 +57,7 @@ export async function GET() {
             const cachedUser = await redisGetJSON(`user_profile:${uid}`);
             if (cachedUser) {
               user = cachedUser;
-              // Sync user session back to cookie
-              cookieStore.set('gp_user_session', JSON.stringify(user), {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'lax',
-                maxAge: 60 * 60 * 24 * 7, // 7 days
-                path: '/',
-              });
+              userWasRestored = true;
             }
           }
         } catch {}
@@ -98,6 +93,16 @@ export async function GET() {
       steamUser: connections.steam || null,
       xboxUser: connections.xbox || null,
     });
+
+    if (userWasRestored) {
+      response.cookies.set('gp_user_session', JSON.stringify(user), {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+        path: '/',
+      });
+    }
 
     // Synchronize cookies to this device if they are in Redis but missing locally
     if (connections.steam && !cookieStore.get('gp_steam_session')) {
