@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  View, Text, TextInput, Pressable, FlatList, ActivityIndicator,
+  View, Text, TextInput, Pressable, ActivityIndicator,
   StyleSheet, ScrollView,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchGames } from '../../src/api/games';
 import GameCard from '../../src/components/GameCard';
-import { colors, radius, spacing } from '../../src/theme';
+import { colors, radius, spacing, TAB_SPACE } from '../../src/theme';
 import { useLanguage } from '../../src/context/LanguageContext';
 
 const COLS = 2;
@@ -93,6 +94,12 @@ export default function GamesScreen() {
     }
   }, [loading]);
 
+  // FlashList için stabil referanslar (her render'da yeniden oluşmasın)
+  const keyExtractor = useCallback((item) => String(item.id), []);
+  const renderGame = useCallback(({ item }) => (
+    <View style={styles.cell}><GameCard game={item} /></View>
+  ), []);
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       {/* Başlık + arama */}
@@ -131,31 +138,32 @@ export default function GamesScreen() {
       </ScrollView>
 
       {/* Grid */}
-      {loading ? (
-        <View style={styles.center}><ActivityIndicator color={colors.accent} size="large" /></View>
-      ) : games.length === 0 ? (
-        <View style={styles.center}>
-          <Ionicons name="search" size={44} color={colors.text3} />
-          <Text style={styles.emptyText}>{t('games.noResults')}</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={games}
-          keyExtractor={(item) => String(item.id)}
-          numColumns={COLS}
-          renderItem={({ item }) => (
-            <View style={styles.cell}><GameCard game={item} /></View>
-          )}
-          columnWrapperStyle={styles.column}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-          onEndReached={loadMore}
-          onEndReachedThreshold={0.6}
-          ListFooterComponent={loadingMore ? (
-            <View style={styles.footer}><ActivityIndicator color={colors.accent} /></View>
-          ) : <View style={{ height: 24 }} />}
-        />
-      )}
+      <View style={{ flex: 1 }}>
+        {loading ? (
+          <View style={styles.center}><ActivityIndicator color={colors.accent} size="large" /></View>
+        ) : games.length === 0 ? (
+          <View style={styles.center}>
+            <Ionicons name="search" size={44} color={colors.text3} />
+            <Text style={styles.emptyText}>{t('games.noResults')}</Text>
+          </View>
+        ) : (
+          <FlashList
+            data={games}
+            keyExtractor={keyExtractor}
+            numColumns={COLS}
+            renderItem={renderGame}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+            onEndReached={loadMore}
+            onEndReachedThreshold={0.6}
+            ListFooterComponent={
+              <View style={{ height: TAB_SPACE, alignItems: 'center', justifyContent: 'center' }}>
+                {loadingMore ? <ActivityIndicator color={colors.accent} /> : null}
+              </View>
+            }
+          />
+        )}
+      </View>
     </SafeAreaView>
   );
 }
@@ -187,9 +195,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder,
   },
   chipText: { fontSize: 13, color: colors.text2, fontWeight: '500' },
-  listContent: { paddingHorizontal: spacing.md, paddingTop: 6 },
-  column: { gap: spacing.md },
-  cell: { flex: 1, marginBottom: spacing.md },
+  listContent: { paddingHorizontal: 10, paddingTop: 6 },
+  cell: { flex: 1, paddingHorizontal: 6, paddingBottom: spacing.md },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   emptyText: { color: colors.text3, fontSize: 15, fontWeight: '600' },
   footer: { paddingVertical: 24 },

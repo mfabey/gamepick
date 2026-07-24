@@ -1,14 +1,16 @@
 import { View, Text, Pressable, ScrollView, StyleSheet, Alert, ActivityIndicator, Switch } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radius, spacing } from '../../src/theme';
+import { colors, radius, spacing, TAB_SPACE } from '../../src/theme';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useAuth } from '../../src/context/AuthContext';
 import { useWishlist } from '../../src/context/WishlistContext';
 
 export default function ProfileScreen() {
   const { t, lang, toggleLang } = useLanguage();
+  const router = useRouter();
   const { steamAccounts, xbox, busy, loginSteam, loginXbox, logoutSteam, logoutXbox } = useAuth();
   const { items, enabled, enableNotifications, disableNotifications } = useWishlist();
 
@@ -31,7 +33,7 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: TAB_SPACE + 16 }} showsVerticalScrollIndicator={false}>
         <Text style={styles.h1}>{t('nav.profile')}</Text>
 
         {/* Bağlı hesaplar */}
@@ -129,11 +131,12 @@ export default function ProfileScreen() {
             thumbColor="#fff"
           />
         </View>
-        {items.length > 0 && (
-          <Text style={styles.wishCount}>
-            <Ionicons name="bookmark" size={12} color={colors.text3} /> {items.length} {t('wishlist.count')}
-          </Text>
-        )}
+        <Pressable style={[styles.settingRow, { marginTop: 10 }]} onPress={() => router.push('/wishlist')}>
+          <Ionicons name="bookmark" size={20} color={colors.accent} />
+          <Text style={styles.settingText}>{t('wishlist.title')}</Text>
+          {items.length > 0 && <View style={styles.wishBadge}><Text style={styles.wishBadgeText}>{items.length}</Text></View>}
+          <Ionicons name="chevron-forward" size={18} color={colors.text3} />
+        </Pressable>
 
         {/* Dil */}
         <Text style={[styles.sectionLabel, { marginTop: 32 }]}>{lang === 'tr' ? 'Ayarlar' : 'Settings'}</Text>
@@ -189,6 +192,8 @@ const styles = StyleSheet.create({
   },
   notifTitle: { fontSize: 15, fontWeight: '700', color: colors.text },
   notifDesc: { fontSize: 12, color: colors.text3, marginTop: 2, lineHeight: 16 },
-  wishCount: { fontSize: 12, color: colors.text3, marginTop: 10, fontWeight: '600' },
+  wishBadge: { minWidth: 22, height: 22, borderRadius: 11, backgroundColor: colors.accentSoft, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
+  wishBadgeText: { color: colors.accent, fontSize: 12, fontWeight: '800' },
 });
+
 

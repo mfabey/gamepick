@@ -1,13 +1,14 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { memo, useState, useEffect, useMemo, useCallback } from 'react';
 import {
-  View, Text, TextInput, Pressable, FlatList, ScrollView,
+  View, Text, TextInput, Pressable, ScrollView,
   ActivityIndicator, StyleSheet, Alert,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radius, spacing } from '../../src/theme';
+import { colors, radius, spacing, TAB_SPACE } from '../../src/theme';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useAuth } from '../../src/context/AuthContext';
 import { fetchSteamLibrary, fetchSteamPrices, fetchXboxLibrary } from '../../src/api/library';
@@ -155,6 +156,14 @@ export default function LibraryScreen() {
     return arr;
   }, [games, search, sort, steamPrices]);
 
+  // FlashList için stabil referanslar
+  const keyExtractor = useCallback((item) => String(item.appid ?? item.titleId), []);
+  const renderTile = useCallback(({ item }) => (
+    <View style={styles.cell}>
+      <GameTile game={item} steam={isSteamView} price={steamPrices[item.appid]} />
+    </View>
+  ), [isSteamView, steamPrices]);
+
   const doLogin = async (fn) => {
     const r = await fn();
     if (!r.ok && r.error) Alert.alert(t('auth.loginFailed'), r.error);
@@ -203,6 +212,7 @@ export default function LibraryScreen() {
         })}
       </ScrollView>
 
+      <View style={{ flex: 1 }}>
       {loading && filtered.length === 0 ? (
         <View style={styles.center}><ActivityIndicator color={colors.accent} size="large" /></View>
       ) : errorMsg ? (
@@ -211,20 +221,15 @@ export default function LibraryScreen() {
           <Text style={styles.errText}>{errorMsg}</Text>
         </View>
       ) : (
-        <FlatList
+        <FlashList
           data={filtered}
-          keyExtractor={(item) => String(item.appid ?? item.titleId)}
+          keyExtractor={keyExtractor}
           numColumns={2}
-          renderItem={({ item }) => (
-            <View style={styles.cell}>
-              <GameTile game={item} steam={isSteamView} price={steamPrices[item.appid]} />
-            </View>
-          )}
-          columnWrapperStyle={styles.column}
+          renderItem={renderTile}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
-            <View>
+            <View style={{ paddingHorizontal: 6 }}>
               <LibraryHeaderCard header={header} formatPrice={formatPrice} pricesLoading={pricesLoading} t={t} lang={lang} />
               {/* Arama + sıralama */}
               <View style={styles.searchBox}>
@@ -254,9 +259,10 @@ export default function LibraryScreen() {
               <Text style={styles.errText}>{t('lib.empty')}</Text>
             </View>
           ) : null}
-          ListFooterComponent={<View style={{ height: 24 }} />}
+          ListFooterComponent={<View style={{ height: TAB_SPACE }} />}
         />
       )}
+      </View>
     </SafeAreaView>
   );
 }
@@ -349,14 +355,14 @@ function LibraryHeaderCard({ header, formatPrice, pricesLoading, t, lang }) {
   );
 }
 
-function GameTile({ game, steam, price }) {
+const GameTile = memo(function GameTile({ game, steam, price }) {
   const { t, lang, formatPrice } = useLanguage();
   const hourSymbol = lang === 'tr' ? 's' : 'h';
   const isFree = price?.isFree;
   const onSale = price?.discount > 0 && !isFree;
   return (
     <View style={styles.tile}>
-      <Image source={game.image} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} />
+      <Image source={game.image} recyclingKey={String(game.appid ?? game.titleId)} cachePolicy="memory-disk" style={StyleSheet.absoluteFill} contentFit="cover" transition={200} />
       <LinearGradient colors={['transparent', 'rgba(6,7,9,0.96)']} locations={[0.4, 1]} style={StyleSheet.absoluteFill} />
       {!steam && game.isGamePass ? (
         <View style={styles.gpBadge}><Text style={styles.gpText}>GAME PASS</Text></View>
@@ -385,7 +391,7 @@ function GameTile({ game, steam, price }) {
       </View>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
@@ -417,9 +423,8 @@ const styles = StyleSheet.create({
   sortChipText: { fontSize: 12.5, color: colors.text2 },
   countText: { marginLeft: 'auto', fontSize: 12, color: colors.text3, fontWeight: '600' },
 
-  listContent: { paddingHorizontal: spacing.md, paddingTop: 4 },
-  column: { gap: spacing.md },
-  cell: { flex: 1, marginBottom: spacing.md },
+  listContent: { paddingHorizontal: 10, paddingTop: 4 },
+  cell: { flex: 1, paddingHorizontal: 6, paddingBottom: spacing.md },
   tile: { width: '100%', aspectRatio: 3 / 4, borderRadius: radius.lg, overflow: 'hidden', backgroundColor: colors.card },
   tileInfo: { position: 'absolute', left: 11, right: 11, bottom: 10 },
   tileName: { color: '#fff', fontSize: 14, fontWeight: '800', lineHeight: 17 },

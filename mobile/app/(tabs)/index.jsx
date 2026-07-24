@@ -1,80 +1,181 @@
-import { useEffect, useState } from 'react';
+import { memo, useMemo } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { fetchTrending } from '../../src/api/games';
-import { colors, radius, spacing } from '../../src/theme';
+import { fetchTrending, fetchGames } from '../../src/api/games';
+import { colors, radius, spacing, TAB_SPACE } from '../../src/theme';
 import { useLanguage } from '../../src/context/LanguageContext';
+import FadeIn from '../../src/components/FadeIn';
+import { useQuery } from '../../src/hooks/useQuery';
+
+const LOGO = require('../../assets/logo.png');
+
+// Stabil fetcher'lar (key'in saf fonksiyonu)
+const fetchNewGames = () => fetchGames({ section: 'new', num: 12 });
+const fetchSaleGames = () => fetchGames({ section: 'sale', num: 12 });
 
 export default function HomeScreen() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const router = useRouter();
-  const [trending, setTrending] = useState([]);
 
-  useEffect(() => {
-    let alive = true;
-    fetchTrending()
-      .then(d => { if (alive) setTrending((d.results || d.games || []).slice(0, 12)); })
-      .catch(() => {});
-    return () => { alive = false; };
-  }, []);
+  const { data: trendData } = useQuery('home:trending', fetchTrending, { ttl: 3 * 60 * 1000 });
+  const { data: newData }   = useQuery('home:new', fetchNewGames, { ttl: 5 * 60 * 1000 });
+  const { data: saleData }  = useQuery('home:sale', fetchSaleGames, { ttl: 5 * 60 * 1000 });
+
+  const trend = useMemo(() => (trendData?.results || trendData?.games || []).slice(0, 14), [trendData]);
+  const fresh = useMemo(() => (newData?.results || []).slice(0, 12), [newData]);
+  const sale  = useMemo(() => (saleData?.results || []).slice(0, 12), [saleData]);
+
+  const heroStrip = trend.length ? trend : fresh;
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
-        {/* Hero */}
-        <LinearGradient
-          colors={['#14102a', '#0b0d10']}
-          style={styles.hero}
-        >
-          <Text style={styles.brand}>GAMERISEN</Text>
-          <Text style={styles.tagline}>{t('home.tagline')}</Text>
-          <Pressable style={styles.cta} onPress={() => router.push('/games')}>
-            <Ionicons name="game-controller" size={18} color="#0b0d10" />
-            <Text style={styles.ctaText}>{t('home.exploreGames')}</Text>
-          </Pressable>
-        </LinearGradient>
+    <View style={styles.root}>
+      <SafeAreaView edges={['top']} />
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: TAB_SPACE + 16 }}>
 
-        {/* Trend */}
-        {trending.length > 0 && (
-          <View style={{ marginTop: 24 }}>
-            <Text style={styles.sectionTitle}>🔥 {t('section.popular')}</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hRow}>
-              {trending.map(g => (
-                <Pressable
-                  key={g.id}
-                  style={styles.trendCard}
-                  onPress={() => router.push({ pathname: '/game/[id]', params: { id: String(g.id), name: g.name, image: g.image || '', slug: g.rawgSlug || '' } })}
-                >
-                  <Image source={g.image} style={styles.trendImg} contentFit="cover" transition={250} />
-                  <LinearGradient colors={['transparent', 'rgba(6,7,9,0.95)']} style={StyleSheet.absoluteFill} />
-                  <Text numberOfLines={2} style={styles.trendName}>{g.name}</Text>
-                </Pressable>
-              ))}
-            </ScrollView>
+        {/* ── Üst: logo + marka ── */}
+        <View style={styles.topBar}>
+          <Image source={LOGO} style={styles.logo} contentFit="contain" />
+          <Text style={styles.brand}>GAMERISEN</Text>
+        </View>
+
+        {/* ── Hero ── */}
+        <FadeIn delay={40}>
+        <View style={styles.hero}>
+          <View style={styles.badge}>
+            <View style={styles.liveDot} />
+            <Text style={styles.badgeText}>{t('hero.badge')}</Text>
           </View>
+
+          <Text style={styles.title}>
+            {lang === 'tr' ? 'Aradığın oyunu, ' : 'Find your next game at the '}
+            <Text style={{ color: colors.accent }}>{lang === 'tr' ? 'en iyi fiyata' : 'best price'}</Text>
+            {lang === 'tr' ? ' bul' : ''}
+          </Text>
+          <Text style={styles.subtitle}>{t('hero.subtitle')}</Text>
+
+          {/* Arama (dokununca Oyunlar sekmesine gider) */}
+          <Pressable style={styles.search} onPress={() => router.push('/games')}>
+            <Ionicons name="search" size={19} color={colors.text3} />
+            <Text style={styles.searchText}>{t('hero.search')}</Text>
+            <View style={styles.searchBtn}><Ionicons name="arrow-forward" size={16} color="#fff" /></View>
+          </Pressable>
+        </View>
+        </FadeIn>
+
+        {/* ── Kayan kapak şeridi ── */}
+        {heroStrip.length > 0 && (
+          <FadeIn delay={120}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.strip}>
+            {heroStrip.map(g => (
+              <Pressable key={`s_${g.id}`} style={styles.stripTile}
+                onPress={() => go(router, g)}>
+                <Image source={g.image} cachePolicy="memory-disk" style={StyleSheet.absoluteFill} contentFit="cover" transition={250} />
+                <LinearGradient colors={['transparent', 'rgba(6,7,9,0.9)']} style={StyleSheet.absoluteFill} />
+                <Text numberOfLines={1} style={styles.stripName}>{g.name}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+          </FadeIn>
         )}
+
+        {/* ── Bölümler ── */}
+        <FadeIn delay={180}><Section emoji="🔥" title={t('home.trend')} games={trend} router={router} /></FadeIn>
+        <FadeIn delay={250}><Section emoji="🗓️" title={t('home.new')} games={fresh} router={router} /></FadeIn>
+        <FadeIn delay={320}><Section emoji="🏷️" title={t('home.sale')} games={sale} router={router} /></FadeIn>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
+function go(router, g) {
+  router.push({
+    pathname: '/game/[id]',
+    params: { id: String(g.id), name: g.name, image: g.image || '', slug: g.rawgSlug || '', hasSteam: g.hasSteam ? '1' : '' },
+  });
+}
+
+function Section({ emoji, title, games, router }) {
+  const { t } = useLanguage();
+  if (!games || games.length === 0) return null;
+  return (
+    <View style={{ marginTop: 26 }}>
+      <View style={styles.sectionHead}>
+        <Text style={styles.sectionTitle}>{emoji} {title}</Text>
+        <Pressable onPress={() => router.push('/games')} hitSlop={8}>
+          <Text style={styles.viewAll}>{t('home.viewAll')} ›</Text>
+        </Pressable>
+      </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+        {games.map(g => <HomeCard key={g.id} game={g} router={router} />)}
+      </ScrollView>
+    </View>
+  );
+}
+
+const HomeCard = memo(function HomeCard({ game, router }) {
+  const mcColor = game.metacritic >= 80 ? colors.green : game.metacritic >= 60 ? '#fbbf24' : '#f87171';
+  return (
+    <Pressable
+      style={({ pressed }) => [styles.card, pressed && { opacity: 0.85, transform: [{ scale: 0.96 }] }]}
+      onPress={() => go(router, game)}
+    >
+      <View style={styles.cardCover}>
+        <Image source={game.image} cachePolicy="memory-disk" style={StyleSheet.absoluteFill} contentFit="cover" transition={250} />
+        <LinearGradient colors={['transparent', 'rgba(6,7,9,0.94)']} locations={[0.45, 1]} style={StyleSheet.absoluteFill} />
+        {game.metacritic ? (
+          <View style={styles.mcBadge}><Text style={[styles.mcText, { color: mcColor }]}>{game.metacritic}</Text></View>
+        ) : null}
+        {game.isFree ? (
+          <View style={styles.freeBadge}><Text style={styles.freeText}>Ücretsiz</Text></View>
+        ) : null}
+        <Text numberOfLines={2} style={styles.cardName}>{game.name}</Text>
+      </View>
+    </Pressable>
+  );
+});
+
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
-  hero: { paddingHorizontal: spacing.xl, paddingTop: 40, paddingBottom: 36 },
-  brand: { fontSize: 34, fontWeight: '900', color: colors.accent, letterSpacing: 1 },
-  tagline: { fontSize: 15, color: colors.text2, marginTop: 10, lineHeight: 22, maxWidth: 320 },
-  cta: {
-    flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start',
-    backgroundColor: colors.accent, borderRadius: radius.md, paddingHorizontal: 20, paddingVertical: 13, marginTop: 22,
+  root: { flex: 1, backgroundColor: colors.bg },
+  topBar: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: spacing.lg, paddingTop: 6, paddingBottom: 4 },
+  logo: { width: 34, height: 34 },
+  brand: { fontSize: 20, fontWeight: '900', color: colors.text, letterSpacing: 1.5 },
+
+  hero: { paddingHorizontal: spacing.lg, paddingTop: 18 },
+  badge: {
+    flexDirection: 'row', alignItems: 'center', gap: 7, alignSelf: 'flex-start',
+    backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1,
+    paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.pill, marginBottom: 16,
   },
-  ctaText: { color: '#0b0d10', fontWeight: '800', fontSize: 15 },
-  sectionTitle: { fontSize: 18, fontWeight: '800', color: colors.text, paddingHorizontal: spacing.lg, marginBottom: 12 },
-  hRow: { paddingHorizontal: spacing.lg, gap: 12 },
-  trendCard: { width: 130, height: 174, borderRadius: radius.lg, overflow: 'hidden', backgroundColor: colors.card },
-  trendImg: { ...StyleSheet.absoluteFillObject },
-  trendName: { position: 'absolute', left: 10, right: 10, bottom: 10, color: '#fff', fontSize: 13, fontWeight: '700' },
+  liveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.green },
+  badgeText: { fontSize: 12.5, color: colors.text2, fontWeight: '600' },
+  title: { fontSize: 30, fontWeight: '800', color: colors.text, letterSpacing: -1, lineHeight: 35 },
+  subtitle: { fontSize: 14.5, color: colors.text2, lineHeight: 21, marginTop: 10 },
+
+  search: {
+    flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 20,
+    backgroundColor: colors.card, borderColor: colors.borderHover, borderWidth: 1.5,
+    borderRadius: radius.lg, height: 56, paddingLeft: 18, paddingRight: 8,
+  },
+  searchText: { flex: 1, color: colors.text3, fontSize: 15.5 },
+  searchBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
+
+  strip: { paddingHorizontal: spacing.lg, gap: 12, paddingTop: 22 },
+  stripTile: { width: 172, height: 97, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.card },
+  stripName: { position: 'absolute', left: 10, right: 10, bottom: 8, color: '#fff', fontSize: 12.5, fontWeight: '700' },
+
+  sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, marginBottom: 12 },
+  sectionTitle: { fontSize: 18, fontWeight: '800', color: colors.text },
+  viewAll: { fontSize: 13, color: colors.accent, fontWeight: '700' },
+  row: { paddingHorizontal: spacing.lg, gap: 12 },
+  card: { width: 132 },
+  cardCover: { width: '100%', aspectRatio: 3 / 4, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.card },
+  cardName: { position: 'absolute', left: 10, right: 10, bottom: 9, color: '#fff', fontSize: 13, fontWeight: '700', lineHeight: 16 },
+  mcBadge: { position: 'absolute', top: 7, right: 7, backgroundColor: 'rgba(8,10,14,0.75)', borderRadius: 7, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' },
+  mcText: { fontSize: 11, fontWeight: '800' },
+  freeBadge: { position: 'absolute', top: 7, left: 7, backgroundColor: colors.green, borderRadius: 7, paddingHorizontal: 6, paddingVertical: 2 },
+  freeText: { fontSize: 10, fontWeight: '800', color: '#04130d' },
 });

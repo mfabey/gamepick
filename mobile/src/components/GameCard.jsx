@@ -1,28 +1,19 @@
-import { useEffect, useState } from 'react';
+import { memo } from 'react';
 import { Pressable, View, Text, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { colors, radius } from '../theme';
 import { useLanguage } from '../context/LanguageContext';
-import { fetchCardPrice } from '../api/games';
+import { usePrice } from '../hooks/usePrice';
 
 const BLUR_HASH = 'L03[?nof_3of~qWBofof00WB%MWB';
 
-export default function GameCard({ game }) {
+function GameCard({ game }) {
   const router = useRouter();
   const { t, formatPrice } = useLanguage();
-  const [price, setPrice] = useState(null);
-
-  // Kart göründüğünde fiyatı tembel yükle (web'deki lazy-load mantığı)
-  useEffect(() => {
-    let alive = true;
-    if (game.isFree) return;
-    fetchCardPrice({ slug: game.rawgSlug || '', name: game.name, hasSteam: !!game.hasSteam })
-      .then(d => { if (alive && d && d.price != null) setPrice(d); })
-      .catch(() => {});
-    return () => { alive = false; };
-  }, [game.rawgSlug, game.name, game.hasSteam, game.isFree]);
+  // Fiyat: merkezi önbellek + dedup + eşzamanlılık limitli servis üzerinden
+  const price = usePrice(game);
 
   const isFree = game.isFree || price?.isFree;
   const onSale = price?.discount > 0 && !isFree;
@@ -42,9 +33,11 @@ export default function GameCard({ game }) {
         <Image
           source={game.image}
           placeholder={BLUR_HASH}
+          recyclingKey={String(game.id)}
+          cachePolicy="memory-disk"
           style={StyleSheet.absoluteFill}
           contentFit="cover"
-          transition={250}
+          transition={200}
         />
         <LinearGradient
           colors={['transparent', 'rgba(6,7,9,0.55)', 'rgba(6,7,9,0.96)']}
@@ -88,6 +81,10 @@ export default function GameCard({ game }) {
     </Pressable>
   );
 }
+
+// Prop olarak yalnızca `game` alır; referans stabil olduğu için parent
+// re-render'larında (arama, loadingMore vb.) yeniden render OLMAZ.
+export default memo(GameCard);
 
 const styles = StyleSheet.create({
   card: { flex: 1, borderRadius: radius.lg, overflow: 'hidden', backgroundColor: colors.card },

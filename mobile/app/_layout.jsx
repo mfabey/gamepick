@@ -35,6 +35,7 @@ export default function RootLayout() {
             >
               <Stack.Screen name="(tabs)" />
               <Stack.Screen name="game/[id]" options={{ animation: 'slide_from_bottom' }} />
+              <Stack.Screen name="wishlist" />
             </Stack>
           </WishlistProvider>
         </AuthProvider>

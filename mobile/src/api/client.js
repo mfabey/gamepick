@@ -13,13 +13,27 @@ export const API_BASE =
   Constants.expoConfig?.extra?.apiBase ||
   'https://REPLACE-WITH-YOUR-VERCEL-DOMAIN.vercel.app';
 
-export async function apiGet(path, params = {}) {
+export async function apiGet(path, params = {}, { timeout = 12000 } = {}) {
   const clean = Object.fromEntries(
     Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== '')
   );
   const qs = new URLSearchParams(clean).toString();
   const url = `${API_BASE}${path}${qs ? `?${qs}` : ''}`;
-  const res = await fetch(url, { headers: { Accept: 'application/json' } });
-  if (!res.ok) throw new Error(`HTTP ${res.status} — ${path}`);
-  return res.json();
+
+  // Askıda kalan istekleri kes (sonsuz "yükleniyor" ekranını önler)
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeout);
+  try {
+    const res = await fetch(url, {
+      headers: { Accept: 'application/json' },
+      signal: controller.signal,
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status} — ${path}`);
+    return await res.json();
+  } catch (err) {
+    if (err?.name === 'AbortError') throw new Error(`Zaman aşımı — ${path}`);
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
 }

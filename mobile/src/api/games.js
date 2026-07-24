@@ -14,3 +14,8 @@ export function fetchTrending() {
 export function fetchCardPrice({ slug = '', name = '', hasSteam = false }) {
   return apiGet('/api/card-price', { slug, name, hasSteam: hasSteam ? 'true' : '' });
 }
+
+// Oyun detayı (açıklama, ekran görüntüleri, türler, mağazalar) — /api/rawg-game
+export function fetchGameDetail(slugOrId) {
+  return apiGet('/api/rawg-game', { slug: slugOrId });
+}
