@@ -682,6 +682,14 @@ function CinematicShowcase({ games }) {
           box-shadow: 0 10px 30px rgba(0,0,0,0.5);
           z-index: 5;
         }
+        @media (max-width: 768px) {
+          .showcase-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .showcase-thumbs {
+            display: none !important;
+          }
+        }
         @media (max-width: 640px) {
           .showcase-price-tag {
             right: 20px;

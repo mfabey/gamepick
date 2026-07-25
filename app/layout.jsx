@@ -63,7 +63,7 @@ export default function RootLayout({ children }) {
               }
             }, { passive: false });
             document.addEventListener('touchmove', function(e) {
-              if (e.scale !== undefined && e.scale !== 1) {
+              if (e.touches.length > 1 || (e.scale !== undefined && e.scale !== 1)) {
                 e.preventDefault();
               }
             }, { passive: false });
