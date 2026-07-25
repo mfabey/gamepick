@@ -8,7 +8,12 @@ export function isAdultContent(game) {
   const slug = (game.slug || '').toLowerCase();
 
   // 1. Kısmi eşleşmesi sakıncalı kelimeler (herhangi bir kelimenin içinde geçmesi durumunda elenir)
-  const forbiddenWords = ['hentai', 'porn', 'erotica', 'erotic', 'nsfw', 'uncensored', 'boobs', 'boob', 'r18', 'r-18', 'fetish', 'vagina', 'penis', 'dildo', 'masturbation'];
+  const forbiddenWords = [
+    'hentai', 'porn', 'erotica', 'erotic', 'nsfw', 'uncensored', 'boobs', 'boob', 'r18', 'r-18', 
+    'fetish', 'vagina', 'penis', 'dildo', 'masturbat', 'panty', 'panties', 'harem', 'lewd', 
+    'stripper', 'waifu', 'milf', 'succubus', 'bdsm', 'bondage', 'seduce', 'seduced', 'seduction', 
+    'camgirl', 'clitoris', 'orgasm', 'cuckold', 'yuri', 'yaoi', 'striptease'
+  ];
   if (forbiddenWords.some(word => name.includes(word) || slug.includes(word))) {
     return true;
   }
@@ -16,7 +21,11 @@ export function isAdultContent(game) {
   // Standalone/Birebir eşleşen sakıncalı kelimeler (sexy veya bloodlust gibi kelimelerin filtrelenmesini engellemek için)
   const nameWords = name.split(/[^a-z0-9]+/);
   const slugWords = slug.split(/[^a-z0-9]+/);
-  const standaloneForbidden = ['sex', 'adult', 'nude', 'nudity', 'naked', 'lust', 'sensual', 'sexual', 'ass', 'butt', 'xxx', 'ecchi'];
+  const standaloneForbidden = [
+    'sex', 'adult', 'nude', 'nudity', 'naked', 'lust', 'sensual', 'sexual', 'ass', 'butt', 
+    'xxx', 'ecchi', 'rape', 'raping', 'sadism', 'masochism', 'condom', 'intercourse', 'babe', 
+    'eroge', 'oppai', 'porno'
+  ];
   if (standaloneForbidden.some(word => nameWords.includes(word) || slugWords.includes(word))) {
     return true;
   }
@@ -60,14 +69,23 @@ export function isAdultTitleOrSlug(name, slug) {
   const n = (name || '').toLowerCase();
   const s = (slug || '').toLowerCase();
 
-  const forbiddenWords = ['hentai', 'porn', 'erotica', 'erotic', 'nsfw', 'uncensored', 'boobs', 'boob', 'r18', 'r-18', 'fetish', 'vagina', 'penis', 'dildo', 'masturbation'];
+  const forbiddenWords = [
+    'hentai', 'porn', 'erotica', 'erotic', 'nsfw', 'uncensored', 'boobs', 'boob', 'r18', 'r-18', 
+    'fetish', 'vagina', 'penis', 'dildo', 'masturbat', 'panty', 'panties', 'harem', 'lewd', 
+    'stripper', 'waifu', 'milf', 'succubus', 'bdsm', 'bondage', 'seduce', 'seduced', 'seduction', 
+    'camgirl', 'clitoris', 'orgasm', 'cuckold', 'yuri', 'yaoi', 'striptease'
+  ];
   if (forbiddenWords.some(word => n.includes(word) || s.includes(word))) {
     return true;
   }
 
   const nameWords = n.split(/[^a-z0-9]+/);
   const slugWords = s.split(/[^a-z0-9]+/);
-  const standaloneForbidden = ['sex', 'adult', 'nude', 'nudity', 'naked', 'lust', 'sensual', 'sexual', 'ass', 'butt', 'xxx', 'ecchi'];
+  const standaloneForbidden = [
+    'sex', 'adult', 'nude', 'nudity', 'naked', 'lust', 'sensual', 'sexual', 'ass', 'butt', 
+    'xxx', 'ecchi', 'rape', 'raping', 'sadism', 'masochism', 'condom', 'intercourse', 'babe', 
+    'eroge', 'oppai', 'porno'
+  ];
   if (standaloneForbidden.some(word => nameWords.includes(word) || slugWords.includes(word))) {
     return true;
   }
