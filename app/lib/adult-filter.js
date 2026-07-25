@@ -92,3 +92,33 @@ export function isAdultTitleOrSlug(name, slug) {
 
   return false;
 }
+
+export function isSteamDataAdult(steamData) {
+  if (!steamData) return false;
+
+  // 1. Content Descriptors (1: Nudity, 3: Sexual Content, 4: Adult Only Sexual Content)
+  if (steamData.content_descriptors && Array.isArray(steamData.content_descriptors.ids)) {
+    const forbiddenIds = [1, 3, 4];
+    if (steamData.content_descriptors.ids.some(id => forbiddenIds.includes(id))) {
+      return true;
+    }
+  }
+
+  // 2. Genres check (Nudity, Sexual Content, Erotica, Hentai)
+  if (Array.isArray(steamData.genres)) {
+    const forbiddenGenres = ['nudity', 'sexual content', 'erotica', 'hentai'];
+    if (steamData.genres.some(g => {
+      const desc = (g.description || '').toLowerCase();
+      return forbiddenGenres.includes(desc);
+    })) {
+      return true;
+    }
+  }
+
+  // 3. Name check as fallback
+  if (steamData.name && isAdultTitleOrSlug(steamData.name, steamData.name)) {
+    return true;
+  }
+
+  return false;
+}

@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
-import { isAdultContent, isAdultTitleOrSlug } from '../../lib/adult-filter.js';
+import { isAdultContent, isAdultTitleOrSlug, isSteamDataAdult } from '../../lib/adult-filter.js';
 import { FALLBACK_GAMES } from '../../lib/fallback-games.js';
 import { getUsdToTry } from '../../lib/exchange.js';
+import { getSteamDetailsCached } from '../../lib/steam-cache.js';
 
 const RAWG_KEY = process.env.RAWG_API_KEY;
 const BASE     = 'https://api.rawg.io/api';
@@ -408,8 +409,24 @@ async function fetchSteamSpecials() {
     const data = await res.json();
     const items = data.specials?.items || [];
 
-    // Filtrelenmiş adult öğeleri
-    const cleanItems = items.filter(item => !isAdultTitleOrSlug(item.name, item.name));
+    // Filtrelenmiş adult öğeleri (hızlı kelime kontrolü)
+    const fastFilteredItems = items.filter(item => !isAdultTitleOrSlug(item.name, item.name));
+
+    // Ayrıntılı kontrol: Her oyunun içerik tanımlayıcılarını ve türlerini Steam üzerinden kontrol edelim
+    const detailedItems = await Promise.all(
+      fastFilteredItems.map(async (item) => {
+        try {
+          const details = await getSteamDetailsCached(item.id);
+          if (details && isSteamDataAdult(details)) {
+            return null;
+          }
+        } catch (e) {
+          console.warn('Specials adult filter verification failed for:', item.name, e.message);
+        }
+        return item;
+      })
+    );
+    const cleanItems = detailedItems.filter(Boolean);
 
     // Tekilleştirme: Aynı oyunun farklı edisyonlarını ve mükerrer paketlerini filtrele
     const seenNames = new Set();

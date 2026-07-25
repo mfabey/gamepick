@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSteamAppIdBySlug, fetchLowestPriceFromITAD, fetchPriceByAppId } from '../card-price/route.js';
-import { isAdultContent, isAdultTitleOrSlug } from '../../lib/adult-filter.js';
+import { isAdultContent, isAdultTitleOrSlug, isSteamDataAdult } from '../../lib/adult-filter.js';
 import { FALLBACK_GAMES } from '../../lib/fallback-games.js';
 import { getUsdToTry, amountToTRY } from '../../lib/exchange.js';
 import { getSteamDetailsCached } from '../../lib/steam-cache.js';
@@ -661,18 +661,18 @@ export async function GET(request) {
               if (!appid) return null;
 
               let releasedDate = null;
-              if (fetchReleaseDates) {
-                try {
-                  const data = await getSteamDetailsCached(appid);
-                  if (data) {
-                    // Filter out coming soon / unreleased games
-                    if (data.release_date?.coming_soon) {
-                      return null;
-                    }
-                    releasedDate = data.release_date?.date || null;
+              try {
+                const steamData = await getSteamDetailsCached(appid);
+                if (steamData) {
+                  if (isSteamDataAdult(steamData)) {
+                    return null;
                   }
-                } catch {}
-              }
+                  if (fetchReleaseDates && steamData.release_date?.coming_soon) {
+                    return null;
+                  }
+                  releasedDate = steamData.release_date?.date || null;
+                }
+              } catch {}
 
               const slug = generateSlug(item.name);
               const g = {
