@@ -235,8 +235,22 @@ async function fetchSteamFeatured(category) {
     const data = await res.json();
     const items = data[category]?.items || [];
 
-    // Filtrelenmiş adult öğeleri
-    const cleanItems = items.filter(item => !isAdultTitleOrSlug(item.name, item.name));
+    // Filtrelenmiş adult öğeleri (hızlı kontrol)
+    const fastFilteredItems = items.filter(item => !isAdultTitleOrSlug(item.name, item.name));
+
+    // Ayrıntılı kontrol: Steam içerik tanımlayıcılarını sorgula
+    const detailedItems = await Promise.all(
+      fastFilteredItems.map(async (item) => {
+        try {
+          const data = await getSteamDetailsCached(item.id);
+          if (data && isSteamDataAdult(data)) {
+            return null;
+          }
+        } catch {}
+        return item;
+      })
+    );
+    const cleanItems = detailedItems.filter(Boolean);
 
     return cleanItems.map(item => {
       const slug = generateSlug(item.name);
@@ -296,6 +310,7 @@ async function fetchSteamNewReleases() {
             return {
               item,
               released: data.release_date?.date || null,
+              steamData: data
             };
           }
           return null;
@@ -305,7 +320,9 @@ async function fetchSteamNewReleases() {
       })
     );
 
-    const gamesOnly = detailedItems.filter(Boolean).filter(d => !isAdultTitleOrSlug(d.item.name, d.item.name));
+    const gamesOnly = detailedItems
+      .filter(Boolean)
+      .filter(d => !isAdultTitleOrSlug(d.item.name, d.item.name) && !isSteamDataAdult(d.steamData));
 
     return gamesOnly.map(d => {
       const item = d.item;
@@ -391,7 +408,7 @@ async function fetchSteamByMode(mode, { genres = '', q = '', section = '', page 
     // paging açık kalsın (sonraki bloğu da varsay), kısa sayfa geldiyse burada bitsin.
     const total = data.total_count || (offset + items.length + (items.length >= STEAM_PAGE ? STEAM_PAGE : 0));
 
-    const results = items.map(item => {
+    const initialGames = items.map(item => {
       const appidMatch = (item.logo || '').match(/\/apps\/(\d+)\//);
       const appid = appidMatch ? parseInt(appidMatch[1]) : null;
       const slug  = generateSlug(item.name);
@@ -404,6 +421,20 @@ async function fetchSteamByMode(mode, { genres = '', q = '', section = '', page 
         genres: [], released: null,
       };
     }).filter(g => g.rawgId && !isAdultTitleOrSlug(g.name, g.rawgSlug));
+
+    // Ayrıntılı kontrol: İçerik tanımlayıcılarını doğrula
+    const verifiedGames = await Promise.all(
+      initialGames.map(async (g) => {
+        try {
+          const data = await getSteamDetailsCached(g.rawgId);
+          if (data && isSteamDataAdult(data)) {
+            return null;
+          }
+        } catch {}
+        return g;
+      })
+    );
+    const results = verifiedGames.filter(Boolean);
 
     // Fallback veritabanından zengin meta veriyi eşle
     results.forEach(g => {

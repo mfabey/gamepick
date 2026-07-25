@@ -31,8 +31,8 @@ async function searchSteamGame(slug) {
     // Eşleşen en yakın oyunu bul veya ilkini al
     const cleanSlug = cleanNameForMatch(slug);
     const match = items.find(i => cleanNameForMatch(i.name) === cleanSlug)
-               || items.find(i => cleanNameForMatch(i.name).includes(cleanSlug))
-               || items[0];
+               || items.find(i => cleanNameForMatch(i.name).includes(cleanSlug) || cleanSlug.includes(cleanNameForMatch(i.name)));
+    if (!match) return null;
     
     const appidMatch = match.logo.match(/\/apps\/(\d+)\//);
     const appid = appidMatch ? parseInt(appidMatch[1]) : null;
