@@ -10,6 +10,7 @@ import { fetchCardPrice, fetchGameDetail } from '../../src/api/games';
 import { colors, radius, spacing } from '../../src/theme';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useWishlist } from '../../src/context/WishlistContext';
+import { useQuery } from '../../src/hooks/useQuery';
 import FadeIn from '../../src/components/FadeIn';
 
 function stripHtml(s) {
@@ -30,7 +31,12 @@ export default function GameDetail() {
   const { t, formatPrice } = useLanguage();
   const { isWatched, toggle } = useWishlist();
 
-  const [detail, setDetail]   = useState(null);
+  // Zengin detay: cache-first (aynı oyunu tekrar açınca anında gelir)
+  const { data: detail } = useQuery(
+    `game-detail:${slug || id}`,
+    () => fetchGameDetail(slug || id).then((d) => (d && !d.error ? d : null)),
+    { ttl: 30 * 60 * 1000 }
+  );
   const [price, setPrice]     = useState(null);
   const [loadingPrice, setLoadingPrice] = useState(true);
   const [expanded, setExpanded] = useState(false);
@@ -40,17 +46,12 @@ export default function GameDetail() {
 
   useEffect(() => {
     let alive = true;
-    // Zengin detay
-    fetchGameDetail(slug || id)
-      .then(d => { if (alive && d && !d.error) setDetail(d); })
-      .catch(() => {});
-    // Fiyat
     fetchCardPrice({ slug: slug || '', name: name || '', hasSteam: true })
       .then(d => { if (alive) setPrice(d); })
       .catch(() => {})
       .finally(() => { if (alive) setLoadingPrice(false); });
     return () => { alive = false; };
-  }, [slug, id, name]);
+  }, [slug, name]);
 
   const cover = detail?.image || image;
   const title = detail?.name || name;

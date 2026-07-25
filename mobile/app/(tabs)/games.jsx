@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   View, Text, TextInput, Pressable, ActivityIndicator,
   StyleSheet, ScrollView,
@@ -8,6 +8,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchGames } from '../../src/api/games';
 import GameCard from '../../src/components/GameCard';
+import { GamesGridSkeleton } from '../../src/components/Skeleton';
+import { prefetchImages } from '../../src/utils/prefetch';
+import { useTimeToData } from '../../src/dev/perf';
 import { colors, radius, spacing, TAB_SPACE } from '../../src/theme';
 import { useLanguage } from '../../src/context/LanguageContext';
 
@@ -17,20 +20,21 @@ const NUM = 24;
 export default function GamesScreen() {
   const { t } = useLanguage();
 
-  const SECTIONS = [
+  // Dil değişmedikçe yeniden oluşmasın
+  const SECTIONS = useMemo(() => [
     { v: '',         label: t('section.all') },
     { v: 'popular',  label: t('section.popular') },
     { v: 'new',      label: t('section.new') },
     { v: 'sale',     label: t('section.sale') },
     { v: 'free',     label: t('section.free') },
     { v: 'topscore', label: t('section.topscore') },
-  ];
-  const MODES = [
+  ], [t]);
+  const MODES = useMemo(() => [
     { v: '',             label: t('mode.all') },
     { v: 'singleplayer', label: t('mode.singleplayer') },
     { v: 'multiplayer',  label: t('mode.multiplayer') },
     { v: 'coop',         label: t('mode.coop') },
-  ];
+  ], [t]);
 
   const [query, setQuery]       = useState('');
   const [section, setSection]   = useState('');
@@ -41,6 +45,9 @@ export default function GamesScreen() {
 
   const ref = useRef({ page: 1, canMore: true, fetching: false, seen: new Set(), section: '', mode: '', query: '' });
   const debounce = useRef(null);
+
+  // Dev-only: ekran mount'undan ilk oyunların gelişine kadar geçen süre
+  useTimeToData('Games', games.length > 0);
 
   const load = useCallback(async () => {
     const r = ref.current;
@@ -54,6 +61,7 @@ export default function GamesScreen() {
         r.seen.add(g.id); return true;
       });
       setGames(results);
+      prefetchImages(results.map(g => g.image));
       r.canMore = (data.total || 0) > NUM;
     } catch {
       setGames([]);
@@ -84,7 +92,10 @@ export default function GamesScreen() {
         r.seen.add(g.id); return true;
       });
       r.page = next;
-      if (fresh.length > 0) setGames(prev => [...prev, ...fresh]);
+      if (fresh.length > 0) {
+        setGames(prev => [...prev, ...fresh]);
+        prefetchImages(fresh.map(g => g.image));
+      }
       if (next * NUM >= (data.total || 0) || (data.results || []).length === 0) r.canMore = false;
     } catch {
       r.canMore = false;
@@ -124,14 +135,14 @@ export default function GamesScreen() {
       </View>
 
       {/* Bölüm chip'leri */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll} contentContainerStyle={styles.chipsRow}>
         {SECTIONS.map(s => (
           <Chip key={s.v} active={section === s.v} label={s.label} onPress={() => setSection(s.v)} />
         ))}
       </ScrollView>
 
       {/* Mod chip'leri */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.chipsRow, { paddingBottom: 6 }]}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll} contentContainerStyle={[styles.chipsRow, { paddingBottom: 6 }]}>
         {MODES.map(m => (
           <Chip key={m.v} active={mode === m.v} label={m.label} accent="#6ea8ff" onPress={() => setMode(m.v)} />
         ))}
@@ -140,7 +151,7 @@ export default function GamesScreen() {
       {/* Grid */}
       <View style={{ flex: 1 }}>
         {loading ? (
-          <View style={styles.center}><ActivityIndicator color={colors.accent} size="large" /></View>
+          <GamesGridSkeleton />
         ) : games.length === 0 ? (
           <View style={styles.center}>
             <Ionicons name="search" size={44} color={colors.text3} />
@@ -189,7 +200,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.md, paddingHorizontal: 14, height: 44,
   },
   searchInput: { flex: 1, color: colors.text, fontSize: 15 },
-  chipsRow: { paddingHorizontal: spacing.lg, gap: 8, paddingVertical: 8 },
+  chipsScroll: { flexGrow: 0, flexShrink: 0, maxHeight: 54 },
+  chipsRow: { paddingHorizontal: spacing.lg, gap: 8, paddingVertical: 8, alignItems: 'center' },
   chip: {
     paddingHorizontal: 15, paddingVertical: 8, borderRadius: radius.pill,
     backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder,

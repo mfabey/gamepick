@@ -1,13 +1,15 @@
 import { memo, useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View, Text, TextInput, Pressable, ScrollView,
-  ActivityIndicator, StyleSheet, Alert,
+  StyleSheet, Alert,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { GamesGridSkeleton } from '../../src/components/Skeleton';
+import { prefetchImages } from '../../src/utils/prefetch';
 import { colors, radius, spacing, TAB_SPACE } from '../../src/theme';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useAuth } from '../../src/context/AuthContext';
@@ -52,6 +54,8 @@ export default function LibraryScreen() {
       if (!alive) return;
       const map = {}; entries.forEach(([id, d]) => { map[id] = d; });
       setSteamLibs(map);
+      // İlk kapakları önden ısıt (kaydırmada anında görünsün)
+      prefetchImages(Object.values(map).flatMap(l => (l?.games || []).map(g => g.image)).slice(0, 30));
     }).finally(() => { if (alive) setSteamLoading(false); });
     return () => { alive = false; };
   }, [steamIdsKey]);
@@ -76,7 +80,7 @@ export default function LibraryScreen() {
     let alive = true;
     setXboxLoading(true); setXboxErr(null);
     fetchXboxLibrary(xbox)
-      .then(d => { if (alive) setXboxLib(d); })
+      .then(d => { if (alive) { setXboxLib(d); prefetchImages((d?.games || []).slice(0, 30).map(g => g.image)); } })
       .catch(e => { if (alive) setXboxErr(e.message); })
       .finally(() => { if (alive) setXboxLoading(false); });
     return () => { alive = false; };
@@ -197,7 +201,7 @@ export default function LibraryScreen() {
       <Text style={styles.header}>{t('nav.library')}</Text>
 
       {/* Kaynak seçici */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll} contentContainerStyle={styles.chipsRow}>
         {sources.map(s => {
           const active = view === s.key;
           const accent = s.type === 'xbox' ? colors.xbox : s.type === 'combined' ? colors.accent : colors.steam;
@@ -214,7 +218,7 @@ export default function LibraryScreen() {
 
       <View style={{ flex: 1 }}>
       {loading && filtered.length === 0 ? (
-        <View style={styles.center}><ActivityIndicator color={colors.accent} size="large" /></View>
+        <GamesGridSkeleton />
       ) : errorMsg ? (
         <View style={styles.center}>
           <Ionicons name="warning-outline" size={44} color={colors.danger} />
@@ -396,7 +400,8 @@ const GameTile = memo(function GameTile({ game, steam, price }) {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   header: { fontSize: 28, fontWeight: '800', color: colors.text, letterSpacing: -0.6, paddingHorizontal: spacing.lg, paddingTop: 8, paddingBottom: 4 },
-  chipsRow: { paddingHorizontal: spacing.lg, gap: 8, paddingVertical: 10 },
+  chipsScroll: { flexGrow: 0, flexShrink: 0, maxHeight: 56 },
+  chipsRow: { paddingHorizontal: spacing.lg, gap: 8, paddingVertical: 10, alignItems: 'center' },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 6, maxWidth: 200, paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.pill, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder },
   chipText: { fontSize: 13, color: colors.text2, fontWeight: '500' },
 

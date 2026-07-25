@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { registerForPushToken } from '../notifications';
@@ -92,8 +92,13 @@ export function WishlistProvider({ children }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, enabled]);
 
+  const value = useMemo(
+    () => ({ items, enabled, ready, add, remove, toggle, isWatched, enableNotifications, disableNotifications }),
+    [items, enabled, ready, add, remove, toggle, isWatched, enableNotifications, disableNotifications]
+  );
+
   return (
-    <WishlistContext.Provider value={{ items, enabled, ready, add, remove, toggle, isWatched, enableNotifications, disableNotifications }}>
+    <WishlistContext.Provider value={value}>
       {children}
     </WishlistContext.Provider>
   );

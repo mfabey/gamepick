@@ -1,5 +1,5 @@
 import { memo, useState, useMemo, useCallback } from 'react';
-import { View, Text, Pressable, ScrollView, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import { fetchNews } from '../../src/api/news';
+import { NewsListSkeleton } from '../../src/components/Skeleton';
 import { colors, radius, spacing, TAB_SPACE } from '../../src/theme';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useQuery } from '../../src/hooks/useQuery';
@@ -43,7 +44,7 @@ export default function NewsScreen() {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
         <Text style={styles.header}>{t('news.title')}</Text>
-        <View style={styles.center}><ActivityIndicator color={colors.accent} size="large" /></View>
+        <NewsListSkeleton />
       </SafeAreaView>
     );
   }

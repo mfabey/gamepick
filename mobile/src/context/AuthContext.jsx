@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import * as WebBrowser from 'expo-web-browser';
@@ -131,11 +131,13 @@ export function AuthProvider({ children }) {
     await persistXbox(null);
   }, [persistXbox]);
 
+  const value = useMemo(
+    () => ({ steamAccounts, xbox, ready, busy, loginSteam, loginXbox, logoutSteam, logoutXbox }),
+    [steamAccounts, xbox, ready, busy, loginSteam, loginXbox, logoutSteam, logoutXbox]
+  );
+
   return (
-    <AuthContext.Provider value={{
-      steamAccounts, xbox, ready, busy,
-      loginSteam, loginXbox, logoutSteam, logoutXbox,
-    }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

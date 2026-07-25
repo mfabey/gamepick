@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo } from 'react';
 
 // Web sitesindeki dil sistemiyle uyumlu, mobil için sadeleştirilmiş sürüm.
 const STRINGS = {
@@ -196,8 +196,13 @@ export function LanguageProvider({ children }) {
 
   const toggleLang = useCallback(() => setLang(l => (l === 'tr' ? 'en' : 'tr')), []);
 
+  const value = useMemo(
+    () => ({ lang, setLang, toggleLang, t, formatPrice, rate, setRate }),
+    [lang, toggleLang, t, formatPrice, rate]
+  );
+
   return (
-    <LanguageContext.Provider value={{ lang, setLang, toggleLang, t, formatPrice, rate, setRate }}>
+    <LanguageContext.Provider value={value}>
       {children}
     </LanguageContext.Provider>
   );

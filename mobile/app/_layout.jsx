@@ -6,6 +6,7 @@ import * as Notifications from 'expo-notifications';
 import { LanguageProvider } from '../src/context/LanguageContext';
 import { AuthProvider } from '../src/context/AuthContext';
 import { WishlistProvider } from '../src/context/WishlistContext';
+import FpsMeter from '../src/dev/FpsMeter';
 import { colors } from '../src/theme';
 
 export default function RootLayout() {
@@ -37,6 +38,7 @@ export default function RootLayout() {
               <Stack.Screen name="game/[id]" options={{ animation: 'slide_from_bottom' }} />
               <Stack.Screen name="wishlist" />
             </Stack>
+            {__DEV__ && <FpsMeter />}
           </WishlistProvider>
         </AuthProvider>
       </LanguageProvider>
