@@ -1,9 +1,9 @@
-import { useEffect, useState, useRef, useMemo } from 'react';
+import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet, ActivityIndicator, Modal, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
@@ -59,15 +59,14 @@ export default function GameDetail() {
   const [loadingPrice, setLoadingPrice] = useState(true);
   const [expanded, setExpanded] = useState(false);
   const [activeShotIndex, setActiveShotIndex] = useState(null);
-  const [currentScrollIndex, setCurrentScrollIndex] = useState(null);
-  const scrollRef = useRef(null);
+  const [currentScrollIndex, setCurrentScrollIndex] = useState(0);
   const { width: screenWidth } = Dimensions.get('window');
 
-  useEffect(() => {
-    if (activeShotIndex !== null) {
-      setCurrentScrollIndex(activeShotIndex);
-    }
-  }, [activeShotIndex]);
+  // Lightbox'ı aç: indeks ve gösterge aynı anda ayarlanır (bir karelik yanlış sayı olmaz)
+  const openShot = useCallback((i) => {
+    setActiveShotIndex(i);
+    setCurrentScrollIndex(i);
+  }, []);
 
   // Mağaza-başı fiyat karşılaştırması (ITAD) — detay yüklenince (steamAppId için)
   const { data: pricesData } = useQuery(
@@ -95,6 +94,22 @@ export default function GameDetail() {
     p.muted = true;
     p.play();
   });
+
+  // Ekran odakta mı? (mağaza linki/tarayıcı üste açılınca ekran mount'ta kalır)
+  const [focused, setFocused] = useState(true);
+  useFocusEffect(
+    useCallback(() => {
+      setFocused(true);
+      return () => setFocused(false);
+    }, [])
+  );
+
+  // Video yalnızca ekran odaktayken VE lightbox kapalıyken oynasın (pil/CPU)
+  useEffect(() => {
+    if (!trailerUrl) return;
+    if (focused && activeShotIndex === null) trailerPlayer.play();
+    else trailerPlayer.pause();
+  }, [focused, activeShotIndex, trailerUrl, trailerPlayer]);
 
   const watched = isWatched(id);
   const gameObj = { id, name, slug, image, hasSteam: hasSteam === 'true' || hasSteam === '1' };
@@ -291,7 +306,7 @@ export default function GameDetail() {
           <Section title={t('detail.screenshots')} delay={160}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -spacing.lg }} contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: 10 }}>
               {shots.map((url, i) => (
-                <Pressable key={i} onPress={() => setActiveShotIndex(i)}>
+                <Pressable key={i} onPress={() => openShot(i)}>
                   <Image source={url} cachePolicy="memory-disk" style={styles.shot} contentFit="cover" transition={200} />
                 </Pressable>
               ))}
@@ -321,7 +336,6 @@ export default function GameDetail() {
       >
         <View style={styles.modalBg}>
           <ScrollView
-            ref={scrollRef}
             horizontal
             pagingEnabled
             showsHorizontalScrollIndicator={false}
@@ -357,7 +371,7 @@ export default function GameDetail() {
           {shots.length > 1 && (
             <View style={styles.indicatorContainer}>
               <Text style={styles.indicatorText}>
-                {`${(currentScrollIndex !== null ? currentScrollIndex : activeShotIndex) + 1} / ${shots.length}`}
+                {`${currentScrollIndex + 1} / ${shots.length}`}
               </Text>
             </View>
           )}

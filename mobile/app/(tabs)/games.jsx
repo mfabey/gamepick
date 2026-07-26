@@ -7,6 +7,7 @@ import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchGames } from '../../src/api/games';
+import { fetchQuery, getEntry, isFresh } from '../../src/services/queryCache';
 import GameCard from '../../src/components/GameCard';
 import { GamesGridSkeleton } from '../../src/components/Skeleton';
 import { prefetchImages } from '../../src/utils/prefetch';
@@ -16,6 +17,7 @@ import { useLanguage } from '../../src/context/LanguageContext';
 
 const COLS = 2;
 const NUM = 24;
+const PAGE1_TTL = 5 * 60 * 1000;   // 1. sayfa önbellek ömrü
 
 export default function GamesScreen() {
   const { t } = useLanguage();
@@ -36,7 +38,8 @@ export default function GamesScreen() {
     { v: 'coop',         label: t('mode.coop') },
   ], [t]);
 
-  const [query, setQuery]       = useState('');
+  const [query, setQuery]       = useState('');   // arama kutusundaki canlı değer
+  const [searchTerm, setSearchTerm] = useState(''); // isteğe giden değer (yalnızca bu debounce'lu)
   const [section, setSection]   = useState('');
   const [mode, setMode]         = useState('');
   const [games, setGames]       = useState([]);
@@ -44,7 +47,6 @@ export default function GamesScreen() {
   const [loadingMore, setLoadingMore] = useState(false);
 
   const ref = useRef({ page: 1, canMore: true, fetching: false, seen: new Set(), section: '', mode: '', query: '' });
-  const debounce = useRef(null);
 
   // Dev-only: ekran mount'undan ilk oyunların gelişine kadar geçen süre
   useTimeToData('Games', games.length > 0);
@@ -52,10 +54,18 @@ export default function GamesScreen() {
   const load = useCallback(async () => {
     const r = ref.current;
     r.page = 1; r.canMore = true; r.fetching = true; r.seen = new Set();
-    r.section = section; r.mode = mode; r.query = query.trim();
-    setLoading(true);
+    r.section = section; r.mode = mode; r.query = searchTerm;
+
+    // 1. sayfa filtre bazında önbellekli → aynı filtreye dönünce ağ isteği yok
+    const key = `games:${section}|${mode}|${searchTerm}`;
+    const cacheHit = isFresh(getEntry(key), PAGE1_TTL);
+    if (!cacheHit) setLoading(true);   // önbellekten geliyorsa skeleton yanıp sönmesin
     try {
-      const data = await fetchGames({ page: 1, num: NUM, section, mode, q: query.trim() });
+      const data = await fetchQuery(
+        key,
+        () => fetchGames({ page: 1, num: NUM, section, mode, q: searchTerm }),
+        { ttl: PAGE1_TTL }
+      );
       const results = (data.results || []).filter(g => {
         if (r.seen.has(g.id)) return false;
         r.seen.add(g.id); return true;
@@ -70,14 +80,18 @@ export default function GamesScreen() {
       r.fetching = false;
       setLoading(false);
     }
-  }, [section, mode, query]);
+  }, [section, mode, searchTerm]);
 
-  // Arama debounce + filtre değişince yeniden yükle
+  // Yalnızca METİN aramasını geciktir (çip ve ilk açılış anında tetiklensin)
   useEffect(() => {
-    if (debounce.current) clearTimeout(debounce.current);
-    debounce.current = setTimeout(load, 350);
-    return () => clearTimeout(debounce.current);
-  }, [load]);
+    const q = query.trim();
+    if (q === searchTerm) return;
+    const t = setTimeout(() => setSearchTerm(q), 350);
+    return () => clearTimeout(t);
+  }, [query, searchTerm]);
+
+  // Filtre/arama değiştiğinde ANINDA yükle
+  useEffect(() => { load(); }, [load]);
 
   const loadMore = useCallback(async () => {
     const r = ref.current;
