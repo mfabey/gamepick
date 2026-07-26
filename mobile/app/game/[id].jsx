@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet, ActivityIndicator, Modal, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
+import { Video } from 'expo-av';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -140,6 +141,18 @@ export default function GameDetail() {
       {/* Kapak */}
       <View style={styles.coverWrap}>
         {cover ? <Image source={cover} priority="high" cachePolicy="memory-disk" style={StyleSheet.absoluteFill} contentFit="cover" transition={250} /> : null}
+        {detail?.trailer ? (
+          <Video
+            source={{ uri: detail.trailer }}
+            rate={1.0}
+            volume={1.0}
+            isMuted={true}
+            resizeMode="cover"
+            shouldPlay
+            isLooping
+            style={StyleSheet.absoluteFill}
+          />
+        ) : null}
         <LinearGradient colors={['rgba(8,10,13,0.15)', 'rgba(8,10,13,0.45)', colors.bg]} locations={[0, 0.55, 1]} style={StyleSheet.absoluteFill} />
         <SafeAreaView edges={['top']} style={styles.topBar}>
           <Pressable style={styles.iconBtn} onPress={() => router.back()} hitSlop={10}>

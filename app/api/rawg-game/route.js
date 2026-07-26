@@ -72,6 +72,7 @@ async function fetchSteamDetails(appid, slug) {
       tags:         (d.categories || []).map(c => c.description).slice(0, 15),
       platforms:    ['PC'],
       screenshots:  (d.screenshots || []).map(s => s.path_full).slice(0, 6),
+      trailer:      d.movies?.[0]?.hls_h264 || d.movies?.[0]?.mp4?.max || d.movies?.[0]?.webm?.max || null,
       hasSteam:     true,
       hasEpic:      false,
       steamAppId:   String(appid),
@@ -118,6 +119,7 @@ async function trySteamFallback(slug) {
       tags:         [],
       platforms:    ['PC'],
       screenshots:  [],
+      trailer:      null,
       hasSteam:     true,
       hasEpic:      localMatch.hasEpic || false,
       steamAppId:   String(appid),
@@ -157,6 +159,7 @@ async function trySteamFallback(slug) {
       tags:         [],
       platforms:    ['PC'],
       screenshots:  [],
+      trailer:      null,
       hasSteam:     true,
       hasEpic:      false,
       steamAppId:   String(match.appid),
@@ -282,6 +285,18 @@ export async function GET(request) {
         const hasSteam = !!steamAppId || detailStores.some(s => s.store?.slug === 'steam');
         const hasEpic  = !!epicUrl  || detailStores.some(s => s.store?.slug === 'epic-games');
 
+        let trailer = null;
+        if (steamAppId) {
+          try {
+            const steamData = await getSteamDetailsCached(steamAppId);
+            if (steamData && steamData.movies && steamData.movies.length > 0) {
+              trailer = steamData.movies[0].hls_h264 || steamData.movies[0].mp4?.max || steamData.movies[0].webm?.max || null;
+            }
+          } catch (e) {
+            console.error("Steam trailer fetch failed for rawg game:", e);
+          }
+        }
+
         const game = {
           id:           `rawg_${rawgDetail.id}`,
           rawgId:       rawgDetail.id,
@@ -300,6 +315,7 @@ export async function GET(request) {
           tags:         (rawgDetail.tags     || []).map(t => t.name).slice(0, 15),
           platforms:    (rawgDetail.platforms|| []).map(p => p.platform.name),
           screenshots:  (rawgShots.results   || []).map(s => s.image).filter(Boolean).slice(0, 6),
+          trailer,
           hasSteam,
           hasEpic,
           steamAppId:   steamAppId || null,
@@ -415,6 +431,18 @@ export async function GET(request) {
     const hasSteam = !!steamAppId || detailStores.some(s => s.store?.slug === 'steam');
     const hasEpic  = !!epicUrl  || detailStores.some(s => s.store?.slug === 'epic-games');
 
+    let trailer = null;
+    if (steamAppId) {
+      try {
+        const steamData = await getSteamDetailsCached(steamAppId);
+        if (steamData && steamData.movies && steamData.movies.length > 0) {
+          trailer = steamData.movies[0].hls_h264 || steamData.movies[0].mp4?.max || steamData.movies[0].webm?.max || null;
+        }
+      } catch (e) {
+        console.error("Steam trailer fetch failed for rawg game:", e);
+      }
+    }
+
     const game = {
       id:           `rawg_${detail.id}`,
       rawgId:       detail.id,
@@ -433,6 +461,7 @@ export async function GET(request) {
       tags:         (detail.tags     || []).map(t => t.name).slice(0, 15),
       platforms:    (detail.platforms|| []).map(p => p.platform.name),
       screenshots:  (shots.results   || []).map(s => s.image).filter(Boolean).slice(0, 6),
+      trailer,
       hasSteam,
       hasEpic,
       steamAppId:   steamAppId || null,
