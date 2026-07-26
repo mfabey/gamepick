@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, ScrollView, StyleSheet, ActivityIndicator, Modal } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -57,6 +57,7 @@ export default function GameDetail() {
   const [price, setPrice]     = useState(null);
   const [loadingPrice, setLoadingPrice] = useState(true);
   const [expanded, setExpanded] = useState(false);
+  const [activeScreenshot, setActiveScreenshot] = useState(null);
 
   // Mağaza-başı fiyat karşılaştırması (ITAD) — detay yüklenince (steamAppId için)
   const { data: pricesData } = useQuery(
@@ -264,7 +265,7 @@ export default function GameDetail() {
           <Section title={t('detail.screenshots')} delay={160}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -spacing.lg }} contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: 10 }}>
               {shots.map((url, i) => (
-                <Pressable key={i} onPress={() => open(url)}>
+                <Pressable key={i} onPress={() => setActiveScreenshot(url)}>
                   <Image source={url} cachePolicy="memory-disk" style={styles.shot} contentFit="cover" transition={200} />
                 </Pressable>
               ))}
@@ -284,6 +285,25 @@ export default function GameDetail() {
           </Section>
         ) : null}
       </ScrollView>
+      
+      {/* Screenshot Lightbox Modal */}
+      <Modal
+        visible={!!activeScreenshot}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setActiveScreenshot(null)}
+      >
+        <Pressable style={styles.modalBg} onPress={() => setActiveScreenshot(null)}>
+          <Image
+            source={activeScreenshot}
+            contentFit="contain"
+            style={styles.modalImage}
+          />
+          <Pressable style={styles.closeBtn} onPress={() => setActiveScreenshot(null)} hitSlop={10}>
+            <Ionicons name="close" size={26} color="#fff" />
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -347,4 +367,7 @@ const styles = StyleSheet.create({
   shot: { width: 264, height: 148, borderRadius: radius.md, backgroundColor: colors.card },
   desc: { fontSize: 14, color: colors.text2, lineHeight: 21 },
   moreLink: { color: colors.accent, fontSize: 13.5, fontWeight: '700', marginTop: 8 },
+  modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', alignItems: 'center', justifyContent: 'center' },
+  modalImage: { width: '100%', height: '100%' },
+  closeBtn: { position: 'absolute', top: 50, right: 20, width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
 });
