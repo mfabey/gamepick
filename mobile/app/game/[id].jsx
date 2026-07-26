@@ -108,11 +108,21 @@ export default function GameDetail() {
     if (willAdd && detail?.genres?.length) recordSignal({ genres: detail.genres, type: 'wishlist' });
   };
 
-  // For Steam fallback, detail.image is a low-res 460x215 header image.
-  // We prefer the first screenshot (1920x1080) for a sharp, premium background banner.
-  const cover = (detail?.image && detail.image.includes('/header.jpg') && detail.screenshots?.[0])
-    ? detail.screenshots[0]
-    : (detail?.image || image);
+  // Steam details return a low-resolution 460x215 header image.
+  // We prefer the 2x high-resolution header (920x430) or the first high-res screenshot (1920x1080) for a premium background banner.
+  const coverSource = useMemo(() => {
+    const rawImage = detail?.image || image;
+    if (typeof rawImage === 'string' && rawImage.includes('/header.jpg')) {
+      const cover2x = rawImage.replace('header.jpg', 'header_2x.jpg');
+      const sources = [{ uri: cover2x }];
+      if (detail?.screenshots?.[0]) {
+        sources.push({ uri: detail.screenshots[0] });
+      }
+      sources.push({ uri: rawImage });
+      return sources;
+    }
+    return rawImage ? { uri: rawImage } : null;
+  }, [detail, image]);
   const title = detail?.name || name;
   const isFree = price?.isFree;
   const onSale = price?.discount > 0 && !isFree;
@@ -133,7 +143,7 @@ export default function GameDetail() {
     <View style={styles.root}>
       {/* Kapak */}
       <View style={styles.coverWrap}>
-        {cover ? <Image source={cover} priority="high" cachePolicy="memory-disk" style={StyleSheet.absoluteFill} contentFit="cover" transition={250} /> : null}
+        {coverSource ? <Image source={coverSource} priority="high" cachePolicy="memory-disk" style={StyleSheet.absoluteFill} contentFit="cover" transition={250} /> : null}
         <LinearGradient colors={['rgba(8,10,13,0.15)', 'rgba(8,10,13,0.45)', colors.bg]} locations={[0, 0.55, 1]} style={StyleSheet.absoluteFill} />
         <SafeAreaView edges={['top']} style={styles.topBar}>
           <Pressable style={styles.iconBtn} onPress={() => router.back()} hitSlop={10}>
