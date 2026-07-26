@@ -108,7 +108,11 @@ export default function GameDetail() {
     if (willAdd && detail?.genres?.length) recordSignal({ genres: detail.genres, type: 'wishlist' });
   };
 
-  const cover = detail?.image || image;
+  // For Steam fallback, detail.image is a low-res 460x215 header image.
+  // We prefer the first screenshot (1920x1080) for a sharp, premium background banner.
+  const cover = (detail?.image && detail.image.includes('/header.jpg') && detail.screenshots?.[0])
+    ? detail.screenshots[0]
+    : (detail?.image || image);
   const title = detail?.name || name;
   const isFree = price?.isFree;
   const onSale = price?.discount > 0 && !isFree;
