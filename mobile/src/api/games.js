@@ -16,6 +16,19 @@ export function fetchCardPrice({ slug = '', name = '', hasSteam = false }) {
 }
 
 // Oyun detayı (açıklama, ekran görüntüleri, türler, mağazalar) — /api/rawg-game
+// Yanıt { game: {...} } ile sarılı → düz objeye aç (ekran düz alan okur).
 export function fetchGameDetail(slugOrId) {
-  return apiGet('/api/rawg-game', { slug: slugOrId });
+  return apiGet('/api/rawg-game', { slug: slugOrId }).then((d) => d?.game || d || null);
+}
+
+// Mağaza-başı fiyat karşılaştırması (ITAD, TRY) — /api/prices
+export function fetchPrices({ appid = '', title = '' } = {}) {
+  if (!appid && !title) return Promise.resolve({ stores: [] });
+  return apiGet('/api/prices', { appid: appid || '', title: title || '' });
+}
+
+// Steam topluluk inceleme özeti (olumlu %, toplam) — /api/steam-reviews
+export function fetchSteamReviews(appid) {
+  if (!appid) return Promise.resolve(null);
+  return apiGet('/api/steam-reviews', { appid });
 }

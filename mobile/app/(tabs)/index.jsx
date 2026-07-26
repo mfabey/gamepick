@@ -1,15 +1,27 @@
-import { memo, useMemo } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { memo, useMemo, useCallback } from 'react';
+import { View, Text, Pressable, ScrollView, StyleSheet, Alert } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as WebBrowser from 'expo-web-browser';
 import { fetchTrending, fetchGames } from '../../src/api/games';
+import { fetchNews } from '../../src/api/news';
 import { colors, radius, spacing, TAB_SPACE } from '../../src/theme';
 import { useLanguage } from '../../src/context/LanguageContext';
 import FadeIn from '../../src/components/FadeIn';
+import PosterImage from '../../src/components/PosterImage';
+import NewsImage from '../../src/components/NewsImage';
 import { useQuery } from '../../src/hooks/useQuery';
+import { useTasteProfile } from '../../src/hooks/useTasteProfile';
+import { useOwnedGames } from '../../src/hooks/useOwnedGames';
+import { useLibraryTaste } from '../../src/hooks/useLibraryTaste';
+import { useSeen } from '../../src/hooks/useSeen';
+import { useDismissed } from '../../src/hooks/useDismissed';
+import { recordDismiss } from '../../src/services/dismissStore';
+import { fetchForYouCandidates } from '../../src/api/recommend';
+import { genreSlugsFor, rankCandidates } from '../../src/services/recommend';
 
 const LOGO = require('../../assets/logo.png');
 
@@ -28,6 +40,43 @@ export default function HomeScreen() {
   const trend = useMemo(() => (trendData?.results || trendData?.games || []).slice(0, 14), [trendData]);
   const fresh = useMemo(() => (newData?.results || []).slice(0, 12), [newData]);
   const sale  = useMemo(() => (saleData?.results || []).slice(0, 12), [saleData]);
+
+  // Haberler — News sekmesiyle AYNI cache anahtarı → çift fetch yok, anlık
+  const { data: newsData } = useQuery(`news:${lang}`, () => fetchNews(lang), { ttl: 10 * 60 * 1000 });
+  const news = useMemo(() => (newsData?.results || []).slice(0, 8), [newsData]);
+  const openNews = (url) => { if (url) WebBrowser.openBrowserAsync(url); };
+
+  // ── Kişiselleştirilmiş "Senin İçin" akışı ──
+  // Bağlı Steam kütüphanesini türle eşle → saat-ağırlıklı zevk sinyali (en güçlü)
+  useLibraryTaste();
+  const { isCold, topGenres, normalizedGenres, profile } = useTasteProfile();
+  const forYouSlugs = genreSlugsFor(topGenres(4));
+  // Adaylar tür imzasına göre cache'li
+  const { data: candData } = useQuery(
+    `foryou-cand:${forYouSlugs.join(',')}`,
+    () => fetchForYouCandidates(forYouSlugs),
+    { ttl: 5 * 60 * 1000, enabled: !isCold }
+  );
+  // Sahip olunan oyunlar (owned filtresi) — bağlıysa daima
+  const ownedNames = useOwnedGames();
+  // Görülen oyunlar (tazelik cezası)
+  const seenIds = useSeen();
+  // "İlgilenmiyorum" (sert eleme)
+  const dismissedIds = useDismissed();
+  // Sıralama saf/istemci-tarafı → owned/görülen/dismiss/zevk değişince yeniden FETCH yok
+  const forYou = useMemo(
+    () => (candData ? rankCandidates(candData, { genreWeights: normalizedGenres(), ownedNames, seenIds, dismissedIds, limit: 12 }) : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [candData, ownedNames, seenIds, dismissedIds, profile]
+  );
+
+  // "İlgilenmiyorum" — uzun-bas → onay → feed'den kaldır
+  const handleDismiss = useCallback((game) => {
+    Alert.alert(game.name, t('home.dismissPrompt'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('home.notInterested'), style: 'destructive', onPress: () => recordDismiss(game.id) },
+    ]);
+  }, [t]);
 
   const heroStrip = trend.length ? trend : fresh;
 
@@ -83,9 +132,29 @@ export default function HomeScreen() {
         )}
 
         {/* ── Bölümler ── */}
+        {!isCold && forYou.length > 0 && (
+          <FadeIn delay={140}><Section emoji="✨" title={t('home.forYou')} games={forYou} router={router} onDismiss={handleDismiss} /></FadeIn>
+        )}
         <FadeIn delay={180}><Section emoji="🔥" title={t('home.trend')} games={trend} router={router} /></FadeIn>
         <FadeIn delay={250}><Section emoji="🗓️" title={t('home.new')} games={fresh} router={router} /></FadeIn>
         <FadeIn delay={320}><Section emoji="🏷️" title={t('home.sale')} games={sale} router={router} /></FadeIn>
+
+        {/* Haberler */}
+        {news.length > 0 && (
+          <FadeIn delay={380}>
+            <View style={{ marginTop: 26 }}>
+              <View style={styles.sectionHead}>
+                <Text style={styles.sectionTitle}>📰 {t('news.title')}</Text>
+                <Pressable onPress={() => router.push('/news')} hitSlop={8}>
+                  <Text style={styles.viewAll}>{t('home.viewAll')} ›</Text>
+                </Pressable>
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+                {news.map(n => <NewsCard key={n.id} item={n} onPress={() => openNews(n.url)} />)}
+              </ScrollView>
+            </View>
+          </FadeIn>
+        )}
       </ScrollView>
     </View>
   );
@@ -98,7 +167,7 @@ function go(router, g) {
   });
 }
 
-function Section({ emoji, title, games, router }) {
+function Section({ emoji, title, games, router, onDismiss }) {
   const { t } = useLanguage();
   if (!games || games.length === 0) return null;
   return (
@@ -110,21 +179,23 @@ function Section({ emoji, title, games, router }) {
         </Pressable>
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-        {games.map(g => <HomeCard key={g.id} game={g} router={router} />)}
+        {games.map(g => <HomeCard key={g.id} game={g} router={router} onDismiss={onDismiss} />)}
       </ScrollView>
     </View>
   );
 }
 
-const HomeCard = memo(function HomeCard({ game, router }) {
+const HomeCard = memo(function HomeCard({ game, router, onDismiss }) {
   const mcColor = game.metacritic >= 80 ? colors.green : game.metacritic >= 60 ? '#fbbf24' : '#f87171';
   return (
     <Pressable
       style={({ pressed }) => [styles.card, pressed && { opacity: 0.85, transform: [{ scale: 0.96 }] }]}
       onPress={() => go(router, game)}
+      onLongPress={onDismiss ? () => onDismiss(game) : undefined}
+      delayLongPress={350}
     >
       <View style={styles.cardCover}>
-        <Image source={game.image} cachePolicy="memory-disk" style={StyleSheet.absoluteFill} contentFit="cover" transition={250} />
+        <PosterImage uri={game.image} cachePolicy="memory-disk" style={StyleSheet.absoluteFill} contentFit="cover" transition={250} />
         <LinearGradient colors={['transparent', 'rgba(6,7,9,0.94)']} locations={[0.45, 1]} style={StyleSheet.absoluteFill} />
         {game.metacritic ? (
           <View style={styles.mcBadge}><Text style={[styles.mcText, { color: mcColor }]}>{game.metacritic}</Text></View>
@@ -134,6 +205,20 @@ const HomeCard = memo(function HomeCard({ game, router }) {
         ) : null}
         <Text numberOfLines={2} style={styles.cardName}>{game.name}</Text>
       </View>
+    </Pressable>
+  );
+});
+
+const NewsCard = memo(function NewsCard({ item, onPress }) {
+  return (
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.newsCard, pressed && { opacity: 0.85 }]}>
+      <View style={styles.newsCover}>
+        <NewsImage item={item} style={StyleSheet.absoluteFill} />
+        <LinearGradient colors={['transparent', 'rgba(6,7,9,0.45)']} style={StyleSheet.absoluteFill} />
+        {item.cat ? <View style={styles.newsCat}><Text style={styles.newsCatText}>{item.cat}</Text></View> : null}
+      </View>
+      <Text numberOfLines={2} style={styles.newsTitle}>{item.title}</Text>
+      <Text numberOfLines={1} style={styles.newsMeta}>{item.source} · {item.date}</Text>
     </Pressable>
   );
 });
@@ -172,6 +257,13 @@ const styles = StyleSheet.create({
   viewAll: { fontSize: 13, color: colors.accent, fontWeight: '700' },
   row: { paddingHorizontal: spacing.lg, gap: 12 },
   card: { width: 132 },
+
+  newsCard: { width: 236 },
+  newsCover: { width: '100%', height: 132, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.card },
+  newsCat: { position: 'absolute', top: 8, left: 8, backgroundColor: colors.accentSoft, borderColor: colors.accentBorder, borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 3 },
+  newsCatText: { color: '#ff8085', fontSize: 9.5, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.3 },
+  newsTitle: { color: colors.text, fontSize: 13.5, fontWeight: '700', lineHeight: 17, marginTop: 8 },
+  newsMeta: { color: colors.text3, fontSize: 11, fontWeight: '600', marginTop: 4 },
   cardCover: { width: '100%', aspectRatio: 3 / 4, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.card },
   cardName: { position: 'absolute', left: 10, right: 10, bottom: 9, color: '#fff', fontSize: 13, fontWeight: '700', lineHeight: 16 },
   mcBadge: { position: 'absolute', top: 7, right: 7, backgroundColor: 'rgba(8,10,14,0.75)', borderRadius: 7, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' },

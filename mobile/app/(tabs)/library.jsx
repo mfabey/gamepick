@@ -9,11 +9,13 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { GamesGridSkeleton } from '../../src/components/Skeleton';
+import PosterImage from '../../src/components/PosterImage';
 import { prefetchImages } from '../../src/utils/prefetch';
 import { colors, radius, spacing, TAB_SPACE } from '../../src/theme';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useAuth } from '../../src/context/AuthContext';
-import { fetchSteamLibrary, fetchSteamPrices, fetchXboxLibrary } from '../../src/api/library';
+import { fetchSteamPrices } from '../../src/api/library';
+import { useConnectedLibrary } from '../../src/hooks/useConnectedLibrary';
 
 function computeValue(games, prices) {
   if (!games) return null;
@@ -29,13 +31,13 @@ export default function LibraryScreen() {
   const { t, lang, formatPrice } = useLanguage();
   const { steamAccounts, xbox, busy, loginSteam, loginXbox } = useAuth();
 
-  const [steamLibs, setSteamLibs]         = useState({});   // steamId -> {games,total,played,totalHours}|{error}
-  const [steamLoading, setSteamLoading]   = useState(false);
+  // Paylaşımlı kütüphane fetch'i (Home önericisi ile aynı cache → çift fetch yok, anlık açılış)
+  const { steam: steamLibs, xbox: xboxRaw, steamGames, xboxGames, loading: libLoading } = useConnectedLibrary();
+  const xboxErr = xboxRaw?.error || null;
+  const xboxLib = xboxErr ? null : xboxRaw;
+
   const [steamPrices, setSteamPrices]     = useState({});
   const [pricesLoading, setPricesLoading] = useState(false);
-  const [xboxLib, setXboxLib]             = useState(null);
-  const [xboxLoading, setXboxLoading]     = useState(false);
-  const [xboxErr, setXboxErr]             = useState(null);
 
   const [view, setView]     = useState('all');   // 'all' | 'steam_<id>' | 'xbox'
   const [search, setSearch] = useState('');
@@ -43,22 +45,11 @@ export default function LibraryScreen() {
 
   const steamIdsKey = steamAccounts.map(a => a.steamId).join(',');
 
-  // Tüm Steam hesaplarının kütüphanelerini çek
+  // İlk kapakları önden ısıt (kaydırmada anında görünsün)
   useEffect(() => {
-    if (steamAccounts.length === 0) { setSteamLibs({}); return; }
-    let alive = true;
-    setSteamLoading(true);
-    Promise.all(steamAccounts.map(a =>
-      fetchSteamLibrary(a.steamId).then(d => [a.steamId, d]).catch(e => [a.steamId, { error: e.message, games: [] }])
-    )).then(entries => {
-      if (!alive) return;
-      const map = {}; entries.forEach(([id, d]) => { map[id] = d; });
-      setSteamLibs(map);
-      // İlk kapakları önden ısıt (kaydırmada anında görünsün)
-      prefetchImages(Object.values(map).flatMap(l => (l?.games || []).map(g => g.image)).slice(0, 30));
-    }).finally(() => { if (alive) setSteamLoading(false); });
-    return () => { alive = false; };
-  }, [steamIdsKey]);
+    const imgs = [...steamGames, ...xboxGames].slice(0, 30).map(g => g.image).filter(Boolean);
+    if (imgs.length) prefetchImages(imgs);
+  }, [steamGames, xboxGames]);
 
   // Birleşik appid listesi için fiyatlar
   useEffect(() => {
@@ -73,18 +64,6 @@ export default function LibraryScreen() {
       .finally(() => { if (alive) setPricesLoading(false); });
     return () => { alive = false; };
   }, [steamLibs]);
-
-  // Xbox kütüphanesi
-  useEffect(() => {
-    if (!xbox) { setXboxLib(null); setXboxErr(null); return; }
-    let alive = true;
-    setXboxLoading(true); setXboxErr(null);
-    fetchXboxLibrary(xbox)
-      .then(d => { if (alive) { setXboxLib(d); prefetchImages((d?.games || []).slice(0, 30).map(g => g.image)); } })
-      .catch(e => { if (alive) setXboxErr(e.message); })
-      .finally(() => { if (alive) setXboxLoading(false); });
-    return () => { alive = false; };
-  }, [xbox]);
 
   // Birleşik Steam istatistikleri
   const combined = useMemo(() => {
@@ -124,7 +103,7 @@ export default function LibraryScreen() {
     if (!current) return { games: [], loading: false, errorMsg: null, header: null };
     if (current.type === 'combined') {
       return {
-        games: combined.games, loading: steamLoading, errorMsg: null,
+        games: combined.games, loading: libLoading, errorMsg: null,
         header: { kind: 'combined', accounts: steamAccounts, stats: {
           games: combined.totalGames, hours: combined.totalHours, value: combined.value } },
       };
@@ -132,7 +111,7 @@ export default function LibraryScreen() {
     if (current.type === 'steam') {
       const lib = steamLibs[current.account.steamId];
       return {
-        games: lib?.games || [], loading: steamLoading, errorMsg: lib?.error || null,
+        games: lib?.games || [], loading: libLoading, errorMsg: lib?.error || null,
         header: { kind: 'steam', account: current.account, stats: {
           games: lib?.total ?? 0, played: lib?.played ?? 0, hours: Math.round(lib?.totalHours ?? 0),
           value: computeValue(lib?.games, steamPrices) } },
@@ -140,12 +119,12 @@ export default function LibraryScreen() {
     }
     // xbox
     return {
-      games: xboxLib?.games || [], loading: xboxLoading, errorMsg: xboxErr,
+      games: xboxLib?.games || [], loading: libLoading, errorMsg: xboxErr,
       header: { kind: 'xbox', gamertag: xbox?.gamertag, avatar: xbox?.avatar, stats: {
         games: xboxLib?.total ?? 0, gamePass: xboxLib?.gamePassCount ?? 0,
         gamerscore: xboxLib?.totalGamerscore ?? 0 } },
     };
-  }, [current, combined, steamLibs, steamPrices, steamLoading, xboxLib, xboxLoading, xboxErr, xbox, steamAccounts]);
+  }, [current, combined, steamLibs, steamPrices, libLoading, xboxLib, xboxErr, xbox, steamAccounts]);
 
   const isSteamView = current?.type === 'steam' || current?.type === 'combined';
 
@@ -366,7 +345,7 @@ const GameTile = memo(function GameTile({ game, steam, price }) {
   const onSale = price?.discount > 0 && !isFree;
   return (
     <View style={styles.tile}>
-      <Image source={game.image} recyclingKey={String(game.appid ?? game.titleId)} cachePolicy="memory-disk" style={StyleSheet.absoluteFill} contentFit="cover" transition={200} />
+      <PosterImage uri={game.image} recyclingKey={String(game.appid ?? game.titleId)} cachePolicy="memory-disk" style={StyleSheet.absoluteFill} contentFit="cover" transition={200} />
       <LinearGradient colors={['transparent', 'rgba(6,7,9,0.96)']} locations={[0.4, 1]} style={StyleSheet.absoluteFill} />
       {!steam && game.isGamePass ? (
         <View style={styles.gpBadge}><Text style={styles.gpText}>GAME PASS</Text></View>

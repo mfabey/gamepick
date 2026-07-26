@@ -1,13 +1,13 @@
 import { memo, useState, useMemo, useCallback } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import { fetchNews } from '../../src/api/news';
 import { NewsListSkeleton } from '../../src/components/Skeleton';
+import NewsImage from '../../src/components/NewsImage';
 import { colors, radius, spacing, TAB_SPACE } from '../../src/theme';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useQuery } from '../../src/hooks/useQuery';
@@ -129,18 +129,6 @@ const NewsRow = memo(function NewsRow({ item, onPress }) {
     </Pressable>
   );
 });
-
-// Görseli olan → resim; olmayan → renkli harf placeholder
-function NewsImage({ item, style }) {
-  if (item.image) {
-    return <Image source={item.image} recyclingKey={item.id} cachePolicy="memory-disk" style={style} contentFit="cover" transition={200} />;
-  }
-  return (
-    <View style={[style, { backgroundColor: item.art || colors.card, alignItems: 'center', justifyContent: 'center' }]}>
-      <Text style={{ fontSize: 30, fontWeight: '900', color: 'rgba(255,255,255,0.85)' }}>{item.mono || '?'}</Text>
-    </View>
-  );
-}
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },

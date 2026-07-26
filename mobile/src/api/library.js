@@ -11,6 +11,12 @@ export function fetchSteamPrices(appids) {
   return apiGet('/api/steam-prices', { appids: appids.join(',') });
 }
 
+// Steam türleri — appid → tür listesi (zevk zenginleştirme için, A4b)
+export function fetchSteamGenres(appids) {
+  if (!appids || appids.length === 0) return Promise.resolve({});
+  return apiGet('/api/steam-genres', { appids: appids.join(',') });
+}
+
 // base64 (UTF-8) encode — Xbox session'ı header'da göndermek için
 function b64EncodeUtf8(str) {
   try {

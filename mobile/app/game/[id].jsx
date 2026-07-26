@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -6,12 +6,29 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
-import { fetchCardPrice, fetchGameDetail } from '../../src/api/games';
+import { fetchCardPrice, fetchGameDetail, fetchPrices, fetchSteamReviews } from '../../src/api/games';
 import { colors, radius, spacing } from '../../src/theme';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useWishlist } from '../../src/context/WishlistContext';
 import { useQuery } from '../../src/hooks/useQuery';
+import { recordSignal } from '../../src/services/tasteProfile';
+import { recordSeen } from '../../src/services/seenStore';
 import FadeIn from '../../src/components/FadeIn';
+import StoreLogo from '../../src/components/StoreLogo';
+
+// Olumlu %'den inceleme tier'ı (etiket i18n + renk)
+function tierFor(pct) {
+  if (pct >= 90) return { key: 'review.veryPositive',    color: '#4ade80' };
+  if (pct >= 75) return { key: 'review.positive',        color: '#86efac' };
+  if (pct >= 60) return { key: 'review.mostlyPositive',  color: '#fbbf24' };
+  if (pct >= 40) return { key: 'review.mixed',           color: '#fb923c' };
+  return           { key: 'review.negative',             color: '#f87171' };
+}
+
+// Binlik ayraçlı sayı (TR '.', EN ',')
+function groupNum(n, sep) {
+  return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, sep);
+}
 
 function stripHtml(s) {
   if (!s) return '';
@@ -28,7 +45,7 @@ function stripHtml(s) {
 export default function GameDetail() {
   const { id, name, image, slug, hasSteam } = useLocalSearchParams();
   const router = useRouter();
-  const { t, formatPrice } = useLanguage();
+  const { t, lang, formatPrice } = useLanguage();
   const { isWatched, toggle } = useWishlist();
 
   // Zengin detay: cache-first (aynı oyunu tekrar açınca anında gelir)
@@ -41,6 +58,25 @@ export default function GameDetail() {
   const [loadingPrice, setLoadingPrice] = useState(true);
   const [expanded, setExpanded] = useState(false);
 
+  // Mağaza-başı fiyat karşılaştırması (ITAD) — detay yüklenince (steamAppId için)
+  const { data: pricesData } = useQuery(
+    `prices:${detail?.steamAppId || slug || id}`,
+    () => fetchPrices({ appid: detail?.steamAppId, title: detail?.name || name }),
+    { ttl: 30 * 60 * 1000, enabled: !!detail }
+  );
+  const priceStores = useMemo(() => {
+    const list = pricesData?.stores || [];
+    return [...list].sort((a, b) => (a.isFree ? -1 : b.isFree ? 1 : a.price - b.price));
+  }, [pricesData]);
+
+  // Steam topluluk inceleme analizi — detay yüklenince (steamAppId için)
+  const { data: reviews } = useQuery(
+    `reviews:${detail?.steamAppId || ''}`,
+    () => fetchSteamReviews(detail?.steamAppId),
+    { ttl: 60 * 60 * 1000, enabled: !!detail?.steamAppId }
+  );
+  const reviewTier = reviews?.total ? tierFor(reviews.positivePct) : null;
+
   const watched = isWatched(id);
   const gameObj = { id, name, slug, image, hasSteam: hasSteam === 'true' || hasSteam === '1' };
 
@@ -52,6 +88,25 @@ export default function GameDetail() {
       .finally(() => { if (alive) setLoadingPrice(false); });
     return () => { alive = false; };
   }, [slug, name]);
+
+  // Tazelik: bu oyunu "görüldü" işaretle (id anında hazır, detay beklemez)
+  useEffect(() => { if (id) recordSeen(id); }, [id]);
+
+  // Zevk sinyali: detay (türler) yüklendiğinde bir kez kaydet
+  const viewRecorded = useRef(false);
+  useEffect(() => {
+    if (detail?.genres?.length && !viewRecorded.current) {
+      viewRecorded.current = true;
+      recordSignal({ genres: detail.genres, type: 'view' });
+    }
+  }, [detail]);
+
+  // Wishlist eklerken güçlü sinyal
+  const onToggleWishlist = () => {
+    const willAdd = !watched;
+    toggle(gameObj);
+    if (willAdd && detail?.genres?.length) recordSignal({ genres: detail.genres, type: 'wishlist' });
+  };
 
   const cover = detail?.image || image;
   const title = detail?.name || name;
@@ -80,7 +135,7 @@ export default function GameDetail() {
           <Pressable style={styles.iconBtn} onPress={() => router.back()} hitSlop={10}>
             <Ionicons name="chevron-back" size={24} color="#fff" />
           </Pressable>
-          <Pressable style={[styles.iconBtn, watched && styles.iconBtnActive]} onPress={() => toggle(gameObj)} hitSlop={10}>
+          <Pressable style={[styles.iconBtn, watched && styles.iconBtnActive]} onPress={onToggleWishlist} hitSlop={10}>
             <Ionicons name={watched ? 'notifications' : 'notifications-outline'} size={20} color={watched ? '#fff' : '#fff'} />
           </Pressable>
         </SafeAreaView>
@@ -147,6 +202,51 @@ export default function GameDetail() {
         )}
 
         </FadeIn>
+
+        {/* Fiyat karşılaştırması */}
+        {priceStores.length > 0 && (
+          <Section title={t('detail.priceCompare')} delay={130}>
+            <View style={{ gap: 8 }}>
+              {priceStores.map((s, i) => (
+                <Pressable key={s.storeId || s.name} onPress={() => open(s.url)} disabled={!s.url}
+                  style={[styles.cmpRow, i === 0 && styles.cmpBest]}>
+                  <StoreLogo store={s.name} size={26} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.cmpName}>{s.name}</Text>
+                    {i === 0 ? <Text style={styles.cmpCheapest}>{t('detail.cheapest')}</Text> : null}
+                  </View>
+                  {s.discount > 0 ? <View style={styles.discountBadge}><Text style={styles.discountText}>-%{s.discount}</Text></View> : null}
+                  <View style={{ alignItems: 'flex-end', minWidth: 64 }}>
+                    {s.discount > 0 ? <Text style={styles.original}>{formatPrice(s.original)}</Text> : null}
+                    <Text style={[styles.cmpPrice, i === 0 && { color: colors.accent }]}>
+                      {s.isFree ? t('card.free') : formatPrice(s.price)}
+                    </Text>
+                  </View>
+                  <Ionicons name="open-outline" size={13} color={colors.text3} />
+                </Pressable>
+              ))}
+            </View>
+          </Section>
+        )}
+
+        {/* Yorum analizi */}
+        {reviewTier && (
+          <Section title={t('detail.reviews')} delay={175}>
+            <View style={styles.revCard}>
+              <View style={styles.revHead}>
+                <Text style={[styles.revLabel, { color: reviewTier.color }]}>{t(reviewTier.key)}</Text>
+                <Text style={styles.revPct}>
+                  {lang === 'tr' ? `%${reviews.positivePct}` : `${reviews.positivePct}%`}
+                  <Text style={styles.revPctLabel}> {t('detail.positive')}</Text>
+                </Text>
+              </View>
+              <View style={styles.revBar}>
+                <View style={[styles.revBarFill, { width: `${reviews.positivePct}%`, backgroundColor: reviewTier.color }]} />
+              </View>
+              <Text style={styles.revCount}>{groupNum(reviews.total, lang === 'tr' ? '.' : ',')} {t('detail.reviewsCount')}</Text>
+            </View>
+          </Section>
+        )}
 
         {/* Türler */}
         {genres.length > 0 && (
@@ -224,6 +324,21 @@ const styles = StyleSheet.create({
   storeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 18 },
   storeBtn: { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: radius.md, paddingHorizontal: 14, paddingVertical: 11 },
   storeText: { color: colors.text, fontSize: 13.5, fontWeight: '700' },
+
+  cmpRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: radius.md, paddingHorizontal: 14, paddingVertical: 11 },
+  cmpBest: { borderColor: colors.accent, backgroundColor: colors.accentSoft },
+  cmpName: { fontSize: 13.5, fontWeight: '700', color: colors.text },
+  cmpCheapest: { fontSize: 10.5, fontWeight: '700', color: colors.accent, marginTop: 1 },
+  cmpPrice: { fontSize: 15, fontWeight: '800', color: colors.text },
+
+  revCard: { backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: radius.md, padding: 16 },
+  revHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 12 },
+  revLabel: { fontSize: 17, fontWeight: '800' },
+  revPct: { fontSize: 15, fontWeight: '800', color: colors.text },
+  revPctLabel: { fontSize: 12.5, fontWeight: '600', color: colors.text3 },
+  revBar: { height: 8, borderRadius: 4, backgroundColor: colors.cardBorder, overflow: 'hidden' },
+  revBarFill: { height: '100%', borderRadius: 4 },
+  revCount: { fontSize: 12.5, color: colors.text3, fontWeight: '600', marginTop: 10 },
 
   sectionTitle: { fontSize: 16, fontWeight: '800', color: colors.text, marginBottom: 12 },
   genreWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

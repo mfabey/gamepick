@@ -1,11 +1,11 @@
 import { memo } from 'react';
 import { Pressable, View, Text, StyleSheet } from 'react-native';
-import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { colors, radius } from '../theme';
 import { useLanguage } from '../context/LanguageContext';
 import { usePrice } from '../hooks/usePrice';
+import PosterImage from './PosterImage';
 
 const BLUR_HASH = 'L03[?nof_3of~qWBofof00WB%MWB';
 
@@ -30,8 +30,8 @@ function GameCard({ game }) {
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
     >
       <View style={styles.coverWrap}>
-        <Image
-          source={game.image}
+        <PosterImage
+          uri={game.image}
           placeholder={BLUR_HASH}
           recyclingKey={String(game.id)}
           cachePolicy="memory-disk"
