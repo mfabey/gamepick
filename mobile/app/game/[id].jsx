@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet, ActivityIndicator, Modal, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
-import { Video } from 'expo-av';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -88,6 +88,14 @@ export default function GameDetail() {
   );
   const reviewTier = reviews?.total ? tierFor(reviews.positivePct) : null;
 
+  // Fragman: sessiz, döngülü, kontrolsüz arka plan videosu (expo-video)
+  const trailerUrl = detail?.trailer || null;
+  const trailerPlayer = useVideoPlayer(trailerUrl, (p) => {
+    p.loop = true;
+    p.muted = true;
+    p.play();
+  });
+
   const watched = isWatched(id);
   const gameObj = { id, name, slug, image, hasSteam: hasSteam === 'true' || hasSteam === '1' };
 
@@ -141,16 +149,12 @@ export default function GameDetail() {
       {/* Kapak */}
       <View style={styles.coverWrap}>
         {cover ? <Image source={cover} priority="high" cachePolicy="memory-disk" style={StyleSheet.absoluteFill} contentFit="cover" transition={250} /> : null}
-        {detail?.trailer ? (
-          <Video
-            source={{ uri: detail.trailer }}
-            rate={1.0}
-            volume={1.0}
-            isMuted={true}
-            resizeMode="cover"
-            shouldPlay
-            isLooping
+        {trailerUrl ? (
+          <VideoView
+            player={trailerPlayer}
             style={StyleSheet.absoluteFill}
+            contentFit="cover"
+            nativeControls={false}
           />
         ) : null}
         <LinearGradient colors={['rgba(8,10,13,0.15)', 'rgba(8,10,13,0.45)', colors.bg]} locations={[0, 0.55, 1]} style={StyleSheet.absoluteFill} />

@@ -8,12 +8,11 @@
     "scheme": "gamerisen",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
-    "splash": {
-      "backgroundColor": "#0b0d10",
-      "resizeMode": "contain"
+    "runtimeVersion": {
+      "policy": "fingerprint"
     },
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.gamerisen.app"
     },
     "android": {
@@ -36,6 +35,16 @@
         "expo-notifications",
         {
           "color": "#e0a72e"
+        }
+      ],
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "backgroundColor": "#0b0d10",
+          "resizeMode": "contain",
+          "imageWidth": 200
         }
       ]
     ],
