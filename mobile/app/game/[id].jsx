@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet, ActivityIndicator, Modal } from 'react-native';
+import { View, Text, Pressable, ScrollView, StyleSheet, ActivityIndicator, Modal, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -57,7 +57,16 @@ export default function GameDetail() {
   const [price, setPrice]     = useState(null);
   const [loadingPrice, setLoadingPrice] = useState(true);
   const [expanded, setExpanded] = useState(false);
-  const [activeScreenshot, setActiveScreenshot] = useState(null);
+  const [activeShotIndex, setActiveShotIndex] = useState(null);
+  const [currentScrollIndex, setCurrentScrollIndex] = useState(null);
+  const scrollRef = useRef(null);
+  const { width: screenWidth } = Dimensions.get('window');
+
+  useEffect(() => {
+    if (activeShotIndex !== null) {
+      setCurrentScrollIndex(activeShotIndex);
+    }
+  }, [activeShotIndex]);
 
   // Mağaza-başı fiyat karşılaştırması (ITAD) — detay yüklenince (steamAppId için)
   const { data: pricesData } = useQuery(
@@ -265,7 +274,7 @@ export default function GameDetail() {
           <Section title={t('detail.screenshots')} delay={160}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -spacing.lg }} contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: 10 }}>
               {shots.map((url, i) => (
-                <Pressable key={i} onPress={() => setActiveScreenshot(url)}>
+                <Pressable key={i} onPress={() => setActiveShotIndex(i)}>
                   <Image source={url} cachePolicy="memory-disk" style={styles.shot} contentFit="cover" transition={200} />
                 </Pressable>
               ))}
@@ -288,21 +297,54 @@ export default function GameDetail() {
       
       {/* Screenshot Lightbox Modal */}
       <Modal
-        visible={!!activeScreenshot}
+        visible={activeShotIndex !== null}
         transparent={true}
         animationType="fade"
-        onRequestClose={() => setActiveScreenshot(null)}
+        onRequestClose={() => setActiveShotIndex(null)}
       >
-        <Pressable style={styles.modalBg} onPress={() => setActiveScreenshot(null)}>
-          <Image
-            source={activeScreenshot}
-            contentFit="contain"
-            style={styles.modalImage}
-          />
-          <Pressable style={styles.closeBtn} onPress={() => setActiveScreenshot(null)} hitSlop={10}>
+        <View style={styles.modalBg}>
+          <ScrollView
+            ref={scrollRef}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            contentOffset={{ x: (activeShotIndex || 0) * screenWidth, y: 0 }}
+            onMomentumScrollEnd={(e) => {
+              const contentOffset = e.nativeEvent.contentOffset.x;
+              const index = Math.round(contentOffset / screenWidth);
+              setCurrentScrollIndex(index);
+            }}
+            style={StyleSheet.absoluteFill}
+          >
+            {shots.map((url, index) => (
+              <Pressable
+                key={index}
+                style={{ width: screenWidth, height: '100%', justifyContent: 'center', alignItems: 'center' }}
+                onPress={() => setActiveShotIndex(null)}
+              >
+                <Image
+                  source={url}
+                  contentFit="contain"
+                  style={styles.modalImage}
+                />
+              </Pressable>
+            ))}
+          </ScrollView>
+
+          {/* Close button */}
+          <Pressable style={styles.closeBtn} onPress={() => setActiveShotIndex(null)} hitSlop={10}>
             <Ionicons name="close" size={26} color="#fff" />
           </Pressable>
-        </Pressable>
+
+          {/* Page Indicator */}
+          {shots.length > 1 && (
+            <View style={styles.indicatorContainer}>
+              <Text style={styles.indicatorText}>
+                {`${(currentScrollIndex !== null ? currentScrollIndex : activeShotIndex) + 1} / ${shots.length}`}
+              </Text>
+            </View>
+          )}
+        </View>
       </Modal>
     </View>
   );
@@ -369,5 +411,7 @@ const styles = StyleSheet.create({
   moreLink: { color: colors.accent, fontSize: 13.5, fontWeight: '700', marginTop: 8 },
   modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', alignItems: 'center', justifyContent: 'center' },
   modalImage: { width: '100%', height: '100%' },
-  closeBtn: { position: 'absolute', top: 50, right: 20, width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
+  closeBtn: { position: 'absolute', top: 50, right: 20, width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center', zIndex: 10 },
+  indicatorContainer: { position: 'absolute', bottom: 40, backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, zIndex: 10 },
+  indicatorText: { color: '#fff', fontSize: 14, fontWeight: '700', letterSpacing: 0.5 },
 });
