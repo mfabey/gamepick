@@ -9,10 +9,36 @@ import { useAuth } from '../../src/context/AuthContext';
 import { useWishlist } from '../../src/context/WishlistContext';
 
 export default function ProfileScreen() {
-  const { t, lang, toggleLang } = useLanguage();
+  const { t, lang, setLang } = useLanguage();
   const router = useRouter();
   const { steamAccounts, xbox, busy, loginSteam, loginXbox, logoutSteam, logoutXbox } = useAuth();
   const { items, enabled, enableNotifications, disableNotifications } = useWishlist();
+
+  const showLanguagePicker = () => {
+    Alert.alert(
+      lang === 'tr' ? 'Dil Seçimi' : 'Language Selection',
+      lang === 'tr' ? 'Lütfen tercih ettiğiniz dili seçin:' : 'Please select your preferred language:',
+      [
+        {
+          text: lang === 'tr' ? '✓ Türkçe' : 'Türkçe',
+          onPress: () => {
+            if (lang !== 'tr') setLang('tr');
+          },
+        },
+        {
+          text: lang === 'en' ? '✓ English' : 'English',
+          onPress: () => {
+            if (lang !== 'en') setLang('en');
+          },
+        },
+        {
+          text: lang === 'tr' ? 'İptal' : 'Cancel',
+          style: 'cancel',
+        },
+      ],
+      { cancelable: true }
+    );
+  };
 
   const doLogin = async (fn) => {
     const r = await fn();
@@ -140,7 +166,7 @@ export default function ProfileScreen() {
 
         {/* Dil */}
         <Text style={[styles.sectionLabel, { marginTop: 32 }]}>{lang === 'tr' ? 'Ayarlar' : 'Settings'}</Text>
-        <Pressable style={styles.settingRow} onPress={toggleLang}>
+        <Pressable style={styles.settingRow} onPress={showLanguagePicker}>
           <Ionicons name="language" size={20} color={colors.accent} />
           <Text style={styles.settingText}>{lang === 'tr' ? 'Dil: Türkçe' : 'Language: English'}</Text>
           <Ionicons name="chevron-forward" size={18} color={colors.text3} />
