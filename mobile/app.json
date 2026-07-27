@@ -50,7 +50,14 @@
     ],
     "extra": {
       "router": {},
-      "apiBase": "https://www.gamerisen.com"
+      "apiBase": "https://www.gamerisen.com",
+      "eas": {
+        "projectId": "bb9d1812-5eeb-45ba-bd98-f07998f7fa7a"
+      }
+    },
+    "owner": "mfabeys-team",
+    "updates": {
+      "url": "https://u.expo.dev/bb9d1812-5eeb-45ba-bd98-f07998f7fa7a"
     }
   }
 }
