@@ -53,7 +53,16 @@ export default function RawgGamePage({ params }) {
   };
 
   useEffect(() => {
-    if (activeMedia && activeMedia.type === 'video' && videoRef.current) {
+    if (!game) return;
+
+    const allImages = [game.image, ...(game.screenshots || [])].filter(Boolean);
+    const mediaList = [
+      ...(game.trailerMp4 ? [{ type: 'video', src: game.trailerMp4, poster: game.image }] : []),
+      ...allImages.map(src => ({ type: 'image', src })),
+    ];
+    const currentMedia = mediaList[imgIdx] || mediaList[0];
+
+    if (currentMedia && currentMedia.type === 'video' && videoRef.current) {
       videoRef.current.muted = isMuted;
       const playPromise = videoRef.current.play();
       if (playPromise !== undefined) {
@@ -67,7 +76,7 @@ export default function RawgGamePage({ params }) {
           });
       }
     }
-  }, [activeMedia]);
+  }, [game, imgIdx]);
 
   const formatReleaseDate = (dateStr) => {
     if (!dateStr) return '';
