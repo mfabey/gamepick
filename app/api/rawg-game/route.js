@@ -74,7 +74,7 @@ async function fetchSteamDetails(appid, slug) {
       screenshots:  (d.screenshots || []).map(s => s.path_full).slice(0, 6),
       trailer:      d.movies?.[0]?.hls_h264 || d.movies?.[0]?.mp4?.max || d.movies?.[0]?.webm?.max || null,
       // mp4: web için (HLS tarayıcılarda native oynamaz). `trailer` alanına dokunma — mobil onu kullanıyor.
-      trailerMp4:   d.movies?.[0]?.mp4?.max || d.movies?.[0]?.mp4?.['480'] || null,
+      trailerMp4:   d.movies?.[0]?.id ? `https://video.akamai.steamstatic.com/store_trailers/${d.movies[0].id}/movie_max.mp4` : null,
       hasSteam:     true,
       hasEpic:      false,
       steamAppId:   String(appid),
@@ -294,7 +294,7 @@ export async function GET(request) {
             const steamData = await getSteamDetailsCached(steamAppId);
             if (steamData && steamData.movies && steamData.movies.length > 0) {
               trailer = steamData.movies[0].hls_h264 || steamData.movies[0].mp4?.max || steamData.movies[0].webm?.max || null;
-              trailerMp4 = steamData.movies[0].mp4?.max || steamData.movies[0].mp4?.['480'] || null;
+              trailerMp4 = steamData.movies[0].id ? `https://video.akamai.steamstatic.com/store_trailers/${steamData.movies[0].id}/movie_max.mp4` : null;
             }
           } catch (e) {
             console.error("Steam trailer fetch failed for rawg game:", e);
@@ -443,7 +443,7 @@ export async function GET(request) {
         const steamData = await getSteamDetailsCached(steamAppId);
         if (steamData && steamData.movies && steamData.movies.length > 0) {
           trailer = steamData.movies[0].hls_h264 || steamData.movies[0].mp4?.max || steamData.movies[0].webm?.max || null;
-          trailerMp4 = steamData.movies[0].mp4?.max || steamData.movies[0].mp4?.['480'] || null;
+          trailerMp4 = steamData.movies[0].id ? `https://video.akamai.steamstatic.com/store_trailers/${steamData.movies[0].id}/movie_max.mp4` : null;
         }
       } catch (e) {
         console.error("Steam trailer fetch failed for rawg game:", e);
