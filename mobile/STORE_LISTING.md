@@ -13,18 +13,19 @@ Türkçe birincil dil, İngilizce ikincil.
 
 ### Uygulama adı (limit 30)
 ```
-Gamerisen: Oyun & Fiyat
+Gamerisen: Oyun fırsatı keşfet
 ```
-*Alternatif: sadece `Gamerisen` — ama isme kelime eklemek App Store aramasında bulunurluğu artırır.*
+*30/30 — tam sınırda. Alternatifler: `Gamerisen: Oyun & Fırsatlar` (27, en akıcı) · `Gamerisen: Fırsatları keşfet` (28) · `Gamerisen: Oyun fırsatları` (26)*
 
 ### Alt başlık (limit 30)
 ```
-Oyun keşfet, en ucuzu bul
+Bütçene uyan oyunu bul
 ```
+*Alternatifler: `Tek ekranda fiyat karşılaştır` (29) · `Fiyatları kıyasla, ucuza al` (27) · `Oyun fiyatları tek ekranda` (26)*
 
 ### Promosyon metni (limit 170 — inceleme olmadan güncellenebilir)
 ```
-Steam, Epic ve GOG fiyatlarını tek ekranda karşılaştır. Sana özel oyun önerileri ve fiyat düşüş bildirimleriyle indirimleri bir daha kaçırma.
+Steam, Epic, GOG ve Humble fiyatlarını tek ekranda karşılaştır. Sana özel oyun önerileri ve fiyat düşüş bildirimleriyle indirimleri bir daha kaçırma.
 ```
 
 ### Anahtar kelimeler (limit 100, virgülle ayrık)
@@ -63,17 +64,17 @@ Gamerisen'i hesap açmadan kullanabilirsin. Kütüphane özelliği yalnızca Ste
 
 ### App name (limit 30)
 ```
-Gamerisen: Games & Prices
+Gamerisen: Games & Deals
 ```
 
 ### Subtitle (limit 30)
 ```
-Discover games, find deals
+Find the game your budget fits
 ```
 
 ### Promotional text (limit 170)
 ```
-Compare Steam, Epic and GOG prices on one screen. Get personalized game picks and price-drop alerts so you never miss a discount again.
+Compare prices from Steam, Epic, GOG and more on one screen. Get personalized game picks and price-drop alerts so you never miss a discount again.
 ```
 
 ### Keywords (limit 100)

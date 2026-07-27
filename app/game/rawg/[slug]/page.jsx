@@ -65,6 +65,7 @@ export default function RawgGamePage({ params }) {
     setLoading(true);
     setError(null);
     setAi(null);
+    setImgIdx(0);          // yeni oyuna geçince galeri başa dönsün
     setSteamPrice(null);
     setEpicPrice(null);
     setGogPrice(null);
@@ -244,6 +245,13 @@ export default function RawgGamePage({ params }) {
 
   const allImages = [game.image, ...(game.screenshots || [])].filter(Boolean);
 
+  // Galeri: fragman varsa ilk sıraya (mp4 — HLS tarayıcılarda native oynamaz)
+  const media = [
+    ...(game.trailerMp4 ? [{ type: 'video', src: game.trailerMp4, poster: game.image }] : []),
+    ...allImages.map(src => ({ type: 'image', src })),
+  ];
+  const activeMedia = media[imgIdx] || media[0];
+
   return (
     <div style={{ position: 'relative', overflow: 'hidden', minHeight: '100vh' }}>
       {/* Cinematic Background Blur */}
@@ -322,20 +330,41 @@ export default function RawgGamePage({ params }) {
 
         {/* ─── Sol ───────────────────────────────────────────────────── */}
         <div style={{ minWidth: 0 }}>
-          {allImages.length > 0 && (
+          {activeMedia && (
             <div style={{ borderRadius: 16, overflow: 'hidden', marginBottom: 12, aspectRatio: '16/9', position: 'relative', background: 'var(--bg-input)' }}>
-              <Image src={allImages[imgIdx]} alt={game.name} fill sizes="640px" style={{ objectFit: 'cover' }} unoptimized />
+              {activeMedia.type === 'video' ? (
+                <video
+                  key={activeMedia.src}
+                  src={activeMedia.src}
+                  poster={activeMedia.poster || undefined}
+                  controls
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  preload="metadata"
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                />
+              ) : (
+                <Image src={activeMedia.src} alt={game.name} fill sizes="640px" style={{ objectFit: 'cover' }} unoptimized />
+              )}
             </div>
           )}
-          {allImages.length > 1 && (
+          {media.length > 1 && (
             <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 20, paddingBottom: 4, maxWidth: '100%', WebkitOverflowScrolling: 'touch' }}>
-              {allImages.map((src, i) => (
-                <button key={i} onClick={() => setImgIdx(i)} style={{
+              {media.map((m, i) => (
+                <button key={i} onClick={() => setImgIdx(i)} title={m.type === 'video' ? 'Fragman' : undefined} style={{
                   flexShrink: 0, width: 80, height: 50, borderRadius: 8, overflow: 'hidden',
                   border: i === imgIdx ? '2px solid var(--accent)' : '2px solid transparent',
                   background: 'none', padding: 0, cursor: 'pointer', position: 'relative',
                 }}>
-                  <Image src={src} alt="" fill sizes="80px" style={{ objectFit: 'cover' }} unoptimized />
+                  <Image src={m.type === 'video' ? m.poster : m.src} alt="" fill sizes="80px" style={{ objectFit: 'cover' }} unoptimized />
+                  {m.type === 'video' && (
+                    <span style={{
+                      position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      background: 'rgba(0,0,0,0.45)', color: '#fff', fontSize: 18, lineHeight: 1,
+                    }}>▶</span>
+                  )}
                 </button>
               ))}
             </div>
