@@ -1,5 +1,6 @@
 import { memo, useMemo, useCallback } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet, Alert } from 'react-native';
+import { View, Text, Pressable, ScrollView, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,11 +20,11 @@ import { useOwnedGames } from '../../src/hooks/useOwnedGames';
 import { useLibraryTaste } from '../../src/hooks/useLibraryTaste';
 import { useSeen } from '../../src/hooks/useSeen';
 import { useDismissed } from '../../src/hooks/useDismissed';
+import { useForYouFeed } from '../../src/hooks/useForYouFeed';
 import { recordDismiss } from '../../src/services/dismissStore';
+import GameCard from '../../src/components/GameCard';
 import { fetchForYouCandidates } from '../../src/api/recommend';
 import { genreSlugsFor, rankCandidates } from '../../src/services/recommend';
-
-const LOGO = require('../../assets/logo.png');
 
 // Stabil fetcher'lar (key'in saf fonksiyonu)
 const fetchNewGames = () => fetchGames({ section: 'new', num: 12 });
@@ -70,6 +71,30 @@ export default function HomeScreen() {
     [candData, ownedNames, seenIds, dismissedIds, profile]
   );
 
+  // ── Sonsuz keşif akışı ("Senin İçin" oluştuktan sonra açılır) ──
+  const slugsKey = forYouSlugs.join(',');
+  const feedSlugs = useMemo(() => (slugsKey ? slugsKey.split(',') : []), [slugsKey]);
+  const genreWeights = useMemo(
+    () => normalizedGenres(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [profile]
+  );
+  // Şeritte zaten gösterilenler akışta tekrarlanmasın
+  const excludeIds = useMemo(() => new Set(forYou.map((g) => String(g.id))), [forYou]);
+  const { items: feedItems, loadMore, loadingMore } = useForYouFeed({
+    enabled: !isCold,
+    slugs: feedSlugs,
+    genreWeights,
+    ownedNames,
+    seenIds,
+    excludeIds,
+  });
+  // "İlgilenmiyorum" anında yansısın (sıralama bozulmadan)
+  const feed = useMemo(
+    () => feedItems.filter((g) => !dismissedIds.has(String(g.id))),
+    [feedItems, dismissedIds]
+  );
+
   // "İlgilenmiyorum" — uzun-bas → onay → feed'den kaldır
   const handleDismiss = useCallback((game) => {
     Alert.alert(game.name, t('home.dismissPrompt'), [
@@ -80,14 +105,18 @@ export default function HomeScreen() {
 
   const heroStrip = trend.length ? trend : fresh;
 
-  return (
-    <View style={styles.root}>
-      <SafeAreaView edges={['top']} />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: TAB_SPACE + 16 }}>
+  const keyExtractor = useCallback((item) => String(item.id), []);
+  const renderFeedItem = useCallback(({ item }) => (
+    <View style={styles.cell}><GameCard game={item} /></View>
+  ), []);
 
-        {/* ── Üst: logo + marka ── */}
+  // Mevcut bölümlerin tamamı listenin başlığı olur → görünüm birebir korunur.
+  // Negatif kenar boşluğu, ızgara için verilen 10px'i başlıkta geri alır.
+  const header = (
+    <View style={styles.headerWrap}>
+
+        {/* ── Üst: marka (ortalı) ── */}
         <View style={styles.topBar}>
-          <Image source={LOGO} style={styles.logo} contentFit="contain" />
           <Text style={styles.brand}>GAMERISEN</Text>
         </View>
 
@@ -132,16 +161,9 @@ export default function HomeScreen() {
         )}
 
         {/* ── Bölümler ── */}
-        {!isCold && forYou.length > 0 && (
-          <FadeIn delay={140}><Section emoji="✨" title={t('home.forYou')} games={forYou} router={router} onDismiss={handleDismiss} /></FadeIn>
-        )}
-        <FadeIn delay={180}><Section emoji="🔥" title={t('home.trend')} games={trend} router={router} /></FadeIn>
-        <FadeIn delay={250}><Section emoji="🗓️" title={t('home.new')} games={fresh} router={router} /></FadeIn>
-        <FadeIn delay={320}><Section emoji="🏷️" title={t('home.sale')} games={sale} router={router} /></FadeIn>
-
-        {/* Haberler */}
+        {/* Haberler (en üstte) */}
         {news.length > 0 && (
-          <FadeIn delay={380}>
+          <FadeIn delay={130}>
             <View style={{ marginTop: 26 }}>
               <View style={styles.sectionHead}>
                 <Text style={styles.sectionTitle}>📰 {t('news.title')}</Text>
@@ -155,7 +177,35 @@ export default function HomeScreen() {
             </View>
           </FadeIn>
         )}
-      </ScrollView>
+
+        {!isCold && forYou.length > 0 && (
+          <FadeIn delay={140}><Section emoji="✨" title={t('home.forYou')} games={forYou} router={router} onDismiss={handleDismiss} /></FadeIn>
+        )}
+        <FadeIn delay={180}><Section emoji="🔥" title={t('home.trend')} games={trend} router={router} /></FadeIn>
+        <FadeIn delay={250}><Section emoji="🗓️" title={t('home.new')} games={fresh} router={router} /></FadeIn>
+        <FadeIn delay={320}><Section emoji="🏷️" title={t('home.sale')} games={sale} router={router} /></FadeIn>
+    </View>
+  );
+
+  return (
+    <View style={styles.root}>
+      <SafeAreaView edges={['top']} />
+      <FlashList
+        data={feed}
+        numColumns={2}
+        keyExtractor={keyExtractor}
+        renderItem={renderFeedItem}
+        ListHeaderComponent={header}
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.6}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+        ListFooterComponent={
+          <View style={{ height: TAB_SPACE, alignItems: 'center', justifyContent: 'center' }}>
+            {loadingMore ? <ActivityIndicator color={colors.accent} /> : null}
+          </View>
+        }
+      />
     </View>
   );
 }
@@ -225,8 +275,10 @@ const NewsCard = memo(function NewsCard({ item, onPress }) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
-  topBar: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: spacing.lg, paddingTop: 6, paddingBottom: 4 },
-  logo: { width: 34, height: 34 },
+  listContent: { paddingHorizontal: 10 },
+  headerWrap: { marginHorizontal: -10 },   // başlık tam genişlikte kalsın
+  cell: { flex: 1, paddingHorizontal: 6, paddingBottom: spacing.md },
+  topBar: { alignItems: 'center', paddingHorizontal: spacing.lg, paddingTop: 6, paddingBottom: 4 },
   brand: { fontSize: 20, fontWeight: '900', color: colors.text, letterSpacing: 1.5 },
 
   hero: { paddingHorizontal: spacing.lg, paddingTop: 18 },
