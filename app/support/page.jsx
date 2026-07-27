@@ -7,16 +7,14 @@ const FAQS_TR = [
   { q: 'Fiyatlar ne sıklıkla güncelleniyor?', a: 'Mağaza fiyatlarını gün içinde birden çok kez; büyük indirim dönemlerinde ise saatlik olarak kontrol ederiz. Bir fiyat düştüğünde alarmın anında tetiklenir.' },
   { q: 'Steam kütüphanemi bağlamak güvenli mi?', a: 'Evet. Yalnızca herkese açık oyun listeni okuruz — şifreni asla görmeyiz ve hesabında hiçbir değişiklik yapamayız. Bağlantıyı dilediğin an kaldırabilirsin.' },
   { q: 'Fiyat alarmını nasıl kurarım?', a: 'Bir oyunun sayfasındaki “Fiyat Alarmı” butonuna bas, hedef fiyatını gir; oyun o fiyatın altına düştüğünde sana e-posta ve uygulama bildirimi göndeririz.' },
-  { q: 'Premium üyelik ne sunuyor?', a: 'Sınırsız fiyat alarmı, geçmiş fiyat grafikleri, ülke karşılaştırması ve reklamsız bir deneyim. Aylık veya yıllık seçeneklerle gelir, dilediğin an iptal edebilirsin.' },
-  { q: 'Para iadesi alabilir miyim?', a: 'Premium aboneliğinde ilk 14 gün içinde koşulsuz iade hakkın var. Aşağıdaki formdan “Premium & Ödeme” konusuyla talep oluşturman yeterli.' },
+  { q: 'Gamerisen mobilde ayrıcalıklar neler?', a: 'Gamerisen, oyun dünyasındaki en uygun fiyatları tek bir yerde toplayan tamamen ücretsiz bir yönlendirme ve fiyat takip platformudur. Gamerisen mobil uygulaması ile ilgilendiğin oyunlar için anlık fiyat düşüş alarmları kurabilir, özel etkinlikler ve indirim kampanyalarından anında haberdar olabilir, oyun dünyasındaki önemli duyurulara ve haberlere öncelikli olarak erişim sağlayabilirsin.' },
 ];
 
 const FAQS_EN = [
   { q: 'How often are prices updated?', a: 'We check store prices multiple times throughout the day, and hourly during major sales. Your alert is triggered instantly when a price drops.' },
   { q: 'Is it safe to connect my Steam library?', a: 'Yes. We only read your public games list — we never see your password and cannot make any changes to your account. You can disconnect at any time.' },
   { q: 'How do I set a price alert?', a: 'Click the "Price Alert" button on a game page, enter your target price, and we will send you email and app notifications when the game falls below that price.' },
-  { q: 'What does Premium membership offer?', a: 'Unlimited price alerts, historical price charts, cross-country comparison, and an ad-free experience. It comes with monthly or annual options, cancelable at any time.' },
-  { q: 'Can I get a refund?', a: 'You have a 14-day unconditional refund policy on your Premium subscription. Just submit a ticket with the topic "Premium & Payment" in the form below.' },
+  { q: 'What are the privileges of Gamerisen mobile?', a: 'Gamerisen is a completely free redirection and price-tracking assistant that aggregates the best deals. With the Gamerisen mobile app, you can set instant price alerts for games you follow, get notified of special events and campaigns, and get priority access to important gaming news and announcements.' },
 ];
 
 const TOPICS_TR = [
