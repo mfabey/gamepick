@@ -35,13 +35,39 @@ export default function RawgGamePage({ params }) {
   const togglePlay = () => {
     if (!videoRef.current) return;
     if (videoRef.current.paused) {
-      videoRef.current.play();
-      setIsPlaying(true);
+      const playPromise = videoRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            setIsPlaying(true);
+          })
+          .catch(err => {
+            console.warn("Play failed:", err);
+            setIsPlaying(false);
+          });
+      }
     } else {
       videoRef.current.pause();
       setIsPlaying(false);
     }
   };
+
+  useEffect(() => {
+    if (activeMedia && activeMedia.type === 'video' && videoRef.current) {
+      videoRef.current.muted = isMuted;
+      const playPromise = videoRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            setIsPlaying(true);
+          })
+          .catch(err => {
+            console.warn("Autoplay blocked:", err);
+            setIsPlaying(false);
+          });
+      }
+    }
+  }, [activeMedia]);
 
   const formatReleaseDate = (dateStr) => {
     if (!dateStr) return '';
