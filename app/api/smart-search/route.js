@@ -140,15 +140,25 @@ async function rawgQuery({ genres = '', tags = '', ordering = '-rating' }) {
 
   try {
     const res = await fetch(url.toString(), { next: { revalidate: 600 } });
-    if (!res.ok) return [];
+    if (!res.ok) {
+      lastError = `RAWG ${res.status}`;
+      return [];
+    }
     const data = await res.json();
-    return (data.results || [])
+    const raw = data.results || [];
+    const kept = raw
       .filter(g => g && !isAdultContent(g) && g.background_image)
       .map(formatGame);
-  } catch {
+    if (raw.length && !kept.length) lastError = `filtre hepsini eledi (${raw.length})`;
+    return kept;
+  } catch (e) {
+    lastError = e.message?.slice(0, 120) || 'bilinmeyen';
     return [];
   }
 }
+
+// Teşhis için son hata (yanıta yalnızca debug:true ile eklenir)
+let lastError = null;
 
 // POST /api/smart-search   body: { query, lang }
 export async function POST(request) {
@@ -197,5 +207,10 @@ export async function POST(request) {
   }
   const results = [...map.values()].slice(0, 60);
 
-  return NextResponse.json({ filters, results, count: results.length });
+  return NextResponse.json({
+    filters,
+    results,
+    count: results.length,
+    ...(body.debug ? { debug: { lastError, tiers: lists.map(l => l.length) } } : {}),
+  });
 }
