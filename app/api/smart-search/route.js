@@ -38,6 +38,41 @@ const TAGS = [
 
 const MODES = ['singleplayer', 'multiplayer', 'coop'];
 
+// LLM bazı ifadeleri kaçırıyor ("sakin" → relaxing gibi). Bu deterministik eşleme
+// modelden bağımsız çalışır ve sonucu LLM'in çıkardıklarıyla birleştirilir.
+const KEYWORD_TAGS = [
+  [/sakin|rahatla|stressiz|stressiz|huzur|relax|chill|calm|unwind/i, 'relaxing'],
+  [/korku|korkut|ürküt|urkut|gerilim|horror|scary|creepy/i, 'horror'],
+  [/zombi|zombie/i, 'zombies'],
+  [/hikaye|hikâye|senaryo|story|narrative/i, 'story-rich'],
+  [/açık dünya|acik dunya|open.?world/i, 'open-world'],
+  [/hayatta kal|survival/i, 'survival'],
+  [/keşf|kesf|explor/i, 'exploration'],
+  [/zor|çetin|cetin|meydan oku|hard|difficult|challeng/i, 'difficult'],
+  [/müzik|muzik|ses|soundtrack|music/i, 'great-soundtrack'],
+  [/atmosfer|atmospher/i, 'atmospheric'],
+  [/gizli|sinsi|stealth/i, 'stealth'],
+  [/uzay|space|sci.?fi|bilim kurgu/i, 'sci-fi'],
+  [/fantast|fantasy|büyü|buyu/i, 'fantasy'],
+  [/kıyamet|kiyamet|post.?apocal/i, 'post-apocalyptic'],
+  [/inşa|insa|üs kur|us kur|base.?build/i, 'base-building'],
+  [/karakter geliştir|karakter gelistir|seviye atla|rpg/i, 'character-customization'],
+  [/soulslike|souls.?like|dark souls|elden ring/i, 'souls-like'],
+  [/rekabet|competitive|pvp/i, 'pvp'],
+];
+
+const KEYWORD_MODES = [
+  [/eşli|esli|arkadaş|arkadas|birlikte|beraber|co.?op|with a friend/i, 'coop'],
+  [/tek başıma|tek basima|yalnız|yalniz|solo|single.?player/i, 'singleplayer'],
+  [/online|rekabet|competitive|multiplayer/i, 'multiplayer'],
+];
+
+function keywordHints(query) {
+  const tags = KEYWORD_TAGS.filter(([re]) => re.test(query)).map(([, t]) => t);
+  const modeHit = KEYWORD_MODES.find(([re]) => re.test(query));
+  return { tags, mode: modeHit ? modeHit[1] : '' };
+}
+
 async function groqJson(messages, maxTokens = 400) {
   const res = await fetch(GROQ_URL, {
     method: 'POST',
@@ -104,8 +139,14 @@ YALNIZCA şu JSON'u döndür:
 
   // Doğrulama: model listeden sapmışsa temizle
   const genres = (raw.genres || []).filter(g => GENRES.includes(g)).slice(0, 3);
-  const tags   = (raw.tags   || []).filter(t => TAGS.includes(t)).slice(0, 5);
-  const mode   = MODES.includes(raw.mode) ? raw.mode : '';
+  const llmTags = (raw.tags || []).filter(t => TAGS.includes(t));
+
+  // Anahtar kelime ipuçlarını ÖNE koy — bunlar kullanıcının kelimelerinden
+  // doğrudan türediği için modelin tahmininden daha güvenilir.
+  const hints = keywordHints(query);
+  const tags = [...new Set([...hints.tags, ...llmTags])].slice(0, 5);
+  const mode = hints.mode || (MODES.includes(raw.mode) ? raw.mode : '');
+
   return { genres, tags, mode, summary: typeof raw.summary === 'string' ? raw.summary : '' };
 }
 
@@ -166,11 +207,17 @@ async function rawgQuery({ genres = '', tags = '', ordering = '-added' }) {
     }
     const data = await res.json();
     const raw = data.results || [];
+    const wanted = tags ? tags.split(',').filter(Boolean) : [];
     const kept = raw
       // ratings_count eşiği: neredeyse hiç oylanmamış belirsiz oyunları eler.
-      // Bunlar dar sorgularda eşleşip listenin tepesini işgal ediyordu.
       .filter(g => g && !isAdultContent(g) && g.background_image && (g.ratings_count || 0) >= 50)
-      .map(formatGame);
+      .map(g => {
+        // RAWG etiketleri VEYA olarak eşleştiriyor → tek etiket tutan popüler oyun
+        // tepeye çıkıyordu. Kaç etiketin tuttuğunu sayıp buna göre sıralıyoruz.
+        const slugs = new Set((g.tags || []).map(t => t.slug));
+        const hits = wanted.filter(w => slugs.has(w)).length;
+        return { game: formatGame(g), hits };
+      });
     if (raw.length && !kept.length) lastError = `filtre hepsini eledi (${raw.length})`;
     return kept;
   } catch (e) {
@@ -240,11 +287,19 @@ export async function POST(request) {
   }
 
   // Sırayı koruyarak tekilleştir (dar sorgunun sonuçları önde kalır)
+  // Tekilleştir — aynı oyun farklı kademelerde çıkarsa en yüksek eşleşme sayısını tut
   const map = new Map();
-  for (const g of lists.flat()) {
-    if (g && g.id != null && !map.has(g.id)) map.set(g.id, g);
+  for (const item of lists.flat()) {
+    if (!item?.game?.id) continue;
+    const prev = map.get(item.game.id);
+    if (!prev || item.hits > prev.hits) map.set(item.game.id, item);
   }
-  const results = [...map.values()].slice(0, 60);
+
+  // Kaç etiketin tuttuğuna göre sırala; eşitlikte daha çok oylanan önde
+  const results = [...map.values()]
+    .sort((a, b) => (b.hits - a.hits) || ((b.game.totalReviews || 0) - (a.game.totalReviews || 0)))
+    .slice(0, 60)
+    .map(x => x.game);
 
   return NextResponse.json({
     filters,
