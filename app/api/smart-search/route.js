@@ -126,16 +126,21 @@ export async function POST(request) {
     return NextResponse.json({ filters, results: [], count: 0 });
   }
 
-  // Dar → geniş üç sorgu; dar olan az sonuç verirse geniş olanlar doldurur
+  // ÖNEMLİ: /api/games'e TEK tür gönderilmeli. Virgülle birden fazla tür +
+  // mode verilince Steam mod yolundaki eşleşme başarısız olup alakasız bir
+  // popüler listeye düşüyor. Bu yüzden her sorgu tek türle kurulur.
   const jobs = [];
-  if (genres.length || tags.length) {
-    jobs.push(gamesQuery(origin, { genres: genres.join(','), tags: tags.join(','), mode, num: 24 }));
-  }
-  if (tags.length) {
-    jobs.push(gamesQuery(origin, { tags: tags.slice(0, 3).join(','), mode, num: 24 }));
-  }
   if (genres.length) {
+    // 1) En olası tür + tüm etiketler → en isabetli sonuçlar
+    jobs.push(gamesQuery(origin, { genres: genres[0], tags: tags.join(','), mode, num: 24 }));
+    // 2) İkinci tür varsa onu da tara
+    if (genres[1]) {
+      jobs.push(gamesQuery(origin, { genres: genres[1], tags: tags.join(','), mode, num: 24 }));
+    }
+    // 3) Etiketsiz geniş tarama — dar sorgular az sonuç verirse doldurur
     jobs.push(gamesQuery(origin, { genres: genres[0], mode, num: 24 }));
+  } else if (tags.length) {
+    jobs.push(gamesQuery(origin, { tags: tags.join(','), mode, num: 24 }));
   }
 
   const lists = await Promise.all(jobs);
