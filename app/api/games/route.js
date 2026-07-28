@@ -464,6 +464,7 @@ export async function GET(request) {
   const mode    = searchParams.get('mode')    || '';   // singleplayer | multiplayer | coop
   const store   = searchParams.get('store')   || '';   // steam | epic
   const mc      = searchParams.get('metacritic') || ''; // min metacritic score e.g. "80"
+  const tags    = searchParams.get('tags')    || '';   // RAWG etiketleri: story-rich,open-world…
   const price   = searchParams.get('price')   || '';
 
   // ── Oyun modu filtresi: Steam mağaza kategorileri (otoriter veri) ──
@@ -572,6 +573,12 @@ export async function GET(request) {
     const MODE_TAG = { singleplayer: 'singleplayer', multiplayer: 'multiplayer', coop: 'co-op' };
     if (mode && MODE_TAG[mode]) {
       params.tags = params.tags ? `${params.tags},${MODE_TAG[mode]}` : MODE_TAG[mode];
+    }
+
+    // Serbest etiket filtresi (doğal dil aramasının çıkardığı etiketler)
+    if (tags) {
+      const clean = tags.split(',').map(s => s.trim().toLowerCase()).filter(Boolean).slice(0, 5).join(',');
+      if (clean) params.tags = params.tags ? `${params.tags},${clean}` : clean;
     }
 
     let results = [];
