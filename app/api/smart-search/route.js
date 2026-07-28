@@ -1,4 +1,8 @@
 import { NextResponse } from 'next/server';
+import { isAdultContent } from '../../lib/adult-filter.js';
+
+const RAWG_KEY = process.env.RAWG_API_KEY;
+const RAWG_BASE = 'https://api.rawg.io/api';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Doğal dil ile oyun arama.
@@ -90,13 +94,57 @@ YALNIZCA şu JSON'u döndür:
   return { genres, tags, mode, summary: typeof raw.summary === 'string' ? raw.summary : '' };
 }
 
-async function gamesQuery(origin, params) {
-  const qs = new URLSearchParams(params).toString();
+// Çıktı şekli /api/games ile birebir aynı → mevcut kart bileşenleri değişmeden çalışır
+function formatGame(game) {
+  const steamStore = game.stores?.find(s => s.store?.slug === 'steam');
+  const epicStore  = game.stores?.find(s => s.store?.slug === 'epic-games');
+  const hasSteam   = !!steamStore;
+  const hasEpic    = !!epicStore;
+  return {
+    id:           'rawg_' + game.id,
+    rawgId:       game.id,
+    rawgSlug:     game.slug,
+    name:         game.name,
+    image:        game.background_image,
+    metacritic:   game.metacritic    || null,
+    reviewScore:  game.rating ? Math.round(game.rating * 20) : 0,
+    totalReviews: game.ratings_count || 0,
+    isFree:       !!game.tags?.some(t => t.slug === 'free-to-play'),
+    onSale:       false,
+    price:        null,
+    noData:       true,
+    platforms:    ['pc'],
+    source:       hasSteam ? 'steam' : hasEpic ? 'epic' : 'rawg',
+    hasSteam,
+    hasEpic,
+    hasStores:    !!(game.stores && game.stores.length > 0),
+    epicUrl:      hasEpic ? 'https://store.epicgames.com/tr/p/' + game.slug : null,
+    steamUrl:     null,
+    genres:       (game.genres || []).map(g => g.name).slice(0, 3),
+    released:     game.released || null,
+  };
+}
+
+// RAWG'a DOĞRUDAN sorgu.
+// /api/games üzerinden gitmiyoruz: o route RAWG+Steam birleştirme ve yedekleme
+// katmanları içeriyor, ince etiket filtrelerini yutuyor (doğrulandı).
+async function rawgQuery({ genres = '', tags = '', ordering = '-rating' }) {
+  const url = new URL(`${RAWG_BASE}/games`);
+  url.searchParams.set('key', RAWG_KEY);
+  url.searchParams.set('platforms', '4');          // PC
+  url.searchParams.set('page_size', '24');
+  url.searchParams.set('exclude_additions', 'true');
+  url.searchParams.set('ordering', ordering);
+  if (genres) url.searchParams.set('genres', genres);
+  if (tags)   url.searchParams.set('tags', tags);
+
   try {
-    const res = await fetch(`${origin}/api/games?${qs}`, { next: { revalidate: 600 } });
+    const res = await fetch(url.toString(), { next: { revalidate: 600 } });
     if (!res.ok) return [];
-    const d = await res.json();
-    return d.results || [];
+    const data = await res.json();
+    return (data.results || [])
+      .filter(g => g && !isAdultContent(g) && g.background_image)
+      .map(formatGame);
   } catch {
     return [];
   }
@@ -104,7 +152,6 @@ async function gamesQuery(origin, params) {
 
 // POST /api/smart-search   body: { query, lang }
 export async function POST(request) {
-  const { origin } = new URL(request.url);
   let body = {};
   try { body = await request.json(); } catch { /* boş gövde */ }
   const query = (body.query || '').toString().trim().slice(0, 500);
@@ -112,6 +159,7 @@ export async function POST(request) {
 
   if (!query) return NextResponse.json({ error: 'query gerekli' }, { status: 400 });
   if (!GROQ_KEY) return NextResponse.json({ error: 'AI yapılandırılmamış', results: [] }, { status: 503 });
+  if (!RAWG_KEY) return NextResponse.json({ error: 'RAWG yapılandırılmamış', results: [] }, { status: 503 });
 
   let filters;
   try {
@@ -126,22 +174,19 @@ export async function POST(request) {
     return NextResponse.json({ filters, results: [], count: 0 });
   }
 
-  // ÖNEMLİ: /api/games'e TEK tür gönderilmeli. Virgülle birden fazla tür +
-  // mode verilince Steam mod yolundaki eşleşme başarısız olup alakasız bir
-  // popüler listeye düşüyor. Bu yüzden her sorgu tek türle kurulur.
-  const jobs = [];
-  if (genres.length) {
-    // 1) En olası tür + tüm etiketler → en isabetli sonuçlar
-    jobs.push(gamesQuery(origin, { genres: genres[0], tags: tags.join(','), mode, num: 24 }));
-    // 2) İkinci tür varsa onu da tara
-    if (genres[1]) {
-      jobs.push(gamesQuery(origin, { genres: genres[1], tags: tags.join(','), mode, num: 24 }));
-    }
-    // 3) Etiketsiz geniş tarama — dar sorgular az sonuç verirse doldurur
-    jobs.push(gamesQuery(origin, { genres: genres[0], mode, num: 24 }));
-  } else if (tags.length) {
-    jobs.push(gamesQuery(origin, { tags: tags.join(','), mode, num: 24 }));
-  }
+  // Mod (co-op / tek oyunculu) RAWG'da bir ETİKET olduğu için tags'e katılır
+  const MODE_TAG = { coop: 'co-op', singleplayer: 'singleplayer', multiplayer: 'multiplayer' };
+  const allTags = [...new Set([...tags, ...(MODE_TAG[mode] ? [MODE_TAG[mode]] : [])])];
+
+  // Dar → geniş kademeler. RAWG çoklu etiketi VE olarak yorumlar; dar sorgu
+  // boş dönerse alttaki geniş kademeler listeyi doldurur.
+  const genreParam = genres.join(',');
+  const jobs = [
+    rawgQuery({ genres: genreParam, tags: allTags.join(',') }),                 // 1) tam eşleşme
+    rawgQuery({ genres: genreParam, tags: allTags.slice(0, 2).join(',') }),     // 2) en güçlü 2 etiket
+    rawgQuery({ tags: allTags.slice(0, 2).join(','), ordering: '-added' }),     // 3) türsüz, etiket odaklı
+    rawgQuery({ genres: genreParam }),                                          // 4) yalnızca tür
+  ];
 
   const lists = await Promise.all(jobs);
 
