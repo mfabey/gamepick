@@ -69,6 +69,11 @@ KURALLAR:
   Örnek: "Dying Light gibi" → zombies, survival, open-world, first-person, co-op
 - Yalnızca aşağıdaki listelerden değer seç. Listede olmayan bir şey YAZMA.
 - En fazla 3 genre, en fazla 5 tag seç. Emin olmadığını ekleme.
+- mode SADECE kullanıcı açıkça söylerse doldurulur:
+  "eşli/arkadaşımla/birlikte" → "coop"
+  "tek başıma/hikaye odaklı tek kişilik" → "singleplayer"
+  "online/rekabetçi" → "multiplayer"
+  Cümlede böyle bir ifade YOKSA mode kesinlikle null olmalı. Tahmin etme.
 
 GEÇERLİ GENRES: ${GENRES.join(', ')}
 GEÇERLİ TAGS: ${TAGS.join(', ')}
@@ -128,7 +133,9 @@ function formatGame(game) {
 // RAWG'a DOĞRUDAN sorgu.
 // /api/games üzerinden gitmiyoruz: o route RAWG+Steam birleştirme ve yedekleme
 // katmanları içeriyor, ince etiket filtrelerini yutuyor (doğrulandı).
-async function rawgQuery({ genres = '', tags = '', ordering = '-rating' }) {
+// Sıralama '-added' (kaç kullanıcı kütüphanesine ekledi) = popülerlik vekili.
+// '-rating' kullanmıyoruz: 5 kişinin oyladığı belirsiz oyunu Witcher 3'ün üstüne çıkarıyor.
+async function rawgQuery({ genres = '', tags = '', ordering = '-added' }) {
   const url = new URL(`${RAWG_BASE}/games`);
   url.searchParams.set('key', RAWG_KEY);
   url.searchParams.set('platforms', '4');          // PC
@@ -150,7 +157,9 @@ async function rawgQuery({ genres = '', tags = '', ordering = '-rating' }) {
     const data = await res.json();
     const raw = data.results || [];
     const kept = raw
-      .filter(g => g && !isAdultContent(g) && g.background_image)
+      // ratings_count eşiği: neredeyse hiç oylanmamış belirsiz oyunları eler.
+      // Bunlar dar sorgularda eşleşip listenin tepesini işgal ediyordu.
+      .filter(g => g && !isAdultContent(g) && g.background_image && (g.ratings_count || 0) >= 50)
       .map(formatGame);
     if (raw.length && !kept.length) lastError = `filtre hepsini eledi (${raw.length})`;
     return kept;
