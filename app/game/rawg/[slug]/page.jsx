@@ -27,58 +27,7 @@ export default function RawgGamePage({ params }) {
   const [loading,      setLoading]      = useState(true);
   const [error,        setError]        = useState(null);
   const [imgIdx,       setImgIdx]       = useState(0);
-  const [isPlaying,    setIsPlaying]    = useState(true);
-  const [isMuted,      setIsMuted]      = useState(true);
-  const [isHovered,    setIsHovered]    = useState(false);
-  const videoRef = useRef(null);
 
-  const togglePlay = () => {
-    if (!videoRef.current) return;
-    if (videoRef.current.paused) {
-      const playPromise = videoRef.current.play();
-      if (playPromise !== undefined) {
-        playPromise
-          .then(() => {
-            setIsPlaying(true);
-          })
-          .catch(err => {
-            console.warn("Play failed:", err);
-            setIsPlaying(false);
-          });
-      }
-    } else {
-      videoRef.current.pause();
-      setIsPlaying(false);
-    }
-  };
-
-  useEffect(() => {
-    if (!game) return;
-
-    const allImages = [game.image, ...(game.screenshots || [])].filter(Boolean);
-    const mediaList = [
-      ...(game.trailerMp4 ? [{ type: 'video', src: game.trailerMp4, poster: game.image }] : []),
-      ...allImages.map(src => ({ type: 'image', src })),
-    ];
-    const currentMedia = mediaList[imgIdx] || mediaList[0];
-
-    const video = videoRef.current;
-
-    if (currentMedia && currentMedia.type === 'video' && video) {
-      video.muted = isMuted;
-      const playPromise = video.play();
-      if (playPromise !== undefined) {
-        playPromise
-          .then(() => {
-            setIsPlaying(true);
-          })
-          .catch(err => {
-            console.warn("Play failed:", err);
-            setIsPlaying(false);
-          });
-      }
-    }
-  }, [game, imgIdx]);
 
   const formatReleaseDate = (dateStr) => {
     if (!dateStr) return '';
@@ -297,11 +246,7 @@ export default function RawgGamePage({ params }) {
 
   const allImages = [game.image, ...(game.screenshots || [])].filter(Boolean);
 
-  // Galeri: fragman varsa ilk sıraya
-  const media = [
-    ...(game.trailerMp4 ? [{ type: 'video', src: game.trailerMp4, poster: game.image }] : []),
-    ...allImages.map(src => ({ type: 'image', src })),
-  ];
+  const media = allImages.map(src => ({ type: 'image', src }));
   const activeMedia = media[imgIdx] || media[0];
 
   return (
@@ -384,123 +329,18 @@ export default function RawgGamePage({ params }) {
         <div style={{ minWidth: 0 }}>
           {activeMedia && (
             <div style={{ borderRadius: 16, overflow: 'hidden', marginBottom: 12, aspectRatio: '16/9', position: 'relative', background: 'var(--bg-input)' }}>
-              {activeMedia.type === 'video' ? (
-                <div 
-                  onMouseEnter={() => setIsHovered(true)}
-                  onMouseLeave={() => setIsHovered(false)}
-                  style={{ position: 'relative', width: '100%', height: '100%', cursor: 'pointer' }}
-                >
-                  <video
-                    ref={videoRef}
-                    key={activeMedia.src}
-                    src={activeMedia.src}
-                    poster={activeMedia.poster || undefined}
-                    autoPlay
-                    muted={isMuted}
-                    loop
-                    playsInline
-                    preload="metadata"
-                    onPlay={() => setIsPlaying(true)}
-                    onPause={() => setIsPlaying(false)}
-                    onClick={togglePlay}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                  />
-                  
-                  {/* Play/Pause Button Overlay in Center */}
-                  <div 
-                    onClick={togglePlay}
-                    style={{
-                      position: 'absolute',
-                      top: '50%',
-                      left: '50%',
-                      transform: 'translate(-50%, -50%)',
-                      width: 64,
-                      height: 64,
-                      borderRadius: '50%',
-                      backgroundColor: 'rgba(8, 10, 13, 0.8)',
-                      border: '1.5px solid var(--accent)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      opacity: (!isPlaying || isHovered) ? 1 : 0,
-                      transition: 'opacity 0.2s ease, transform 0.2s ease',
-                      boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
-                      zIndex: 3,
-                    }}
-                  >
-                    {isPlaying ? (
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="14" y="4" width="4" height="16" rx="1" />
-                        <rect x="6" y="4" width="4" height="16" rx="1" />
-                      </svg>
-                    ) : (
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: 3 }}>
-                        <polygon points="5 3 19 12 5 21 5 3" fill="var(--accent)" />
-                      </svg>
-                    )}
-                  </div>
-
-                  {/* Mute/Unmute Button Overlay in Bottom Right */}
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (videoRef.current) {
-                        videoRef.current.muted = !videoRef.current.muted;
-                        setIsMuted(videoRef.current.muted);
-                      }
-                    }}
-                    style={{
-                      position: 'absolute',
-                      bottom: 16,
-                      right: 16,
-                      width: 40,
-                      height: 40,
-                      borderRadius: 8,
-                      backgroundColor: 'rgba(8, 10, 13, 0.75)',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
-                      zIndex: 3,
-                    }}
-                  >
-                    {isMuted ? (
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-                        <line x1="23" y1="9" x2="17" y2="15" />
-                        <line x1="17" y1="9" x2="23" y2="15" />
-                      </svg>
-                    ) : (
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
-                      </svg>
-                    )}
-                  </button>
-                </div>
-              ) : (
-                <Image src={activeMedia.src} alt={game.name} fill sizes="640px" style={{ objectFit: 'cover' }} unoptimized />
-              )}
+              <Image src={activeMedia.src} alt={game.name} fill sizes="640px" style={{ objectFit: 'cover' }} unoptimized />
             </div>
           )}
           {media.length > 1 && (
             <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 20, paddingBottom: 4, maxWidth: '100%', WebkitOverflowScrolling: 'touch' }}>
               {media.map((m, i) => (
-                <button key={i} onClick={() => setImgIdx(i)} title={m.type === 'video' ? 'Fragman' : undefined} style={{
+                <button key={i} onClick={() => setImgIdx(i)} style={{
                   flexShrink: 0, width: 80, height: 50, borderRadius: 8, overflow: 'hidden',
                   border: i === imgIdx ? '2px solid var(--accent)' : '2px solid transparent',
                   background: 'none', padding: 0, cursor: 'pointer', position: 'relative',
                 }}>
-                  <Image src={m.type === 'video' ? m.poster : m.src} alt="" fill sizes="80px" style={{ objectFit: 'cover' }} unoptimized />
-                  {m.type === 'video' && (
-                    <span style={{
-                      position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      background: 'rgba(0,0,0,0.45)', color: '#fff', fontSize: 18, lineHeight: 1,
-                    }}>▶</span>
-                  )}
+                  <Image src={m.src} alt="" fill sizes="80px" style={{ objectFit: 'cover' }} unoptimized />
                 </button>
               ))}
             </div>
