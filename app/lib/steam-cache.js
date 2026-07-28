@@ -5,8 +5,8 @@ if (!global.steamDetailsCache) {
 
 const cache = global.steamDetailsCache;
 
-export async function getSteamDetailsCached(appid) {
-  const cacheKey = String(appid);
+export async function getSteamDetailsCached(appid, lang = 'en') {
+  const cacheKey = `${appid}_${lang}`;
   
   if (cache.has(cacheKey)) {
     return cache.get(cacheKey);
@@ -23,8 +23,8 @@ export async function getSteamDetailsCached(appid) {
 
   const fetchPromise = (async () => {
     try {
-      // Fetch without l=tr first to ensure English date format is returned and correctly parsed
-      const res = await fetch(`https://store.steampowered.com/api/appdetails?appids=${appid}&cc=tr`, {
+      const steamLang = lang === 'tr' ? 'turkish' : 'english';
+      const res = await fetch(`https://store.steampowered.com/api/appdetails?appids=${appid}&cc=tr&l=${steamLang}`, {
         next: { revalidate: 3600 } // 1-hour cache
       });
       if (!res.ok) return null;
@@ -35,7 +35,7 @@ export async function getSteamDetailsCached(appid) {
       }
       return null;
     } catch (err) {
-      console.error(`Error fetching Steam details for ${appid}:`, err);
+      console.error(`Error fetching Steam details for ${appid} in ${lang}:`, err);
       return null;
     } finally {
       global.steamPromises.delete(cacheKey);

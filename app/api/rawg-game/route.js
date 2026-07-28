@@ -49,9 +49,9 @@ async function searchSteamGame(slug) {
   }
 }
 
-async function fetchSteamDetails(appid, slug) {
+async function fetchSteamDetails(appid, slug, lang = 'en') {
   try {
-    const d = await getSteamDetailsCached(appid);
+    const d = await getSteamDetailsCached(appid, lang);
     if (!d) return null;
     
     let trailerMp4 = null;
@@ -107,13 +107,13 @@ async function fetchSteamDetails(appid, slug) {
   }
 }
 
-async function trySteamFallback(slug) {
+async function trySteamFallback(slug, lang = 'en') {
   // Check local fallback games first
   const localMatch = FALLBACK_GAMES.find(g => g.rawgSlug === slug || String(g.rawgId) === slug || g.id === slug || g.id === `rawg_${slug}`);
   if (localMatch) {
     const appid = localMatch.rawgId || parseInt(localMatch.id.replace('rawg_', ''));
     console.log(`Local fallback database hit for slug: ${slug} -> AppID: ${appid}`);
-    const details = await fetchSteamDetails(appid, slug);
+    const details = await fetchSteamDetails(appid, slug, lang);
     if (details) return details;
     
     // Return high quality local match directly if details fetch fails
@@ -153,7 +153,7 @@ async function trySteamFallback(slug) {
   const match = await searchSteamGame(slug);
   if (match) {
     console.log(`Steam search match found for slug: ${slug} -> AppID: ${match.appid}`);
-    const details = await fetchSteamDetails(match.appid, slug);
+    const details = await fetchSteamDetails(match.appid, slug, lang);
     if (details) return details;
 
     // If search succeeded but details failed, build a basic game from the search match!
@@ -231,6 +231,7 @@ async function trySteamFallback(slug) {
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const slug = searchParams.get('slug');
+  const lang = searchParams.get('lang') || 'en';
 
   if (!slug) return NextResponse.json({ error: 'slug eksik' }, { status: 400 });
 
@@ -303,9 +304,10 @@ export async function GET(request) {
 
         let trailer = null;
         let trailerMp4 = null;
+        let steamData = null;
         if (steamAppId) {
           try {
-            const steamData = await getSteamDetailsCached(steamAppId);
+            steamData = await getSteamDetailsCached(steamAppId, lang);
             if (steamData && steamData.movies && steamData.movies.length > 0) {
               trailer = steamData.movies[0].hls_h264 || steamData.movies[0].mp4?.max || steamData.movies[0].webm?.max || null;
               for (const m of steamData.movies) {
@@ -330,7 +332,7 @@ export async function GET(request) {
           rawgSlug:     rawgDetail.slug,
           name:         rawgDetail.name,
           image:        rawgDetail.background_image,
-          description:  rawgDetail.description_raw || '',
+          description:  steamData?.about_the_game || steamData?.detailed_description || rawgDetail.description_raw || '',
           metacritic:   rawgDetail.metacritic   || null,
           rating:       rawgDetail.rating       || 0,
           totalReviews: rawgDetail.ratings_count || 0,
@@ -372,7 +374,7 @@ export async function GET(request) {
     }
 
     // 2. Try Steam details by AppID direct fallback
-    const fallbackGame = await fetchSteamDetails(directAppId, slug);
+    const fallbackGame = await fetchSteamDetails(directAppId, slug, lang);
     if (fallbackGame) {
       if (isAdultTitleOrSlug(fallbackGame.name, fallbackGame.rawgSlug)) {
         return NextResponse.json({ error: 'Bu oyun kütüphanede gösterilmemektedir.' }, { status: 403 });
@@ -381,7 +383,7 @@ export async function GET(request) {
     }
 
     // 3. Last resort direct ID fallback
-    const fallbackObj = await trySteamFallback(slug);
+    const fallbackObj = await trySteamFallback(slug, lang);
     if (fallbackObj) {
       if (isAdultTitleOrSlug(fallbackObj.name, fallbackObj.rawgSlug)) {
         return NextResponse.json({ error: 'Bu oyun kütüphanede gösterilmemektedir.' }, { status: 403 });
@@ -422,7 +424,7 @@ export async function GET(request) {
   // Eğer RAWG'ta bulunamadıysa veya hata alındıysa, Steam fallback'ini dene
   if (rawgFailed) {
     console.log(`"${slug}" RAWG'ta bulunamadı. Steam fallback deneniyor...`);
-    const fallbackGame = await trySteamFallback(slug);
+    const fallbackGame = await trySteamFallback(slug, lang);
     if (fallbackGame) {
       if (isAdultTitleOrSlug(fallbackGame.name, fallbackGame.rawgSlug)) {
         return NextResponse.json({ error: 'Bu oyun kütüphanede gösterilmemektedir.' }, { status: 403 });
@@ -461,9 +463,10 @@ export async function GET(request) {
 
     let trailer = null;
     let trailerMp4 = null;
+    let steamData = null;
     if (steamAppId) {
       try {
-        const steamData = await getSteamDetailsCached(steamAppId);
+        steamData = await getSteamDetailsCached(steamAppId, lang);
         if (steamData && steamData.movies && steamData.movies.length > 0) {
           trailer = steamData.movies[0].hls_h264 || steamData.movies[0].mp4?.max || steamData.movies[0].webm?.max || null;
           for (const m of steamData.movies) {
@@ -488,7 +491,7 @@ export async function GET(request) {
       rawgSlug:     detail.slug,
       name:         detail.name,
       image:        detail.background_image,
-      description:  detail.description_raw || '',
+      description:  steamData?.about_the_game || steamData?.detailed_description || detail.description_raw || '',
       metacritic:   detail.metacritic   || null,
       rating:       detail.rating       || 0,
       totalReviews: detail.ratings_count || 0,

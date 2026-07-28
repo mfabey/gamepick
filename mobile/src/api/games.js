@@ -17,8 +17,8 @@ export function fetchCardPrice({ slug = '', name = '', hasSteam = false }) {
 
 // Oyun detayı (açıklama, ekran görüntüleri, türler, mağazalar) — /api/rawg-game
 // Yanıt { game: {...} } ile sarılı → düz objeye aç (ekran düz alan okur).
-export function fetchGameDetail(slugOrId) {
-  return apiGet('/api/rawg-game', { slug: slugOrId }).then((d) => d?.game || d || null);
+export function fetchGameDetail(slugOrId, lang = 'en') {
+  return apiGet('/api/rawg-game', { slug: slugOrId, lang }).then((d) => d?.game || d || null);
 }
 
 // Mağaza-başı fiyat karşılaştırması (ITAD, TRY) — /api/prices

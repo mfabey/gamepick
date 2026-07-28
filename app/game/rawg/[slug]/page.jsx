@@ -73,7 +73,7 @@ export default function RawgGamePage({ params }) {
     setHumblePrice(null);
     setXboxPrices([]);
 
-    fetch('/api/rawg-game?slug=' + slug)
+    fetch('/api/rawg-game?slug=' + slug + '&lang=' + lang)
       .then(r => r.json())
       .then(gameData => {
         if (gameData.error) { setError(gameData.error); return; }
@@ -177,7 +177,7 @@ export default function RawgGamePage({ params }) {
       })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false));
-  }, [slug]);
+  }, [slug, lang]);
 
   // ── AI özeti ─────────────────────────────────────────────────────
   useEffect(() => {

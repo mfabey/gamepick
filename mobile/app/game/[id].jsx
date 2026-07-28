@@ -51,8 +51,8 @@ export default function GameDetail() {
 
   // Zengin detay: cache-first (aynı oyunu tekrar açınca anında gelir)
   const { data: detail } = useQuery(
-    `game-detail:${slug || id}`,
-    () => fetchGameDetail(slug || id).then((d) => (d && !d.error ? d : null)),
+    `game-detail:${slug || id}:${lang}`,
+    () => fetchGameDetail(slug || id, lang).then((d) => (d && !d.error ? d : null)),
     { ttl: 30 * 60 * 1000 }
   );
   const [price, setPrice]     = useState(null);
