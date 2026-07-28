@@ -141,7 +141,10 @@ async function rawgQuery({ genres = '', tags = '', ordering = '-rating' }) {
   try {
     const res = await fetch(url.toString(), { next: { revalidate: 600 } });
     if (!res.ok) {
-      lastError = `RAWG ${res.status}`;
+      // RAWG hata gövdesi sebebi söyler: geçersiz anahtar mı, kota mı?
+      let detail = '';
+      try { detail = (await res.text()).slice(0, 200); } catch { /* gövde okunamadı */ }
+      lastError = `RAWG ${res.status} — ${detail}`;
       return [];
     }
     const data = await res.json();
