@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import Hls from 'hls.js';
 import Link from 'next/link';
 import { useAuth, normalizeName } from '../../../context/AuthContext';
 import { useLanguage } from '../../../context/LanguageContext';
@@ -58,59 +57,27 @@ export default function RawgGamePage({ params }) {
 
     const allImages = [game.image, ...(game.screenshots || [])].filter(Boolean);
     const mediaList = [
-      ...(game.trailer ? [{ type: 'video', src: game.trailer, poster: game.image }] : []),
+      ...(game.trailerMp4 ? [{ type: 'video', src: game.trailerMp4, poster: game.image }] : []),
       ...allImages.map(src => ({ type: 'image', src })),
     ];
     const currentMedia = mediaList[imgIdx] || mediaList[0];
 
-    let hls = null;
     const video = videoRef.current;
 
     if (currentMedia && currentMedia.type === 'video' && video) {
-      const videoSrc = currentMedia.src;
-      
-      const playVideo = () => {
-        video.muted = isMuted;
-        const playPromise = video.play();
-        if (playPromise !== undefined) {
-          playPromise
-            .then(() => {
-              setIsPlaying(true);
-            })
-            .catch(err => {
-              console.warn("Play failed:", err);
-              setIsPlaying(false);
-            });
-        }
-      };
-
-      if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        // Native HLS (Safari/iOS)
-        video.src = videoSrc;
-        playVideo();
-      } else if (Hls.isSupported()) {
-        // Hls.js (Chrome/Firefox/Edge)
-        hls = new Hls({
-          maxMaxBufferLength: 10,
-          enableWorker: true,
-        });
-        hls.loadSource(videoSrc);
-        hls.attachMedia(video);
-        hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          playVideo();
-        });
-      } else {
-        // Fallback for direct MP4 links
-        video.src = videoSrc;
-        playVideo();
+      video.muted = isMuted;
+      const playPromise = video.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            setIsPlaying(true);
+          })
+          .catch(err => {
+            console.warn("Play failed:", err);
+            setIsPlaying(false);
+          });
       }
     }
-
-    return () => {
-      if (hls) {
-        hls.destroy();
-      }
-    };
   }, [game, imgIdx]);
 
   const formatReleaseDate = (dateStr) => {
@@ -332,7 +299,7 @@ export default function RawgGamePage({ params }) {
 
   // Galeri: fragman varsa ilk sıraya
   const media = [
-    ...(game.trailer ? [{ type: 'video', src: game.trailer, poster: game.image }] : []),
+    ...(game.trailerMp4 ? [{ type: 'video', src: game.trailerMp4, poster: game.image }] : []),
     ...allImages.map(src => ({ type: 'image', src })),
   ];
   const activeMedia = media[imgIdx] || media[0];
@@ -426,6 +393,7 @@ export default function RawgGamePage({ params }) {
                   <video
                     ref={videoRef}
                     key={activeMedia.src}
+                    src={activeMedia.src}
                     poster={activeMedia.poster || undefined}
                     autoPlay
                     muted={isMuted}
