@@ -79,6 +79,16 @@ GEÇERLİ GENRES: ${GENRES.join(', ')}
 GEÇERLİ TAGS: ${TAGS.join(', ')}
 GEÇERLİ MODE: ${MODES.join(', ')} (yoksa null)
 
+ÖRNEKLER:
+"sakin, stressiz, güzel müzikli bir oyun"
+→ genres: ["indie","simulation"], tags: ["relaxing","great-soundtrack","atmospheric"], mode: null
+"arkadaşımla oynayacağım kısa maçlı nişancı"
+→ genres: ["shooter"], tags: ["multiplayer","pvp"], mode: "multiplayer"
+"çok zor, karanlık fantastik, boss dövüşleri"
+→ genres: ["action","role-playing-games-rpg"], tags: ["souls-like","difficult","dark-fantasy"], mode: null
+Duyguları ve tarifleri de etikete çevir: "kafa dağıtmak"→relaxing, "sürükleyici hikaye"→story-rich,
+"korkutucu"→horror, "keşfetmek"→exploration, "kendi üssümü kurmak"→base-building.
+
 YALNIZCA şu JSON'u döndür:
 {
   "genres": ["..."],
@@ -203,14 +213,31 @@ export async function POST(request) {
   // Dar → geniş kademeler. RAWG çoklu etiketi VE olarak yorumlar; dar sorgu
   // boş dönerse alttaki geniş kademeler listeyi doldurur.
   const genreParam = genres.join(',');
-  const jobs = [
-    rawgQuery({ genres: genreParam, tags: allTags.join(',') }),                 // 1) tam eşleşme
-    rawgQuery({ genres: genreParam, tags: allTags.slice(0, 2).join(',') }),     // 2) en güçlü 2 etiket
-    rawgQuery({ tags: allTags.slice(0, 2).join(','), ordering: '-added' }),     // 3) türsüz, etiket odaklı
-    rawgQuery({ genres: genreParam }),                                          // 4) yalnızca tür
-  ];
+  const MIN_RESULTS = 12;
 
-  const lists = await Promise.all(jobs);
+  // KOŞULLU kademeler: geniş sorgular yalnızca dar olanlar yetersiz kalırsa devreye
+  // girer. Hepsi birden çalışırsa "en popüler oyunlar" listesi her sorguyu bastırıyor.
+  const lists = [];
+  const totalSoFar = () => lists.reduce((n, l) => n + l.length, 0);
+
+  if (allTags.length) {
+    // 1) Tür + tüm etiketler → en isabetli
+    lists.push(await rawgQuery({ genres: genreParam, tags: allTags.join(',') }));
+    // 2) Etiket sayısını azaltarak genişlet
+    if (totalSoFar() < MIN_RESULTS && allTags.length > 2) {
+      lists.push(await rawgQuery({ genres: genreParam, tags: allTags.slice(0, 2).join(',') }));
+    }
+    // 3) Türü bırak, etiketlerde kal (tür yanlış çıkarılmış olabilir)
+    if (totalSoFar() < MIN_RESULTS) {
+      lists.push(await rawgQuery({ tags: allTags.slice(0, 2).join(',') }));
+    }
+  }
+
+  // 4) Son çare: yalnızca tür. Etiket eşleşmesi hiç tutmadıysa boş ekran yerine
+  //    en azından doğru türden popüler oyunlar gösterilsin.
+  if (totalSoFar() < MIN_RESULTS && genreParam) {
+    lists.push(await rawgQuery({ genres: genreParam }));
+  }
 
   // Sırayı koruyarak tekilleştir (dar sorgunun sonuçları önde kalır)
   const map = new Map();

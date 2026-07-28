@@ -13,6 +13,33 @@ export const API_BASE =
   Constants.expoConfig?.extra?.apiBase ||
   'https://REPLACE-WITH-YOUR-VERCEL-DOMAIN.vercel.app';
 
+// POST — gövdeli istekler için (ör. doğal dil arama). AI çağrıları yavaş
+// olabildiğinden zaman aşımı çağrı başına ayarlanabilir.
+export async function apiPost(path, body = {}, { timeout = 25000 } = {}) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeout);
+  try {
+    const res = await fetch(`${API_BASE}${path}`, {
+      method: 'POST',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const err = new Error(data?.error || `HTTP ${res.status} — ${path}`);
+      err.status = res.status;
+      throw err;
+    }
+    return data;
+  } catch (err) {
+    if (err?.name === 'AbortError') throw new Error(`Zaman aşımı — ${path}`);
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function apiGet(path, params = {}, { timeout = 12000 } = {}) {
   const clean = Object.fromEntries(
     Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== '')

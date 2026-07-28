@@ -1,4 +1,10 @@
-import { apiGet } from './client';
+import { apiGet, apiPost } from './client';
+
+// Doğal dil ile oyun arama — /api/smart-search
+// Dönen oyunlar /api/games ile aynı şekilde, yani GameCard doğrudan kullanılabilir.
+export function smartSearch(query, lang = 'tr') {
+  return apiPost('/api/smart-search', { query, lang });
+}
 
 // Oyun listesi — /api/games (RAWG + Steam merge, mod filtresi dahil)
 export function fetchGames({ page = 1, num = 24, section = '', q = '', genres = '', mode = '' } = {}) {

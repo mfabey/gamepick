@@ -141,6 +141,13 @@ export default function HomeScreen() {
             <Text style={styles.searchText}>{t('hero.search')}</Text>
             <View style={styles.searchBtn}><Ionicons name="arrow-forward" size={16} color="#fff" /></View>
           </Pressable>
+
+          {/* Doğal dil ile keşif */}
+          <Pressable style={styles.discover} onPress={() => router.push('/discover')}>
+            <Ionicons name="sparkles" size={17} color={colors.accent} />
+            <Text style={styles.discoverText}>{t('discover.entry')}</Text>
+            <Ionicons name="chevron-forward" size={15} color={colors.text3} />
+          </Pressable>
         </View>
         </FadeIn>
 
@@ -299,6 +306,13 @@ const styles = StyleSheet.create({
   },
   searchText: { flex: 1, color: colors.text3, fontSize: 15.5 },
   searchBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
+
+  discover: {
+    flexDirection: 'row', alignItems: 'center', gap: 9, marginTop: 10,
+    backgroundColor: colors.accentSoft, borderColor: colors.accentBorder, borderWidth: 1,
+    borderRadius: radius.lg, paddingHorizontal: 16, paddingVertical: 13,
+  },
+  discoverText: { flex: 1, color: colors.text, fontSize: 14, fontWeight: '600' },
 
   strip: { paddingHorizontal: spacing.lg, gap: 12, paddingTop: 22 },
   stripTile: { width: 172, height: 97, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.card },
