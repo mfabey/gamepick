@@ -232,15 +232,15 @@ export default function Home() {
 
           <h1 style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 'clamp(32px, 4.4vw, 54px)', lineHeight: 1.04, letterSpacing: '-1.5px', color: 'var(--text)', marginBottom: 16, textWrap: 'balance' }}>
             {lang === 'tr' ? (
-              <>Aradığın oyunu, <span style={{ color: 'var(--accent)' }}>en iyi fiyata</span> bul</>
+              <>Sıradaki oyununu <span style={{ color: 'var(--accent)' }}>keşfet</span></>
             ) : (
-              <>Find your next game at the <span style={{ color: 'var(--accent)' }}>best price</span></>
+              <>Discover your <span style={{ color: 'var(--accent)' }}>next game</span></>
             )}
           </h1>
           <p style={{ fontSize: 17, color: 'var(--text-2)', maxWidth: 540, margin: '0 auto 28px', lineHeight: 1.55 }}>
-            {lang === 'tr' 
-              ? 'Tek aramada 7 mağazada fiyat karşılaştır — Steam, Epic, GOG ve daha fazlası' 
-              : 'Compare prices across 7 stores in one search — Steam, Epic, GOG, and more'}
+            {lang === 'tr'
+              ? 'Zevkine göre öneriler — Steam, Epic, GOG ve Humble fiyatlarını tek ekranda karşılaştır'
+              : 'Picks based on your taste — compare Steam, Epic, GOG and Humble prices on one screen'}
           </p>
 
           <div ref={wrapperRef} style={{ width: '100%', maxWidth: 640, position: 'relative', margin: '0 auto' }}>

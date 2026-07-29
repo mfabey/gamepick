@@ -19,7 +19,7 @@ const TRANSLATIONS = {
     'nav.viewing': 'İnceleniyor',
 
     // Hero / Search
-    'hero.badge': 'Canlı fiyat takibi · 7 mağaza',
+    'hero.badge': 'Canlı fiyat takibi',
     'hero.title': 'Bir sonraki oyununu keşfet',
     'hero.subtitle': '500.000+ oyunu keşfet, Steam · Epic · GOG · Xbox fiyatlarını tek ekranda karşılaştır.',
     'hero.searchPlaceholder': 'Oyun, tür veya stüdyo ara…',
@@ -183,7 +183,7 @@ const TRANSLATIONS = {
     'nav.viewing': 'Viewing',
 
     // Hero / Search
-    'hero.badge': 'Live price tracking · 7 stores',
+    'hero.badge': 'Live price tracking',
     'hero.title': 'Discover your next game',
     'hero.subtitle': 'Discover 500,000+ games, compare Steam, Epic, GOG, and Xbox prices in one place.',
     'hero.searchPlaceholder': 'Search games, genres, or studios...',

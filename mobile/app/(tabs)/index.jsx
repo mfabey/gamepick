@@ -129,9 +129,8 @@ export default function HomeScreen() {
           </View>
 
           <Text style={styles.title}>
-            {lang === 'tr' ? 'Aradığın oyunu, ' : 'Find your next game at the '}
-            <Text style={{ color: colors.accent }}>{lang === 'tr' ? 'en iyi fiyata' : 'best price'}</Text>
-            {lang === 'tr' ? ' bul' : ''}
+            {lang === 'tr' ? 'Sıradaki oyununu ' : 'Discover your '}
+            <Text style={{ color: colors.accent }}>{lang === 'tr' ? 'keşfet' : 'next game'}</Text>
           </Text>
           <Text style={styles.subtitle}>{t('hero.subtitle')}</Text>
 

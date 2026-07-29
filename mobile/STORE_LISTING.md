@@ -19,9 +19,10 @@ Gamerisen: Oyun fırsatı keşfet
 
 ### Alt başlık (limit 30)
 ```
-Bütçene uyan oyunu bul
+Sıradaki oyununu keşfet
 ```
-*Alternatifler: `Tek ekranda fiyat karşılaştır` (29) · `Fiyatları kıyasla, ucuza al` (27) · `Oyun fiyatları tek ekranda` (26)*
+*Marka sloganı — uygulama ve web ana sayfasıyla birebir aynı. Alternatifler:
+`Bütçene uyan oyunu bul` (22) · `Tek ekranda fiyat karşılaştır` (29)*
 
 ### Promosyon metni (limit 170 — inceleme olmadan güncellenebilir)
 ```
@@ -69,7 +70,7 @@ Gamerisen: Games & Deals
 
 ### Subtitle (limit 30)
 ```
-Find the game your budget fits
+Discover your next game
 ```
 
 ### Promotional text (limit 170)
