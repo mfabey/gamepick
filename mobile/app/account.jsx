@@ -14,9 +14,9 @@ import { useLanguage } from '../src/context/LanguageContext';
 
 export default function AccountScreen() {
   const router = useRouter();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
 
-  const [mode, setMode] = useState('signin');   // 'signin' | 'signup'
+  const [mode, setMode] = useState('signin');   // 'signin' | 'signup' | 'forgot'
   const [name, setName]         = useState('');
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
@@ -24,13 +24,67 @@ export default function AccountScreen() {
   const [error, setError] = useState('');
   const [info, setInfo]   = useState('');
 
+  const isForgot = mode === 'forgot';
   const isSignup = mode === 'signup';
-  const canSubmit = email.trim() && password.length >= 6 && (!isSignup || name.trim());
+  const titleText = isForgot
+    ? t('acc.forgot')
+    : (isSignup ? t('acc.signUp') : t('acc.signIn'));
+
+  const validateEmail = (emailStr) => {
+    const trimmed = emailStr.trim();
+    if (!trimmed) return t('acc.emailRequired');
+    if (!trimmed.includes('@') || trimmed.length < 5) {
+      return lang === 'tr' ? 'Lütfen geçerli bir e-posta adresi girin.' : 'Please enter a valid email address.';
+    }
+    return null;
+  };
 
   const submit = useCallback(async () => {
-    if (!canSubmit || busy) return;
+    if (busy) return;
     Keyboard.dismiss();
-    setBusy(true); setError(''); setInfo('');
+    setError(''); setInfo('');
+
+    const emailErr = validateEmail(email);
+    if (emailErr) {
+      setError(emailErr);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      return;
+    }
+
+    if (isForgot) {
+      setBusy(true);
+      try {
+        await requestPasswordReset(email.trim());
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        setInfo(t('acc.resetSent'));
+      } catch (e) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        setError(e?.message || 'Hata');
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
+
+    if (isSignup && !name.trim()) {
+      setError(t('acc.nameRequired'));
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      return;
+    }
+
+    if (!password) {
+      setError(t('acc.passwordRequired'));
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      return;
+    }
+
+    if (password.length < 6) {
+      setError(t('acc.passwordTooShort'));
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      return;
+    }
+
+    setBusy(true);
     try {
       if (isSignup) {
         await registerAccount({ name: name.trim(), email: email.trim(), password });
@@ -45,27 +99,13 @@ export default function AccountScreen() {
       }
     } catch (e) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      // Backend doğrulanmamış e-postayı özel kodla bildiriyor
       setError(String(e?.message || '').includes('EMAIL_NOT_VERIFIED')
         ? t('acc.notVerified')
         : (e?.message || 'Hata'));
     } finally {
       setBusy(false);
     }
-  }, [canSubmit, busy, isSignup, name, email, password, t, router]);
-
-  const onForgot = useCallback(async () => {
-    if (!email.trim()) { setError(t('acc.email')); return; }
-    setBusy(true); setError(''); setInfo('');
-    try {
-      await requestPasswordReset(email.trim());
-      setInfo(t('acc.resetSent'));
-    } catch (e) {
-      setError(e?.message || 'Hata');
-    } finally {
-      setBusy(false);
-    }
-  }, [email, t]);
+  }, [busy, mode, email, name, password, t, router, lang, isForgot, isSignup]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -73,13 +113,17 @@ export default function AccountScreen() {
         <Pressable style={styles.back} onPress={() => router.back()} hitSlop={10}>
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </Pressable>
-        <Text style={styles.title}>{isSignup ? t('acc.signUp') : t('acc.signIn')}</Text>
+        <Text style={styles.title}>{titleText}</Text>
         <View style={{ width: 40 }} />
       </View>
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-          <Text style={styles.lead}>{t('acc.why')}</Text>
+          <Text style={styles.lead}>
+            {isForgot
+              ? (lang === 'tr' ? 'Şifrenizi sıfırlamak için e-posta adresinizi girin.' : 'Enter your email address to reset your password.')
+              : t('acc.why')}
+          </Text>
 
           {isSignup && (
             <Field label={t('acc.name')} value={name} onChangeText={setName} autoCapitalize="words" />
@@ -88,31 +132,41 @@ export default function AccountScreen() {
             label={t('acc.email')} value={email} onChangeText={setEmail}
             keyboardType="email-address" autoCapitalize="none" autoCorrect={false}
           />
-          <Field
-            label={t('acc.password')} value={password} onChangeText={setPassword}
-            secureTextEntry autoCapitalize="none"
-          />
+          {!isForgot && (
+            <Field
+              label={t('acc.password')} value={password} onChangeText={setPassword}
+              secureTextEntry autoCapitalize="none"
+            />
+          )}
 
           {!!error && <Text style={styles.err}>{error}</Text>}
           {!!info && <Text style={styles.info}>{info}</Text>}
 
           <Pressable
             onPress={submit}
-            disabled={!canSubmit || busy}
-            style={({ pressed }) => [styles.cta, (!canSubmit || busy) && styles.ctaOff, pressed && { opacity: 0.85 }]}
+            disabled={busy}
+            style={({ pressed }) => [styles.cta, busy && styles.ctaOff, pressed && { opacity: 0.85 }]}
           >
             {busy ? <ActivityIndicator color="#fff" />
-                  : <Text style={styles.ctaText}>{isSignup ? t('acc.signUp') : t('acc.signIn')}</Text>}
+                  : <Text style={styles.ctaText}>{isForgot ? t('acc.sendResetLink') : (isSignup ? t('acc.signUp') : t('acc.signIn'))}</Text>}
           </Pressable>
 
-          <Pressable onPress={() => { setMode(isSignup ? 'signin' : 'signup'); setError(''); setInfo(''); }} hitSlop={8}>
-            <Text style={styles.link}>{isSignup ? t('acc.haveAccount') : t('acc.noAccount')}</Text>
-          </Pressable>
-
-          {!isSignup && (
-            <Pressable onPress={onForgot} hitSlop={8}>
-              <Text style={styles.linkMuted}>{t('acc.forgot')}</Text>
+          {isForgot ? (
+            <Pressable onPress={() => { setMode('signin'); setError(''); setInfo(''); }} hitSlop={8}>
+              <Text style={styles.link}>{t('acc.backToSignIn')}</Text>
             </Pressable>
+          ) : (
+            <>
+              <Pressable onPress={() => { setMode(isSignup ? 'signin' : 'signup'); setError(''); setInfo(''); }} hitSlop={8}>
+                <Text style={styles.link}>{isSignup ? t('acc.haveAccount') : t('acc.noAccount')}</Text>
+              </Pressable>
+
+              {!isSignup && (
+                <Pressable onPress={() => { setMode('forgot'); setError(''); setInfo(''); }} hitSlop={8}>
+                  <Text style={styles.linkMuted}>{t('acc.forgot')}</Text>
+                </Pressable>
+              )}
+            </>
           )}
         </ScrollView>
       </KeyboardAvoidingView>
