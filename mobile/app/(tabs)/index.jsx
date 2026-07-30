@@ -1,4 +1,4 @@
-import { memo, useMemo, useCallback } from 'react';
+import { memo, useMemo, useCallback, useEffect } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
@@ -31,7 +31,7 @@ const fetchNewGames = () => fetchGames({ section: 'new', num: 12 });
 const fetchSaleGames = () => fetchGames({ section: 'sale', num: 12 });
 
 export default function HomeScreen() {
-  const { t, lang } = useLanguage();
+  const { t, lang, formatPrice } = useLanguage();
   const router = useRouter();
 
   const { data: trendData } = useQuery('home:trending', fetchTrending, { ttl: 3 * 60 * 1000 });
@@ -46,6 +46,24 @@ export default function HomeScreen() {
   const { data: newsData } = useQuery(`news:${lang}`, () => fetchNews(lang), { ttl: 10 * 60 * 1000 });
   const news = useMemo(() => (newsData?.results || []).slice(0, 8), [newsData]);
   const openNews = (url) => { if (url) WebBrowser.openBrowserAsync(url); };
+
+  // ── Günün Fırsatı Widget'ını Güncelle ──
+  useEffect(() => {
+    if (sale && sale.length > 0) {
+      const best = [...sale].sort((a, b) => (b.discount || 0) - (a.discount || 0))[0];
+      if (best) {
+        import('../../modules/gamerisen-widget-module').then(({ setWidgetData }) => {
+          const payload = {
+            name: best.name,
+            discount: best.discount || 0,
+            currentPrice: formatPrice(best.price),
+            originalPrice: formatPrice(best.original)
+          };
+          setWidgetData('gamerisen_deal', JSON.stringify(payload));
+        }).catch(() => {});
+      }
+    }
+  }, [sale, formatPrice]);
 
   // ── Kişiselleştirilmiş "Senin İçin" akışı ──
   // Bağlı Steam kütüphanesini türle eşle → saat-ağırlıklı zevk sinyali (en güçlü)

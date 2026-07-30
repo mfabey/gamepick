@@ -47,7 +47,8 @@
           "resizeMode": "contain",
           "imageWidth": 200
         }
-      ]
+      ],
+      "./plugins/withIosWidget"
     ],
     "extra": {
       "router": {},

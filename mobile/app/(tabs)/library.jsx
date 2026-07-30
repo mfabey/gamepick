@@ -83,6 +83,26 @@ export default function LibraryScreen() {
     return { games, totalGames: games.length, totalHours: Math.round(totalHours), value: computeValue(games, steamPrices) };
   }, [steamLibs, steamPrices, steamIdsKey]);
 
+  // ── Kütüphane İstatistikleri Widget'ını Güncelle ──
+  useEffect(() => {
+    import('../../modules/gamerisen-widget-module').then(({ setWidgetData }) => {
+      if (combined && combined.totalGames > 0) {
+        const lastPlayedGame = [...combined.games].sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0))[0];
+        const lastPlayedName = lastPlayedGame ? lastPlayedGame.name : '—';
+        
+        const payload = {
+          value: combined.value ? formatPrice(combined.value.sum) : '0,00 ₺',
+          hours: combined.totalHours || 0,
+          games: combined.totalGames || 0,
+          lastPlayed: lastPlayedName
+        };
+        setWidgetData('gamerisen_stats', JSON.stringify(payload));
+      } else {
+        setWidgetData('gamerisen_stats', '');
+      }
+    }).catch(() => {});
+  }, [combined, formatPrice]);
+
   // Kaynak seçici
   const sources = useMemo(() => {
     const s = [];

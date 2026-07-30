@@ -30,6 +30,52 @@ export function WishlistProvider({ children }) {
     })();
   }, []);
 
+  // ── Wishlist Widget Güncelleme ──
+  useEffect(() => {
+    if (!ready) return;
+    
+    const appids = items.map(g => g.appid).filter(Boolean);
+    if (appids.length === 0) {
+      import('../../modules/gamerisen-widget-module')
+        .then(({ setWidgetData }) => setWidgetData('gamerisen_wishlist', JSON.stringify([])))
+        .catch(() => {});
+      return;
+    }
+
+    let alive = true;
+    import('../api/library').then(({ fetchSteamPrices }) => {
+      return fetchSteamPrices(appids);
+    }).then(prices => {
+      if (!alive || !prices) return;
+      
+      const saleItems = items
+        .map(g => {
+          const priceInfo = g.appid ? prices[g.appid] : null;
+          return {
+            name: g.name,
+            discount: priceInfo?.discount || 0,
+            price: priceInfo?.current != null ? `${priceInfo.current.toLocaleString('tr-TR')} ₺` : '',
+            originalPrice: priceInfo?.original != null ? priceInfo.original : 0,
+            currentPrice: priceInfo?.current != null ? priceInfo.current : 0,
+          };
+        })
+        .filter(g => g.discount > 0 || (g.originalPrice > 0 && g.currentPrice < g.originalPrice))
+        .sort((a, b) => b.discount - a.discount)
+        .slice(0, 3)
+        .map(g => ({
+          name: g.name,
+          discount: g.discount,
+          price: g.price
+        }));
+
+      import('../../modules/gamerisen-widget-module').then(({ setWidgetData }) => {
+        setWidgetData('gamerisen_wishlist', JSON.stringify(saleItems));
+      }).catch(() => {});
+    }).catch(() => {});
+
+    return () => { alive = false; };
+  }, [items, ready]);
+
   // ── Hesap senkronu ─────────────────────────────────────────────────────────
   // Oturum açıksa zevk profili + takip listesi sunucuyla birleştirilir.
   // Oturum yoksa sessizce atlanır; uygulama hesapsız da tam çalışır.
