@@ -83,20 +83,28 @@ function withIosWidgetExtension(config) {
     project.addToPbxSourcesBuildPhase(fileSwift, targetUuid);
 
     // Widget Extension target'ını oluştur
-    const target = project.addTarget(targetName, 'app_extension', targetUuid);
+    const target = project.addTarget(targetName, 'app_extension', targetName);
     
-    // Target build configurations (Ayarlar)
-    const configurations = project.pbxXCBuildConfigurationSection();
-    for (const key in configurations) {
-      const config = configurations[key];
-      if (typeof config === 'object' && config.buildSettings) {
-        if (config.name === 'Release' || config.name === 'Debug') {
-          config.buildSettings.PRODUCT_BUNDLE_IDENTIFIER = bundleId;
-          config.buildSettings.INFOPLIST_FILE = `${targetName}/Info.plist`;
-          config.buildSettings.CODE_SIGN_ENTITLEMENTS = `${targetName}/GamerisenWidget.entitlements`;
-          config.buildSettings.SWIFT_VERSION = '5.0';
-          config.buildSettings.IPHONEOS_DEPLOYMENT_TARGET = '15.1';
-        }
+    // Target'ın kendi build configuration'larını güncelle (Tüm projeyi bozmadan!)
+    const nativeTargets = project.pbxNativeTargetSection();
+    const nativeTarget = nativeTargets[target.uuid];
+    const buildConfigurationListKey = nativeTarget.buildConfigurationList;
+    const xcConfigurationLists = project.pbxXCConfigurationList();
+    const xcConfigurationList = xcConfigurationLists[buildConfigurationListKey];
+    
+    const buildConfigurations = xcConfigurationList.buildConfigurations;
+    const xcBuildConfigs = project.pbxXCBuildConfigurationSection();
+
+    for (const configRef of buildConfigurations) {
+      const buildConfig = xcBuildConfigs[configRef.value];
+      if (buildConfig && buildConfig.buildSettings) {
+        buildConfig.buildSettings.PRODUCT_BUNDLE_IDENTIFIER = `"${bundleId}"`;
+        buildConfig.buildSettings.INFOPLIST_FILE = `"${targetName}/Info.plist"`;
+        buildConfig.buildSettings.CODE_SIGN_ENTITLEMENTS = `"${targetName}/GamerisenWidget.entitlements"`;
+        buildConfig.buildSettings.SWIFT_VERSION = '"5.0"';
+        buildConfig.buildSettings.IPHONEOS_DEPLOYMENT_TARGET = '"15.1"';
+        buildConfig.buildSettings.LD_RUNPATH_SEARCH_PATHS = '"$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks"';
+        buildConfig.buildSettings.TARGETED_DEVICE_FAMILY = '"1,2"';
       }
     }
 
