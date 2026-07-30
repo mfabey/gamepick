@@ -56,6 +56,7 @@ export default function RootLayout() {
               <Stack.Screen name="discover" />
               <Stack.Screen name="onboarding" options={{ animation: 'fade', gestureEnabled: false }} />
               <Stack.Screen name="account" />
+              <Stack.Screen name="delete-account" />
             </Stack>
             {__DEV__ && <FpsMeter />}
           </WishlistProvider>

@@ -3,6 +3,8 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { registerForPushToken } from '../notifications';
 import { registerPush, unregisterPush } from '../api/push';
+import { subscribeSession } from '../services/session';
+import { syncAccountData } from '../services/sync';
 
 const WISH_KEY  = 'gr_wishlist';
 const NOTIF_KEY = 'gr_notif_enabled';
@@ -15,6 +17,10 @@ export function WishlistProvider({ children }) {
   const [ready, setReady]     = useState(false);
   const tokenRef = useRef(null);
 
+  // Oturum değişimini izle → giriş/çıkışta senkron tetiklensin
+  const [sessionTick, setSessionTick] = useState(0);
+  useEffect(() => subscribeSession(() => setSessionTick(n => n + 1)), []);
+
   // Açılışta yükle
   useEffect(() => {
     (async () => {
@@ -23,6 +29,22 @@ export function WishlistProvider({ children }) {
       setReady(true);
     })();
   }, []);
+
+  // ── Hesap senkronu ─────────────────────────────────────────────────────────
+  // Oturum açıksa zevk profili + takip listesi sunucuyla birleştirilir.
+  // Oturum yoksa sessizce atlanır; uygulama hesapsız da tam çalışır.
+  useEffect(() => {
+    if (!ready) return;
+    let alive = true;
+    syncAccountData(items, async (merged) => {
+      if (!alive || !Array.isArray(merged)) return;
+      setItems(merged);
+      try { await AsyncStorage.setItem(WISH_KEY, JSON.stringify(merged)); } catch {}
+    });
+    return () => { alive = false; };
+    // Oturum değişince (giriş/çıkış) tekrar dene
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, sessionTick]);
 
   const watchPayload = useCallback((list) => list.map(g => ({
     id: g.id, appid: g.appid || null, slug: g.slug || null, name: g.name, hasSteam: !!g.hasSteam,

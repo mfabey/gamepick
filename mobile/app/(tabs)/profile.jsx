@@ -86,7 +86,18 @@ export default function ProfileScreen() {
               <Ionicons name="log-out-outline" size={18} color={colors.text3} />
             </Pressable>
           </View>
-        ) : (
+        ) : null}
+
+        {/* Apple zorunlu: uygulama içinden hesap silme (yalnızca oturum açıkken) */}
+        {account && (
+          <Pressable style={styles.settingRow} onPress={() => router.push('/delete-account')}>
+            <Ionicons name="trash-outline" size={20} color={colors.danger} />
+            <Text style={[styles.settingText, { color: colors.danger }]}>{t('acc.deleteTitle')}</Text>
+            <Ionicons name="chevron-forward" size={18} color={colors.text3} />
+          </Pressable>
+        )}
+
+        {!account && (
           <Pressable style={styles.settingRow} onPress={() => router.push('/account')}>
             <Ionicons name="person-circle-outline" size={20} color={colors.accent} />
             <Text style={styles.settingText}>{t('acc.signIn')}</Text>

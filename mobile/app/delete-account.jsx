@@ -1,0 +1,125 @@
+import { useState, useCallback } from 'react';
+import {
+  View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator, Alert, Keyboard,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+import { getValidToken, signOut } from '../src/services/session';
+import { deleteAccount } from '../src/api/account';
+import { useAuth } from '../src/context/AuthContext';
+import { colors, radius, spacing } from '../src/theme';
+import { useLanguage } from '../src/context/LanguageContext';
+
+export default function DeleteAccountScreen() {
+  const router = useRouter();
+  const { t } = useLanguage();
+  const { account } = useAuth();
+
+  const [password, setPassword] = useState('');
+  const [busy, setBusy]   = useState(false);
+  const [error, setError] = useState('');
+
+  const confirm = useCallback(() => {
+    if (!password || busy) return;
+    Keyboard.dismiss();
+    // İki aşamalı onay: yanlışlıkla silmeyi engelle
+    Alert.alert(t('acc.deleteTitle'), t('acc.deleteWarn'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('acc.deleteConfirm'),
+        style: 'destructive',
+        onPress: async () => {
+          setBusy(true); setError('');
+          try {
+            const token = await getValidToken();
+            if (!token) throw new Error('Oturum bulunamadı.');
+            await deleteAccount(token, password);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            await signOut();
+            router.replace('/(tabs)/profile');
+          } catch (e) {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            setError(e?.message || 'Hesap silinemedi.');
+          } finally {
+            setBusy(false);
+          }
+        },
+      },
+    ]);
+  }, [password, busy, t, router]);
+
+  return (
+    <SafeAreaView style={styles.safe} edges={['top']}>
+      <View style={styles.head}>
+        <Pressable style={styles.back} onPress={() => router.back()} hitSlop={10}>
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
+        </Pressable>
+        <Text style={styles.title}>{t('acc.deleteTitle')}</Text>
+        <View style={{ width: 40 }} />
+      </View>
+
+      <View style={styles.body}>
+        <View style={styles.warnBox}>
+          <Ionicons name="warning-outline" size={22} color={colors.danger} />
+          <Text style={styles.warnText}>{t('acc.deleteWarn')}</Text>
+        </View>
+
+        {!!account?.email && <Text style={styles.email}>{account.email}</Text>}
+
+        <Text style={styles.label}>{t('acc.password')}</Text>
+        <TextInput
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          autoCapitalize="none"
+          style={styles.input}
+          placeholderTextColor={colors.text3}
+        />
+
+        {!!error && <Text style={styles.err}>{error}</Text>}
+
+        <Pressable
+          onPress={confirm}
+          disabled={!password || busy}
+          style={({ pressed }) => [styles.cta, (!password || busy) && styles.ctaOff, pressed && { opacity: 0.85 }]}
+        >
+          {busy ? <ActivityIndicator color="#fff" />
+                : <Text style={styles.ctaText}>{t('acc.deleteConfirm')}</Text>}
+        </Pressable>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.bg },
+  head: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.sm },
+  back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  title: { flex: 1, fontSize: 20, fontWeight: '800', color: colors.text, textAlign: 'center' },
+
+  body: { padding: spacing.lg },
+  warnBox: {
+    flexDirection: 'row', gap: 12, alignItems: 'flex-start',
+    backgroundColor: 'rgba(248,113,113,0.08)', borderColor: 'rgba(248,113,113,0.35)',
+    borderWidth: 1, borderRadius: radius.md, padding: 14, marginBottom: 22,
+  },
+  warnText: { flex: 1, color: colors.text2, fontSize: 13.5, lineHeight: 20 },
+  email: { color: colors.text, fontSize: 15, fontWeight: '700', marginBottom: 20 },
+
+  label: { fontSize: 12.5, color: colors.text3, fontWeight: '700', marginBottom: 7 },
+  input: {
+    backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1,
+    borderRadius: radius.md, paddingHorizontal: 14, height: 50,
+    color: colors.text, fontSize: 15.5,
+  },
+  err: { color: colors.danger, fontSize: 13.5, lineHeight: 20, marginTop: 12 },
+
+  cta: {
+    height: 52, borderRadius: radius.lg, backgroundColor: colors.danger,
+    alignItems: 'center', justifyContent: 'center', marginTop: 24,
+  },
+  ctaOff: { opacity: 0.4 },
+  ctaText: { color: '#fff', fontSize: 15, fontWeight: '800' },
+});

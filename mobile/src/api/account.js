@@ -29,6 +29,21 @@ export async function fetchUserData(idToken) {
   return res.json();
 }
 
+export async function deleteAccount(idToken, password) {
+  const res = await fetch(`${API_BASE}/api/auth/mobile-delete`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${idToken}`,
+    },
+    body: JSON.stringify({ password }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+  return data;
+}
+
 export async function pushUserData(idToken, { taste, wishlist }) {
   const res = await fetch(`${API_BASE}/api/user/data`, {
     method: 'PUT',

@@ -156,6 +156,27 @@ export function setLibraryTaste(rawWeights = {}, sig = '') {
   }
 }
 
+// Sunucudan gelen zevk profilini yerel profille BİRLEŞTİR (hesap senkronu).
+// Üzerine yazmıyoruz: iki cihazda da gezen kullanıcı sinyal kaybetmesin.
+export async function mergeRemoteTaste(remoteGenres = {}, remoteEvents = 0) {
+  if (!loaded) await loadProfile();
+  const now = Date.now();
+  const p = decayed(profile, now);
+  const g = { ...p.genres };
+  for (const k in remoteGenres) {
+    const v = Number(remoteGenres[k]);
+    if (Number.isFinite(v) && v > 0) g[k] = Math.max(g[k] || 0, v);
+  }
+  profile = {
+    ...profile,
+    genres: capTop(g, MAX_GENRES),
+    events: Math.max(p.events || 0, Number(remoteEvents) || 0),
+    updatedAt: now,
+  };
+  scheduleSave();
+  emit();
+}
+
 // Son kütüphane zenginleştirmesinin imzası (değişmedikçe tekrar etme)
 export function libraryTasteSig() { return profile.library?.sig || ''; }
 
