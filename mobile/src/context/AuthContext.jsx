@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
+import { loadSession, getAccount, subscribeSession } from '../services/session';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 import { API_BASE } from '../api/client';
@@ -131,9 +132,20 @@ export function AuthProvider({ children }) {
     await persistXbox(null);
   }, [persistXbox]);
 
+  // ── Hesap oturumu (e-posta/şifre) ──────────────────────────────────────────
+  // Steam/Xbox "bağlantı"dır; bu ise kullanıcının kimliği. İkisi bağımsız.
+  const [account, setAccount] = useState(null);
+  useEffect(() => {
+    loadSession().then(() => setAccount(getAccount()));
+    return subscribeSession(() => setAccount(getAccount()));
+  }, []);
+
   const value = useMemo(
-    () => ({ steamAccounts, xbox, ready, busy, loginSteam, loginXbox, logoutSteam, logoutXbox }),
-    [steamAccounts, xbox, ready, busy, loginSteam, loginXbox, logoutSteam, logoutXbox]
+    () => ({
+      steamAccounts, xbox, ready, busy, loginSteam, loginXbox, logoutSteam, logoutXbox,
+      account, isSignedIn: !!account,
+    }),
+    [steamAccounts, xbox, ready, busy, loginSteam, loginXbox, logoutSteam, logoutXbox, account]
   );
 
   return (

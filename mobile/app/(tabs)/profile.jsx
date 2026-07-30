@@ -7,11 +7,19 @@ import { colors, radius, spacing, TAB_SPACE } from '../../src/theme';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useAuth } from '../../src/context/AuthContext';
 import { useWishlist } from '../../src/context/WishlistContext';
+import { signOut } from '../../src/services/session';
 
 export default function ProfileScreen() {
   const { t, lang, setLang } = useLanguage();
   const router = useRouter();
-  const { steamAccounts, xbox, busy, loginSteam, loginXbox, logoutSteam, logoutXbox } = useAuth();
+  const { steamAccounts, xbox, busy, loginSteam, loginXbox, logoutSteam, logoutXbox, account } = useAuth();
+
+  const onSignOut = () => {
+    Alert.alert(t('acc.signOut'), account?.email || '', [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('acc.signOut'), style: 'destructive', onPress: () => signOut() },
+    ]);
+  };
   const { items, enabled, enableNotifications, disableNotifications } = useWishlist();
 
   const showLanguagePicker = () => {
@@ -63,7 +71,30 @@ export default function ProfileScreen() {
         <Text style={styles.h1}>{t('nav.profile')}</Text>
 
         {/* Bağlı hesaplar */}
-        <Text style={styles.sectionLabel}>{t('auth.accounts')}</Text>
+        {/* ── Gamerisen hesabı ── */}
+        <Text style={styles.sectionLabel}>Gamerisen</Text>
+        {account ? (
+          <View style={styles.accCard}>
+            <View style={styles.accAvatar}>
+              <Ionicons name="person" size={18} color={colors.accent} />
+            </View>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={styles.accName} numberOfLines={1}>{account.name}</Text>
+              <Text style={styles.accStatus} numberOfLines={1}>{account.email}</Text>
+            </View>
+            <Pressable onPress={onSignOut} hitSlop={8} style={styles.discBtn}>
+              <Ionicons name="log-out-outline" size={18} color={colors.text3} />
+            </Pressable>
+          </View>
+        ) : (
+          <Pressable style={styles.settingRow} onPress={() => router.push('/account')}>
+            <Ionicons name="person-circle-outline" size={20} color={colors.accent} />
+            <Text style={styles.settingText}>{t('acc.signIn')}</Text>
+            <Ionicons name="chevron-forward" size={18} color={colors.text3} />
+          </Pressable>
+        )}
+
+        <Text style={[styles.sectionLabel, { marginTop: 32 }]}>{t('auth.accounts')}</Text>
 
         {/* Steam hesapları */}
         {steamAccounts.map(acc => (
@@ -199,6 +230,16 @@ const styles = StyleSheet.create({
   avatar: { width: 44, height: 44, borderRadius: 10 },
   avatarFallback: { alignItems: 'center', justifyContent: 'center' },
   avatarInitial: { color: '#fff', fontWeight: '800', fontSize: 18 },
+  accCard: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1,
+    borderRadius: radius.lg, paddingHorizontal: 14, paddingVertical: 13,
+  },
+  accAvatar: {
+    width: 38, height: 38, borderRadius: 19, backgroundColor: colors.accentSoft,
+    borderColor: colors.accentBorder, borderWidth: 1,
+    alignItems: 'center', justifyContent: 'center',
+  },
   accName: { fontSize: 15, fontWeight: '700', color: colors.text },
   badgeRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 3 },
   accStatus: { fontSize: 12, color: colors.text3 },
