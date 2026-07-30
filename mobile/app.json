@@ -54,7 +54,24 @@
       "router": {},
       "apiBase": "https://www.gamerisen.com",
       "eas": {
-        "projectId": "bb9d1812-5eeb-45ba-bd98-f07998f7fa7a"
+        "projectId": "bb9d1812-5eeb-45ba-bd98-f07998f7fa7a",
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "targetName": "GamerisenWidget",
+                  "bundleIdentifier": "com.gamerisen.app.GamerisenWidget",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.com.gamerisen.app"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        }
       }
     },
     "owner": "mfabeys-team",

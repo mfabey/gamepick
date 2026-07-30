@@ -67,16 +67,16 @@ function withIosWidgetExtension(config) {
       return config;
     }
 
-    const bundleId = `${config.ios.bundleIdentifier}.${targetName}`;
+    const bundleId = `${config.ios?.bundleIdentifier || 'com.gamerisen.app'}.${targetName}`;
     const targetUuid = project.generateUuid();
     
     // Grubu oluştur ve dosyaları gruba ekle
     const groupName = targetName;
     const groupKey = project.pbxCreateGroup(groupName, targetName);
     
-    const fileSwift = project.addFile('GamerisenWidget.swift', groupKey, { target: targetUuid });
-    const filePlist = project.addFile('Info.plist', groupKey);
-    const fileEnt = project.addFile('GamerisenWidget.entitlements', groupKey);
+    const fileSwift = project.addFile('GamerisenWidget/GamerisenWidget.swift', groupKey, { target: targetUuid });
+    const filePlist = project.addFile('GamerisenWidget/Info.plist', groupKey);
+    const fileEnt = project.addFile('GamerisenWidget/GamerisenWidget.entitlements', groupKey);
 
     // Build phases (kaynak derleme aşaması)
     const sourcesBuildPhase = project.addBuildPhase([], 'PBXSourcesBuildPhase', 'Sources', targetUuid);
