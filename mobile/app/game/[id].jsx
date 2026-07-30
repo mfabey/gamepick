@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet, ActivityIndicator, Modal, Dimensions } from 'react-native';
+import { View, Text, Pressable, ScrollView, StyleSheet, ActivityIndicator, Modal, Dimensions, Share } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -135,12 +136,25 @@ export default function GameDetail() {
     }
   }, [detail]);
 
-  // Wishlist eklerken güçlü sinyal
+  // Wishlist eklerken güçlü sinyal + dokunsal geri bildirim
   const onToggleWishlist = () => {
     const willAdd = !watched;
+    Haptics.impactAsync(willAdd ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light);
     toggle(gameObj);
     if (willAdd && detail?.genres?.length) recordSignal({ genres: detail.genres, type: 'wishlist' });
   };
+
+  // Oyunu iOS paylaşım katmanıyla paylaş
+  const onShare = useCallback(async () => {
+    const url = detail?.steamUrl || detail?.officialUrl || '';
+    try {
+      Haptics.selectionAsync();
+      await Share.share({
+        title: detail?.name || name,
+        message: url ? `${detail?.name || name} — ${url}` : `${detail?.name || name}`,
+      });
+    } catch { /* kullanıcı iptal etti */ }
+  }, [detail, name]);
 
   const cover = detail?.image || image;
   const title = detail?.name || name;
@@ -177,9 +191,14 @@ export default function GameDetail() {
           <Pressable style={styles.iconBtn} onPress={() => router.back()} hitSlop={10}>
             <Ionicons name="chevron-back" size={24} color="#fff" />
           </Pressable>
-          <Pressable style={[styles.iconBtn, watched && styles.iconBtnActive]} onPress={onToggleWishlist} hitSlop={10}>
-            <Ionicons name={watched ? 'notifications' : 'notifications-outline'} size={20} color={watched ? '#fff' : '#fff'} />
-          </Pressable>
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <Pressable style={styles.iconBtn} onPress={onShare} hitSlop={10}>
+              <Ionicons name="share-outline" size={21} color="#fff" />
+            </Pressable>
+            <Pressable style={[styles.iconBtn, watched && styles.iconBtnActive]} onPress={onToggleWishlist} hitSlop={10}>
+              <Ionicons name={watched ? 'notifications' : 'notifications-outline'} size={20} color={watched ? '#fff' : '#fff'} />
+            </Pressable>
+          </View>
         </SafeAreaView>
       </View>
 

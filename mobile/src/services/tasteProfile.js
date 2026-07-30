@@ -15,7 +15,9 @@ const LIBRARY_WEIGHT = 0.5;    // harmanda kütüphane (oynanan) payı; kalanı 
 const DAY            = 86400000;
 
 // Sinyal türü → temel ağırlık
-const WEIGHTS = { view: 1, wishlist: 3 };
+// pick = kullanıcının ilk açılışta "bunu severim" diye BİLİNÇLİ seçtiği oyun.
+// Tesadüfi görüntülemeden (view) ve takibe almaktan (wishlist) daha güçlü bir beyan.
+const WEIGHTS = { view: 1, wishlist: 3, pick: 4 };
 
 let profile = emptyProfile();
 let loaded = false;

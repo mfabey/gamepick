@@ -171,6 +171,13 @@ export default function ProfileScreen() {
           <Text style={styles.settingText}>{lang === 'tr' ? 'Dil: Türkçe' : 'Language: English'}</Text>
           <Ionicons name="chevron-forward" size={18} color={colors.text3} />
         </Pressable>
+
+        {/* Zevk profilini yeniden kur */}
+        <Pressable style={styles.settingRow} onPress={() => router.push('/onboarding')}>
+          <Ionicons name="sparkles" size={20} color={colors.accent} />
+          <Text style={styles.settingText}>{t('onb.retake')}</Text>
+          <Ionicons name="chevron-forward" size={18} color={colors.text3} />
+        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );
