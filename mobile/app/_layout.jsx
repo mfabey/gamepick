@@ -10,12 +10,19 @@ import { loadProfile } from '../src/services/tasteProfile';
 import { loadSeen } from '../src/services/seenStore';
 import { loadDismissed } from '../src/services/dismissStore';
 import { loadOnboarding } from '../src/services/onboarding';
+import { initQueryCache } from '../src/services/queryCache';
 import FpsMeter from '../src/dev/FpsMeter';
 import { colors } from '../src/theme';
 
 export default function RootLayout() {
-  // Zevk profilini açılışta belleğe yükle (keşif algoritması için)
-  useEffect(() => { loadProfile(); loadSeen(); loadDismissed(); }, []);
+  // Zevk profilini açılışta belleğe yükle (keşif algoritması için) ve önbelleği geri yükle
+  useEffect(() => {
+    initQueryCache().finally(() => {
+      loadProfile();
+      loadSeen();
+      loadDismissed();
+    });
+  }, []);
 
   // İlk açılışta oyun seçimi ekranını göster — kişiselleştirme hemen devreye girsin
   useEffect(() => {

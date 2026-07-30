@@ -1,3 +1,5 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Sorgu önbelleği — bağımlılıksız, saf JS.
 // TTL önbellek + in-flight istek tekilleştirme (dedup) + abonelik (SWR için).
@@ -6,6 +8,7 @@
 const store = new Map();          // key -> { data, ts, error, promise, listeners:Set }
 const MAX_ENTRIES = 120;
 export const DEFAULT_TTL = 5 * 60 * 1000; // 5 dk
+const CACHE_KEY = 'gr_query_cache';
 
 function ensure(key) {
   let e = store.get(key);
@@ -49,6 +52,38 @@ function prune() {
   }
 }
 
+// Önbelleği cihaz diskine kaydet
+async function persistCache() {
+  try {
+    const entries = [];
+    for (const [k, e] of store.entries()) {
+      if (e.data !== undefined && !k.startsWith('foryou-cand:')) {
+        entries.push([k, { data: e.data, ts: e.ts }]);
+      }
+    }
+    await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(entries));
+  } catch (err) {
+    console.warn('Cache persistence error:', err);
+  }
+}
+
+// Önbelleği cihaz diskinden geri yükle (Offline erişim desteği için)
+export async function initQueryCache() {
+  try {
+    const dataStr = await AsyncStorage.getItem(CACHE_KEY);
+    if (dataStr) {
+      const entries = JSON.parse(dataStr);
+      for (const [k, v] of entries) {
+        const e = ensure(k);
+        e.data = v.data;
+        e.ts = v.ts;
+      }
+    }
+  } catch (err) {
+    console.warn('Cache loading error:', err);
+  }
+}
+
 /**
  * Veriyi getir: taze önbellek → in-flight dedup → fetcher.
  * @param key benzersiz sorgu anahtarı
@@ -63,7 +98,13 @@ export function fetchQuery(key, fetcher, { ttl = DEFAULT_TTL, force = false } = 
 
   e.promise = Promise.resolve()
     .then(fetcher)
-    .then((data) => { e.data = data; e.ts = Date.now(); e.error = null; return data; })
+    .then((data) => {
+      e.data = data;
+      e.ts = Date.now();
+      e.error = null;
+      persistCache(); // Arka planda kaydet
+      return data;
+    })
     .catch((err) => { e.error = err; throw err; })
     .finally(() => { e.promise = null; notify(e); prune(); });
 
