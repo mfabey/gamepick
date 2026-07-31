@@ -172,6 +172,14 @@ export default function HomeScreen() {
             <Text style={styles.discoverText}>{t('swipe.entry')}</Text>
             <Ionicons name="chevron-forward" size={15} color={colors.text3} />
           </Pressable>
+
+          {/* Video akışı — beta */}
+          <Pressable style={styles.discover} onPress={() => router.push('/videos')}>
+            <Ionicons name="play-circle" size={17} color={colors.accent} />
+            <Text style={styles.discoverText}>{t('vid.entry')}</Text>
+            <View style={styles.betaChip}><Text style={styles.betaChipText}>BETA</Text></View>
+            <Ionicons name="chevron-forward" size={15} color={colors.text3} />
+          </Pressable>
         </View>
         </FadeIn>
 
@@ -337,6 +345,12 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg, paddingHorizontal: 16, paddingVertical: 13,
   },
   discoverText: { flex: 1, color: colors.text, fontSize: 14, fontWeight: '600' },
+  betaChip: {
+    paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.sm,
+    backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accentBorder,
+    marginRight: 4,
+  },
+  betaChipText: { color: colors.accent, fontSize: 9, fontWeight: '900', letterSpacing: 0.5 },
 
   strip: { paddingHorizontal: spacing.lg, gap: 12, paddingTop: 22 },
   stripTile: { width: 172, height: 97, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.card },

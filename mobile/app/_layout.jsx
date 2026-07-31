@@ -74,6 +74,7 @@ export default function RootLayout() {
                 <Stack.Screen name="wishlist" />
                 <Stack.Screen name="discover" />
                 <Stack.Screen name="swipe" />
+                <Stack.Screen name="videos" options={{ animation: 'slide_from_bottom' }} />
                 <Stack.Screen name="collections" />
                 <Stack.Screen name="collection/[id]" />
                 <Stack.Screen name="onboarding" options={{ animation: 'fade', gestureEnabled: false }} />
