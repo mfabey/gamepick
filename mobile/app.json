@@ -48,7 +48,9 @@
           "imageWidth": 200
         }
       ],
-      "./plugins/withIosWidget"
+      "./plugins/withIosWidget",
+      "./plugins/withIosShareExtension",
+      "expo-apple-authentication"
     ],
     "extra": {
       "router": {},

@@ -11,6 +11,7 @@ import { loadSeen } from '../src/services/seenStore';
 import { loadDismissed } from '../src/services/dismissStore';
 import { loadOnboarding } from '../src/services/onboarding';
 import { initQueryCache } from '../src/services/queryCache';
+import { startSharedLinkWatcher } from '../src/services/sharedLink';
 import FpsMeter from '../src/dev/FpsMeter';
 import { colors } from '../src/theme';
 
@@ -32,6 +33,9 @@ export default function RootLayout() {
     });
     return () => { alive = false; };
   }, []);
+
+  // Share Extension'dan gelen bekleyen bir Steam linki varsa oyuna git
+  useEffect(() => { startSharedLinkWatcher(); }, []);
 
   // Bildirime dokununca ilgili oyuna git
   useEffect(() => {

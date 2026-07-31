@@ -85,10 +85,28 @@ function withIosWidgetExtension(config) {
     const groupName = targetName;
     const groupKey = project.pbxCreateGroup(groupName, targetName);
     
-    // addFile içindeki { target: targetUuid } otomatik olarak PBXSourcesBuildPhase'e ekler
-    const fileSwift = project.addFile('GamerisenWidget/GamerisenWidget.swift', groupKey, { target: targetUuid });
-    const filePlist = project.addFile('GamerisenWidget/Info.plist', groupKey);
-    const fileEnt = project.addFile('GamerisenWidget/GamerisenWidget.entitlements', groupKey);
+    // Info.plist ve entitlements: yalnızca dosya referansı yeterli (build phase'e
+    // girmezler, build settings INFOPLIST_FILE/CODE_SIGN_ENTITLEMENTS ile yol
+    // üzerinden referans verir).
+    project.addFile('GamerisenWidget/Info.plist', groupKey);
+    project.addFile('GamerisenWidget/GamerisenWidget.entitlements', groupKey);
+
+    // Swift dosyası: addFile + addToPbxSourcesBuildPhase İKİLİSİNİ KULLANMIYORUZ.
+    // addToPbxSourcesBuildPhase, dosyanın `.target` alanına bakıyor — ama addFile'a
+    // verilen { target } seçeneği pbxFile tarafından hiç saklanmıyor (kaynaktan
+    // doğrulandı). Sonuç: `.target` her zaman undefined kalıyor ve fonksiyon,
+    // projedeki İLK bulduğu Sources fazına (ana uygulamanınkine) ekliyor — Swift
+    // dosyası yanlış hedefte derlenmeye çalışılıyor (örn. @main çakışması).
+    //
+    // addBuildPhase(dosya_yolları, tip, yorum, hedef) tek başına hem dosya
+    // referansını hem derleme kaydını oluşturup DOĞRUDAN verilen hedefe ekliyor
+    // — kırık köprüye hiç ihtiyaç kalmıyor.
+    project.addBuildPhase(
+      ['GamerisenWidget/GamerisenWidget.swift'],
+      'PBXSourcesBuildPhase',
+      'Sources',
+      targetUuid
+    );
 
     // Target'ın kendi build configuration'larını güncelle (Tüm projeyi bozmadan!)
     const nativeTargets = project.pbxNativeTargetSection();

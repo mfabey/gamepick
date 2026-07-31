@@ -5,7 +5,7 @@
 // sessizce yeniler; kullanıcı tekrar giriş yapmak zorunda kalmaz.
 // ─────────────────────────────────────────────────────────────────────────────
 import * as SecureStore from 'expo-secure-store';
-import { loginAccount, refreshSession } from '../api/account';
+import { loginAccount, refreshSession, appleSignIn } from '../api/account';
 
 const KEY = 'gr_account_session';
 const SKEW_MS = 5 * 60 * 1000;   // süre dolmadan 5 dk önce yenile
@@ -39,6 +39,20 @@ export async function loadSession() {
 
 export async function signIn(email, password) {
   const r = await loginAccount({ email, password });
+  await persist({
+    user: { ...r.user, provider: 'password' },
+    idToken: r.idToken,
+    refreshToken: r.refreshToken,
+    expiresAt: Date.now() + (r.expiresIn || 3600) * 1000,
+  });
+  return r.user;
+}
+
+// Sign in with Apple — persist() aynı, yalnızca kaynak farklı.
+// account.provider === 'apple' olur → delete-account ekranı şifre yerine
+// Apple ile yeniden doğrulama isteyecek.
+export async function signInWithApple(identityToken, fullName) {
+  const r = await appleSignIn({ identityToken, fullName });
   await persist({
     user: r.user,
     idToken: r.idToken,

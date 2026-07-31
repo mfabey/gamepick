@@ -7,7 +7,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { signIn } from '../src/services/session';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import { signIn, signInWithApple } from '../src/services/session';
 import { registerAccount, requestPasswordReset } from '../src/api/account';
 import { colors, radius, spacing } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
@@ -107,6 +108,25 @@ export default function AccountScreen() {
     }
   }, [busy, mode, email, name, password, t, router, lang, isForgot, isSignup]);
 
+  // Sign in with Apple — Apple yalnızca İLK onayda tam adı verir, o yüzden
+  // credential.fullName'i hemen backend'e iletiyoruz (sonraki girişlerde gelmez).
+  const onApple = useCallback(async (credential) => {
+    setBusy(true); setError(''); setInfo('');
+    try {
+      const fullName = credential.fullName
+        ? [credential.fullName.givenName, credential.fullName.familyName].filter(Boolean).join(' ')
+        : '';
+      await signInWithApple(credential.identityToken, fullName);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.back();
+    } catch (e) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setError(e?.message || 'Hata');
+    } finally {
+      setBusy(false);
+    }
+  }, [router]);
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.head}>
@@ -124,6 +144,35 @@ export default function AccountScreen() {
               ? (lang === 'tr' ? 'Şifrenizi sıfırlamak için e-posta adresinizi girin.' : 'Enter your email address to reset your password.')
               : t('acc.why')}
           </Text>
+
+          {!isForgot && Platform.OS === 'ios' && (
+            <>
+              <AppleAuthentication.AppleAuthenticationButton
+                buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
+                cornerRadius={radius.lg}
+                style={{ height: 52, marginBottom: 18 }}
+                onPress={async () => {
+                  try {
+                    const credential = await AppleAuthentication.signInAsync({
+                      requestedScopes: [
+                        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+                        AppleAuthentication.AppleAuthenticationScope.EMAIL,
+                      ],
+                    });
+                    await onApple(credential);
+                  } catch (e) {
+                    if (e?.code !== 'ERR_REQUEST_CANCELED') setError(e?.message || 'Hata');
+                  }
+                }}
+              />
+              <View style={styles.dividerRow}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>{t('acc.or')}</Text>
+                <View style={styles.dividerLine} />
+              </View>
+            </>
+          )}
 
           {isSignup && (
             <Field label={t('acc.name')} value={name} onChangeText={setName} autoCapitalize="words" />
@@ -195,6 +244,9 @@ const styles = StyleSheet.create({
 
   body: { padding: spacing.lg, paddingTop: 8 },
   lead: { fontSize: 14, color: colors.text2, lineHeight: 21, marginBottom: 22 },
+  dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 18 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: colors.cardBorder },
+  dividerText: { color: colors.text3, fontSize: 12.5, fontWeight: '600' },
 
   label: { fontSize: 12.5, color: colors.text3, fontWeight: '700', marginBottom: 7 },
   input: {

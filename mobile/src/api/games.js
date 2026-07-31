@@ -27,6 +27,13 @@ export function fetchGameDetail(slugOrId, lang = 'en') {
   return apiGet('/api/rawg-game', { slug: slugOrId, lang }).then((d) => d?.game || d || null);
 }
 
+// Doğrudan Steam appid ile oyun çek (Share Extension'dan gelen linkler için).
+// RAWG slug tahmini yapılmaz — appid Steam appdetails'e doğrudan gider, bu
+// yüzden rastgele bir Steam linkinin doğru oyuna çözülmesini garanti eder.
+export function fetchGameByAppid(appid, lang = 'en') {
+  return apiGet('/api/rawg-game', { appid, lang }).then((d) => d?.game || d || null);
+}
+
 // Mağaza-başı fiyat karşılaştırması (ITAD, TRY) — /api/prices
 export function fetchPrices({ appid = '', title = '' } = {}) {
   if (!appid && !title) return Promise.resolve({ stores: [] });

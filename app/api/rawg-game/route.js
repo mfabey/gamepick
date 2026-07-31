@@ -231,7 +231,30 @@ async function trySteamFallback(slug, lang = 'en') {
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const slug = searchParams.get('slug');
+  const appidParam = searchParams.get('appid');
   const lang = searchParams.get('lang') || 'en';
+
+  // Doğrudan Steam AppID isteği (ör. Share Extension'dan gelen Steam linki).
+  // Yukarıdaki "slug" yolundaki sayısal ID tespiti RAWG'IN KENDİ iç numarasını
+  // bekliyor — Steam appid'i ile karıştırılırsa YANLIŞ oyun döner (iki sistem
+  // tamamen farklı numaralandırma kullanıyor). Bu yüzden appid, fetchSteamDetails'e
+  // DOĞRUDAN gider; RAWG numara tahmini veya isim araması hiç devreye girmez —
+  // tüm Steam kataloğu için güvenilir çözümleme sağlar.
+  if (appidParam && /^\d+$/.test(appidParam)) {
+    try {
+      const details = await fetchSteamDetails(appidParam, `rawg_${appidParam}`, lang);
+      if (details) {
+        if (isAdultContent({ tags: [], name: details.name })) {
+          return NextResponse.json({ error: 'Bu oyun kütüphanede gösterilmemektedir.' }, { status: 403 });
+        }
+        return NextResponse.json({ game: details });
+      }
+      return NextResponse.json({ error: 'Oyun bulunamadı.' }, { status: 404 });
+    } catch (err) {
+      console.error('appid ile çözümleme hatası:', err.message);
+      return NextResponse.json({ error: 'Oyun bilgisi alınamadı.' }, { status: 500 });
+    }
+  }
 
   if (!slug) return NextResponse.json({ error: 'slug eksik' }, { status: 400 });
 

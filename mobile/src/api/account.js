@@ -11,6 +11,11 @@ export function loginAccount({ email, password }) {
   return apiPost('/api/auth/mobile-login', { email, password });
 }
 
+// Sign in with Apple (Guideline 4.8 — e-posta girişi sunduğumuz için zorunlu eş değer)
+export function appleSignIn({ identityToken, fullName }) {
+  return apiPost('/api/auth/apple-signin', { identityToken, fullName });
+}
+
 export function refreshSession(refreshToken) {
   return apiPost('/api/auth/mobile-refresh', { refreshToken });
 }
@@ -29,7 +34,9 @@ export async function fetchUserData(idToken) {
   return res.json();
 }
 
-export async function deleteAccount(idToken, password) {
+// reauth: { password } veya { appleIdentityToken } — hesabın oturum açma
+// yöntemine göre biri gönderilir (Apple kullanıcılarının şifresi yoktur).
+export async function deleteAccount(idToken, reauth) {
   const res = await fetch(`${API_BASE}/api/auth/mobile-delete`, {
     method: 'POST',
     headers: {
@@ -37,7 +44,7 @@ export async function deleteAccount(idToken, password) {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${idToken}`,
     },
-    body: JSON.stringify({ password }),
+    body: JSON.stringify(reauth),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);

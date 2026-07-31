@@ -8,7 +8,7 @@ import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
-import { fetchCardPrice, fetchGameDetail, fetchPrices, fetchSteamReviews } from '../../src/api/games';
+import { fetchCardPrice, fetchGameDetail, fetchGameByAppid, fetchPrices, fetchSteamReviews } from '../../src/api/games';
 import { colors, radius, spacing } from '../../src/theme';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useWishlist } from '../../src/context/WishlistContext';
@@ -45,15 +45,19 @@ function stripHtml(s) {
 }
 
 export default function GameDetail() {
-  const { id, name, image, slug, hasSteam } = useLocalSearchParams();
+  const { id, name, image, slug, hasSteam, appid } = useLocalSearchParams();
   const router = useRouter();
   const { t, lang, formatPrice } = useLanguage();
   const { isWatched, toggle } = useWishlist();
 
-  // Zengin detay: cache-first (aynı oyunu tekrar açınca anında gelir)
+  // Zengin detay: cache-first (aynı oyunu tekrar açınca anında gelir).
+  // appid varsa (Share Extension'dan gelindiyse) doğrudan Steam appdetails'e
+  // gider — RAWG slug tahmini yapılmaz, rastgele bir Steam linkinin her zaman
+  // doğru oyuna çözülmesini garanti eder.
   const { data: detail } = useQuery(
-    `game-detail:${slug || id}:${lang}`,
-    () => fetchGameDetail(slug || id, lang).then((d) => (d && !d.error ? d : null)),
+    appid ? `game-detail:appid:${appid}:${lang}` : `game-detail:${slug || id}:${lang}`,
+    () => (appid ? fetchGameByAppid(appid, lang) : fetchGameDetail(slug || id, lang))
+      .then((d) => (d && !d.error ? d : null)),
     { ttl: 30 * 60 * 1000 }
   );
   const [price, setPrice]     = useState(null);

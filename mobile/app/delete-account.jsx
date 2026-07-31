@@ -1,11 +1,12 @@
 import { useState, useCallback } from 'react';
 import {
-  View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator, Alert, Keyboard,
+  View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator, Alert, Keyboard, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { getValidToken, signOut } from '../src/services/session';
 import { deleteAccount } from '../src/api/account';
 import { useAuth } from '../src/context/AuthContext';
@@ -21,34 +22,56 @@ export default function DeleteAccountScreen() {
   const [busy, setBusy]   = useState(false);
   const [error, setError] = useState('');
 
-  const confirm = useCallback(() => {
+  const isApple = account?.provider === 'apple';
+
+  const runDelete = useCallback(async (reauth) => {
+    setBusy(true); setError('');
+    try {
+      const token = await getValidToken();
+      if (!token) throw new Error('Oturum bulunamadı.');
+      await deleteAccount(token, reauth);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      await signOut();
+      router.replace('/(tabs)/profile');
+    } catch (e) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setError(e?.message || 'Hesap silinemedi.');
+    } finally {
+      setBusy(false);
+    }
+  }, [router]);
+
+  // E-posta/şifre hesapları: şifre tekrar girilir
+  const confirmPassword = useCallback(() => {
     if (!password || busy) return;
     Keyboard.dismiss();
-    // İki aşamalı onay: yanlışlıkla silmeyi engelle
+    Alert.alert(t('acc.deleteTitle'), t('acc.deleteWarn'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('acc.deleteConfirm'), style: 'destructive', onPress: () => runDelete({ password }) },
+    ]);
+  }, [password, busy, t, runDelete]);
+
+  // Apple hesapları: şifre yok — taze bir Apple onayı (Face ID/Touch ID) istenir
+  const confirmApple = useCallback(() => {
+    if (busy) return;
     Alert.alert(t('acc.deleteTitle'), t('acc.deleteWarn'), [
       { text: t('common.cancel'), style: 'cancel' },
       {
         text: t('acc.deleteConfirm'),
         style: 'destructive',
         onPress: async () => {
-          setBusy(true); setError('');
           try {
-            const token = await getValidToken();
-            if (!token) throw new Error('Oturum bulunamadı.');
-            await deleteAccount(token, password);
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            await signOut();
-            router.replace('/(tabs)/profile');
+            const credential = await AppleAuthentication.signInAsync({
+              requestedScopes: [AppleAuthentication.AppleAuthenticationScope.EMAIL],
+            });
+            await runDelete({ appleIdentityToken: credential.identityToken });
           } catch (e) {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-            setError(e?.message || 'Hesap silinemedi.');
-          } finally {
-            setBusy(false);
+            if (e?.code !== 'ERR_REQUEST_CANCELED') setError(e?.message || 'Hata');
           }
         },
       },
     ]);
-  }, [password, busy, t, router]);
+  }, [busy, t, runDelete]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -68,26 +91,42 @@ export default function DeleteAccountScreen() {
 
         {!!account?.email && <Text style={styles.email}>{account.email}</Text>}
 
-        <Text style={styles.label}>{t('acc.password')}</Text>
-        <TextInput
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          autoCapitalize="none"
-          style={styles.input}
-          placeholderTextColor={colors.text3}
-        />
+        {isApple && Platform.OS === 'ios' ? (
+          <>
+            <Text style={styles.label}>{t('acc.appleReauth')}</Text>
+            <AppleAuthentication.AppleAuthenticationButton
+              buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+              buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
+              cornerRadius={radius.lg}
+              style={{ height: 52, marginTop: 12 }}
+              onPress={confirmApple}
+            />
+            {busy && <ActivityIndicator color={colors.accent} style={{ marginTop: 16 }} />}
+          </>
+        ) : (
+          <>
+            <Text style={styles.label}>{t('acc.password')}</Text>
+            <TextInput
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              autoCapitalize="none"
+              style={styles.input}
+              placeholderTextColor={colors.text3}
+            />
+
+            <Pressable
+              onPress={confirmPassword}
+              disabled={!password || busy}
+              style={({ pressed }) => [styles.cta, (!password || busy) && styles.ctaOff, pressed && { opacity: 0.85 }]}
+            >
+              {busy ? <ActivityIndicator color="#fff" />
+                    : <Text style={styles.ctaText}>{t('acc.deleteConfirm')}</Text>}
+            </Pressable>
+          </>
+        )}
 
         {!!error && <Text style={styles.err}>{error}</Text>}
-
-        <Pressable
-          onPress={confirm}
-          disabled={!password || busy}
-          style={({ pressed }) => [styles.cta, (!password || busy) && styles.ctaOff, pressed && { opacity: 0.85 }]}
-        >
-          {busy ? <ActivityIndicator color="#fff" />
-                : <Text style={styles.ctaText}>{t('acc.deleteConfirm')}</Text>}
-        </Pressable>
       </View>
     </SafeAreaView>
   );
@@ -114,7 +153,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md, paddingHorizontal: 14, height: 50,
     color: colors.text, fontSize: 15.5,
   },
-  err: { color: colors.danger, fontSize: 13.5, lineHeight: 20, marginTop: 12 },
+  err: { color: colors.danger, fontSize: 13.5, lineHeight: 20, marginTop: 16 },
 
   cta: {
     height: 52, borderRadius: radius.lg, backgroundColor: colors.danger,

@@ -7,10 +7,16 @@ import { redisCmd } from '../../../lib/redis';
 // hesap silmeyi zorunlu tutuyor (web'e yönlendirmek kabul edilmiyor).
 //
 // Web'deki delete-account cookie okuduğu için mobil onu kullanamıyor.
-// Güvenlik: token'a ek olarak ŞİFRE tekrar doğrulanır — çalınmış bir cihazla
-// hesap silinemesin.
+// Güvenlik: token'a ek olarak KİMLİK tekrar doğrulanır (silme, taze bir kimlik
+// doğrulaması ister) — çalınmış bir cihazla hesap silinemesin.
+//
+// İki yeniden doğrulama yolu desteklenir çünkü Apple ile kaydolan kullanıcıların
+// şifresi yoktur:
+//   { password }             → e-posta/şifre hesapları
+//   { appleIdentityToken }   → Apple ile kaydolan hesaplar (taze Apple onayı)
 // ─────────────────────────────────────────────────────────────────────────────
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
+const REQUEST_URI = 'https://www.gamerisen.com';
 
 export async function POST(request) {
   const user = await verifyMobileToken(request);
@@ -19,27 +25,48 @@ export async function POST(request) {
   let body = {};
   try { body = await request.json(); } catch { /* boş gövde */ }
   const password = (body.password || '').toString();
+  const appleIdentityToken = (body.appleIdentityToken || '').toString();
 
-  if (!password) {
-    return NextResponse.json({ error: 'Şifrenizi girmeniz zorunludur.' }, { status: 400 });
+  if (!password && !appleIdentityToken) {
+    return NextResponse.json({ error: 'Kimlik doğrulaması zorunludur.' }, { status: 400 });
   }
   if (!FIREBASE_API_KEY) {
     return NextResponse.json({ error: 'Kimlik doğrulama yapılandırılmamış.' }, { status: 503 });
   }
 
   try {
-    // 1) Şifreyi doğrula ve taze bir idToken al (silme işlemi taze token ister)
-    const reauthRes = await fetch(
-      `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREBASE_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: user.email, password, returnSecureToken: true }),
+    // 1) Taze bir idToken al (silme işlemi taze kimlik doğrulaması ister)
+    let reauth;
+    if (appleIdentityToken) {
+      const reauthRes = await fetch(
+        `https://identitytoolkit.googleapis.com/v1/accounts:signInWithIdp?key=${FIREBASE_API_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            postBody: `id_token=${appleIdentityToken}&providerId=apple.com`,
+            requestUri: REQUEST_URI,
+            returnSecureToken: true,
+          }),
+        }
+      );
+      reauth = await reauthRes.json();
+      if (!reauthRes.ok || reauth.localId !== user.uid) {
+        return NextResponse.json({ error: 'Apple doğrulaması başarısız.' }, { status: 400 });
       }
-    );
-    const reauth = await reauthRes.json();
-    if (!reauthRes.ok) {
-      return NextResponse.json({ error: 'Şifre hatalı.' }, { status: 400 });
+    } else {
+      const reauthRes = await fetch(
+        `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREBASE_API_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: user.email, password, returnSecureToken: true }),
+        }
+      );
+      reauth = await reauthRes.json();
+      if (!reauthRes.ok) {
+        return NextResponse.json({ error: 'Şifre hatalı.' }, { status: 400 });
+      }
     }
 
     // 2) Sunucudaki kullanıcı verilerini sil
