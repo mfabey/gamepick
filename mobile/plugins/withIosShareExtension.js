@@ -26,11 +26,37 @@ function withIosShareExtensionTarget(config) {
     }
 
     // 2. Info.plist — NSExtensionPrincipalClass ile storyboard'suz özel sınıf
+    //
+    // CFBundle* anahtarları ŞART (bkz. withIosWidget.js'deki aynı açıklama):
+    // eksik olduklarında .appex'in CFBundleIdentifier'ı (null) kalıyor ve
+    // ValidateEmbeddedBinary adımı build'i düşürüyor. Sürüm değerleri Expo'nun
+    // ana uygulama için kullandığı mantığın aynısıyla türetiliyor.
+    const appVersion = config.ios?.version || config.version || '1.0.0';
+    const appBuildNumber = config.ios?.buildNumber ? config.ios.buildNumber : '1';
+
     const plistDest = path.join(targetDir, 'Info.plist');
     const plistContent = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleDisplayName</key>
+	<string>Gamerisen</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>XPC!</string>
+	<key>CFBundleShortVersionString</key>
+	<string>${appVersion}</string>
+	<key>CFBundleVersion</key>
+	<string>${appBuildNumber}</string>
 	<key>NSExtension</key>
 	<dict>
 		<key>NSExtensionPointIdentifier</key>
@@ -113,7 +139,8 @@ function withIosShareExtensionTarget(config) {
         cfg.buildSettings.IPHONEOS_DEPLOYMENT_TARGET = '"15.1"';
         cfg.buildSettings.LD_RUNPATH_SEARCH_PATHS =
           '"$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks"';
-        cfg.buildSettings.TARGETED_DEVICE_FAMILY = '"1,2"';
+        // Ana uygulamayla aynı cihaz ailesi (supportsTablet false → yalnızca iPhone)
+        cfg.buildSettings.TARGETED_DEVICE_FAMILY = config.ios?.supportsTablet ? '"1,2"' : '"1"';
       }
     }
 

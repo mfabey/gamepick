@@ -34,11 +34,43 @@ function withIosWidgetExtension(config) {
     }
 
     // 3. Info.plist ve Entitlements dosyalarını oluştur
+    //
+    // CFBundle* anahtarları ŞART. Bunlar olmadan derlenen .appex'in
+    // CFBundleIdentifier'ı boş kalıyor ve Xcode'un ValidateEmbeddedBinary adımı
+    // "Embedded binary's bundle identifier is not prefixed with the parent app's
+    // bundle identifier / Embedded Binary Bundle Identifier: (null)" hatası veriyor.
+    //
+    // Sürüm değerleri, Expo'nun ana uygulama için kullandığı mantığın birebir
+    // aynısıyla türetiliyor (@expo/config-plugins ios/Version.js) — böylece
+    // uzantı ile ana uygulamanın sürümü hiçbir koşulda ayrışamaz. App Store
+    // yüklemesinde uzantının CFBundleVersion/CFBundleShortVersionString değerleri
+    // ana uygulamayla aynı olmak zorunda.
+    const appVersion = config.ios?.version || config.version || '1.0.0';
+    const appBuildNumber = config.ios?.buildNumber ? config.ios.buildNumber : '1';
+
     const plistDest = path.join(widgetTargetDir, 'Info.plist');
     const plistContent = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleDisplayName</key>
+	<string>Gamerisen</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>XPC!</string>
+	<key>CFBundleShortVersionString</key>
+	<string>${appVersion}</string>
+	<key>CFBundleVersion</key>
+	<string>${appBuildNumber}</string>
 	<key>NSExtension</key>
 	<dict>
 		<key>NSExtensionPointIdentifier</key>
@@ -127,7 +159,10 @@ function withIosWidgetExtension(config) {
         buildConfig.buildSettings.SWIFT_VERSION = '"5.0"';
         buildConfig.buildSettings.IPHONEOS_DEPLOYMENT_TARGET = '"15.1"';
         buildConfig.buildSettings.LD_RUNPATH_SEARCH_PATHS = '"$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks"';
-        buildConfig.buildSettings.TARGETED_DEVICE_FAMILY = '"1,2"';
+        // Ana uygulamayla aynı cihaz ailesi — app.json'da supportsTablet false
+        // olduğu için ana uygulama yalnızca iPhone ("1"). Uzantının daha geniş
+        // bir aile bildirmesi tutarsızlık yaratır.
+        buildConfig.buildSettings.TARGETED_DEVICE_FAMILY = config.ios?.supportsTablet ? '"1,2"' : '"1"';
       }
     }
 
