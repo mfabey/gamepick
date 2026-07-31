@@ -17,7 +17,10 @@ const DAY            = 86400000;
 // Sinyal türü → temel ağırlık
 // pick = kullanıcının ilk açılışta "bunu severim" diye BİLİNÇLİ seçtiği oyun.
 // Tesadüfi görüntülemeden (view) ve takibe almaktan (wishlist) daha güçlü bir beyan.
-const WEIGHTS = { view: 1, wishlist: 3, pick: 4 };
+// like = swipe ile sağa kaydırma. Bilinçli ama düşük maliyetli bir beyan ve
+// seri hâlde üretiliyor; wishlist'ten hafif tutuldu ki yığın hâlde gelen swipe
+// sinyalleri diğer sinyalleri bastırmasın.
+const WEIGHTS = { view: 1, like: 2, wishlist: 3, pick: 4 };
 
 let profile = emptyProfile();
 let loaded = false;
@@ -92,7 +95,11 @@ export async function recordSignal({ genres = [], type = 'view' } = {}) {
   const g = { ...p.genres };
   clean.forEach((name) => { g[name] = (g[name] || 0) + base; });
 
-  profile = { genres: capTop(g, MAX_GENRES), events: (p.events || 0) + 1, updatedAt: now };
+  // ...p ŞART: profili sıfırdan kurmak `library` anlık görüntüsünü siliyordu.
+  // Sonuç: kütüphane bağlayan kullanıcı ilk etkileşiminde kütüphane sinyalini
+  // kaybediyor, normalizedGenres() harmanı bozuluyor ve isCold() tekrar true
+  // dönüp "Senin İçin" bölümünü gizliyordu.
+  profile = { ...p, genres: capTop(g, MAX_GENRES), events: (p.events || 0) + 1, updatedAt: now };
   scheduleSave();
   emit();
 

@@ -10,6 +10,7 @@ import { WishlistProvider } from '../src/context/WishlistContext';
 import { loadProfile } from '../src/services/tasteProfile';
 import { loadSeen } from '../src/services/seenStore';
 import { loadDismissed } from '../src/services/dismissStore';
+import { loadLiked } from '../src/services/likeStore';
 import { loadOnboarding } from '../src/services/onboarding';
 import { initQueryCache } from '../src/services/queryCache';
 import { startSharedLinkWatcher } from '../src/services/sharedLink';
@@ -23,6 +24,7 @@ export default function RootLayout() {
       loadProfile();
       loadSeen();
       loadDismissed();
+      loadLiked();
     });
   }, []);
 
@@ -69,6 +71,7 @@ export default function RootLayout() {
                 <Stack.Screen name="game/[id]" options={{ animation: 'slide_from_bottom' }} />
                 <Stack.Screen name="wishlist" />
                 <Stack.Screen name="discover" />
+                <Stack.Screen name="swipe" />
                 <Stack.Screen name="onboarding" options={{ animation: 'fade', gestureEnabled: false }} />
                 <Stack.Screen name="account" />
                 <Stack.Screen name="delete-account" />

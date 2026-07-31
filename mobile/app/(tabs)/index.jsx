@@ -165,6 +165,13 @@ export default function HomeScreen() {
             <Text style={styles.discoverText}>{t('discover.entry')}</Text>
             <Ionicons name="chevron-forward" size={15} color={colors.text3} />
           </Pressable>
+
+          {/* Kaydırarak keşif — hızlı zevk sinyali üretir */}
+          <Pressable style={styles.discover} onPress={() => router.push('/swipe')}>
+            <Ionicons name="layers" size={17} color={colors.accent} />
+            <Text style={styles.discoverText}>{t('swipe.entry')}</Text>
+            <Ionicons name="chevron-forward" size={15} color={colors.text3} />
+          </Pressable>
         </View>
         </FadeIn>
 
