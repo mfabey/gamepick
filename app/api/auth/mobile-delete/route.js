@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { verifyMobileToken } from '../../../lib/mobile-auth';
+import { verifyMobileToken, invalidateMobileToken } from '../../../lib/mobile-auth';
 import { redisCmd } from '../../../lib/redis';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -92,6 +92,10 @@ export async function POST(request) {
       console.error('Firebase hesap silme hatası:', d?.error?.message);
       return NextResponse.json({ error: 'Hesap silinemedi.' }, { status: 500 });
     }
+
+    // Hesap gitti — doğrulama önbelleğindeki kaydı da anında düşür ki silinen
+    // hesabın token'ı önbellek ömrü boyunca geçerli görünmesin.
+    invalidateMobileToken(request);
 
     return NextResponse.json({ ok: true });
   } catch (err) {
