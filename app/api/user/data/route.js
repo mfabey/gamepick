@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { verifyMobileToken } from '../../../lib/mobile-auth';
-import { redisGetJSON, redisSetJSON } from '../../../lib/redis';
+import { redisGetJSON, redisSetJSON, redisPipeline, parseJSON } from '../../../lib/redis';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Hesaba bağlı kullanıcı verisi (zevk profili + takip listesi).
+// Hesaba bağlı kullanıcı verisi (zevk profili + takip listesi + koleksiyonlar).
 // Cihaz değişse de korunur, web ile mobil aynı hesabı paylaşır.
 //
 // GET  → sunucudaki veri
@@ -12,9 +12,56 @@ import { redisGetJSON, redisSetJSON } from '../../../lib/redis';
 
 const MAX_GENRES = 60;
 const MAX_WISHLIST = 300;
+const MAX_COLLECTIONS = 50;
+const MAX_GAMES_PER_COL = 300;
+const TOMB_TTL_MS = 90 * 86400000;
 
 function tasteKey(uid) { return `user_taste:${uid}`; }
 function wishKey(uid)  { return `user_wishlist:${uid}`; }
+function colKey(uid)   { return `user_collections:${uid}`; }
+function tombKey(uid)  { return `user_collections_deleted:${uid}`; }
+
+// ── Koleksiyon birleştirme ──────────────────────────────────────────────────
+// Aynı id iki tarafta da varsa updatedAt'i YENİ olan kazanır.
+// Mezar taşı (silinme zamanı) koleksiyonun updatedAt'inden yeniyse kayıt düşer —
+// bu olmadan bir cihazda silinen koleksiyon diğer cihazdan geri dirilirdi.
+function mergeCollections(serverCols, clientCols, serverTombs, clientTombs) {
+  const tombs = { ...(serverTombs || {}) };
+  for (const id in (clientTombs || {})) {
+    const t = Number(clientTombs[id]) || 0;
+    if (t > (tombs[id] || 0)) tombs[id] = t;
+  }
+
+  const byId = new Map();
+  for (const c of [...(serverCols || []), ...(clientCols || [])]) {
+    if (!c || !c.id) continue;
+    const prev = byId.get(c.id);
+    if (!prev || (Number(c.updatedAt) || 0) > (Number(prev.updatedAt) || 0)) byId.set(c.id, c);
+  }
+
+  const merged = [];
+  for (const [id, c] of byId) {
+    const deletedAt = tombs[id] || 0;
+    if (deletedAt >= (Number(c.updatedAt) || 0)) continue;   // silinmiş sayılır
+    merged.push({
+      id: String(id),
+      name: String(c.name || '').slice(0, 60),
+      emoji: String(c.emoji || '🎮').slice(0, 8),
+      games: Array.isArray(c.games) ? c.games.slice(0, MAX_GAMES_PER_COL) : [],
+      createdAt: Number(c.createdAt) || 0,
+      updatedAt: Number(c.updatedAt) || 0,
+    });
+  }
+
+  merged.sort((a, b) => b.updatedAt - a.updatedAt);
+
+  // Mezar taşları sonsuza dek büyümesin
+  const cutoff = Date.now() - TOMB_TTL_MS;
+  const prunedTombs = {};
+  for (const id in tombs) if (tombs[id] >= cutoff) prunedTombs[id] = tombs[id];
+
+  return { collections: merged.slice(0, MAX_COLLECTIONS), deleted: prunedTombs };
+}
 
 async function unauthorized() {
   return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
@@ -24,15 +71,21 @@ export async function GET(request) {
   const user = await verifyMobileToken(request);
   if (!user) return unauthorized();
 
-  const [taste, wishlist] = await Promise.all([
-    redisGetJSON(tasteKey(user.uid)).catch(() => null),
-    redisGetJSON(wishKey(user.uid)).catch(() => null),
+  // Tek HTTP turunda dört anahtar (dört ayrı gidiş-dönüş yerine)
+  const rows = await redisPipeline([
+    ['GET', tasteKey(user.uid)],
+    ['GET', wishKey(user.uid)],
+    ['GET', colKey(user.uid)],
+    ['GET', tombKey(user.uid)],
   ]);
+  const [taste, wishlist, collections, deleted] = (rows || []).map(parseJSON);
 
   return NextResponse.json({
     user: { uid: user.uid, email: user.email, name: user.name },
     taste: taste || { genres: {}, events: 0, updatedAt: 0 },
     wishlist: wishlist || [],
+    collections: collections || [],
+    deleted: deleted || {},
   });
 }
 
@@ -43,10 +96,13 @@ export async function PUT(request) {
   let body = {};
   try { body = await request.json(); } catch { /* boş gövde */ }
 
-  const [srvTaste, srvWish] = await Promise.all([
-    redisGetJSON(tasteKey(user.uid)).catch(() => null),
-    redisGetJSON(wishKey(user.uid)).catch(() => null),
+  const rows = await redisPipeline([
+    ['GET', tasteKey(user.uid)],
+    ['GET', wishKey(user.uid)],
+    ['GET', colKey(user.uid)],
+    ['GET', tombKey(user.uid)],
   ]);
+  const [srvTaste, srvWish, srvCols, srvTombs] = (rows || []).map(parseJSON);
 
   // ── Zevk profili: tür ağırlıklarını TOPLA ──────────────────────────────────
   // Üzerine yazmıyoruz; iki cihazda da gezen kullanıcı sinyal kaybetmesin.
@@ -74,11 +130,18 @@ export async function PUT(request) {
   }
   const wishlist = [...wishMap.values()].slice(0, MAX_WISHLIST);
 
+  // ── Koleksiyonlar: id bazında, updatedAt'i yeni olan kazanır + mezar taşları ─
+  const { collections, deleted } = mergeCollections(
+    srvCols, body.collections, srvTombs, body.deleted
+  );
+
   await Promise.all([
     redisSetJSON(tasteKey(user.uid), taste).catch(() => {}),
     redisSetJSON(wishKey(user.uid), wishlist).catch(() => {}),
+    redisSetJSON(colKey(user.uid), collections).catch(() => {}),
+    redisSetJSON(tombKey(user.uid), deleted).catch(() => {}),
   ]);
 
   // Birleşmiş hâli geri döndür → cihaz kendini buna göre günceller
-  return NextResponse.json({ ok: true, taste, wishlist });
+  return NextResponse.json({ ok: true, taste, wishlist, collections, deleted });
 }

@@ -7,6 +7,7 @@ import { colors, radius, spacing, TAB_SPACE } from '../../src/theme';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useAuth } from '../../src/context/AuthContext';
 import { useWishlist } from '../../src/context/WishlistContext';
+import { useCollections } from '../../src/hooks/useCollections';
 import { signOut } from '../../src/services/session';
 
 export default function ProfileScreen() {
@@ -21,6 +22,7 @@ export default function ProfileScreen() {
     ]);
   };
   const { items, enabled, enableNotifications, disableNotifications } = useWishlist();
+  const collections = useCollections();
 
   const showLanguagePicker = () => {
     Alert.alert(
@@ -203,6 +205,14 @@ export default function ProfileScreen() {
           <Ionicons name="bookmark" size={20} color={colors.accent} />
           <Text style={styles.settingText}>{t('wishlist.title')}</Text>
           {items.length > 0 && <View style={styles.wishBadge}><Text style={styles.wishBadgeText}>{items.length}</Text></View>}
+          <Ionicons name="chevron-forward" size={18} color={colors.text3} />
+        </Pressable>
+
+        {/* Koleksiyonlar */}
+        <Pressable style={styles.settingRow} onPress={() => router.push('/collections')}>
+          <Ionicons name="albums" size={20} color={colors.accent} />
+          <Text style={styles.settingText}>{t('col.entry')}</Text>
+          {collections.length > 0 && <View style={styles.wishBadge}><Text style={styles.wishBadgeText}>{collections.length}</Text></View>}
           <Ionicons name="chevron-forward" size={18} color={colors.text3} />
         </Pressable>
 

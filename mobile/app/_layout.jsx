@@ -11,6 +11,7 @@ import { loadProfile } from '../src/services/tasteProfile';
 import { loadSeen } from '../src/services/seenStore';
 import { loadDismissed } from '../src/services/dismissStore';
 import { loadLiked } from '../src/services/likeStore';
+import { loadCollections } from '../src/services/collectionsStore';
 import { loadOnboarding } from '../src/services/onboarding';
 import { initQueryCache } from '../src/services/queryCache';
 import { startSharedLinkWatcher } from '../src/services/sharedLink';
@@ -25,6 +26,7 @@ export default function RootLayout() {
       loadSeen();
       loadDismissed();
       loadLiked();
+      loadCollections();
     });
   }, []);
 
@@ -72,6 +74,8 @@ export default function RootLayout() {
                 <Stack.Screen name="wishlist" />
                 <Stack.Screen name="discover" />
                 <Stack.Screen name="swipe" />
+                <Stack.Screen name="collections" />
+                <Stack.Screen name="collection/[id]" />
                 <Stack.Screen name="onboarding" options={{ animation: 'fade', gestureEnabled: false }} />
                 <Stack.Screen name="account" />
                 <Stack.Screen name="delete-account" />

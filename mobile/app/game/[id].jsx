@@ -12,6 +12,9 @@ import { fetchCardPrice, fetchGameDetail, fetchGameByAppid, fetchPrices, fetchSt
 import { colors, radius, spacing } from '../../src/theme';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useWishlist } from '../../src/context/WishlistContext';
+import { useCollections, useCollectionsContaining } from '../../src/hooks/useCollections';
+import { toggleGameInCollection, createCollection } from '../../src/services/collectionsStore';
+import CollectionPicker from '../../src/components/CollectionPicker';
 import { useQuery } from '../../src/hooks/useQuery';
 import { recordSignal } from '../../src/services/tasteProfile';
 import { recordSeen } from '../../src/services/seenStore';
@@ -49,6 +52,10 @@ export default function GameDetail() {
   const router = useRouter();
   const { t, lang, formatPrice } = useLanguage();
   const { isWatched, toggle } = useWishlist();
+
+  // Koleksiyonlar — bu oyunun hangi listelerde olduğunu göster
+  const collections = useCollections();
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   // Zengin detay: cache-first (aynı oyunu tekrar açınca anında gelir).
   // appid varsa (Share Extension'dan gelindiyse) doğrudan Steam appdetails'e
@@ -118,6 +125,8 @@ export default function GameDetail() {
 
   const watched = isWatched(id);
   const gameObj = { id, name, slug, image, hasSteam: hasSteam === 'true' || hasSteam === '1' };
+  const inCollections = useCollectionsContaining(id);
+  const inAnyCollection = inCollections.size > 0;
 
   useEffect(() => {
     let alive = true;
@@ -198,6 +207,13 @@ export default function GameDetail() {
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <Pressable style={styles.iconBtn} onPress={onShare} hitSlop={10}>
               <Ionicons name="share-outline" size={21} color="#fff" />
+            </Pressable>
+            <Pressable
+              style={[styles.iconBtn, inAnyCollection && styles.iconBtnActive]}
+              onPress={() => { Haptics.selectionAsync(); setPickerOpen(true); }}
+              hitSlop={10}
+            >
+              <Ionicons name={inAnyCollection ? 'albums' : 'albums-outline'} size={20} color="#fff" />
             </Pressable>
             <Pressable style={[styles.iconBtn, watched && styles.iconBtnActive]} onPress={onToggleWishlist} hitSlop={10}>
               <Ionicons name={watched ? 'notifications' : 'notifications-outline'} size={20} color={watched ? '#fff' : '#fff'} />
@@ -400,6 +416,22 @@ export default function GameDetail() {
           )}
         </View>
       </Modal>
+
+      {/* Koleksiyona ekleme sayfası */}
+      <CollectionPicker
+        visible={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        collections={collections}
+        selectedIds={inCollections}
+        game={{ name: title }}
+        onToggle={(colId) => toggleGameInCollection(colId, {
+          ...gameObj,
+          name: title,
+          image: cover,
+          slug: detail?.rawgSlug || slug || '',
+        })}
+        onCreate={(nm) => createCollection(nm)}
+      />
     </View>
   );
 }
