@@ -77,6 +77,7 @@ export default function RootLayout() {
                 <Stack.Screen name="videos" options={{ animation: 'slide_from_bottom' }} />
                 <Stack.Screen name="collections" />
                 <Stack.Screen name="collection/[id]" />
+                <Stack.Screen name="stats" />
                 <Stack.Screen name="onboarding" options={{ animation: 'fade', gestureEnabled: false }} />
                 <Stack.Screen name="account" />
                 <Stack.Screen name="delete-account" />

@@ -72,6 +72,13 @@ export function getSeenSet() {
   return set;
 }
 
+/** Belirtilen andan sonra görülen oyun sayısı (haftalık istatistik için). */
+export function seenCountSince(sinceTs) {
+  let n = 0;
+  for (const k in seen) if (seen[k] >= sinceTs) n++;
+  return n;
+}
+
 // Ayar/gizlilik için sıfırla
 export async function resetSeen() {
   seen = {};

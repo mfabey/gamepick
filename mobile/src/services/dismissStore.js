@@ -72,6 +72,13 @@ export function getDismissedSet() {
   return set;
 }
 
+/** Belirtilen andan sonra elenen oyun sayısı (haftalık istatistik için). */
+export function dismissedCountSince(sinceTs) {
+  let n = 0;
+  for (const k in dismissed) if (dismissed[k] >= sinceTs) n++;
+  return n;
+}
+
 // Ayar/gizlilik için sıfırla
 export async function resetDismissed() {
   dismissed = {};
