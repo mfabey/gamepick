@@ -63,31 +63,36 @@ function withIosWidgetExtension(config) {
 
     // 4. Xcode pbxproj projesine hedef olarak ekle
     // Zaten ekliyse mükerrer eklemeyi önle
-    if (project.pbxTargetByName(targetName)) {
+    const targets = project.hash.project.objects.PBXNativeTarget;
+    let targetExists = false;
+    for (const key in targets) {
+      if (typeof targets[key] === 'object' && (targets[key].name === `"${targetName}"` || targets[key].name === targetName)) {
+        targetExists = true;
+        break;
+      }
+    }
+    if (targetExists) {
       return config;
     }
 
     const bundleId = `${config.ios?.bundleIdentifier || 'com.gamerisen.app'}.${targetName}`;
-    const targetUuid = project.generateUuid();
+    
+    // Önce Widget Extension target'ını oluştur ki UUID hazır olsun
+    const target = project.addTarget(targetName, 'app_extension', targetName);
+    const targetUuid = target.uuid;
     
     // Grubu oluştur ve dosyaları gruba ekle
     const groupName = targetName;
     const groupKey = project.pbxCreateGroup(groupName, targetName);
     
+    // addFile içindeki { target: targetUuid } otomatik olarak PBXSourcesBuildPhase'e ekler
     const fileSwift = project.addFile('GamerisenWidget/GamerisenWidget.swift', groupKey, { target: targetUuid });
     const filePlist = project.addFile('GamerisenWidget/Info.plist', groupKey);
     const fileEnt = project.addFile('GamerisenWidget/GamerisenWidget.entitlements', groupKey);
 
-    // Build phases (kaynak derleme aşaması)
-    const sourcesBuildPhase = project.addBuildPhase([], 'PBXSourcesBuildPhase', 'Sources', targetUuid);
-    project.addToPbxSourcesBuildPhase(fileSwift, targetUuid);
-
-    // Widget Extension target'ını oluştur
-    const target = project.addTarget(targetName, 'app_extension', targetName);
-    
     // Target'ın kendi build configuration'larını güncelle (Tüm projeyi bozmadan!)
     const nativeTargets = project.pbxNativeTargetSection();
-    const nativeTarget = nativeTargets[target.uuid];
+    const nativeTarget = nativeTargets[targetUuid];
     const buildConfigurationListKey = nativeTarget.buildConfigurationList;
     const xcConfigurationLists = project.pbxXCConfigurationList();
     const xcConfigurationList = xcConfigurationLists[buildConfigurationListKey];
@@ -110,7 +115,7 @@ function withIosWidgetExtension(config) {
 
     // Ana uygulama hedefine target dependency olarak ekle
     const appTargetUuid = project.getFirstTarget().uuid;
-    project.addTargetDependency(appTargetUuid, target.uuid);
+    project.addTargetDependency(appTargetUuid, targetUuid);
 
     return config;
   });
