@@ -117,9 +117,13 @@ function withIosShareExtensionTarget(config) {
       }
     }
 
-    // Ana uygulama hedefine bağımlılık olarak ekle
+    // Ana uygulama hedefine bağımlılık olarak ekle.
+    // addTargetDependency(target, dependencyTargets) — 2. parametre bir DİZİ
+    // bekliyor (kaynaktan doğrulandı). Bare string verilirse JS'in string-index
+    // davranışı yüzünden karakter karakter geziyor ve "Invalid target: <tek
+    // karakter>" hatasıyla patlıyor — bu build'in tam olarak çöktüğü nokta.
     const appTargetUuid = project.getFirstTarget().uuid;
-    project.addTargetDependency(appTargetUuid, targetUuid);
+    project.addTargetDependency(appTargetUuid, [targetUuid]);
 
     return config;
   });

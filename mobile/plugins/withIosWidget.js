@@ -131,9 +131,13 @@ function withIosWidgetExtension(config) {
       }
     }
 
-    // Ana uygulama hedefine target dependency olarak ekle
+    // Ana uygulama hedefine target dependency olarak ekle.
+    // addTargetDependency(target, dependencyTargets) — 2. parametre bir DİZİ
+    // bekliyor (kaynaktan doğrulandı: .length ve [index] ile geziniyor). Bare
+    // string verilirse JS'in string-index davranışı yüzünden karakter karakter
+    // geziyor ve "Invalid target: <tek karakter>" hatasıyla patlıyor.
     const appTargetUuid = project.getFirstTarget().uuid;
-    project.addTargetDependency(appTargetUuid, targetUuid);
+    project.addTargetDependency(appTargetUuid, [targetUuid]);
 
     return config;
   });
