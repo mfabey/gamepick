@@ -69,6 +69,15 @@
                       "group.com.gamerisen.app"
                     ]
                   }
+                },
+                {
+                  "targetName": "GamerisenShare",
+                  "bundleIdentifier": "com.gamerisen.app.GamerisenShare",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.com.gamerisen.app"
+                    ]
+                  }
                 }
               ]
             }
