@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Notifications from 'expo-notifications';
 import { LanguageProvider } from '../src/context/LanguageContext';
@@ -49,30 +50,34 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <SafeAreaProvider>
-      <LanguageProvider>
-        <AuthProvider>
-          <WishlistProvider>
-            <StatusBar style="light" />
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                contentStyle: { backgroundColor: colors.bg },
-                animation: 'slide_from_right',
-              }}
-            >
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen name="game/[id]" options={{ animation: 'slide_from_bottom' }} />
-              <Stack.Screen name="wishlist" />
-              <Stack.Screen name="discover" />
-              <Stack.Screen name="onboarding" options={{ animation: 'fade', gestureEnabled: false }} />
-              <Stack.Screen name="account" />
-              <Stack.Screen name="delete-account" />
-            </Stack>
-            {__DEV__ && <FpsMeter />}
-          </WishlistProvider>
-        </AuthProvider>
-      </LanguageProvider>
-    </SafeAreaProvider>
+    // Jest sistemi kökten sarmalanmalı — swipe (Faz 1) ve diğer jest tabanlı
+    // etkileşimler bu sağlayıcı olmadan sessizce çalışmaz.
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <LanguageProvider>
+          <AuthProvider>
+            <WishlistProvider>
+              <StatusBar style="light" />
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                  contentStyle: { backgroundColor: colors.bg },
+                  animation: 'slide_from_right',
+                }}
+              >
+                <Stack.Screen name="(tabs)" />
+                <Stack.Screen name="game/[id]" options={{ animation: 'slide_from_bottom' }} />
+                <Stack.Screen name="wishlist" />
+                <Stack.Screen name="discover" />
+                <Stack.Screen name="onboarding" options={{ animation: 'fade', gestureEnabled: false }} />
+                <Stack.Screen name="account" />
+                <Stack.Screen name="delete-account" />
+              </Stack>
+              {__DEV__ && <FpsMeter />}
+            </WishlistProvider>
+          </AuthProvider>
+        </LanguageProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
