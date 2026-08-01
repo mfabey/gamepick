@@ -31,6 +31,7 @@ import { useCollections, useCollectionsContaining } from '../src/hooks/useCollec
 import { toggleGameInCollection, createCollection } from '../src/services/collectionsStore';
 import CollectionPicker from '../src/components/CollectionPicker';
 import { recordSignal } from '../src/services/tasteProfile';
+import { reportActivity } from '../src/api/social';
 import { recordSeen } from '../src/services/seenStore';
 import { colors, radius, spacing } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
@@ -230,6 +231,11 @@ function VideoItem({ item, height, isActive, player, insets, muted, onToggleMute
     Haptics.impactAsync(willAdd ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light);
     toggle({ id: item.id, name: item.name, image: item.image, appid: item.appid, hasSteam: true, slug: '' });
     if (willAdd && item.genres?.length) recordSignal({ genres: item.genres, type: 'wishlist' });
+    if (willAdd) {
+      reportActivity({
+        type: 'wishlist', gameId: item.id, gameName: item.name || '', gameImage: item.image || '',
+      });
+    }
   }, [watched, toggle, item]);
 
   const onBuy = useCallback(() => {

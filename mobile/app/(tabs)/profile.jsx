@@ -208,6 +208,14 @@ export default function ProfileScreen() {
           <Ionicons name="chevron-forward" size={18} color={colors.text3} />
         </Pressable>
 
+        {/* Arkadaşlar — beta */}
+        <Pressable style={styles.settingRow} onPress={() => router.push('/social')}>
+          <Ionicons name="people" size={20} color={colors.accent} />
+          <Text style={styles.settingText}>{t('soc.entry')}</Text>
+          <View style={styles.betaChip}><Text style={styles.betaChipText}>BETA</Text></View>
+          <Ionicons name="chevron-forward" size={18} color={colors.text3} />
+        </Pressable>
+
         {/* Haftalık rapor */}
         <Pressable style={styles.settingRow} onPress={() => router.push('/stats')}>
           <Ionicons name="stats-chart" size={20} color={colors.accent} />
@@ -228,6 +236,13 @@ export default function ProfileScreen() {
         <Pressable style={styles.settingRow} onPress={showLanguagePicker}>
           <Ionicons name="language" size={20} color={colors.accent} />
           <Text style={styles.settingText}>{lang === 'tr' ? 'Dil: Türkçe' : 'Language: English'}</Text>
+          <Ionicons name="chevron-forward" size={18} color={colors.text3} />
+        </Pressable>
+
+        {/* Sosyal gizlilik + engellenenler */}
+        <Pressable style={styles.settingRow} onPress={() => router.push('/social-settings')}>
+          <Ionicons name="lock-closed" size={20} color={colors.accent} />
+          <Text style={styles.settingText}>{t('soc.privacyTitle')}</Text>
           <Ionicons name="chevron-forward" size={18} color={colors.text3} />
         </Pressable>
 
@@ -296,6 +311,12 @@ const styles = StyleSheet.create({
   notifDesc: { fontSize: 12, color: colors.text3, marginTop: 2, lineHeight: 16 },
   wishBadge: { minWidth: 22, height: 22, borderRadius: 11, backgroundColor: colors.accentSoft, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
   wishBadgeText: { color: colors.accent, fontSize: 12, fontWeight: '800' },
+  betaChip: {
+    paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.sm,
+    backgroundColor: colors.accentBg, borderWidth: 1, borderColor: colors.accentBorder,
+    marginRight: 4,
+  },
+  betaChipText: { color: colors.accent, fontSize: 9, fontWeight: '900', letterSpacing: 0.5 },
 });
 
 

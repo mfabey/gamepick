@@ -78,6 +78,8 @@ export default function RootLayout() {
                 <Stack.Screen name="collections" />
                 <Stack.Screen name="collection/[id]" />
                 <Stack.Screen name="stats" />
+                <Stack.Screen name="social" />
+                <Stack.Screen name="social-settings" />
                 <Stack.Screen name="onboarding" options={{ animation: 'fade', gestureEnabled: false }} />
                 <Stack.Screen name="account" />
                 <Stack.Screen name="delete-account" />

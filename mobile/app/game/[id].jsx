@@ -15,6 +15,7 @@ import { useWishlist } from '../../src/context/WishlistContext';
 import { useCollections, useCollectionsContaining } from '../../src/hooks/useCollections';
 import { toggleGameInCollection, createCollection } from '../../src/services/collectionsStore';
 import CollectionPicker from '../../src/components/CollectionPicker';
+import { reportActivity } from '../../src/api/social';
 import { useQuery } from '../../src/hooks/useQuery';
 import { recordSignal } from '../../src/services/tasteProfile';
 import { recordSeen } from '../../src/services/seenStore';
@@ -155,6 +156,15 @@ export default function GameDetail() {
     Haptics.impactAsync(willAdd ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light);
     toggle(gameObj);
     if (willAdd && detail?.genres?.length) recordSignal({ genres: detail.genres, type: 'wishlist' });
+    // Arkadaş akışına bildir (ateşle-unut; oturum/gizlilik yoksa sessizce düşer)
+    if (willAdd) {
+      reportActivity({
+        type: 'wishlist',
+        gameId: String(id),
+        gameName: detail?.name || name || '',
+        gameImage: detail?.image || image || '',
+      });
+    }
   };
 
   // Oyunu iOS paylaşım katmanıyla paylaş
@@ -424,12 +434,24 @@ export default function GameDetail() {
         collections={collections}
         selectedIds={inCollections}
         game={{ name: title }}
-        onToggle={(colId) => toggleGameInCollection(colId, {
-          ...gameObj,
-          name: title,
-          image: cover,
-          slug: detail?.rawgSlug || slug || '',
-        })}
+        onToggle={async (colId) => {
+          const added = await toggleGameInCollection(colId, {
+            ...gameObj,
+            name: title,
+            image: cover,
+            slug: detail?.rawgSlug || slug || '',
+          });
+          // Yalnızca EKLEME akışa düşsün; çıkarma bildirimi anlamsız olurdu
+          if (added) {
+            reportActivity({
+              type: 'collection',
+              gameId: String(id),
+              gameName: title || '',
+              gameImage: cover || '',
+            });
+          }
+          return added;
+        }}
         onCreate={(nm) => createCollection(nm)}
       />
     </View>
