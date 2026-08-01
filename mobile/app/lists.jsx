@@ -17,6 +17,7 @@ import * as Haptics from 'expo-haptics';
 
 import { fetchListFeed, toggleListLike } from '../src/api/social';
 import { getSession } from '../src/services/session';
+import EmptyState from '../src/components/EmptyState';
 import { posterImage } from '../src/utils/images';
 import { colors, radius, spacing } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
@@ -124,11 +125,14 @@ export default function ListsScreen() {
       {items === null ? (
         <View style={styles.center}><ActivityIndicator color={colors.accent} /></View>
       ) : items.length === 0 ? (
-        <View style={styles.center}>
-          <Ionicons name="list-outline" size={52} color={colors.text3} />
-          <Text style={styles.emptyTitle}>{t('pl.empty')}</Text>
-          <Text style={styles.emptyText}>{t('pl.emptyText')}</Text>
-        </View>
+        <EmptyState
+          icon="list-outline"
+          title={t('pl.empty')}
+          text={t('pl.emptyText')}
+          actionLabel={t('col.entry')}
+          actionIcon="albums"
+          onAction={() => router.push('/collections')}
+        />
       ) : (
         <FlashList
           data={items}
@@ -200,7 +204,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md, paddingTop: 6, paddingBottom: 10,
   },
   titleWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
-  title: { fontSize: 18, fontWeight: '900', color: colors.text, letterSpacing: -0.3 },
+  title: { fontSize: 17, fontWeight: '900', color: colors.text, letterSpacing: -0.3 },
   betaBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.sm, backgroundColor: colors.accent },
   betaText: { color: '#fff', fontSize: 11, fontWeight: '900', letterSpacing: 0.5 },
   iconBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
@@ -223,16 +227,13 @@ const styles = StyleSheet.create({
   },
   cover: { width: '50%', height: '50%' },
   coverEmpty: { width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' },
-  coverEmoji: { fontSize: 27 },
+  coverEmoji: { fontSize: 28 },
 
   cardBody: { flex: 1 },
   cardTitle: { color: colors.text, fontSize: 15, fontWeight: '800' },
-  cardDesc: { color: colors.text2, fontSize: 12.5, marginTop: 3, lineHeight: 17 },
-  cardMeta: { color: colors.text3, fontSize: 11.5, marginTop: 4 },
+  cardDesc: { color: colors.text2, fontSize: 13, marginTop: 3, lineHeight: 17 },
+  cardMeta: { color: colors.text3, fontSize: 12, marginTop: 4 },
 
   likeBtn: { alignItems: 'center', gap: 2, paddingHorizontal: 4 },
-  likeCount: { color: colors.text3, fontSize: 11.5, fontWeight: '700' },
-
-  emptyTitle: { color: colors.text, fontSize: 16.5, fontWeight: '800', marginTop: 13 },
-  emptyText: { color: colors.text2, fontSize: 13.5, textAlign: 'center', marginTop: 6, lineHeight: 20 },
+  likeCount: { color: colors.text3, fontSize: 12, fontWeight: '700' },
 });

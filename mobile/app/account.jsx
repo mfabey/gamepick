@@ -243,28 +243,28 @@ const styles = StyleSheet.create({
   title: { flex: 1, fontSize: 20, fontWeight: '800', color: colors.text, textAlign: 'center' },
 
   body: { padding: spacing.lg, paddingTop: 8 },
-  lead: { fontSize: 14, color: colors.text2, lineHeight: 21, marginBottom: 22 },
+  lead: { fontSize: 15, color: colors.text2, lineHeight: 21, marginBottom: 22 },
   dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 18 },
   dividerLine: { flex: 1, height: 1, backgroundColor: colors.cardBorder },
-  dividerText: { color: colors.text3, fontSize: 12.5, fontWeight: '600' },
+  dividerText: { color: colors.text3, fontSize: 13, fontWeight: '600' },
 
-  label: { fontSize: 12.5, color: colors.text3, fontWeight: '700', marginBottom: 7 },
+  label: { fontSize: 13, color: colors.text3, fontWeight: '700', marginBottom: 7 },
   input: {
     backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1,
     borderRadius: radius.md, paddingHorizontal: 14, height: 50,
-    color: colors.text, fontSize: 15.5,
+    color: colors.text, fontSize: 15,
   },
 
-  err:  { color: colors.danger, fontSize: 13.5, lineHeight: 20, marginBottom: 10 },
-  info: { color: colors.green,  fontSize: 13.5, lineHeight: 20, marginBottom: 10 },
+  err:  { color: colors.danger, fontSize: 13, lineHeight: 20, marginBottom: 10 },
+  info: { color: colors.green,  fontSize: 13, lineHeight: 20, marginBottom: 10 },
 
   cta: {
     height: 52, borderRadius: radius.lg, backgroundColor: colors.accent,
     alignItems: 'center', justifyContent: 'center', marginTop: 6,
   },
   ctaOff: { opacity: 0.45 },
-  ctaText: { color: '#fff', fontSize: 15.5, fontWeight: '800' },
+  ctaText: { color: '#fff', fontSize: 15, fontWeight: '800' },
 
-  link:      { color: colors.accentText, fontSize: 14, fontWeight: '700', textAlign: 'center', marginTop: 20 },
-  linkMuted: { color: colors.text3,  fontSize: 13.5, textAlign: 'center', marginTop: 14 },
+  link:      { color: colors.accentText, fontSize: 15, fontWeight: '700', textAlign: 'center', marginTop: 20 },
+  linkMuted: { color: colors.text3,  fontSize: 13, textAlign: 'center', marginTop: 14 },
 });

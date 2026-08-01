@@ -31,6 +31,28 @@ export const colors = {
   overlay:    'rgba(0,0,0,0.6)',
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Tipografi ölçeği
+//
+// Öncesinde kodda 27 farklı font boyutu vardı (11.5, 12.5, 13.5 gibi keyfi ara
+// değerler dahil) ve aralarında bir sistem yoktu. Bu ölçek Apple'ın iOS metin
+// stillerine yaslanıyor — HIG'e göre iOS'ta varsayılan gövde 17pt, minimum 11pt.
+//
+// YENİ KOD BU ÖLÇEĞİ KULLANMALI, ham sayı yazmamalı.
+export const type = {
+  caption2: 11,   // Apple minimumu — bunun altına inilmez
+  caption:  12,
+  footnote: 13,
+  subhead:  15,
+  body:     17,   // HIG varsayılanı
+  headline: 20,
+  title3:   22,
+  title2:   24,
+  title1:   28,
+  hero:     40,
+  display:  62,
+};
+
 export const radius = { sm: 8, md: 12, lg: 16, xl: 20, pill: 999 };
 
 export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24 };

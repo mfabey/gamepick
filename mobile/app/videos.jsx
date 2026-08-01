@@ -348,7 +348,7 @@ function ActionBtn({ icon, label, active, onPress }) {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#000' },
   loadingRoot: { flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' },
-  loadingText: { color: colors.text2, fontSize: 13.5, marginTop: 12 },
+  loadingText: { color: colors.text2, fontSize: 13, marginTop: 12 },
 
   item: { width: SCREEN_W, backgroundColor: '#000' },
 
@@ -358,7 +358,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   titleWrap: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  topTitle: { color: '#fff', fontSize: 16, fontWeight: '900', letterSpacing: -0.2 },
+  topTitle: { color: '#fff', fontSize: 17, fontWeight: '900', letterSpacing: -0.2 },
   betaBadge: {
     paddingHorizontal: 7, paddingVertical: 2.5, borderRadius: radius.sm,
     backgroundColor: colors.accent,
@@ -382,7 +382,7 @@ const styles = StyleSheet.create({
   actionLabel: { color: '#fff', fontSize: 11, fontWeight: '700' },
 
   info: { position: 'absolute', left: spacing.lg, right: 84 },
-  name: { color: '#fff', fontSize: 21, fontWeight: '900', letterSpacing: -0.4, lineHeight: 26 },
+  name: { color: '#fff', fontSize: 22, fontWeight: '900', letterSpacing: -0.4, lineHeight: 26 },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 9 },
   tag: {
     paddingHorizontal: 9, paddingVertical: 4, borderRadius: radius.pill,
@@ -390,5 +390,5 @@ const styles = StyleSheet.create({
   },
   tagText: { color: '#fff', fontSize: 11, fontWeight: '700' },
   detailHint: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 11 },
-  detailHintText: { color: 'rgba(255,255,255,0.75)', fontSize: 12.5, fontWeight: '600' },
+  detailHintText: { color: 'rgba(255,255,255,0.75)', fontSize: 13, fontWeight: '600' },
 });

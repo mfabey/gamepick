@@ -25,6 +25,7 @@ import {
 } from '../src/api/social';
 import { subscribeSession, getSession } from '../src/services/session';
 import ReportSheet from '../src/components/ReportSheet';
+import EmptyState from '../src/components/EmptyState';
 import { colors, radius, spacing } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
 
@@ -144,16 +145,6 @@ function Avatar({ name, size = 42 }) {
   return (
     <View style={[styles.avatar, { width: size, height: size, borderRadius: size / 2 }]}>
       <Text style={[styles.avatarText, { fontSize: size * 0.42 }]}>{letter}</Text>
-    </View>
-  );
-}
-
-function EmptyState({ icon, title, text }) {
-  return (
-    <View style={styles.center}>
-      <Ionicons name={icon} size={50} color={colors.text3} />
-      <Text style={styles.emptyTitle}>{title}</Text>
-      {text ? <Text style={styles.emptyText}>{text}</Text> : null}
     </View>
   );
 }
@@ -565,7 +556,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md, paddingTop: 6, paddingBottom: 10,
   },
   headTitleWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
-  headTitle: { fontSize: 18, fontWeight: '900', color: colors.text, letterSpacing: -0.3 },
+  headTitle: { fontSize: 17, fontWeight: '900', color: colors.text, letterSpacing: -0.3 },
   betaBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.sm, backgroundColor: colors.accent },
   betaText: { color: '#fff', fontSize: 11, fontWeight: '900', letterSpacing: 0.5 },
   iconBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
@@ -584,15 +575,15 @@ const styles = StyleSheet.create({
 
   list: { paddingHorizontal: spacing.md, paddingBottom: 30 },
   sectionLabel: {
-    color: colors.text3, fontSize: 11.5, fontWeight: '800',
+    color: colors.text3, fontSize: 12, fontWeight: '800',
     letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 6, marginTop: 4,
   },
-  inlineEmpty: { color: colors.text2, fontSize: 13.5, textAlign: 'center', marginTop: 26, lineHeight: 20 },
+  inlineEmpty: { color: colors.text2, fontSize: 13, textAlign: 'center', marginTop: 26, lineHeight: 20 },
 
   personRow: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 9 },
   personBody: { flex: 1 },
   personName: { color: colors.text, fontSize: 15, fontWeight: '700' },
-  personHandle: { color: colors.text3, fontSize: 12.5, marginTop: 1 },
+  personHandle: { color: colors.text3, fontSize: 13, marginTop: 1 },
   rowBtns: { flexDirection: 'row', gap: 6 },
   moreBtn: { padding: 6 },
 
@@ -611,14 +602,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10, paddingVertical: 6, borderRadius: radius.pill,
     backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder,
   },
-  tagText: { color: colors.text2, fontSize: 11.5, fontWeight: '700' },
+  tagText: { color: colors.text2, fontSize: 12, fontWeight: '700' },
 
   actRow: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 11 },
   actBody: { flex: 1 },
-  actText: { color: colors.text2, fontSize: 14, lineHeight: 19 },
+  actText: { color: colors.text2, fontSize: 15, lineHeight: 19 },
   actName: { color: colors.text, fontWeight: '800' },
   actGame: { color: colors.accentText, fontWeight: '700' },
-  actTime: { color: colors.text3, fontSize: 11.5, marginTop: 3 },
+  actTime: { color: colors.text3, fontSize: 12, marginTop: 3 },
 
   searchWrap: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
@@ -627,13 +618,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12, height: 44,
     borderWidth: 1, borderColor: colors.cardBorder,
   },
-  searchInput: { flex: 1, color: colors.text, fontSize: 14.5 },
+  searchInput: { flex: 1, color: colors.text, fontSize: 15 },
 
   setupBody: { padding: spacing.xl, alignItems: 'center' },
-  setupTitle: { color: colors.text, fontSize: 21, fontWeight: '900', marginTop: 14, textAlign: 'center', letterSpacing: -0.4 },
-  setupText: { color: colors.text2, fontSize: 14, textAlign: 'center', marginTop: 8, lineHeight: 20 },
+  setupTitle: { color: colors.text, fontSize: 22, fontWeight: '900', marginTop: 14, textAlign: 'center', letterSpacing: -0.4 },
+  setupText: { color: colors.text2, fontSize: 15, textAlign: 'center', marginTop: 8, lineHeight: 20 },
   label: {
-    alignSelf: 'flex-start', color: colors.text3, fontSize: 11.5, fontWeight: '800',
+    alignSelf: 'flex-start', color: colors.text3, fontSize: 12, fontWeight: '800',
     letterSpacing: 0.5, textTransform: 'uppercase', marginTop: 26, marginBottom: 7,
   },
   inputWrap: {
@@ -642,25 +633,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 13, height: 52,
     borderWidth: 1, borderColor: colors.cardBorder,
   },
-  at: { color: colors.text3, fontSize: 16, fontWeight: '700' },
-  input: { flex: 1, color: colors.text, fontSize: 16 },
-  hint: { alignSelf: 'flex-start', color: colors.text3, fontSize: 12.5, marginTop: 7 },
+  at: { color: colors.text3, fontSize: 17, fontWeight: '700' },
+  input: { flex: 1, color: colors.text, fontSize: 17 },
+  hint: { alignSelf: 'flex-start', color: colors.text3, fontSize: 13, marginTop: 7 },
 
   privacyNote: {
     flexDirection: 'row', gap: 8, alignItems: 'flex-start',
     backgroundColor: colors.card, borderRadius: radius.md, padding: 13,
     borderWidth: 1, borderColor: colors.cardBorder, marginTop: 22,
   },
-  privacyNoteText: { flex: 1, color: colors.text2, fontSize: 12.5, lineHeight: 18 },
+  privacyNoteText: { flex: 1, color: colors.text2, fontSize: 13, lineHeight: 18 },
 
-  gateText: { color: colors.text2, fontSize: 14.5, textAlign: 'center', marginTop: 14, lineHeight: 21 },
+  gateText: { color: colors.text2, fontSize: 15, textAlign: 'center', marginTop: 14, lineHeight: 21 },
   cta: {
     alignSelf: 'stretch', height: 52, borderRadius: radius.lg, backgroundColor: colors.accent,
     alignItems: 'center', justifyContent: 'center', marginTop: 22, paddingHorizontal: 24,
   },
   ctaOff: { opacity: 0.4 },
-  ctaText: { color: '#fff', fontSize: 15, fontWeight: '800' },
-
-  emptyTitle: { color: colors.text, fontSize: 16.5, fontWeight: '800', marginTop: 13 },
-  emptyText: { color: colors.text2, fontSize: 13.5, textAlign: 'center', marginTop: 6, lineHeight: 20 },
+  ctaText: { color: '#fff', fontSize: 15, fontWeight: '800' },
 });

@@ -15,6 +15,7 @@ import * as Haptics from 'expo-haptics';
 
 import { fetchList, toggleListLike, deletePublicList } from '../../src/api/social';
 import ReportSheet from '../../src/components/ReportSheet';
+import EmptyState from '../../src/components/EmptyState';
 import { posterImage } from '../../src/utils/images';
 import { colors, radius, spacing } from '../../src/theme';
 import { useLanguage } from '../../src/context/LanguageContext';
@@ -170,7 +171,7 @@ export default function PublicListScreen() {
           </View>
         }
         ListEmptyComponent={
-          <View style={styles.center}><Text style={styles.emptyText}>{t('pl.emptyList')}</Text></View>
+          <EmptyState icon="game-controller-outline" title={t('pl.emptyList')} compact />
         }
       />
 
@@ -205,12 +206,12 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: colors.accentBorder,
     padding: 12, marginBottom: 14,
   },
-  noticeText: { flex: 1, color: colors.text, fontSize: 12.5, lineHeight: 18 },
+  noticeText: { flex: 1, color: colors.text, fontSize: 13, lineHeight: 18 },
 
-  title: { color: colors.text, fontSize: 23, fontWeight: '900', letterSpacing: -0.5 },
-  desc: { color: colors.text2, fontSize: 14, marginTop: 7, lineHeight: 20 },
+  title: { color: colors.text, fontSize: 24, fontWeight: '900', letterSpacing: -0.5 },
+  desc: { color: colors.text2, fontSize: 15, marginTop: 7, lineHeight: 20 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 12 },
-  meta: { flex: 1, color: colors.text3, fontSize: 12.5 },
+  meta: { flex: 1, color: colors.text3, fontSize: 13 },
   likeBtn: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   likeCount: { color: colors.text3, fontSize: 13, fontWeight: '700' },
 
@@ -222,9 +223,8 @@ const styles = StyleSheet.create({
   },
   cellName: {
     position: 'absolute', left: 8, right: 8, bottom: 7,
-    color: '#fff', fontSize: 11.5, fontWeight: '700', lineHeight: 14,
+    color: '#fff', fontSize: 12, fontWeight: '700', lineHeight: 14,
   },
 
-  emptyTitle: { color: colors.text, fontSize: 16, fontWeight: '800', marginTop: 12 },
-  emptyText: { color: colors.text2, fontSize: 13.5 },
+  emptyTitle: { color: colors.text, fontSize: 17, fontWeight: '800', marginTop: 12 },
 });

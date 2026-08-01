@@ -19,6 +19,7 @@ import { useSeen } from '../src/hooks/useSeen';
 import { useDismissed } from '../src/hooks/useDismissed';
 import { weeklyReport } from '../src/services/stats';
 import { fetchSteamPrices } from '../src/api/library';
+import EmptyState from '../src/components/EmptyState';
 import { colors, radius, spacing } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
 
@@ -82,15 +83,14 @@ export default function StatsScreen() {
       </View>
 
       {!report.hasActivity ? (
-        <View style={styles.empty}>
-          <Ionicons name="stats-chart-outline" size={54} color={colors.text3} />
-          <Text style={styles.emptyTitle}>{t('stats.emptyTitle')}</Text>
-          <Text style={styles.emptyText}>{t('stats.emptyText')}</Text>
-          <Pressable style={styles.cta} onPress={() => router.replace('/swipe')}>
-            <Ionicons name="layers" size={17} color="#fff" />
-            <Text style={styles.ctaText}>{t('stats.startSwiping')}</Text>
-          </Pressable>
-        </View>
+        <EmptyState
+          icon="stats-chart-outline"
+          title={t('stats.emptyTitle')}
+          text={t('stats.emptyText')}
+          actionLabel={t('stats.startSwiping')}
+          actionIcon="layers"
+          onAction={() => router.replace('/swipe')}
+        />
       ) : (
         <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
           {/* Kahraman sayı — haftanın ana metriği */}
@@ -176,8 +176,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md, paddingTop: 6, paddingBottom: 10, gap: 8,
   },
   headText: { flex: 1 },
-  title: { fontSize: 19, fontWeight: '900', color: colors.text, letterSpacing: -0.3 },
-  subtitle: { fontSize: 12.5, color: colors.text2, marginTop: 2 },
+  title: { fontSize: 20, fontWeight: '900', color: colors.text, letterSpacing: -0.3 },
+  subtitle: { fontSize: 13, color: colors.text2, marginTop: 2 },
   iconBtn: {
     width: 44, height: 44, borderRadius: 22, backgroundColor: colors.card,
     alignItems: 'center', justifyContent: 'center',
@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: colors.accentBorder, marginTop: 6,
   },
   heroNum: { color: colors.accentText, fontSize: 62, fontWeight: '900', letterSpacing: -2, lineHeight: 66 },
-  heroLabel: { color: colors.text, fontSize: 14.5, fontWeight: '700', marginTop: 2 },
+  heroLabel: { color: colors.text, fontSize: 15, fontWeight: '700', marginTop: 2 },
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 12 },
   card: {
@@ -199,24 +199,24 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card, borderRadius: radius.lg, padding: 15,
     borderWidth: 1, borderColor: colors.cardBorder,
   },
-  cardNum: { color: colors.text, fontSize: 27, fontWeight: '900', marginTop: 7, letterSpacing: -0.8 },
+  cardNum: { color: colors.text, fontSize: 28, fontWeight: '900', marginTop: 7, letterSpacing: -0.8 },
   cardLabel: { color: colors.text2, fontSize: 12, marginTop: 2, fontWeight: '600' },
 
   banner: {
     marginTop: 12, backgroundColor: colors.card, borderRadius: radius.lg,
     padding: 16, borderWidth: 1, borderColor: colors.cardBorder,
   },
-  bannerLabel: { color: colors.text2, fontSize: 12.5, fontWeight: '600' },
+  bannerLabel: { color: colors.text2, fontSize: 13, fontWeight: '600' },
   bannerValue: { color: colors.text, fontSize: 24, fontWeight: '900', marginTop: 4, letterSpacing: -0.5 },
 
   section: {
     marginTop: 12, backgroundColor: colors.card, borderRadius: radius.lg,
     padding: 16, borderWidth: 1, borderColor: colors.cardBorder,
   },
-  sectionTitle: { color: colors.text, fontSize: 14.5, fontWeight: '800', marginBottom: 12 },
+  sectionTitle: { color: colors.text, fontSize: 15, fontWeight: '800', marginBottom: 12 },
 
   barRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 9 },
-  barLabel: { width: 88, color: colors.text2, fontSize: 12.5, fontWeight: '600' },
+  barLabel: { width: 88, color: colors.text2, fontSize: 13, fontWeight: '600' },
   barTrack: { flex: 1, height: 8, borderRadius: 4, backgroundColor: colors.bgInput, overflow: 'hidden' },
   barFill: { height: '100%', borderRadius: 4, backgroundColor: colors.accent },
   barCount: { width: 22, textAlign: 'right', color: colors.text3, fontSize: 12, fontWeight: '700' },
@@ -226,13 +226,9 @@ const styles = StyleSheet.create({
   saleNum: { color: colors.green, fontSize: 40, fontWeight: '900', letterSpacing: -1.5 },
   saleLabel: { color: colors.text2, fontSize: 12, fontWeight: '600', marginTop: 2 },
   saleSide: { alignItems: 'flex-end' },
-  saleSideNum: { color: colors.text, fontSize: 19, fontWeight: '900' },
-  saleSideLabel: { color: colors.text2, fontSize: 11.5, fontWeight: '600' },
-  saleSideMeta: { color: colors.text3, fontSize: 11, marginTop: 5 },
-
-  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xl },
-  emptyTitle: { color: colors.text, fontSize: 17, fontWeight: '800', marginTop: 14 },
-  emptyText: { color: colors.text2, fontSize: 13.5, textAlign: 'center', marginTop: 7, lineHeight: 20 },
+  saleSideNum: { color: colors.text, fontSize: 20, fontWeight: '900' },
+  saleSideLabel: { color: colors.text2, fontSize: 12, fontWeight: '600' },
+  saleSideMeta: { color: colors.text3, fontSize: 11, marginTop: 5 },
   cta: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     height: 50, paddingHorizontal: 22, borderRadius: radius.lg,

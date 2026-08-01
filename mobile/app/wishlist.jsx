@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchCardPrice } from '../src/api/games';
+import EmptyState from '../src/components/EmptyState';
 import { colors, radius, spacing } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
 import { useWishlist } from '../src/context/WishlistContext';
@@ -45,14 +46,14 @@ export default function WishlistScreen() {
       </View>
 
       {items.length === 0 ? (
-        <View style={styles.empty}>
-          <Ionicons name="bookmark-outline" size={54} color={colors.text3} />
-          <Text style={styles.emptyTitle}>{t('wishlist.empty')}</Text>
-          <Text style={styles.emptyDesc}>{t('wishlist.emptyDesc')}</Text>
-          <Pressable style={styles.exploreBtn} onPress={() => router.push('/games')}>
-            <Text style={styles.exploreText}>{t('wishlist.explore')}</Text>
-          </Pressable>
-        </View>
+        <EmptyState
+          icon="bookmark-outline"
+          title={t('wishlist.empty')}
+          text={t('wishlist.emptyDesc')}
+          actionLabel={t('wishlist.explore')}
+          actionIcon="search"
+          onAction={() => router.push('/games')}
+        />
       ) : (
         <FlashList
           data={items}
@@ -122,25 +123,19 @@ const styles = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: 8 },
   back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   title: { flex: 1, fontSize: 20, fontWeight: '800', color: colors.text, textAlign: 'center' },
-  count: { width: 40, textAlign: 'center', fontSize: 15, fontWeight: '800', color: colors.accentText },
-
-  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 40 },
-  emptyTitle: { fontSize: 18, fontWeight: '800', color: colors.text },
-  emptyDesc: { fontSize: 13.5, color: colors.text3, textAlign: 'center', lineHeight: 20 },
-  exploreBtn: { marginTop: 8, backgroundColor: colors.accent, borderRadius: radius.md, paddingHorizontal: 24, paddingVertical: 12 },
-  exploreText: { color: '#fff', fontWeight: '700', fontSize: 14.5 },
+  count: { width: 40, textAlign: 'center', fontSize: 15, fontWeight: '800', color: colors.accentText },
 
   notifBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.accentSoft, borderColor: colors.accentBorder, borderWidth: 1, borderRadius: radius.md, padding: 12, marginHorizontal: spacing.lg, marginTop: 12, marginBottom: 4 },
   notifText: { flex: 1, fontSize: 12, color: colors.text2, lineHeight: 16 },
-  notifCta: { fontSize: 12.5, fontWeight: '800', color: colors.accentText },
+  notifCta: { fontSize: 13, fontWeight: '800', color: colors.accentText },
 
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: spacing.lg, paddingVertical: 11 },
   thumb: { width: 96, height: 54, borderRadius: radius.sm, overflow: 'hidden', backgroundColor: colors.card },
-  rowName: { fontSize: 14.5, fontWeight: '700', color: colors.text, lineHeight: 18 },
+  rowName: { fontSize: 15, fontWeight: '700', color: colors.text, lineHeight: 18 },
   rowPriceRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 5 },
-  price: { fontSize: 14, fontWeight: '800', color: colors.text },
-  priceDim: { fontSize: 14, color: colors.text3 },
-  free: { fontSize: 14, fontWeight: '800', color: colors.green },
+  price: { fontSize: 15, fontWeight: '800', color: colors.text },
+  priceDim: { fontSize: 15, color: colors.text3 },
+  free: { fontSize: 15, fontWeight: '800', color: colors.green },
   saleBadge: { backgroundColor: colors.accent, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
   saleText: { color: '#fff', fontWeight: '800', fontSize: 11 },
   remove: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },

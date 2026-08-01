@@ -327,16 +327,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.pill, marginBottom: 16,
   },
   liveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.green },
-  badgeText: { fontSize: 12.5, color: colors.text2, fontWeight: '600' },
-  title: { fontSize: 30, fontWeight: '800', color: colors.text, letterSpacing: -1, lineHeight: 35 },
-  subtitle: { fontSize: 14.5, color: colors.text2, lineHeight: 21, marginTop: 10 },
+  badgeText: { fontSize: 13, color: colors.text2, fontWeight: '600' },
+  title: { fontSize: 28, fontWeight: '800', color: colors.text, letterSpacing: -1, lineHeight: 35 },
+  subtitle: { fontSize: 15, color: colors.text2, lineHeight: 21, marginTop: 10 },
 
   search: {
     flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 20,
     backgroundColor: colors.card, borderColor: colors.borderHover, borderWidth: 1.5,
     borderRadius: radius.lg, height: 56, paddingLeft: 18, paddingRight: 8,
   },
-  searchText: { flex: 1, color: colors.text3, fontSize: 15.5 },
+  searchText: { flex: 1, color: colors.text3, fontSize: 15 },
   searchBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
 
   discover: {
@@ -344,7 +344,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accentSoft, borderColor: colors.accentBorder, borderWidth: 1,
     borderRadius: radius.lg, paddingHorizontal: 16, paddingVertical: 13,
   },
-  discoverText: { flex: 1, color: colors.text, fontSize: 14, fontWeight: '600' },
+  discoverText: { flex: 1, color: colors.text, fontSize: 15, fontWeight: '600' },
   betaChip: {
     paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.sm,
     backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accentBorder,
@@ -354,10 +354,10 @@ const styles = StyleSheet.create({
 
   strip: { paddingHorizontal: spacing.lg, gap: 12, paddingTop: 22 },
   stripTile: { width: 172, height: 97, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.card },
-  stripName: { position: 'absolute', left: 10, right: 10, bottom: 8, color: '#fff', fontSize: 12.5, fontWeight: '700' },
+  stripName: { position: 'absolute', left: 10, right: 10, bottom: 8, color: '#fff', fontSize: 13, fontWeight: '700' },
 
   sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, marginBottom: 12 },
-  sectionTitle: { fontSize: 18, fontWeight: '800', color: colors.text },
+  sectionTitle: { fontSize: 17, fontWeight: '800', color: colors.text },
   viewAll: { fontSize: 13, color: colors.accentText, fontWeight: '700' },
   row: { paddingHorizontal: spacing.lg, gap: 12 },
   card: { width: 132 },
@@ -366,7 +366,7 @@ const styles = StyleSheet.create({
   newsCover: { width: '100%', height: 132, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.card },
   newsCat: { position: 'absolute', top: 8, left: 8, backgroundColor: colors.accentSoft, borderColor: colors.accentBorder, borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 3 },
   newsCatText: { color: '#ff8085', fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.3 },
-  newsTitle: { color: colors.text, fontSize: 13.5, fontWeight: '700', lineHeight: 17, marginTop: 8 },
+  newsTitle: { color: colors.text, fontSize: 13, fontWeight: '700', lineHeight: 17, marginTop: 8 },
   newsMeta: { color: colors.text3, fontSize: 11, fontWeight: '600', marginTop: 4 },
   cardCover: { width: '100%', aspectRatio: 3 / 4, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.card },
   cardName: { position: 'absolute', left: 10, right: 10, bottom: 9, color: '#fff', fontSize: 13, fontWeight: '700', lineHeight: 16 },

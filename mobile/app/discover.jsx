@@ -178,19 +178,19 @@ const styles = StyleSheet.create({
   headerWrap: { marginHorizontal: -10, paddingHorizontal: spacing.lg, paddingTop: 8 },
   cell: { flex: 1, paddingHorizontal: 6, paddingBottom: spacing.md },
 
-  lead: { fontSize: 14.5, color: colors.text2, lineHeight: 21, marginBottom: 16 },
+  lead: { fontSize: 15, color: colors.text2, lineHeight: 21, marginBottom: 16 },
   inputBox: {
     backgroundColor: colors.card, borderColor: colors.borderHover, borderWidth: 1.5,
     borderRadius: radius.lg, paddingHorizontal: 16, paddingVertical: 12, minHeight: 96,
   },
-  input: { color: colors.text, fontSize: 15.5, lineHeight: 22, textAlignVertical: 'top', minHeight: 72 },
+  input: { color: colors.text, fontSize: 15, lineHeight: 22, textAlignVertical: 'top', minHeight: 72 },
 
   cta: {
     marginTop: 12, height: 52, borderRadius: radius.lg, backgroundColor: colors.accent,
     alignItems: 'center', justifyContent: 'center',
   },
   ctaOff: { opacity: 0.45 },
-  ctaText: { color: '#fff', fontSize: 15.5, fontWeight: '800' },
+  ctaText: { color: '#fff', fontSize: 15, fontWeight: '800' },
 
   examples: { gap: 8, paddingVertical: 16 },
   example: {
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
   exampleText: { color: colors.text2, fontSize: 13 },
 
   understood: { marginTop: 18 },
-  understoodLabel: { fontSize: 11.5, color: colors.text3, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 8 },
+  understoodLabel: { fontSize: 12, color: colors.text3, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 8 },
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
   tag: {
     backgroundColor: colors.accentSoft, borderColor: colors.accentBorder, borderWidth: 1,
@@ -208,5 +208,5 @@ const styles = StyleSheet.create({
   },
   tagText: { color: '#ff8085', fontSize: 12, fontWeight: '700' },
 
-  msg: { color: colors.text3, fontSize: 14, lineHeight: 21, marginTop: 20, marginBottom: 8 },
+  msg: { color: colors.text3, fontSize: 15, lineHeight: 21, marginTop: 20, marginBottom: 8 },
 });

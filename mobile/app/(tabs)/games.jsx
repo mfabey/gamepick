@@ -207,7 +207,7 @@ function Chip({ active, label, onPress, accent = colors.accent }) {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   header: { paddingHorizontal: spacing.lg, paddingTop: 8, paddingBottom: 6 },
-  title: { fontSize: 26, fontWeight: '800', color: colors.text, letterSpacing: -0.6, marginBottom: 12 },
+  title: { fontSize: 28, fontWeight: '800', color: colors.text, letterSpacing: -0.6, marginBottom: 12 },
   searchBox: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1,

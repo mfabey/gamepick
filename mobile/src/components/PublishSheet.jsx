@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card, borderRadius: radius.md, padding: 12,
     borderWidth: 1, borderColor: colors.cardBorder, marginTop: 12, marginBottom: 14,
   },
-  noticeText: { flex: 1, color: colors.text2, fontSize: 12.5, lineHeight: 18 },
+  noticeText: { flex: 1, color: colors.text2, fontSize: 13, lineHeight: 18 },
 
   input: {
     backgroundColor: colors.bgInput, borderRadius: radius.md,

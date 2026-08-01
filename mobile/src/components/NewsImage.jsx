@@ -13,7 +13,7 @@ export default function NewsImage({ item, style }) {
   }
   return (
     <View style={[style, { backgroundColor: item.art || colors.card, alignItems: 'center', justifyContent: 'center' }]}>
-      <Text style={{ fontSize: 30, fontWeight: '900', color: 'rgba(255,255,255,0.85)' }}>{item.mono || '?'}</Text>
+      <Text style={{ fontSize: 28, fontWeight: '900', color: 'rgba(255,255,255,0.85)' }}>{item.mono || '?'}</Text>
     </View>
   );
 }

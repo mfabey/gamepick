@@ -124,10 +124,10 @@ const styles = StyleSheet.create({
   gameName: { color: colors.text2, fontSize: 13, marginTop: 3, marginBottom: 12 },
 
   list: { flexGrow: 0 },
-  emptyText: { color: colors.text2, fontSize: 13.5, lineHeight: 20, paddingVertical: 10 },
+  emptyText: { color: colors.text2, fontSize: 13, lineHeight: 20, paddingVertical: 10 },
 
   row: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 11 },
-  rowEmoji: { fontSize: 21 },
+  rowEmoji: { fontSize: 22 },
   rowBody: { flex: 1 },
   rowName: { color: colors.text, fontSize: 15, fontWeight: '700' },
   rowMeta: { color: colors.text3, fontSize: 12, marginTop: 2 },
@@ -139,12 +139,12 @@ const styles = StyleSheet.create({
   checkOn: { backgroundColor: colors.accent, borderColor: colors.accent },
 
   addRow: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingVertical: 13 },
-  addText: { color: colors.accentText, fontSize: 14.5, fontWeight: '700' },
+  addText: { color: colors.accentText, fontSize: 15, fontWeight: '700' },
 
   newRow: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingVertical: 10 },
   input: {
     flex: 1, backgroundColor: colors.bgInput, borderRadius: radius.md,
-    paddingHorizontal: 13, height: 46, color: colors.text, fontSize: 14.5,
+    paddingHorizontal: 13, height: 46, color: colors.text, fontSize: 15,
     borderWidth: 1, borderColor: colors.cardBorder,
   },
   miniCta: {

@@ -79,6 +79,7 @@ export default function RootLayout() {
                 <Stack.Screen name="collection/[id]" />
                 <Stack.Screen name="stats" />
                 <Stack.Screen name="social" />
+                <Stack.Screen name="settings" />
                 <Stack.Screen name="social-settings" />
                 <Stack.Screen name="lists" />
                 <Stack.Screen name="list/[id]" />

@@ -16,6 +16,7 @@ import * as Haptics from 'expo-haptics';
 
 import { useCollection } from '../../src/hooks/useCollections';
 import PublishSheet from '../../src/components/PublishSheet';
+import EmptyState from '../../src/components/EmptyState';
 import {
   renameCollection, deleteCollection, removeGameFromCollection,
 } from '../../src/services/collectionsStore';
@@ -144,11 +145,14 @@ export default function CollectionDetailScreen() {
       </View>
 
       {games.length === 0 ? (
-        <View style={styles.empty}>
-          <Ionicons name="game-controller-outline" size={50} color={colors.text3} />
-          <Text style={styles.emptyTitle}>{t('col.emptyList')}</Text>
-          <Text style={styles.emptyText}>{t('col.emptyListText')}</Text>
-        </View>
+        <EmptyState
+          icon="game-controller-outline"
+          title={t('col.emptyList')}
+          text={t('col.emptyListText')}
+          actionLabel={t('nav.games')}
+          actionIcon="search"
+          onAction={() => router.push('/games')}
+        />
       ) : (
         <FlashList
           data={games}
@@ -210,8 +214,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md, paddingTop: 6, paddingBottom: 10, gap: 6,
   },
   headText: { flex: 1, paddingHorizontal: 4 },
-  title: { fontSize: 18, fontWeight: '900', color: colors.text, letterSpacing: -0.3 },
-  subtitle: { fontSize: 12.5, color: colors.text2, marginTop: 2 },
+  title: { fontSize: 17, fontWeight: '900', color: colors.text, letterSpacing: -0.3 },
+  subtitle: { fontSize: 13, color: colors.text2, marginTop: 2 },
   iconBtn: {
     width: 44, height: 44, borderRadius: 22, backgroundColor: colors.card,
     alignItems: 'center', justifyContent: 'center',
@@ -223,11 +227,7 @@ const styles = StyleSheet.create({
     width: '100%', aspectRatio: 3 / 4, borderRadius: radius.md, overflow: 'hidden',
     backgroundColor: colors.card,
   },
-  cellName: { position: 'absolute', left: 8, right: 8, bottom: 7, color: '#fff', fontSize: 11.5, fontWeight: '700', lineHeight: 14 },
-
-  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xl },
-  emptyTitle: { color: colors.text, fontSize: 16.5, fontWeight: '800', marginTop: 14 },
-  emptyText: { color: colors.text2, fontSize: 13.5, textAlign: 'center', marginTop: 7, lineHeight: 20 },
+  cellName: { position: 'absolute', left: 8, right: 8, bottom: 7, color: '#fff', fontSize: 12, fontWeight: '700', lineHeight: 14 },
 
   backdrop: { flex: 1, backgroundColor: colors.overlay, alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
   sheet: {
@@ -243,11 +243,11 @@ const styles = StyleSheet.create({
   },
   sheetActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 16 },
   ghostBtn: { paddingHorizontal: 16, height: 46, alignItems: 'center', justifyContent: 'center' },
-  ghostText: { color: colors.text2, fontSize: 14.5, fontWeight: '700' },
+  ghostText: { color: colors.text2, fontSize: 15, fontWeight: '700' },
   cta: {
     minWidth: 110, height: 46, borderRadius: radius.lg, backgroundColor: colors.accent,
     alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18,
   },
   ctaOff: { opacity: 0.4 },
-  ctaText: { color: '#fff', fontSize: 14.5, fontWeight: '800' },
+  ctaText: { color: '#fff', fontSize: 15, fontWeight: '800' },
 });

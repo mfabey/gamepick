@@ -146,8 +146,8 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
   head: { paddingHorizontal: spacing.lg, paddingTop: 10, paddingBottom: 14 },
-  title: { fontSize: 26, fontWeight: '900', color: colors.text, letterSpacing: -0.5 },
-  subtitle: { fontSize: 14.5, color: colors.text2, lineHeight: 21, marginTop: 8 },
+  title: { fontSize: 28, fontWeight: '900', color: colors.text, letterSpacing: -0.5 },
+  subtitle: { fontSize: 15, color: colors.text2, lineHeight: 21, marginTop: 8 },
 
   list: { paddingHorizontal: 8 },
   cell: { flex: 1, paddingHorizontal: 5, paddingBottom: 10 },
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card, borderWidth: 2, borderColor: 'transparent',
   },
   coverOn: { borderColor: colors.accent },
-  name: { position: 'absolute', left: 8, right: 8, bottom: 7, color: '#fff', fontSize: 11.5, fontWeight: '700', lineHeight: 14 },
+  name: { position: 'absolute', left: 8, right: 8, bottom: 7, color: '#fff', fontSize: 12, fontWeight: '700', lineHeight: 14 },
   check: {
     position: 'absolute', top: 6, right: 6, width: 24, height: 24, borderRadius: 12,
     backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center',
@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg, paddingTop: 12, paddingBottom: 24,
     borderTopWidth: 1, borderTopColor: colors.cardBorder, backgroundColor: colors.bg,
   },
-  skip: { color: colors.text3, fontSize: 14, fontWeight: '600' },
+  skip: { color: colors.text3, fontSize: 15, fontWeight: '600' },
   cta: {
     minWidth: 170, height: 50, borderRadius: radius.lg, backgroundColor: colors.accent,
     alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20,

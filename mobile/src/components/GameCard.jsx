@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
   info: { position: 'absolute', left: 12, right: 12, bottom: 11 },
   name: { fontSize: 15, fontWeight: '800', color: '#fff', lineHeight: 18 },
   metaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 5 },
-  genre: { fontSize: 11.5, color: 'rgba(255,255,255,0.6)', flexShrink: 1, marginRight: 8 },
-  price: { fontSize: 14, fontWeight: '800', color: '#fff' },
-  priceFree: { fontSize: 14, fontWeight: '800', color: colors.green },
+  genre: { fontSize: 12, color: 'rgba(255,255,255,0.6)', flexShrink: 1, marginRight: 8 },
+  price: { fontSize: 15, fontWeight: '800', color: '#fff' },
+  priceFree: { fontSize: 15, fontWeight: '800', color: colors.green },
 });

@@ -15,6 +15,7 @@ import * as Haptics from 'expo-haptics';
 
 import { useCollections } from '../src/hooks/useCollections';
 import { createCollection, deleteCollection } from '../src/services/collectionsStore';
+import EmptyState from '../src/components/EmptyState';
 import { posterImage } from '../src/utils/images';
 import { colors, radius, spacing } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
@@ -78,11 +79,11 @@ export default function CollectionsScreen() {
       </View>
 
       {collections.length === 0 ? (
-        <View style={styles.empty}>
-          <Ionicons name="albums-outline" size={54} color={colors.text3} />
-          <Text style={styles.emptyTitle}>{t('col.empty')}</Text>
-          <Text style={styles.emptyText}>{t('col.emptyText')}</Text>
-
+        <EmptyState
+          icon="albums-outline"
+          title={t('col.empty')}
+          text={t('col.emptyText')}
+        >
           {/* Hazır öneriler — boş ekranı eyleme çevirir */}
           <View style={styles.suggests}>
             {[t('col.suggest1'), t('col.suggest2'), t('col.suggest3')].map((s, i) => (
@@ -103,7 +104,7 @@ export default function CollectionsScreen() {
               </Pressable>
             ))}
           </View>
-        </View>
+        </EmptyState>
       ) : (
         <FlashList
           data={collections}
@@ -207,7 +208,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: spacing.md, paddingTop: 6, paddingBottom: 10, gap: 8,
   },
-  title: { flex: 1, fontSize: 19, fontWeight: '900', color: colors.text, letterSpacing: -0.3 },
+  title: { flex: 1, fontSize: 20, fontWeight: '900', color: colors.text, letterSpacing: -0.3 },
   iconBtn: {
     width: 44, height: 44, borderRadius: 22, backgroundColor: colors.card,
     alignItems: 'center', justifyContent: 'center',
@@ -224,14 +225,10 @@ const styles = StyleSheet.create({
   },
   thumb: { width: '50%', height: '50%' },
   thumbEmpty: { width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' },
-  rowEmoji: { fontSize: 26 },
+  rowEmoji: { fontSize: 28 },
   rowBody: { flex: 1 },
-  rowName: { color: colors.text, fontSize: 15.5, fontWeight: '800' },
-  rowMeta: { color: colors.text2, fontSize: 12.5, marginTop: 3 },
-
-  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xl },
-  emptyTitle: { color: colors.text, fontSize: 17, fontWeight: '800', marginTop: 14 },
-  emptyText: { color: colors.text2, fontSize: 13.5, textAlign: 'center', marginTop: 7, lineHeight: 20 },
+  rowName: { color: colors.text, fontSize: 15, fontWeight: '800' },
+  rowMeta: { color: colors.text2, fontSize: 13, marginTop: 3 },
   suggests: { alignSelf: 'stretch', marginTop: 22, gap: 8 },
   suggest: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
@@ -240,7 +237,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: colors.cardBorder,
   },
   suggestEmoji: { fontSize: 17 },
-  suggestText: { flex: 1, color: colors.text, fontSize: 14, fontWeight: '600' },
+  suggestText: { flex: 1, color: colors.text, fontSize: 15, fontWeight: '600' },
 
   backdrop: { flex: 1, backgroundColor: colors.overlay, alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
   sheet: {
@@ -256,7 +253,7 @@ const styles = StyleSheet.create({
     borderWidth: 2, borderColor: 'transparent',
   },
   emojiBtnOn: { borderColor: colors.accent },
-  emojiText: { fontSize: 19 },
+  emojiText: { fontSize: 20 },
   input: {
     backgroundColor: colors.bgInput, borderRadius: radius.md,
     paddingHorizontal: 14, height: 50, color: colors.text, fontSize: 15,
@@ -264,11 +261,11 @@ const styles = StyleSheet.create({
   },
   sheetActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 16 },
   ghostBtn: { paddingHorizontal: 16, height: 46, alignItems: 'center', justifyContent: 'center' },
-  ghostText: { color: colors.text2, fontSize: 14.5, fontWeight: '700' },
+  ghostText: { color: colors.text2, fontSize: 15, fontWeight: '700' },
   cta: {
     minWidth: 110, height: 46, borderRadius: radius.lg, backgroundColor: colors.accent,
     alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18,
   },
   ctaOff: { opacity: 0.4 },
-  ctaText: { color: '#fff', fontSize: 14.5, fontWeight: '800' },
+  ctaText: { color: '#fff', fontSize: 15, fontWeight: '800' },
 });

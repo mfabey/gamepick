@@ -144,16 +144,16 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(248,113,113,0.08)', borderColor: 'rgba(248,113,113,0.35)',
     borderWidth: 1, borderRadius: radius.md, padding: 14, marginBottom: 22,
   },
-  warnText: { flex: 1, color: colors.text2, fontSize: 13.5, lineHeight: 20 },
+  warnText: { flex: 1, color: colors.text2, fontSize: 13, lineHeight: 20 },
   email: { color: colors.text, fontSize: 15, fontWeight: '700', marginBottom: 20 },
 
-  label: { fontSize: 12.5, color: colors.text3, fontWeight: '700', marginBottom: 7 },
+  label: { fontSize: 13, color: colors.text3, fontWeight: '700', marginBottom: 7 },
   input: {
     backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1,
     borderRadius: radius.md, paddingHorizontal: 14, height: 50,
-    color: colors.text, fontSize: 15.5,
+    color: colors.text, fontSize: 15,
   },
-  err: { color: colors.danger, fontSize: 13.5, lineHeight: 20, marginTop: 16 },
+  err: { color: colors.danger, fontSize: 13, lineHeight: 20, marginTop: 16 },
 
   cta: {
     height: 52, borderRadius: radius.lg, backgroundColor: colors.danger,
