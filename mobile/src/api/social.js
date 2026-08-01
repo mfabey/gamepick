@@ -68,6 +68,18 @@ export const unblockUser       = (targetUid) =>
 export const reportContent     = ({ targetType, targetId, reason, note }) =>
   authed('/api/social/report', { method: 'POST', body: { targetType, targetId, reason, note } });
 
+// ── Topluluk listeleri ──────────────────────────────────────────────────────
+export const fetchListFeed   = (sort = 'popular', page = 1) =>
+  authed(`/api/social/lists?sort=${sort}&page=${page}`);
+export const fetchList       = (id) => authed(`/api/social/lists?id=${encodeURIComponent(id)}`);
+export const fetchUserLists  = (owner) => authed(`/api/social/lists?owner=${encodeURIComponent(owner)}`);
+export const publishList     = ({ id, title, description, emoji, games }) =>
+  authed('/api/social/lists', { method: 'POST', body: { action: 'publish', id, title, description, emoji, games } });
+export const deletePublicList = (id) =>
+  authed('/api/social/lists', { method: 'POST', body: { action: 'delete', id } });
+export const toggleListLike  = (id) =>
+  authed('/api/social/lists', { method: 'POST', body: { action: 'like', id } });
+
 // ── Gizlilik ────────────────────────────────────────────────────────────────
 export const getPrivacy        = ()      => authed('/api/social/privacy');
 export const setPrivacy        = (patch) => authed('/api/social/privacy', { method: 'POST', body: patch });

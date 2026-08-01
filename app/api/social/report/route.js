@@ -91,5 +91,17 @@ export async function POST(request) {
   await redisCmd(['LPUSH', 'report_queue', id]).catch(() => {});
   await redisCmd(['LTRIM', 'report_queue', '0', String(QUEUE_MAX - 1)]).catch(() => {});
 
-  return NextResponse.json({ ok: true, reportId: id });
+  // Topluluk listesi şikayet edildiyse eşiğe ulaşınca OTOMATİK GİZLE.
+  // Apple Guideline 1.2 "zamanında yanıt" istiyor; yalnızca manuel incelemeye
+  // bel bağlamak, inceleme yapılana kadar içeriğin görünür kalması demekti.
+  let autoHidden = false;
+  if (targetType === 'list') {
+    try {
+      const { recordListReport } = await import('../../../lib/lists-store');
+      const r = await recordListReport(targetId, user.uid);
+      autoHidden = r.hidden;
+    } catch { /* moderasyon sayacı yazılamadıysa rapor yine de kaydedildi */ }
+  }
+
+  return NextResponse.json({ ok: true, reportId: id, autoHidden });
 }

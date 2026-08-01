@@ -216,6 +216,14 @@ export default function ProfileScreen() {
           <Ionicons name="chevron-forward" size={18} color={colors.text3} />
         </Pressable>
 
+        {/* Topluluk listeleri — beta */}
+        <Pressable style={styles.settingRow} onPress={() => router.push('/lists')}>
+          <Ionicons name="list" size={20} color={colors.accent} />
+          <Text style={styles.settingText}>{t('pl.entry')}</Text>
+          <View style={styles.betaChip}><Text style={styles.betaChipText}>BETA</Text></View>
+          <Ionicons name="chevron-forward" size={18} color={colors.text3} />
+        </Pressable>
+
         {/* Haftalık rapor */}
         <Pressable style={styles.settingRow} onPress={() => router.push('/stats')}>
           <Ionicons name="stats-chart" size={20} color={colors.accent} />

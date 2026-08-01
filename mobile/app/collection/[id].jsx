@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 import { useCollection } from '../../src/hooks/useCollections';
+import PublishSheet from '../../src/components/PublishSheet';
 import {
   renameCollection, deleteCollection, removeGameFromCollection,
 } from '../../src/services/collectionsStore';
@@ -30,6 +31,7 @@ export default function CollectionDetailScreen() {
 
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState('');
+  const [publishing, setPublishing] = useState(false);
 
   const openRename = useCallback(() => {
     setName(col?.name || '');
@@ -128,6 +130,11 @@ export default function CollectionDetailScreen() {
           <Text numberOfLines={1} style={styles.title}>{col.emoji} {col.name}</Text>
           <Text style={styles.subtitle}>{games.length} {t('col.gameCount')}</Text>
         </View>
+        {games.length > 0 && (
+          <Pressable style={styles.iconBtn} onPress={() => setPublishing(true)} hitSlop={10}>
+            <Ionicons name="share-social-outline" size={19} color={colors.accent} />
+          </Pressable>
+        )}
         <Pressable style={styles.iconBtn} onPress={openRename} hitSlop={10}>
           <Ionicons name="create-outline" size={20} color={colors.text} />
         </Pressable>
@@ -152,6 +159,12 @@ export default function CollectionDetailScreen() {
           showsVerticalScrollIndicator={false}
         />
       )}
+
+      <PublishSheet
+        visible={publishing}
+        onClose={() => setPublishing(false)}
+        collection={col}
+      />
 
       <Modal visible={editing} transparent animationType="fade" onRequestClose={() => setEditing(false)}>
         <Pressable style={styles.backdrop} onPress={() => setEditing(false)}>
