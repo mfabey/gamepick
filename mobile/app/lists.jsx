@@ -202,18 +202,18 @@ const styles = StyleSheet.create({
   titleWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
   title: { fontSize: 18, fontWeight: '900', color: colors.text, letterSpacing: -0.3 },
   betaBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.sm, backgroundColor: colors.accent },
-  betaText: { color: '#fff', fontSize: 9, fontWeight: '900', letterSpacing: 0.5 },
-  iconBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  betaText: { color: '#fff', fontSize: 11, fontWeight: '900', letterSpacing: 0.5 },
+  iconBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
 
   tabs: { flexDirection: 'row', gap: 6, paddingHorizontal: spacing.md, paddingBottom: 10 },
   tab: {
-    flex: 1, height: 36, borderRadius: radius.md, backgroundColor: colors.card,
+    flex: 1, height: 44, borderRadius: radius.md, backgroundColor: colors.card,
     alignItems: 'center', justifyContent: 'center',
     borderWidth: 1, borderColor: colors.cardBorder,
   },
   tabOn: { backgroundColor: colors.accentBg, borderColor: colors.accentBorder },
   tabText: { color: colors.text2, fontSize: 13, fontWeight: '700' },
-  tabTextOn: { color: colors.accent },
+  tabTextOn: { color: colors.accentText },
 
   list: { paddingHorizontal: spacing.md, paddingBottom: 30 },
   card: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11 },

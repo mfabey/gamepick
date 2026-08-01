@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
   checkOn: { backgroundColor: colors.accent, borderColor: colors.accent },
 
   addRow: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingVertical: 13 },
-  addText: { color: colors.accent, fontSize: 14.5, fontWeight: '700' },
+  addText: { color: colors.accentText, fontSize: 14.5, fontWeight: '700' },
 
   newRow: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingVertical: 10 },
   input: {

@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
   },
   title: { flex: 1, fontSize: 19, fontWeight: '900', color: colors.text, letterSpacing: -0.3 },
   iconBtn: {
-    width: 40, height: 40, borderRadius: 20, backgroundColor: colors.card,
+    width: 44, height: 44, borderRadius: 22, backgroundColor: colors.card,
     alignItems: 'center', justifyContent: 'center',
   },
 
@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
   sheetTitle: { color: colors.text, fontSize: 17, fontWeight: '900', marginBottom: 14 },
   emojiRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginBottom: 14 },
   emojiBtn: {
-    width: 40, height: 40, borderRadius: radius.md, backgroundColor: colors.card,
+    width: 44, height: 44, borderRadius: radius.md, backgroundColor: colors.card,
     alignItems: 'center', justifyContent: 'center',
     borderWidth: 2, borderColor: 'transparent',
   },

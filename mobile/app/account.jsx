@@ -265,6 +265,6 @@ const styles = StyleSheet.create({
   ctaOff: { opacity: 0.45 },
   ctaText: { color: '#fff', fontSize: 15.5, fontWeight: '800' },
 
-  link:      { color: colors.accent, fontSize: 14, fontWeight: '700', textAlign: 'center', marginTop: 20 },
+  link:      { color: colors.accentText, fontSize: 14, fontWeight: '700', textAlign: 'center', marginTop: 20 },
   linkMuted: { color: colors.text3,  fontSize: 13.5, textAlign: 'center', marginTop: 14 },
 });

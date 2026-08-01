@@ -137,13 +137,13 @@ const styles = StyleSheet.create({
 
   featured: { marginHorizontal: spacing.lg, height: 210, borderRadius: radius.lg, overflow: 'hidden', backgroundColor: colors.card, marginBottom: 4 },
   featuredBadge: { position: 'absolute', top: 12, left: 12, backgroundColor: colors.accent, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 4 },
-  featuredBadgeText: { color: '#fff', fontSize: 10.5, fontWeight: '800', letterSpacing: 0.5 },
+  featuredBadgeText: { color: '#fff', fontSize: 11, fontWeight: '800', letterSpacing: 0.5 },
   featuredInfo: { position: 'absolute', left: 16, right: 16, bottom: 14 },
   featuredTitle: { color: '#fff', fontSize: 18, fontWeight: '800', lineHeight: 22, marginTop: 8 },
 
   catRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   catPill: { backgroundColor: colors.accentSoft, borderColor: colors.accentBorder, borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: 9, paddingVertical: 3 },
-  catPillText: { color: '#ff6b70', fontSize: 10.5, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.4 },
+  catPillText: { color: '#ff6b70', fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.4 },
   metaText: { color: 'rgba(255,255,255,0.7)', fontSize: 11.5, fontWeight: '500' },
 
   chipsRow: { paddingHorizontal: spacing.lg, gap: 8, paddingVertical: 14 },
@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: 12, paddingHorizontal: spacing.lg, paddingVertical: 12 },
   thumb: { width: 108, height: 76, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.card },
   catPillSm: { alignSelf: 'flex-start', backgroundColor: colors.accentSoft, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2, marginBottom: 5 },
-  catPillTextSm: { color: '#ff6b70', fontSize: 9.5, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.3 },
+  catPillTextSm: { color: '#ff6b70', fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.3 },
   rowTitle: { color: colors.text, fontSize: 14.5, fontWeight: '700', lineHeight: 18 },
   rowMeta: { color: colors.text3, fontSize: 11.5, marginTop: 5, fontWeight: '500' },
 

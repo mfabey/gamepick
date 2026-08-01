@@ -318,13 +318,13 @@ const styles = StyleSheet.create({
   notifTitle: { fontSize: 15, fontWeight: '700', color: colors.text },
   notifDesc: { fontSize: 12, color: colors.text3, marginTop: 2, lineHeight: 16 },
   wishBadge: { minWidth: 22, height: 22, borderRadius: 11, backgroundColor: colors.accentSoft, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
-  wishBadgeText: { color: colors.accent, fontSize: 12, fontWeight: '800' },
+  wishBadgeText: { color: colors.accentText, fontSize: 12, fontWeight: '800' },
   betaChip: {
     paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.sm,
     backgroundColor: colors.accentBg, borderWidth: 1, borderColor: colors.accentBorder,
     marginRight: 4,
   },
-  betaChipText: { color: colors.accent, fontSize: 9, fontWeight: '900', letterSpacing: 0.5 },
+  betaChipText: { color: colors.accentText, fontSize: 11, fontWeight: '900', letterSpacing: 0.5 },
 });
 
 

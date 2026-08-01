@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md, paddingTop: 6, paddingBottom: 10,
   },
   title: { flex: 1, textAlign: 'center', fontSize: 18, fontWeight: '900', color: colors.text },
-  iconBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  iconBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
 
   body: { padding: spacing.lg, paddingBottom: 40 },
   card: {
@@ -172,11 +172,11 @@ const styles = StyleSheet.create({
     width: 38, height: 38, borderRadius: 19, backgroundColor: colors.accentBg,
     alignItems: 'center', justifyContent: 'center',
   },
-  avatarText: { color: colors.accent, fontWeight: '900', fontSize: 16 },
+  avatarText: { color: colors.accentText, fontWeight: '900', fontSize: 16 },
   blockName: { color: colors.text, fontSize: 14.5, fontWeight: '700' },
   blockHandle: { color: colors.text3, fontSize: 12, marginTop: 1 },
   unblockBtn: {
-    paddingHorizontal: 13, height: 33, borderRadius: radius.md,
+    paddingHorizontal: 13, height: 44, borderRadius: radius.md,
     backgroundColor: colors.bgInput, alignItems: 'center', justifyContent: 'center',
     borderWidth: 1, borderColor: colors.cardBorder,
   },

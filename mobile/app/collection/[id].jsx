@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 18, fontWeight: '900', color: colors.text, letterSpacing: -0.3 },
   subtitle: { fontSize: 12.5, color: colors.text2, marginTop: 2 },
   iconBtn: {
-    width: 40, height: 40, borderRadius: 20, backgroundColor: colors.card,
+    width: 44, height: 44, borderRadius: 22, backgroundColor: colors.card,
     alignItems: 'center', justifyContent: 'center',
   },
 

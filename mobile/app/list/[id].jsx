@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md, paddingTop: 6, paddingBottom: 4,
   },
   iconBtn: {
-    width: 40, height: 40, borderRadius: 20, backgroundColor: colors.card,
+    width: 44, height: 44, borderRadius: 22, backgroundColor: colors.card,
     alignItems: 'center', justifyContent: 'center',
   },
 

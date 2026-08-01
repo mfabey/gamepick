@@ -246,7 +246,7 @@ export default function GameDetail() {
           ) : null}
           {detail?.rating > 0 ? (
             <View style={styles.metaChip}>
-              <Text style={[styles.metaChipText, { color: colors.accent }]}>★ {detail.rating.toFixed(1)}</Text>
+              <Text style={[styles.metaChipText, { color: colors.accentText }]}>★ {detail.rating.toFixed(1)}</Text>
               <Text style={styles.metaChipLabel}>Puan</Text>
             </View>
           ) : null}
@@ -272,7 +272,7 @@ export default function GameDetail() {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               {onSale && <View style={styles.discountBadge}><Text style={styles.discountText}>-%{price.discount}</Text></View>}
               {onSale && price.original != null && <Text style={styles.original}>{formatPrice(price.original)}</Text>}
-              <Text style={[styles.price, onSale && { color: colors.accent }]}>{formatPrice(price.price)}</Text>
+              <Text style={[styles.price, onSale && { color: colors.accentText }]}>{formatPrice(price.price)}</Text>
             </View>
           ) : (
             <Text style={styles.priceLoading}>—</Text>
@@ -309,7 +309,7 @@ export default function GameDetail() {
                   {s.discount > 0 ? <View style={styles.discountBadge}><Text style={styles.discountText}>-%{s.discount}</Text></View> : null}
                   <View style={{ alignItems: 'flex-end', minWidth: 64 }}>
                     {s.discount > 0 ? <Text style={styles.original}>{formatPrice(s.original)}</Text> : null}
-                    <Text style={[styles.cmpPrice, i === 0 && { color: colors.accent }]}>
+                    <Text style={[styles.cmpPrice, i === 0 && { color: colors.accentText }]}>
                       {s.isFree ? t('card.free') : formatPrice(s.price)}
                     </Text>
                   </View>
@@ -471,7 +471,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   coverWrap: { height: 320, backgroundColor: '#0d0f12' },
   topBar: { paddingHorizontal: spacing.md, paddingTop: 6, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  iconBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
+  iconBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
   iconBtnActive: { backgroundColor: colors.accent },
   body: { flex: 1, marginTop: -48 },
   name: { fontSize: 26, fontWeight: '900', color: colors.text, letterSpacing: -0.5, lineHeight: 30 },
@@ -480,7 +480,7 @@ const styles = StyleSheet.create({
   metaChip: { backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: radius.md, paddingHorizontal: 14, paddingVertical: 8, alignItems: 'center', minWidth: 68 },
   metaChipText: { fontSize: 17, fontWeight: '800' },
   metaChipText2: { fontSize: 12.5, fontWeight: '700', color: colors.text },
-  metaChipLabel: { fontSize: 10, color: colors.text3, fontWeight: '600', marginTop: 2, textTransform: 'uppercase', letterSpacing: 0.3 },
+  metaChipLabel: { fontSize: 11, color: colors.text3, fontWeight: '600', marginTop: 2, textTransform: 'uppercase', letterSpacing: 0.3 },
   dev: { fontSize: 13, color: colors.text3, marginTop: 12, fontWeight: '600' },
 
   priceRow: { marginTop: 16, minHeight: 26, justifyContent: 'center', alignItems: 'flex-start' },
@@ -498,7 +498,7 @@ const styles = StyleSheet.create({
   cmpRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: radius.md, paddingHorizontal: 14, paddingVertical: 11 },
   cmpBest: { borderColor: colors.accent, backgroundColor: colors.accentSoft },
   cmpName: { fontSize: 13.5, fontWeight: '700', color: colors.text },
-  cmpCheapest: { fontSize: 10.5, fontWeight: '700', color: colors.accent, marginTop: 1 },
+  cmpCheapest: { fontSize: 11, fontWeight: '700', color: colors.accentText, marginTop: 1 },
   cmpPrice: { fontSize: 15, fontWeight: '800', color: colors.text },
 
   revCard: { backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: radius.md, padding: 16 },
@@ -516,7 +516,7 @@ const styles = StyleSheet.create({
   genreText: { color: '#ff8085', fontSize: 12.5, fontWeight: '700' },
   shot: { width: 264, height: 148, borderRadius: radius.md, backgroundColor: colors.card },
   desc: { fontSize: 14, color: colors.text2, lineHeight: 21 },
-  moreLink: { color: colors.accent, fontSize: 13.5, fontWeight: '700', marginTop: 8 },
+  moreLink: { color: colors.accentText, fontSize: 13.5, fontWeight: '700', marginTop: 8 },
   modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', alignItems: 'center', justifyContent: 'center' },
   modalImage: { width: '100%', height: '100%' },
   closeBtn: { position: 'absolute', top: 50, right: 20, width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center', zIndex: 10 },

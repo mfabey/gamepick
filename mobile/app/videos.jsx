@@ -363,9 +363,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 7, paddingVertical: 2.5, borderRadius: radius.sm,
     backgroundColor: colors.accent,
   },
-  betaText: { color: '#fff', fontSize: 9.5, fontWeight: '900', letterSpacing: 0.6 },
+  betaText: { color: '#fff', fontSize: 11, fontWeight: '900', letterSpacing: 0.6 },
   iconBtn: {
-    width: 40, height: 40, borderRadius: 20,
+    width: 44, height: 44, borderRadius: 22,
     backgroundColor: 'rgba(0,0,0,0.35)',
     alignItems: 'center', justifyContent: 'center',
   },
@@ -379,7 +379,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: 'rgba(255,255,255,0.16)',
   },
   actionCircleOn: { backgroundColor: colors.accent, borderColor: colors.accent },
-  actionLabel: { color: '#fff', fontSize: 10.5, fontWeight: '700' },
+  actionLabel: { color: '#fff', fontSize: 11, fontWeight: '700' },
 
   info: { position: 'absolute', left: spacing.lg, right: 84 },
   name: { color: '#fff', fontSize: 21, fontWeight: '900', letterSpacing: -0.4, lineHeight: 26 },

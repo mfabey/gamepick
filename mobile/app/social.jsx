@@ -567,20 +567,20 @@ const styles = StyleSheet.create({
   headTitleWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
   headTitle: { fontSize: 18, fontWeight: '900', color: colors.text, letterSpacing: -0.3 },
   betaBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.sm, backgroundColor: colors.accent },
-  betaText: { color: '#fff', fontSize: 9, fontWeight: '900', letterSpacing: 0.5 },
-  iconBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  betaText: { color: '#fff', fontSize: 11, fontWeight: '900', letterSpacing: 0.5 },
+  iconBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
 
   tabs: {
     flexDirection: 'row', gap: 6, paddingHorizontal: spacing.md, paddingBottom: 10,
   },
   tab: {
-    flex: 1, height: 38, borderRadius: radius.md, backgroundColor: colors.card,
+    flex: 1, height: 44, borderRadius: radius.md, backgroundColor: colors.card,
     alignItems: 'center', justifyContent: 'center',
     borderWidth: 1, borderColor: colors.cardBorder,
   },
   tabOn: { backgroundColor: colors.accentBg, borderColor: colors.accentBorder },
   tabText: { color: colors.text2, fontSize: 13, fontWeight: '700' },
-  tabTextOn: { color: colors.accent },
+  tabTextOn: { color: colors.accentText },
 
   list: { paddingHorizontal: spacing.md, paddingBottom: 30 },
   sectionLabel: {
@@ -597,10 +597,10 @@ const styles = StyleSheet.create({
   moreBtn: { padding: 6 },
 
   avatar: { backgroundColor: colors.accentBg, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { color: colors.accent, fontWeight: '900' },
+  avatarText: { color: colors.accentText, fontWeight: '900' },
 
   smallBtn: {
-    paddingHorizontal: 14, height: 34, borderRadius: radius.md,
+    paddingHorizontal: 14, height: 44, borderRadius: radius.md,
     backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center',
   },
   smallBtnGhost: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder },
@@ -617,7 +617,7 @@ const styles = StyleSheet.create({
   actBody: { flex: 1 },
   actText: { color: colors.text2, fontSize: 14, lineHeight: 19 },
   actName: { color: colors.text, fontWeight: '800' },
-  actGame: { color: colors.accent, fontWeight: '700' },
+  actGame: { color: colors.accentText, fontWeight: '700' },
   actTime: { color: colors.text3, fontSize: 11.5, marginTop: 3 },
 
   searchWrap: {

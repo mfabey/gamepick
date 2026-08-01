@@ -103,7 +103,7 @@ const WishRow = memo(function WishRow({ item, onOpen, onRemove }) {
           ) : price?.price != null ? (
             <>
               {onSale && <View style={styles.saleBadge}><Text style={styles.saleText}>-%{price.discount}</Text></View>}
-              <Text style={[styles.price, onSale && { color: colors.accent }]}>{formatPrice(price.price)}</Text>
+              <Text style={[styles.price, onSale && { color: colors.accentText }]}>{formatPrice(price.price)}</Text>
             </>
           ) : (
             <Text style={styles.priceDim}>…</Text>
@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: 8 },
   back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   title: { flex: 1, fontSize: 20, fontWeight: '800', color: colors.text, textAlign: 'center' },
-  count: { width: 40, textAlign: 'center', fontSize: 15, fontWeight: '800', color: colors.accent },
+  count: { width: 40, textAlign: 'center', fontSize: 15, fontWeight: '800', color: colors.accentText },
 
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 40 },
   emptyTitle: { fontSize: 18, fontWeight: '800', color: colors.text },
@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
 
   notifBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.accentSoft, borderColor: colors.accentBorder, borderWidth: 1, borderRadius: radius.md, padding: 12, marginHorizontal: spacing.lg, marginTop: 12, marginBottom: 4 },
   notifText: { flex: 1, fontSize: 12, color: colors.text2, lineHeight: 16 },
-  notifCta: { fontSize: 12.5, fontWeight: '800', color: colors.accent },
+  notifCta: { fontSize: 12.5, fontWeight: '800', color: colors.accentText },
 
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: spacing.lg, paddingVertical: 11 },
   thumb: { width: 96, height: 54, borderRadius: radius.sm, overflow: 'hidden', backgroundColor: colors.card },

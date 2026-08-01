@@ -73,7 +73,7 @@ function GameCard({ game }) {
             {isFree ? (
               <Text style={styles.priceFree}>{t('card.free')}</Text>
             ) : price?.price != null ? (
-              <Text style={[styles.price, onSale && { color: colors.accent }]}>{formatPrice(price.price)}</Text>
+              <Text style={[styles.price, onSale && { color: colors.accentText }]}>{formatPrice(price.price)}</Text>
             ) : null}
           </View>
         </View>

@@ -148,7 +148,7 @@ export default function HomeScreen() {
 
           <Text style={styles.title}>
             {lang === 'tr' ? 'Sıradaki oyununu ' : 'Discover your '}
-            <Text style={{ color: colors.accent }}>{lang === 'tr' ? 'keşfet' : 'next game'}</Text>
+            <Text style={{ color: colors.accentText }}>{lang === 'tr' ? 'keşfet' : 'next game'}</Text>
           </Text>
           <Text style={styles.subtitle}>{t('hero.subtitle')}</Text>
 
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg, height: 56, paddingLeft: 18, paddingRight: 8,
   },
   searchText: { flex: 1, color: colors.text3, fontSize: 15.5 },
-  searchBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
+  searchBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
 
   discover: {
     flexDirection: 'row', alignItems: 'center', gap: 9, marginTop: 10,
@@ -350,7 +350,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accentBorder,
     marginRight: 4,
   },
-  betaChipText: { color: colors.accent, fontSize: 9, fontWeight: '900', letterSpacing: 0.5 },
+  betaChipText: { color: colors.accentText, fontSize: 11, fontWeight: '900', letterSpacing: 0.5 },
 
   strip: { paddingHorizontal: spacing.lg, gap: 12, paddingTop: 22 },
   stripTile: { width: 172, height: 97, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.card },
@@ -358,14 +358,14 @@ const styles = StyleSheet.create({
 
   sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, marginBottom: 12 },
   sectionTitle: { fontSize: 18, fontWeight: '800', color: colors.text },
-  viewAll: { fontSize: 13, color: colors.accent, fontWeight: '700' },
+  viewAll: { fontSize: 13, color: colors.accentText, fontWeight: '700' },
   row: { paddingHorizontal: spacing.lg, gap: 12 },
   card: { width: 132 },
 
   newsCard: { width: 236 },
   newsCover: { width: '100%', height: 132, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.card },
   newsCat: { position: 'absolute', top: 8, left: 8, backgroundColor: colors.accentSoft, borderColor: colors.accentBorder, borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 3 },
-  newsCatText: { color: '#ff8085', fontSize: 9.5, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.3 },
+  newsCatText: { color: '#ff8085', fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.3 },
   newsTitle: { color: colors.text, fontSize: 13.5, fontWeight: '700', lineHeight: 17, marginTop: 8 },
   newsMeta: { color: colors.text3, fontSize: 11, fontWeight: '600', marginTop: 4 },
   cardCover: { width: '100%', aspectRatio: 3 / 4, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.card },
@@ -373,5 +373,5 @@ const styles = StyleSheet.create({
   mcBadge: { position: 'absolute', top: 7, right: 7, backgroundColor: 'rgba(8,10,14,0.75)', borderRadius: 7, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' },
   mcText: { fontSize: 11, fontWeight: '800' },
   freeBadge: { position: 'absolute', top: 7, left: 7, backgroundColor: colors.green, borderRadius: 7, paddingHorizontal: 6, paddingVertical: 2 },
-  freeText: { fontSize: 10, fontWeight: '800', color: '#04130d' },
+  freeText: { fontSize: 11, fontWeight: '800', color: '#04130d' },
 });

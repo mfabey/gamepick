@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 19, fontWeight: '900', color: colors.text, letterSpacing: -0.3 },
   subtitle: { fontSize: 12.5, color: colors.text2, marginTop: 2 },
   iconBtn: {
-    width: 40, height: 40, borderRadius: 20, backgroundColor: colors.card,
+    width: 44, height: 44, borderRadius: 22, backgroundColor: colors.card,
     alignItems: 'center', justifyContent: 'center',
   },
 
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accentBg, borderRadius: radius.xl,
     borderWidth: 1, borderColor: colors.accentBorder, marginTop: 6,
   },
-  heroNum: { color: colors.accent, fontSize: 62, fontWeight: '900', letterSpacing: -2, lineHeight: 66 },
+  heroNum: { color: colors.accentText, fontSize: 62, fontWeight: '900', letterSpacing: -2, lineHeight: 66 },
   heroLabel: { color: colors.text, fontSize: 14.5, fontWeight: '700', marginTop: 2 },
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 12 },

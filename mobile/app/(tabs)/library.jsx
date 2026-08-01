@@ -249,7 +249,7 @@ export default function LibraryScreen() {
                 ].map(o => (
                   <Pressable key={o.v} onPress={() => setSort(o.v)}
                     style={[styles.sortChip, sort === o.v && styles.sortChipActive]}>
-                    <Text style={[styles.sortChipText, sort === o.v && { color: colors.accent, fontWeight: '700' }]}>{o.label}</Text>
+                    <Text style={[styles.sortChipText, sort === o.v && { color: colors.accentText, fontWeight: '700' }]}>{o.label}</Text>
                   </Pressable>
                 ))}
                 <Text style={styles.countText}>{filtered.length}</Text>
@@ -412,12 +412,12 @@ const styles = StyleSheet.create({
   stackAvatar: { width: 46, height: 46, borderRadius: 11, borderWidth: 2, borderColor: '#0f141e' },
   avatarFallback: { alignItems: 'center', justifyContent: 'center' },
   avatarInitial: { color: '#fff', fontWeight: '800', fontSize: 18 },
-  platformTag: { fontSize: 10, fontWeight: '800', color: colors.steam, letterSpacing: 1, marginBottom: 2 },
+  platformTag: { fontSize: 11, fontWeight: '800', color: colors.steam, letterSpacing: 1, marginBottom: 2 },
   headerName: { fontSize: 18, fontWeight: '800', color: '#fff' },
   statsRow: { flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 14, gap: 4 },
   statCell: { flex: 1, alignItems: 'center' },
   statValue: { fontSize: 20, fontWeight: '800', color: '#fff', letterSpacing: -0.5 },
-  statLabel: { fontSize: 10, fontWeight: '700', color: colors.text3, textTransform: 'uppercase', letterSpacing: 0.4, marginTop: 3 },
+  statLabel: { fontSize: 11, fontWeight: '700', color: colors.text3, textTransform: 'uppercase', letterSpacing: 0.4, marginTop: 3 },
 
   searchBox: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: radius.md, paddingHorizontal: 14, height: 42, marginBottom: 10 },
   searchInput: { flex: 1, color: colors.text, fontSize: 14 },
@@ -433,12 +433,12 @@ const styles = StyleSheet.create({
   tileInfo: { position: 'absolute', left: 11, right: 11, bottom: 10 },
   tileName: { color: '#fff', fontSize: 14, fontWeight: '800', lineHeight: 17 },
   tileMeta: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 4 },
-  tileHours: { color: colors.accent, fontSize: 16, fontWeight: '800' },
+  tileHours: { color: colors.accentText, fontSize: 16, fontWeight: '800' },
   tileSub: { color: colors.text3, fontSize: 11, fontWeight: '600' },
   tilePrice: { color: '#fff', fontSize: 13, fontWeight: '800' },
   tilePriceFree: { color: colors.green, fontSize: 13, fontWeight: '800' },
   gpBadge: { position: 'absolute', top: 8, right: 8, backgroundColor: '#107c10', borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 },
-  gpText: { color: '#fff', fontSize: 9.5, fontWeight: '800' },
+  gpText: { color: '#fff', fontSize: 11, fontWeight: '800' },
   saleBadge: { position: 'absolute', top: 8, left: 8, backgroundColor: colors.accent, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 },
   saleText: { color: '#0b0d10', fontSize: 11, fontWeight: '800' },
 
