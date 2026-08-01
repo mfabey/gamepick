@@ -9,7 +9,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { smartSearch } from '../src/api/games';
 import GameCard from '../src/components/GameCard';
-import { colors, radius, spacing, TAB_SPACE } from '../src/theme';
+import { colors, radius, spacing, TAB_SPACE, PRESSED } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
 import { useOwnedGames } from '../src/hooks/useOwnedGames';
 import { useDismissed } from '../src/hooks/useDismissed';
@@ -146,7 +146,7 @@ export default function DiscoverScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.head}>
-        <Pressable style={styles.back} onPress={() => router.back()} hitSlop={10}>
+        <Pressable style={({ pressed }) => [styles.back, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10}>
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </Pressable>
         <Text style={styles.title}>{t('discover.title')}</Text>

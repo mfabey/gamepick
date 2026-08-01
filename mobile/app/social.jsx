@@ -26,8 +26,9 @@ import {
 import { subscribeSession, getSession } from '../src/services/session';
 import ReportSheet from '../src/components/ReportSheet';
 import EmptyState from '../src/components/EmptyState';
-import { colors, radius, spacing } from '../src/theme';
+import { colors, radius, spacing, PRESSED } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
+import IconButton from '../src/components/IconButton';
 
 const TABS = ['feed', 'friends', 'requests'];
 
@@ -113,9 +114,7 @@ function Header({ title, beta, onBack }) {
   const { t } = useLanguage();
   return (
     <View style={styles.head}>
-      <Pressable style={styles.iconBtn} onPress={onBack} hitSlop={10}>
-        <Ionicons name="chevron-back" size={24} color={colors.text} />
-      </Pressable>
+      <IconButton icon='chevron-back' size={24} color={colors.text} onPress={onBack} style={styles.iconBtn} />
       <View style={styles.headTitleWrap}>
         <Text style={styles.headTitle}>{title}</Text>
         {beta ? <View style={styles.betaBadge}><Text style={styles.betaText}>{t('soc.beta')}</Text></View> : null}
@@ -132,7 +131,7 @@ function Gate({ icon, text, ctaLabel, onPress, onBack, title }) {
       <View style={styles.center}>
         <Ionicons name={icon} size={54} color={colors.text3} />
         <Text style={styles.gateText}>{text}</Text>
-        <Pressable style={styles.cta} onPress={onPress}>
+        <Pressable style={({ pressed }) => [styles.cta, pressed && PRESSED]} onPress={onPress}>
           <Text style={styles.ctaText}>{ctaLabel}</Text>
         </Pressable>
       </View>
@@ -297,7 +296,7 @@ function FeedTab() {
       {items.map((it, i) => (
         <Pressable
           key={`${it.uid}_${it.ts}_${i}`}
-          style={styles.actRow}
+          style={({ pressed }) => [styles.actRow, pressed && PRESSED]}
           onPress={() => it.gameId && router.push({
             pathname: '/game/[id]',
             params: { id: it.gameId, name: it.gameName || '', image: it.gameImage || '' },

@@ -21,8 +21,9 @@ import {
   renameCollection, deleteCollection, removeGameFromCollection,
 } from '../../src/services/collectionsStore';
 import { posterImage } from '../../src/utils/images';
-import { colors, radius, spacing } from '../../src/theme';
+import { colors, radius, spacing, PRESSED } from '../../src/theme';
 import { useLanguage } from '../../src/context/LanguageContext';
+import IconButton from '../../src/components/IconButton';
 
 export default function CollectionDetailScreen() {
   const router = useRouter();
@@ -88,7 +89,7 @@ export default function CollectionDetailScreen() {
 
   const renderItem = useCallback(({ item }) => (
     <Pressable
-      style={styles.cell}
+      style={({ pressed }) => [styles.cell, pressed && PRESSED]}
       onPress={() => openGame(item)}
       onLongPress={() => removeGame(item)}
     >
@@ -111,7 +112,7 @@ export default function CollectionDetailScreen() {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={styles.head}>
-          <Pressable style={styles.iconBtn} onPress={() => router.back()} hitSlop={10}>
+          <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10}>
             <Ionicons name="chevron-back" size={24} color={colors.text} />
           </Pressable>
         </View>
@@ -124,7 +125,7 @@ export default function CollectionDetailScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.head}>
-        <Pressable style={styles.iconBtn} onPress={() => router.back()} hitSlop={10}>
+        <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10}>
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </Pressable>
         <View style={styles.headText}>
@@ -132,16 +133,12 @@ export default function CollectionDetailScreen() {
           <Text style={styles.subtitle}>{games.length} {t('col.gameCount')}</Text>
         </View>
         {games.length > 0 && (
-          <Pressable style={styles.iconBtn} onPress={() => setPublishing(true)} hitSlop={10}>
+          <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => setPublishing(true)} hitSlop={10}>
             <Ionicons name="share-social-outline" size={19} color={colors.accent} />
           </Pressable>
         )}
-        <Pressable style={styles.iconBtn} onPress={openRename} hitSlop={10}>
-          <Ionicons name="create-outline" size={20} color={colors.text} />
-        </Pressable>
-        <Pressable style={styles.iconBtn} onPress={confirmDelete} hitSlop={10}>
-          <Ionicons name="trash-outline" size={19} color={colors.danger} />
-        </Pressable>
+        <IconButton icon='create-outline' size={20} color={colors.text} onPress={openRename} style={styles.iconBtn} />
+        <IconButton icon='trash-outline' size={19} color={colors.danger} onPress={confirmDelete} style={styles.iconBtn} />
       </View>
 
       {games.length === 0 ? (
@@ -171,9 +168,9 @@ export default function CollectionDetailScreen() {
       />
 
       <Modal visible={editing} transparent animationType="fade" onRequestClose={() => setEditing(false)}>
-        <Pressable style={styles.backdrop} onPress={() => setEditing(false)}>
+        <Pressable style={({ pressed }) => [styles.backdrop, pressed && PRESSED]} onPress={() => setEditing(false)}>
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-            <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+            <Pressable style={({ pressed }) => [styles.sheet, pressed && PRESSED]} onPress={(e) => e.stopPropagation()}>
               <Text style={styles.sheetTitle}>{t('col.rename')}</Text>
               <TextInput
                 value={name}
@@ -187,7 +184,7 @@ export default function CollectionDetailScreen() {
                 onSubmitEditing={saveName}
               />
               <View style={styles.sheetActions}>
-                <Pressable style={styles.ghostBtn} onPress={() => setEditing(false)}>
+                <Pressable style={({ pressed }) => [styles.ghostBtn, pressed && PRESSED]} onPress={() => setEditing(false)}>
                   <Text style={styles.ghostText}>{t('col.cancel')}</Text>
                 </Pressable>
                 <Pressable

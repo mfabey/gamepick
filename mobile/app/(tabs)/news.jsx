@@ -8,7 +8,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { fetchNews } from '../../src/api/news';
 import { NewsListSkeleton } from '../../src/components/Skeleton';
 import NewsImage from '../../src/components/NewsImage';
-import { colors, radius, spacing, TAB_SPACE } from '../../src/theme';
+import { colors, radius, spacing, TAB_SPACE, PRESSED } from '../../src/theme';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useQuery } from '../../src/hooks/useQuery';
 
@@ -55,7 +55,7 @@ export default function NewsScreen() {
         <Text style={styles.header}>{t('news.title')}</Text>
         <View style={styles.center}>
           <Ionicons name="cloud-offline-outline" size={44} color={colors.text3} />
-          <Pressable style={styles.retryBtn} onPress={refetch}><Text style={styles.retryText}>{t('common.retry')}</Text></Pressable>
+          <Pressable style={({ pressed }) => [styles.retryBtn, pressed && PRESSED]} onPress={refetch}><Text style={styles.retryText}>{t('common.retry')}</Text></Pressable>
         </View>
       </SafeAreaView>
     );
@@ -74,7 +74,7 @@ export default function NewsScreen() {
           <View>
             {/* Öne çıkan */}
             {cat === 'all' && featured && (
-              <Pressable style={styles.featured} onPress={() => open(featured.url)}>
+              <Pressable style={({ pressed }) => [styles.featured, pressed && PRESSED]} onPress={() => open(featured.url)}>
                 <NewsImage item={featured} style={StyleSheet.absoluteFill} />
                 <LinearGradient colors={['transparent', 'rgba(6,7,9,0.55)', 'rgba(6,7,9,0.97)']} locations={[0.2, 0.6, 1]} style={StyleSheet.absoluteFill} />
                 <View style={styles.featuredBadge}><Text style={styles.featuredBadgeText}>★ {t('news.featured')}</Text></View>
@@ -115,7 +115,7 @@ export default function NewsScreen() {
 
 const NewsRow = memo(function NewsRow({ item, onPress }) {
   return (
-    <Pressable style={styles.row} onPress={() => onPress(item.url)}>
+    <Pressable style={({ pressed }) => [styles.row, pressed && PRESSED]} onPress={() => onPress(item.url)}>
       <View style={styles.thumb}>
         <NewsImage item={item} style={StyleSheet.absoluteFill} />
       </View>

@@ -11,7 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-import { colors, radius, spacing, type } from '../src/theme';
+import { colors, radius, spacing, type, PRESSED } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
 import { useAuth } from '../src/context/AuthContext';
 import { useWishlist } from '../src/context/WishlistContext';
@@ -58,7 +58,7 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.head}>
-        <Pressable style={styles.iconBtn} onPress={() => router.back()} hitSlop={10}>
+        <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10}>
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </Pressable>
         <Text style={styles.title}>{t('prof.settingsTitle')}</Text>
@@ -86,7 +86,7 @@ export default function SettingsScreen() {
 
           <View style={styles.divider} />
 
-          <Pressable style={styles.row} onPress={showLanguagePicker}>
+          <Pressable style={({ pressed }) => [styles.row, pressed && PRESSED]} onPress={showLanguagePicker}>
             <Ionicons name="language" size={20} color={colors.accent} />
             <Text style={styles.rowText}>
               {lang === 'tr' ? 'Dil: Türkçe' : 'Language: English'}
@@ -96,7 +96,7 @@ export default function SettingsScreen() {
 
           <View style={styles.divider} />
 
-          <Pressable style={styles.row} onPress={() => router.push('/onboarding')}>
+          <Pressable style={({ pressed }) => [styles.row, pressed && PRESSED]} onPress={() => router.push('/onboarding')}>
             <Ionicons name="sparkles" size={20} color={colors.accent} />
             <Text style={styles.rowText}>{t('onb.retake')}</Text>
             <Ionicons name="chevron-forward" size={18} color={colors.text3} />
@@ -106,7 +106,7 @@ export default function SettingsScreen() {
         {/* Gizlilik */}
         <Text style={styles.sectionLabel}>{t('prof.privacy')}</Text>
         <View style={styles.card}>
-          <Pressable style={styles.row} onPress={() => router.push('/social-settings')}>
+          <Pressable style={({ pressed }) => [styles.row, pressed && PRESSED]} onPress={() => router.push('/social-settings')}>
             <Ionicons name="lock-closed" size={20} color={colors.accent} />
             <Text style={styles.rowText}>{t('soc.privacyTitle')}</Text>
             <Ionicons name="chevron-forward" size={18} color={colors.text3} />
@@ -118,7 +118,7 @@ export default function SettingsScreen() {
           <>
             <Text style={styles.sectionLabel}>{t('prof.account')}</Text>
             <View style={styles.card}>
-              <Pressable style={styles.row} onPress={onSignOut}>
+              <Pressable style={({ pressed }) => [styles.row, pressed && PRESSED]} onPress={onSignOut}>
                 <Ionicons name="log-out-outline" size={20} color={colors.text2} />
                 <Text style={styles.rowText}>{t('acc.signOut')}</Text>
                 <Ionicons name="chevron-forward" size={18} color={colors.text3} />
@@ -127,7 +127,7 @@ export default function SettingsScreen() {
               <View style={styles.divider} />
 
               {/* Apple zorunlu: uygulama içinden hesap silme */}
-              <Pressable style={styles.row} onPress={() => router.push('/delete-account')}>
+              <Pressable style={({ pressed }) => [styles.row, pressed && PRESSED]} onPress={() => router.push('/delete-account')}>
                 <Ionicons name="trash-outline" size={20} color={colors.danger} />
                 <Text style={[styles.rowText, { color: colors.danger }]}>{t('acc.deleteTitle')}</Text>
                 <Ionicons name="chevron-forward" size={18} color={colors.text3} />

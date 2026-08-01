@@ -11,7 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 import { reportContent } from '../api/social';
-import { colors, radius, spacing } from '../theme';
+import { colors, radius, spacing, PRESSED } from '../theme';
 import { useLanguage } from '../context/LanguageContext';
 
 const REASONS = [
@@ -47,9 +47,9 @@ export default function ReportSheet({ visible, onClose, targetType, targetId, ta
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={close}>
-      <Pressable style={styles.backdrop} onPress={close}>
+      <Pressable style={({ pressed }) => [styles.backdrop, pressed && PRESSED]} onPress={close}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+          <Pressable style={({ pressed }) => [styles.sheet, pressed && PRESSED]} onPress={(e) => e.stopPropagation()}>
             <View style={styles.grabber} />
             <Text style={styles.title}>{t('soc.reportTitle')}</Text>
             {targetLabel ? <Text numberOfLines={1} style={styles.target}>{targetLabel}</Text> : null}

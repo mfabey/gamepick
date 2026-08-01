@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 import { getPrivacy, setPrivacy, getBlocked, unblockUser } from '../src/api/social';
-import { colors, radius, spacing } from '../src/theme';
+import { colors, radius, spacing, PRESSED } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
 
 export default function SocialSettingsScreen() {
@@ -74,7 +74,7 @@ export default function SocialSettingsScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.head}>
-        <Pressable style={styles.iconBtn} onPress={() => router.back()} hitSlop={10}>
+        <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10}>
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </Pressable>
         <Text style={styles.title}>{t('soc.privacyTitle')}</Text>
@@ -127,7 +127,7 @@ export default function SocialSettingsScreen() {
                       </Text>
                       {p.username ? <Text style={styles.blockHandle}>@{p.username}</Text> : null}
                     </View>
-                    <Pressable style={styles.unblockBtn} onPress={() => unblock(p)}>
+                    <Pressable style={({ pressed }) => [styles.unblockBtn, pressed && PRESSED]} onPress={() => unblock(p)}>
                       <Text style={styles.unblockText}>{t('soc.unblock')}</Text>
                     </Pressable>
                   </View>

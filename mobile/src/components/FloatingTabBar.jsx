@@ -3,6 +3,7 @@ import { View, Pressable, Text, StyleSheet, Platform, Animated } from 'react-nat
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassView, isLiquidGlassAvailable, isGlassEffectAPIAvailable } from 'expo-glass-effect';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 import { colors, type } from '../theme';
 
 const ICONS = {
@@ -41,16 +42,23 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
   const insets = useSafeAreaInsets();
   const [barW, setBarW] = useState(0);
   const anim = useRef(new Animated.Value(state.index)).current;
+  const reducedMotion = useReducedMotion();
 
-  // Aktif sekme değişince vurgu yumuşakça kayar
+  // Aktif sekme değişince vurgu yumuşakça kayar.
+  // "Hareketi Azalt" açıksa yaylanma yapılmaz, vurgu doğrudan yerine geçer —
+  // konum bilgisi korunur, yalnızca dekoratif hareket kalkar.
   useEffect(() => {
+    if (reducedMotion) {
+      anim.setValue(state.index);
+      return;
+    }
     Animated.spring(anim, {
       toValue: state.index,
       useNativeDriver: true,
       speed: 18,
       bounciness: 9,
     }).start();
-  }, [state.index, anim]);
+  }, [state.index, anim, reducedMotion]);
 
   const N = state.routes.length;
   const cellW = barW > 0 ? (barW - PAD * 2) / N : 0;

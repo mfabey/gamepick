@@ -17,8 +17,9 @@ import { fetchList, toggleListLike, deletePublicList } from '../../src/api/socia
 import ReportSheet from '../../src/components/ReportSheet';
 import EmptyState from '../../src/components/EmptyState';
 import { posterImage } from '../../src/utils/images';
-import { colors, radius, spacing } from '../../src/theme';
+import { colors, radius, spacing, PRESSED } from '../../src/theme';
 import { useLanguage } from '../../src/context/LanguageContext';
+import IconButton from '../../src/components/IconButton';
 
 export default function PublicListScreen() {
   const router = useRouter();
@@ -77,7 +78,7 @@ export default function PublicListScreen() {
   }, [router]);
 
   const renderItem = useCallback(({ item }) => (
-    <Pressable style={styles.cell} onPress={() => openGame(item)}>
+    <Pressable style={({ pressed }) => [styles.cell, pressed && PRESSED]} onPress={() => openGame(item)}>
       <View style={styles.cover}>
         <Image
           source={posterImage(item.image)}
@@ -104,7 +105,7 @@ export default function PublicListScreen() {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={styles.head}>
-          <Pressable style={styles.iconBtn} onPress={() => router.back()} hitSlop={10}>
+          <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10}>
             <Ionicons name="chevron-back" size={24} color={colors.text} />
           </Pressable>
         </View>
@@ -119,16 +120,14 @@ export default function PublicListScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.head}>
-        <Pressable style={styles.iconBtn} onPress={() => router.back()} hitSlop={10}>
+        <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10}>
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </Pressable>
         <View style={{ flex: 1 }} />
         {list.isOwner ? (
-          <Pressable style={styles.iconBtn} onPress={onUnpublish} hitSlop={10}>
-            <Ionicons name="trash-outline" size={19} color={colors.danger} />
-          </Pressable>
+          <IconButton icon='trash-outline' size={19} color={colors.danger} onPress={onUnpublish} style={styles.iconBtn} />
         ) : (
-          <Pressable style={styles.iconBtn} onPress={() => setReporting(true)} hitSlop={10}>
+          <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => setReporting(true)} hitSlop={10}>
             <Ionicons name="flag-outline" size={19} color={colors.text2} />
           </Pressable>
         )}
@@ -157,7 +156,7 @@ export default function PublicListScreen() {
               <Text style={styles.meta}>
                 {list.gameCount} {t('pl.games')} · {t('pl.by')} @{list.ownerUsername}
               </Text>
-              <Pressable style={styles.likeBtn} onPress={onLike} hitSlop={8}>
+              <Pressable style={({ pressed }) => [styles.likeBtn, pressed && PRESSED]} onPress={onLike} hitSlop={8}>
                 <Ionicons
                   name={list.likedByMe ? 'heart' : 'heart-outline'}
                   size={20}

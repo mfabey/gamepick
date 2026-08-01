@@ -10,7 +10,7 @@ import * as AppleAuthentication from 'expo-apple-authentication';
 import { getValidToken, signOut } from '../src/services/session';
 import { deleteAccount } from '../src/api/account';
 import { useAuth } from '../src/context/AuthContext';
-import { colors, radius, spacing } from '../src/theme';
+import { colors, radius, spacing, PRESSED } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
 
 export default function DeleteAccountScreen() {
@@ -76,7 +76,7 @@ export default function DeleteAccountScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.head}>
-        <Pressable style={styles.back} onPress={() => router.back()} hitSlop={10}>
+        <Pressable style={({ pressed }) => [styles.back, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10}>
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </Pressable>
         <Text style={styles.title}>{t('acc.deleteTitle')}</Text>

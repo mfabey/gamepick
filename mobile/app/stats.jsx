@@ -20,8 +20,9 @@ import { useDismissed } from '../src/hooks/useDismissed';
 import { weeklyReport } from '../src/services/stats';
 import { fetchSteamPrices } from '../src/api/library';
 import EmptyState from '../src/components/EmptyState';
-import { colors, radius, spacing } from '../src/theme';
+import { colors, radius, spacing, PRESSED } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
+import IconButton from '../src/components/IconButton';
 
 export default function StatsScreen() {
   const router = useRouter();
@@ -68,7 +69,7 @@ export default function StatsScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.head}>
-        <Pressable style={styles.iconBtn} onPress={() => router.back()} hitSlop={10}>
+        <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10}>
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </Pressable>
         <View style={styles.headText}>
@@ -76,9 +77,7 @@ export default function StatsScreen() {
           <Text style={styles.subtitle}>{t('stats.subtitle')}</Text>
         </View>
         {report.hasActivity && (
-          <Pressable style={styles.iconBtn} onPress={onShare} hitSlop={10}>
-            <Ionicons name="share-outline" size={20} color={colors.text} />
-          </Pressable>
+          <IconButton icon='share-outline' size={20} color={colors.text} onPress={onShare} style={styles.iconBtn} />
         )}
       </View>
 

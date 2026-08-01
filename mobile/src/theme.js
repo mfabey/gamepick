@@ -53,6 +53,11 @@ export const type = {
   display:  62,
 };
 
+// Basma geri bildirimi — dokunuşa 100ms içinde görsel yanıt (Apple HIG).
+// Modül düzeyinde DONDURULMUŞ tek nesne: her render'da yeni nesne üretmek
+// gereksiz yeniden çizime yol açıyor.
+export const PRESSED = Object.freeze({ opacity: 0.65 });
+
 export const radius = { sm: 8, md: 12, lg: 16, xl: 20, pill: 999 };
 
 export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24 };

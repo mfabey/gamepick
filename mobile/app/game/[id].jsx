@@ -9,7 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import { fetchCardPrice, fetchGameDetail, fetchGameByAppid, fetchPrices, fetchSteamReviews } from '../../src/api/games';
-import { colors, radius, spacing } from '../../src/theme';
+import { colors, radius, spacing, PRESSED } from '../../src/theme';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useWishlist } from '../../src/context/WishlistContext';
 import { useCollections, useCollectionsContaining } from '../../src/hooks/useCollections';
@@ -21,6 +21,7 @@ import { recordSignal } from '../../src/services/tasteProfile';
 import { recordSeen } from '../../src/services/seenStore';
 import FadeIn from '../../src/components/FadeIn';
 import StoreLogo from '../../src/components/StoreLogo';
+import IconButton from '../../src/components/IconButton';
 
 // Olumlu %'den inceleme tier'ı (etiket i18n + renk)
 function tierFor(pct) {
@@ -211,13 +212,11 @@ export default function GameDetail() {
         ) : null}
         <LinearGradient colors={['rgba(8,10,13,0.15)', 'rgba(8,10,13,0.45)', colors.bg]} locations={[0, 0.55, 1]} style={StyleSheet.absoluteFill} />
         <SafeAreaView edges={['top']} style={styles.topBar}>
-          <Pressable style={styles.iconBtn} onPress={() => router.back()} hitSlop={10}>
+          <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10}>
             <Ionicons name="chevron-back" size={24} color="#fff" />
           </Pressable>
           <View style={{ flexDirection: 'row', gap: 10 }}>
-            <Pressable style={styles.iconBtn} onPress={onShare} hitSlop={10}>
-              <Ionicons name="share-outline" size={21} color="#fff" />
-            </Pressable>
+            <IconButton icon='share-outline' size={21} color="#fff" onPress={onShare} style={styles.iconBtn} />
             <Pressable
               style={[styles.iconBtn, inAnyCollection && styles.iconBtnActive]}
               onPress={() => { Haptics.selectionAsync(); setPickerOpen(true); }}
@@ -283,7 +282,7 @@ export default function GameDetail() {
         {stores.length > 0 && (
           <View style={styles.storeRow}>
             {stores.map(s => (
-              <Pressable key={s.key} style={styles.storeBtn} onPress={() => open(s.url)} disabled={!s.url}>
+              <Pressable key={s.key} style={({ pressed }) => [styles.storeBtn, pressed && PRESSED]} onPress={() => open(s.url)} disabled={!s.url}>
                 <Ionicons name={s.icon} size={17} color={s.color} />
                 <Text style={styles.storeText}>{s.label}</Text>
                 <Ionicons name="open-outline" size={13} color={colors.text3} />
@@ -412,7 +411,7 @@ export default function GameDetail() {
           </ScrollView>
 
           {/* Close button */}
-          <Pressable style={styles.closeBtn} onPress={() => setActiveShotIndex(null)} hitSlop={10}>
+          <Pressable style={({ pressed }) => [styles.closeBtn, pressed && PRESSED]} onPress={() => setActiveShotIndex(null)} hitSlop={10}>
             <Ionicons name="close" size={26} color="#fff" />
           </Pressable>
 

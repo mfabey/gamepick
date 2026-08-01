@@ -33,7 +33,7 @@ import CollectionPicker from '../src/components/CollectionPicker';
 import { recordSignal } from '../src/services/tasteProfile';
 import { reportActivity } from '../src/api/social';
 import { recordSeen } from '../src/services/seenStore';
-import { colors, radius, spacing } from '../src/theme';
+import { colors, radius, spacing, PRESSED } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
 
 const { height: SCREEN_H, width: SCREEN_W } = Dimensions.get('window');
@@ -180,7 +180,7 @@ export default function VideosScreen() {
 
       {/* Üst çubuk — geri + BETA rozeti */}
       <SafeAreaView edges={['top']} style={styles.topBar} pointerEvents="box-none">
-        <Pressable style={styles.iconBtn} onPress={() => router.back()} hitSlop={10}>
+        <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10}>
           <Ionicons name="chevron-back" size={24} color="#fff" />
         </Pressable>
         <View style={styles.titleWrap}>
@@ -336,7 +336,7 @@ function VideoItem({ item, height, isActive, player, insets, muted, onToggleMute
 
 function ActionBtn({ icon, label, active, onPress }) {
   return (
-    <Pressable style={styles.actionBtn} onPress={onPress} hitSlop={6}>
+    <Pressable style={({ pressed }) => [styles.actionBtn, pressed && PRESSED]} onPress={onPress} hitSlop={6}>
       <View style={[styles.actionCircle, active && styles.actionCircleOn]}>
         <Ionicons name={icon} size={23} color="#fff" />
       </View>

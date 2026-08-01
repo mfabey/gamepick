@@ -14,7 +14,7 @@ import { useQuery } from '../src/hooks/useQuery';
 import { recordSignal } from '../src/services/tasteProfile';
 import { completeOnboarding } from '../src/services/onboarding';
 import { posterImage } from '../src/utils/images';
-import { colors, radius, spacing } from '../src/theme';
+import { colors, radius, spacing, PRESSED } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
 
 const MIN_PICKS = 3;
@@ -119,7 +119,7 @@ export default function OnboardingScreen() {
 
 function PickCard({ game, selected, onPress }) {
   return (
-    <Pressable onPress={onPress} style={styles.cell}>
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.cell, pressed && PRESSED]}>
       <View style={[styles.cover, selected && styles.coverOn]}>
         <Image
           source={posterImage(game.image)}

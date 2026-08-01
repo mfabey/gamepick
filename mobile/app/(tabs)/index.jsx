@@ -9,7 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import { fetchTrending, fetchGames } from '../../src/api/games';
 import { fetchNews } from '../../src/api/news';
-import { colors, radius, spacing, TAB_SPACE } from '../../src/theme';
+import { colors, radius, spacing, TAB_SPACE, PRESSED } from '../../src/theme';
 import { useLanguage } from '../../src/context/LanguageContext';
 import FadeIn from '../../src/components/FadeIn';
 import PosterImage from '../../src/components/PosterImage';
@@ -153,28 +153,28 @@ export default function HomeScreen() {
           <Text style={styles.subtitle}>{t('hero.subtitle')}</Text>
 
           {/* Arama (dokununca Oyunlar sekmesine gider) */}
-          <Pressable style={styles.search} onPress={() => router.push('/games')}>
+          <Pressable style={({ pressed }) => [styles.search, pressed && PRESSED]} onPress={() => router.push('/games')}>
             <Ionicons name="search" size={19} color={colors.text3} />
             <Text style={styles.searchText}>{t('hero.search')}</Text>
             <View style={styles.searchBtn}><Ionicons name="arrow-forward" size={16} color="#fff" /></View>
           </Pressable>
 
           {/* Doğal dil ile keşif */}
-          <Pressable style={styles.discover} onPress={() => router.push('/discover')}>
+          <Pressable style={({ pressed }) => [styles.discover, pressed && PRESSED]} onPress={() => router.push('/discover')}>
             <Ionicons name="sparkles" size={17} color={colors.accent} />
             <Text style={styles.discoverText}>{t('discover.entry')}</Text>
             <Ionicons name="chevron-forward" size={15} color={colors.text3} />
           </Pressable>
 
           {/* Kaydırarak keşif — hızlı zevk sinyali üretir */}
-          <Pressable style={styles.discover} onPress={() => router.push('/swipe')}>
+          <Pressable style={({ pressed }) => [styles.discover, pressed && PRESSED]} onPress={() => router.push('/swipe')}>
             <Ionicons name="layers" size={17} color={colors.accent} />
             <Text style={styles.discoverText}>{t('swipe.entry')}</Text>
             <Ionicons name="chevron-forward" size={15} color={colors.text3} />
           </Pressable>
 
           {/* Video akışı — beta */}
-          <Pressable style={styles.discover} onPress={() => router.push('/videos')}>
+          <Pressable style={({ pressed }) => [styles.discover, pressed && PRESSED]} onPress={() => router.push('/videos')}>
             <Ionicons name="play-circle" size={17} color={colors.accent} />
             <Text style={styles.discoverText}>{t('vid.entry')}</Text>
             <View style={styles.betaChip}><Text style={styles.betaChipText}>BETA</Text></View>
@@ -188,7 +188,7 @@ export default function HomeScreen() {
           <FadeIn delay={120}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.strip}>
             {heroStrip.map(g => (
-              <Pressable key={`s_${g.id}`} style={styles.stripTile}
+              <Pressable key={`s_${g.id}`} style={({ pressed }) => [styles.stripTile, pressed && PRESSED]}
                 onPress={() => go(router, g)}>
                 <Image source={g.image} cachePolicy="memory-disk" style={StyleSheet.absoluteFill} contentFit="cover" transition={250} />
                 <LinearGradient colors={['transparent', 'rgba(6,7,9,0.9)']} style={StyleSheet.absoluteFill} />

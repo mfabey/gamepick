@@ -17,7 +17,7 @@ import { useCollections } from '../src/hooks/useCollections';
 import { createCollection, deleteCollection } from '../src/services/collectionsStore';
 import EmptyState from '../src/components/EmptyState';
 import { posterImage } from '../src/utils/images';
-import { colors, radius, spacing } from '../src/theme';
+import { colors, radius, spacing, PRESSED } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
 
 const EMOJIS = ['🎮', '🏆', '❤️', '🔥', '👾', '🗡️', '🚀', '🧩', '🌙', '⚡'];
@@ -69,11 +69,11 @@ export default function CollectionsScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.head}>
-        <Pressable style={styles.iconBtn} onPress={() => router.back()} hitSlop={10}>
+        <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10}>
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </Pressable>
         <Text style={styles.title}>{t('col.title')}</Text>
-        <Pressable style={styles.iconBtn} onPress={() => setCreating(true)} hitSlop={10}>
+        <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => setCreating(true)} hitSlop={10}>
           <Ionicons name="add" size={26} color={colors.accent} />
         </Pressable>
       </View>
@@ -89,7 +89,7 @@ export default function CollectionsScreen() {
             {[t('col.suggest1'), t('col.suggest2'), t('col.suggest3')].map((s, i) => (
               <Pressable
                 key={s}
-                style={styles.suggest}
+                style={({ pressed }) => [styles.suggest, pressed && PRESSED]}
                 onPress={async () => {
                   const id = await createCollection(s, EMOJIS[i + 1] || EMOJIS[0]);
                   if (id) {
@@ -117,9 +117,9 @@ export default function CollectionsScreen() {
 
       {/* Oluşturma sayfası */}
       <Modal visible={creating} transparent animationType="fade" onRequestClose={() => setCreating(false)}>
-        <Pressable style={styles.backdrop} onPress={() => setCreating(false)}>
+        <Pressable style={({ pressed }) => [styles.backdrop, pressed && PRESSED]} onPress={() => setCreating(false)}>
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-            <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+            <Pressable style={({ pressed }) => [styles.sheet, pressed && PRESSED]} onPress={(e) => e.stopPropagation()}>
               <Text style={styles.sheetTitle}>{t('col.new')}</Text>
 
               <View style={styles.emojiRow}>
@@ -147,7 +147,7 @@ export default function CollectionsScreen() {
               />
 
               <View style={styles.sheetActions}>
-                <Pressable style={styles.ghostBtn} onPress={() => setCreating(false)}>
+                <Pressable style={({ pressed }) => [styles.ghostBtn, pressed && PRESSED]} onPress={() => setCreating(false)}>
                   <Text style={styles.ghostText}>{t('col.cancel')}</Text>
                 </Pressable>
                 <Pressable

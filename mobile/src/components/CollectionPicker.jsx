@@ -10,8 +10,9 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
-import { colors, radius, spacing } from '../theme';
+import { colors, radius, spacing, PRESSED } from '../theme';
 import { useLanguage } from '../context/LanguageContext';
+import IconButton from './IconButton';
 
 export default function CollectionPicker({
   visible, onClose, collections, selectedIds, game, onToggle, onCreate,
@@ -34,9 +35,9 @@ export default function CollectionPicker({
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose}>
+      <Pressable style={({ pressed }) => [styles.backdrop, pressed && PRESSED]} onPress={onClose}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+          <Pressable style={({ pressed }) => [styles.sheet, pressed && PRESSED]} onPress={(e) => e.stopPropagation()}>
             <View style={styles.grabber} />
             <Text style={styles.title}>{t('col.addTo')}</Text>
             <Text numberOfLines={1} style={styles.gameName}>{game?.name}</Text>
@@ -82,23 +83,17 @@ export default function CollectionPicker({
                     returnKeyType="done"
                     onSubmitEditing={submitNew}
                   />
-                  <Pressable
-                    style={[styles.miniCta, !name.trim() && styles.ctaOff]}
-                    onPress={submitNew}
-                    disabled={!name.trim()}
-                  >
-                    <Ionicons name="checkmark" size={19} color="#fff" />
-                  </Pressable>
+                  <IconButton icon='checkmark' size={19} color="#fff" onPress={submitNew} disabled={!name.trim()} style={[styles.miniCta, !name.trim() && styles.ctaOff]} />
                 </View>
               ) : (
-                <Pressable style={styles.addRow} onPress={() => setAdding(true)}>
+                <Pressable style={({ pressed }) => [styles.addRow, pressed && PRESSED]} onPress={() => setAdding(true)}>
                   <Ionicons name="add-circle-outline" size={21} color={colors.accent} />
                   <Text style={styles.addText}>{t('col.new')}</Text>
                 </Pressable>
               )}
             </ScrollView>
 
-            <Pressable style={styles.done} onPress={onClose}>
+            <Pressable style={({ pressed }) => [styles.done, pressed && PRESSED]} onPress={onClose}>
               <Text style={styles.doneText}>{t('col.save')}</Text>
             </Pressable>
           </Pressable>

@@ -37,8 +37,9 @@ import { recordSeen } from '../src/services/seenStore';
 import { recordLike, removeLike } from '../src/services/likeStore';
 import EmptyState from '../src/components/EmptyState';
 import { posterImage } from '../src/utils/images';
-import { colors, radius, spacing } from '../src/theme';
+import { colors, radius, spacing, PRESSED } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
+import IconButton from '../src/components/IconButton';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const SWIPE_THRESHOLD = SCREEN_W * 0.28;   // bu mesafeden sonra bırakınca karar verilir
@@ -138,7 +139,7 @@ export default function SwipeScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       {/* Üst çubuk */}
       <View style={styles.head}>
-        <Pressable style={styles.iconBtn} onPress={() => router.back()} hitSlop={10}>
+        <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10}>
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </Pressable>
         <View style={styles.headText}>
@@ -149,14 +150,7 @@ export default function SwipeScreen() {
               : t('swipe.subtitle')}
           </Text>
         </View>
-        <Pressable
-          style={[styles.iconBtn, history.length === 0 && styles.iconBtnOff]}
-          onPress={undo}
-          disabled={history.length === 0}
-          hitSlop={10}
-        >
-          <Ionicons name="arrow-undo" size={20} color={colors.text} />
-        </Pressable>
+        <IconButton icon='arrow-undo' size={20} color={colors.text} onPress={undo} disabled={history.length === 0} style={[styles.iconBtn, history.length === 0 && styles.iconBtnOff]} />
       </View>
 
       {/* Deste */}
@@ -190,7 +184,7 @@ export default function SwipeScreen() {
           >
             <Ionicons name="close" size={30} color="#fff" />
           </Pressable>
-          <Pressable style={styles.infoBtn} onPress={() => openDetail(top)}>
+          <Pressable style={({ pressed }) => [styles.infoBtn, pressed && PRESSED]} onPress={() => openDetail(top)}>
             <Ionicons name="information" size={20} color={colors.text2} />
           </Pressable>
           <Pressable

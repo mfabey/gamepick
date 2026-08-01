@@ -19,7 +19,7 @@ import { fetchListFeed, toggleListLike } from '../src/api/social';
 import { getSession } from '../src/services/session';
 import EmptyState from '../src/components/EmptyState';
 import { posterImage } from '../src/utils/images';
-import { colors, radius, spacing } from '../src/theme';
+import { colors, radius, spacing, PRESSED } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
 
 export default function ListsScreen() {
@@ -98,7 +98,7 @@ export default function ListsScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.head}>
-        <Pressable style={styles.iconBtn} onPress={() => router.back()} hitSlop={10}>
+        <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10}>
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </Pressable>
         <View style={styles.titleWrap}>
@@ -181,7 +181,7 @@ function ListCard({ item, onPress, onLike, t }) {
         </Text>
       </View>
 
-      <Pressable style={styles.likeBtn} onPress={onLike} hitSlop={8}>
+      <Pressable style={({ pressed }) => [styles.likeBtn, pressed && PRESSED]} onPress={onLike} hitSlop={8}>
         <Ionicons
           name={item.likedByMe ? 'heart' : 'heart-outline'}
           size={21}

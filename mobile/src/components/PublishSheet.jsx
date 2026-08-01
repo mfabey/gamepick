@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 import { publishList } from '../api/social';
-import { colors, radius, spacing } from '../theme';
+import { colors, radius, spacing, PRESSED } from '../theme';
 import { useLanguage } from '../context/LanguageContext';
 
 export default function PublishSheet({ visible, onClose, collection, publishedId, onPublished }) {
@@ -58,9 +58,9 @@ export default function PublishSheet({ visible, onClose, collection, publishedId
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose}>
+      <Pressable style={({ pressed }) => [styles.backdrop, pressed && PRESSED]} onPress={onClose}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+          <Pressable style={({ pressed }) => [styles.sheet, pressed && PRESSED]} onPress={(e) => e.stopPropagation()}>
             <View style={styles.grabber} />
             <Text style={styles.title}>{t('pl.publishTitle')}</Text>
 

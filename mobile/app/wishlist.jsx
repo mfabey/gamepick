@@ -7,7 +7,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchCardPrice } from '../src/api/games';
 import EmptyState from '../src/components/EmptyState';
-import { colors, radius, spacing } from '../src/theme';
+import { colors, radius, spacing, PRESSED } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
 import { useWishlist } from '../src/context/WishlistContext';
 
@@ -38,7 +38,7 @@ export default function WishlistScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       {/* Başlık */}
       <View style={styles.head}>
-        <Pressable style={styles.back} onPress={() => router.back()} hitSlop={10}>
+        <Pressable style={({ pressed }) => [styles.back, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10}>
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </Pressable>
         <Text style={styles.title}>{t('wishlist.title')}</Text>
@@ -63,7 +63,7 @@ export default function WishlistScreen() {
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             !enabled ? (
-              <Pressable style={styles.notifBanner} onPress={onEnable}>
+              <Pressable style={({ pressed }) => [styles.notifBanner, pressed && PRESSED]} onPress={onEnable}>
                 <Ionicons name="notifications" size={18} color={colors.accent} />
                 <Text style={styles.notifText}>{t('notif.desc')}</Text>
                 <Text style={styles.notifCta}>{t('notif.enable')}</Text>
@@ -92,7 +92,7 @@ const WishRow = memo(function WishRow({ item, onOpen, onRemove }) {
   const onSale = price?.discount > 0 && !isFree;
 
   return (
-    <Pressable style={styles.row} onPress={() => onOpen(item)}>
+    <Pressable style={({ pressed }) => [styles.row, pressed && PRESSED]} onPress={() => onOpen(item)}>
       <View style={styles.thumb}>
         {item.image ? <Image source={item.image} recyclingKey={String(item.id)} cachePolicy="memory-disk" style={StyleSheet.absoluteFill} contentFit="cover" transition={200} /> : null}
       </View>

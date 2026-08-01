@@ -3,11 +3,12 @@ import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radius, spacing, TAB_SPACE } from '../../src/theme';
+import { colors, radius, spacing, TAB_SPACE, PRESSED } from '../../src/theme';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useAuth } from '../../src/context/AuthContext';
 import { useWishlist } from '../../src/context/WishlistContext';
 import { useCollections } from '../../src/hooks/useCollections';
+import IconButton from '../../src/components/IconButton';
 
 export default function ProfileScreen() {
   const { t } = useLanguage();
@@ -31,7 +32,7 @@ export default function ProfileScreen() {
         {/* Başlık + ayarlar — ayarlar artık içerikle aynı listede değil */}
         <View style={styles.headRow}>
           <Text style={styles.h1}>{t('nav.profile')}</Text>
-          <Pressable style={styles.gearBtn} onPress={() => router.push('/settings')} hitSlop={8}>
+          <Pressable style={({ pressed }) => [styles.gearBtn, pressed && PRESSED]} onPress={() => router.push('/settings')} hitSlop={8}>
             <Ionicons name="settings-outline" size={22} color={colors.text} />
           </Pressable>
         </View>
@@ -48,7 +49,7 @@ export default function ProfileScreen() {
             </View>
           </View>
         ) : (
-          <Pressable style={styles.settingRow} onPress={() => router.push('/account')}>
+          <Pressable style={({ pressed }) => [styles.settingRow, pressed && PRESSED]} onPress={() => router.push('/account')}>
             <Ionicons name="person-circle-outline" size={20} color={colors.accent} />
             <Text style={styles.settingText}>{t('acc.signIn')}</Text>
             <Ionicons name="chevron-forward" size={18} color={colors.text3} />
@@ -140,9 +141,7 @@ export default function ProfileScreen() {
                 <Text style={styles.accStatus}>Xbox · {t('auth.connected')}</Text>
               </View>
             </View>
-            <Pressable onPress={logoutXbox} hitSlop={8} style={styles.discBtn}>
-              <Ionicons name="close" size={18} color={colors.text3} />
-            </Pressable>
+            <IconButton icon='close' size={18} color={colors.text3} onPress={logoutXbox} style={styles.discBtn} />
           </View>
         ) : (
           <Pressable
