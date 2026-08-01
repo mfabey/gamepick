@@ -14,6 +14,11 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.gamerisen.app",
+      "icon": {
+        "light": "./assets/icon.png",
+        "dark": "./assets/icon.png",
+        "tinted": "./assets/icon-tinted.png"
+      },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }

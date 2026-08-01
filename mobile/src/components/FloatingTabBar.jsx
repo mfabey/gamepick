@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { View, Pressable, Text, StyleSheet, Platform, Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../theme';
+import { GlassView, isLiquidGlassAvailable, isGlassEffectAPIAvailable } from 'expo-glass-effect';
+import { colors, type } from '../theme';
 
 const ICONS = {
   index:   'home',
@@ -14,6 +15,27 @@ const ICONS = {
 
 const PAD = 4;      // bar iç yatay padding
 const PILL_W = 46;  // kayan vurgu genişliği
+const RADIUS = 26;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Liquid Glass kullanılabilirliği — MODÜL DÜZEYİNDE bir kez hesaplanır.
+//
+// İKİ kontrol birden şart:
+//   • isLiquidGlassAvailable()   → sistem + derleyici + Info.plist uygun mu
+//   • isGlassEffectAPIAvailable() → API çalışma anında GERÇEKTEN var mı
+// İkincisi olmadan bazı iOS 26 beta sürümlerinde uygulama ÇÖKÜYOR
+// (expo-glass-effect dokümanında açıkça belirtiliyor).
+//
+// iOS 26 altında ve Android'de otomatik olarak eski görünüme düşüyoruz.
+// ─────────────────────────────────────────────────────────────────────────────
+const GLASS_OK = (() => {
+  if (Platform.OS !== 'ios') return false;
+  try {
+    return isLiquidGlassAvailable() && isGlassEffectAPIAvailable();
+  } catch {
+    return false;
+  }
+})();
 
 export default function FloatingTabBar({ state, descriptors, navigation }) {
   const insets = useSafeAreaInsets();
@@ -43,7 +65,22 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
 
   return (
     <View pointerEvents="box-none" style={[styles.wrap, { bottom: insets.bottom || 10 }]}>
-      <View style={styles.bar} onLayout={e => setBarW(e.nativeEvent.layout.width)}>
+      <View
+        style={[styles.bar, GLASS_OK ? styles.barGlass : styles.barSolid]}
+        onLayout={e => setBarW(e.nativeEvent.layout.width)}
+      >
+        {/* Cam katmanı içeriği SARMALAMAZ, arkasında durur.
+            Dokümantasyon GlassView'ın kendisinde veya EBEVEYNİNDE opacity<1
+            kullanılmamasını söylüyor; sekme öğeleri basılınca opacity
+            uyguluyor, bu yüzden cam kardeş katman olarak ayrıldı. */}
+        {GLASS_OK && (
+          <GlassView
+            style={[StyleSheet.absoluteFill, styles.glassLayer]}
+            glassEffectStyle="regular"
+            pointerEvents="none"
+          />
+        )}
+
         {/* Kayan vurgu */}
         {cellW > 0 && (
           <Animated.View style={[styles.pill, { transform: [{ translateX: pillTranslate }] }]} />
@@ -84,7 +121,7 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
               <Animated.View style={[styles.iconWrap, { transform: [{ scale }] }]}>
                 <Ionicons name={iconName} size={22} color={focused ? colors.accent : colors.text3} />
               </Animated.View>
-              <Text style={[styles.label, { color: focused ? colors.accent : colors.text3 }]} numberOfLines={1}>
+              <Text style={[styles.label, { color: focused ? colors.accentText : colors.text3 }]} numberOfLines={1}>
                 {label}
               </Text>
             </Pressable>
@@ -109,7 +146,17 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 62,
     paddingHorizontal: PAD,
-    borderRadius: 26,
+    borderRadius: RADIUS,
+    // Cam katmanı köşelerden taşmasın
+    overflow: 'hidden',
+  },
+  // iOS 26+: arka planı cam veriyor, altına düz renk KOYULMAZ —
+  // koyulursa cam efekti görünmez.
+  barGlass: {
+    backgroundColor: 'transparent',
+  },
+  // iOS 26 öncesi ve Android: eski görünüm aynen korunur
+  barSolid: {
     backgroundColor: 'rgba(18,21,27,0.94)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
@@ -123,6 +170,7 @@ const styles = StyleSheet.create({
       android: { elevation: 18 },
     }),
   },
+  glassLayer: { borderRadius: RADIUS },
   pill: {
     position: 'absolute',
     left: 0,
@@ -148,7 +196,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   label: {
-    fontSize: 11,
+    fontSize: type.caption2,
     fontWeight: '700',
   },
 });
