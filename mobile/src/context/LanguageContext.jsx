@@ -233,6 +233,8 @@ const STRINGS = {
     // ── Profil / Ayarlar ayrımı ──
     'prof.myContent': 'İçeriğim',
     'post.more': 'devamını gör',
+    'vid.play': 'Oynat',
+    'vid.pause': 'Duraklat',
     'post.less': 'daha az göster',
     'post.detail': 'Oyun sayfasına git',
     'prof.lockTitle': 'Profil oluşturun',
@@ -569,6 +571,8 @@ const STRINGS = {
     // ── Profile / Settings split ──
     'prof.myContent': 'My content',
     'post.more': 'see more',
+    'vid.play': 'Play',
+    'vid.pause': 'Pause',
     'post.less': 'show less',
     'post.detail': 'Open game page',
     'prof.lockTitle': 'Create a profile',

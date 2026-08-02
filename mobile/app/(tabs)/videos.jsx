@@ -54,6 +54,10 @@ export default function VideosScreen() {
   // Ekran şu an görünür mü? Sekme geçişinde ekran sökülmediği için oynatmayı
   // yalnızca bu bayrak durdurabiliyor.
   const [focused, setFocused] = useState(true);
+  // Kullanıcının elle duraklatması. EKRAN düzeyinde tutuluyor, elemanda değil:
+  // oynatıcıyı yöneten efekt burada ve tek kaynak olmazsa efekt her
+  // çalıştığında kullanıcının duraklattığı videoyu geri başlatırdı.
+  const [paused, setPaused] = useState(false);
   const fetching = useRef(false);
   const listRef = useRef(null);
 
@@ -114,6 +118,7 @@ export default function VideosScreen() {
     loadedRef.current = {};          // havuzdaki kaynaklar artık geçersiz
     setItems([]);
     setActive(0);
+    setPaused(false);
     setHasMore(true);
     setLoading(true);
     listRef.current?.scrollToOffset?.({ offset: 0, animated: false });
@@ -142,13 +147,19 @@ export default function VideosScreen() {
       if (shouldPlay) player.play(); else player.pause();
     };
 
-    // Odak yokken oynatma: kullanıcı başka sekmedeyken ses devam etmesin
-    assign(active, focused);
+    // Odak yokken oynatma: kullanıcı başka sekmedeyken ses devam etmesin.
+    // Elle duraklatma da burada: tek kaynak olduğu için efekt yeniden
+    // çalıştığında kullanıcının kararını ezmiyor.
+    assign(active, focused && !paused);
     assign(active + 1, false);   // sonraki hazır beklesin → geçiş anında donma olmaz
     assign(active - 1, false);
 
     // Havuz dışındaki her şey zaten farklı slota yazılınca serbest kalıyor
-  }, [active, items, players, muted, focused]);
+  }, [active, items, players, muted, focused, paused]);
+
+  // Yeni videoya geçince duraklatma kalksın — kullanıcı kaydırdıysa
+  // oynatmak istiyor demektir.
+  useEffect(() => { setPaused(false); }, [active]);
 
   // Ekran SÖKÜLÜRSE sesi kes. Tek başına YETMİYOR: sekme değiştirmek ekranı
   // sökmez (tab'lerin amacı durumu korumaktır), o yüzden bu temizlik sekme
@@ -196,6 +207,32 @@ export default function VideosScreen() {
     setMuted((m) => !m);
   }, []);
 
+  // ── Duraklatma jestleri ─────────────────────────────────────────────────
+  // Tek dokunuş: aç/kapat.  Basılı tutma: bırakana kadar duraklat.
+  //
+  // İkisi çakışmıyor çünkü React Native uzun basış tetiklendiğinde onPress'i
+  // ÇAĞIRMIYOR. holdRef ise onPressOut'un hangi durumda çalıştığını ayırt
+  // ediyor: tutmadan sonra bırakma devam ettirmeli, kısa dokunuştan sonraki
+  // bırakma hiçbir şey yapmamalı (yoksa dokunuşla duraklatmak imkânsız olurdu).
+  const holdRef = useRef(false);
+
+  const onTapVideo = useCallback(() => {
+    Haptics.selectionAsync();
+    setPaused((p) => !p);
+  }, []);
+
+  const onHoldStart = useCallback(() => {
+    holdRef.current = true;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setPaused(true);
+  }, []);
+
+  const onHoldEnd = useCallback(() => {
+    if (!holdRef.current) return;
+    holdRef.current = false;
+    setPaused(false);
+  }, []);
+
   const renderItem = useCallback(({ item, index }) => (
     <VideoItem
       item={item}
@@ -204,10 +241,16 @@ export default function VideosScreen() {
       player={players[index % POOL]}
       muted={muted}
       onToggleMute={onToggleMute}
+      // Duraklatma yalnızca aktif elemanı ilgilendiriyor; diğerlerine
+      // `false` geçmek memo'nun boşuna kırılmasını da önlüyor.
+      paused={index === active && paused}
+      onTapVideo={onTapVideo}
+      onHoldStart={onHoldStart}
+      onHoldEnd={onHoldEnd}
       router={router}
       t={t}
     />
-  ), [active, players, itemH, muted, onToggleMute, router, t]);
+  ), [active, players, itemH, muted, onToggleMute, paused, onTapVideo, onHoldStart, onHoldEnd, router, t]);
 
   if (loading && items.length === 0) {
     return (
@@ -254,7 +297,10 @@ export default function VideosScreen() {
 // aktif) gerçekten yeniden render oluyor; diğerlerinin propları aynı kaldığı
 // için atlanıyorlar. Bunun çalışması için onToggleMute'un sabit referans
 // olması gerekiyor — yukarıda useCallback ile sabitlendi.
-const VideoItem = memo(function VideoItem({ item, height, isActive, player, muted, onToggleMute, router, t }) {
+const VideoItem = memo(function VideoItem({
+  item, height, isActive, player, muted, onToggleMute,
+  paused, onTapVideo, onHoldStart, onHoldEnd, router, t,
+}) {
   const { isWatched, toggle } = useWishlist();
   const collections = useCollections();
   const inCollections = useCollectionsContaining(item.id);
@@ -341,6 +387,33 @@ const VideoItem = memo(function VideoItem({ item, height, isActive, player, mute
         pointerEvents="none"
       />
 
+      {/* Dokunma katmanı — tek dokunuş duraklatır/sürdürür, basılı tutmak
+          bırakana kadar duraklatır.
+          SIRALAMA ÖNEMLİ: bu katman aksiyon sütunundan ve bilgi çubuğundan
+          ÖNCE geliyor, yani onlar üstte kalıyor ve kendi dokunuşlarını
+          almaya devam ediyor. Sonra gelseydi tüm arayüzü yutardı. */}
+      {isActive ? (
+        <Pressable
+          style={StyleSheet.absoluteFill}
+          onPress={onTapVideo}
+          onLongPress={onHoldStart}
+          onPressOut={onHoldEnd}
+          delayLongPress={220}
+          accessibilityRole="button"
+          accessibilityLabel={paused ? t('vid.play') : t('vid.pause')}
+        />
+      ) : null}
+
+      {/* Duraklatma göstergesi — kullanıcı videonun durduğunu görmeli,
+          yoksa donmuş sanır. pointerEvents kapalı ki dokunmayı yutmasın. */}
+      {isActive && paused ? (
+        <View style={styles.pauseWrap} pointerEvents="none">
+          <View style={styles.pauseBadge}>
+            <Ionicons name="play" size={34} color="#fff" />
+          </View>
+        </View>
+      ) : null}
+
       {/* Sağ aksiyon sütunu */}
       <View style={[styles.actions, { bottom: TAB_SPACE + 90 }]}>
         <ActionBtn
@@ -406,6 +479,13 @@ function ActionBtn({ icon, label, active, onPress }) {
 }
 
 const styles = StyleSheet.create({
+  // Duraklatma göstergesi — ortada, yarı saydam daire
+  pauseWrap: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
+  pauseBadge: {
+    width: 78, height: 78, borderRadius: 39,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center', justifyContent: 'center',
+  },
   root: { flex: 1, backgroundColor: '#000' },
   loadingRoot: { flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' },
   loadingText: { color: colors.text2, fontSize: 13, marginTop: 12 },
