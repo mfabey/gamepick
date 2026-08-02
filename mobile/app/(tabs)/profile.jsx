@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius, spacing, TAB_SPACE, PRESSED } from '../../src/theme';
+import { useTabBarScroll } from '../../src/context/TabBarContext';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useAuth } from '../../src/context/AuthContext';
 import { useWishlist } from '../../src/context/WishlistContext';
@@ -11,6 +12,7 @@ import { useCollections } from '../../src/hooks/useCollections';
 import IconButton from '../../src/components/IconButton';
 
 export default function ProfileScreen() {
+  const onTabScroll = useTabBarScroll();
   const { t } = useLanguage();
   const router = useRouter();
   const { steamAccounts, xbox, busy, loginSteam, loginXbox, logoutSteam, logoutXbox, account } = useAuth();
@@ -28,7 +30,7 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: TAB_SPACE + 16 }} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: TAB_SPACE + 16 }} showsVerticalScrollIndicator={false} onScroll={onTabScroll} scrollEventThrottle={16}>
         {/* Başlık + ayarlar — ayarlar artık içerikle aynı listede değil */}
         <View style={styles.headRow}>
           <Text style={styles.h1}>{t('nav.profile')}</Text>

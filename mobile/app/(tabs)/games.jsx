@@ -13,6 +13,7 @@ import { GamesGridSkeleton } from '../../src/components/Skeleton';
 import { prefetchImages } from '../../src/utils/prefetch';
 import { useTimeToData } from '../../src/dev/perf';
 import { colors, radius, spacing, TAB_SPACE } from '../../src/theme';
+import { useTabBarScroll } from '../../src/context/TabBarContext';
 import { useLanguage } from '../../src/context/LanguageContext';
 
 const COLS = 2;
@@ -20,6 +21,7 @@ const NUM = 24;
 const PAGE1_TTL = 5 * 60 * 1000;   // 1. sayfa önbellek ömrü
 
 export default function GamesScreen() {
+  const onTabScroll = useTabBarScroll();
   const { t } = useLanguage();
 
   // Dil değişmedikçe yeniden oluşmasın
@@ -173,6 +175,8 @@ export default function GamesScreen() {
           </View>
         ) : (
           <FlashList
+            onScroll={onTabScroll}
+            scrollEventThrottle={16}
             data={games}
             keyExtractor={keyExtractor}
             numColumns={COLS}

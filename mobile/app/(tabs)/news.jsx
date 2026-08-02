@@ -9,10 +9,12 @@ import { fetchNews } from '../../src/api/news';
 import { NewsListSkeleton } from '../../src/components/Skeleton';
 import NewsImage from '../../src/components/NewsImage';
 import { colors, radius, spacing, TAB_SPACE, PRESSED } from '../../src/theme';
+import { useTabBarScroll } from '../../src/context/TabBarContext';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useQuery } from '../../src/hooks/useQuery';
 
 export default function NewsScreen() {
+  const onTabScroll = useTabBarScroll();
   const { t, lang } = useLanguage();
   const [cat, setCat] = useState('all');
 
@@ -65,6 +67,8 @@ export default function NewsScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       <Text style={styles.header}>{t('news.title')}</Text>
       <FlashList
+        onScroll={onTabScroll}
+        scrollEventThrottle={16}
         data={filtered}
         keyExtractor={keyExtractor}
         renderItem={renderNews}

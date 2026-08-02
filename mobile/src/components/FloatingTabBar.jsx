@@ -1,10 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
-import { View, Pressable, Text, StyleSheet, Platform, Animated } from 'react-native';
+import { View, Pressable, StyleSheet, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassView, isLiquidGlassAvailable, isGlassEffectAPIAvailable } from 'expo-glass-effect';
+import Animated, {
+  useAnimatedStyle, useSharedValue, withSpring, interpolate, Extrapolation,
+} from 'react-native-reanimated';
+
 import { useReducedMotion } from '../hooks/useReducedMotion';
-import { colors, type } from '../theme';
+import { useTabBarCompact } from '../context/TabBarContext';
+import { colors } from '../theme';
 
 const ICONS = {
   index:   'home',
@@ -15,20 +20,15 @@ const ICONS = {
   profile: 'person',
 };
 
-const PAD = 4;      // bar iç yatay padding
-const PILL_W = 46;  // kayan vurgu genişliği
-const RADIUS = 26;
+const PAD = 6;
+const PILL_W = 52;
+const BAR_H = 58;      // etiketler kalkınca çubuk kısaldı
+const RADIUS = BAR_H / 2;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Liquid Glass kullanılabilirliği — MODÜL DÜZEYİNDE bir kez hesaplanır.
-//
-// İKİ kontrol birden şart:
-//   • isLiquidGlassAvailable()   → sistem + derleyici + Info.plist uygun mu
-//   • isGlassEffectAPIAvailable() → API çalışma anında GERÇEKTEN var mı
-// İkincisi olmadan bazı iOS 26 beta sürümlerinde uygulama ÇÖKÜYOR
-// (expo-glass-effect dokümanında açıkça belirtiliyor).
-//
-// iOS 26 altında ve Android'de otomatik olarak eski görünüme düşüyoruz.
+// İki kontrol birden şart: bazı iOS 26 beta sürümlerinde API yok ve yalnızca
+// isLiquidGlassAvailable'a güvenilirse uygulama çöküyor.
 // ─────────────────────────────────────────────────────────────────────────────
 const GLASS_OK = (() => {
   if (Platform.OS !== 'ios') return false;
@@ -42,46 +42,48 @@ const GLASS_OK = (() => {
 export default function FloatingTabBar({ state, descriptors, navigation }) {
   const insets = useSafeAreaInsets();
   const [barW, setBarW] = useState(0);
-  const anim = useRef(new Animated.Value(state.index)).current;
   const reducedMotion = useReducedMotion();
+  const compact = useTabBarCompact();
 
-  // Aktif sekme değişince vurgu yumuşakça kayar.
-  // "Hareketi Azalt" açıksa yaylanma yapılmaz, vurgu doğrudan yerine geçer —
-  // konum bilgisi korunur, yalnızca dekoratif hareket kalkar.
+  // Kayan vurgu konumu
+  const pos = useSharedValue(state.index);
   useEffect(() => {
-    if (reducedMotion) {
-      anim.setValue(state.index);
-      return;
-    }
-    Animated.spring(anim, {
-      toValue: state.index,
-      useNativeDriver: true,
-      speed: 18,
-      bounciness: 9,
-    }).start();
-  }, [state.index, anim, reducedMotion]);
+    if (reducedMotion) pos.value = state.index;
+    else pos.value = withSpring(state.index, { damping: 18, stiffness: 190 });
+  }, [state.index, pos, reducedMotion]);
 
   const N = state.routes.length;
   const cellW = barW > 0 ? (barW - PAD * 2) / N : 0;
-  const inputRange = state.routes.map((_, i) => i);
 
-  const pillTranslate = cellW
-    ? anim.interpolate({
-        inputRange,
-        outputRange: state.routes.map((_, i) => PAD + i * cellW + (cellW - PILL_W) / 2),
-      })
-    : 0;
+  const pillStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: PAD + pos.value * cellW + (cellW - PILL_W) / 2 }],
+  }), [cellW]);
+
+  // Aşağı kaydırınca küçül, yukarı kaydırınca büyü.
+  //
+  // YALNIZCA transform kullanılıyor — iki sebeple:
+  //  1. height/width animasyonu her karede yeniden yerleşim tetikler
+  //  2. expo-glass-effect dokümanı GlassView'da veya EBEVEYNİNDE opacity<1
+  //     kullanılmamasını söylüyor; opacity ile soldursaydık cam bozulurdu
+  const barStyle = useAnimatedStyle(() => {
+    if (reducedMotion || !compact) return {};
+    const c = compact.value;
+    return {
+      transform: [
+        { scale: interpolate(c, [0, 1], [1, 0.86], Extrapolation.CLAMP) },
+        { translateY: interpolate(c, [0, 1], [0, 10], Extrapolation.CLAMP) },
+      ],
+    };
+  }, [reducedMotion, compact]);
 
   return (
     <View pointerEvents="box-none" style={[styles.wrap, { bottom: insets.bottom || 10 }]}>
-      <View
-        style={[styles.bar, GLASS_OK ? styles.barGlass : styles.barSolid]}
+      <Animated.View
+        style={[styles.bar, GLASS_OK ? styles.barGlass : styles.barSolid, barStyle]}
         onLayout={e => setBarW(e.nativeEvent.layout.width)}
       >
-        {/* Cam katmanı içeriği SARMALAMAZ, arkasında durur.
-            Dokümantasyon GlassView'ın kendisinde veya EBEVEYNİNDE opacity<1
-            kullanılmamasını söylüyor; sekme öğeleri basılınca opacity
-            uyguluyor, bu yüzden cam kardeş katman olarak ayrıldı. */}
+        {/* Cam katmanı içeriği SARMALAMAZ, arkasında durur — sekme öğeleri
+            basılınca opacity uyguluyor ve bu camı bozardı. */}
         {GLASS_OK && (
           <GlassView
             style={[StyleSheet.absoluteFill, styles.glassLayer]}
@@ -90,26 +92,13 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
           />
         )}
 
-        {/* Kayan vurgu */}
-        {cellW > 0 && (
-          <Animated.View style={[styles.pill, { transform: [{ translateX: pillTranslate }] }]} />
-        )}
+        {cellW > 0 && <Animated.View style={[styles.pill, pillStyle]} />}
 
         {state.routes.map((route, index) => {
           const { options } = descriptors[route.key];
           const label = options.title ?? route.name;
           const focused = state.index === index;
           const base = ICONS[route.name] || 'ellipse';
-          const iconName = focused ? base : `${base}-outline`;
-
-          // Aktif ikon vurgu gelirken hafifçe büyür
-          const scale = cellW
-            ? anim.interpolate({
-                inputRange: [index - 1, index, index + 1],
-                outputRange: [1, 1.16, 1],
-                extrapolate: 'clamp',
-              })
-            : 1;
 
           const onPress = () => {
             const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
@@ -121,22 +110,24 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
             <Pressable
               key={route.key}
               accessibilityRole="button"
+              // Görünür etiket kalktı → VoiceOver'ın okuyacağı tek kaynak bu.
+              // Etiketsiz bırakmak sekmeleri ekran okuyucuda anlamsız yapardı.
+              accessibilityLabel={label}
               accessibilityState={focused ? { selected: true } : {}}
               onPress={onPress}
               onLongPress={onLongPress}
               style={({ pressed }) => [styles.item, pressed && { opacity: 0.55 }]}
               hitSlop={8}
             >
-              <Animated.View style={[styles.iconWrap, { transform: [{ scale }] }]}>
-                <Ionicons name={iconName} size={22} color={focused ? colors.accent : colors.text3} />
-              </Animated.View>
-              <Text style={[styles.label, { color: focused ? colors.accentText : colors.text3 }]} numberOfLines={1}>
-                {label}
-              </Text>
+              <Ionicons
+                name={focused ? base : `${base}-outline`}
+                size={25}
+                color={focused ? colors.accent : colors.text3}
+              />
             </Pressable>
           );
         })}
-      </View>
+      </Animated.View>
     </View>
   );
 }
@@ -153,18 +144,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-around',
     width: '100%',
-    height: 62,
+    height: BAR_H,
     paddingHorizontal: PAD,
     borderRadius: RADIUS,
-    // Cam katmanı köşelerden taşmasın
     overflow: 'hidden',
   },
-  // iOS 26+: arka planı cam veriyor, altına düz renk KOYULMAZ —
-  // koyulursa cam efekti görünmez.
-  barGlass: {
-    backgroundColor: 'transparent',
-  },
-  // iOS 26 öncesi ve Android: eski görünüm aynen korunur
+  // iOS 26+: arka planı cam veriyor, altına düz renk KOYULMAZ
+  barGlass: { backgroundColor: 'transparent' },
+  // iOS 26 öncesi ve Android: eski görünüm
   barSolid: {
     backgroundColor: 'rgba(18,21,27,0.94)',
     borderWidth: 1,
@@ -183,29 +170,16 @@ const styles = StyleSheet.create({
   pill: {
     position: 'absolute',
     left: 0,
-    top: 7,
+    top: (BAR_H - 42) / 2,
     width: PILL_W,
-    height: 30,
-    borderRadius: 15,
+    height: 42,
+    borderRadius: 21,
     backgroundColor: 'rgba(232,36,43,0.16)',
   },
   item: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 3,
-    paddingVertical: 6,
-    paddingHorizontal: 2,
-  },
-  iconWrap: {
-    width: 38,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  label: {
-    fontSize: type.caption2,
-    fontWeight: '700',
+    height: '100%',
   },
 });

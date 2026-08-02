@@ -10,6 +10,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { fetchTrending, fetchGames } from '../../src/api/games';
 import { fetchNews } from '../../src/api/news';
 import { colors, radius, spacing, TAB_SPACE, PRESSED } from '../../src/theme';
+import { useTabBarScroll } from '../../src/context/TabBarContext';
 import { useLanguage } from '../../src/context/LanguageContext';
 import FadeIn from '../../src/components/FadeIn';
 import PosterImage from '../../src/components/PosterImage';
@@ -31,6 +32,7 @@ const fetchNewGames = () => fetchGames({ section: 'new', num: 12 });
 const fetchSaleGames = () => fetchGames({ section: 'sale', num: 12 });
 
 export default function HomeScreen() {
+  const onTabScroll = useTabBarScroll();
   const { t, lang, formatPrice } = useLanguage();
   const router = useRouter();
 
@@ -226,6 +228,8 @@ export default function HomeScreen() {
     <View style={styles.root}>
       <SafeAreaView edges={['top']} />
       <FlashList
+        onScroll={onTabScroll}
+        scrollEventThrottle={16}
         data={feed}
         numColumns={2}
         keyExtractor={keyExtractor}
