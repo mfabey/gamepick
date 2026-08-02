@@ -46,7 +46,11 @@ export default function SocialScreen() {
     if (!session) { setProfile(null); return; }
     try {
       const r = await getMyProfile();
-      setProfile(r?.profile || null);
+      // `username` KONTROL EDİLİYOR, profilin varlığı değil.
+      // Eski kayıt akışı `user_profile:{uid}` anahtarına { uid, name, email }
+      // yazıyordu; nesne dolu ama kullanıcı adı yok. Yalnızca `profile`e
+      // bakılsaydı kapı açık geçilir ve kullanıcı kalıcı olarak adsız kalırdı.
+      setProfile(r?.profile?.username ? r.profile : null);
     } catch {
       setProfile(null);
     }
@@ -649,5 +653,5 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', marginTop: 22, paddingHorizontal: 24,
   },
   ctaOff: { opacity: 0.4 },
-  ctaText: { color: '#fff', fontSize: 15, fontWeight: '800' },
+  ctaText: { color: '#fff', fontSize: 15, fontWeight: '800' },
 });

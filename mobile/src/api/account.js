@@ -3,8 +3,21 @@ import { apiPost, API_BASE } from './client';
 // Hesap uçları — web ile aynı Firebase kullanıcılarını kullanır.
 // Kayıt için web'in mevcut ucu yeniden kullanılıyor (cookie kurmuyor).
 
-export function registerAccount({ name, email, password }) {
-  return apiPost('/api/auth/register', { name, email, password });
+export function registerAccount({ name, username, email, password }) {
+  return apiPost('/api/auth/register', { name, username, email, password });
+}
+
+/**
+ * Kullanıcı adı uygunluğu — KAYIT SIRASINDA, token olmadan.
+ * /api/social/username?check= ucu oturum istiyor, kayıt formunda henüz yok.
+ */
+export async function checkUsernameAvailable(username) {
+  const res = await fetch(
+    `${API_BASE}/api/auth/username-available?u=${encodeURIComponent(username)}`,
+    { headers: { Accept: 'application/json' } }
+  );
+  if (!res.ok) throw Object.assign(new Error(`HTTP ${res.status}`), { status: res.status });
+  return res.json();
 }
 
 export function loginAccount({ email, password }) {

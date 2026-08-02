@@ -1,14 +1,27 @@
 import { NextResponse } from 'next/server';
-import { redisSetJSON } from '../../../lib/redis';
+import { validateUsername } from '../../../lib/content-filter';
+import { claimUsername, uidForUsername } from '../../../lib/social-store';
 
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
 
 export async function POST(request) {
   try {
-    const { name, email, password } = await request.json();
+    const { name, email, password, username } = await request.json();
 
     if (!email || !password || !name) {
       return NextResponse.json({ error: 'E-posta, şifre ve isim zorunludur.' }, { status: 400 });
+    }
+
+    // ── Kullanıcı adı: sosyal özelliklerin kimlik temeli ────────────────────
+    // Kullanıcıyı YARATMADAN ÖNCE doğrula; aksi hâlde geçersiz addan dolayı
+    // hesap oluşup yarım kalırdı.
+    const wantsUsername = typeof username === 'string' && username.trim().length > 0;
+    if (wantsUsername) {
+      const v = validateUsername(username.trim());
+      if (!v.ok) return NextResponse.json({ error: v.error }, { status: 400 });
+
+      const owner = await uidForUsername(username.trim());
+      if (owner) return NextResponse.json({ error: 'TAKEN' }, { status: 409 });
     }
 
     // Local development fallback if Firebase Key is not set
@@ -77,15 +90,27 @@ export async function POST(request) {
 
     const userObj = { uid: localId, name, email };
 
-    // Cache profile in Redis
-    try {
-      await redisSetJSON(`user_profile:${localId}`, userObj);
-    } catch (e) {
-      console.warn('Failed to cache user profile in register:', e.message);
+    // ── Sosyal profili kur ──────────────────────────────────────────────────
+    // DİKKAT: Burada eskiden doğrudan `user_profile:{uid}` anahtarına
+    // { uid, name, email } yazılıyordu. O anahtar sosyal katmanın profil
+    // anahtarıyla AYNI; sonuç olarak her kullanıcıda `username` alanı olmayan
+    // bir profil oluşuyor, Arkadaşlar ekranındaki kurulum kapısı "profil var"
+    // sanıp atlanıyor ve kullanıcı kalıcı olarak adsız kalıyordu.
+    // Artık profil yalnızca claimUsername üzerinden, doğru şemayla yazılıyor.
+    let usernameClaimed = false;
+    if (wantsUsername) {
+      const res = await claimUsername(localId, username.trim(), { displayName: name });
+      usernameClaimed = !!res.ok;
+      if (!res.ok) {
+        // Kontrol ile talep arasında biri adı kapmış olabilir. Hesap zaten
+        // oluştu; kullanıcıyı hata ile geri çevirmek yerine adsız bırakıyoruz,
+        // uygulamadaki kurulum kapısı devreye girer.
+        console.warn('register: username claim failed', res.error);
+      }
     }
 
     // 4. Return success response WITHOUT issuing session cookies
-    return NextResponse.json({ ok: true, user: userObj, mock: false });
+    return NextResponse.json({ ok: true, user: userObj, usernameClaimed, mock: false });
 
   } catch (err) {
     console.error('Register API Error:', err.message);

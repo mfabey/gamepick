@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator,
   KeyboardAvoidingView, Platform, ScrollView, Alert, Keyboard,
@@ -9,7 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { signIn, signInWithApple } from '../src/services/session';
-import { registerAccount, requestPasswordReset } from '../src/api/account';
+import { registerAccount, requestPasswordReset, checkUsernameAvailable } from '../src/api/account';
 import { colors, radius, spacing, PRESSED } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
 
@@ -19,11 +19,39 @@ export default function AccountScreen() {
 
   const [mode, setMode] = useState('signin');   // 'signin' | 'signup' | 'forgot'
   const [name, setName]         = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy]   = useState(false);
   const [error, setError] = useState('');
   const [info, setInfo]   = useState('');
+
+  // Kullanıcı adı uygunluğu — yazarken canlı kontrol (400ms sönümleme)
+  const [uname, setUname] = useState({ status: 'idle' });   // idle|checking|ok|error
+  const unameTimer = useRef(null);
+
+  useEffect(() => {
+    if (unameTimer.current) clearTimeout(unameTimer.current);
+    const v = username.trim();
+    if (mode !== 'signup' || v.length < 3) { setUname({ status: 'idle' }); return; }
+
+    setUname({ status: 'checking' });
+    unameTimer.current = setTimeout(async () => {
+      try {
+        const r = await checkUsernameAvailable(v);
+        setUname(r?.available ? { status: 'ok' } : { status: 'error', code: r?.error || 'TAKEN' });
+      } catch {
+        // Ağ hatasında engelleme — sunucu kayıt sırasında yine doğruluyor
+        setUname({ status: 'idle' });
+      }
+    }, 400);
+
+    return () => { if (unameTimer.current) clearTimeout(unameTimer.current); };
+  }, [username, mode]);
+
+  const unameMsg = uname.status === 'error'
+    ? (t(`soc.err.${uname.code}`) !== `soc.err.${uname.code}` ? t(`soc.err.${uname.code}`) : t('soc.err.generic'))
+    : (uname.status === 'ok' ? t('soc.available') : t('soc.usernameHint'));
 
   const isForgot = mode === 'forgot';
   const isSignup = mode === 'signup';
@@ -73,6 +101,14 @@ export default function AccountScreen() {
       return;
     }
 
+    // Kullanıcı adı zorunlu: sosyal özelliklerin kimlik temeli.
+    // Boş bırakılırsa kullanıcı adsız kalıyor ve arkadaş ekleyemiyor.
+    if (isSignup && uname.status !== 'ok') {
+      setError(username.trim().length < 3 ? t('soc.usernameHint') : unameMsg);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      return;
+    }
+
     if (!password) {
       setError(t('acc.passwordRequired'));
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
@@ -88,7 +124,7 @@ export default function AccountScreen() {
     setBusy(true);
     try {
       if (isSignup) {
-        await registerAccount({ name: name.trim(), email: email.trim(), password });
+        await registerAccount({ name: name.trim(), username: username.trim(), email: email.trim(), password });
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setInfo(t('acc.verifySent'));
         setMode('signin');
@@ -106,7 +142,7 @@ export default function AccountScreen() {
     } finally {
       setBusy(false);
     }
-  }, [busy, mode, email, name, password, t, router, lang, isForgot, isSignup]);
+  }, [busy, mode, email, name, username, uname, unameMsg, password, t, router, lang, isForgot, isSignup]);
 
   // Sign in with Apple — Apple yalnızca İLK onayda tam adı verir, o yüzden
   // credential.fullName'i hemen backend'e iletiyoruz (sonraki girişlerde gelmez).
@@ -175,7 +211,34 @@ export default function AccountScreen() {
           )}
 
           {isSignup && (
-            <Field label={t('acc.name')} value={name} onChangeText={setName} autoCapitalize="words" />
+            <>
+              <Field label={t('acc.name')} value={name} onChangeText={setName} autoCapitalize="words" />
+
+              {/* Kullanıcı adı — arkadaş eklemenin ön koşulu.
+                  Kayıtta sorulmadığı için kullanıcılar adsız kalıyordu. */}
+              <View style={{ marginBottom: 14 }}>
+                <Text style={styles.label}>{t('soc.usernameLabel')}</Text>
+                <View style={styles.unameWrap}>
+                  <Text style={styles.at}>@</Text>
+                  <TextInput
+                    value={username}
+                    onChangeText={(v) => setUsername(v.replace(/[^a-zA-Z0-9_]/g, ''))}
+                    placeholder={t('soc.usernamePlaceholder')}
+                    placeholderTextColor={colors.text3}
+                    style={styles.unameInput}
+                    maxLength={20}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                  {uname.status === 'checking' && <ActivityIndicator size="small" color={colors.text3} />}
+                  {uname.status === 'ok' && <Ionicons name="checkmark-circle" size={20} color={colors.green} />}
+                  {uname.status === 'error' && <Ionicons name="close-circle" size={20} color={colors.danger} />}
+                </View>
+                <Text style={[styles.hint, uname.status === 'error' && { color: colors.danger }]}>
+                  {unameMsg}
+                </Text>
+              </View>
+            </>
           )}
           <Field
             label={t('acc.email')} value={email} onChangeText={setEmail}
@@ -249,6 +312,15 @@ const styles = StyleSheet.create({
   dividerText: { color: colors.text3, fontSize: 13, fontWeight: '600' },
 
   label: { fontSize: 13, color: colors.text3, fontWeight: '700', marginBottom: 7 },
+  unameWrap: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: colors.bgInput, borderRadius: radius.md,
+    paddingHorizontal: 14, height: 52,
+    borderWidth: 1, borderColor: colors.cardBorder,
+  },
+  at: { color: colors.text3, fontSize: 15, fontWeight: '700' },
+  unameInput: { flex: 1, color: colors.text, fontSize: 15 },
+  hint: { fontSize: 12, color: colors.text3, marginTop: 6 },
   input: {
     backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1,
     borderRadius: radius.md, paddingHorizontal: 14, height: 50,
