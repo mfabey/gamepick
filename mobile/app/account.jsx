@@ -13,6 +13,11 @@ import { registerAccount, requestPasswordReset, checkUsernameAvailable } from '.
 import { colors, radius, spacing, PRESSED } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
 
+// Sunucudaki USERNAME_RE ile birebir aynı (app/lib/content-filter.js).
+// Sunucuya ulaşılamadığında biçim hatasını yine de yakalayabilmek için burada
+// da duruyor — yetkili doğrulama her zaman sunucuda.
+const USERNAME_RE = /^[a-zA-Z0-9_]{3,20}$/;
+
 export default function AccountScreen() {
   const router = useRouter();
   const { t, lang } = useLanguage();
@@ -26,8 +31,13 @@ export default function AccountScreen() {
   const [error, setError] = useState('');
   const [info, setInfo]   = useState('');
 
-  // Kullanıcı adı uygunluğu — yazarken canlı kontrol (400ms sönümleme)
-  const [uname, setUname] = useState({ status: 'idle' });   // idle|checking|ok|error
+  // Kullanıcı adı uygunluğu — yazarken canlı kontrol (400ms sönümleme).
+  //
+  // 'taken' (sunucu KESİN olarak "alınmış" dedi) ile 'unknown' (kontrol
+  // edilemedi) ayrı durumlar olmak ZORUNDA. Eskiden ikisi de 'idle'a düşüyordu,
+  // gönderme koşulu ise 'ok' şart koşuyordu; sonuçta uca ulaşılamadığı her
+  // durumda kayıt sonsuza dek kilitleniyordu. Artık yalnızca 'taken' engelliyor.
+  const [uname, setUname] = useState({ status: 'idle' });   // idle|checking|ok|taken|unknown
   const unameTimer = useRef(null);
 
   useEffect(() => {
@@ -39,17 +49,18 @@ export default function AccountScreen() {
     unameTimer.current = setTimeout(async () => {
       try {
         const r = await checkUsernameAvailable(v);
-        setUname(r?.available ? { status: 'ok' } : { status: 'error', code: r?.error || 'TAKEN' });
+        setUname(r?.available ? { status: 'ok' } : { status: 'taken', code: r?.error || 'TAKEN' });
       } catch {
-        // Ağ hatasında engelleme — sunucu kayıt sırasında yine doğruluyor
-        setUname({ status: 'idle' });
+        // Kontrol edilemedi (ağ hatası ya da uç henüz yayında değil) → engelleme.
+        // Kayıt ucu adı zaten yeniden doğruluyor ve çakışmada 409 dönüyor.
+        setUname({ status: 'unknown' });
       }
     }, 400);
 
     return () => { if (unameTimer.current) clearTimeout(unameTimer.current); };
   }, [username, mode]);
 
-  const unameMsg = uname.status === 'error'
+  const unameMsg = uname.status === 'taken'
     ? (t(`soc.err.${uname.code}`) !== `soc.err.${uname.code}` ? t(`soc.err.${uname.code}`) : t('soc.err.generic'))
     : (uname.status === 'ok' ? t('soc.available') : t('soc.usernameHint'));
 
@@ -103,10 +114,23 @@ export default function AccountScreen() {
 
     // Kullanıcı adı zorunlu: sosyal özelliklerin kimlik temeli.
     // Boş bırakılırsa kullanıcı adsız kalıyor ve arkadaş ekleyemiyor.
-    if (isSignup && uname.status !== 'ok') {
-      setError(username.trim().length < 3 ? t('soc.usernameHint') : unameMsg);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-      return;
+    //
+    // YALNIZCA kesin bilinen iki durumda engelliyoruz: biçim yanlış, ya da
+    // sunucu adın alındığını söyledi. 'checking' ve 'unknown' geçirilir —
+    // uygunluk kontrolü bir KOLAYLIK, yetkili doğrulama kayıt ucunda.
+    // (Aksi hâlde uca ulaşılamadığında kayıt tamamen kilitleniyor.)
+    if (isSignup) {
+      const u = username.trim();
+      if (!USERNAME_RE.test(u)) {
+        setError(t('soc.err.USERNAME_FORMAT'));
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        return;
+      }
+      if (uname.status === 'taken') {
+        setError(unameMsg);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        return;
+      }
     }
 
     if (!password) {
@@ -232,9 +256,9 @@ export default function AccountScreen() {
                   />
                   {uname.status === 'checking' && <ActivityIndicator size="small" color={colors.text3} />}
                   {uname.status === 'ok' && <Ionicons name="checkmark-circle" size={20} color={colors.green} />}
-                  {uname.status === 'error' && <Ionicons name="close-circle" size={20} color={colors.danger} />}
+                  {uname.status === 'taken' && <Ionicons name="close-circle" size={20} color={colors.danger} />}
                 </View>
-                <Text style={[styles.hint, uname.status === 'error' && { color: colors.danger }]}>
+                <Text style={[styles.hint, uname.status === 'taken' && { color: colors.danger }]}>
                   {unameMsg}
                 </Text>
               </View>
