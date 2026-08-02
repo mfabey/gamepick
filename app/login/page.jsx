@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import AppleSignInButton from '../components/AppleSignInButton';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -101,6 +102,19 @@ export default function LoginPage() {
 
         {/* Form */}
         <div className="card" style={{ padding: '28px' }}>
+          {/* Apple ile giriş — Services ID tanımlı değilse kendini gizler */}
+          <AppleSignInButton lang={lang} onError={setError} />
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 12,
+            margin: '18px 0',
+          }}>
+            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+            <span style={{ fontSize: 12, color: 'var(--text-3)' }}>
+              {lang === 'tr' ? 'veya' : 'or'}
+            </span>
+            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+          </div>
+
           <form onSubmit={handleSubmit}>
             {error && (
               <div style={{

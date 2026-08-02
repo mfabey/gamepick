@@ -77,13 +77,30 @@ export async function POST(request) {
     };
     try { await mergeProfile(localId, user); } catch { /* önbellek şart değil */ }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       ok: true,
       user,
       idToken,
       refreshToken,
       expiresIn: Number(expiresIn) || 3600,
     });
+
+    // Web ve mobil AYNI ucu kullanıyor ama oturumları farklı taşıyor:
+    // mobil yanıttaki token'ları saklıyor, web httpOnly çerez bekliyor.
+    // `web: true` geldiğinde çerez de kuruluyor — mobil bu başlığı yok sayar,
+    // bu yüzden mevcut mobil akış etkilenmiyor.
+    if (body.web === true) {
+      response.cookies.set('gp_user_session', JSON.stringify({
+        uid: user.uid, name: user.name, email: user.email,
+      }), {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 7,
+      });
+    }
+
+    return response;
   } catch (err) {
     console.error('apple-signin hatası:', err.message);
     return NextResponse.json({ error: 'Giriş sırasında hata oluştu.' }, { status: 500 });
