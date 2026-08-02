@@ -23,7 +23,7 @@ import { useSeen } from '../../src/hooks/useSeen';
 import { useDismissed } from '../../src/hooks/useDismissed';
 import { useForYouFeed } from '../../src/hooks/useForYouFeed';
 import { recordDismiss } from '../../src/services/dismissStore';
-import GameCard from '../../src/components/GameCard';
+import GamePostCard from '../../src/components/GamePostCard';
 import SwipeGlowButton from '../../src/components/SwipeGlowButton';
 import { fetchForYouCandidates } from '../../src/api/recommend';
 import { genreSlugsFor, rankCandidates } from '../../src/services/recommend';
@@ -125,12 +125,14 @@ export default function HomeScreen() {
   }, [t]);
 
   const keyExtractor = useCallback((item) => String(item.id), []);
+  // Keşif akışı artık iki sütunlu kapak ızgarası değil, tek sütunlu gönderi
+  // akışı: oyun içi ekran görüntüsü + açıklama. Öneri MANTIĞI aynı kaldı
+  // (zevk profili + Steam kütüphanesi), değişen yalnızca sunum.
   const renderFeedItem = useCallback(({ item }) => (
-    <View style={styles.cell}><GameCard game={item} /></View>
-  ), []);
+    <GamePostCard game={item} onDismiss={handleDismiss} />
+  ), [handleDismiss]);
 
-  // Mevcut bölümlerin tamamı listenin başlığı olur → görünüm birebir korunur.
-  // Negatif kenar boşluğu, ızgara için verilen 10px'i başlıkta geri alır.
+  // Mevcut bölümlerin tamamı listenin başlığı olur → tek kaydırma, tek liste.
   const header = (
     <View style={styles.headerWrap}>
 
@@ -204,7 +206,6 @@ export default function HomeScreen() {
         onScroll={onTabScroll}
         scrollEventThrottle={16}
         data={feed}
-        numColumns={2}
         keyExtractor={keyExtractor}
         renderItem={renderFeedItem}
         ListHeaderComponent={header}
@@ -287,13 +288,15 @@ const NewsCard = memo(function NewsCard({ item, onPress }) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
-  listContent: { paddingHorizontal: 10 },
+  // Tek sütuna geçilince listenin yatay dolgusu kaldırıldı: gönderi kartı
+  // kendi kenar boşluğunu (spacing.lg) taşıyor ve böylece bölüm başlıklarıyla
+  // AYNI hizada duruyor. Dolgu kalsaydı kartlar içeri kaçardı.
+  listContent: {},
   // Başlık tam genişlikte kalsın diye listenin yatay dolgusu geri alınıyor.
   // paddingBottom ŞART: başlığın son bölümü (İndirimdekiler) ile altındaki
   // iki sütunlu ızgara bitişik duruyordu, ızgara o bölümün devamı gibi
   // görünüyordu. 26 = bölümler arası boşlukla aynı ritim.
-  headerWrap: { marginHorizontal: -10, paddingBottom: 26 },
-  cell: { flex: 1, paddingHorizontal: 6, paddingBottom: spacing.md },
+  headerWrap: { paddingBottom: 26 },
   topBar: { alignItems: 'center', paddingHorizontal: spacing.lg, paddingTop: 6, paddingBottom: 4, justifyContent: 'center' },
   // İkon akıştan çıkarıldı: normal akışta olsaydı marka ortadan kayardı.
   topRight: { position: 'absolute', right: spacing.lg - 4, top: 2 },
