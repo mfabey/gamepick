@@ -18,6 +18,14 @@ expo-env.d.ts
 *.key
 *.mobileprovision
 
+# Google Play service account anahtari — Play hesabina yazma yetkisi veren
+# GIZLI kimlik bilgisi. Genel `*.json` kurali YAZILAMAZ, cunku package.json /
+# app.json / eas.json'i da yok sayardi; bu yuzden ada gore eleniyor.
+google-play-service-account.json
+*-service-account.json
+play-store-key.json
+credentials/
+
 # Metro
 .metro-health-check*
 
