@@ -11,8 +11,8 @@ export default function TabLayout() {
     >
       <Tabs.Screen name="index"   options={{ title: t('nav.home') }} />
       <Tabs.Screen name="games"   options={{ title: t('nav.games') }} />
+      <Tabs.Screen name="videos"  options={{ title: t('nav.videos') }} />
       <Tabs.Screen name="news"    options={{ title: t('nav.news') }} />
-      <Tabs.Screen name="library" options={{ title: t('nav.library') }} />
       <Tabs.Screen name="profile" options={{ title: t('nav.profile') }} />
     </Tabs>
   );

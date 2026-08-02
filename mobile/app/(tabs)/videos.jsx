@@ -25,16 +25,16 @@ import * as Haptics from 'expo-haptics';
 import * as WebBrowser from 'expo-web-browser';
 import { useVideoPlayer, VideoView } from 'expo-video';
 
-import { fetchVideoFeed } from '../src/api/videoFeed';
-import { useWishlist } from '../src/context/WishlistContext';
-import { useCollections, useCollectionsContaining } from '../src/hooks/useCollections';
-import { toggleGameInCollection, createCollection } from '../src/services/collectionsStore';
-import CollectionPicker from '../src/components/CollectionPicker';
-import { recordSignal } from '../src/services/tasteProfile';
-import { reportActivity } from '../src/api/social';
-import { recordSeen } from '../src/services/seenStore';
-import { colors, radius, spacing, PRESSED } from '../src/theme';
-import { useLanguage } from '../src/context/LanguageContext';
+import { fetchVideoFeed } from '../../src/api/videoFeed';
+import { useWishlist } from '../../src/context/WishlistContext';
+import { useCollections, useCollectionsContaining } from '../../src/hooks/useCollections';
+import { toggleGameInCollection, createCollection } from '../../src/services/collectionsStore';
+import CollectionPicker from '../../src/components/CollectionPicker';
+import { recordSignal } from '../../src/services/tasteProfile';
+import { reportActivity } from '../../src/api/social';
+import { recordSeen } from '../../src/services/seenStore';
+import { colors, radius, spacing, PRESSED, TAB_SPACE } from '../../src/theme';
+import { useLanguage } from '../../src/context/LanguageContext';
 
 const { height: SCREEN_H, width: SCREEN_W } = Dimensions.get('window');
 const POOL = 3;
@@ -146,13 +146,12 @@ export default function VideosScreen() {
       height={itemH}
       isActive={index === active}
       player={players[index % POOL]}
-      insets={insets}
       muted={muted}
       onToggleMute={() => { Haptics.selectionAsync(); setMuted((m) => !m); }}
       router={router}
       t={t}
     />
-  ), [active, players, itemH, insets, muted, router, t]);
+  ), [active, players, itemH, muted, router, t]);
 
   if (loading && items.length === 0) {
     return (
@@ -178,23 +177,20 @@ export default function VideosScreen() {
         decelerationRate="fast"
       />
 
-      {/* Üst çubuk — geri + BETA rozeti */}
+      {/* Üst çubuk — BETA rozeti.
+          Geri butonu YOK: bu artık bir sekme, geri dönülecek bir yer yok. */}
       <SafeAreaView edges={['top']} style={styles.topBar} pointerEvents="box-none">
-        <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10}>
-          <Ionicons name="chevron-back" size={24} color="#fff" />
-        </Pressable>
         <View style={styles.titleWrap}>
           <Text style={styles.topTitle}>{t('vid.title')}</Text>
           <View style={styles.betaBadge}><Text style={styles.betaText}>BETA</Text></View>
         </View>
-        <View style={styles.iconBtn} />
       </SafeAreaView>
     </View>
   );
 }
 
 // ─── Tek video elemanı ──────────────────────────────────────────────────────
-function VideoItem({ item, height, isActive, player, insets, muted, onToggleMute, router, t }) {
+function VideoItem({ item, height, isActive, player, muted, onToggleMute, router, t }) {
   const { isWatched, toggle } = useWishlist();
   const collections = useCollections();
   const inCollections = useCollectionsContaining(item.id);
@@ -282,7 +278,7 @@ function VideoItem({ item, height, isActive, player, insets, muted, onToggleMute
       />
 
       {/* Sağ aksiyon sütunu */}
-      <View style={[styles.actions, { bottom: insets.bottom + 130 }]}>
+      <View style={[styles.actions, { bottom: TAB_SPACE + 90 }]}>
         <ActionBtn
           icon={watched ? 'notifications' : 'notifications-outline'}
           active={watched}
@@ -304,7 +300,7 @@ function VideoItem({ item, height, isActive, player, insets, muted, onToggleMute
       </View>
 
       {/* Alt bilgi */}
-      <Pressable style={[styles.info, { bottom: insets.bottom + 34 }]} onPress={openDetail}>
+      <Pressable style={[styles.info, { bottom: TAB_SPACE + 6 }]} onPress={openDetail}>
         <Text numberOfLines={2} style={styles.name}>{item.name}</Text>
         {item.genres?.length > 0 && (
           <View style={styles.tags}>
@@ -354,7 +350,8 @@ const styles = StyleSheet.create({
 
   topBar: {
     position: 'absolute', top: 0, left: 0, right: 0,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    // Geri butonu kalkınca tek çocuk kaldı; space-between sola yaslıyordu
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     paddingHorizontal: spacing.md,
   },
   titleWrap: { flexDirection: 'row', alignItems: 'center', gap: 7 },
@@ -364,12 +361,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent,
   },
   betaText: { color: '#fff', fontSize: 11, fontWeight: '900', letterSpacing: 0.6 },
-  iconBtn: {
-    width: 44, height: 44, borderRadius: 22,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-    alignItems: 'center', justifyContent: 'center',
-  },
-
   actions: { position: 'absolute', right: 12, alignItems: 'center', gap: 17 },
   actionBtn: { alignItems: 'center', gap: 5 },
   actionCircle: {

@@ -77,6 +77,13 @@ export default function ProfileScreen() {
             icon="list" label={t('pl.entry')} beta
             onPress={() => router.push('/lists')}
           />
+          {/* Kütüphane sekmeden çıkarıldı (yerine Videolar geldi) — erişilemez
+              kalmasın diye içerik ızgarasına alındı. Steam/Xbox bağlantıları
+              zaten bu ekranda, doğal yeri burası. */}
+          <ContentTile
+            icon="library" label={t('nav.library')}
+            onPress={() => router.push('/library')}
+          />
           <ContentTile
             icon="stats-chart" label={t('stats.entry')} wide
             onPress={() => router.push('/stats')}

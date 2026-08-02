@@ -9,6 +9,7 @@ import { colors, type } from '../theme';
 const ICONS = {
   index:   'home',
   games:   'game-controller',
+  videos:  'play-circle',
   news:    'newspaper',
   library: 'library',
   profile: 'person',

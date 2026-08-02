@@ -8,14 +8,14 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { GamesGridSkeleton } from '../../src/components/Skeleton';
-import PosterImage from '../../src/components/PosterImage';
-import { prefetchImages } from '../../src/utils/prefetch';
-import { colors, radius, spacing, TAB_SPACE } from '../../src/theme';
-import { useLanguage } from '../../src/context/LanguageContext';
-import { useAuth } from '../../src/context/AuthContext';
-import { fetchSteamPrices } from '../../src/api/library';
-import { useConnectedLibrary } from '../../src/hooks/useConnectedLibrary';
+import { GamesGridSkeleton } from '../src/components/Skeleton';
+import PosterImage from '../src/components/PosterImage';
+import { prefetchImages } from '../src/utils/prefetch';
+import { colors, radius, spacing, TAB_SPACE } from '../src/theme';
+import { useLanguage } from '../src/context/LanguageContext';
+import { useAuth } from '../src/context/AuthContext';
+import { fetchSteamPrices } from '../src/api/library';
+import { useConnectedLibrary } from '../src/hooks/useConnectedLibrary';
 
 function computeValue(games, prices) {
   if (!games) return null;
@@ -85,7 +85,7 @@ export default function LibraryScreen() {
 
   // ── Kütüphane İstatistikleri Widget'ını Güncelle ──
   useEffect(() => {
-    import('../../modules/gamerisen-widget-module').then(({ setWidgetData }) => {
+    import('../modules/gamerisen-widget-module').then(({ setWidgetData }) => {
       if (combined && combined.totalGames > 0) {
         const lastPlayedGame = [...combined.games].sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0))[0];
         const lastPlayedName = lastPlayedGame ? lastPlayedGame.name : '—';
