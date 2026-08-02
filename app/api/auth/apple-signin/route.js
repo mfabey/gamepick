@@ -46,8 +46,17 @@ export async function POST(request) {
     const idp = await idpRes.json();
 
     if (!idpRes.ok) {
-      console.error('Firebase signInWithIdp hatası:', idp?.error?.message);
-      return NextResponse.json({ error: 'Apple ile giriş doğrulanamadı.' }, { status: 401 });
+      // Firebase'in hata KODU istemciye de taşınıyor. Hassas bir bilgi değil ama
+      // teşhis için şart: tek başına "doğrulanamadı" mesajı, Firebase'de Apple
+      // sağlayıcısının kapalı olmasıyla (OPERATION_NOT_ALLOWED) token/audience
+      // uyuşmazlığını (INVALID_IDP_RESPONSE) ayırt edilemez hâle getiriyordu.
+      const raw = String(idp?.error?.message || '');
+      const code = raw.split(/[\s:]/)[0] || 'UNKNOWN';
+      console.error('Firebase signInWithIdp hatası:', raw);
+      return NextResponse.json(
+        { error: 'Apple ile giriş doğrulanamadı.', code },
+        { status: 401 }
+      );
     }
 
     const { localId, idToken, refreshToken, expiresIn, email, isNewUser } = idp;

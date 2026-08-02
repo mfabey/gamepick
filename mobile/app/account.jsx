@@ -181,7 +181,9 @@ export default function AccountScreen() {
       router.back();
     } catch (e) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setError(e?.message || 'Hata');
+      // Sunucudan kod geldiyse göster — "giriş yapılamadı" tek başına ne
+      // kullanıcıya ne de bize bir şey anlatıyor.
+      setError(e?.code ? `${e.message} (${e.code})` : (e?.message || 'Hata'));
     } finally {
       setBusy(false);
     }

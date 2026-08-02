@@ -29,6 +29,9 @@ export async function apiPost(path, body = {}, { timeout = 25000 } = {}) {
     if (!res.ok) {
       const err = new Error(data?.error || `HTTP ${res.status} — ${path}`);
       err.status = res.status;
+      // Sunucu bir hata KODU döndürdüyse taşı — üst katman kullanıcıya
+      // gösterebilsin. Kodsuz mesajlar teşhisi imkânsız hâle getiriyordu.
+      if (data?.code) err.code = data.code;
       throw err;
     }
     return data;
