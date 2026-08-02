@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import AppleSignInButton from '../components/AppleSignInButton';
+import GoogleSignInButton from '../components/GoogleSignInButton';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -104,6 +105,8 @@ export default function LoginPage() {
         <div className="card" style={{ padding: '28px' }}>
           {/* Apple ile giriş — Services ID tanımlı değilse kendini gizler */}
           <AppleSignInButton lang={lang} onError={setError} />
+          {/* Google ile giriş — istemci kimliği tanımlı değilse kendini gizler */}
+          <GoogleSignInButton lang={lang} onError={setError} />
           <div style={{
             display: 'flex', alignItems: 'center', gap: 12,
             margin: '18px 0',
