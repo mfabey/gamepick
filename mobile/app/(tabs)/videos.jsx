@@ -19,7 +19,7 @@ import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as WebBrowser from 'expo-web-browser';
@@ -50,6 +50,9 @@ export default function VideosScreen() {
   const [loading, setLoading] = useState(true);
   const [active, setActive] = useState(0);
   const [muted, setMuted] = useState(false);
+  // Ekran şu an görünür mü? Sekme geçişinde ekran sökülmediği için oynatmayı
+  // yalnızca bu bayrak durdurabiliyor.
+  const [focused, setFocused] = useState(true);
   const fetching = useRef(false);
 
   // Oturum başına tek seed — sunucu sırayı buna göre karıştırıyor.
@@ -116,15 +119,33 @@ export default function VideosScreen() {
       if (shouldPlay) player.play(); else player.pause();
     };
 
-    assign(active, true);
+    // Odak yokken oynatma: kullanıcı başka sekmedeyken ses devam etmesin
+    assign(active, focused);
     assign(active + 1, false);   // sonraki hazır beklesin → geçiş anında donma olmaz
     assign(active - 1, false);
 
     // Havuz dışındaki her şey zaten farklı slota yazılınca serbest kalıyor
-  }, [active, items, players, muted]);
+  }, [active, items, players, muted, focused]);
 
-  // Ekrandan çıkarken tüm sesi kes (arka planda çalmasın)
+  // Ekran SÖKÜLÜRSE sesi kes. Tek başına YETMİYOR: sekme değiştirmek ekranı
+  // sökmez (tab'lerin amacı durumu korumaktır), o yüzden bu temizlik sekme
+  // geçişinde hiç çalışmıyordu ve ses arka planda devam ediyordu.
   useEffect(() => () => { players.forEach((p) => { try { p.pause(); } catch {} }); }, [players]);
+
+  // Doğru sinyal ODAK KAYBI. Sekmeden çıkınca ya da oyun detayına gidince
+  // burası çalışıp sesi anında kesiyor; geri dönüldüğünde `focused` tekrar
+  // true olduğu için yukarıdaki efekt videoyu kaldığı yerden sürdürüyor.
+  useFocusEffect(
+    useCallback(() => {
+      setFocused(true);
+      return () => {
+        setFocused(false);
+        // Durum güncellemesini beklemeden doğrudan durdur — sesin kesilmesi
+        // bir sonraki render'a kalmasın.
+        players.forEach((p) => { try { p.pause(); } catch {} });
+      };
+    }, [players])
+  );
 
   // Aktif video değişince zevk sinyali + görüldü kaydı
   useEffect(() => {
