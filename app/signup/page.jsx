@@ -34,6 +34,7 @@ export default function SignupPage() {
           if (container && container.innerHTML === '') {
             window.grecaptcha.enterprise.render('recaptcha-container', {
               sitekey: process.env.NEXT_PUBLIC_FIREBASE_RECAPTCHA_SITE_KEY,
+              action: 'signup',
               callback: (token) => {
                 setCaptchaChecked(true);
                 setCaptchaToken(token);
