@@ -11,7 +11,7 @@
 // Ayrıca: video hazır olana kadar Steam'in kendi küçük görseli poster olarak
 // duruyor → siyah ekran flaşı yok. Algılanan akıcılıkta en belirleyici detay bu.
 // ─────────────────────────────────────────────────────────────────────────────
-import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo, memo } from 'react';
 import {
   View, Text, Pressable, StyleSheet, ActivityIndicator, Dimensions, Platform,
 } from 'react-native';
@@ -52,6 +52,11 @@ export default function VideosScreen() {
   const [muted, setMuted] = useState(false);
   const fetching = useRef(false);
 
+  // Oturum başına tek seed — sunucu sırayı buna göre karıştırıyor.
+  // Sabit kalması ŞART: her istekte değişseydi sayfa 2, sayfa 1'in devamı
+  // olmaz ve aynı videolar tekrar gelirdi.
+  const seedRef = useRef(String(Date.now()) + Math.random().toString(36).slice(2, 8));
+
   // Tam ekran eleman yüksekliği — paging bunun tam katlarına oturur
   const itemH = SCREEN_H;
 
@@ -73,7 +78,7 @@ export default function VideosScreen() {
     if (fetching.current) return;
     fetching.current = true;
     try {
-      const data = await fetchVideoFeed(p, lang);
+      const data = await fetchVideoFeed(p, lang, seedRef.current);
       const fresh = data?.results || [];
       setItems((prev) => {
         const seen = new Set(prev.map((x) => x.id));
@@ -140,6 +145,13 @@ export default function VideosScreen() {
     if (hasMore && !fetching.current) load(page + 1);
   }, [hasMore, page, load]);
 
+  // Sabit referans — her render'da yeniden üretilseydi VideoItem'ın memo'su
+  // hiç tutmaz ve kaydırma sırasında tüm görünür elemanlar yeniden çizilirdi.
+  const onToggleMute = useCallback(() => {
+    Haptics.selectionAsync();
+    setMuted((m) => !m);
+  }, []);
+
   const renderItem = useCallback(({ item, index }) => (
     <VideoItem
       item={item}
@@ -147,11 +159,11 @@ export default function VideosScreen() {
       isActive={index === active}
       player={players[index % POOL]}
       muted={muted}
-      onToggleMute={() => { Haptics.selectionAsync(); setMuted((m) => !m); }}
+      onToggleMute={onToggleMute}
       router={router}
       t={t}
     />
-  ), [active, players, itemH, muted, router, t]);
+  ), [active, players, itemH, muted, onToggleMute, router, t]);
 
   if (loading && items.length === 0) {
     return (
@@ -190,7 +202,14 @@ export default function VideosScreen() {
 }
 
 // ─── Tek video elemanı ──────────────────────────────────────────────────────
-function VideoItem({ item, height, isActive, player, muted, onToggleMute, router, t }) {
+//
+// memo ŞART: `renderItem` aktif index'e bağlı olduğu için her kaydırmada
+// yeniden üretiliyor ve FlashList tüm görünür elemanlar için çağırıyordu.
+// memo sayesinde yalnızca `isActive` DEĞİŞEN iki eleman (eski aktif ve yeni
+// aktif) gerçekten yeniden render oluyor; diğerlerinin propları aynı kaldığı
+// için atlanıyorlar. Bunun çalışması için onToggleMute'un sabit referans
+// olması gerekiyor — yukarıda useCallback ile sabitlendi.
+const VideoItem = memo(function VideoItem({ item, height, isActive, player, muted, onToggleMute, router, t }) {
   const { isWatched, toggle } = useWishlist();
   const collections = useCollections();
   const inCollections = useCollectionsContaining(item.id);
@@ -328,7 +347,7 @@ function VideoItem({ item, height, isActive, player, muted, onToggleMute, router
       />
     </View>
   );
-}
+});
 
 function ActionBtn({ icon, label, active, onPress }) {
   return (
