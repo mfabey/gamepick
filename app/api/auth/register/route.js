@@ -6,11 +6,7 @@ const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
 
 export async function POST(request) {
   try {
-<<<<<<< Updated upstream
-    const { name, email, password, username } = await request.json();
-=======
-    const { name, email, password, captchaToken } = await request.json();
->>>>>>> Stashed changes
+    const { name, email, password, username, captchaToken } = await request.json();
 
     if (!email || !password || !name) {
       return NextResponse.json({ error: 'E-posta, şifre ve isim zorunludur.' }, { status: 400 });
