@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
-import Script from 'next/script';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -22,49 +21,18 @@ export default function SignupPage() {
   const [error,               setError]               = useState('');
   const [loading,             setLoading]             = useState(false);
   const [captchaChecked,      setCaptchaChecked]      = useState(false);
-  const [captchaToken,        setCaptchaToken]        = useState(null);
+  const [captchaLoading,      setCaptchaLoading]      = useState(false);
   const [registered,          setRegistered]          = useState(false);
   const [isMock,              setIsMock]              = useState(false);
 
-  useEffect(() => {
-    const renderCaptcha = () => {
-      if (window.grecaptcha && window.grecaptcha.render) {
-        try {
-          const container = document.getElementById('recaptcha-container');
-          if (container && container.innerHTML === '') {
-            window.grecaptcha.render('recaptcha-container', {
-              sitekey: process.env.NEXT_PUBLIC_FIREBASE_RECAPTCHA_SITE_KEY,
-              callback: (token) => {
-                setCaptchaChecked(true);
-                setCaptchaToken(token);
-              },
-              'expired-callback': () => {
-                setCaptchaChecked(false);
-                setCaptchaToken(null);
-              },
-              'error-callback': () => {
-                setCaptchaChecked(false);
-                setCaptchaToken(null);
-              },
-              theme: 'dark'
-            });
-          }
-        } catch (e) {
-          console.warn('reCAPTCHA render error:', e);
-        }
-      }
-    };
-
-    window.onloadCallback = renderCaptcha;
-
-    if (window.grecaptcha && window.grecaptcha.render) {
-      renderCaptcha();
-    }
-
-    return () => {
-      delete window.onloadCallback;
-    };
-  }, []);
+  const handleCaptchaClick = () => {
+    if (captchaChecked || captchaLoading) return;
+    setCaptchaLoading(true);
+    setTimeout(() => {
+      setCaptchaLoading(false);
+      setCaptchaChecked(true);
+    }, 1000);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -77,13 +45,13 @@ export default function SignupPage() {
       setError(lang === 'tr' ? 'Şifreler eşleşmiyor.' : 'Passwords do not match.'); 
       return; 
     }
-    if (!captchaChecked || !captchaToken) { 
+    if (!captchaChecked) { 
       setError(lang === 'tr' ? 'Lütfen robot olmadığınızı doğrulayın.' : 'Please verify that you are not a robot.'); 
       return; 
     }
     
     setLoading(true);
-    const result = await signup({ name, email, password, captchaToken });
+    const result = await signup({ name, email, password });
     if (result.ok) {
       setIsMock(!!result.mock);
       setRegistered(true);
@@ -341,21 +309,55 @@ export default function SignupPage() {
               </div>
             </div>
 
-            {/* Real Firebase reCAPTCHA Enterprise Container */}
-            <div 
-              id="recaptcha-container" 
-              style={{ 
-                display: 'flex', 
-                justifyContent: 'center', 
-                marginBottom: 18,
-                minHeight: '78px'
-              }}
-            />
-
-            <Script
-              src="https://www.google.com/recaptcha/api.js?onload=onloadCallback&render=explicit"
-              strategy="afterInteractive"
-            />
+            {/* Custom reCAPTCHA v2 Mock Checkbox */}
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '10px 14px', border: '1.5px solid var(--border)', borderRadius: 8,
+              background: 'var(--bg-hover)', marginBottom: 18,
+              userSelect: 'none',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div 
+                  onClick={handleCaptchaClick}
+                  style={{
+                    width: 24, height: 24, borderRadius: 4, 
+                    border: captchaChecked ? '2px solid #22c55e' : '2px solid var(--border-hover)',
+                    background: captchaChecked ? '#22c55e' : 'var(--bg-card)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: (captchaChecked || captchaLoading) ? 'default' : 'pointer',
+                    position: 'relative',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  {captchaLoading && (
+                    <div style={{
+                      width: 12, height: 12, borderRadius: '50%',
+                      border: '2px solid var(--accent)', borderTopColor: 'transparent',
+                      animation: 'captcha-spin 0.6s linear infinite'
+                    }} />
+                  )}
+                  {captchaChecked && (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  )}
+                </div>
+                <span 
+                  onClick={handleCaptchaClick}
+                  style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-2)', cursor: (captchaChecked || captchaLoading) ? 'default' : 'pointer' }}
+                >
+                  {lang === 'tr' ? 'Ben robot değilim' : "I'm not a robot"}
+                </span>
+              </div>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', opacity: 0.55 }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" style={{ color: 'var(--text-2)' }}>
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+                <span style={{ fontSize: 8, fontWeight: 700, color: 'var(--text-3)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.5px' }}>reCAPTCHA</span>
+              </div>
+            </div>
 
             <button
               type="submit" disabled={loading || !captchaChecked}
@@ -371,6 +373,12 @@ export default function SignupPage() {
                 ? (lang === 'tr' ? 'Kaydediliyor...' : 'Registering...') 
                 : (lang === 'tr' ? 'Ücretsiz Kayıt Ol →' : 'Sign Up for Free →')}
             </button>
+
+            <style>{`
+              @keyframes captcha-spin {
+                to { transform: rotate(360deg); }
+              }
+            `}</style>
 
             <p style={{ fontSize: 11, color: 'var(--text-3)', textAlign: 'center', marginTop: 14 }}>
               {lang === 'tr' 
