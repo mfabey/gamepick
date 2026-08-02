@@ -28,11 +28,11 @@ export default function SignupPage() {
 
   useEffect(() => {
     const renderCaptcha = () => {
-      if (window.grecaptcha && window.grecaptcha.enterprise) {
+      if (window.grecaptcha && window.grecaptcha.render) {
         try {
           const container = document.getElementById('recaptcha-container');
           if (container && container.innerHTML === '') {
-            window.grecaptcha.enterprise.render('recaptcha-container', {
+            window.grecaptcha.render('recaptcha-container', {
               sitekey: process.env.NEXT_PUBLIC_FIREBASE_RECAPTCHA_SITE_KEY,
               callback: (token) => {
                 setCaptchaChecked(true);
@@ -57,7 +57,7 @@ export default function SignupPage() {
 
     window.onloadCallback = renderCaptcha;
 
-    if (window.grecaptcha && window.grecaptcha.enterprise) {
+    if (window.grecaptcha && window.grecaptcha.render) {
       renderCaptcha();
     }
 
@@ -353,7 +353,7 @@ export default function SignupPage() {
             />
 
             <Script
-              src="https://www.google.com/recaptcha/enterprise.js?onload=onloadCallback&render=explicit"
+              src="https://www.google.com/recaptcha/api.js?onload=onloadCallback&render=explicit"
               strategy="afterInteractive"
             />
 
