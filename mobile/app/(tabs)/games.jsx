@@ -20,7 +20,12 @@ const COLS = 2;
 const NUM = 24;
 const PAGE1_TTL = 5 * 60 * 1000;   // 1. sayfa önbellek ömrü
 
+import { useTabPressAction, scrollRefToTop } from '../../src/hooks/useTabPressAction';
+
 export default function GamesScreen() {
+  // Sekmeye tekrar basınca listeyi başa sar (iOS'ta beklenen davranış)
+  const listRef = useRef(null);
+  useTabPressAction(useCallback(() => scrollRefToTop(listRef), []));
   const onTabScroll = useTabBarScroll();
   const { t } = useLanguage();
 
@@ -175,6 +180,7 @@ export default function GamesScreen() {
           </View>
         ) : (
           <FlashList
+            ref={listRef}
             onScroll={onTabScroll}
             scrollEventThrottle={16}
             data={games}

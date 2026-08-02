@@ -26,6 +26,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { useVideoPlayer, VideoView } from 'expo-video';
 
 import { fetchVideoFeed } from '../../src/api/videoFeed';
+import { useTabPressAction } from '../../src/hooks/useTabPressAction';
 import { useWishlist } from '../../src/context/WishlistContext';
 import { useCollections, useCollectionsContaining } from '../../src/hooks/useCollections';
 import { toggleGameInCollection, createCollection } from '../../src/services/collectionsStore';
@@ -54,6 +55,7 @@ export default function VideosScreen() {
   // yalnızca bu bayrak durdurabiliyor.
   const [focused, setFocused] = useState(true);
   const fetching = useRef(false);
+  const listRef = useRef(null);
 
   // Oturum başına tek seed — sunucu sırayı buna göre karıştırıyor.
   // Sabit kalması ŞART: her istekte değişseydi sayfa 2, sayfa 1'in devamı
@@ -98,6 +100,27 @@ export default function VideosScreen() {
   }, [lang]);
 
   useEffect(() => { load(1); }, [load]);
+
+  // Sekmeye tekrar basmak: diğer sekmelerde listeyi başa sarıyor, BURADA
+  // akışı yeniliyor. Tam ekran videoda "başa sar" zaten tek bir kaydırma
+  // hareketi; asıl istenen şey yeni içerik görmek.
+  //
+  // Seed'i DEĞİŞTİRMEK şart: sunucu sırayı seed'e göre kuruyor, aynı seed'le
+  // yeniden çekseydik birebir aynı videolar gelirdi.
+  const refresh = useCallback(() => {
+    if (fetching.current) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    seedRef.current = String(Date.now()) + Math.random().toString(36).slice(2, 8);
+    loadedRef.current = {};          // havuzdaki kaynaklar artık geçersiz
+    setItems([]);
+    setActive(0);
+    setHasMore(true);
+    setLoading(true);
+    listRef.current?.scrollToOffset?.({ offset: 0, animated: false });
+    load(1);
+  }, [load]);
+
+  useTabPressAction(refresh);
 
   // ── Aktif elemana göre havuzu yönet ─────────────────────────────────────
   // Aktif olanı oynat, komşusunu ÖN YÜKLE (duraklatılmış), uzağı durdur.
@@ -198,6 +221,7 @@ export default function VideosScreen() {
   return (
     <View style={styles.root}>
       <FlashList
+        ref={listRef}
         data={items}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}

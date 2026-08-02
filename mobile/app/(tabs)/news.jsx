@@ -1,4 +1,4 @@
-import { memo, useState, useMemo, useCallback } from 'react';
+import { memo, useState, useMemo, useCallback , useRef} from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -12,8 +12,12 @@ import { colors, radius, spacing, TAB_SPACE, PRESSED } from '../../src/theme';
 import { useTabBarScroll } from '../../src/context/TabBarContext';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useQuery } from '../../src/hooks/useQuery';
+import { useTabPressAction, scrollRefToTop } from '../../src/hooks/useTabPressAction';
 
 export default function NewsScreen() {
+  // Sekmeye tekrar basınca listeyi başa sar (iOS'ta beklenen davranış)
+  const listRef = useRef(null);
+  useTabPressAction(useCallback(() => scrollRefToTop(listRef), []));
   const onTabScroll = useTabBarScroll();
   const { t, lang } = useLanguage();
   const [cat, setCat] = useState('all');
@@ -67,6 +71,7 @@ export default function NewsScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       <Text style={styles.header}>{t('news.title')}</Text>
       <FlashList
+        ref={listRef}
         onScroll={onTabScroll}
         scrollEventThrottle={16}
         data={filtered}

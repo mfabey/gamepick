@@ -1,3 +1,4 @@
+import { useRef, useCallback } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -10,8 +11,12 @@ import { useAuth } from '../../src/context/AuthContext';
 import { useWishlist } from '../../src/context/WishlistContext';
 import { useCollections } from '../../src/hooks/useCollections';
 import IconButton from '../../src/components/IconButton';
+import { useTabPressAction, scrollRefToTop } from '../../src/hooks/useTabPressAction';
 
 export default function ProfileScreen() {
+  // Sekmeye tekrar basınca listeyi başa sar (iOS'ta beklenen davranış)
+  const scrollRef = useRef(null);
+  useTabPressAction(useCallback(() => scrollRefToTop(scrollRef), []));
   const onTabScroll = useTabBarScroll();
   const { t } = useLanguage();
   const router = useRouter();
@@ -36,7 +41,8 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: TAB_SPACE + 16 }} showsVerticalScrollIndicator={false} onScroll={onTabScroll} scrollEventThrottle={16}>
+      <ScrollView
+        ref={scrollRef} contentContainerStyle={{ padding: spacing.lg, paddingBottom: TAB_SPACE + 16 }} showsVerticalScrollIndicator={false} onScroll={onTabScroll} scrollEventThrottle={16}>
         {/* Başlık + ayarlar — ayarlar artık içerikle aynı listede değil */}
         <View style={styles.headRow}>
           <Text style={styles.h1}>{t('nav.profile')}</Text>

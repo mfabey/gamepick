@@ -1,4 +1,4 @@
-import { memo, useMemo, useCallback, useEffect } from 'react';
+import { memo, useMemo, useCallback, useEffect , useRef} from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
@@ -27,12 +27,16 @@ import GamePostCard from '../../src/components/GamePostCard';
 import SwipeGlowButton from '../../src/components/SwipeGlowButton';
 import { fetchForYouCandidates } from '../../src/api/recommend';
 import { genreSlugsFor, rankCandidates } from '../../src/services/recommend';
+import { useTabPressAction, scrollRefToTop } from '../../src/hooks/useTabPressAction';
 
 // Stabil fetcher'lar (key'in saf fonksiyonu)
 const fetchNewGames = () => fetchGames({ section: 'new', num: 12 });
 const fetchSaleGames = () => fetchGames({ section: 'sale', num: 12 });
 
 export default function HomeScreen() {
+  // Sekmeye tekrar basınca listeyi başa sar (iOS'ta beklenen davranış)
+  const listRef = useRef(null);
+  useTabPressAction(useCallback(() => scrollRefToTop(listRef), []));
   const onTabScroll = useTabBarScroll();
   const { t, lang, formatPrice } = useLanguage();
   const router = useRouter();
@@ -203,6 +207,7 @@ export default function HomeScreen() {
     <View style={styles.root}>
       <SafeAreaView edges={['top']} />
       <FlashList
+        ref={listRef}
         onScroll={onTabScroll}
         scrollEventThrottle={16}
         data={feed}
