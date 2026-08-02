@@ -24,6 +24,7 @@ import { useDismissed } from '../../src/hooks/useDismissed';
 import { useForYouFeed } from '../../src/hooks/useForYouFeed';
 import { recordDismiss } from '../../src/services/dismissStore';
 import GameCard from '../../src/components/GameCard';
+import SwipeGlowButton from '../../src/components/SwipeGlowButton';
 import { fetchForYouCandidates } from '../../src/api/recommend';
 import { genreSlugsFor, rankCandidates } from '../../src/services/recommend';
 
@@ -133,9 +134,17 @@ export default function HomeScreen() {
   const header = (
     <View style={styles.headerWrap}>
 
-        {/* ── Üst: marka (ortalı) ── */}
+        {/* ── Üst: marka (ortalı) + kaydırarak keşif ──
+            Marka ORTADA kalsın diye ikon akışa girmiyor, mutlak konumlu.
+            Aksi hâlde marka sola kayardı. */}
         <View style={styles.topBar}>
           <Text style={styles.brand}>GAMERISEN</Text>
+          <View style={styles.topRight}>
+            <SwipeGlowButton
+              onPress={() => router.push('/swipe')}
+              accessibilityLabel={t('swipe.entry')}
+            />
+          </View>
         </View>
 
         {/* ── Hero ── */}
@@ -159,23 +168,14 @@ export default function HomeScreen() {
             <View style={styles.searchBtn}><Ionicons name="arrow-forward" size={16} color="#fff" /></View>
           </Pressable>
 
-          {/* Doğal dil ile keşif */}
-          <Pressable style={({ pressed }) => [styles.discover, pressed && PRESSED]} onPress={() => router.push('/discover')}>
-            <Ionicons name="sparkles" size={17} color={colors.accent} />
-            <Text style={styles.discoverText}>{t('discover.entry')}</Text>
-            <Ionicons name="chevron-forward" size={15} color={colors.text3} />
-          </Pressable>
+          {/* Not: Bu satırın altında iki giriş daha vardı, ikisi de taşındı.
+              • Kaydırarak keşif → sağ üstteki parlayan ikon
+              • Doğal dil ile keşif → onboarding ve Profil
+              Hero'nun işi tek bir eylemi öne çıkarmak; alt alta dizilen üç
+              giriş hiçbirini öne çıkarmıyordu.
 
-          {/* Kaydırarak keşif — hızlı zevk sinyali üretir */}
-          <Pressable style={({ pressed }) => [styles.discover, pressed && PRESSED]} onPress={() => router.push('/swipe')}>
-            <Ionicons name="layers" size={17} color={colors.accent} />
-            <Text style={styles.discoverText}>{t('swipe.entry')}</Text>
-            <Ionicons name="chevron-forward" size={15} color={colors.text3} />
-          </Pressable>
-
-          {/* Not: Video akışı buradan kaldırıldı — artık alt navigasyonda
-              kendi sekmesi var. Aynı hedefe iki giriş bırakmak, sekmeye
-              basmak yerine yığına ekran itmek anlamına geliyordu. */}
+              Video akışı da daha önce buradan alınmıştı — artık alt
+              navigasyonda kendi sekmesi var. */}
         </View>
         </FadeIn>
 
@@ -308,7 +308,9 @@ const styles = StyleSheet.create({
   // görünüyordu. 26 = bölümler arası boşlukla aynı ritim.
   headerWrap: { marginHorizontal: -10, paddingBottom: 26 },
   cell: { flex: 1, paddingHorizontal: 6, paddingBottom: spacing.md },
-  topBar: { alignItems: 'center', paddingHorizontal: spacing.lg, paddingTop: 6, paddingBottom: 4 },
+  topBar: { alignItems: 'center', paddingHorizontal: spacing.lg, paddingTop: 6, paddingBottom: 4, justifyContent: 'center' },
+  // İkon akıştan çıkarıldı: normal akışta olsaydı marka ortadan kayardı.
+  topRight: { position: 'absolute', right: spacing.lg - 4, top: 2 },
   brand: { fontSize: 20, fontWeight: '900', color: colors.text, letterSpacing: 1.5 },
 
   hero: { paddingHorizontal: spacing.lg, paddingTop: 18 },
@@ -329,14 +331,6 @@ const styles = StyleSheet.create({
   },
   searchText: { flex: 1, color: colors.text3, fontSize: 15 },
   searchBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
-
-  discover: {
-    flexDirection: 'row', alignItems: 'center', gap: 9, marginTop: 10,
-    backgroundColor: colors.accentSoft, borderColor: colors.accentBorder, borderWidth: 1,
-    borderRadius: radius.lg, paddingHorizontal: 16, paddingVertical: 13,
-  },
-  discoverText: { flex: 1, color: colors.text, fontSize: 15, fontWeight: '600' },
-
 
   sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, marginBottom: 12 },
   sectionTitle: { fontSize: 17, fontWeight: '800', color: colors.text },

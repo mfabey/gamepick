@@ -114,9 +114,15 @@ export default function ProfileScreen() {
             onPress={() => router.push('/library')}
           />
           <ContentTile
-            icon="stats-chart" label={t('stats.entry')} wide
+            icon="stats-chart" label={t('stats.entry')}
             locked={locked} lockedHint={t('prof.lockedHint')}
             onPress={go('/stats')}
+          />
+          {/* Doğal dil ile keşif — anasayfadan buraya taşındı.
+              Kilitli DEĞİL: hesap gerektirmiyor, tamamen istemci tarafı. */}
+          <ContentTile
+            icon="sparkles" label={t('discover.entry')}
+            onPress={() => router.push('/discover')}
           />
         </View>
 

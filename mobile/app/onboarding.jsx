@@ -74,6 +74,17 @@ export default function OnboardingScreen() {
       <View style={styles.head}>
         <Text style={styles.title}>{t('onb.title')}</Text>
         <Text style={styles.subtitle}>{t('onb.subtitle')}</Text>
+
+        {/* Doğal dil ile keşif — anasayfadan buraya taşındı.
+            Oyun seçmek istemeyene ikinci bir yol: ne aradığını yazsın. */}
+        <Pressable
+          style={({ pressed }) => [styles.discover, pressed && PRESSED]}
+          onPress={() => router.push('/discover')}
+        >
+          <Ionicons name="sparkles" size={17} color={colors.accent} />
+          <Text style={styles.discoverText}>{t('discover.entry')}</Text>
+          <Ionicons name="chevron-forward" size={15} color={colors.text3} />
+        </Pressable>
       </View>
 
       {loading && games.length === 0 ? (
@@ -148,6 +159,14 @@ const styles = StyleSheet.create({
   head: { paddingHorizontal: spacing.lg, paddingTop: 10, paddingBottom: 14 },
   title: { fontSize: 28, fontWeight: '900', color: colors.text, letterSpacing: -0.5 },
   subtitle: { fontSize: 15, color: colors.text2, lineHeight: 21, marginTop: 8 },
+
+  // Doğal dil ile keşif girişi — anasayfadaki satırın aynısı
+  discover: {
+    flexDirection: 'row', alignItems: 'center', gap: 9, marginTop: 14,
+    backgroundColor: colors.accentSoft, borderColor: colors.accentBorder, borderWidth: 1,
+    borderRadius: radius.lg, paddingHorizontal: 16, paddingVertical: 13,
+  },
+  discoverText: { flex: 1, color: colors.text, fontSize: 15, fontWeight: '600' },
 
   list: { paddingHorizontal: 8 },
   cell: { flex: 1, paddingHorizontal: 5, paddingBottom: 10 },
