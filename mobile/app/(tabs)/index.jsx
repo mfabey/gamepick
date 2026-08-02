@@ -147,36 +147,22 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* ── Hero ── */}
+        {/* ── Arama ──
+            Eskiden burada bir hero vardı: CANLI rozeti, "Sıradaki oyununu
+            keşfet" başlığı ve alt metni. Üçü birlikte ekranın ilk perdesini
+            doldurup içeriği (haberler, bölümler) kıvrımın altına itiyordu.
+            Kaldırıldı — marka zaten üstte, aramanın ne işe yaradığı da
+            kendi metninden belli.
+
+            Daha önce bu bloktan çıkanlar: kaydırarak keşif (sağ üstteki
+            parlayan ikon), doğal dil ile keşif (onboarding + Profil) ve
+            video akışı (alt navigasyonda kendi sekmesi). */}
         <FadeIn delay={40}>
-        <View style={styles.hero}>
-          <View style={styles.badge}>
-            <View style={styles.liveDot} />
-            <Text style={styles.badgeText}>{t('hero.badge')}</Text>
-          </View>
-
-          <Text style={styles.title}>
-            {lang === 'tr' ? 'Sıradaki oyununu ' : 'Discover your '}
-            <Text style={{ color: colors.accentText }}>{lang === 'tr' ? 'keşfet' : 'next game'}</Text>
-          </Text>
-          <Text style={styles.subtitle}>{t('hero.subtitle')}</Text>
-
-          {/* Arama (dokununca Oyunlar sekmesine gider) */}
           <Pressable style={({ pressed }) => [styles.search, pressed && PRESSED]} onPress={() => router.push('/games')}>
             <Ionicons name="search" size={19} color={colors.text3} />
             <Text style={styles.searchText}>{t('hero.search')}</Text>
             <View style={styles.searchBtn}><Ionicons name="arrow-forward" size={16} color="#fff" /></View>
           </Pressable>
-
-          {/* Not: Bu satırın altında iki giriş daha vardı, ikisi de taşındı.
-              • Kaydırarak keşif → sağ üstteki parlayan ikon
-              • Doğal dil ile keşif → onboarding ve Profil
-              Hero'nun işi tek bir eylemi öne çıkarmak; alt alta dizilen üç
-              giriş hiçbirini öne çıkarmıyordu.
-
-              Video akışı da daha önce buradan alınmıştı — artık alt
-              navigasyonda kendi sekmesi var. */}
-        </View>
         </FadeIn>
 
         {/* Not: Kayan kapak şeridi kaldırıldı. Trend/Yeni oyunları zaten
@@ -313,19 +299,11 @@ const styles = StyleSheet.create({
   topRight: { position: 'absolute', right: spacing.lg - 4, top: 2 },
   brand: { fontSize: 20, fontWeight: '900', color: colors.text, letterSpacing: 1.5 },
 
-  hero: { paddingHorizontal: spacing.lg, paddingTop: 18 },
-  badge: {
-    flexDirection: 'row', alignItems: 'center', gap: 7, alignSelf: 'flex-start',
-    backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1,
-    paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.pill, marginBottom: 16,
-  },
-  liveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.green },
-  badgeText: { fontSize: 13, color: colors.text2, fontWeight: '600' },
-  title: { fontSize: 28, fontWeight: '800', color: colors.text, letterSpacing: -1, lineHeight: 35 },
-  subtitle: { fontSize: 15, color: colors.text2, lineHeight: 21, marginTop: 10 },
-
+  // Arama artık hero'nun içinde değil, doğrudan başlıkta duruyor — yatay
+  // boşluğu hero'dan devraldı ki bölüm başlıklarıyla aynı hizada kalsın.
   search: {
-    flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 20,
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    marginTop: 14, marginHorizontal: spacing.lg,
     backgroundColor: colors.card, borderColor: colors.borderHover, borderWidth: 1.5,
     borderRadius: radius.lg, height: 56, paddingLeft: 18, paddingRight: 8,
   },
