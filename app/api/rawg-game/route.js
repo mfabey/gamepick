@@ -6,6 +6,36 @@ import { getSteamDetailsCached } from '../../lib/steam-cache.js';
 const RAWG_KEY = process.env.RAWG_API_KEY;
 const BASE     = 'https://api.rawg.io/api';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// RAWG çağrılarına ZAMAN AŞIMI.
+//
+// 3 Ağustos 2026'da RAWG çöktü ve Cloudflare üzerinden HTTP 522 vermeye
+// başladı. Kritik nokta şu: 522 HEMEN dönmüyor — Cloudflare origin'i ~20 sn
+// bekliyor. Zaman aşımı olmadığı için her detay isteği 20 sn askıda kalıyordu.
+//
+// Mobil istemci 12 sn'de vazgeçtiği (client.js apiGet) için kullanıcı sadece
+// oyun adını ve fiyatını görüyordu; detay hiç gelmiyordu.
+//
+// Steam yedeği ZATEN VARDI ama 20 sn'lik hatanın arkasında beklediği için
+// pratikte hiç devreye girmiyordu. Kısa zaman aşımı onu çalışır hâle getiriyor:
+// RAWG yoksa kullanıcı yine Steam'den gelen bir detay sayfası görüyor.
+// ─────────────────────────────────────────────────────────────────────────────
+const RAWG_TIMEOUT_MS = 5000;
+
+async function rawgFetch(url, fallback = null) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), RAWG_TIMEOUT_MS);
+  try {
+    const r = await fetch(url, { next: { revalidate: 3600 }, signal: ctrl.signal });
+    if (!r.ok) return fallback;
+    return await r.json();
+  } catch {
+    return fallback;      // zaman aşımı, ağ hatası veya bozuk JSON
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 // RAWG store ID'leri
 const STEAM_STORE_ID = 1;
 const EPIC_STORE_ID  = 11;
@@ -278,17 +308,17 @@ export async function GET(request) {
 
     try {
       const [detailRes, shotsRes, storesRes, additionsRes] = await Promise.all([
-        fetch(`${BASE}/games/${directAppId}?key=${RAWG_KEY}`, { next: { revalidate: 3600 } }).then(r => r.json()),
-        fetch(`${BASE}/games/${directAppId}/screenshots?key=${RAWG_KEY}`, { next: { revalidate: 3600 } }).then(r => r.json()).catch(() => ({ results: [] })),
-        fetch(`${BASE}/games/${directAppId}/stores?key=${RAWG_KEY}`, { next: { revalidate: 3600 } }).then(r => r.json()).catch(() => ({ results: [] })),
-        fetch(`${BASE}/games/${directAppId}/additions?key=${RAWG_KEY}&page_size=12`, { next: { revalidate: 3600 } }).then(r => r.json()).catch(() => ({ results: [] })),
+        rawgFetch(`${BASE}/games/${directAppId}?key=${RAWG_KEY}`),
+        rawgFetch(`${BASE}/games/${directAppId}/screenshots?key=${RAWG_KEY}`, { results: [] }),
+        rawgFetch(`${BASE}/games/${directAppId}/stores?key=${RAWG_KEY}`, { results: [] }),
+        rawgFetch(`${BASE}/games/${directAppId}/additions?key=${RAWG_KEY}&page_size=12`, { results: [] }),
       ]);
 
       if (detailRes && !detailRes.detail && !detailRes.error && detailRes.id) {
         rawgDetail = detailRes;
-        rawgShots = shotsRes;
-        rawgStores = storesRes;
-        rawgAdditions = additionsRes;
+        rawgShots = shotsRes || { results: [] };
+        rawgStores = storesRes || { results: [] };
+        rawgAdditions = additionsRes || { results: [] };
         rawgSuccess = true;
       }
     } catch (err) {
@@ -423,18 +453,18 @@ export async function GET(request) {
 
   try {
     const [detailRes, shotsRes, storesRes, additionsRes] = await Promise.all([
-      fetch(`${BASE}/games/${slug}?key=${RAWG_KEY}`, { next: { revalidate: 3600 } }).then(r => r.json()),
-      fetch(`${BASE}/games/${slug}/screenshots?key=${RAWG_KEY}`, { next: { revalidate: 3600 } }).then(r => r.json()).catch(() => ({ results: [] })),
-      fetch(`${BASE}/games/${slug}/stores?key=${RAWG_KEY}`, { next: { revalidate: 3600 } }).then(r => r.json()).catch(() => ({ results: [] })),
-      fetch(`${BASE}/games/${slug}/additions?key=${RAWG_KEY}&page_size=12`, { next: { revalidate: 3600 } }).then(r => r.json()).catch(() => ({ results: [] })),
+      rawgFetch(`${BASE}/games/${slug}?key=${RAWG_KEY}`),
+      rawgFetch(`${BASE}/games/${slug}/screenshots?key=${RAWG_KEY}`, { results: [] }),
+      rawgFetch(`${BASE}/games/${slug}/stores?key=${RAWG_KEY}`, { results: [] }),
+      rawgFetch(`${BASE}/games/${slug}/additions?key=${RAWG_KEY}&page_size=12`, { results: [] }),
     ]);
 
     detail = detailRes;
-    shots = shotsRes;
-    storesData = storesRes;
-    additions = additionsRes;
+    shots = shotsRes || { results: [] };
+    storesData = storesRes || { results: [] };
+    additions = additionsRes || { results: [] };
 
-    if (detail.detail === 'Not found.' || detail.error || !detail.id) {
+    if (!detail || detail.detail === 'Not found.' || detail.error || !detail.id) {
       rawgFailed = true;
     } else if (isAdultContent(detail)) {
       return NextResponse.json({ error: 'Bu oyun kütüphanede gösterilmemektedir.' }, { status: 403 });
