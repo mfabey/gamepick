@@ -101,13 +101,12 @@ export function AuthProvider({ children }) {
       .catch(() => {});
   }, [xboxUser]);
 
-  // ── Site hesabı işlemleri ────────────────────────────────────────────────
-  const signup = async ({ name, email, password, captchaToken }) => {
+  const signup = async ({ name, email, password }) => {
     try {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, captchaToken }),
+        body: JSON.stringify({ name, email, password }),
       });
       const data = await res.json();
       if (!res.ok || !data.ok) return { error: data.error || 'Kayıt başarısız.' };
