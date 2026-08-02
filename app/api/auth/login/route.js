@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { redisCmd, redisSetJSON } from '../../../lib/redis';
+import { mergeProfile } from '../../../lib/social-store';
 
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
 
@@ -23,7 +24,7 @@ export async function POST(request) {
         maxAge: 60 * 60 * 24 * 7, // 7 days
       });
       try {
-        await redisSetJSON(`user_profile:mock_user`, userObj);
+        await mergeProfile('mock_user', userObj);
       } catch {}
       return response;
     }
@@ -93,7 +94,7 @@ export async function POST(request) {
 
     // Cache profile and map connections in Redis
     try {
-      await redisSetJSON(`user_profile:${localId}`, userObj);
+      await mergeProfile(localId, userObj);
 
       const connRes = await redisCmd(['GET', `user_connections:${localId}`]);
       if (connRes) {

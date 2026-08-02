@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { redisCmd, redisGetJSON, redisSetJSON } from '../../../../lib/redis';
+import { mergeProfile } from '../../../../lib/social-store';
 
 // Mobil deep-link güvenliği: yalnızca uygulama şemalarına yönlendirmeye izin ver
 // (açık yönlendirme / token sızıntısı engeli).
@@ -170,7 +171,7 @@ export async function GET(request) {
       await saveUserConnection(user.uid, 'steam', steamAccounts[0]);
 
       // Cache user profile and reverse mapping for auto-login
-      await redisSetJSON(`user_profile:${user.uid}`, user);
+      await mergeProfile(user.uid, user);
       for (const acc of steamAccounts) {
         if (acc.steamId) {
           await redisCmd(['SET', `steam_to_uid:${acc.steamId}`, user.uid]);

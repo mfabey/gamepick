@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { redisSetJSON } from '../../../lib/redis';
+import { mergeProfile } from '../../../lib/social-store';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Sign in with Apple — Guideline 4.8 uyumu (e-posta/şifre girişi sunduğumuz için
@@ -74,7 +75,7 @@ export async function POST(request) {
       email: email || '',
       provider: 'apple',
     };
-    try { await redisSetJSON(`user_profile:${localId}`, user); } catch { /* önbellek şart değil */ }
+    try { await mergeProfile(localId, user); } catch { /* önbellek şart değil */ }
 
     return NextResponse.json({
       ok: true,

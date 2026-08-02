@@ -12,7 +12,9 @@
 // saklansaydı, B'nin akışını süzmek için TÜM kullanıcıların engel listesini
 // taramak gerekirdi.
 // ─────────────────────────────────────────────────────────────────────────────
-import { redisCmd, redisGetJSON, redisPipeline, redisSetJSONStrict, parseJSON } from './redis';
+import {
+  redisCmd, redisGetJSON, redisSetJSON, redisPipeline, redisSetJSONStrict, parseJSON,
+} from './redis';
 
 export function profileKey(uid)   { return `user_profile:${uid}`; }
 export function usernameKey(name) { return `username:${String(name).toLowerCase()}`; }
@@ -48,6 +50,25 @@ export async function getProfiles(uids = []) {
     if (p) out[u] = p;
   });
   return out;
+}
+
+/**
+ * Profili BİRLEŞTİREREK günceller — üzerine YAZMAZ.
+ *
+ * Kimlik uçları (login, mobile-login, apple-signin, steam/callback, user-me)
+ * oturum için ad/e-posta önbelleklemek istiyor ve bunu `user_profile:{uid}`
+ * anahtarına yazarak yapıyordu. O anahtar sosyal profille AYNI olduğu için
+ * her giriş kullanıcının `username` alanını siliyordu — kullanıcı adını
+ * belirlese bile bir sonraki girişte kayboluyordu.
+ *
+ * Bu fonksiyon mevcut alanları koruyup yalnızca verilenleri günceller.
+ */
+export async function mergeProfile(uid, patch = {}) {
+  if (!uid) return null;
+  const cur = (await redisGetJSON(profileKey(uid)).catch(() => null)) || {};
+  const next = { ...cur, ...patch, uid };
+  await redisSetJSON(profileKey(uid), next).catch(() => {});
+  return next;
 }
 
 /** Kullanıcı adından uid çözer. */

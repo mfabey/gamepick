@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { redisCmd, redisGetJSON, redisSetJSON } from '../../../lib/redis';
+import { mergeProfile } from '../../../lib/social-store';
 
 export const dynamic = 'force-dynamic';
 
@@ -72,7 +73,7 @@ export async function GET() {
 
     // Auto-cache profile and links to Redis
     try {
-      await redisSetJSON(`user_profile:${user.uid}`, user);
+      await mergeProfile(user.uid, user);
       if (connections.steam && connections.steam.steamId) {
         await redisCmd(['SET', `steam_to_uid:${connections.steam.steamId}`, user.uid]);
       }

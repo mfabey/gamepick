@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { redisSetJSON } from '../../../lib/redis';
+import { mergeProfile } from '../../../lib/social-store';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Mobil giriş — web'deki /api/auth/login ile aynı kimlik doğrulama, farklı çıktı.
@@ -66,7 +67,7 @@ export async function POST(request) {
     }
 
     const user = { uid: localId, name: displayName || email.split('@')[0], email };
-    try { await redisSetJSON(`user_profile:${localId}`, user); } catch { /* önbellek şart değil */ }
+    try { await mergeProfile(localId, user); } catch { /* önbellek şart değil */ }
 
     return NextResponse.json({
       ok: true,
