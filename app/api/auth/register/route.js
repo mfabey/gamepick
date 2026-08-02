@@ -6,7 +6,11 @@ const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
 
 export async function POST(request) {
   try {
+<<<<<<< Updated upstream
     const { name, email, password, username } = await request.json();
+=======
+    const { name, email, password, captchaToken } = await request.json();
+>>>>>>> Stashed changes
 
     if (!email || !password || !name) {
       return NextResponse.json({ error: 'E-posta, şifre ve isim zorunludur.' }, { status: 400 });
@@ -40,7 +44,15 @@ export async function POST(request) {
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, returnSecureToken: true }),
+        body: JSON.stringify({
+          email,
+          password,
+          returnSecureToken: true,
+          ...(captchaToken && {
+            captchaResponse: captchaToken,
+            recaptchaVersion: 'RECAPTCHA_ENTERPRISE'
+          })
+        }),
       }
     );
 
