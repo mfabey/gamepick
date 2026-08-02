@@ -123,8 +123,6 @@ export default function HomeScreen() {
     ]);
   }, [t]);
 
-  const heroStrip = trend.length ? trend : fresh;
-
   const keyExtractor = useCallback((item) => String(item.id), []);
   const renderFeedItem = useCallback(({ item }) => (
     <View style={styles.cell}><GameCard game={item} /></View>
@@ -181,21 +179,10 @@ export default function HomeScreen() {
         </View>
         </FadeIn>
 
-        {/* ── Kayan kapak şeridi ── */}
-        {heroStrip.length > 0 && (
-          <FadeIn delay={120}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.strip}>
-            {heroStrip.map(g => (
-              <Pressable key={`s_${g.id}`} style={({ pressed }) => [styles.stripTile, pressed && PRESSED]}
-                onPress={() => go(router, g)}>
-                <Image source={g.image} cachePolicy="memory-disk" style={StyleSheet.absoluteFill} contentFit="cover" transition={250} />
-                <LinearGradient colors={['transparent', 'rgba(6,7,9,0.9)']} style={StyleSheet.absoluteFill} />
-                <Text numberOfLines={1} style={styles.stripName}>{g.name}</Text>
-              </Pressable>
-            ))}
-          </ScrollView>
-          </FadeIn>
-        )}
+        {/* Not: Kayan kapak şeridi kaldırıldı. Trend/Yeni oyunları zaten
+            aşağıdaki kendi bölümlerinde gösteriyoruz; şerit aynı oyunları
+            ikinci kez, üstelik başlıksız gösterdiği için haberlerin önünü
+            gereksiz kapatıyordu. */}
 
         {/* ── Bölümler ── */}
         {/* Haberler (en üstte) */}
@@ -315,7 +302,11 @@ const NewsCard = memo(function NewsCard({ item, onPress }) {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   listContent: { paddingHorizontal: 10 },
-  headerWrap: { marginHorizontal: -10 },   // başlık tam genişlikte kalsın
+  // Başlık tam genişlikte kalsın diye listenin yatay dolgusu geri alınıyor.
+  // paddingBottom ŞART: başlığın son bölümü (İndirimdekiler) ile altındaki
+  // iki sütunlu ızgara bitişik duruyordu, ızgara o bölümün devamı gibi
+  // görünüyordu. 26 = bölümler arası boşlukla aynı ritim.
+  headerWrap: { marginHorizontal: -10, paddingBottom: 26 },
   cell: { flex: 1, paddingHorizontal: 6, paddingBottom: spacing.md },
   topBar: { alignItems: 'center', paddingHorizontal: spacing.lg, paddingTop: 6, paddingBottom: 4 },
   brand: { fontSize: 20, fontWeight: '900', color: colors.text, letterSpacing: 1.5 },
@@ -346,9 +337,6 @@ const styles = StyleSheet.create({
   },
   discoverText: { flex: 1, color: colors.text, fontSize: 15, fontWeight: '600' },
 
-  strip: { paddingHorizontal: spacing.lg, gap: 12, paddingTop: 22 },
-  stripTile: { width: 172, height: 97, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.card },
-  stripName: { position: 'absolute', left: 10, right: 10, bottom: 8, color: '#fff', fontSize: 13, fontWeight: '700' },
 
   sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, marginBottom: 12 },
   sectionTitle: { fontSize: 17, fontWeight: '800', color: colors.text },
