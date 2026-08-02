@@ -45,11 +45,23 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
   const reducedMotion = useReducedMotion();
   const compact = useTabBarCompact();
 
-  // Kayan vurgu konumu
+  // Kayan vurgu konumu.
+  //
+  // Eskiden { damping: 18, stiffness: 190 } vardı. Sönümleme oranı
+  //   ζ = damping / (2·√(stiffness·mass)) = 18 / (2·√190) ≈ 0.65
+  // yani 1'in ALTINDA → yay hedefi aşıp geri salınıyordu. Vurgu sekmeye
+  // varmadan önce ileri geri oynuyordu.
+  //
+  // dampingRatio: 1 kritik sönümleme — hedefe en hızlı şekilde, HİÇ aşmadan
+  // varır. overshootClamping ayrıca sert bir güvence.
   const pos = useSharedValue(state.index);
   useEffect(() => {
     if (reducedMotion) pos.value = state.index;
-    else pos.value = withSpring(state.index, { damping: 18, stiffness: 190 });
+    else pos.value = withSpring(state.index, {
+      duration: 300,
+      dampingRatio: 1,
+      overshootClamping: true,
+    });
   }, [state.index, pos, reducedMotion]);
 
   const N = state.routes.length;
