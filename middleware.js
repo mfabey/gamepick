@@ -7,7 +7,7 @@ const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
 const LIMIT = 60;
 const WINDOW_SIZE = 60;
 
-const cspHeader = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' blob: data: https:; connect-src 'self' https://api.rawg.io https://*.steampowered.com https://discord.gg; frame-ancestors 'none'; form-action 'self'; base-uri 'self'; object-src 'none';";
+const cspHeader = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ https://appleid.cdn-apple.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' blob: data: https:; connect-src 'self' https://api.rawg.io https://*.steampowered.com https://discord.gg https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/; frame-src 'self' https://www.google.com/recaptcha/ https://recaptcha.google.com/recaptcha/ https://appleid.apple.com; frame-ancestors 'none'; form-action 'self'; base-uri 'self'; object-src 'none';";
 
 function addSecurityHeaders(headers) {
   headers.set('Content-Security-Policy', cspHeader);
