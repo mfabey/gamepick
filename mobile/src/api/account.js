@@ -64,7 +64,15 @@ export async function deleteAccount(idToken, reauth) {
   return data;
 }
 
-export async function pushUserData(idToken, { taste, wishlist }) {
+/**
+ * Cihazdaki veriyi sunucuya gönderir, BİRLEŞMİŞ hâlini geri alır.
+ *
+ * `collections` ve `deleted` alanları burada MUTLAKA iletilmeli. İletilmezse
+ * sunucu istemci tarafını hiç görmez, birleştirmeden boş liste döner ve
+ * applyMergedCollections yereldeki koleksiyonları siler — kullanıcı
+ * oluşturduğu koleksiyonların kaybolduğunu görür.
+ */
+export async function pushUserData(idToken, { taste, wishlist, collections, deleted }) {
   const res = await fetch(`${API_BASE}/api/user/data`, {
     method: 'PUT',
     headers: {
@@ -72,7 +80,7 @@ export async function pushUserData(idToken, { taste, wishlist }) {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${idToken}`,
     },
-    body: JSON.stringify({ taste, wishlist }),
+    body: JSON.stringify({ taste, wishlist, collections, deleted }),
   });
   if (!res.ok) throw Object.assign(new Error(`HTTP ${res.status}`), { status: res.status });
   return res.json();

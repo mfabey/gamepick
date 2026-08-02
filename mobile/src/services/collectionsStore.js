@@ -79,17 +79,26 @@ function pruneTombstones() {
   for (const id in tombstones) if (tombstones[id] < cutoff) delete tombstones[id];
 }
 
-function scheduleSave() {
-  if (saveTimer) clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => {
-    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(collections)).catch(() => {});
-    AsyncStorage.setItem(TOMB_KEY, JSON.stringify(tombstones)).catch(() => {});
-  }, 600);
+function writeNow() {
+  AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(collections)).catch(() => {});
+  AsyncStorage.setItem(TOMB_KEY, JSON.stringify(tombstones)).catch(() => {});
 }
 
-function commit(next) {
+/**
+ * Sönümleme, oyun ekle/çıkar gibi hızlı ardışık değişikliklerde diski
+ * yormamak için var. Ama KOLEKSİYON OLUŞTURMA/SİLME seyrek ve kritik:
+ * 600ms dolmadan uygulama kapanırsa yeni koleksiyon diske hiç ulaşmıyordu.
+ * Bu yüzden yapısal değişiklikler anında yazılıyor.
+ */
+function scheduleSave(immediate = false) {
+  if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+  if (immediate) { writeNow(); return; }
+  saveTimer = setTimeout(writeNow, 600);
+}
+
+function commit(next, immediate = false) {
   collections = next;
-  scheduleSave();
+  scheduleSave(immediate);
   emit();
 }
 
@@ -129,7 +138,7 @@ export async function createCollection(name, emoji = '🎮') {
 
   const ts = nextTs();
   const col = { id: newId(), name: clean.slice(0, 60), emoji, games: [], createdAt: ts, updatedAt: ts };
-  commit([col, ...collections]);
+  commit([col, ...collections], true);
   return col.id;
 }
 
@@ -149,7 +158,7 @@ export async function deleteCollection(id) {
   if (!collections.some((c) => c.id === id)) return;
   // Mezar taşı ŞART: aksi hâlde senkronda sunucudan geri gelir
   tombstones = { ...tombstones, [id]: nextTs() };
-  commit(collections.filter((c) => c.id !== id));
+  commit(collections.filter((c) => c.id !== id), true);
 }
 
 export async function addGameToCollection(collectionId, game) {
