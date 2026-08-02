@@ -232,6 +232,10 @@ const STRINGS = {
     'pl.err.TEXT_EMPTY': 'Başlık gerekli',
     // ── Profil / Ayarlar ayrımı ──
     'prof.myContent': 'İçeriğim',
+    'prof.lockTitle': 'Profil oluşturun',
+    'prof.lockDesc': 'Koleksiyonlarınız, istek listeniz ve bağladığınız Steam/Xbox hesapları profilinize kaydedilir — cihaz değiştirseniz de kaybolmaz.',
+    'prof.lockCta': 'Profil oluştur',
+    'prof.lockedHint': 'Profil oluşturunca açılır',
     'prof.settingsTitle': 'Ayarlar',
     'prof.settingsEntry': 'Ayarlar',
     'prof.general': 'Genel',
@@ -561,6 +565,10 @@ const STRINGS = {
     'pl.err.TEXT_EMPTY': 'A title is required',
     // ── Profile / Settings split ──
     'prof.myContent': 'My content',
+    'prof.lockTitle': 'Create a profile',
+    'prof.lockDesc': 'Your collections, wishlist and linked Steam/Xbox accounts are saved to your profile — they survive a device change.',
+    'prof.lockCta': 'Create profile',
+    'prof.lockedHint': 'Unlocks after you create a profile',
     'prof.settingsTitle': 'Settings',
     'prof.settingsEntry': 'Settings',
     'prof.general': 'General',

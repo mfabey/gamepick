@@ -10,8 +10,17 @@ import EmptyState from '../src/components/EmptyState';
 import { colors, radius, spacing, PRESSED } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
 import { useWishlist } from '../src/context/WishlistContext';
+import ProfileGate from '../src/components/ProfileGate';
 
 export default function WishlistScreen() {
+  return (
+    <ProfileGate>
+      <WishlistScreenContent />
+    </ProfileGate>
+  );
+}
+
+function WishlistScreenContent() {
   const router = useRouter();
   const { t } = useLanguage();
   const { items, remove, enabled, enableNotifications } = useWishlist();

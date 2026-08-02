@@ -24,7 +24,16 @@ import { colors, radius, spacing, PRESSED } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
 import IconButton from '../src/components/IconButton';
 
+import ProfileGate from '../src/components/ProfileGate';
 export default function StatsScreen() {
+  return (
+    <ProfileGate>
+      <StatsScreenContent />
+    </ProfileGate>
+  );
+}
+
+function StatsScreenContent() {
   const router = useRouter();
   const { t } = useLanguage();
   const { items } = useWishlist();

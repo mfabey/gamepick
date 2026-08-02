@@ -28,6 +28,12 @@ export default function ProfileScreen() {
     if (!r.ok && r.error) Alert.alert(t('auth.loginFailed'), r.error);
   };
 
+  // Profil olmadan kilitli olan bölümler. Kilitli bir karoya dokunmak HİÇBİR
+  // ŞEY yapmamalı değil — kullanıcıyı kayıt ekranına götürüyoruz, yoksa
+  // dokunup tepki alamamak bozukluk gibi görünür.
+  const locked = !account;
+  const go = (dest) => () => router.push(locked ? '/account' : dest);
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: TAB_SPACE + 16 }} showsVerticalScrollIndicator={false} onScroll={onTabScroll} scrollEventThrottle={16}>
@@ -62,14 +68,35 @@ export default function ProfileScreen() {
             Liste satırı yerine ızgara: beş giriş art arda satır olarak
             dizildiğinde ayarlardan ayırt edilemiyordu. */}
         <Text style={[styles.sectionLabel, { marginTop: 28 }]}>{t('prof.myContent')}</Text>
+
+        {/* Kilidin NEDEN orada olduğunu söyleyen tek açıklama. Her karoya ayrı
+            metin koymak ızgarayı okunmaz hâle getirirdi. */}
+        {locked ? (
+          <Pressable
+            style={({ pressed }) => [styles.lockCard, pressed && PRESSED]}
+            onPress={() => router.push('/account')}
+          >
+            <View style={styles.lockIcon}>
+              <Ionicons name="lock-closed" size={18} color={colors.accent} />
+            </View>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={styles.lockTitle}>{t('prof.lockTitle')}</Text>
+              <Text style={styles.lockDesc}>{t('prof.lockDesc')}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.text3} />
+          </Pressable>
+        ) : null}
+
         <View style={styles.grid}>
           <ContentTile
             icon="albums" label={t('col.entry')} count={collections.length}
-            onPress={() => router.push('/collections')}
+            locked={locked} lockedHint={t('prof.lockedHint')}
+            onPress={go('/collections')}
           />
           <ContentTile
             icon="bookmark" label={t('wishlist.title')} count={items.length}
-            onPress={() => router.push('/wishlist')}
+            locked={locked} lockedHint={t('prof.lockedHint')}
+            onPress={go('/wishlist')}
           />
           <ContentTile
             icon="people" label={t('soc.entry')} beta
@@ -88,12 +115,27 @@ export default function ProfileScreen() {
           />
           <ContentTile
             icon="stats-chart" label={t('stats.entry')} wide
-            onPress={() => router.push('/stats')}
+            locked={locked} lockedHint={t('prof.lockedHint')}
+            onPress={go('/stats')}
           />
         </View>
 
         <Text style={[styles.sectionLabel, { marginTop: 32 }]}>{t('auth.accounts')}</Text>
 
+        {/* Profil yoksa bağlama HİÇ sunulmuyor.
+            Bağlantı hesaba kaydedildiği için profilsiz bağlanan kullanıcı
+            kütüphanesini ilk oturum kapanışında kaybederdi. */}
+        {locked ? (
+          <Pressable
+            style={({ pressed }) => [styles.lockCta, pressed && PRESSED]}
+            onPress={() => router.push('/account')}
+          >
+            <Ionicons name="lock-closed" size={16} color={colors.accent} />
+            <Text style={styles.lockCtaText}>{t('prof.lockCta')}</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.accent} />
+          </Pressable>
+        ) : (
+        <>
         {/* Steam hesapları */}
         {steamAccounts.map(acc => (
           <View key={acc.steamId} style={styles.accountCard}>
@@ -166,6 +208,8 @@ export default function ProfileScreen() {
             )}
           </Pressable>
         )}
+        </>
+        )}
 
       </ScrollView>
     </SafeAreaView>
@@ -177,22 +221,31 @@ function SteamMark({ size = 14 }) {
 }
 
 // İçerik karosu — sayacı ve BETA rozetini taşır.
-function ContentTile({ icon, label, count, beta, wide, onPress }) {
+//
+// Kilitliyken karo SOLDURULUYOR ama devre dışı bırakılmıyor: dokunulduğunda
+// kayıt ekranına gidiyor. Tamamen pasif bir karo, kullanıcıya ne yapması
+// gerektiğini söylemez.
+function ContentTile({ icon, label, count, beta, wide, locked, lockedHint, onPress }) {
   return (
     <Pressable
       style={({ pressed }) => [styles.tile, wide && styles.tileWide, pressed && { opacity: 0.75 }]}
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityHint={locked ? lockedHint : undefined}
     >
-      <View style={styles.tileTop}>
+      <View style={[styles.tileTop, locked && styles.tileDim]}>
         <View style={styles.tileIcon}>
-          <Ionicons name={icon} size={19} color={colors.accent} />
+          <Ionicons name={icon} size={19} color={locked ? colors.text3 : colors.accent} />
         </View>
-        {beta ? <View style={styles.betaChip}><Text style={styles.betaChipText}>BETA</Text></View> : null}
-        {count > 0 && !beta ? (
+        {locked ? (
+          <Ionicons name="lock-closed" size={14} color={colors.text3} />
+        ) : beta ? <View style={styles.betaChip}><Text style={styles.betaChipText}>BETA</Text></View> : null}
+        {count > 0 && !beta && !locked ? (
           <View style={styles.wishBadge}><Text style={styles.wishBadgeText}>{count}</Text></View>
         ) : null}
       </View>
-      <Text numberOfLines={1} style={styles.tileLabel}>{label}</Text>
+      <Text numberOfLines={1} style={[styles.tileLabel, locked && styles.tileLabelDim]}>{label}</Text>
     </Pressable>
   );
 }
@@ -217,6 +270,32 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   tileLabel: { fontSize: 15, fontWeight: '700', color: colors.text, marginTop: 10 },
+  // Kilitli karo: soluk ama okunabilir. Metnin kendisi text2'de kalıyor —
+  // opacity ile solduran bir yaklaşım kontrastı 4.5:1'in altına düşürürdü.
+  tileDim: { opacity: 0.55 },
+  tileLabelDim: { color: colors.text2 },
+
+  // Izgaranın üstündeki açıklama kartı
+  lockCard: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1,
+    borderRadius: radius.lg, padding: 14, marginBottom: 12,
+  },
+  lockIcon: {
+    width: 38, height: 38, borderRadius: radius.md,
+    backgroundColor: colors.accentSoft,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  lockTitle: { fontSize: 15, fontWeight: '700', color: colors.text },
+  lockDesc: { fontSize: 13, color: colors.text2, marginTop: 3, lineHeight: 18 },
+
+  // Bağlı Hesaplar bölümündeki tek çağrı düğmesi
+  lockCta: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    minHeight: 52, borderRadius: radius.lg,
+    borderWidth: 1, borderColor: colors.accent, backgroundColor: colors.accentSoft,
+  },
+  lockCtaText: { fontSize: 15, fontWeight: '700', color: colors.accentText },
   sectionLabel: { fontSize: 12, fontWeight: '800', color: colors.text3, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 },
   accountCard: {
     flexDirection: 'row', alignItems: 'center', gap: 12,

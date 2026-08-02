@@ -19,10 +19,19 @@ import EmptyState from '../src/components/EmptyState';
 import { posterImage } from '../src/utils/images';
 import { colors, radius, spacing, PRESSED } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
+import ProfileGate from '../src/components/ProfileGate';
 
 const EMOJIS = ['🎮', '🏆', '❤️', '🔥', '👾', '🗡️', '🚀', '🧩', '🌙', '⚡'];
 
 export default function CollectionsScreen() {
+  return (
+    <ProfileGate>
+      <CollectionsScreenContent />
+    </ProfileGate>
+  );
+}
+
+function CollectionsScreenContent() {
   const router = useRouter();
   const { t } = useLanguage();
   const collections = useCollections();

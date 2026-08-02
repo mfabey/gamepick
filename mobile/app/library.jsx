@@ -8,6 +8,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { GamesGridSkeleton } from '../src/components/Skeleton';
 import PosterImage from '../src/components/PosterImage';
 import { prefetchImages } from '../src/utils/prefetch';
@@ -29,7 +30,8 @@ function computeValue(games, prices) {
 
 export default function LibraryScreen() {
   const { t, lang, formatPrice } = useLanguage();
-  const { steamAccounts, xbox, busy, loginSteam, loginXbox } = useAuth();
+  const { steamAccounts, xbox, busy, loginSteam, loginXbox, account } = useAuth();
+  const router = useRouter();
 
   // Paylaşımlı kütüphane fetch'i (Home önericisi ile aynı cache → çift fetch yok, anlık açılış)
   const { steam: steamLibs, xbox: xboxRaw, steamGames, xboxGames, loading: libLoading } = useConnectedLibrary();
@@ -179,16 +181,31 @@ export default function LibraryScreen() {
         <View style={styles.center}>
           <Ionicons name="library-outline" size={54} color={colors.text3} />
           <Text style={styles.h1}>{t('nav.library')}</Text>
-          <Text style={styles.prompt}>{t('library.connectPrompt')}</Text>
+          <Text style={styles.prompt}>
+            {account ? t('library.connectPrompt') : t('prof.lockDesc')}
+          </Text>
           <View style={{ width: '100%', gap: 12, marginTop: 8 }}>
-            <Pressable disabled={busy} onPress={() => doLogin(loginSteam)} style={[styles.connectBtn, { backgroundColor: '#1b2838' }]}>
-              <Ionicons name="logo-steam" size={19} color="#fff" />
-              <Text style={styles.connectText}>{t('auth.connectSteam')}</Text>
-            </Pressable>
-            <Pressable disabled={busy} onPress={() => doLogin(loginXbox)} style={[styles.connectBtn, { backgroundColor: '#107C10' }]}>
-              <Ionicons name="logo-xbox" size={19} color="#fff" />
-              <Text style={styles.connectText}>{t('auth.connectXbox')}</Text>
-            </Pressable>
+            {/* Profil yokken bağlama düğmeleri HİÇ sunulmuyor. Bağlantı hesaba
+                kaydedildiği için profilsiz bağlanan kullanıcı kütüphanesini ilk
+                oturum kapanışında kaybederdi. Profil ekranındaki kilidi burada
+                da uygulamak şart — aksi hâlde bu ekran kapıyı atlatıyordu. */}
+            {account ? (
+              <>
+                <Pressable disabled={busy} onPress={() => doLogin(loginSteam)} style={[styles.connectBtn, { backgroundColor: '#1b2838' }]}>
+                  <Ionicons name="logo-steam" size={19} color="#fff" />
+                  <Text style={styles.connectText}>{t('auth.connectSteam')}</Text>
+                </Pressable>
+                <Pressable disabled={busy} onPress={() => doLogin(loginXbox)} style={[styles.connectBtn, { backgroundColor: '#107C10' }]}>
+                  <Ionicons name="logo-xbox" size={19} color="#fff" />
+                  <Text style={styles.connectText}>{t('auth.connectXbox')}</Text>
+                </Pressable>
+              </>
+            ) : (
+              <Pressable onPress={() => router.push('/account')} style={[styles.connectBtn, { backgroundColor: colors.accent }]}>
+                <Ionicons name="person-add-outline" size={19} color="#fff" />
+                <Text style={styles.connectText}>{t('prof.lockCta')}</Text>
+              </Pressable>
+            )}
           </View>
         </View>
       </SafeAreaView>
