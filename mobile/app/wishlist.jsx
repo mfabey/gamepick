@@ -7,7 +7,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchCardPrice } from '../src/api/games';
 import EmptyState from '../src/components/EmptyState';
-import { colors, radius, spacing, PRESSED } from '../src/theme';
+import { colors, radius, spacing, PRESSED, type } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
 import { useWishlist } from '../src/context/WishlistContext';
 import ProfileGate from '../src/components/ProfileGate';
@@ -131,21 +131,21 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   head: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: 8 },
   back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  title: { flex: 1, fontSize: 20, fontWeight: '800', color: colors.text, textAlign: 'center' },
-  count: { width: 40, textAlign: 'center', fontSize: 15, fontWeight: '800', color: colors.accentText },
+  title: { flex: 1, fontSize: type.headline, fontWeight: '800', color: colors.text, textAlign: 'center' },
+  count: { width: 40, textAlign: 'center', fontSize: type.subhead, fontWeight: '800', color: colors.accentText },
 
   notifBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.accentSoft, borderColor: colors.accentBorder, borderWidth: 1, borderRadius: radius.md, padding: 12, marginHorizontal: spacing.lg, marginTop: 12, marginBottom: 4 },
-  notifText: { flex: 1, fontSize: 12, color: colors.text2, lineHeight: 16 },
-  notifCta: { fontSize: 13, fontWeight: '800', color: colors.accentText },
+  notifText: { flex: 1, fontSize: type.caption, color: colors.text2, lineHeight: 16 },
+  notifCta: { fontSize: type.footnote, fontWeight: '800', color: colors.accentText },
 
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: spacing.lg, paddingVertical: 11 },
   thumb: { width: 96, height: 54, borderRadius: radius.sm, overflow: 'hidden', backgroundColor: colors.card },
-  rowName: { fontSize: 15, fontWeight: '700', color: colors.text, lineHeight: 18 },
+  rowName: { fontSize: type.subhead, fontWeight: '700', color: colors.text, lineHeight: 18 },
   rowPriceRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 5 },
-  price: { fontSize: 15, fontWeight: '800', color: colors.text },
-  priceDim: { fontSize: 15, color: colors.text3 },
-  free: { fontSize: 15, fontWeight: '800', color: colors.green },
+  price: { fontSize: type.subhead, fontWeight: '800', color: colors.text },
+  priceDim: { fontSize: type.subhead, color: colors.text3 },
+  free: { fontSize: type.subhead, fontWeight: '800', color: colors.green },
   saleBadge: { backgroundColor: colors.accent, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
-  saleText: { color: '#fff', fontWeight: '800', fontSize: 11 },
+  saleText: { color: '#fff', fontWeight: '800', fontSize: type.caption2 },
   remove: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
 });

@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 import { getPrivacy, setPrivacy, getBlocked, unblockUser } from '../src/api/social';
-import { colors, radius, spacing, PRESSED } from '../src/theme';
+import { colors, radius, spacing, PRESSED, type } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
 
 export default function SocialSettingsScreen() {
@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: spacing.md, paddingTop: 6, paddingBottom: 10,
   },
-  title: { flex: 1, textAlign: 'center', fontSize: 17, fontWeight: '900', color: colors.text },
+  title: { flex: 1, textAlign: 'center', fontSize: type.body, fontWeight: '900', color: colors.text },
   iconBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
 
   body: { padding: spacing.lg, paddingBottom: 40 },
@@ -158,27 +158,27 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: colors.cardBorder, paddingHorizontal: 15,
   },
   switchRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14 },
-  switchLabel: { flex: 1, color: colors.text, fontSize: 15, fontWeight: '600' },
+  switchLabel: { flex: 1, color: colors.text, fontSize: type.subhead, fontWeight: '600' },
   divider: { height: 1, backgroundColor: colors.cardBorder },
 
   sectionLabel: {
-    color: colors.text3, fontSize: 12, fontWeight: '800',
+    color: colors.text3, fontSize: type.caption, fontWeight: '800',
     letterSpacing: 0.5, textTransform: 'uppercase', marginTop: 26, marginBottom: 9,
   },
-  emptyText: { color: colors.text2, fontSize: 13, paddingVertical: 6 },
+  emptyText: { color: colors.text2, fontSize: type.footnote, paddingVertical: 6 },
 
   blockRow: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 11 },
   avatar: {
     width: 38, height: 38, borderRadius: 19, backgroundColor: colors.accentBg,
     alignItems: 'center', justifyContent: 'center',
   },
-  avatarText: { color: colors.accentText, fontWeight: '900', fontSize: 17 },
-  blockName: { color: colors.text, fontSize: 15, fontWeight: '700' },
-  blockHandle: { color: colors.text3, fontSize: 12, marginTop: 1 },
+  avatarText: { color: colors.accentText, fontWeight: '900', fontSize: type.body },
+  blockName: { color: colors.text, fontSize: type.subhead, fontWeight: '700' },
+  blockHandle: { color: colors.text3, fontSize: type.caption, marginTop: 1 },
   unblockBtn: {
     paddingHorizontal: 13, height: 44, borderRadius: radius.md,
     backgroundColor: colors.bgInput, alignItems: 'center', justifyContent: 'center',
     borderWidth: 1, borderColor: colors.cardBorder,
   },
-  unblockText: { color: colors.text, fontSize: 13, fontWeight: '700' },
+  unblockText: { color: colors.text, fontSize: type.footnote, fontWeight: '700' },
 });

@@ -20,7 +20,7 @@ import { useDismissed } from '../src/hooks/useDismissed';
 import { weeklyReport } from '../src/services/stats';
 import { fetchSteamPrices } from '../src/api/library';
 import EmptyState from '../src/components/EmptyState';
-import { colors, radius, spacing, PRESSED } from '../src/theme';
+import { colors, radius, spacing, PRESSED, type } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
 import IconButton from '../src/components/IconButton';
 
@@ -184,8 +184,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md, paddingTop: 6, paddingBottom: 10, gap: 8,
   },
   headText: { flex: 1 },
-  title: { fontSize: 20, fontWeight: '900', color: colors.text, letterSpacing: -0.3 },
-  subtitle: { fontSize: 13, color: colors.text2, marginTop: 2 },
+  title: { fontSize: type.headline, fontWeight: '900', color: colors.text, letterSpacing: -0.3 },
+  subtitle: { fontSize: type.footnote, color: colors.text2, marginTop: 2 },
   iconBtn: {
     width: 44, height: 44, borderRadius: 22, backgroundColor: colors.card,
     alignItems: 'center', justifyContent: 'center',
@@ -198,8 +198,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accentBg, borderRadius: radius.xl,
     borderWidth: 1, borderColor: colors.accentBorder, marginTop: 6,
   },
-  heroNum: { color: colors.accentText, fontSize: 62, fontWeight: '900', letterSpacing: -2, lineHeight: 66 },
-  heroLabel: { color: colors.text, fontSize: 15, fontWeight: '700', marginTop: 2 },
+  heroNum: { color: colors.accentText, fontSize: type.display, fontWeight: '900', letterSpacing: -2, lineHeight: 66 },
+  heroLabel: { color: colors.text, fontSize: type.subhead, fontWeight: '700', marginTop: 2 },
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 12 },
   card: {
@@ -207,40 +207,40 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card, borderRadius: radius.lg, padding: 15,
     borderWidth: 1, borderColor: colors.cardBorder,
   },
-  cardNum: { color: colors.text, fontSize: 28, fontWeight: '900', marginTop: 7, letterSpacing: -0.8 },
-  cardLabel: { color: colors.text2, fontSize: 12, marginTop: 2, fontWeight: '600' },
+  cardNum: { color: colors.text, fontSize: type.title1, fontWeight: '900', marginTop: 7, letterSpacing: -0.8 },
+  cardLabel: { color: colors.text2, fontSize: type.caption, marginTop: 2, fontWeight: '600' },
 
   banner: {
     marginTop: 12, backgroundColor: colors.card, borderRadius: radius.lg,
     padding: 16, borderWidth: 1, borderColor: colors.cardBorder,
   },
-  bannerLabel: { color: colors.text2, fontSize: 13, fontWeight: '600' },
-  bannerValue: { color: colors.text, fontSize: 24, fontWeight: '900', marginTop: 4, letterSpacing: -0.5 },
+  bannerLabel: { color: colors.text2, fontSize: type.footnote, fontWeight: '600' },
+  bannerValue: { color: colors.text, fontSize: type.title2, fontWeight: '900', marginTop: 4, letterSpacing: -0.5 },
 
   section: {
     marginTop: 12, backgroundColor: colors.card, borderRadius: radius.lg,
     padding: 16, borderWidth: 1, borderColor: colors.cardBorder,
   },
-  sectionTitle: { color: colors.text, fontSize: 15, fontWeight: '800', marginBottom: 12 },
+  sectionTitle: { color: colors.text, fontSize: type.subhead, fontWeight: '800', marginBottom: 12 },
 
   barRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 9 },
-  barLabel: { width: 88, color: colors.text2, fontSize: 13, fontWeight: '600' },
+  barLabel: { width: 88, color: colors.text2, fontSize: type.footnote, fontWeight: '600' },
   barTrack: { flex: 1, height: 8, borderRadius: 4, backgroundColor: colors.bgInput, overflow: 'hidden' },
   barFill: { height: '100%', borderRadius: 4, backgroundColor: colors.accent },
-  barCount: { width: 22, textAlign: 'right', color: colors.text3, fontSize: 12, fontWeight: '700' },
+  barCount: { width: 22, textAlign: 'right', color: colors.text3, fontSize: type.caption, fontWeight: '700' },
 
   saleRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   saleBig: { flex: 1 },
-  saleNum: { color: colors.green, fontSize: 40, fontWeight: '900', letterSpacing: -1.5 },
-  saleLabel: { color: colors.text2, fontSize: 12, fontWeight: '600', marginTop: 2 },
+  saleNum: { color: colors.green, fontSize: type.hero, fontWeight: '900', letterSpacing: -1.5 },
+  saleLabel: { color: colors.text2, fontSize: type.caption, fontWeight: '600', marginTop: 2 },
   saleSide: { alignItems: 'flex-end' },
-  saleSideNum: { color: colors.text, fontSize: 20, fontWeight: '900' },
-  saleSideLabel: { color: colors.text2, fontSize: 12, fontWeight: '600' },
-  saleSideMeta: { color: colors.text3, fontSize: 11, marginTop: 5 },
+  saleSideNum: { color: colors.text, fontSize: type.headline, fontWeight: '900' },
+  saleSideLabel: { color: colors.text2, fontSize: type.caption, fontWeight: '600' },
+  saleSideMeta: { color: colors.text3, fontSize: type.caption2, marginTop: 5 },
   cta: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     height: 50, paddingHorizontal: 22, borderRadius: radius.lg,
     backgroundColor: colors.accent, marginTop: 22,
   },
-  ctaText: { color: '#fff', fontSize: 15, fontWeight: '800' },
+  ctaText: { color: '#fff', fontSize: type.subhead, fontWeight: '800' },
 });

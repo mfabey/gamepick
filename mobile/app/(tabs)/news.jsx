@@ -8,7 +8,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { fetchNews } from '../../src/api/news';
 import { NewsListSkeleton } from '../../src/components/Skeleton';
 import NewsImage from '../../src/components/NewsImage';
-import { colors, radius, spacing, TAB_SPACE, PRESSED } from '../../src/theme';
+import { colors, radius, spacing, TAB_SPACE, PRESSED, type } from '../../src/theme';
 import { useTabBarScroll } from '../../src/context/TabBarContext';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useQuery } from '../../src/hooks/useQuery';
@@ -141,34 +141,34 @@ const NewsRow = memo(function NewsRow({ item, onPress }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
-  header: { fontSize: 28, fontWeight: '800', color: colors.text, letterSpacing: -0.6, paddingHorizontal: spacing.lg, paddingTop: 8, paddingBottom: 8 },
+  header: { fontSize: type.title1, fontWeight: '800', color: colors.text, letterSpacing: -0.6, paddingHorizontal: spacing.lg, paddingTop: 8, paddingBottom: 8 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 },
 
   featured: { marginHorizontal: spacing.lg, height: 210, borderRadius: radius.lg, overflow: 'hidden', backgroundColor: colors.card, marginBottom: 4 },
   featuredBadge: { position: 'absolute', top: 12, left: 12, backgroundColor: colors.accent, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 4 },
-  featuredBadgeText: { color: '#fff', fontSize: 11, fontWeight: '800', letterSpacing: 0.5 },
+  featuredBadgeText: { color: '#fff', fontSize: type.caption2, fontWeight: '800', letterSpacing: 0.5 },
   featuredInfo: { position: 'absolute', left: 16, right: 16, bottom: 14 },
-  featuredTitle: { color: '#fff', fontSize: 17, fontWeight: '800', lineHeight: 22, marginTop: 8 },
+  featuredTitle: { color: '#fff', fontSize: type.body, fontWeight: '800', lineHeight: 22, marginTop: 8 },
 
   catRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  catPill: { backgroundColor: colors.accentSoft, borderColor: colors.accentBorder, borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: 9, paddingVertical: 3 },
-  catPillText: { color: '#ff6b70', fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.4 },
-  metaText: { color: 'rgba(255,255,255,0.7)', fontSize: 12, fontWeight: '500' },
+  catPill: { backgroundColor: colors.bgInput, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: 9, paddingVertical: 3 },
+  catPillText: { color: '#ff6b70', fontSize: type.caption2, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.4 },
+  metaText: { color: 'rgba(255,255,255,0.7)', fontSize: type.caption, fontWeight: '500' },
 
   chipsRow: { paddingHorizontal: spacing.lg, gap: 8, paddingVertical: 14 },
   chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.pill, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder },
   chipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
-  chipText: { fontSize: 13, color: colors.text2, fontWeight: '500' },
+  chipText: { fontSize: type.footnote, color: colors.text2, fontWeight: '500' },
 
   row: { flexDirection: 'row', gap: 12, paddingHorizontal: spacing.lg, paddingVertical: 12 },
   thumb: { width: 108, height: 76, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.card },
-  catPillSm: { alignSelf: 'flex-start', backgroundColor: colors.accentSoft, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2, marginBottom: 5 },
-  catPillTextSm: { color: '#ff6b70', fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.3 },
-  rowTitle: { color: colors.text, fontSize: 15, fontWeight: '700', lineHeight: 18 },
-  rowMeta: { color: colors.text3, fontSize: 12, marginTop: 5, fontWeight: '500' },
+  catPillSm: { alignSelf: 'flex-start', backgroundColor: colors.bgInput, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2, marginBottom: 5 },
+  catPillTextSm: { color: '#ff6b70', fontSize: type.caption2, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.3 },
+  rowTitle: { color: colors.text, fontSize: type.subhead, fontWeight: '700', lineHeight: 18 },
+  rowMeta: { color: colors.text3, fontSize: type.caption, marginTop: 5, fontWeight: '500' },
 
   emptyBox: { alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 60 },
-  emptyText: { color: colors.text3, fontSize: 15, fontWeight: '600' },
+  emptyText: { color: colors.text3, fontSize: type.subhead, fontWeight: '600' },
   retryBtn: { backgroundColor: colors.accent, borderRadius: radius.md, paddingHorizontal: 22, paddingVertical: 11 },
-  retryText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  retryText: { color: '#fff', fontWeight: '700', fontSize: type.subhead },
 });

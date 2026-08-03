@@ -12,7 +12,7 @@ import { useRouter } from 'expo-router';
 import { GamesGridSkeleton } from '../src/components/Skeleton';
 import PosterImage from '../src/components/PosterImage';
 import { prefetchImages } from '../src/utils/prefetch';
-import { colors, radius, spacing, TAB_SPACE } from '../src/theme';
+import { colors, radius, spacing, TAB_SPACE, type } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
 import { useAuth } from '../src/context/AuthContext';
 import { fetchSteamPrices } from '../src/api/library';
@@ -415,11 +415,11 @@ const GameTile = memo(function GameTile({ game, steam, price }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
-  header: { fontSize: 28, fontWeight: '800', color: colors.text, letterSpacing: -0.6, paddingHorizontal: spacing.lg, paddingTop: 8, paddingBottom: 4 },
+  header: { fontSize: type.title1, fontWeight: '800', color: colors.text, letterSpacing: -0.6, paddingHorizontal: spacing.lg, paddingTop: 8, paddingBottom: 4 },
   chipsScroll: { flexGrow: 0, flexShrink: 0, maxHeight: 56 },
   chipsRow: { paddingHorizontal: spacing.lg, gap: 8, paddingVertical: 10, alignItems: 'center' },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 6, maxWidth: 200, paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.pill, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder },
-  chipText: { fontSize: 13, color: colors.text2, fontWeight: '500' },
+  chipText: { fontSize: type.footnote, color: colors.text2, fontWeight: '500' },
 
   headerCard: { borderRadius: radius.lg, borderWidth: 1, overflow: 'hidden', backgroundColor: 'rgba(20,23,30,0.6)', marginBottom: 14 },
   accentBar: { height: 3, width: '55%' },
@@ -428,42 +428,42 @@ const styles = StyleSheet.create({
   avatarStack: { flexDirection: 'row' },
   stackAvatar: { width: 46, height: 46, borderRadius: 11, borderWidth: 2, borderColor: '#0f141e' },
   avatarFallback: { alignItems: 'center', justifyContent: 'center' },
-  avatarInitial: { color: '#fff', fontWeight: '800', fontSize: 17 },
-  platformTag: { fontSize: 11, fontWeight: '800', color: colors.steam, letterSpacing: 1, marginBottom: 2 },
-  headerName: { fontSize: 17, fontWeight: '800', color: '#fff' },
+  avatarInitial: { color: '#fff', fontWeight: '800', fontSize: type.body },
+  platformTag: { fontSize: type.caption2, fontWeight: '800', color: colors.steam, letterSpacing: 1, marginBottom: 2 },
+  headerName: { fontSize: type.body, fontWeight: '800', color: '#fff' },
   statsRow: { flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 14, gap: 4 },
   statCell: { flex: 1, alignItems: 'center' },
-  statValue: { fontSize: 20, fontWeight: '800', color: '#fff', letterSpacing: -0.5 },
-  statLabel: { fontSize: 11, fontWeight: '700', color: colors.text3, textTransform: 'uppercase', letterSpacing: 0.4, marginTop: 3 },
+  statValue: { fontSize: type.headline, fontWeight: '800', color: '#fff', letterSpacing: -0.5 },
+  statLabel: { fontSize: type.caption2, fontWeight: '700', color: colors.text3, textTransform: 'uppercase', letterSpacing: 0.4, marginTop: 3 },
 
   searchBox: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: radius.md, paddingHorizontal: 14, height: 42, marginBottom: 10 },
-  searchInput: { flex: 1, color: colors.text, fontSize: 15 },
+  searchInput: { flex: 1, color: colors.text, fontSize: type.subhead },
   sortRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
   sortChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.pill, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder },
-  sortChipActive: { borderColor: colors.accentBorder, backgroundColor: colors.accentSoft },
-  sortChipText: { fontSize: 13, color: colors.text2 },
-  countText: { marginLeft: 'auto', fontSize: 12, color: colors.text3, fontWeight: '600' },
+  sortChipActive: { borderColor: colors.borderHover, backgroundColor: 'rgba(255,255,255,0.10)' },
+  sortChipText: { fontSize: type.footnote, color: colors.text2 },
+  countText: { marginLeft: 'auto', fontSize: type.caption, color: colors.text3, fontWeight: '600' },
 
   listContent: { paddingHorizontal: 10, paddingTop: 4 },
   cell: { flex: 1, paddingHorizontal: 6, paddingBottom: spacing.md },
   tile: { width: '100%', aspectRatio: 3 / 4, borderRadius: radius.lg, overflow: 'hidden', backgroundColor: colors.card },
   tileInfo: { position: 'absolute', left: 11, right: 11, bottom: 10 },
-  tileName: { color: '#fff', fontSize: 15, fontWeight: '800', lineHeight: 17 },
+  tileName: { color: '#fff', fontSize: type.subhead, fontWeight: '800', lineHeight: 17 },
   tileMeta: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 4 },
-  tileHours: { color: colors.accentText, fontSize: 17, fontWeight: '800' },
-  tileSub: { color: colors.text3, fontSize: 11, fontWeight: '600' },
-  tilePrice: { color: '#fff', fontSize: 13, fontWeight: '800' },
-  tilePriceFree: { color: colors.green, fontSize: 13, fontWeight: '800' },
+  tileHours: { color: colors.accentText, fontSize: type.body, fontWeight: '800' },
+  tileSub: { color: colors.text3, fontSize: type.caption2, fontWeight: '600' },
+  tilePrice: { color: '#fff', fontSize: type.footnote, fontWeight: '800' },
+  tilePriceFree: { color: colors.green, fontSize: type.footnote, fontWeight: '800' },
   gpBadge: { position: 'absolute', top: 8, right: 8, backgroundColor: '#107c10', borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 },
-  gpText: { color: '#fff', fontSize: 11, fontWeight: '800' },
+  gpText: { color: '#fff', fontSize: type.caption2, fontWeight: '800' },
   saleBadge: { position: 'absolute', top: 8, left: 8, backgroundColor: colors.accent, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 },
-  saleText: { color: '#0b0d10', fontSize: 11, fontWeight: '800' },
+  saleText: { color: '#0b0d10', fontSize: type.caption2, fontWeight: '800' },
 
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 32 },
   emptyBox: { alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 60 },
-  h1: { fontSize: 22, fontWeight: '800', color: colors.text },
-  prompt: { fontSize: 15, color: colors.text3, textAlign: 'center', lineHeight: 20, marginBottom: 8 },
+  h1: { fontSize: type.title3, fontWeight: '800', color: colors.text },
+  prompt: { fontSize: type.subhead, color: colors.text3, textAlign: 'center', lineHeight: 20, marginBottom: 8 },
   connectBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, borderRadius: radius.md, paddingVertical: 14 },
-  connectText: { color: '#fff', fontWeight: '700', fontSize: 15 },
-  errText: { color: colors.text2, fontSize: 15, textAlign: 'center' },
+  connectText: { color: '#fff', fontWeight: '700', fontSize: type.subhead },
+  errText: { color: colors.text2, fontSize: type.subhead, textAlign: 'center' },
 });

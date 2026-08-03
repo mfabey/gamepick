@@ -1,6 +1,6 @@
 import { View, Text } from 'react-native';
 import { Image } from 'expo-image';
-import { colors } from '../theme';
+import { colors, type } from '../theme';
 
 // Görseli olan → resim; olmayan → renkli harf placeholder.
 // News sekmesi ve Home haber şeridi ortak kullanır.
@@ -13,7 +13,7 @@ export default function NewsImage({ item, style }) {
   }
   return (
     <View style={[style, { backgroundColor: item.art || colors.card, alignItems: 'center', justifyContent: 'center' }]}>
-      <Text style={{ fontSize: 28, fontWeight: '900', color: 'rgba(255,255,255,0.85)' }}>{item.mono || '?'}</Text>
+      <Text style={{ fontSize: type.title1, fontWeight: '900', color: 'rgba(255,255,255,0.85)' }}>{item.mono || '?'}</Text>
     </View>
   );
 }

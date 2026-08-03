@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 import { publishList } from '../api/social';
-import { colors, radius, spacing, PRESSED } from '../theme';
+import { colors, radius, spacing, PRESSED, type } from '../theme';
 import { useLanguage } from '../context/LanguageContext';
 
 export default function PublishSheet({ visible, onClose, collection, publishedId, onPublished }) {
@@ -114,18 +114,18 @@ const styles = StyleSheet.create({
     alignSelf: 'center', width: 38, height: 4, borderRadius: 2,
     backgroundColor: colors.text3, opacity: 0.5, marginBottom: 14,
   },
-  title: { color: colors.text, fontSize: 17, fontWeight: '900' },
+  title: { color: colors.text, fontSize: type.body, fontWeight: '900' },
 
   notice: {
     flexDirection: 'row', gap: 8, alignItems: 'flex-start',
     backgroundColor: colors.card, borderRadius: radius.md, padding: 12,
     borderWidth: 1, borderColor: colors.cardBorder, marginTop: 12, marginBottom: 14,
   },
-  noticeText: { flex: 1, color: colors.text2, fontSize: 13, lineHeight: 18 },
+  noticeText: { flex: 1, color: colors.text2, fontSize: type.footnote, lineHeight: 18 },
 
   input: {
     backgroundColor: colors.bgInput, borderRadius: radius.md,
-    paddingHorizontal: 13, height: 50, color: colors.text, fontSize: 15,
+    paddingHorizontal: 13, height: 50, color: colors.text, fontSize: type.subhead,
     borderWidth: 1, borderColor: colors.cardBorder, marginBottom: 10,
   },
   multiline: { height: 88, paddingTop: 13, textAlignVertical: 'top' },
@@ -135,5 +135,5 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', marginTop: 6,
   },
   ctaOff: { opacity: 0.4 },
-  ctaText: { color: '#fff', fontSize: 15, fontWeight: '800' },
+  ctaText: { color: '#fff', fontSize: type.subhead, fontWeight: '800' },
 });

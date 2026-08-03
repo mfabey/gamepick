@@ -2,7 +2,7 @@ import { memo } from 'react';
 import { Pressable, View, Text, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { colors, radius } from '../theme';
+import { colors, radius, type } from '../theme';
 import { useLanguage } from '../context/LanguageContext';
 import { usePrice } from '../hooks/usePrice';
 import PosterImage from './PosterImage';
@@ -95,14 +95,14 @@ const styles = StyleSheet.create({
     borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2,
     borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
   },
-  mcText: { fontSize: 12, fontWeight: '800' },
+  mcText: { fontSize: type.caption, fontWeight: '800' },
   tagBadge: { position: 'absolute', top: 8, left: 8, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
-  tagFree: { fontSize: 11, fontWeight: '800', color: '#04130d' },
-  tagSale: { fontSize: 11, fontWeight: '800', color: '#fff' },
+  tagFree: { fontSize: type.caption2, fontWeight: '800', color: '#04130d' },
+  tagSale: { fontSize: type.caption2, fontWeight: '800', color: '#fff' },
   info: { position: 'absolute', left: 12, right: 12, bottom: 11 },
-  name: { fontSize: 15, fontWeight: '800', color: '#fff', lineHeight: 18 },
+  name: { fontSize: type.subhead, fontWeight: '800', color: '#fff', lineHeight: 18 },
   metaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 5 },
-  genre: { fontSize: 12, color: 'rgba(255,255,255,0.6)', flexShrink: 1, marginRight: 8 },
-  price: { fontSize: 15, fontWeight: '800', color: '#fff' },
-  priceFree: { fontSize: 15, fontWeight: '800', color: colors.green },
+  genre: { fontSize: type.caption, color: 'rgba(255,255,255,0.6)', flexShrink: 1, marginRight: 8 },
+  price: { fontSize: type.subhead, fontWeight: '800', color: '#fff' },
+  priceFree: { fontSize: type.subhead, fontWeight: '800', color: colors.green },
 });

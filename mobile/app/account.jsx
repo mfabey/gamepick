@@ -10,7 +10,7 @@ import * as Haptics from 'expo-haptics';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { signIn, signInWithApple } from '../src/services/session';
 import { registerAccount, requestPasswordReset, checkUsernameAvailable } from '../src/api/account';
-import { colors, radius, spacing, PRESSED } from '../src/theme';
+import { colors, radius, spacing, PRESSED, type } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
 
 // Sunucudaki USERNAME_RE ile birebir aynı (app/lib/content-filter.js).
@@ -329,40 +329,40 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   head: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.sm },
   back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  title: { flex: 1, fontSize: 20, fontWeight: '800', color: colors.text, textAlign: 'center' },
+  title: { flex: 1, fontSize: type.headline, fontWeight: '800', color: colors.text, textAlign: 'center' },
 
   body: { padding: spacing.lg, paddingTop: 8 },
-  lead: { fontSize: 15, color: colors.text2, lineHeight: 21, marginBottom: 22 },
+  lead: { fontSize: type.subhead, color: colors.text2, lineHeight: 21, marginBottom: 22 },
   dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 18 },
   dividerLine: { flex: 1, height: 1, backgroundColor: colors.cardBorder },
-  dividerText: { color: colors.text3, fontSize: 13, fontWeight: '600' },
+  dividerText: { color: colors.text3, fontSize: type.footnote, fontWeight: '600' },
 
-  label: { fontSize: 13, color: colors.text3, fontWeight: '700', marginBottom: 7 },
+  label: { fontSize: type.footnote, color: colors.text3, fontWeight: '700', marginBottom: 7 },
   unameWrap: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     backgroundColor: colors.bgInput, borderRadius: radius.md,
     paddingHorizontal: 14, height: 52,
     borderWidth: 1, borderColor: colors.cardBorder,
   },
-  at: { color: colors.text3, fontSize: 15, fontWeight: '700' },
-  unameInput: { flex: 1, color: colors.text, fontSize: 15 },
-  hint: { fontSize: 12, color: colors.text3, marginTop: 6 },
+  at: { color: colors.text3, fontSize: type.subhead, fontWeight: '700' },
+  unameInput: { flex: 1, color: colors.text, fontSize: type.subhead },
+  hint: { fontSize: type.caption, color: colors.text3, marginTop: 6 },
   input: {
     backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1,
     borderRadius: radius.md, paddingHorizontal: 14, height: 50,
-    color: colors.text, fontSize: 15,
+    color: colors.text, fontSize: type.subhead,
   },
 
-  err:  { color: colors.danger, fontSize: 13, lineHeight: 20, marginBottom: 10 },
-  info: { color: colors.green,  fontSize: 13, lineHeight: 20, marginBottom: 10 },
+  err:  { color: colors.danger, fontSize: type.footnote, lineHeight: 20, marginBottom: 10 },
+  info: { color: colors.green,  fontSize: type.footnote, lineHeight: 20, marginBottom: 10 },
 
   cta: {
     height: 52, borderRadius: radius.lg, backgroundColor: colors.accent,
     alignItems: 'center', justifyContent: 'center', marginTop: 6,
   },
   ctaOff: { opacity: 0.45 },
-  ctaText: { color: '#fff', fontSize: 15, fontWeight: '800' },
+  ctaText: { color: '#fff', fontSize: type.subhead, fontWeight: '800' },
 
-  link:      { color: colors.accentText, fontSize: 15, fontWeight: '700', textAlign: 'center', marginTop: 20 },
-  linkMuted: { color: colors.text3,  fontSize: 13, textAlign: 'center', marginTop: 14 },
+  link:      { color: colors.accentText, fontSize: type.subhead, fontWeight: '700', textAlign: 'center', marginTop: 20 },
+  linkMuted: { color: colors.text3,  fontSize: type.footnote, textAlign: 'center', marginTop: 14 },
 });

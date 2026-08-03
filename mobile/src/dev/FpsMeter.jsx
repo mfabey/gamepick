@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
+import { type } from '../theme';
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Canlı FPS ölçer — YALNIZCA geliştirmede (__DEV__).
 // requestAnimationFrame ile JS thread frame hızını sayar; kaydırma jank'ı
@@ -49,5 +51,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
-  text: { fontSize: 12, fontWeight: '800', fontVariant: ['tabular-nums'] },
+  text: { fontSize: type.caption, fontWeight: '800', fontVariant: ['tabular-nums'] },
 });

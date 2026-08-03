@@ -10,7 +10,7 @@ import * as AppleAuthentication from 'expo-apple-authentication';
 import { getValidToken, signOut } from '../src/services/session';
 import { deleteAccount } from '../src/api/account';
 import { useAuth } from '../src/context/AuthContext';
-import { colors, radius, spacing, PRESSED } from '../src/theme';
+import { colors, radius, spacing, PRESSED, type } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
 
 export default function DeleteAccountScreen() {
@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   head: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.sm },
   back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  title: { flex: 1, fontSize: 20, fontWeight: '800', color: colors.text, textAlign: 'center' },
+  title: { flex: 1, fontSize: type.headline, fontWeight: '800', color: colors.text, textAlign: 'center' },
 
   body: { padding: spacing.lg },
   warnBox: {
@@ -144,21 +144,21 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(248,113,113,0.08)', borderColor: 'rgba(248,113,113,0.35)',
     borderWidth: 1, borderRadius: radius.md, padding: 14, marginBottom: 22,
   },
-  warnText: { flex: 1, color: colors.text2, fontSize: 13, lineHeight: 20 },
-  email: { color: colors.text, fontSize: 15, fontWeight: '700', marginBottom: 20 },
+  warnText: { flex: 1, color: colors.text2, fontSize: type.footnote, lineHeight: 20 },
+  email: { color: colors.text, fontSize: type.subhead, fontWeight: '700', marginBottom: 20 },
 
-  label: { fontSize: 13, color: colors.text3, fontWeight: '700', marginBottom: 7 },
+  label: { fontSize: type.footnote, color: colors.text3, fontWeight: '700', marginBottom: 7 },
   input: {
     backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1,
     borderRadius: radius.md, paddingHorizontal: 14, height: 50,
-    color: colors.text, fontSize: 15,
+    color: colors.text, fontSize: type.subhead,
   },
-  err: { color: colors.danger, fontSize: 13, lineHeight: 20, marginTop: 16 },
+  err: { color: colors.danger, fontSize: type.footnote, lineHeight: 20, marginTop: 16 },
 
   cta: {
     height: 52, borderRadius: radius.lg, backgroundColor: colors.danger,
     alignItems: 'center', justifyContent: 'center', marginTop: 24,
   },
   ctaOff: { opacity: 0.4 },
-  ctaText: { color: '#fff', fontSize: 15, fontWeight: '800' },
+  ctaText: { color: '#fff', fontSize: type.subhead, fontWeight: '800' },
 });

@@ -14,7 +14,7 @@ import { useQuery } from '../src/hooks/useQuery';
 import { recordSignal } from '../src/services/tasteProfile';
 import { completeOnboarding } from '../src/services/onboarding';
 import { posterImage } from '../src/utils/images';
-import { colors, radius, spacing, PRESSED } from '../src/theme';
+import { colors, radius, spacing, PRESSED, type } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
 
 const MIN_PICKS = 3;
@@ -157,8 +157,8 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
   head: { paddingHorizontal: spacing.lg, paddingTop: 10, paddingBottom: 14 },
-  title: { fontSize: 28, fontWeight: '900', color: colors.text, letterSpacing: -0.5 },
-  subtitle: { fontSize: 15, color: colors.text2, lineHeight: 21, marginTop: 8 },
+  title: { fontSize: type.title1, fontWeight: '900', color: colors.text, letterSpacing: -0.5 },
+  subtitle: { fontSize: type.subhead, color: colors.text2, lineHeight: 21, marginTop: 8 },
 
   // Doğal dil ile keşif girişi — anasayfadaki satırın aynısı
   discover: {
@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accentSoft, borderColor: colors.accentBorder, borderWidth: 1,
     borderRadius: radius.lg, paddingHorizontal: 16, paddingVertical: 13,
   },
-  discoverText: { flex: 1, color: colors.text, fontSize: 15, fontWeight: '600' },
+  discoverText: { flex: 1, color: colors.text, fontSize: type.subhead, fontWeight: '600' },
 
   list: { paddingHorizontal: 8 },
   cell: { flex: 1, paddingHorizontal: 5, paddingBottom: 10 },
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card, borderWidth: 2, borderColor: 'transparent',
   },
   coverOn: { borderColor: colors.accent },
-  name: { position: 'absolute', left: 8, right: 8, bottom: 7, color: '#fff', fontSize: 12, fontWeight: '700', lineHeight: 14 },
+  name: { position: 'absolute', left: 8, right: 8, bottom: 7, color: '#fff', fontSize: type.caption, fontWeight: '700', lineHeight: 14 },
   check: {
     position: 'absolute', top: 6, right: 6, width: 24, height: 24, borderRadius: 12,
     backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center',
@@ -186,11 +186,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg, paddingTop: 12, paddingBottom: 24,
     borderTopWidth: 1, borderTopColor: colors.cardBorder, backgroundColor: colors.bg,
   },
-  skip: { color: colors.text3, fontSize: 15, fontWeight: '600' },
+  skip: { color: colors.text3, fontSize: type.subhead, fontWeight: '600' },
   cta: {
     minWidth: 170, height: 50, borderRadius: radius.lg, backgroundColor: colors.accent,
     alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20,
   },
   ctaOff: { opacity: 0.4 },
-  ctaText: { color: '#fff', fontSize: 15, fontWeight: '800' },
+  ctaText: { color: '#fff', fontSize: type.subhead, fontWeight: '800' },
 });

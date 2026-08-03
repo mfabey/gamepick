@@ -219,9 +219,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md, paddingTop: 6, paddingBottom: 10,
   },
   titleWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
-  title: { fontSize: 17, fontWeight: '900', color: colors.text, letterSpacing: -0.3 },
+  title: { fontSize: type.body, fontWeight: '900', color: colors.text, letterSpacing: -0.3 },
   betaBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.sm, backgroundColor: colors.accent },
-  betaText: { color: '#fff', fontSize: 11, fontWeight: '900', letterSpacing: 0.5 },
+  betaText: { color: '#fff', fontSize: type.caption2, fontWeight: '900', letterSpacing: 0.5 },
   iconBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
 
   tabs: { flexDirection: 'row', gap: 6, paddingHorizontal: spacing.md, paddingBottom: 10 },
@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: colors.cardBorder,
   },
   tabOn: { backgroundColor: colors.accentBg, borderColor: colors.accentBorder },
-  tabText: { color: colors.text2, fontSize: 13, fontWeight: '700' },
+  tabText: { color: colors.text2, fontSize: type.footnote, fontWeight: '700' },
   tabTextOn: { color: colors.accentText },
 
   list: { paddingHorizontal: spacing.md, paddingBottom: 30 },
@@ -242,12 +242,12 @@ const styles = StyleSheet.create({
   },
   cover: { width: '50%', height: '50%' },
   coverEmpty: { width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' },
-  coverEmoji: { fontSize: 28 },
+  coverEmoji: { fontSize: type.title1 },
 
   cardBody: { flex: 1 },
-  cardTitle: { color: colors.text, fontSize: 15, fontWeight: '800' },
-  cardDesc: { color: colors.text2, fontSize: 13, marginTop: 3, lineHeight: 17 },
-  cardMeta: { color: colors.text3, fontSize: 12, marginTop: 4 },
+  cardTitle: { color: colors.text, fontSize: type.subhead, fontWeight: '800' },
+  cardDesc: { color: colors.text2, fontSize: type.footnote, marginTop: 3, lineHeight: 17 },
+  cardMeta: { color: colors.text3, fontSize: type.caption, marginTop: 4 },
 
   likeBtn: { alignItems: 'center', gap: 2, paddingHorizontal: 4 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 },
@@ -258,5 +258,5 @@ const styles = StyleSheet.create({
   },
   // 11pt Apple'ın mutlak minimumu (HIG). Önceki turda 10pt yazmıştım — ihlaldi.
   officialText: { color: colors.accentText, fontSize: type.caption2, fontWeight: '800', letterSpacing: 0.3 },
-  likeCount: { color: colors.text3, fontSize: 12, fontWeight: '700' },
+  likeCount: { color: colors.text3, fontSize: type.caption, fontWeight: '700' },
 });

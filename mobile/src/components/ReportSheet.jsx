@@ -11,7 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 import { reportContent } from '../api/social';
-import { colors, radius, spacing, PRESSED } from '../theme';
+import { colors, radius, spacing, PRESSED, type } from '../theme';
 import { useLanguage } from '../context/LanguageContext';
 
 const REASONS = [
@@ -110,12 +110,12 @@ const styles = StyleSheet.create({
     alignSelf: 'center', width: 38, height: 4, borderRadius: 2,
     backgroundColor: colors.text3, opacity: 0.5, marginBottom: 14,
   },
-  title: { color: colors.text, fontSize: 17, fontWeight: '900' },
-  target: { color: colors.text2, fontSize: 13, marginTop: 3 },
+  title: { color: colors.text, fontSize: type.body, fontWeight: '900' },
+  target: { color: colors.text2, fontSize: type.footnote, marginTop: 3 },
 
   list: { flexGrow: 0, marginTop: 10 },
   row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12 },
-  rowText: { flex: 1, color: colors.text, fontSize: 15, fontWeight: '600' },
+  rowText: { flex: 1, color: colors.text, fontSize: type.subhead, fontWeight: '600' },
   radio: {
     width: 24, height: 24, borderRadius: 12,
     borderWidth: 2, borderColor: colors.cardBorder,
@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: colors.bgInput, borderRadius: radius.md,
     paddingHorizontal: 13, paddingTop: 12, paddingBottom: 12,
-    minHeight: 78, color: colors.text, fontSize: 15,
+    minHeight: 78, color: colors.text, fontSize: type.subhead,
     borderWidth: 1, borderColor: colors.cardBorder,
     marginTop: 8, textAlignVertical: 'top',
   },
@@ -136,5 +136,5 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', marginTop: 14,
   },
   ctaOff: { opacity: 0.45 },
-  ctaText: { color: '#fff', fontSize: 15, fontWeight: '800' },
+  ctaText: { color: '#fff', fontSize: type.subhead, fontWeight: '800' },
 });

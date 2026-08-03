@@ -10,7 +10,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
-import { colors, radius, spacing, PRESSED } from '../theme';
+import { colors, radius, spacing, PRESSED, type } from '../theme';
 import { useLanguage } from '../context/LanguageContext';
 import IconButton from './IconButton';
 
@@ -115,17 +115,17 @@ const styles = StyleSheet.create({
     alignSelf: 'center', width: 38, height: 4, borderRadius: 2,
     backgroundColor: colors.text3, opacity: 0.5, marginBottom: 14,
   },
-  title: { color: colors.text, fontSize: 17, fontWeight: '900' },
-  gameName: { color: colors.text2, fontSize: 13, marginTop: 3, marginBottom: 12 },
+  title: { color: colors.text, fontSize: type.body, fontWeight: '900' },
+  gameName: { color: colors.text2, fontSize: type.footnote, marginTop: 3, marginBottom: 12 },
 
   list: { flexGrow: 0 },
-  emptyText: { color: colors.text2, fontSize: 13, lineHeight: 20, paddingVertical: 10 },
+  emptyText: { color: colors.text2, fontSize: type.footnote, lineHeight: 20, paddingVertical: 10 },
 
   row: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 11 },
-  rowEmoji: { fontSize: 22 },
+  rowEmoji: { fontSize: type.title3 },
   rowBody: { flex: 1 },
-  rowName: { color: colors.text, fontSize: 15, fontWeight: '700' },
-  rowMeta: { color: colors.text3, fontSize: 12, marginTop: 2 },
+  rowName: { color: colors.text, fontSize: type.subhead, fontWeight: '700' },
+  rowMeta: { color: colors.text3, fontSize: type.caption, marginTop: 2 },
   check: {
     width: 25, height: 25, borderRadius: 13,
     borderWidth: 2, borderColor: colors.cardBorder,
@@ -134,12 +134,12 @@ const styles = StyleSheet.create({
   checkOn: { backgroundColor: colors.accent, borderColor: colors.accent },
 
   addRow: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingVertical: 13 },
-  addText: { color: colors.accentText, fontSize: 15, fontWeight: '700' },
+  addText: { color: colors.accentText, fontSize: type.subhead, fontWeight: '700' },
 
   newRow: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingVertical: 10 },
   input: {
     flex: 1, backgroundColor: colors.bgInput, borderRadius: radius.md,
-    paddingHorizontal: 13, height: 46, color: colors.text, fontSize: 15,
+    paddingHorizontal: 13, height: 46, color: colors.text, fontSize: type.subhead,
     borderWidth: 1, borderColor: colors.cardBorder,
   },
   miniCta: {
@@ -153,5 +153,5 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', marginTop: 14,
     borderWidth: 1, borderColor: colors.cardBorder,
   },
-  doneText: { color: colors.text, fontSize: 15, fontWeight: '800' },
+  doneText: { color: colors.text, fontSize: type.subhead, fontWeight: '800' },
 });

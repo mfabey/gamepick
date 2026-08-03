@@ -17,7 +17,7 @@ import { useCollections } from '../src/hooks/useCollections';
 import { createCollection, deleteCollection } from '../src/services/collectionsStore';
 import EmptyState from '../src/components/EmptyState';
 import { posterImage } from '../src/utils/images';
-import { colors, radius, spacing, PRESSED } from '../src/theme';
+import { colors, radius, spacing, PRESSED, type } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
 import ProfileGate from '../src/components/ProfileGate';
 
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: spacing.md, paddingTop: 6, paddingBottom: 10, gap: 8,
   },
-  title: { flex: 1, fontSize: 20, fontWeight: '900', color: colors.text, letterSpacing: -0.3 },
+  title: { flex: 1, fontSize: type.headline, fontWeight: '900', color: colors.text, letterSpacing: -0.3 },
   iconBtn: {
     width: 44, height: 44, borderRadius: 22, backgroundColor: colors.card,
     alignItems: 'center', justifyContent: 'center',
@@ -234,10 +234,10 @@ const styles = StyleSheet.create({
   },
   thumb: { width: '50%', height: '50%' },
   thumbEmpty: { width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' },
-  rowEmoji: { fontSize: 28 },
+  rowEmoji: { fontSize: type.title1 },
   rowBody: { flex: 1 },
-  rowName: { color: colors.text, fontSize: 15, fontWeight: '800' },
-  rowMeta: { color: colors.text2, fontSize: 13, marginTop: 3 },
+  rowName: { color: colors.text, fontSize: type.subhead, fontWeight: '800' },
+  rowMeta: { color: colors.text2, fontSize: type.footnote, marginTop: 3 },
   suggests: { alignSelf: 'stretch', marginTop: 22, gap: 8 },
   suggest: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
@@ -245,8 +245,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14, paddingVertical: 13,
     borderWidth: 1, borderColor: colors.cardBorder,
   },
-  suggestEmoji: { fontSize: 17 },
-  suggestText: { flex: 1, color: colors.text, fontSize: 15, fontWeight: '600' },
+  suggestEmoji: { fontSize: type.body },
+  suggestText: { flex: 1, color: colors.text, fontSize: type.subhead, fontWeight: '600' },
 
   backdrop: { flex: 1, backgroundColor: colors.overlay, alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
   sheet: {
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl, padding: spacing.lg,
     borderWidth: 1, borderColor: colors.cardBorder,
   },
-  sheetTitle: { color: colors.text, fontSize: 17, fontWeight: '900', marginBottom: 14 },
+  sheetTitle: { color: colors.text, fontSize: type.body, fontWeight: '900', marginBottom: 14 },
   emojiRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginBottom: 14 },
   emojiBtn: {
     width: 44, height: 44, borderRadius: radius.md, backgroundColor: colors.card,
@@ -262,19 +262,19 @@ const styles = StyleSheet.create({
     borderWidth: 2, borderColor: 'transparent',
   },
   emojiBtnOn: { borderColor: colors.accent },
-  emojiText: { fontSize: 20 },
+  emojiText: { fontSize: type.headline },
   input: {
     backgroundColor: colors.bgInput, borderRadius: radius.md,
-    paddingHorizontal: 14, height: 50, color: colors.text, fontSize: 15,
+    paddingHorizontal: 14, height: 50, color: colors.text, fontSize: type.subhead,
     borderWidth: 1, borderColor: colors.cardBorder,
   },
   sheetActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 16 },
   ghostBtn: { paddingHorizontal: 16, height: 46, alignItems: 'center', justifyContent: 'center' },
-  ghostText: { color: colors.text2, fontSize: 15, fontWeight: '700' },
+  ghostText: { color: colors.text2, fontSize: type.subhead, fontWeight: '700' },
   cta: {
     minWidth: 110, height: 46, borderRadius: radius.lg, backgroundColor: colors.accent,
     alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18,
   },
   ctaOff: { opacity: 0.4 },
-  ctaText: { color: '#fff', fontSize: 15, fontWeight: '800' },
+  ctaText: { color: '#fff', fontSize: type.subhead, fontWeight: '800' },
 });

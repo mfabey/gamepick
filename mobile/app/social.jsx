@@ -26,7 +26,7 @@ import {
 import { subscribeSession, getSession } from '../src/services/session';
 import ReportSheet from '../src/components/ReportSheet';
 import EmptyState from '../src/components/EmptyState';
-import { colors, radius, spacing, PRESSED } from '../src/theme';
+import { colors, radius, spacing, PRESSED, type } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
 import IconButton from '../src/components/IconButton';
 
@@ -559,9 +559,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md, paddingTop: 6, paddingBottom: 10,
   },
   headTitleWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
-  headTitle: { fontSize: 17, fontWeight: '900', color: colors.text, letterSpacing: -0.3 },
+  headTitle: { fontSize: type.body, fontWeight: '900', color: colors.text, letterSpacing: -0.3 },
   betaBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.sm, backgroundColor: colors.accent },
-  betaText: { color: '#fff', fontSize: 11, fontWeight: '900', letterSpacing: 0.5 },
+  betaText: { color: '#fff', fontSize: type.caption2, fontWeight: '900', letterSpacing: 0.5 },
   iconBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
 
   tabs: {
@@ -573,20 +573,20 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: colors.cardBorder,
   },
   tabOn: { backgroundColor: colors.accentBg, borderColor: colors.accentBorder },
-  tabText: { color: colors.text2, fontSize: 13, fontWeight: '700' },
+  tabText: { color: colors.text2, fontSize: type.footnote, fontWeight: '700' },
   tabTextOn: { color: colors.accentText },
 
   list: { paddingHorizontal: spacing.md, paddingBottom: 30 },
   sectionLabel: {
-    color: colors.text3, fontSize: 12, fontWeight: '800',
+    color: colors.text3, fontSize: type.caption, fontWeight: '800',
     letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 6, marginTop: 4,
   },
-  inlineEmpty: { color: colors.text2, fontSize: 13, textAlign: 'center', marginTop: 26, lineHeight: 20 },
+  inlineEmpty: { color: colors.text2, fontSize: type.footnote, textAlign: 'center', marginTop: 26, lineHeight: 20 },
 
   personRow: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 9 },
   personBody: { flex: 1 },
-  personName: { color: colors.text, fontSize: 15, fontWeight: '700' },
-  personHandle: { color: colors.text3, fontSize: 13, marginTop: 1 },
+  personName: { color: colors.text, fontSize: type.subhead, fontWeight: '700' },
+  personHandle: { color: colors.text3, fontSize: type.footnote, marginTop: 1 },
   rowBtns: { flexDirection: 'row', gap: 6 },
   moreBtn: { padding: 6 },
 
@@ -598,21 +598,21 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center',
   },
   smallBtnGhost: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder },
-  smallBtnText: { color: '#fff', fontSize: 13, fontWeight: '800' },
+  smallBtnText: { color: '#fff', fontSize: type.footnote, fontWeight: '800' },
   smallBtnTextGhost: { color: colors.text2 },
 
   tag: {
     paddingHorizontal: 10, paddingVertical: 6, borderRadius: radius.pill,
     backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder,
   },
-  tagText: { color: colors.text2, fontSize: 12, fontWeight: '700' },
+  tagText: { color: colors.text2, fontSize: type.caption, fontWeight: '700' },
 
   actRow: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 11 },
   actBody: { flex: 1 },
-  actText: { color: colors.text2, fontSize: 15, lineHeight: 19 },
+  actText: { color: colors.text2, fontSize: type.subhead, lineHeight: 19 },
   actName: { color: colors.text, fontWeight: '800' },
   actGame: { color: colors.accentText, fontWeight: '700' },
-  actTime: { color: colors.text3, fontSize: 12, marginTop: 3 },
+  actTime: { color: colors.text3, fontSize: type.caption, marginTop: 3 },
 
   searchWrap: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
@@ -621,13 +621,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12, height: 44,
     borderWidth: 1, borderColor: colors.cardBorder,
   },
-  searchInput: { flex: 1, color: colors.text, fontSize: 15 },
+  searchInput: { flex: 1, color: colors.text, fontSize: type.subhead },
 
   setupBody: { padding: spacing.xl, alignItems: 'center' },
-  setupTitle: { color: colors.text, fontSize: 22, fontWeight: '900', marginTop: 14, textAlign: 'center', letterSpacing: -0.4 },
-  setupText: { color: colors.text2, fontSize: 15, textAlign: 'center', marginTop: 8, lineHeight: 20 },
+  setupTitle: { color: colors.text, fontSize: type.title3, fontWeight: '900', marginTop: 14, textAlign: 'center', letterSpacing: -0.4 },
+  setupText: { color: colors.text2, fontSize: type.subhead, textAlign: 'center', marginTop: 8, lineHeight: 20 },
   label: {
-    alignSelf: 'flex-start', color: colors.text3, fontSize: 12, fontWeight: '800',
+    alignSelf: 'flex-start', color: colors.text3, fontSize: type.caption, fontWeight: '800',
     letterSpacing: 0.5, textTransform: 'uppercase', marginTop: 26, marginBottom: 7,
   },
   inputWrap: {
@@ -636,22 +636,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 13, height: 52,
     borderWidth: 1, borderColor: colors.cardBorder,
   },
-  at: { color: colors.text3, fontSize: 17, fontWeight: '700' },
-  input: { flex: 1, color: colors.text, fontSize: 17 },
-  hint: { alignSelf: 'flex-start', color: colors.text3, fontSize: 13, marginTop: 7 },
+  at: { color: colors.text3, fontSize: type.body, fontWeight: '700' },
+  input: { flex: 1, color: colors.text, fontSize: type.body },
+  hint: { alignSelf: 'flex-start', color: colors.text3, fontSize: type.footnote, marginTop: 7 },
 
   privacyNote: {
     flexDirection: 'row', gap: 8, alignItems: 'flex-start',
     backgroundColor: colors.card, borderRadius: radius.md, padding: 13,
     borderWidth: 1, borderColor: colors.cardBorder, marginTop: 22,
   },
-  privacyNoteText: { flex: 1, color: colors.text2, fontSize: 13, lineHeight: 18 },
+  privacyNoteText: { flex: 1, color: colors.text2, fontSize: type.footnote, lineHeight: 18 },
 
-  gateText: { color: colors.text2, fontSize: 15, textAlign: 'center', marginTop: 14, lineHeight: 21 },
+  gateText: { color: colors.text2, fontSize: type.subhead, textAlign: 'center', marginTop: 14, lineHeight: 21 },
   cta: {
     alignSelf: 'stretch', height: 52, borderRadius: radius.lg, backgroundColor: colors.accent,
     alignItems: 'center', justifyContent: 'center', marginTop: 22, paddingHorizontal: 24,
   },
   ctaOff: { opacity: 0.4 },
-  ctaText: { color: '#fff', fontSize: 15, fontWeight: '800' },
+  ctaText: { color: '#fff', fontSize: type.subhead, fontWeight: '800' },
 });

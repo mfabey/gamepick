@@ -265,7 +265,7 @@ function ContentTile({ icon, label, count, beta, wide, locked, lockedHint, onPre
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   headRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
-  h1: { flex: 1, fontSize: 28, fontWeight: '800', color: colors.text, letterSpacing: -0.6 },
+  h1: { flex: 1, fontSize: type.title1, fontWeight: '800', color: colors.text, letterSpacing: -0.6 },
   gearBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
@@ -283,7 +283,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bgInput,
     alignItems: 'center', justifyContent: 'center',
   },
-  tileLabel: { fontSize: 15, fontWeight: '700', color: colors.text, marginTop: 10 },
+  tileLabel: { fontSize: type.subhead, fontWeight: '700', color: colors.text, marginTop: 10 },
   // Kilitli karo: soluk ama okunabilir. Metnin kendisi text2'de kalıyor —
   // opacity ile solduran bir yaklaşım kontrastı 4.5:1'in altına düşürürdü.
   tileDim: { opacity: 0.55 },
@@ -300,8 +300,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bgInput,
     alignItems: 'center', justifyContent: 'center',
   },
-  lockTitle: { fontSize: 15, fontWeight: '700', color: colors.text },
-  lockDesc: { fontSize: 13, color: colors.text2, marginTop: 3, lineHeight: 18 },
+  lockTitle: { fontSize: type.subhead, fontWeight: '700', color: colors.text },
+  lockDesc: { fontSize: type.footnote, color: colors.text2, marginTop: 3, lineHeight: 18 },
 
   // Bağlı Hesaplar bölümündeki tek çağrı düğmesi
   lockCta: {
@@ -309,8 +309,8 @@ const styles = StyleSheet.create({
     minHeight: 52, borderRadius: radius.lg,
     borderWidth: 1, borderColor: colors.accent, backgroundColor: colors.accentSoft,
   },
-  lockCtaText: { fontSize: 15, fontWeight: '700', color: colors.accentText },
-  sectionLabel: { fontSize: 12, fontWeight: '800', color: colors.text3, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 },
+  lockCtaText: { fontSize: type.subhead, fontWeight: '700', color: colors.accentText },
+  sectionLabel: { fontSize: type.caption, fontWeight: '800', color: colors.text3, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 },
   accountCard: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1,
@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
   },
   avatar: { width: 44, height: 44, borderRadius: 10 },
   avatarFallback: { alignItems: 'center', justifyContent: 'center' },
-  avatarInitial: { color: '#fff', fontWeight: '800', fontSize: 17 },
+  avatarInitial: { color: '#fff', fontWeight: '800', fontSize: type.body },
   accCard: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1,
@@ -329,21 +329,21 @@ const styles = StyleSheet.create({
     borderColor: colors.cardBorder, borderWidth: 1,
     alignItems: 'center', justifyContent: 'center',
   },
-  accName: { fontSize: 15, fontWeight: '700', color: colors.text },
+  accName: { fontSize: type.subhead, fontWeight: '700', color: colors.text },
   badgeRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 3 },
-  accStatus: { fontSize: 12, color: colors.text3 },
+  accStatus: { fontSize: type.caption, color: colors.text3 },
   discBtn: { padding: 4 },
   connectBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9,
     borderWidth: 1.5, borderStyle: 'dashed', borderRadius: radius.md, paddingVertical: 13,
   },
-  connectText: { fontSize: 15, fontWeight: '700' },
+  connectText: { fontSize: type.subhead, fontWeight: '700' },
   settingRow: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1,
     borderRadius: radius.md, padding: 14,
   },
-  settingText: { flex: 1, fontSize: 15, color: colors.text, fontWeight: '500' },
+  settingText: { flex: 1, fontSize: type.subhead, color: colors.text, fontWeight: '500' },
   wishBadge: { minWidth: 22, height: 22, borderRadius: 11, backgroundColor: colors.bgInput, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
   wishBadgeText: { color: colors.text2, fontSize: type.caption, fontWeight: '800', ...NUMERIC },
   betaChip: {

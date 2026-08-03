@@ -9,7 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import { fetchTrending, fetchGames } from '../../src/api/games';
 import { fetchNews } from '../../src/api/news';
-import { colors, radius, spacing, TAB_SPACE, PRESSED } from '../../src/theme';
+import { colors, radius, spacing, TAB_SPACE, PRESSED, type } from '../../src/theme';
 import { useTabBarScroll } from '../../src/context/TabBarContext';
 import { useLanguage } from '../../src/context/LanguageContext';
 import FadeIn from '../../src/components/FadeIn';
@@ -182,7 +182,7 @@ export default function HomeScreen() {
           <FadeIn delay={130}>
             <View style={{ marginTop: 26 }}>
               <View style={styles.sectionHead}>
-                <Text style={styles.sectionTitle}>📰 {t('news.title')}</Text>
+                <Text style={styles.sectionTitle}>{t('news.title')}</Text>
                 <Pressable onPress={() => router.push('/news')} hitSlop={8}>
                   <Text style={styles.viewAll}>{t('home.viewAll')} ›</Text>
                 </Pressable>
@@ -195,11 +195,11 @@ export default function HomeScreen() {
         )}
 
         {!isCold && forYou.length > 0 && (
-          <FadeIn delay={140}><Section emoji="✨" title={t('home.forYou')} games={forYou} router={router} onDismiss={handleDismiss} /></FadeIn>
+          <FadeIn delay={140}><Section title={t('home.forYou')} games={forYou} router={router} onDismiss={handleDismiss} /></FadeIn>
         )}
-        <FadeIn delay={180}><Section emoji="🔥" title={t('home.trend')} games={trend} router={router} /></FadeIn>
-        <FadeIn delay={250}><Section emoji="🗓️" title={t('home.new')} games={fresh} router={router} /></FadeIn>
-        <FadeIn delay={320}><Section emoji="🏷️" title={t('home.sale')} games={sale} router={router} /></FadeIn>
+        <FadeIn delay={180}><Section title={t('home.trend')} games={trend} router={router} /></FadeIn>
+        <FadeIn delay={250}><Section title={t('home.new')} games={fresh} router={router} /></FadeIn>
+        <FadeIn delay={320}><Section title={t('home.sale')} games={sale} router={router} /></FadeIn>
     </View>
   );
 
@@ -235,13 +235,13 @@ function go(router, g) {
   });
 }
 
-function Section({ emoji, title, games, router, onDismiss }) {
+function Section({ title, games, router, onDismiss }) {
   const { t } = useLanguage();
   if (!games || games.length === 0) return null;
   return (
     <View style={{ marginTop: 26 }}>
       <View style={styles.sectionHead}>
-        <Text style={styles.sectionTitle}>{emoji} {title}</Text>
+        <Text style={styles.sectionTitle}>{title}</Text>
         <Pressable onPress={() => router.push('/games')} hitSlop={8}>
           <Text style={styles.viewAll}>{t('home.viewAll')} ›</Text>
         </Pressable>
@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
   topBar: { alignItems: 'center', paddingHorizontal: spacing.lg, paddingTop: 6, paddingBottom: 4, justifyContent: 'center' },
   // İkon akıştan çıkarıldı: normal akışta olsaydı marka ortadan kayardı.
   topRight: { position: 'absolute', right: spacing.lg - 4, top: 2 },
-  brand: { fontSize: 20, fontWeight: '900', color: colors.text, letterSpacing: 1.5 },
+  brand: { fontSize: type.headline, fontWeight: '900', color: colors.text, letterSpacing: 1.5 },
 
   // Arama artık hero'nun içinde değil, doğrudan başlıkta duruyor — yatay
   // boşluğu hero'dan devraldı ki bölüm başlıklarıyla aynı hizada kalsın.
@@ -315,25 +315,28 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card, borderColor: colors.borderHover, borderWidth: 1.5,
     borderRadius: radius.lg, height: 56, paddingLeft: 18, paddingRight: 8,
   },
-  searchText: { flex: 1, color: colors.text3, fontSize: 15 },
+  searchText: { flex: 1, color: colors.text3, fontSize: type.subhead },
   searchBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
 
   sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, marginBottom: 12 },
-  sectionTitle: { fontSize: 17, fontWeight: '800', color: colors.text },
-  viewAll: { fontSize: 13, color: colors.accentText, fontWeight: '700' },
+  sectionTitle: {
+    fontSize: type.caption, fontWeight: '700', color: colors.text2,
+    textTransform: 'uppercase', letterSpacing: 1.1,
+  },
+  viewAll: { fontSize: type.footnote, color: colors.accentText, fontWeight: '700' },
   row: { paddingHorizontal: spacing.lg, gap: 12 },
   card: { width: 132 },
 
   newsCard: { width: 236 },
   newsCover: { width: '100%', height: 132, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.card },
-  newsCat: { position: 'absolute', top: 8, left: 8, backgroundColor: colors.accentSoft, borderColor: colors.accentBorder, borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 3 },
-  newsCatText: { color: '#ff8085', fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.3 },
-  newsTitle: { color: colors.text, fontSize: 13, fontWeight: '700', lineHeight: 17, marginTop: 8 },
-  newsMeta: { color: colors.text3, fontSize: 11, fontWeight: '600', marginTop: 4 },
+  newsCat: { position: 'absolute', top: 8, left: 8, backgroundColor: 'rgba(0,0,0,0.55)', borderColor: colors.cardBorder, borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 3 },
+  newsCatText: { color: colors.text2, fontSize: type.caption2, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.3 },
+  newsTitle: { color: colors.text, fontSize: type.footnote, fontWeight: '700', lineHeight: 17, marginTop: 8 },
+  newsMeta: { color: colors.text3, fontSize: type.caption2, fontWeight: '600', marginTop: 4 },
   cardCover: { width: '100%', aspectRatio: 3 / 4, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.card },
-  cardName: { position: 'absolute', left: 10, right: 10, bottom: 9, color: '#fff', fontSize: 13, fontWeight: '700', lineHeight: 16 },
+  cardName: { position: 'absolute', left: 10, right: 10, bottom: 9, color: '#fff', fontSize: type.footnote, fontWeight: '700', lineHeight: 16 },
   mcBadge: { position: 'absolute', top: 7, right: 7, backgroundColor: 'rgba(8,10,14,0.75)', borderRadius: 7, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' },
-  mcText: { fontSize: 11, fontWeight: '800' },
+  mcText: { fontSize: type.caption2, fontWeight: '800' },
   freeBadge: { position: 'absolute', top: 7, left: 7, backgroundColor: colors.green, borderRadius: 7, paddingHorizontal: 6, paddingVertical: 2 },
-  freeText: { fontSize: 11, fontWeight: '800', color: '#04130d' },
+  freeText: { fontSize: type.caption2, fontWeight: '800', color: '#04130d' },
 });

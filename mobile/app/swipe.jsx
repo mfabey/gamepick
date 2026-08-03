@@ -37,7 +37,7 @@ import { recordSeen } from '../src/services/seenStore';
 import { recordLike, removeLike } from '../src/services/likeStore';
 import EmptyState from '../src/components/EmptyState';
 import { posterImage } from '../src/utils/images';
-import { colors, radius, spacing, PRESSED } from '../src/theme';
+import { colors, radius, spacing, PRESSED, type } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
 import IconButton from '../src/components/IconButton';
 
@@ -336,8 +336,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md, paddingTop: 6, paddingBottom: 10, gap: 10,
   },
   headText: { flex: 1 },
-  title: { fontSize: 20, fontWeight: '900', color: colors.text, letterSpacing: -0.3 },
-  subtitle: { fontSize: 13, color: colors.text2, marginTop: 2 },
+  title: { fontSize: type.headline, fontWeight: '900', color: colors.text, letterSpacing: -0.3 },
+  subtitle: { fontSize: type.footnote, color: colors.text2, marginTop: 2 },
   iconBtn: {
     width: 44, height: 44, borderRadius: 22, backgroundColor: colors.card,
     alignItems: 'center', justifyContent: 'center',
@@ -354,15 +354,15 @@ const styles = StyleSheet.create({
   },
 
   cardBody: { position: 'absolute', left: 18, right: 18, bottom: 22 },
-  cardName: { color: '#fff', fontSize: 24, fontWeight: '900', letterSpacing: -0.5, lineHeight: 30 },
+  cardName: { color: '#fff', fontSize: type.title2, fontWeight: '900', letterSpacing: -0.5, lineHeight: 30 },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 },
   tag: {
     paddingHorizontal: 10, paddingVertical: 4.5, borderRadius: radius.pill,
     backgroundColor: 'rgba(255,255,255,0.14)',
   },
-  tagText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  tagText: { color: '#fff', fontSize: type.caption, fontWeight: '700' },
   meta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 9 },
-  metaText: { color: colors.text2, fontSize: 13, fontWeight: '700' },
+  metaText: { color: colors.text2, fontSize: type.footnote, fontWeight: '700' },
 
   badge: {
     position: 'absolute', top: 28,
@@ -371,7 +371,7 @@ const styles = StyleSheet.create({
   },
   badgeLike: { left: 20, borderColor: colors.green, transform: [{ rotate: '-14deg' }] },
   badgePass: { right: 20, borderColor: colors.accent, transform: [{ rotate: '14deg' }] },
-  badgeText: { color: '#fff', fontSize: 20, fontWeight: '900', letterSpacing: 1 },
+  badgeText: { color: '#fff', fontSize: type.headline, fontWeight: '900', letterSpacing: 1 },
 
   actions: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',

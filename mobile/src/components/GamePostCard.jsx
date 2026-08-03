@@ -24,7 +24,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { fetchGameDetail } from '../api/games';
 import { useQuery } from '../hooks/useQuery';
 import { useLanguage } from '../context/LanguageContext';
-import { colors, radius, spacing, PRESSED } from '../theme';
+import { colors, radius, spacing, PRESSED, type } from '../theme';
 
 const DETAIL_TTL = 24 * 60 * 60 * 1000;   // ekran görüntüleri ve metin sık değişmez
 const CLAMP_LINES = 3;
@@ -152,13 +152,13 @@ const styles = StyleSheet.create({
   // ekran görüntüsünde beyaz yazı kaybolurdu.
   scrim: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '55%' },
   overlay: { position: 'absolute', left: 14, right: 14, bottom: 12 },
-  name: { color: '#fff', fontSize: 19, fontWeight: '800', letterSpacing: -0.3 },
-  genres: { color: 'rgba(255,255,255,0.75)', fontSize: 12, fontWeight: '600', marginTop: 3 },
+  name: { color: '#fff', fontSize: type.headline, fontWeight: '800', letterSpacing: -0.3 },
+  genres: { color: 'rgba(255,255,255,0.75)', fontSize: type.caption, fontWeight: '600', marginTop: 3 },
 
   body: { paddingTop: 10 },
-  desc: { color: colors.text2, fontSize: 14, lineHeight: 20 },
-  more: { color: colors.accentText, fontSize: 14, fontWeight: '700', marginTop: 6 },
+  desc: { color: colors.text2, fontSize: type.subhead, lineHeight: 20 },
+  more: { color: colors.accentText, fontSize: type.subhead, fontWeight: '700', marginTop: 6 },
 
   cta: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 10, minHeight: 32 },
-  ctaText: { color: colors.accentText, fontSize: 14, fontWeight: '700' },
+  ctaText: { color: colors.accentText, fontSize: type.subhead, fontWeight: '700' },
 });

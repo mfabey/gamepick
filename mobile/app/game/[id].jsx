@@ -9,7 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import { fetchCardPrice, fetchGameDetail, fetchGameByAppid, fetchPrices, fetchSteamReviews } from '../../src/api/games';
-import { colors, radius, spacing, PRESSED } from '../../src/theme';
+import { colors, radius, spacing, PRESSED, type } from '../../src/theme';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useWishlist } from '../../src/context/WishlistContext';
 import { useCollections, useCollectionsContaining } from '../../src/hooks/useCollections';
@@ -480,52 +480,52 @@ const styles = StyleSheet.create({
   iconBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
   iconBtnActive: { backgroundColor: colors.accent },
   body: { flex: 1, marginTop: -48 },
-  name: { fontSize: 28, fontWeight: '900', color: colors.text, letterSpacing: -0.5, lineHeight: 30 },
+  name: { fontSize: type.title1, fontWeight: '900', color: colors.text, letterSpacing: -0.5, lineHeight: 30 },
 
   metaRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
   metaChip: { backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: radius.md, paddingHorizontal: 14, paddingVertical: 8, alignItems: 'center', minWidth: 68 },
-  metaChipText: { fontSize: 17, fontWeight: '800' },
-  metaChipText2: { fontSize: 13, fontWeight: '700', color: colors.text },
-  metaChipLabel: { fontSize: 11, color: colors.text3, fontWeight: '600', marginTop: 2, textTransform: 'uppercase', letterSpacing: 0.3 },
-  dev: { fontSize: 13, color: colors.text3, marginTop: 12, fontWeight: '600' },
+  metaChipText: { fontSize: type.body, fontWeight: '800' },
+  metaChipText2: { fontSize: type.footnote, fontWeight: '700', color: colors.text },
+  metaChipLabel: { fontSize: type.caption2, color: colors.text3, fontWeight: '600', marginTop: 2, textTransform: 'uppercase', letterSpacing: 0.3 },
+  dev: { fontSize: type.footnote, color: colors.text3, marginTop: 12, fontWeight: '600' },
 
   priceRow: { marginTop: 16, minHeight: 26, justifyContent: 'center', alignItems: 'flex-start' },
-  price: { fontSize: 22, fontWeight: '800', color: colors.text },
-  priceFree: { fontSize: 22, fontWeight: '800', color: colors.green },
-  priceLoading: { fontSize: 20, color: colors.text3 },
-  original: { fontSize: 15, color: colors.text3, textDecorationLine: 'line-through' },
+  price: { fontSize: type.title3, fontWeight: '800', color: colors.text },
+  priceFree: { fontSize: type.title3, fontWeight: '800', color: colors.green },
+  priceLoading: { fontSize: type.headline, color: colors.text3 },
+  original: { fontSize: type.subhead, color: colors.text3, textDecorationLine: 'line-through' },
   discountBadge: { backgroundColor: colors.accent, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
-  discountText: { color: '#fff', fontWeight: '800', fontSize: 13 },
+  discountText: { color: '#fff', fontWeight: '800', fontSize: type.footnote },
 
   storeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 18 },
   storeBtn: { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: radius.md, paddingHorizontal: 14, paddingVertical: 11 },
-  storeText: { color: colors.text, fontSize: 13, fontWeight: '700' },
+  storeText: { color: colors.text, fontSize: type.footnote, fontWeight: '700' },
 
   cmpRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: radius.md, paddingHorizontal: 14, paddingVertical: 11 },
   cmpBest: { borderColor: colors.accent, backgroundColor: colors.accentSoft },
-  cmpName: { fontSize: 13, fontWeight: '700', color: colors.text },
-  cmpCheapest: { fontSize: 11, fontWeight: '700', color: colors.accentText, marginTop: 1 },
-  cmpPrice: { fontSize: 15, fontWeight: '800', color: colors.text },
+  cmpName: { fontSize: type.footnote, fontWeight: '700', color: colors.text },
+  cmpCheapest: { fontSize: type.caption2, fontWeight: '700', color: colors.accentText, marginTop: 1 },
+  cmpPrice: { fontSize: type.subhead, fontWeight: '800', color: colors.text },
 
   revCard: { backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: radius.md, padding: 16 },
   revHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 12 },
-  revLabel: { fontSize: 17, fontWeight: '800' },
-  revPct: { fontSize: 15, fontWeight: '800', color: colors.text },
-  revPctLabel: { fontSize: 13, fontWeight: '600', color: colors.text3 },
+  revLabel: { fontSize: type.body, fontWeight: '800' },
+  revPct: { fontSize: type.subhead, fontWeight: '800', color: colors.text },
+  revPctLabel: { fontSize: type.footnote, fontWeight: '600', color: colors.text3 },
   revBar: { height: 8, borderRadius: 4, backgroundColor: colors.cardBorder, overflow: 'hidden' },
   revBarFill: { height: '100%', borderRadius: 4 },
-  revCount: { fontSize: 13, color: colors.text3, fontWeight: '600', marginTop: 10 },
+  revCount: { fontSize: type.footnote, color: colors.text3, fontWeight: '600', marginTop: 10 },
 
-  sectionTitle: { fontSize: 17, fontWeight: '800', color: colors.text, marginBottom: 12 },
+  sectionTitle: { fontSize: type.body, fontWeight: '800', color: colors.text, marginBottom: 12 },
   genreWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  genreChip: { backgroundColor: colors.accentSoft, borderColor: colors.accentBorder, borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 6 },
-  genreText: { color: '#ff8085', fontSize: 13, fontWeight: '700' },
+  genreChip: { backgroundColor: colors.bgInput, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 6 },
+  genreText: { color: '#ff8085', fontSize: type.footnote, fontWeight: '700' },
   shot: { width: 264, height: 148, borderRadius: radius.md, backgroundColor: colors.card },
-  desc: { fontSize: 15, color: colors.text2, lineHeight: 21 },
-  moreLink: { color: colors.accentText, fontSize: 13, fontWeight: '700', marginTop: 8 },
+  desc: { fontSize: type.subhead, color: colors.text2, lineHeight: 21 },
+  moreLink: { color: colors.accentText, fontSize: type.footnote, fontWeight: '700', marginTop: 8 },
   modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', alignItems: 'center', justifyContent: 'center' },
   modalImage: { width: '100%', height: '100%' },
   closeBtn: { position: 'absolute', top: 50, right: 20, width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center', zIndex: 10 },
   indicatorContainer: { position: 'absolute', bottom: 40, backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, zIndex: 10 },
-  indicatorText: { color: '#fff', fontSize: 15, fontWeight: '700', letterSpacing: 0.5 },
+  indicatorText: { color: '#fff', fontSize: type.subhead, fontWeight: '700', letterSpacing: 0.5 },
 });

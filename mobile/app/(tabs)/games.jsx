@@ -13,7 +13,7 @@ import GameCard from '../../src/components/GameCard';
 import { GamesGridSkeleton } from '../../src/components/Skeleton';
 import { prefetchImages } from '../../src/utils/prefetch';
 import { useTimeToData } from '../../src/dev/perf';
-import { colors, radius, spacing, TAB_SPACE } from '../../src/theme';
+import { colors, radius, spacing, TAB_SPACE, type } from '../../src/theme';
 import { useTabBarScroll } from '../../src/context/TabBarContext';
 import { useLanguage } from '../../src/context/LanguageContext';
 
@@ -268,22 +268,22 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
   },
   header: { paddingHorizontal: spacing.lg, paddingTop: 8, paddingBottom: 6 },
-  title: { fontSize: 28, fontWeight: '800', color: colors.text, letterSpacing: -0.6, marginBottom: 12 },
+  title: { fontSize: type.title1, fontWeight: '800', color: colors.text, letterSpacing: -0.6, marginBottom: 12 },
   searchBox: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1,
     borderRadius: radius.md, paddingHorizontal: 14, height: 44,
   },
-  searchInput: { flex: 1, color: colors.text, fontSize: 15 },
+  searchInput: { flex: 1, color: colors.text, fontSize: type.subhead },
   chipsScroll: { flexGrow: 0, flexShrink: 0, maxHeight: 54 },
   chipsRow: { paddingHorizontal: spacing.lg, gap: 8, paddingVertical: 8, alignItems: 'center' },
   chip: {
     paddingHorizontal: 15, paddingVertical: 8, borderRadius: radius.pill,
     backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder,
   },
-  chipText: { fontSize: 13, color: colors.text2, fontWeight: '500' },
+  chipText: { fontSize: type.footnote, color: colors.text2, fontWeight: '500' },
   cell: { flex: 1, paddingHorizontal: 6, paddingBottom: spacing.md },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
-  emptyText: { color: colors.text3, fontSize: 15, fontWeight: '600' },
+  emptyText: { color: colors.text3, fontSize: type.subhead, fontWeight: '600' },
   footer: { paddingVertical: 24 },
 });

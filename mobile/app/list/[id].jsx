@@ -17,7 +17,7 @@ import { fetchList, toggleListLike, deletePublicList } from '../../src/api/socia
 import ReportSheet from '../../src/components/ReportSheet';
 import EmptyState from '../../src/components/EmptyState';
 import { posterImage } from '../../src/utils/images';
-import { colors, radius, spacing, PRESSED } from '../../src/theme';
+import { colors, radius, spacing, PRESSED, type } from '../../src/theme';
 import { useLanguage } from '../../src/context/LanguageContext';
 import IconButton from '../../src/components/IconButton';
 
@@ -205,14 +205,14 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: colors.accentBorder,
     padding: 12, marginBottom: 14,
   },
-  noticeText: { flex: 1, color: colors.text, fontSize: 13, lineHeight: 18 },
+  noticeText: { flex: 1, color: colors.text, fontSize: type.footnote, lineHeight: 18 },
 
-  title: { color: colors.text, fontSize: 24, fontWeight: '900', letterSpacing: -0.5 },
-  desc: { color: colors.text2, fontSize: 15, marginTop: 7, lineHeight: 20 },
+  title: { color: colors.text, fontSize: type.title2, fontWeight: '900', letterSpacing: -0.5 },
+  desc: { color: colors.text2, fontSize: type.subhead, marginTop: 7, lineHeight: 20 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 12 },
-  meta: { flex: 1, color: colors.text3, fontSize: 13 },
+  meta: { flex: 1, color: colors.text3, fontSize: type.footnote },
   likeBtn: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  likeCount: { color: colors.text3, fontSize: 13, fontWeight: '700' },
+  likeCount: { color: colors.text3, fontSize: type.footnote, fontWeight: '700' },
 
   list: { paddingHorizontal: 8, paddingBottom: 30 },
   cell: { flex: 1, paddingHorizontal: 5, paddingBottom: 10 },
@@ -222,8 +222,8 @@ const styles = StyleSheet.create({
   },
   cellName: {
     position: 'absolute', left: 8, right: 8, bottom: 7,
-    color: '#fff', fontSize: 12, fontWeight: '700', lineHeight: 14,
+    color: '#fff', fontSize: type.caption, fontWeight: '700', lineHeight: 14,
   },
 
-  emptyTitle: { color: colors.text, fontSize: 17, fontWeight: '800', marginTop: 12 },
+  emptyTitle: { color: colors.text, fontSize: type.body, fontWeight: '800', marginTop: 12 },
 });
