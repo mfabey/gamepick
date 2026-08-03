@@ -21,8 +21,15 @@
 // fark yaratıyor.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const DEFAULT_TIMEOUT_MS = 4000;
-const COOLDOWN_MS = 60 * 1000;
+// 2.5 sn: RAWG sağlıklıyken tipik yanıt 300-800 ms, yani bu pay fazlasıyla
+// yeterli. Daha uzun tutmanın tek etkisi, çöküş sırasında beklemeyi uzatmak.
+const DEFAULT_TIMEOUT_MS = 2500;
+
+// 5 dakika: 60 sn'de bir yeniden denemek, dakikada bir isteğin zaman aşımını
+// ödemesi demekti ve o isteğe denk gelen kullanıcı yine boş liste görüyordu.
+// Beşe bölmek o olasılığı beşte bire indiriyor. RAWG geri geldiğinde en fazla
+// 5 dakika gecikmeyle normale dönülüyor.
+const COOLDOWN_MS = 5 * 60 * 1000;
 
 let downUntil = 0;
 

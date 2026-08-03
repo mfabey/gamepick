@@ -2,38 +2,19 @@ import { NextResponse } from 'next/server';
 import { isAdultContent, isAdultTitleOrSlug } from '../../lib/adult-filter.js';
 import { FALLBACK_GAMES } from '../../lib/fallback-games.js';
 import { getSteamDetailsCached } from '../../lib/steam-cache.js';
+import { rawgJsonSafe } from '../../lib/rawg-fetch.js';
 
 const RAWG_KEY = process.env.RAWG_API_KEY;
 const BASE     = 'https://api.rawg.io/api';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// RAWG çağrılarına ZAMAN AŞIMI.
+// Zaman aşımı ve devre kesici PAYLAŞILAN kütüphanede (app/lib/rawg-fetch.js).
+// Burada ayrı bir kopya tutmak, her rotanın RAWG'ın çöktüğünü kendi başına
+// öğrenmesi demekti — yani aynı cezanın rota sayısı kadar ödenmesi.
 //
-// 3 Ağustos 2026'da RAWG çöktü ve Cloudflare üzerinden HTTP 522 vermeye
-// başladı. Kritik nokta şu: 522 HEMEN dönmüyor — Cloudflare origin'i ~20 sn
-// bekliyor. Zaman aşımı olmadığı için her detay isteği 20 sn askıda kalıyordu.
-//
-// Mobil istemci 12 sn'de vazgeçtiği (client.js apiGet) için kullanıcı sadece
-// oyun adını ve fiyatını görüyordu; detay hiç gelmiyordu.
-//
-// Steam yedeği ZATEN VARDI ama 20 sn'lik hatanın arkasında beklediği için
-// pratikte hiç devreye girmiyordu. Kısa zaman aşımı onu çalışır hâle getiriyor:
-// RAWG yoksa kullanıcı yine Steam'den gelen bir detay sayfası görüyor.
-// ─────────────────────────────────────────────────────────────────────────────
-const RAWG_TIMEOUT_MS = 5000;
-
+// RAWG başarısız olunca Steam yedeği devreye giriyor; kullanıcı yine dolu bir
+// detay sayfası görüyor.
 async function rawgFetch(url, fallback = null) {
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), RAWG_TIMEOUT_MS);
-  try {
-    const r = await fetch(url, { next: { revalidate: 3600 }, signal: ctrl.signal });
-    if (!r.ok) return fallback;
-    return await r.json();
-  } catch {
-    return fallback;      // zaman aşımı, ağ hatası veya bozuk JSON
-  } finally {
-    clearTimeout(timer);
-  }
+  return rawgJsonSafe(url, fallback, { revalidate: 3600 });
 }
 
 // RAWG store ID'leri
