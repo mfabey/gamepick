@@ -126,7 +126,14 @@ export default function GameDetail() {
   }, [focused, activeShotIndex, trailerUrl, trailerPlayer]);
 
   const watched = isWatched(id);
-  const gameObj = { id, name, slug, image, hasSteam: hasSteam === 'true' || hasSteam === '1' };
+  // appid ŞART: istek listesi widget'ı fiyatları Steam appid'iyle çekiyor.
+  // Buradan appid'siz eklenen oyunlar widget'ta hiç görünmüyordu — detay
+  // zaten steamAppId'i taşıyordu, sadece iletilmiyordu.
+  const gameObj = {
+    id, name, slug, image,
+    appid: detail?.steamAppId || appid || null,
+    hasSteam: hasSteam === 'true' || hasSteam === '1',
+  };
   const inCollections = useCollectionsContaining(id);
   const inAnyCollection = inCollections.size > 0;
 

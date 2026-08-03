@@ -30,10 +30,44 @@ export function WishlistProvider({ children }) {
     })();
   }, []);
 
+  // ── Eksik appid'leri tamamla ──
+  // Detay ekranı uzun süre appid'i iletmeden ekleme yapıyordu; o kayıtlar
+  // widget'ta hiç görünmüyor çünkü fiyatlar appid ile çekiliyor. Slug'dan
+  // bir kez çözüp kalıcı yazıyoruz → liste kendiliğinden iyileşiyor.
+  //
+  // Denenen kimlikler ref'te tutuluyor: çözülemeyen bir oyun her render'da
+  // yeniden sorgulanmasın (ve sonsuz döngü oluşmasın).
+  const backfilledRef = useRef(new Set());
+  useEffect(() => {
+    if (!ready) return;
+    const missing = items.filter(
+      (g) => !g.appid && (g.slug || g.name) && !backfilledRef.current.has(g.id)
+    );
+    if (missing.length === 0) return;
+
+    let alive = true;
+    (async () => {
+      const { fetchCardPrice } = await import('../api/games');
+      const resolved = {};
+      for (const g of missing) {
+        backfilledRef.current.add(g.id);
+        try {
+          const r = await fetchCardPrice({ slug: g.slug || '', name: g.name || '', hasSteam: true });
+          if (r?.appid) resolved[g.id] = String(r.appid);
+        } catch { /* çözülemedi, bir daha denenmeyecek */ }
+      }
+      if (!alive || Object.keys(resolved).length === 0) return;
+      persist(items.map((g) => (resolved[g.id] ? { ...g, appid: resolved[g.id] } : g)));
+    })();
+
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, ready]);
+
   // ── Wishlist Widget Güncelleme ──
   useEffect(() => {
     if (!ready) return;
-    
+
     const appids = items.map(g => g.appid).filter(Boolean);
     if (appids.length === 0) {
       import('../../modules/gamerisen-widget-module')

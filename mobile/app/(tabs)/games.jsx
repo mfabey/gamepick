@@ -4,6 +4,7 @@ import {
   StyleSheet, ScrollView,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
+import Animated, { useAnimatedStyle, interpolate, Extrapolation } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchGames } from '../../src/api/games';
@@ -21,6 +22,8 @@ const NUM = 24;
 const PAGE1_TTL = 5 * 60 * 1000;   // 1. sayfa önbellek ömrü
 
 import { useTabPressAction, scrollRefToTop } from '../../src/hooks/useTabPressAction';
+import { useTabBarCompact } from '../../src/context/TabBarContext';
+import { useReducedMotion } from '../../src/hooks/useReducedMotion';
 
 export default function GamesScreen() {
   // Sekmeye tekrar basınca listeyi başa sar (iOS'ta beklenen davranış)
@@ -126,6 +129,29 @@ export default function GamesScreen() {
     }
   }, [loading]);
 
+  // ── Katlanır başlık ──
+  // Yükseklik ölçülüyor çünkü sabit değil: başlık, arama kutusu ve iki chip
+  // satırı cihaz/dil/yazı tipi boyutuna göre değişiyor. Sabit bir sayı
+  // yazsaydım bazı cihazlarda başlık tam gizlenmez ya da fazla kayardı.
+  const [headerH, setHeaderH] = useState(0);
+  const compact = useTabBarCompact();
+  const reducedMotion = useReducedMotion();
+
+  const headerStyle = useAnimatedStyle(() => {
+    if (reducedMotion || !compact || headerH === 0) return {};
+    return {
+      transform: [{
+        translateY: interpolate(compact.value, [0, 1], [0, -headerH], Extrapolation.CLAMP),
+      }],
+    };
+  }, [reducedMotion, compact, headerH]);
+
+  // Liste başlığın ALTINDAN kayıyor; dolgu olmasa ilk satır gizli kalırdı.
+  const listPad = useMemo(
+    () => ({ paddingHorizontal: 10, paddingTop: headerH + 6 }),
+    [headerH]
+  );
+
   // FlashList için stabil referanslar (her render'da yeniden oluşmasın)
   const keyExtractor = useCallback((item) => String(item.id), []);
   const renderGame = useCallback(({ item }) => (
@@ -134,6 +160,23 @@ export default function GamesScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
+      {/* ── Katlanır üst bölüm ──
+          Aşağı kaydırınca yukarı kayıp gözden kayboluyor, yukarı kaydırınca
+          geri geliyor.
+
+          Sinyali TabBarContext'ten alıyoruz: `compact` zaten tam bunu
+          kodluyor (0 = başta ya da yukarı kaydırılıyor, 1 = aşağı). İkinci bir
+          yön algılama yazmak, iki ayrı eşiğin bağımsız tetiklenmesi demekti —
+          başlık ve sekme çubuğu ayrı anlarda hareket ederdi. Tek kaynakla
+          ikisi birlikte gidiyor.
+
+          Bölüm MUTLAK konumlu, liste ona eşit paddingTop taşıyor: akışta
+          kalsaydı gizlenirken listenin yüksekliği değişir ve her karede
+          yeniden yerleşim tetiklenirdi. */}
+      <Animated.View
+        style={[styles.headerWrap, headerStyle]}
+        onLayout={(e) => setHeaderH(e.nativeEvent.layout.height)}
+      >
       {/* Başlık + arama */}
       <View style={styles.header}>
         <Text style={styles.title}>{t('games.title')}</Text>
@@ -168,6 +211,7 @@ export default function GamesScreen() {
           <Chip key={m.v} active={mode === m.v} label={m.label} accent="#6ea8ff" onPress={() => setMode(m.v)} />
         ))}
       </ScrollView>
+      </Animated.View>
 
       {/* Grid */}
       <View style={{ flex: 1 }}>
@@ -187,7 +231,7 @@ export default function GamesScreen() {
             keyExtractor={keyExtractor}
             numColumns={COLS}
             renderItem={renderGame}
-            contentContainerStyle={styles.listContent}
+            contentContainerStyle={listPad}
             showsVerticalScrollIndicator={false}
             onEndReached={loadMore}
             onEndReachedThreshold={0.6}
@@ -216,6 +260,13 @@ function Chip({ active, label, onPress, accent = colors.accent }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
+  // Mutlak konum: gizlenirken listenin yüksekliğini değiştirmesin.
+  // Arka plan ŞART — saydam olsaydı liste altından geçerken metinler
+  // üst üste binerdi. zIndex de gerekli, yoksa liste üstünü örter.
+  headerWrap: {
+    position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
+    backgroundColor: colors.bg,
+  },
   header: { paddingHorizontal: spacing.lg, paddingTop: 8, paddingBottom: 6 },
   title: { fontSize: 28, fontWeight: '800', color: colors.text, letterSpacing: -0.6, marginBottom: 12 },
   searchBox: {
@@ -231,7 +282,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder,
   },
   chipText: { fontSize: 13, color: colors.text2, fontWeight: '500' },
-  listContent: { paddingHorizontal: 10, paddingTop: 6 },
   cell: { flex: 1, paddingHorizontal: 6, paddingBottom: spacing.md },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   emptyText: { color: colors.text3, fontSize: 15, fontWeight: '600' },
