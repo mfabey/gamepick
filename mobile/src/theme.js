@@ -1,12 +1,20 @@
 // Gamerisen mobil tema — web sitesinin (koyu tema) GERÇEK renkleriyle birebir
 // Kaynak: app/globals.css [data-theme] koyu değişkenleri. Vurgu = KIRMIZI.
 export const colors = {
-  bg:         '#080a0d',              // --bg-body (ana ekran arka planı)
-  bgElevated: '#0e1014',              // --bg
-  card:       '#14171c',              // --bg-card
+  // ── Zemin katmanları ──
+  // Sadeleştirme turunda derinleştirildi. Amaç dekoratif değil: zemin
+  // koyulaştıkça kapak görselleri kendiliğinden ayrışıyor ve kartların
+  // kenarlığa ihtiyacı kalmıyor. Daha az çizgi = daha az göz hareketi.
+  //
+  // Kontrast yeniden ölçüldü — dört yüzeyin HEPSİNDE text/text2/text3/
+  // accentText/danger ≥ 4.5:1 (en dar olan bgInput üzerinde text3: 4.51).
+  // Zemin koyulaştığı için oranlar düşmedi, yükseldi.
+  bg:         '#06070a',              // --bg-body (ana ekran arka planı)
+  bgElevated: '#0d0f14',              // --bg
+  card:       '#151920',              // --bg-card
   bgInput:    '#1b1f26',              // --bg-input
   bgHover:    '#1a1e24',              // --bg-hover
-  cardBorder: 'rgba(255,255,255,0.08)',   // --border
+  cardBorder: 'rgba(255,255,255,0.07)',   // --border
   borderHover:'rgba(255,255,255,0.16)',   // --border-hover
   text:       '#f2f4f7',              // --text
   text2:      '#9aa3b0',              // --text-2
@@ -57,6 +65,42 @@ export const type = {
 // Modül düzeyinde DONDURULMUŞ tek nesne: her render'da yeni nesne üretmek
 // gereksiz yeniden çizime yol açıyor.
 export const PRESSED = Object.freeze({ opacity: 0.65 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sadeleştirmenin karşılığı: dokunsal his
+//
+// Arayüz sakinleştikçe geri bildirimin kalitesi daha çok önem kazanıyor —
+// az şey bağırdığında, dokunduğun şeyin cevap vermesi belirleyici oluyor.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Kart/karo gibi BÜYÜK yüzeyler için: hafif küçülme, parmağın altında
+// "bastırılmış" hissi veriyor.
+//
+// Neden ayrı bir belirteç: PRESSED 63 yerde kullanılıyor ve bazıları tam
+// genişlikte satır ya da mutlak konumlu öğe — hepsine ölçek uygulamak garip
+// durur. Bu yüzden blanket değil, İSTEĞE BAĞLI.
+//
+// scale layout'u DEĞİŞTİRMEZ (derleyici dönüşümü), yani yeniden yerleşim
+// tetiklemiyor. HIG'in 0.95–1.05 aralığının üst ucunda kalındı: 0.97 fark
+// edilir ama sıçrama hissi vermez.
+export const PRESSED_CARD = Object.freeze({
+  opacity: 0.9,
+  transform: [{ scale: 0.97 }],
+});
+
+// Rakamların hizası — fiyat, saat, sayaç.
+// Orantılı yazıda "1" ile "8" farklı genişlikte olduğu için liste kaydırırken
+// fiyat sütunu titriyor. Tablo rakamları bunu durduruyor.
+export const NUMERIC = Object.freeze({ fontVariant: ['tabular-nums'] });
+
+// Hareket süreleri — tek yerden yönetilsin ki tüm uygulama aynı ritimde olsun.
+// Material/HIG: mikro etkileşim 150–300ms; çıkış girişten kısa olmalı.
+export const motion = Object.freeze({
+  fast:    150,   // basma, renk geçişi
+  base:    240,   // giriş, açılma
+  exit:    160,   // çıkış — girişin ~%65'i
+  stagger:  40,   // liste öğeleri arası gecikme (MD: 30–50ms)
+});
 
 export const radius = { sm: 8, md: 12, lg: 16, xl: 20, pill: 999 };
 

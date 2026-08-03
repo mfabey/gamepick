@@ -19,7 +19,7 @@ import { fetchListFeed, toggleListLike } from '../src/api/social';
 import { getSession } from '../src/services/session';
 import EmptyState from '../src/components/EmptyState';
 import { posterImage } from '../src/utils/images';
-import { colors, radius, spacing, PRESSED } from '../src/theme';
+import { colors, radius, spacing, type, PRESSED } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
 
 export default function ListsScreen() {
@@ -256,6 +256,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accentSoft, borderColor: colors.accentBorder, borderWidth: 1,
     borderRadius: radius.pill, paddingHorizontal: 7, paddingVertical: 2,
   },
-  officialText: { color: colors.accentText, fontSize: 10, fontWeight: '800', letterSpacing: 0.3 },
-  likeCount: { color: colors.text3, fontSize: 12, fontWeight: '700' },
+  // 11pt Apple'ın mutlak minimumu (HIG). Önceki turda 10pt yazmıştım — ihlaldi.
+  officialText: { color: colors.accentText, fontSize: type.caption2, fontWeight: '800', letterSpacing: 0.3 },
+  likeCount: { color: colors.text3, fontSize: 12, fontWeight: '700' },
 });

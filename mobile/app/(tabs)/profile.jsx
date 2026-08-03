@@ -4,7 +4,7 @@ import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radius, spacing, TAB_SPACE, PRESSED } from '../../src/theme';
+import { colors, radius, spacing, type, TAB_SPACE, PRESSED, PRESSED_CARD, NUMERIC } from '../../src/theme';
 import { useTabBarScroll } from '../../src/context/TabBarContext';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useAuth } from '../../src/context/AuthContext';
@@ -55,7 +55,7 @@ export default function ProfileScreen() {
         {account ? (
           <View style={styles.accCard}>
             <View style={styles.accAvatar}>
-              <Ionicons name="person" size={18} color={colors.accent} />
+              <Ionicons name="person" size={18} color={colors.text2} />
             </View>
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={styles.accName} numberOfLines={1}>{account.name}</Text>
@@ -64,7 +64,7 @@ export default function ProfileScreen() {
           </View>
         ) : (
           <Pressable style={({ pressed }) => [styles.settingRow, pressed && PRESSED]} onPress={() => router.push('/account')}>
-            <Ionicons name="person-circle-outline" size={20} color={colors.accent} />
+            <Ionicons name="person-circle-outline" size={20} color={colors.text2} />
             <Text style={styles.settingText}>{t('acc.signIn')}</Text>
             <Ionicons name="chevron-forward" size={18} color={colors.text3} />
           </Pressable>
@@ -83,7 +83,7 @@ export default function ProfileScreen() {
             onPress={() => router.push('/account')}
           >
             <View style={styles.lockIcon}>
-              <Ionicons name="lock-closed" size={18} color={colors.accent} />
+              <Ionicons name="lock-closed" size={18} color={colors.text2} />
             </View>
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={styles.lockTitle}>{t('prof.lockTitle')}</Text>
@@ -240,7 +240,7 @@ function SteamMark({ size = 14 }) {
 function ContentTile({ icon, label, count, beta, wide, locked, lockedHint, onPress }) {
   return (
     <Pressable
-      style={({ pressed }) => [styles.tile, wide && styles.tileWide, pressed && { opacity: 0.75 }]}
+      style={({ pressed }) => [styles.tile, wide && styles.tileWide, pressed && PRESSED_CARD]}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label}
@@ -248,7 +248,7 @@ function ContentTile({ icon, label, count, beta, wide, locked, lockedHint, onPre
     >
       <View style={[styles.tileTop, locked && styles.tileDim]}>
         <View style={styles.tileIcon}>
-          <Ionicons name={icon} size={19} color={locked ? colors.text3 : colors.accent} />
+          <Ionicons name={icon} size={19} color={locked ? colors.text3 : colors.text2} />
         </View>
         {locked ? (
           <Ionicons name="lock-closed" size={14} color={colors.text3} />
@@ -276,9 +276,11 @@ const styles = StyleSheet.create({
   },
   tileWide: { flexBasis: '100%', minHeight: 76 },
   tileTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  // Nötr zemin: ızgarada yedi kırmızı simge, bakışı hiçbir yere
+  // yönlendirmiyordu — hepsi eşit sesle bağırıyordu.
   tileIcon: {
     width: 38, height: 38, borderRadius: radius.md,
-    backgroundColor: colors.accentSoft,
+    backgroundColor: colors.bgInput,
     alignItems: 'center', justifyContent: 'center',
   },
   tileLabel: { fontSize: 15, fontWeight: '700', color: colors.text, marginTop: 10 },
@@ -295,7 +297,7 @@ const styles = StyleSheet.create({
   },
   lockIcon: {
     width: 38, height: 38, borderRadius: radius.md,
-    backgroundColor: colors.accentSoft,
+    backgroundColor: colors.bgInput,
     alignItems: 'center', justifyContent: 'center',
   },
   lockTitle: { fontSize: 15, fontWeight: '700', color: colors.text },
@@ -323,8 +325,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg, paddingHorizontal: 14, paddingVertical: 13,
   },
   accAvatar: {
-    width: 38, height: 38, borderRadius: 19, backgroundColor: colors.accentSoft,
-    borderColor: colors.accentBorder, borderWidth: 1,
+    width: 38, height: 38, borderRadius: 19, backgroundColor: colors.bgInput,
+    borderColor: colors.cardBorder, borderWidth: 1,
     alignItems: 'center', justifyContent: 'center',
   },
   accName: { fontSize: 15, fontWeight: '700', color: colors.text },
@@ -342,14 +344,14 @@ const styles = StyleSheet.create({
     borderRadius: radius.md, padding: 14,
   },
   settingText: { flex: 1, fontSize: 15, color: colors.text, fontWeight: '500' },
-  wishBadge: { minWidth: 22, height: 22, borderRadius: 11, backgroundColor: colors.accentSoft, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
-  wishBadgeText: { color: colors.accentText, fontSize: 12, fontWeight: '800' },
+  wishBadge: { minWidth: 22, height: 22, borderRadius: 11, backgroundColor: colors.bgInput, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
+  wishBadgeText: { color: colors.text2, fontSize: type.caption, fontWeight: '800', ...NUMERIC },
   betaChip: {
     paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.sm,
-    backgroundColor: colors.accentBg, borderWidth: 1, borderColor: colors.accentBorder,
+    backgroundColor: colors.bgInput, borderWidth: 1, borderColor: colors.cardBorder,
     marginRight: 4,
   },
-  betaChipText: { color: colors.accentText, fontSize: 11, fontWeight: '900', letterSpacing: 0.5 },
+  betaChipText: { color: colors.text3, fontSize: type.caption2, fontWeight: '900', letterSpacing: 0.5 },
 });
 
 
