@@ -8,7 +8,7 @@
 // Paylaşılan değer kullanılmasının sebebi: animasyon UI thread'inde çalışsın.
 // State kullanılsaydı her kaydırma karesinde React yeniden render olurdu.
 // ─────────────────────────────────────────────────────────────────────────────
-import { createContext, useContext, useCallback, useRef } from 'react';
+import { createContext, useContext, useCallback, useRef, useMemo } from 'react';
 import { useSharedValue, withTiming } from 'react-native-reanimated';
 
 const TabBarCtx = createContext(null);
@@ -21,12 +21,22 @@ const TOP_ZONE = 24;
 
 export function TabBarProvider({ children }) {
   const compact = useSharedValue(0);   // 0 = tam boy, 1 = daralmış
-  return <TabBarCtx.Provider value={compact}>{children}</TabBarCtx.Provider>;
+  // TAMAMEN gizleme — daralmadan ayrı bir eksen. Reels'te videoya basılı
+  // tutunca bütün arayüz siliniyor ve çubuk da buna dahil; "daralmış" hâli
+  // bunun için yeterli değil, çubuk yine görünür kalırdı.
+  const hidden = useSharedValue(0);    // 0 = görünür, 1 = gizli
+  const value = useMemo(() => ({ compact, hidden }), [compact, hidden]);
+  return <TabBarCtx.Provider value={value}>{children}</TabBarCtx.Provider>;
 }
 
-/** Sekme çubuğunun okuduğu değer. */
+/** Sekme çubuğunun daralma değeri. */
 export function useTabBarCompact() {
-  return useContext(TabBarCtx);
+  return useContext(TabBarCtx)?.compact ?? null;
+}
+
+/** Sekme çubuğunu tamamen gizleme değeri (ekranlar yazar, çubuk okur). */
+export function useTabBarHidden() {
+  return useContext(TabBarCtx)?.hidden ?? null;
 }
 
 /**
@@ -38,7 +48,7 @@ export function useTabBarCompact() {
  * Sağlayıcı yoksa (sekme dışı ekran) zararsız boş fonksiyon döner.
  */
 export function useTabBarScroll() {
-  const compact = useContext(TabBarCtx);
+  const compact = useContext(TabBarCtx)?.compact ?? null;
   const lastY = useRef(0);
 
   return useCallback((e) => {

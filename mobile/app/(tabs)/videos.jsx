@@ -24,10 +24,13 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as WebBrowser from 'expo-web-browser';
 import { useVideoPlayer, VideoView } from 'expo-video';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
 import { fetchVideoFeed } from '../../src/api/videoFeed';
 import { useTabPressAction } from '../../src/hooks/useTabPressAction';
+import { useTabBarHidden } from '../../src/context/TabBarContext';
 import { useWishlist } from '../../src/context/WishlistContext';
+import { useAuth } from '../../src/context/AuthContext';
 import { useCollections, useCollectionsContaining } from '../../src/hooks/useCollections';
 import { toggleGameInCollection, createCollection } from '../../src/services/collectionsStore';
 import CollectionPicker from '../../src/components/CollectionPicker';
@@ -58,6 +61,11 @@ export default function VideosScreen() {
   // oynatıcıyı yöneten efekt burada ve tek kaynak olmazsa efekt her
   // çalıştığında kullanıcının duraklattığı videoyu geri başlatırdı.
   const [paused, setPaused] = useState(false);
+  // Basılı tutma sürüyor mu? Duraklatma göstergesini bastırmak için gerekli:
+  // tutarken oynat simgesi çıkmamalı, Instagram'da da çıkmıyor.
+  const [holding, setHolding] = useState(false);
+  // Sekme cubugunu tamamen gizlemek icin navigator seviyesine kopru
+  const tabHidden = useTabBarHidden();
   const fetching = useRef(false);
   const listRef = useRef(null);
 
@@ -119,6 +127,7 @@ export default function VideosScreen() {
     setItems([]);
     setActive(0);
     setPaused(false);
+    setHolding(false);
     setHasMore(true);
     setLoading(true);
     listRef.current?.scrollToOffset?.({ offset: 0, animated: false });
@@ -177,8 +186,15 @@ export default function VideosScreen() {
         // Durum güncellemesini beklemeden doğrudan durdur — sesin kesilmesi
         // bir sonraki render'a kalmasın.
         players.forEach((p) => { try { p.pause(); } catch {} });
+
+        // Sekme çubuğunu MUTLAKA geri getir. Bu ekrandan tutma sırasında
+        // çıkılırsa (ör. bildirime dokunma) çubuk uygulamanın tamamında
+        // kalıcı olarak gizli kalırdı — kurtarılamaz bir durum.
+        setHolding(false);
+        uiOpacity.value = 1;
+        if (tabHidden) tabHidden.value = 0;
       };
-    }, [players])
+    }, [players, uiOpacity, tabHidden])
   );
 
   // Aktif video değişince zevk sinyali + görüldü kaydı
@@ -216,6 +232,15 @@ export default function VideosScreen() {
   // bırakma hiçbir şey yapmamalı (yoksa dokunuşla duraklatmak imkânsız olurdu).
   const holdRef = useRef(false);
 
+  // Arayüz görünürlüğü AYRI bir kanal: paylaşılan değer, React state değil.
+  // Böylece solma UI thread'inde çalışıyor ve her karede yeniden render
+  // olmuyor. `paused`'dan da ayrı tutuluyor — tek dokunuşta video duruyor
+  // ama arayüz KALMALI; yalnızca basılı tutmak onu gizliyor.
+  const uiOpacity = useSharedValue(1);
+
+  // Ekranin ust cubugu (BETA rozeti) de ayni kanaldan soluyor.
+  const topBarStyle = useAnimatedStyle(() => ({ opacity: uiOpacity.value }), [uiOpacity]);
+
   const onTapVideo = useCallback(() => {
     Haptics.selectionAsync();
     setPaused((p) => !p);
@@ -225,13 +250,19 @@ export default function VideosScreen() {
     holdRef.current = true;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setPaused(true);
-  }, []);
+    setHolding(true);
+    uiOpacity.value = withTiming(0, { duration: 160 });
+    if (tabHidden) tabHidden.value = withTiming(1, { duration: 160 });
+  }, [uiOpacity, tabHidden]);
 
   const onHoldEnd = useCallback(() => {
     if (!holdRef.current) return;
     holdRef.current = false;
     setPaused(false);
-  }, []);
+    setHolding(false);
+    uiOpacity.value = withTiming(1, { duration: 160 });
+    if (tabHidden) tabHidden.value = withTiming(0, { duration: 160 });
+  }, [uiOpacity, tabHidden]);
 
   const renderItem = useCallback(({ item, index }) => (
     <VideoItem
@@ -244,13 +275,16 @@ export default function VideosScreen() {
       // Duraklatma yalnızca aktif elemanı ilgilendiriyor; diğerlerine
       // `false` geçmek memo'nun boşuna kırılmasını da önlüyor.
       paused={index === active && paused}
+      // Tutarken oynat simgesi gösterilmiyor
+      holding={index === active && holding}
+      uiOpacity={uiOpacity}
       onTapVideo={onTapVideo}
       onHoldStart={onHoldStart}
       onHoldEnd={onHoldEnd}
       router={router}
       t={t}
     />
-  ), [active, players, itemH, muted, onToggleMute, paused, onTapVideo, onHoldStart, onHoldEnd, router, t]);
+  ), [active, players, itemH, muted, onToggleMute, paused, holding, uiOpacity, onTapVideo, onHoldStart, onHoldEnd, router, t]);
 
   if (loading && items.length === 0) {
     return (
@@ -279,12 +313,14 @@ export default function VideosScreen() {
 
       {/* Üst çubuk — BETA rozeti.
           Geri butonu YOK: bu artık bir sekme, geri dönülecek bir yer yok. */}
+      <Animated.View style={topBarStyle} pointerEvents="box-none">
       <SafeAreaView edges={['top']} style={styles.topBar} pointerEvents="box-none">
         <View style={styles.titleWrap}>
           <Text style={styles.topTitle}>{t('vid.title')}</Text>
           <View style={styles.betaBadge}><Text style={styles.betaText}>BETA</Text></View>
         </View>
       </SafeAreaView>
+      </Animated.View>
     </View>
   );
 }
@@ -299,9 +335,14 @@ export default function VideosScreen() {
 // olması gerekiyor — yukarıda useCallback ile sabitlendi.
 const VideoItem = memo(function VideoItem({
   item, height, isActive, player, muted, onToggleMute,
-  paused, onTapVideo, onHoldStart, onHoldEnd, router, t,
+  paused, holding, uiOpacity, onTapVideo, onHoldStart, onHoldEnd, router, t,
 }) {
+  // Basılı tutunca kenardaki her şey soluyor, yalnızca video kalıyor.
+  // Karartma gradyanı da dahil — o da bir arayüz katmanı ve kalsaydı
+  // görüntünün alt/üstünü kirletirdi.
+  const uiStyle = useAnimatedStyle(() => ({ opacity: uiOpacity?.value ?? 1 }), [uiOpacity]);
   const { isWatched, toggle } = useWishlist();
+  const { account } = useAuth();
   const collections = useCollections();
   const inCollections = useCollectionsContaining(item.id);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -332,7 +373,20 @@ const VideoItem = memo(function VideoItem({
     return () => { try { sub?.remove(); } catch {} };
   }, [isActive, player]);
 
+  // İstek listesi ve koleksiyonlar profil arkasında (Profil ekranındaki
+  // kilitle aynı kural). Hesapsız kullanıcı burada dokunduğunda sessizce
+  // hiçbir şey olmamalı değil — kayıt ekranına götürüyoruz, yoksa düğme
+  // bozuk görünür. Aynı gerekçe: bu veriler hesaba kaydediliyor, hesapsız
+  // eklenen kayıt ilk oturum kapanışında kaybolurdu.
+  const requireAccount = useCallback(() => {
+    if (account) return false;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    router.push('/account');
+    return true;
+  }, [account, router]);
+
   const onWishlist = useCallback(() => {
+    if (requireAccount()) return;
     const willAdd = !watched;
     Haptics.impactAsync(willAdd ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light);
     toggle({ id: item.id, name: item.name, image: item.image, appid: item.appid, hasSteam: true, slug: '' });
@@ -342,7 +396,7 @@ const VideoItem = memo(function VideoItem({
         type: 'wishlist', gameId: item.id, gameName: item.name || '', gameImage: item.image || '',
       });
     }
-  }, [watched, toggle, item]);
+  }, [requireAccount, watched, toggle, item]);
 
   const onBuy = useCallback(() => {
     Haptics.selectionAsync();
@@ -379,13 +433,16 @@ const VideoItem = memo(function VideoItem({
         />
       ) : null}
 
-      {/* Okunabilirlik için alt/üst karartma */}
-      <LinearGradient
-        colors={['rgba(0,0,0,0.55)', 'transparent', 'transparent', 'rgba(0,0,0,0.88)']}
-        locations={[0, 0.22, 0.55, 1]}
-        style={StyleSheet.absoluteFill}
-        pointerEvents="none"
-      />
+      {/* Okunabilirlik için alt/üst karartma.
+          Basılı tutunca bu da soluyor: metin kalmadığında karartmanın işlevi
+          bitiyor ve görüntünün üstünde gereksiz bir perde bırakıyor. */}
+      <Animated.View style={[StyleSheet.absoluteFill, uiStyle]} pointerEvents="none">
+        <LinearGradient
+          colors={['rgba(0,0,0,0.55)', 'transparent', 'transparent', 'rgba(0,0,0,0.88)']}
+          locations={[0, 0.22, 0.55, 1]}
+          style={StyleSheet.absoluteFill}
+        />
+      </Animated.View>
 
       {/* Dokunma katmanı — tek dokunuş duraklatır/sürdürür, basılı tutmak
           bırakana kadar duraklatır.
@@ -405,8 +462,10 @@ const VideoItem = memo(function VideoItem({
       ) : null}
 
       {/* Duraklatma göstergesi — kullanıcı videonun durduğunu görmeli,
-          yoksa donmuş sanır. pointerEvents kapalı ki dokunmayı yutmasın. */}
-      {isActive && paused ? (
+          yoksa donmuş sanır. pointerEvents kapalı ki dokunmayı yutmasın.
+          TUTARKEN GÖSTERİLMİYOR: parmak ekrandayken zaten duraklattığını
+          biliyor, simge yalnızca temiz görüntüyü bozardı. */}
+      {isActive && paused && !holding ? (
         <View style={styles.pauseWrap} pointerEvents="none">
           <View style={styles.pauseBadge}>
             <Ionicons name="play" size={34} color="#fff" />
@@ -415,7 +474,7 @@ const VideoItem = memo(function VideoItem({
       ) : null}
 
       {/* Sağ aksiyon sütunu */}
-      <View style={[styles.actions, { bottom: TAB_SPACE + 90 }]}>
+      <Animated.View style={[styles.actions, { bottom: TAB_SPACE + 90 }, uiStyle]} pointerEvents={holding ? 'none' : 'auto'}>
         <ActionBtn
           icon={watched ? 'notifications' : 'notifications-outline'}
           active={watched}
@@ -426,7 +485,7 @@ const VideoItem = memo(function VideoItem({
           icon={inCollections.size > 0 ? 'albums' : 'albums-outline'}
           active={inCollections.size > 0}
           label={t('vid.save')}
-          onPress={() => { Haptics.selectionAsync(); setPickerOpen(true); }}
+          onPress={() => { if (requireAccount()) return; Haptics.selectionAsync(); setPickerOpen(true); }}
         />
         <ActionBtn icon="cart-outline" label={t('vid.buy')} onPress={onBuy} />
         <ActionBtn
@@ -434,10 +493,11 @@ const VideoItem = memo(function VideoItem({
           label={muted ? t('vid.unmute') : t('vid.mute')}
           onPress={onToggleMute}
         />
-      </View>
+      </Animated.View>
 
       {/* Alt bilgi */}
-      <Pressable style={[styles.info, { bottom: TAB_SPACE + 6 }]} onPress={openDetail}>
+      <Animated.View style={[styles.info, { bottom: TAB_SPACE + 6 }, uiStyle]} pointerEvents={holding ? 'none' : 'auto'}>
+      <Pressable onPress={openDetail}>
         <Text numberOfLines={2} style={styles.name}>{item.name}</Text>
         {item.genres?.length > 0 && (
           <View style={styles.tags}>
@@ -451,6 +511,7 @@ const VideoItem = memo(function VideoItem({
           <Ionicons name="chevron-forward" size={13} color="rgba(255,255,255,0.75)" />
         </View>
       </Pressable>
+      </Animated.View>
 
       <CollectionPicker
         visible={pickerOpen}

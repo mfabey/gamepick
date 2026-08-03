@@ -8,7 +8,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { useReducedMotion } from '../hooks/useReducedMotion';
-import { useTabBarCompact } from '../context/TabBarContext';
+import { useTabBarCompact, useTabBarHidden } from '../context/TabBarContext';
 import { colors } from '../theme';
 
 const ICONS = {
@@ -44,6 +44,7 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
   const [barW, setBarW] = useState(0);
   const reducedMotion = useReducedMotion();
   const compact = useTabBarCompact();
+  const hidden = useTabBarHidden();
 
   // Kayan vurgu konumu.
   //
@@ -78,15 +79,26 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
   //  2. expo-glass-effect dokümanı GlassView'da veya EBEVEYNİNDE opacity<1
   //     kullanılmamasını söylüyor; opacity ile soldursaydık cam bozulurdu
   const barStyle = useAnimatedStyle(() => {
-    if (reducedMotion || !compact) return {};
+    // Tam gizleme daralmadan BAĞIMSIZ: Reels'te videoya basılı tutulduğunda
+    // çubuk ekranın altına kayıp gözden kayboluyor.
+    //
+    // OPACITY KULLANILMIYOR — yukarıdaki 2. maddenin aynısı: cam katmanının
+    // ebeveyninde opacity<1 camı bozuyor. Ekran dışına ötelemek zaten yeterli;
+    // BAR_H + 60, en büyük güvenli alan boşluğunu ve gölgeyi de aşıyor.
+    const h = hidden ? hidden.value : 0;
+    const hideY = interpolate(h, [0, 1], [0, BAR_H + 60], Extrapolation.CLAMP);
+
+    if (reducedMotion || !compact) return { transform: [{ translateY: hideY }] };
+
     const c = compact.value;
     return {
       transform: [
+        { translateY: hideY },
         { scale: interpolate(c, [0, 1], [1, 0.86], Extrapolation.CLAMP) },
         { translateY: interpolate(c, [0, 1], [0, 10], Extrapolation.CLAMP) },
       ],
     };
-  }, [reducedMotion, compact]);
+  }, [reducedMotion, compact, hidden]);
 
   return (
     <View pointerEvents="box-none" style={[styles.wrap, { bottom: insets.bottom || 10 }]}>
