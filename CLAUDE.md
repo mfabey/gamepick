@@ -1,5 +1,35 @@
 # Gamerisen — Claude Code Proje Rehberi
 
+## Çalışma Biçimi
+
+Bu bölüm nasıl çalışılmasını istediğimizi tarif eder; koda başlamadan önce oku.
+
+**Tek seferde tek iş.** Aynı anda birden fazla değişikliğe girme. Bir iş bitince
+DUR ve onay bekle — sıradakine kendiliğinden geçme.
+
+**Koddan önce dört başlık.** Her iş için sırayla yaz:
+1. Mevcut durum analizi
+2. Sorunlar
+3. Yapacağın geliştirmeler
+4. Beklenen kazanımlar
+
+**Öncelik sırası:** 1. Performans · 2. Kullanıcı deneyimi · 3. Algoritma ·
+4. Yeni özellik.
+
+**Tahmin değil ölçüm.** "Yavaş", "karışık", "yorucu" gibi sezgisel şikâyetlerde
+önce ölç (süre, kullanım sayısı, kontrast oranı), sonra teşhis koy. Bu repoda
+alınan tasarım ve mimari kararların çoğu ölçüme dayanıyor; commit mesajlarında
+sayılar duruyor.
+
+**Doğrulama zorunlu.** Mobil değişikliklerden sonra `npx expo export
+--platform ios`, web değişikliklerinden sonra `npm run build`. Kodmod
+yazdıysan sonucunu ayrıca denetle — bu repoda kodmodlar birkaç kez sessizce
+hata yaptı.
+
+**Dürüstlük tıkıştırmaya yeğdir.** Bir şeyi doğrulayamıyorsan (ör. görsel
+değişiklikler Windows'ta gözle görülemiyor) bunu açıkça söyle. Yarım kalan
+işi tamamlanmış gibi raporlama.
+
 ## Proje Özeti
 Next.js 14 (App Router) tabanlı oyun keşif platformu. Kullanıcılar PC oyunlarını keşfedebilir, Steam/Epic fiyatlarını görebilir, kütüphanelerini bağlayabilir.
 
