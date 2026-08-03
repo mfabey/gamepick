@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getUsdToTry, amountToTRY } from '../../lib/exchange';
+import { rawgJsonSafe } from '../../lib/rawg-fetch.js';
 
 const RAWG_KEY  = process.env.RAWG_API_KEY;
 const RAWG_BASE = 'https://api.rawg.io/api';
@@ -42,12 +43,14 @@ function cleanNameForMatch(name) {
 // RAWG slug → Steam appid
 export async function getSteamAppIdBySlug(slug) {
   try {
-    const res = await fetch(
+    // Zaman aşımı + devre kesici: RAWG çöktüğünde bu çağrı 22 sn askıda
+    // kalıyordu ve her kart ayrı ayrı bekliyordu.
+    const data = await rawgJsonSafe(
       `${RAWG_BASE}/games/${slug}/stores?key=${RAWG_KEY}`,
-      { next: { revalidate: 86400 } }
+      null,
+      { revalidate: 86400 }
     );
-    if (!res.ok) return null;
-    const data       = await res.json();
+    if (!data) return null;
     const steamStore = (data.results || []).find(s => s.store_id === 1);
     const url        = steamStore?.url || '';
     return url.match(/store\.steampowered\.com\/app\/(\d+)/)?.[1] || null;

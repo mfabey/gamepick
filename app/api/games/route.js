@@ -193,11 +193,54 @@ function rawgUrl(path, params = {}) {
   return url.toString();
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// RAWG çağrılarına ZAMAN AŞIMI.
+//
+// 3 Ağustos 2026'da RAWG çöktü ve Cloudflare üzerinden HTTP 522 vermeye
+// başladı. 522 hemen dönmüyor — Cloudflare origin'i ~22 sn bekliyor. Bu rota
+// istek başına iki RAWG çağrısı yaptığı için toplam ~42 sn sürüyordu.
+//
+// Mobil istemci 12 sn'de vazgeçtiği için (client.js apiGet) uygulamada HİÇBİR
+// oyun görünmüyordu.
+//
+// Yedek yol ZATEN VARDI (aşağıda "proceeding to fallback") ama 42 sn'lik
+// hatanın arkasında beklediği için pratikte hiç işe yaramıyordu. Kısa zaman
+// aşımı onu çalışır hâle getiriyor.
+//
+// Hata FIRLATILMAYA devam ediyor: mevcut catch blokları ve yedek mantığı
+// bunun üzerine kurulu, sessizce boş sonuç dönmek onları atlatırdı.
+// ─────────────────────────────────────────────────────────────────────────────
+const RAWG_TIMEOUT_MS = 4000;
+
+// DEVRE KESİCİ. Tek başına zaman aşımı yetmiyor: bu rota bir istekte iki
+// ardışık RAWG çağrısı yapabiliyor, yani 2 × 4 sn = 8 sn — mobilin 12 sn'lik
+// sınırına gereksiz yakın. RAWG'ın çöktüğü bir kez anlaşıldıysa sonraki
+// isteklerde tekrar beklemenin bir anlamı yok; doğrudan yedeğe gidiyoruz.
+//
+// Süre dolunca bir istek yeniden deniyor — RAWG geri geldiğinde kendiliğinden
+// normale dönüyor, elle müdahale gerekmiyor.
+const RAWG_COOLDOWN_MS = 60 * 1000;
+let rawgDownUntil = 0;
+
 async function fetchRawg(path, params = {}) {
+  if (Date.now() < rawgDownUntil) throw new Error('RAWG devre dışı (devre kesici)');
+
   const url = rawgUrl(path, params);
-  const res = await fetch(url, { next: { revalidate: 300 } });
-  if (!res.ok) throw new Error(`RAWG ${res.status}`);
-  return res.json();
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), RAWG_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, { next: { revalidate: 300 }, signal: ctrl.signal });
+    if (!res.ok) throw new Error(`RAWG ${res.status}`);
+    const json = await res.json();
+    rawgDownUntil = 0;                 // sağlıklı yanıt → devreyi kapat
+    return json;
+  } catch (err) {
+    rawgDownUntil = Date.now() + RAWG_COOLDOWN_MS;
+    if (err?.name === 'AbortError') throw new Error(`RAWG zaman aşımı (${RAWG_TIMEOUT_MS}ms)`);
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function generateSlug(text) {

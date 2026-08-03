@@ -3,6 +3,7 @@ import { isAdultContent, isAdultTitleOrSlug, isSteamDataAdult } from '../../lib/
 import { FALLBACK_GAMES } from '../../lib/fallback-games.js';
 import { getUsdToTry } from '../../lib/exchange.js';
 import { getSteamDetailsCached } from '../../lib/steam-cache.js';
+import { rawgJsonSafe } from '../../lib/rawg-fetch.js';
 
 const RAWG_KEY = process.env.RAWG_API_KEY;
 const BASE     = 'https://api.rawg.io/api';
@@ -45,9 +46,10 @@ function cleanNameForMatch(name) {
 async function searchRawg(name) {
   const fixedName = NAME_FIXES[name] || name;
   const url = `${BASE}/games?key=${RAWG_KEY}&search=${encodeURIComponent(fixedName)}&page_size=3&search_precise=true`;
-  const res = await fetch(url, { next: { revalidate: 21600 } });
-  if (!res.ok) return null;
-  const data = await res.json();
+  // Zaman aşımı + devre kesici — RAWG çöktüğünde bu arama isim başına
+  // 22 sn askıda kalıyordu.
+  const data = await rawgJsonSafe(url, null, { revalidate: 21600 });
+  if (!data) return null;
 
   // İsim benzerliği kontrol et — yanlış eşleşmeleri önle
   const results = data.results || [];
