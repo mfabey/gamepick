@@ -137,6 +137,12 @@ export async function hideList(id) {
  * @returns {{ count: number, hidden: boolean }}
  */
 export async function recordListReport(listId, reporterUid) {
+  // Editör listeleri raporlanamaz: sahibi bir kullanıcı değil, biziz. Guard
+  // olmasaydı rapor sayacı Redis'te birikir ve eşiğe ulaşınca hideList
+  // çağrılırdı — Redis'te karşılığı olmayan bir kaydı gizlemeye çalışarak.
+  // deleteList ve toggleLike zaten getList üzerinden NOT_FOUND dönüyor.
+  if (isCuratedId(listId)) return { count: 0, hidden: false };
+
   await redisCmd(['SADD', reportsKey(listId), reporterUid]).catch(() => {});
   const count = Number(await redisCmd(['SCARD', reportsKey(listId)])) || 0;
 
@@ -200,9 +206,10 @@ export async function getListFeed(viewerUid, { sort = 'popular', page = 1, pageS
   const ids = await redisCmd([
     'ZREVRANGE', zset, String(start), String(start + over - 1),
   ]);
-  if (!Array.isArray(ids) || ids.length === 0) return { items: [], hasMore: false };
 
-  const rows = await redisPipeline(ids.map((id) => ['GET', listKey(id)]));
+  const rows = Array.isArray(ids) && ids.length
+    ? await redisPipeline(ids.map((id) => ['GET', listKey(id)]))
+    : [];
   const lists = (rows || []).map(parseJSON).filter(Boolean);
 
   const [hidden, liked] = await Promise.all([
@@ -216,10 +223,18 @@ export async function getListFeed(viewerUid, { sort = 'popular', page = 1, pageS
 
   const pageItems = visible.slice(0, pageSize);
   const profiles = await getProfiles(pageItems.map((l) => l.ownerUid));
+  const items = pageItems.map((l) => shapeForFeed(l, profiles, liked));
+
+  // Editör listeleri YALNIZCA ilk sayfada ve kullanıcı listelerinin ÜSTÜNDE.
+  // Her sayfaya eklenselerdi kaydırdıkça tekrar tekrar görünürlerdi.
+  //
+  // Bunlar Redis'te değil, kodda (app/lib/curated-lists.js) — yönetici ucu
+  // açmaya gerek kalmıyor ve tohumlama adımı gerekmiyor.
+  const head = page === 1 ? CURATED_LISTS.map((l) => shapeCurated(l, liked)) : [];
 
   return {
-    items: pageItems.map((l) => shapeForFeed(l, profiles, liked)),
-    hasMore: visible.length > pageSize || ids.length >= over,
+    items: [...head, ...items],
+    hasMore: visible.length > pageSize || (Array.isArray(ids) && ids.length >= over),
   };
 }
 
@@ -245,6 +260,33 @@ export async function getUserLists(ownerUid, viewerUid) {
     .map((l) => shapeForFeed(l, profiles, liked));
 }
 
+/**
+ * Editör listesini akış biçimine çevirir.
+ *
+ * shapeForFeed'den ayrı tutuldu çünkü sahibi bir KULLANICI DEĞİL: profil
+ * aramasına gerek yok ve beğeni/rapor durumu taşımıyor. Aynı fonksiyona
+ * sıkıştırmak, olmayan bir profili aramak anlamına gelirdi.
+ */
+function shapeCurated(l) {
+  return {
+    id: l.id,
+    ownerUid: CURATOR_UID,
+    ownerUsername: CURATOR_PROFILE.username,
+    ownerName: CURATOR_PROFILE.displayName,
+    official: true,               // arayüz "Editör" rozetini buna bakarak basıyor
+    title: l.title,
+    description: l.description,
+    emoji: l.emoji,
+    gameCount: (l.games || []).length,
+    covers: (l.games || []).slice(0, 4).map((g) => g.image).filter(Boolean),
+    likeCount: 0,
+    likedByMe: false,
+    status: 'public',
+    createdAt: l.createdAt,
+    updatedAt: l.updatedAt,
+  };
+}
+
 function shapeForFeed(l, profiles, liked) {
   return {
     id: l.id,
@@ -266,6 +308,14 @@ function shapeForFeed(l, profiles, liked) {
 
 /** Tek liste — detay ekranı için, oyunlar dahil. */
 export async function getListDetail(id, viewerUid) {
+  // Editör listeleri Redis'te değil; doğrudan bağlantıyla da açılabilmeleri
+  // için burada karşılanıyorlar.
+  if (isCuratedId(id)) {
+    const c = CURATED_LISTS.find((x) => x.id === id);
+    if (!c) return null;
+    return { ...shapeCurated(c), games: c.games || [], isOwner: false };
+  }
+
   const l = await getList(id);
   if (!l) return null;
 

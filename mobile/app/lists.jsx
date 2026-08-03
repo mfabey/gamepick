@@ -176,21 +176,36 @@ function ListCard({ item, onPress, onLike, t }) {
         {item.description ? (
           <Text numberOfLines={2} style={styles.cardDesc}>{item.description}</Text>
         ) : null}
-        <Text style={styles.cardMeta}>
-          {item.gameCount} {t('pl.games')} · {t('pl.by')} @{item.ownerUsername}
-        </Text>
+        <View style={styles.metaRow}>
+          {/* Editör listeleri açıkça işaretleniyor — kullanıcı yapımı gibi
+              görünmemeleri şart. */}
+          {item.official ? (
+            <View style={styles.officialChip}>
+              <Ionicons name="ribbon" size={11} color={colors.accentText} />
+              <Text style={styles.officialText}>{t('pl.official')}</Text>
+            </View>
+          ) : null}
+          <Text numberOfLines={1} style={styles.cardMeta}>
+            {item.gameCount} {t('pl.games')}
+            {item.official ? '' : ` · ${t('pl.by')} @${item.ownerUsername}`}
+          </Text>
+        </View>
       </View>
 
-      <Pressable style={({ pressed }) => [styles.likeBtn, pressed && PRESSED]} onPress={onLike} hitSlop={8}>
-        <Ionicons
-          name={item.likedByMe ? 'heart' : 'heart-outline'}
-          size={21}
-          color={item.likedByMe ? colors.danger : colors.text3}
-        />
-        <Text style={[styles.likeCount, item.likedByMe && { color: colors.danger }]}>
-          {item.likeCount}
-        </Text>
-      </Pressable>
+      {/* Editör listesi beğenilemez: sahibi bir kullanıcı değil. Düğmeyi
+          gösterip çalışmamasındansa hiç göstermemek doğru. */}
+      {item.official ? null : (
+        <Pressable style={({ pressed }) => [styles.likeBtn, pressed && PRESSED]} onPress={onLike} hitSlop={8}>
+          <Ionicons
+            name={item.likedByMe ? 'heart' : 'heart-outline'}
+            size={21}
+            color={item.likedByMe ? colors.danger : colors.text3}
+          />
+          <Text style={[styles.likeCount, item.likedByMe && { color: colors.danger }]}>
+            {item.likeCount}
+          </Text>
+        </Pressable>
+      )}
     </Pressable>
   );
 }
@@ -235,5 +250,12 @@ const styles = StyleSheet.create({
   cardMeta: { color: colors.text3, fontSize: 12, marginTop: 4 },
 
   likeBtn: { alignItems: 'center', gap: 2, paddingHorizontal: 4 },
-  likeCount: { color: colors.text3, fontSize: 12, fontWeight: '700' },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 },
+  officialChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 3,
+    backgroundColor: colors.accentSoft, borderColor: colors.accentBorder, borderWidth: 1,
+    borderRadius: radius.pill, paddingHorizontal: 7, paddingVertical: 2,
+  },
+  officialText: { color: colors.accentText, fontSize: 10, fontWeight: '800', letterSpacing: 0.3 },
+  likeCount: { color: colors.text3, fontSize: 12, fontWeight: '700' },
 });
