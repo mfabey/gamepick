@@ -731,7 +731,7 @@ function CinematicShowcase({ games }) {
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(6,7,9,0.85), transparent 46%)' }} />
         <div style={{ position: 'absolute', left: 0, bottom: 0, padding: '40px 44px', maxWidth: 620 }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '6px 13px', borderRadius: 999, background: g.isPromo ? 'rgba(251,191,36,0.15)' : 'color-mix(in srgb, var(--accent) 26%, transparent)', border: g.isPromo ? '1px solid rgba(251,191,36,0.35)' : '1px solid color-mix(in srgb, var(--accent) 55%, transparent)', fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', color: g.isPromo ? '#fbbf24' : '#fff', marginBottom: 16 }}>
-            {g.isPromo ? (lang === 'tr' ? '✦ SPONSORLU REKLAM' : '✦ SPONSORED AD') : (lang === 'tr' ? '✦ ÖNE ÇIKAN FIRSAT' : '✦ FEATURED DEAL')}
+            {g.isPromo ? (lang === 'tr' ? '✦ SPONSOR' : '✦ SPONSOR') : (lang === 'tr' ? '✦ ÖNE ÇIKAN FIRSAT' : '✦ FEATURED DEAL')}
           </span>
           <h2 style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 'clamp(30px,4vw,52px)', lineHeight: 1.02, letterSpacing: '-1.4px', color: '#fff', marginBottom: 14, textWrap: 'balance' }}>{g.name}</h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 18 }}>
