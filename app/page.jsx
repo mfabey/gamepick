@@ -650,6 +650,7 @@ function CinematicShowcase({ games }) {
     isPromo: true,
     promoUrl: 'https://www.willsavor.com/',
     promoImage: '/willsavor_banner.jpg',
+    promoLogo: '/willsavor_logo.jpg',
     promoSubtitle: lang === 'tr'
       ? 'Gamerisen üyelerine özel, GAMER10 koduyla yüzde 10 indirimi hemen kap.'
       : 'Special for Gamerisen members, grab 10% discount immediately with code GAMER10.',
@@ -764,7 +765,7 @@ function CinematicShowcase({ games }) {
               onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-3px) scale(1.04)'}
               onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
               {it.isPromo ? (
-                <img src={it.promoImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} />
+                <img src={it.promoLogo || it.promoImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', position: 'absolute', inset: 0, backgroundColor: '#000' }} />
               ) : (
                 <GameImage game={it} alt="" fill style={{ objectFit: 'cover' }} />
               )}
