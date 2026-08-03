@@ -213,12 +213,20 @@ export default function GamesScreen() {
       </ScrollView>
       </Animated.View>
 
-      {/* Grid */}
-      <View style={{ flex: 1 }}>
+      {/* Grid.
+          headerH ölçülene kadar GİZLİ: sıfırdan başladığı için ilk kare
+          yanlış boşlukla çiziliyor, ölçüm gelince zıplıyordu. Yerleşim yine
+          yapılıyor (ölçüm için şart), yalnızca görünmüyor — bir kare sürüyor. */}
+      <View style={{ flex: 1, opacity: headerH > 0 ? 1 : 0 }}>
+        {/* Üst bölüm MUTLAK konumlu olduğu için bu iki durumun da aynı
+            boşluğu taşıması ŞART. Taşımadıklarında başlığın ARKASINDA
+            kalıyorlardı — yükleme iskeleti her açılışta görünmüyordu. */}
         {loading ? (
-          <GamesGridSkeleton />
+          <View style={{ paddingTop: headerH }}>
+            <GamesGridSkeleton />
+          </View>
         ) : games.length === 0 ? (
-          <View style={styles.center}>
+          <View style={[styles.center, { paddingTop: headerH }]}>
             <Ionicons name="search" size={44} color={colors.text3} />
             <Text style={styles.emptyText}>{t('games.noResults')}</Text>
           </View>

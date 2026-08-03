@@ -348,7 +348,12 @@ export default function VideosScreen() {
 
       {/* Üst çubuk — BETA rozeti.
           Geri butonu YOK: bu artık bir sekme, geri dönülecek bir yer yok. */}
-      <Animated.View style={topBarStyle} pointerEvents="box-none">
+      {/* KONUMLANDIRMA SARMALAYICIDA olmak zorunda. Daha önce yalnızca
+          opacity taşıyordu; sarmalayıcı flex:1 olan listeden SONRA akışta
+          yer aldığı için sıfır yükseklikte bir kutu olarak ekranın altına
+          düşüyordu ve içindeki mutlak konumlu çubuk ona göre hizalanıp
+          görünmez oluyordu. */}
+      <Animated.View style={[styles.topBarWrap, topBarStyle]} pointerEvents="box-none">
       <SafeAreaView edges={['top']} style={styles.topBar} pointerEvents="box-none">
         {/* Yatay/dikey geçişi — başlık ORTADA kalsın diye mutlak konumlu */}
         <View style={styles.topRight}>
@@ -597,12 +602,14 @@ const styles = StyleSheet.create({
   item: { backgroundColor: '#000' },
 
   // Dondurme dugmesi akista degil: baslik ortada kalsin
-  topRight: { position: 'absolute', right: spacing.md, top: 0, zIndex: 2 },
+  // Mutlak konum SARMALAYICIDA; içerideki çubuk artık normal akışta.
+  topBarWrap: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 3 },
+  topRight: { position: 'absolute', right: spacing.md, top: 0, bottom: 0, justifyContent: 'center', zIndex: 2 },
   topBar: {
-    position: 'absolute', top: 0, left: 0, right: 0,
     // Geri butonu kalkınca tek çocuk kaldı; space-between sola yaslıyordu
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     paddingHorizontal: spacing.md,
+    minHeight: 44,
   },
   titleWrap: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   topTitle: { color: '#fff', fontSize: type.body, fontWeight: '900', letterSpacing: -0.2 },
