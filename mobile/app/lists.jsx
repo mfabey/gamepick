@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 import { fetchListFeed, toggleListLike } from '../src/api/social';
-import { getSession } from '../src/services/session';
+import { getSession, subscribeSession } from '../src/services/session';
 import EmptyState from '../src/components/EmptyState';
 import { posterImage } from '../src/utils/images';
 import { colors, radius, spacing, type, PRESSED } from '../src/theme';
@@ -33,7 +33,13 @@ export default function ListsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
 
-  const session = getSession();
+  // Oturum ASENKRON yükleniyor (depodan). Düz `getSession()` çağrısı ilk
+  // render'da null döndürüyor, ekran da abone olmadığı için oturum gelince
+  // yeniden çizilmiyordu — liste sonsuza dek boş kalıyordu.
+  //
+  // social.jsx bu deseni zaten doğru kullanıyor; burası tek kaçaktı.
+  const [session, setSession] = useState(() => getSession());
+  useEffect(() => subscribeSession(() => setSession(getSession())), []);
 
   const load = useCallback(async (nextSort, nextPage) => {
     try {
