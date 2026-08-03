@@ -659,7 +659,8 @@ function CinematicShowcase({ games }) {
 
   const list = useMemo(() => {
     const raw = (games || []).filter(g => g && g.name && g.id !== 'willsavor-promo');
-    return [promoItem, ...raw].slice(0, 6);
+    // Reklamı ilk sıraya koyup oyun indirimlerini gizlemek yerine, 3. sıraya (index 2) yerleştiriyoruz.
+    return [...raw.slice(0, 2), promoItem, ...raw.slice(2)].slice(0, 6);
   }, [games, promoItem]);
 
   useEffect(() => {
