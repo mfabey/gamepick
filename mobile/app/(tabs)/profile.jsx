@@ -1,4 +1,19 @@
-import { useRef, useCallback } from 'react';
+// ─────────────────────────────────────────────────────────────────────────────
+// Profil.
+//
+// BİLGİ MİMARİSİ: eskiden yedi karo TEK bir "İçeriğim" başlığı altında, bağlı
+// hesaplar da sayfanın en altında ayrı bir bölümdeydi. Sonuç: kendi ürettiğin
+// şey (koleksiyon), sosyal olan (arkadaş) ve bağlantıya bağlı olan (kütüphane)
+// aynı düzlemde duruyordu — hiçbiri diğerinden ayrışmıyordu.
+//
+// Artık üç anlamlı grup var ve bağlı hesaplar "Oyunlarım" grubunun İÇİNDE:
+// kütüphane ve haftalık rapor zaten o bağlantıya bağımlı, ayrı yerde durmaları
+// ilişkiyi gizliyordu.
+//
+// SOĞUKLUK: profilde kişiye ait tek bir sayı yoktu. Kimlik başlığındaki üç
+// sayaç (koleksiyon / takipte / oyun) sayfayı "senin" yapan şey.
+// ─────────────────────────────────────────────────────────────────────────────
+import { useRef, useCallback, useEffect, useState } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -10,6 +25,8 @@ import { useLanguage } from '../../src/context/LanguageContext';
 import { useAuth } from '../../src/context/AuthContext';
 import { useWishlist } from '../../src/context/WishlistContext';
 import { useCollections } from '../../src/hooks/useCollections';
+import { useConnectedLibrary } from '../../src/hooks/useConnectedLibrary';
+import { getMyProfile } from '../../src/api/social';
 import IconButton from '../../src/components/IconButton';
 import { useTabPressAction, scrollRefToTop } from '../../src/hooks/useTabPressAction';
 
@@ -24,9 +41,20 @@ export default function ProfileScreen() {
 
   const { items } = useWishlist();
   const collections = useCollections();
+  const { steamGames, xboxGames } = useConnectedLibrary();
+  const gameCount = steamGames.length + xboxGames.length;
 
-  // Not: oturum kapatma, dil seçimi ve bildirim anahtarı /settings ekranına
-  // taşındı — bu ekran artık yalnızca kullanıcının içeriğini gösteriyor.
+  // Kullanıcı adı — arkadaş eklemenin temeli, o yüzden profilde GÖRÜNÜR olmalı.
+  // Eskiden hiçbir yerde yazmıyordu; kullanıcı kendi etiketini bilmiyordu.
+  const [username, setUsername] = useState(null);
+  useEffect(() => {
+    if (!account) { setUsername(null); return; }
+    let alive = true;
+    getMyProfile()
+      .then((r) => { if (alive) setUsername(r?.profile?.username || null); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [account]);
 
   const doLogin = async (fn) => {
     const r = await fn();
@@ -38,320 +66,286 @@ export default function ProfileScreen() {
   // dokunup tepki alamamak bozukluk gibi görünür.
   const locked = !account;
   const go = (dest) => () => router.push(locked ? '/account' : dest);
+  const hint = t('prof.lockedHint');
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView
-        ref={scrollRef} contentContainerStyle={{ padding: spacing.lg, paddingBottom: TAB_SPACE + 16 }} showsVerticalScrollIndicator={false} onScroll={onTabScroll} scrollEventThrottle={16}>
-        {/* Başlık + ayarlar — ayarlar artık içerikle aynı listede değil */}
+        ref={scrollRef}
+        contentContainerStyle={styles.body}
+        showsVerticalScrollIndicator={false}
+        onScroll={onTabScroll}
+        scrollEventThrottle={16}
+      >
+        {/* ── Kimlik ──
+            Avatar, ad, kullanıcı adı ve üç sayaç. Sayaçlar dekoratif değil:
+            profilin kime ait olduğunu tek bakışta söyleyen tek şey onlar. */}
         <View style={styles.headRow}>
           <Text style={styles.h1}>{t('nav.profile')}</Text>
-          <Pressable style={({ pressed }) => [styles.gearBtn, pressed && PRESSED]} onPress={() => router.push('/settings')} hitSlop={8}>
-            <Ionicons name="settings-outline" size={22} color={colors.text} />
-          </Pressable>
+          <IconButton icon="settings-outline" size={22} color={colors.text} onPress={() => router.push('/settings')} />
         </View>
 
-        {/* ── Gamerisen hesabı ── */}
         {account ? (
-          <View style={styles.accCard}>
-            <View style={styles.accAvatar}>
-              <Ionicons name="person" size={18} color={colors.text2} />
+          <View style={styles.identity}>
+            <View style={styles.avatarLg}>
+              <Text style={styles.avatarInitialLg}>
+                {(account.name || account.email || '?').slice(0, 1).toUpperCase()}
+              </Text>
             </View>
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={styles.accName} numberOfLines={1}>{account.name}</Text>
-              <Text style={styles.accStatus} numberOfLines={1}>{account.email}</Text>
+            <Text style={styles.idName} numberOfLines={1}>{account.name}</Text>
+            <Pressable onPress={() => router.push('/social')} hitSlop={6}>
+              <Text style={styles.idHandle} numberOfLines={1}>
+                {username ? `@${username}` : t('prof.noUsername')}
+              </Text>
+            </Pressable>
+
+            <View style={styles.stats}>
+              <Stat n={collections.length} label={t('prof.statCollections')} />
+              <View style={styles.statDiv} />
+              <Stat n={items.length} label={t('prof.statWishlist')} />
+              <View style={styles.statDiv} />
+              <Stat n={gameCount} label={t('prof.statGames')} />
             </View>
           </View>
         ) : (
-          <Pressable style={({ pressed }) => [styles.settingRow, pressed && PRESSED]} onPress={() => router.push('/account')}>
-            <Ionicons name="person-circle-outline" size={20} color={colors.text2} />
-            <Text style={styles.settingText}>{t('acc.signIn')}</Text>
+          /* Giriş yapılmamışsa kimlik yerine tek bir davet — sayfanın
+             başındaki en güçlü eylem bu olmalı. */
+          <Pressable style={({ pressed }) => [styles.signInCard, pressed && PRESSED]} onPress={() => router.push('/account')}>
+            <View style={styles.lockIcon}>
+              <Ionicons name="person-add-outline" size={20} color={colors.accent} />
+            </View>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={styles.signInTitle}>{t('prof.lockTitle')}</Text>
+              <Text style={styles.signInDesc}>{t('prof.lockDesc')}</Text>
+            </View>
             <Ionicons name="chevron-forward" size={18} color={colors.text3} />
           </Pressable>
         )}
 
-        {/* ── İçeriğim ──
-            Liste satırı yerine ızgara: beş giriş art arda satır olarak
-            dizildiğinde ayarlardan ayırt edilemiyordu. */}
-        <Text style={[styles.sectionLabel, { marginTop: 28 }]}>{t('prof.myContent')}</Text>
-
-        {/* Kilidin NEDEN orada olduğunu söyleyen tek açıklama. Her karoya ayrı
-            metin koymak ızgarayı okunmaz hâle getirirdi. */}
-        {locked ? (
-          <Pressable
-            style={({ pressed }) => [styles.lockCard, pressed && PRESSED]}
-            onPress={() => router.push('/account')}
-          >
-            <View style={styles.lockIcon}>
-              <Ionicons name="lock-closed" size={18} color={colors.text2} />
-            </View>
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={styles.lockTitle}>{t('prof.lockTitle')}</Text>
-              <Text style={styles.lockDesc}>{t('prof.lockDesc')}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.text3} />
-          </Pressable>
-        ) : null}
-
-        <View style={styles.grid}>
-          <ContentTile
-            icon="albums" label={t('col.entry')} count={collections.length}
-            locked={locked} lockedHint={t('prof.lockedHint')}
-            onPress={go('/collections')}
-          />
-          <ContentTile
-            icon="bookmark" label={t('wishlist.title')} count={items.length}
-            locked={locked} lockedHint={t('prof.lockedHint')}
-            onPress={go('/wishlist')}
-          />
-          <ContentTile
-            icon="people" label={t('soc.entry')} beta
-            onPress={() => router.push('/social')}
-          />
-          <ContentTile
-            icon="list" label={t('pl.entry')} beta
-            onPress={() => router.push('/lists')}
-          />
-          {/* Kütüphane sekmeden çıkarıldı (yerine Videolar geldi) — erişilemez
-              kalmasın diye içerik ızgarasına alındı. Steam/Xbox bağlantıları
-              zaten bu ekranda, doğal yeri burası. */}
-          <ContentTile
-            icon="library" label={t('nav.library')}
-            onPress={() => router.push('/library')}
-          />
-          <ContentTile
-            icon="stats-chart" label={t('stats.entry')}
-            locked={locked} lockedHint={t('prof.lockedHint')}
-            onPress={go('/stats')}
-          />
-          {/* Doğal dil ile keşif — anasayfadan buraya taşındı.
-              Kilitli DEĞİL: hesap gerektirmiyor, tamamen istemci tarafı. */}
-          <ContentTile
-            icon="sparkles" label={t('discover.entry')}
-            onPress={() => router.push('/discover')}
-          />
+        {/* ── İçeriğim ── kullanıcının kendi ürettiği şeyler */}
+        <Text style={styles.sectionLabel}>{t('prof.myContent')}</Text>
+        <View style={styles.card}>
+          <Row icon="albums-outline" label={t('col.entry')} count={collections.length}
+               locked={locked} hint={hint} onPress={go('/collections')} />
+          <Div />
+          <Row icon="bookmark-outline" label={t('wishlist.title')} count={items.length}
+               locked={locked} hint={hint} onPress={go('/wishlist')} />
         </View>
 
-        <Text style={[styles.sectionLabel, { marginTop: 32 }]}>{t('auth.accounts')}</Text>
+        {/* ── Sosyal ── başkalarıyla kesişen her şey tek yerde */}
+        <Text style={styles.sectionLabel}>{t('prof.social')}</Text>
+        <View style={styles.card}>
+          <Row icon="people-outline" label={t('soc.entry')} beta onPress={() => router.push('/social')} />
+          <Div />
+          <Row icon="list-outline" label={t('pl.entry')} beta onPress={() => router.push('/lists')} />
+        </View>
 
-        {/* Profil yoksa bağlama HİÇ sunulmuyor.
-            Bağlantı hesaba kaydedildiği için profilsiz bağlanan kullanıcı
-            kütüphanesini ilk oturum kapanışında kaybederdi. */}
-        {locked ? (
-          <Pressable
-            style={({ pressed }) => [styles.lockCta, pressed && PRESSED]}
-            onPress={() => router.push('/account')}
-          >
-            <Ionicons name="lock-closed" size={16} color={colors.accent} />
-            <Text style={styles.lockCtaText}>{t('prof.lockCta')}</Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.accent} />
-          </Pressable>
-        ) : (
-        <>
-        {/* Steam hesapları */}
-        {steamAccounts.map(acc => (
-          <View key={acc.steamId} style={styles.accountCard}>
-            {acc.avatar ? (
-              <Image source={acc.avatar} style={styles.avatar} contentFit="cover" />
-            ) : (
-              <View style={[styles.avatar, styles.avatarFallback, { backgroundColor: colors.steam }]}>
-                <Text style={styles.avatarInitial}>{acc.name?.slice(0, 1).toUpperCase()}</Text>
+        {/* ── Oyunlarım ──
+            Kütüphane ve rapor bağlı hesaplara DAYANIYOR, o yüzden bağlantılar
+            da bu grubun içinde. Ayrı bir bölümde dururken bu bağ görünmüyordu
+            ve kullanıcı boş bir kütüphaneyle karşılaşıp nedenini anlamıyordu. */}
+        <Text style={styles.sectionLabel}>{t('prof.myGames')}</Text>
+        <View style={styles.card}>
+          <Row icon="library-outline" label={t('nav.library')} count={gameCount || undefined}
+               onPress={() => router.push('/library')} />
+          <Div />
+          <Row icon="stats-chart-outline" label={t('stats.entry')}
+               locked={locked} hint={hint} onPress={go('/stats')} />
+          <Div />
+          <Row icon="sparkles-outline" label={t('discover.entry')} onPress={() => router.push('/discover')} />
+        </View>
+
+        {/* Bağlı mağazalar — aynı grubun devamı, ayrı görsel dil YOK.
+            Eskiden kesikli çerçeveli düğmelerdi ve sayfadaki hiçbir şeye
+            benzemiyorlardı. */}
+        <View style={[styles.card, { marginTop: 10 }]}>
+          {locked ? (
+            <Pressable style={({ pressed }) => [styles.row, pressed && PRESSED]} onPress={() => router.push('/account')}>
+              <View style={styles.rowIcon}><Ionicons name="lock-closed-outline" size={19} color={colors.text2} /></View>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={styles.rowLabel}>{t('prof.lockCta')}</Text>
+                <Text style={styles.rowSub} numberOfLines={2}>{t('prof.connectHint')}</Text>
               </View>
-            )}
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={styles.accName} numberOfLines={1}>{acc.name}</Text>
-              <View style={styles.badgeRow}>
-                <SteamMark />
-                <Text style={styles.accStatus}>Steam · {t('auth.connected')}</Text>
-              </View>
-            </View>
-            <Pressable onPress={() => logoutSteam(acc.steamId)} hitSlop={8} style={styles.discBtn}>
-              <Ionicons name="close" size={18} color={colors.text3} />
+              <Ionicons name="chevron-forward" size={18} color={colors.text3} />
             </Pressable>
-          </View>
-        ))}
-
-        {/* Steam bağla / ekle */}
-        <Pressable
-          disabled={busy}
-          onPress={() => doLogin(loginSteam)}
-          style={[styles.connectBtn, { borderColor: colors.steam }]}
-        >
-          {busy ? <ActivityIndicator color={colors.steam} /> : (
+          ) : (
             <>
-              <SteamMark size={17} />
-              <Text style={[styles.connectText, { color: colors.steam }]}>
-                {steamAccounts.length > 0 ? t('auth.addSteam') : t('auth.connectSteam')}
-              </Text>
+              {steamAccounts.map((acc, i) => (
+                <View key={acc.steamId}>
+                  {i > 0 && <Div />}
+                  <View style={styles.row}>
+                    {acc.avatar ? (
+                      <Image source={acc.avatar} style={styles.storeAvatar} contentFit="cover" />
+                    ) : (
+                      <View style={[styles.storeAvatar, styles.avatarFallback, { backgroundColor: colors.steam }]}>
+                        <Text style={styles.avatarInitial}>{acc.name?.slice(0, 1).toUpperCase()}</Text>
+                      </View>
+                    )}
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={styles.rowLabel} numberOfLines={1}>{acc.name}</Text>
+                      <Text style={styles.rowSub}>Steam · {t('auth.connected')}</Text>
+                    </View>
+                    <IconButton icon="close" size={18} color={colors.text3} onPress={() => logoutSteam(acc.steamId)} />
+                  </View>
+                </View>
+              ))}
+              {steamAccounts.length > 0 && <Div />}
+
+              <Pressable style={({ pressed }) => [styles.row, pressed && PRESSED]} disabled={busy} onPress={() => doLogin(loginSteam)}>
+                <View style={styles.rowIcon}>
+                  {busy ? <ActivityIndicator size="small" color={colors.steam} />
+                        : <Ionicons name="logo-steam" size={19} color={colors.steam} />}
+                </View>
+                <Text style={styles.rowLabel}>
+                  {steamAccounts.length > 0 ? t('auth.addSteam') : t('auth.connectSteam')}
+                </Text>
+                <Ionicons name="chevron-forward" size={18} color={colors.text3} />
+              </Pressable>
+
+              <Div />
+
+              {xbox ? (
+                <View style={styles.row}>
+                  {xbox.avatar ? (
+                    <Image source={xbox.avatar} style={styles.storeAvatar} contentFit="cover" />
+                  ) : (
+                    <View style={[styles.storeAvatar, styles.avatarFallback, { backgroundColor: 'rgba(16,124,16,0.3)' }]}>
+                      <Ionicons name="logo-xbox" size={19} color={colors.xbox} />
+                    </View>
+                  )}
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={styles.rowLabel} numberOfLines={1}>{xbox.gamertag}</Text>
+                    <Text style={styles.rowSub}>Xbox · {t('auth.connected')}</Text>
+                  </View>
+                  <IconButton icon="close" size={18} color={colors.text3} onPress={logoutXbox} />
+                </View>
+              ) : (
+                <Pressable style={({ pressed }) => [styles.row, pressed && PRESSED]} disabled={busy} onPress={() => doLogin(loginXbox)}>
+                  <View style={styles.rowIcon}>
+                    {busy ? <ActivityIndicator size="small" color={colors.xbox} />
+                          : <Ionicons name="logo-xbox" size={19} color={colors.xbox} />}
+                  </View>
+                  <Text style={styles.rowLabel}>{t('auth.connectXbox')}</Text>
+                  <Ionicons name="chevron-forward" size={18} color={colors.text3} />
+                </Pressable>
+              )}
             </>
           )}
-        </Pressable>
-
-        {/* Xbox */}
-        {xbox ? (
-          <View style={[styles.accountCard, { marginTop: 12 }]}>
-            {xbox.avatar ? (
-              <Image source={xbox.avatar} style={styles.avatar} contentFit="cover" />
-            ) : (
-              <View style={[styles.avatar, styles.avatarFallback, { backgroundColor: 'rgba(16,124,16,0.3)' }]}>
-                <Ionicons name="logo-xbox" size={22} color={colors.xbox} />
-              </View>
-            )}
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={styles.accName} numberOfLines={1}>{xbox.gamertag}</Text>
-              <View style={styles.badgeRow}>
-                <Ionicons name="logo-xbox" size={13} color={colors.xbox} />
-                <Text style={styles.accStatus}>Xbox · {t('auth.connected')}</Text>
-              </View>
-            </View>
-            <IconButton icon='close' size={18} color={colors.text3} onPress={logoutXbox} style={styles.discBtn} />
-          </View>
-        ) : (
-          <Pressable
-            disabled={busy}
-            onPress={() => doLogin(loginXbox)}
-            style={[styles.connectBtn, { borderColor: colors.xbox, marginTop: 12 }]}
-          >
-            {busy ? <ActivityIndicator color={colors.xbox} /> : (
-              <>
-                <Ionicons name="logo-xbox" size={18} color={colors.xbox} />
-                <Text style={[styles.connectText, { color: colors.xbox }]}>{t('auth.connectXbox')}</Text>
-              </>
-            )}
-          </Pressable>
-        )}
-        </>
-        )}
-
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function SteamMark({ size = 14 }) {
-  return <Ionicons name="logo-steam" size={size} color={colors.steam} />;
+/** Kimlik başlığındaki tek sayaç. */
+function Stat({ n, label }) {
+  return (
+    <View style={styles.stat}>
+      <Text style={styles.statN}>{n}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
+    </View>
+  );
 }
 
-// İçerik karosu — sayacı ve BETA rozetini taşır.
-//
-// Kilitliyken karo SOLDURULUYOR ama devre dışı bırakılmıyor: dokunulduğunda
-// kayıt ekranına gidiyor. Tamamen pasif bir karo, kullanıcıya ne yapması
-// gerektiğini söylemez.
-function ContentTile({ icon, label, count, beta, wide, locked, lockedHint, onPress }) {
+const Div = () => <View style={styles.div} />;
+
+/**
+ * Kart içi satır. Izgara karosu yerine satır kullanılıyor: yedi karo eşit
+ * ağırlıkta bir duvar oluşturuyordu, satırlar ise okunacak bir liste.
+ *
+ * Kilitliyken kilit simgesi çıkıyor ve dokunuş kayıt ekranına gidiyor —
+ * tepkisiz bir satır bozukluk gibi görünür.
+ */
+function Row({ icon, label, count, beta, locked, hint, onPress }) {
   return (
     <Pressable
-      style={({ pressed }) => [styles.tile, wide && styles.tileWide, pressed && PRESSED_CARD]}
+      style={({ pressed }) => [styles.row, pressed && PRESSED]}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label}
-      accessibilityHint={locked ? lockedHint : undefined}
+      accessibilityHint={locked ? hint : undefined}
     >
-      <View style={[styles.tileTop, locked && styles.tileDim]}>
-        <View style={styles.tileIcon}>
-          <Ionicons name={icon} size={19} color={locked ? colors.text3 : colors.text2} />
-        </View>
-        {locked ? (
-          <Ionicons name="lock-closed" size={14} color={colors.text3} />
-        ) : beta ? <View style={styles.betaChip}><Text style={styles.betaChipText}>BETA</Text></View> : null}
-        {count > 0 && !beta && !locked ? (
-          <View style={styles.wishBadge}><Text style={styles.wishBadgeText}>{count}</Text></View>
-        ) : null}
+      <View style={styles.rowIcon}>
+        <Ionicons name={icon} size={19} color={locked ? colors.text3 : colors.text2} />
       </View>
-      <Text numberOfLines={1} style={[styles.tileLabel, locked && styles.tileLabelDim]}>{label}</Text>
+      <Text style={[styles.rowLabel, locked && { color: colors.text2 }]} numberOfLines={1}>{label}</Text>
+
+      {beta ? <View style={styles.betaChip}><Text style={styles.betaChipText}>BETA</Text></View> : null}
+      {count > 0 && !locked ? <Text style={styles.rowCount}>{count}</Text> : null}
+      {locked ? <Ionicons name="lock-closed" size={14} color={colors.text3} /> : null}
+
+      <Ionicons name="chevron-forward" size={18} color={colors.text3} />
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
-  headRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
-  h1: { flex: 1, fontSize: type.title1, fontWeight: '800', color: colors.text, letterSpacing: -0.6 },
-  gearBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  body: { padding: spacing.lg, paddingBottom: TAB_SPACE + 16 },
 
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  tile: {
-    flexGrow: 1, flexBasis: '46%',
-    backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1,
-    borderRadius: radius.lg, padding: 14, minHeight: 92, justifyContent: 'space-between',
-  },
-  tileWide: { flexBasis: '100%', minHeight: 76 },
-  tileTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  // Nötr zemin: ızgarada yedi kırmızı simge, bakışı hiçbir yere
-  // yönlendirmiyordu — hepsi eşit sesle bağırıyordu.
-  tileIcon: {
-    width: 38, height: 38, borderRadius: radius.md,
+  headRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  h1: { flex: 1, fontSize: type.title1, fontWeight: '800', color: colors.text, letterSpacing: -0.6 },
+
+  // ── Kimlik ──
+  identity: { alignItems: 'center', paddingVertical: 20 },
+  avatarLg: {
+    width: 68, height: 68, borderRadius: 34,
     backgroundColor: colors.bgInput,
+    borderWidth: 1, borderColor: colors.cardBorder,
     alignItems: 'center', justifyContent: 'center',
   },
-  tileLabel: { fontSize: type.subhead, fontWeight: '700', color: colors.text, marginTop: 10 },
-  // Kilitli karo: soluk ama okunabilir. Metnin kendisi text2'de kalıyor —
-  // opacity ile solduran bir yaklaşım kontrastı 4.5:1'in altına düşürürdü.
-  tileDim: { opacity: 0.55 },
-  tileLabelDim: { color: colors.text2 },
+  avatarInitialLg: { fontSize: type.title2, fontWeight: '800', color: colors.text2 },
+  idName: { fontSize: type.headline, fontWeight: '700', color: colors.text, marginTop: 12 },
+  idHandle: { fontSize: type.footnote, color: colors.text3, marginTop: 2 },
 
-  // Izgaranın üstündeki açıklama kartı
-  lockCard: {
+  stats: { flexDirection: 'row', alignItems: 'center', marginTop: 18 },
+  stat: { alignItems: 'center', paddingHorizontal: 22 },
+  // Tablo rakamları: sayı değiştikçe sütun genişliği oynamasın
+  statN: { fontSize: type.headline, fontWeight: '700', color: colors.text, ...NUMERIC },
+  statLabel: { fontSize: type.caption, color: colors.text3, marginTop: 2 },
+  statDiv: { width: 1, height: 26, backgroundColor: colors.cardBorder },
+
+  signInCard: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1,
-    borderRadius: radius.lg, padding: 14, marginBottom: 12,
+    borderRadius: radius.lg, padding: 14, marginTop: 12,
   },
+  signInTitle: { fontSize: type.subhead, fontWeight: '700', color: colors.text },
+  signInDesc: { fontSize: type.footnote, color: colors.text2, marginTop: 3, lineHeight: 18 },
   lockIcon: {
     width: 38, height: 38, borderRadius: radius.md,
-    backgroundColor: colors.bgInput,
+    backgroundColor: colors.accentSoft,
     alignItems: 'center', justifyContent: 'center',
   },
-  lockTitle: { fontSize: type.subhead, fontWeight: '700', color: colors.text },
-  lockDesc: { fontSize: type.footnote, color: colors.text2, marginTop: 3, lineHeight: 18 },
 
-  // Bağlı Hesaplar bölümündeki tek çağrı düğmesi
-  lockCta: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    minHeight: 52, borderRadius: radius.lg,
-    borderWidth: 1, borderColor: colors.accent, backgroundColor: colors.accentSoft,
+  // ── Gruplar ──
+  sectionLabel: {
+    fontSize: type.caption, fontWeight: '700', color: colors.text3,
+    textTransform: 'uppercase', letterSpacing: 1.1,
+    marginTop: 28, marginBottom: 9,
   },
-  lockCtaText: { fontSize: type.subhead, fontWeight: '700', color: colors.accentText },
-  sectionLabel: { fontSize: type.caption, fontWeight: '800', color: colors.text3, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 },
-  accountCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
+  card: {
     backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1,
-    borderRadius: radius.md, padding: 12, marginBottom: 10,
+    borderRadius: radius.lg, overflow: 'hidden',
   },
-  avatar: { width: 44, height: 44, borderRadius: 10 },
+  div: { height: 1, backgroundColor: colors.cardBorder, marginLeft: 56 },
+
+  row: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    minHeight: 56, paddingHorizontal: 14, paddingVertical: 10,
+  },
+  rowIcon: { width: 30, alignItems: 'center' },
+  rowLabel: { flex: 1, fontSize: type.subhead, fontWeight: '600', color: colors.text },
+  rowSub: { fontSize: type.caption, color: colors.text3, marginTop: 2 },
+  rowCount: { fontSize: type.footnote, fontWeight: '700', color: colors.text3, ...NUMERIC },
+
+  storeAvatar: { width: 30, height: 30, borderRadius: 15 },
   avatarFallback: { alignItems: 'center', justifyContent: 'center' },
-  avatarInitial: { color: '#fff', fontWeight: '800', fontSize: type.body },
-  accCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1,
-    borderRadius: radius.lg, paddingHorizontal: 14, paddingVertical: 13,
-  },
-  accAvatar: {
-    width: 38, height: 38, borderRadius: 19, backgroundColor: colors.bgInput,
-    borderColor: colors.cardBorder, borderWidth: 1,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  accName: { fontSize: type.subhead, fontWeight: '700', color: colors.text },
-  badgeRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 3 },
-  accStatus: { fontSize: type.caption, color: colors.text3 },
-  discBtn: { padding: 4 },
-  connectBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9,
-    borderWidth: 1.5, borderStyle: 'dashed', borderRadius: radius.md, paddingVertical: 13,
-  },
-  connectText: { fontSize: type.subhead, fontWeight: '700' },
-  settingRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1,
-    borderRadius: radius.md, padding: 14,
-  },
-  settingText: { flex: 1, fontSize: type.subhead, color: colors.text, fontWeight: '500' },
-  wishBadge: { minWidth: 22, height: 22, borderRadius: 11, backgroundColor: colors.bgInput, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
-  wishBadgeText: { color: colors.text2, fontSize: type.caption, fontWeight: '800', ...NUMERIC },
+  avatarInitial: { color: '#fff', fontWeight: '800', fontSize: type.footnote },
+
   betaChip: {
     paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.sm,
     backgroundColor: colors.bgInput, borderWidth: 1, borderColor: colors.cardBorder,
-    marginRight: 4,
   },
   betaChipText: { color: colors.text3, fontSize: type.caption2, fontWeight: '900', letterSpacing: 0.5 },
 });
-
-
