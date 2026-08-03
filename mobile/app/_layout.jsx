@@ -3,6 +3,7 @@ import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import * as ScreenOrientation from 'expo-screen-orientation';
 import * as Notifications from 'expo-notifications';
 import { LanguageProvider } from '../src/context/LanguageContext';
 import { AuthProvider } from '../src/context/AuthContext';
@@ -41,6 +42,18 @@ export default function RootLayout() {
 
   // Share Extension'dan gelen bekleyen bir Steam linki varsa oyuna git
   useEffect(() => { startSharedLinkWatcher(); }, []);
+
+  // ── Yön politikası ──
+  // app.json'da orientation "default" YAPILMAK ZORUNDAYDI: iOS'ta Info.plist
+  // yatayı listelemiyorsa lockAsync(LANDSCAPE) hiç çalışmıyor. Ama bu, tüm
+  // uygulamanın serbestçe dönmesi demek — istenen bu değil.
+  //
+  // Çözüm: uygulamayı açılışta dikeye KİLİTLE, yalnızca video ekranı geçici
+  // olarak yatayı açsın. Böylece Info.plist izin veriyor ama davranış
+  // eskisiyle aynı kalıyor.
+  useEffect(() => {
+    ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch(() => {});
+  }, []);
 
   // Bildirime dokununca ilgili oyuna git
   useEffect(() => {

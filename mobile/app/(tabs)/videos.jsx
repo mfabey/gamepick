@@ -13,7 +13,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState, useCallback, useRef, useEffect, useMemo, memo } from 'react';
 import {
-  View, Text, Pressable, StyleSheet, ActivityIndicator, Dimensions, Platform,
+  View, Text, Pressable, StyleSheet, ActivityIndicator, useWindowDimensions, Platform,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
@@ -24,6 +24,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as WebBrowser from 'expo-web-browser';
 import { useVideoPlayer, VideoView } from 'expo-video';
+import * as ScreenOrientation from 'expo-screen-orientation';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
 import { fetchVideoFeed } from '../../src/api/videoFeed';
@@ -34,13 +35,13 @@ import { useAuth } from '../../src/context/AuthContext';
 import { useCollections, useCollectionsContaining } from '../../src/hooks/useCollections';
 import { toggleGameInCollection, createCollection } from '../../src/services/collectionsStore';
 import CollectionPicker from '../../src/components/CollectionPicker';
+import RotateGlowButton from '../../src/components/RotateGlowButton';
 import { recordSignal } from '../../src/services/tasteProfile';
 import { reportActivity } from '../../src/api/social';
 import { recordSeen } from '../../src/services/seenStore';
 import { colors, radius, spacing, PRESSED, TAB_SPACE } from '../../src/theme';
 import { useLanguage } from '../../src/context/LanguageContext';
 
-const { height: SCREEN_H, width: SCREEN_W } = Dimensions.get('window');
 const POOL = 3;
 
 export default function VideosScreen() {
@@ -74,8 +75,13 @@ export default function VideosScreen() {
   // olmaz ve aynı videolar tekrar gelirdi.
   const seedRef = useRef(String(Date.now()) + Math.random().toString(36).slice(2, 8));
 
-  // Tam ekran eleman yüksekliği — paging bunun tam katlarına oturur
-  const itemH = SCREEN_H;
+  // Tam ekran eleman ölçüleri — paging bunun tam katlarına oturur.
+  //
+  // useWindowDimensions ŞART: eskiden modül düzeyinde Dimensions.get('window')
+  // vardı ve döndürmede GÜNCELLENMİYORDU. Yatay moda geçince eleman yüksekliği
+  // hâlâ dikey ekranın yüksekliği olurdu; sayfalama tamamen bozulurdu.
+  const { width: winW, height: winH } = useWindowDimensions();
+  const itemH = winH;
 
   // ── Sabit oynatıcı havuzu ───────────────────────────────────────────────
   const cfg = useCallback((p) => {
@@ -193,6 +199,13 @@ export default function VideosScreen() {
         setHolding(false);
         uiOpacity.value = 1;
         if (tabHidden) tabHidden.value = 0;
+
+        // Dikey moda MUTLAKA dön. Uygulamanın geri kalanı yatay tasarlanmadı;
+        // bu ekrandan yatayken çıkılırsa kullanıcı bozuk bir arayüzde kalır ve
+        // düzeltmek için buraya geri dönmesi gerekirdi.
+        setLandscape(false);
+        ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP)
+          .catch(() => {});
       };
     }, [players, uiOpacity, tabHidden])
   );
@@ -264,10 +277,32 @@ export default function VideosScreen() {
     if (tabHidden) tabHidden.value = withTiming(0, { duration: 160 });
   }, [uiOpacity, tabHidden]);
 
+  // ── Yatay mod ───────────────────────────────────────────────────────────
+  // Dönüş animasyonunu iOS'un KENDİSİ yapıyor; üstüne kendi animasyonumuzu
+  // koymak sistemin geçişiyle çakışır ve titreme yaratır. Bizim animasyonumuz
+  // yalnızca ikonun kendi dönüşü.
+  //
+  // Uygulama _layout'ta dikeye kilitli; burada geçici olarak açıyoruz.
+  const [landscape, setLandscape] = useState(false);
+
+  const toggleOrientation = useCallback(async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const next = !landscape;
+    setLandscape(next);
+    try {
+      await ScreenOrientation.lockAsync(
+        next
+          ? ScreenOrientation.OrientationLock.LANDSCAPE
+          : ScreenOrientation.OrientationLock.PORTRAIT_UP
+      );
+    } catch { setLandscape(!next); }   // kilitlenemedi → durumu geri al
+  }, [landscape]);
+
   const renderItem = useCallback(({ item, index }) => (
     <VideoItem
       item={item}
       height={itemH}
+      width={winW}
       isActive={index === active}
       player={players[index % POOL]}
       muted={muted}
@@ -315,6 +350,14 @@ export default function VideosScreen() {
           Geri butonu YOK: bu artık bir sekme, geri dönülecek bir yer yok. */}
       <Animated.View style={topBarStyle} pointerEvents="box-none">
       <SafeAreaView edges={['top']} style={styles.topBar} pointerEvents="box-none">
+        {/* Yatay/dikey geçişi — başlık ORTADA kalsın diye mutlak konumlu */}
+        <View style={styles.topRight}>
+          <RotateGlowButton
+            active={landscape}
+            onPress={toggleOrientation}
+            accessibilityLabel={landscape ? t('vid.portrait') : t('vid.landscape')}
+          />
+        </View>
         <View style={styles.titleWrap}>
           <Text style={styles.topTitle}>{t('vid.title')}</Text>
           <View style={styles.betaBadge}><Text style={styles.betaText}>BETA</Text></View>
@@ -334,7 +377,7 @@ export default function VideosScreen() {
 // için atlanıyorlar. Bunun çalışması için onToggleMute'un sabit referans
 // olması gerekiyor — yukarıda useCallback ile sabitlendi.
 const VideoItem = memo(function VideoItem({
-  item, height, isActive, player, muted, onToggleMute,
+  item, height, width, isActive, player, muted, onToggleMute,
   paused, holding, uiOpacity, onTapVideo, onHoldStart, onHoldEnd, router, t,
 }) {
   // Basılı tutunca kenardaki her şey soluyor, yalnızca video kalıyor.
@@ -411,7 +454,7 @@ const VideoItem = memo(function VideoItem({
   }, [router, item]);
 
   return (
-    <View style={[styles.item, { height }]}>
+    <View style={[styles.item, { height, width }]}>
       {/* Poster — video hazır olana kadar; siyah flaşı önler */}
       {(!isActive || !ready) && (
         <Image
@@ -551,8 +594,10 @@ const styles = StyleSheet.create({
   loadingRoot: { flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' },
   loadingText: { color: colors.text2, fontSize: 13, marginTop: 12 },
 
-  item: { width: SCREEN_W, backgroundColor: '#000' },
+  item: { backgroundColor: '#000' },
 
+  // Dondurme dugmesi akista degil: baslik ortada kalsin
+  topRight: { position: 'absolute', right: spacing.md, top: 0, zIndex: 2 },
   topBar: {
     position: 'absolute', top: 0, left: 0, right: 0,
     // Geri butonu kalkınca tek çocuk kaldı; space-between sola yaslıyordu

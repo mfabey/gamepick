@@ -3,7 +3,7 @@
     "name": "Gamerisen",
     "slug": "gamerisen",
     "version": "2.2.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/icon.png",
     "scheme": "gamerisen",
     "userInterfaceStyle": "dark",
@@ -21,7 +21,8 @@
       },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "requireFullScreen": true
     },
     "android": {
       "package": "com.gamerisen.app",
