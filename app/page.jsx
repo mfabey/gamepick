@@ -646,7 +646,7 @@ function CinematicShowcase({ games }) {
 
   const promoItem = useMemo(() => ({
     id: 'willsavor-promo',
-    name: "Willsavor'dan bir kahve molası !",
+    name: lang === 'tr' ? "Willsavor'dan bir kahve molası !" : "A coffee break from Willsavor !",
     isPromo: true,
     promoUrl: 'https://www.willsavor.com/',
     promoImage: '/willsavor_banner.jpg',
