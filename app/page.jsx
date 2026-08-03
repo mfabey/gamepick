@@ -643,7 +643,24 @@ const Section = memo(function Section({ title, subtitle, href, games, loading, b
 function CinematicShowcase({ games }) {
   const { t, lang, formatPrice } = useLanguage();
   const [active, setActive] = useState(0);
-  const list = (games || []).filter(g => g && g.name).slice(0, 6);
+
+  const promoItem = useMemo(() => ({
+    id: 'willsavor-promo',
+    name: "Willsavor'dan bir kahve molası !",
+    isPromo: true,
+    promoUrl: 'https://www.willsavor.com/',
+    promoImage: '/willsavor_banner.jpg',
+    promoSubtitle: lang === 'tr'
+      ? 'Gamerisen üyelerine özel, GAMER10 koduyla yüzde 10 indirimi hemen kap.'
+      : 'Special for Gamerisen members, grab 10% discount immediately with code GAMER10.',
+    discount: 10,
+    genres: ['WillSavor Coffee Co.']
+  }), [lang]);
+
+  const list = useMemo(() => {
+    const raw = (games || []).filter(g => g && g.name && g.id !== 'willsavor-promo');
+    return [promoItem, ...raw].slice(0, 6);
+  }, [games, promoItem]);
 
   useEffect(() => {
     if (list.length < 2) return;
@@ -656,7 +673,7 @@ function CinematicShowcase({ games }) {
   }
 
   const g = list[active] || list[0];
-  const href = g.rawgSlug ? `/game/rawg/${g.rawgSlug}` : `/game/rawg/${g.id}`;
+  const href = g.isPromo ? g.promoUrl : (g.rawgSlug ? `/game/rawg/${g.rawgSlug}` : `/game/rawg/${g.id}`);
   const mcColor = g.metacritic >= 80 ? '#4ade80' : g.metacritic >= 60 ? '#fbbf24' : '#f87171';
 
   return (
@@ -702,29 +719,33 @@ function CinematicShowcase({ games }) {
       `}</style>
 
       {/* Ana sahne */}
-      <Link href={href} style={{ position: 'relative', borderRadius: 26, overflow: 'hidden', minHeight: 454, boxShadow: '0 40px 90px -36px rgba(0,0,0,0.8), inset 0 0 0 1px rgba(255,255,255,0.08)' }}>
-        <GameImage key={g.id} game={g} alt={g.name} fill isHero style={{ objectFit: 'cover' }} />
+      <Link href={href} target={g.isPromo ? "_blank" : undefined} rel={g.isPromo ? "noopener noreferrer" : undefined} style={{ position: 'relative', borderRadius: 26, overflow: 'hidden', minHeight: 454, boxShadow: '0 40px 90px -36px rgba(0,0,0,0.8), inset 0 0 0 1px rgba(255,255,255,0.08)' }}>
+        {g.isPromo ? (
+          <img src={g.promoImage} alt={g.name} style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} />
+        ) : (
+          <GameImage key={g.id} game={g} alt={g.name} fill isHero style={{ objectFit: 'cover' }} />
+        )}
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(105deg, rgba(6,7,9,0.94) 8%, rgba(6,7,9,0.6) 42%, rgba(6,7,9,0.12) 78%)' }} />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(6,7,9,0.85), transparent 46%)' }} />
         <div style={{ position: 'absolute', left: 0, bottom: 0, padding: '40px 44px', maxWidth: 620 }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '6px 13px', borderRadius: 999, background: 'color-mix(in srgb, var(--accent) 26%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 55%, transparent)', fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', color: '#fff', marginBottom: 16 }}>
-            {lang === 'tr' ? '✦ ÖNE ÇIKAN FIRSAT' : '✦ FEATURED DEAL'}
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '6px 13px', borderRadius: 999, background: g.isPromo ? 'rgba(251,191,36,0.15)' : 'color-mix(in srgb, var(--accent) 26%, transparent)', border: g.isPromo ? '1px solid rgba(251,191,36,0.35)' : '1px solid color-mix(in srgb, var(--accent) 55%, transparent)', fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', color: g.isPromo ? '#fbbf24' : '#fff', marginBottom: 16 }}>
+            {g.isPromo ? (lang === 'tr' ? '✦ SPONSORLU REKLAM' : '✦ SPONSORED AD') : (lang === 'tr' ? '✦ ÖNE ÇIKAN FIRSAT' : '✦ FEATURED DEAL')}
           </span>
           <h2 style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 'clamp(30px,4vw,52px)', lineHeight: 1.02, letterSpacing: '-1.4px', color: '#fff', marginBottom: 14, textWrap: 'balance' }}>{g.name}</h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 18 }}>
-            {g.metacritic ? <span style={{ fontSize: 12.5, fontWeight: 800, padding: '4px 9px', borderRadius: 8, background: 'rgba(8,10,14,0.6)', border: '1px solid rgba(255,255,255,0.14)', color: mcColor }}>{g.metacritic} Metacritic</span> : null}
-            <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.62)' }}>{(g.genres || []).slice(0, 3).join(' · ')}</span>
+            {!g.isPromo && g.metacritic ? <span style={{ fontSize: 12.5, fontWeight: 800, padding: '4px 9px', borderRadius: 8, background: 'rgba(8,10,14,0.6)', border: '1px solid rgba(255,255,255,0.14)', color: mcColor }}>{g.metacritic} Metacritic</span> : null}
+            <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.62)' }}>{g.isPromo ? g.promoSubtitle : (g.genres || []).slice(0, 3).join(' · ')}</span>
           </div>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
             <span className="btn btn-red" style={{ padding: '13px 26px', fontSize: 15 }}>
-              {lang === 'tr' ? 'İncele →' : 'View →'}
+              {g.isPromo ? (lang === 'tr' ? 'Siteye Git →' : 'Go to Site →') : (lang === 'tr' ? 'İncele →' : 'View →')}
             </span>
           </div>
         </div>
 
         {/* Sağ alta konumlandırılmış Fiyat Paneli (Mobil uyumlu) */}
-        {g.price !== null && g.discount > 0 && (
+        {!g.isPromo && g.price !== null && g.discount > 0 && (
           <div className="showcase-price-tag">
             <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', textDecoration: 'line-through' }}>{formatPrice(g.original)}</span>
             <span style={{ fontSize: 18, fontWeight: 900, color: '#fbbf24' }}>{formatPrice(g.price)}</span>
@@ -741,7 +762,11 @@ function CinematicShowcase({ games }) {
             <button key={it.id} onClick={() => setActive(i)} style={{ position: 'relative', flex: 1, minHeight: 0, border: 'none', padding: 0, borderRadius: 16, overflow: 'hidden', cursor: 'pointer', background: 'var(--bg-input)', opacity: on ? 1 : 0.62, boxShadow: on ? '0 14px 30px -12px var(--accent-glow)' : '0 8px 18px -12px rgba(0,0,0,0.6)', transition: 'opacity 0.25s, box-shadow 0.25s, transform 0.25s', outline: on ? '2px solid var(--accent)' : 'none', outlineOffset: -2 }}
               onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-3px) scale(1.04)'}
               onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
-              <GameImage game={it} alt="" fill style={{ objectFit: 'cover' }} />
+              {it.isPromo ? (
+                <img src={it.promoImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} />
+              ) : (
+                <GameImage game={it} alt="" fill style={{ objectFit: 'cover' }} />
+              )}
               <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(6,7,9,0.85), transparent 60%)' }} />
               <span style={{ position: 'absolute', left: 12, right: 12, bottom: 10, fontSize: 12.5, fontWeight: 700, lineHeight: 1.15, color: '#fff', textAlign: 'left', textShadow: '0 1px 5px rgba(0,0,0,0.6)' }}>{it.name}</span>
               
