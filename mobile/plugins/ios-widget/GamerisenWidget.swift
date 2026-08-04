@@ -2,11 +2,19 @@ import WidgetKit
 import SwiftUI
 
 // MARK: - Data Models
+//
+// `image` alanları base64 JPEG gövdesi taşıyor (veri URI öneki YOK).
+//
+// WidgetKit render sırasında ağdan görsel çekemez — timeline entry'si hazır
+// gelmek zorunda. Bu yüzden görseli uygulama indirip App Group'a metin olarak
+// yazıyor (src/utils/widgetImage.js). Alan OPSİYONEL: eski yükler ya da
+// indirmenin başarısız olduğu durumlar için widget görselsiz düzene düşüyor.
 struct DealData: Codable {
     let name: String
     let discount: Int
     let currentPrice: String
     let originalPrice: String
+    let image: String?
 }
 
 struct StatsData: Codable {
@@ -21,6 +29,17 @@ struct WishlistItem: Codable, Identifiable {
     let name: String
     let discount: Int
     let price: String
+    let image: String?
+}
+
+// base64 gövdesini UIImage'a çevirir. Bozuk/eksik veride nil döner ve
+// çağıran taraf görselsiz düzene düşer — widget hiçbir durumda boş
+// kalmıyor.
+func decodeWidgetImage(_ base64: String?) -> UIImage? {
+    guard let base64, !base64.isEmpty,
+          let data = Data(base64Encoded: base64),
+          let image = UIImage(data: data) else { return nil }
+    return image
 }
 
 // MARK: - Timeline Provider
@@ -86,7 +105,8 @@ let mockDeal = DealData(
     name: "The Witcher 3: Wild Hunt",
     discount: 80,
     currentPrice: "99,99 ₺",
-    originalPrice: "499,99 ₺"
+    originalPrice: "499,99 ₺",
+    image: nil
 )
 
 let mockStats = StatsData(
@@ -97,9 +117,9 @@ let mockStats = StatsData(
 )
 
 let mockWishlist = [
-    WishlistItem(name: "Elden Ring", discount: 30, price: "699,00 ₺"),
-    WishlistItem(name: "Hades II", discount: 15, price: "382,50 ₺"),
-    WishlistItem(name: "Portal 2", discount: 90, price: "10,50 ₺")
+    WishlistItem(name: "Elden Ring", discount: 30, price: "699,00 ₺", image: nil),
+    WishlistItem(name: "Hades II", discount: 15, price: "382,50 ₺", image: nil),
+    WishlistItem(name: "Portal 2", discount: 90, price: "10,50 ₺", image: nil)
 ]
 
 // MARK: - Color Palette
@@ -144,7 +164,22 @@ struct DealWidgetView: View {
     var body: some View {
         ZStack {
             AppColors.bg
-            
+
+            // Kapak görseli zemin olarak. Üstüne koyudan koyuya bir gradyan
+            // biniyor: metin keyfi bir görselin üstünde duracağı için
+            // okunurluk garanti altına alınmalı — kapağın rengi ne olursa
+            // olsun yazılar aynı kontrastta kalıyor.
+            if let cover = decodeWidgetImage(deal?.image) {
+                Image(uiImage: cover)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                LinearGradient(
+                    colors: [AppColors.bg.opacity(0.55), AppColors.bg.opacity(0.96)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            }
+
             if let deal = deal {
                 VStack(alignment: .leading, spacing: 6) {
                     HStack {
@@ -287,6 +322,16 @@ struct WishlistWidgetView: View {
                     VStack(spacing: 6) {
                         ForEach(wishlist.prefix(3)) { item in
                             HStack {
+                                // Küçük kapak — oyunu addan önce bu tanıtıyor.
+                                // Görsel yoksa satır eskisi gibi yalnız metinle
+                                // çiziliyor, boşluk bırakılmıyor.
+                                if let cover = decodeWidgetImage(item.image) {
+                                    Image(uiImage: cover)
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(width: 40, height: 19)
+                                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                                }
                                 Text(item.name)
                                     .font(.system(size: 12, weight: .medium))
                                     .foregroundColor(AppColors.text)

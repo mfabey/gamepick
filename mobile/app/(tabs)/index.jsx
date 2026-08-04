@@ -60,12 +60,24 @@ export default function HomeScreen() {
     if (sale && sale.length > 0) {
       const best = [...sale].sort((a, b) => (b.discount || 0) - (a.discount || 0))[0];
       if (best) {
-        import('../../modules/gamerisen-widget-module').then(({ setWidgetData }) => {
+        // Kapak görseli base64 olarak yükün İÇİNDE gidiyor: WidgetKit render
+        // sırasında ağdan görsel çekemiyor, hazır bayt bekliyor.
+        //
+        // İndirme başarısız olursa image null kalıyor ve widget görselsiz
+        // düzenine düşüyor — bu yüzden setWidgetData indirmeyi BEKLEMİYOR
+        // olsaydı yarış oluşurdu; await ile sıralı tutuluyor.
+        Promise.all([
+          import('../../modules/gamerisen-widget-module'),
+          import('../../src/utils/widgetImage'),
+        ]).then(async ([{ setWidgetData }, { fetchImageBase64, steamHeaderUrl }]) => {
+          const url = best.image || steamHeaderUrl(best.appid);
+          const image = await fetchImageBase64(url);
           const payload = {
             name: best.name,
             discount: best.discount || 0,
             currentPrice: formatPrice(best.price),
-            originalPrice: formatPrice(best.original)
+            originalPrice: formatPrice(best.original),
+            image,
           };
           setWidgetData('gamerisen_deal', JSON.stringify(payload));
         }).catch(() => {});

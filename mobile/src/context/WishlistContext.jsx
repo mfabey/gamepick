@@ -87,6 +87,7 @@ export function WishlistProvider({ children }) {
           const priceInfo = g.appid ? prices[g.appid] : null;
           return {
             name: g.name,
+            appid: g.appid,
             discount: priceInfo?.discount || 0,
             price: priceInfo?.current != null ? `${priceInfo.current.toLocaleString('tr-TR')} ₺` : '',
             originalPrice: priceInfo?.original != null ? priceInfo.original : 0,
@@ -95,15 +96,26 @@ export function WishlistProvider({ children }) {
         })
         .filter(g => g.discount > 0 || (g.originalPrice > 0 && g.currentPrice < g.originalPrice))
         .sort((a, b) => b.discount - a.discount)
-        .slice(0, 3)
-        .map(g => ({
-          name: g.name,
-          discount: g.discount,
-          price: g.price
-        }));
+        .slice(0, 3);
 
-      import('../../modules/gamerisen-widget-module').then(({ setWidgetData }) => {
-        setWidgetData('gamerisen_wishlist', JSON.stringify(saleItems));
+      // Kapaklar base64 olarak yükün içinde gidiyor — WidgetKit render
+      // sırasında indirme yapamıyor. Küçük capsule boyu seçildi (231×87,
+      // ~10 KB): satır küçük resmi 40×19pt, daha büyüğü UserDefaults'a
+      // gereksiz yük olurdu. En fazla üç öğe var, toplam ~40 KB.
+      Promise.all([
+        import('../../modules/gamerisen-widget-module'),
+        import('../utils/widgetImage'),
+      ]).then(async ([{ setWidgetData }, { fetchImageBase64, steamCapsuleUrl }]) => {
+        const withImages = await Promise.all(
+          saleItems.map(async (g) => ({
+            name: g.name,
+            discount: g.discount,
+            price: g.price,
+            image: await fetchImageBase64(steamCapsuleUrl(g.appid)),
+          }))
+        );
+        if (!alive) return;
+        setWidgetData('gamerisen_wishlist', JSON.stringify(withImages));
       }).catch(() => {});
     }).catch(() => {});
 
