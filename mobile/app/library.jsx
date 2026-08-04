@@ -224,9 +224,14 @@ export default function LibraryScreen() {
           const icon = s.type === 'xbox' ? 'logo-xbox' : s.type === 'combined' ? 'sparkles' : 'logo-steam';
           return (
             <Pressable key={s.key} onPress={() => setView(s.key)}
-              style={[styles.chip, active && { backgroundColor: accent, borderColor: accent }]}>
-              <Ionicons name={icon} size={14} color={active ? '#fff' : accent} />
-              <Text style={[styles.chipText, active && { color: '#fff', fontWeight: '700' }]} numberOfLines={1}>{s.label}</Text>
+              style={[styles.chip, active && styles.chipOn]}>
+              {/* Seçili değilken ikon marka renginde kalıyor — platformu o
+                  söylüyor. Seçim ise games/news ile aynı dil: dolu nötr yüzey,
+                  koyu metin. Önceden seçili çip marka rengiyle doluyordu, yani
+                  aynı renk hem "hangi platform" hem "hangisi seçili" demeye
+                  çalışıyordu. */}
+              <Ionicons name={icon} size={14} color={active ? colors.bg : accent} />
+              <Text style={[styles.chipText, active && styles.chipTextOn]} numberOfLines={1}>{s.label}</Text>
             </Pressable>
           );
         })}
@@ -266,7 +271,11 @@ export default function LibraryScreen() {
                 ].map(o => (
                   <Pressable key={o.v} onPress={() => setSort(o.v)}
                     style={[styles.sortChip, sort === o.v && styles.sortChipActive]}>
-                    <Text style={[styles.sortChipText, sort === o.v && { color: colors.accentText, fontWeight: '700' }]}>{o.label}</Text>
+                    {/* Yüzey (sortChipActive) zaten nötr; metin de vurgudan
+                        çıkıp ağırlığa devrediyor. Sıralama ikincil bir denetim
+                        olduğu için ana filtre çiplerinden daha sönük kalması
+                        kasıtlı — ama marka rengi taşımıyor. */}
+                    <Text style={[styles.sortChipText, sort === o.v && { color: colors.text, fontWeight: '700' }]}>{o.label}</Text>
                   </Pressable>
                 ))}
                 <Text style={styles.countText}>{filtered.length}</Text>
@@ -420,6 +429,8 @@ const styles = StyleSheet.create({
   chipsRow: { paddingHorizontal: spacing.lg, gap: 8, paddingVertical: 10, alignItems: 'center' },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 6, maxWidth: 200, paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.pill, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder },
   chipText: { fontSize: type.footnote, color: colors.text2, fontWeight: '500' },
+  chipOn: { backgroundColor: colors.text, borderColor: colors.text },
+  chipTextOn: { color: colors.bg, fontWeight: '700' },
 
   headerCard: { borderRadius: radius.lg, borderWidth: 1, overflow: 'hidden', backgroundColor: 'rgba(20,23,30,0.6)', marginBottom: 14 },
   accentBar: { height: 3, width: '55%' },
@@ -430,10 +441,13 @@ const styles = StyleSheet.create({
   avatarFallback: { alignItems: 'center', justifyContent: 'center' },
   avatarInitial: { color: '#fff', fontWeight: '800', fontSize: type.body },
   platformTag: { fontSize: type.caption2, fontWeight: '800', color: colors.steam, letterSpacing: 1, marginBottom: 2 },
-  headerName: { fontSize: type.body, fontWeight: '800', color: '#fff' },
+  // Zemin headerCard: rgba(20,23,30,0.6) — koyu uygulama yuzeyi, gorsel
+  // degil. Saf beyaz burada theme.js'te olculen kontrast zarfinin disinda
+  // kaliyordu; token tonuna donuyor.
+  headerName: { fontSize: type.body, fontWeight: '800', color: colors.text },
   statsRow: { flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 14, gap: 4 },
   statCell: { flex: 1, alignItems: 'center' },
-  statValue: { fontSize: type.headline, fontWeight: '800', color: '#fff', letterSpacing: -0.5 },
+  statValue: { fontSize: type.headline, fontWeight: '800', color: colors.text, letterSpacing: -0.5 },
   statLabel: { fontSize: type.caption2, fontWeight: '700', color: colors.text3, textTransform: 'uppercase', letterSpacing: 0.4, marginTop: 3 },
 
   searchBox: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: radius.md, paddingHorizontal: 14, height: 42, marginBottom: 10 },
