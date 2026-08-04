@@ -118,7 +118,7 @@ export default function NewsScreen() {
                 const label = c === 'all' ? t('news.all') : c;
                 return (
                   <Pressable key={c} onPress={() => setCat(c)} style={[styles.chip, active && styles.chipActive]}>
-                    <Text style={[styles.chipText, active && { color: '#fff', fontWeight: '700' }]}>{label}</Text>
+                    <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
                   </Pressable>
                 );
               })}
@@ -176,7 +176,9 @@ const styles = StyleSheet.create({
 
   chipsRow: { paddingHorizontal: spacing.lg, gap: 8, paddingVertical: 14 },
   chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.pill, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder },
-  chipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  // games.jsx ile ayni secim dili: dolu notr yuzey, koyu metin, agirlik.
+  chipActive: { backgroundColor: colors.text, borderColor: colors.text },
+  chipTextActive: { color: colors.bg, fontWeight: '700' },
   chipText: { fontSize: type.footnote, color: colors.text2, fontWeight: '500' },
 
   row: { flexDirection: 'row', gap: 12, paddingHorizontal: spacing.lg, paddingVertical: 12 },

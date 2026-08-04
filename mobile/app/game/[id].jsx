@@ -229,10 +229,21 @@ export default function GameDetail() {
               onPress={() => { Haptics.selectionAsync(); setPickerOpen(true); }}
               hitSlop={10}
             >
-              <Ionicons name={inAnyCollection ? 'albums' : 'albums-outline'} size={20} color="#fff" />
+              <Ionicons
+                name={inAnyCollection ? 'albums' : 'albums-outline'}
+                size={20}
+                color={inAnyCollection ? colors.bg : '#fff'}
+              />
             </Pressable>
             <Pressable style={[styles.iconBtn, watched && styles.iconBtnActive]} onPress={onToggleWishlist} hitSlop={10}>
-              <Ionicons name={watched ? 'notifications' : 'notifications-outline'} size={20} color={watched ? '#fff' : '#fff'} />
+              {/* Aktif yüzey açık olduğu için ikon koyuya dönüyor. Eskiden
+                  `watched ? '#fff' : '#fff'` yazıyordu — iki dalı da aynı
+                  olan işlevsiz bir üçlüydü. */}
+              <Ionicons
+                name={watched ? 'notifications' : 'notifications-outline'}
+                size={20}
+                color={watched ? colors.bg : '#fff'}
+              />
             </Pressable>
           </View>
         </SafeAreaView>
@@ -483,7 +494,10 @@ const styles = StyleSheet.create({
   coverWrap: { height: 320, backgroundColor: '#0d0f12' },
   topBar: { paddingHorizontal: spacing.md, paddingTop: 6, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   iconBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
-  iconBtnActive: { backgroundColor: colors.accent },
+  // Aktif durum dolu nötr yüzeyle: ikon zaten outline→dolu değişiyor, yani
+  // renk olmadan da iki sinyal var (biçim + yüzey). Kapak görselinin üstünde
+  // durduğu için açık yüzey her sahnede okunur kalıyor.
+  iconBtnActive: { backgroundColor: colors.text },
   body: { flex: 1, marginTop: -48 },
   name: { fontSize: type.title1, fontWeight: '900', color: colors.text, letterSpacing: -0.5, lineHeight: 30 },
 

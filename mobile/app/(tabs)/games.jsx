@@ -240,7 +240,7 @@ export default function GamesScreen() {
       {/* Mod chip'leri */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll} contentContainerStyle={[styles.chipsRow, { paddingBottom: 6 }]}>
         {MODES.map(m => (
-          <Chip key={m.v} active={mode === m.v} label={m.label} accent="#6ea8ff" onPress={() => setMode(m.v)} />
+          <Chip key={m.v} active={mode === m.v} label={m.label} onPress={() => setMode(m.v)} />
         ))}
       </ScrollView>
       </SafeAreaView>
@@ -288,13 +288,17 @@ export default function GamesScreen() {
   );
 }
 
-function Chip({ active, label, onPress, accent = colors.accent }) {
+// Seçim RENKLE değil, dolu nötr yüzey + koyu metin + ağırlıkla gösteriliyor.
+//
+// Önceden tür satırı kırmızı, mod satırı mavi (#6ea8ff) dolguyla seçiliyordu:
+// yan yana duran iki filtre satırı, aynı jest için iki farklı dil. Üstelik
+// seçili çip ekranın tek gerçek CTA'sıyla aynı ağırlıktaydı.
+//
+// `accent` prop'u kaldırıldı — artık seçimin rengi diye bir şey yok.
+function Chip({ active, label, onPress }) {
   return (
-    <Pressable
-      onPress={onPress}
-      style={[styles.chip, active && { backgroundColor: accent, borderColor: accent }]}
-    >
-      <Text style={[styles.chipText, active && { color: '#0b0d10', fontWeight: '700' }]}>{label}</Text>
+    <Pressable onPress={onPress} style={[styles.chip, active && styles.chipOn]}>
+      <Text style={[styles.chipText, active && styles.chipTextOn]}>{label}</Text>
     </Pressable>
   );
 }
@@ -327,6 +331,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder,
   },
   chipText: { fontSize: type.footnote, color: colors.text2, fontWeight: '500' },
+  chipOn: { backgroundColor: colors.text, borderColor: colors.text },
+  chipTextOn: { color: colors.bg, fontWeight: '700' },
   cell: { flex: 1, paddingHorizontal: 6, paddingBottom: spacing.md },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   emptyText: { color: colors.text3, fontSize: type.subhead, fontWeight: '600' },
