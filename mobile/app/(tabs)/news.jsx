@@ -2,7 +2,8 @@ import { memo, useState, useMemo, useCallback , useRef} from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { TopFade, BottomFade } from '../../src/components/EdgeFade';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import { fetchNews } from '../../src/api/news';
@@ -20,6 +21,12 @@ export default function NewsScreen() {
   useTabPressAction(useCallback(() => scrollRefToTop(listRef), []));
   const onTabScroll = useTabBarScroll();
   const { t, lang } = useLanguage();
+  const insets = useSafeAreaInsets();
+  // Başlık listenin DIŞINDA ve sabit: sönümleme bandı onun altına, listenin
+  // gerçek üst kenarına oturmalı. Üstüne binerse başlığı karartır.
+  // Yükseklik ölçülüyor, sabit yazılmıyor — yazı tipi boyutu ve dil değiştikçe
+  // değişiyor (games.jsx'te aynı gerekçe).
+  const [headerH, setHeaderH] = useState(0);
   const [cat, setCat] = useState('all');
 
   // Cache-first: yeniden açılışta anında; arka planda tazelenir
@@ -69,7 +76,14 @@ export default function NewsScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <Text style={styles.header}>{t('news.title')}</Text>
+      <Text
+        style={styles.header}
+        onLayout={(e) => setHeaderH(e.nativeEvent.layout.height)}
+      >
+        {t('news.title')}
+      </Text>
+      {headerH > 0 ? <TopFade top={insets.top + headerH} /> : null}
+      <BottomFade />
       <FlashList
         ref={listRef}
         onScroll={onTabScroll}

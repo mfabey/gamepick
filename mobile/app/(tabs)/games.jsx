@@ -5,12 +5,13 @@ import {
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import Animated, { useAnimatedStyle, interpolate, Extrapolation } from 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchGames } from '../../src/api/games';
 import { fetchQuery, getEntry, isFresh } from '../../src/services/queryCache';
 import GameCard from '../../src/components/GameCard';
 import { GamesGridSkeleton } from '../../src/components/Skeleton';
+import { TopFade, BottomFade } from '../../src/components/EdgeFade';
 import { prefetchImages } from '../../src/utils/prefetch';
 import { useTimeToData } from '../../src/dev/perf';
 import { colors, radius, spacing, TAB_SPACE, type } from '../../src/theme';
@@ -136,6 +137,7 @@ export default function GamesScreen() {
   const [headerH, setHeaderH] = useState(0);
   const compact = useTabBarCompact();
   const reducedMotion = useReducedMotion();
+  const insets = useSafeAreaInsets();
 
   const headerStyle = useAnimatedStyle(() => {
     if (reducedMotion || !compact || headerH === 0) return {};
@@ -159,7 +161,26 @@ export default function GamesScreen() {
   ), []);
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <View style={styles.safe}>
+      {/* Durum çubuğu şeridi — katlanan başlıktan BAĞIMSIZ, hiç hareket etmez.
+          Başlığı eksik kaydırarak şerit bırakmayı denemek işe yaramıyor:
+          geriye başlığın ALTI kalıyor, yani chip satırları saatin arkasına
+          giriyor. Ayrı katman gerekiyor.
+
+          zIndex başlığınkinden (10) büyük: başlık yukarı kayarken bunun
+          ARKASINA girsin, kenarı şeridin altından görünmesin. */}
+      <View
+        style={[styles.statusStrip, { height: insets.top }]}
+        pointerEvents="none"
+      />
+
+      {/* Kenar sönümlemesi — şeridin ALTINDAN başlıyor ki onun keskin alt
+          kenarını yumuşatsın. Başlık açıkken zaten görünmüyor (zIndex 9,
+          başlık 10): yalnızca başlık katlanıp içerik yukarı geçtiğinde
+          devreye giriyor, tam da sertliğin göründüğü an. */}
+      <TopFade top={insets.top} />
+      <BottomFade />
+
       {/* ── Katlanır üst bölüm ──
           Aşağı kaydırınca yukarı kayıp gözden kayboluyor, yukarı kaydırınca
           geri geliyor.
@@ -177,6 +198,17 @@ export default function GamesScreen() {
         style={[styles.headerWrap, headerStyle]}
         onLayout={(e) => setHeaderH(e.nativeEvent.layout.height)}
       >
+      {/* Güvenli alan SARMALAYICININ İÇİNDE — sıra önemli.
+          Dışarıda olduğunda başlık durum çubuğunun üstüne biniyordu: Yoga'da
+          mutlak konumlu çocuk `top: 0` derken ebeveynin paddingTop'unu yok
+          sayar, SafeAreaView ise güvenli alanı tam olarak paddingTop ile
+          uygular. İçeri alınca dolgu normal akıştaki çocuklara işliyor.
+          videos.jsx'teki üst çubuk da aynı sırayla kurulu.
+
+          onLayout bu yüzden artık inset'i de ölçüyor; headerH kendiliğinden
+          büyüdüğü için listenin üst dolgusu ve katlanma mesafesi ayrıca
+          düzeltilmek zorunda değil. */}
+      <SafeAreaView edges={['top']}>
       {/* Başlık + arama */}
       <View style={styles.header}>
         <Text style={styles.title}>{t('games.title')}</Text>
@@ -211,6 +243,7 @@ export default function GamesScreen() {
           <Chip key={m.v} active={mode === m.v} label={m.label} accent="#6ea8ff" onPress={() => setMode(m.v)} />
         ))}
       </ScrollView>
+      </SafeAreaView>
       </Animated.View>
 
       {/* Grid.
@@ -251,7 +284,7 @@ export default function GamesScreen() {
           />
         )}
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -273,6 +306,10 @@ const styles = StyleSheet.create({
   // üst üste binerdi. zIndex de gerekli, yoksa liste üstünü örter.
   headerWrap: {
     position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
+    backgroundColor: colors.bg,
+  },
+  statusStrip: {
+    position: 'absolute', top: 0, left: 0, right: 0, zIndex: 11,
     backgroundColor: colors.bg,
   },
   header: { paddingHorizontal: spacing.lg, paddingTop: 8, paddingBottom: 6 },

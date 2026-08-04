@@ -4,6 +4,7 @@ import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { BottomFade } from '../../src/components/EdgeFade';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
@@ -206,6 +207,12 @@ export default function HomeScreen() {
   return (
     <View style={styles.root}>
       <SafeAreaView edges={['top']} />
+      {/* ÜST bant burada YOK, bilerek: bu ekranda listenin tepesinde boşluk
+          yok — "GAMERISEN" başlığı doğrudan üst kenarda başlıyor ve bandın
+          içinde kalıp okunmaz hâle geliyordu. Diğer sekmelerde bant ya opak
+          bir başlığın altında (oyunlar, haberler) ya da başlık üstündeki
+          boşlukta (profil) duruyor; burada duracak yer yok. */}
+      <BottomFade />
       <FlashList
         ref={listRef}
         onScroll={onTabScroll}
