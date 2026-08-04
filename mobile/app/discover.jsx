@@ -206,7 +206,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accentSoft, borderColor: colors.accentBorder, borderWidth: 1,
     borderRadius: radius.pill, paddingHorizontal: 11, paddingVertical: 5,
   },
-  tagText: { color: '#ff8085', fontSize: type.caption, fontWeight: '700' },
+  // Tür etiketi — oyun detayındaki genreText ile aynı rol, aynı karar:
+  // sabit bilgi, eylem değil. Vurgu rengi burada da gürültüydü.
+  tagText: { color: colors.text2, fontSize: type.caption, fontWeight: '700' },
 
   msg: { color: colors.text3, fontSize: type.subhead, lineHeight: 21, marginTop: 20, marginBottom: 8 },
 });

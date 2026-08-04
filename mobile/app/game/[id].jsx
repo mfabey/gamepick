@@ -252,7 +252,12 @@ export default function GameDetail() {
           ) : null}
           {detail?.rating > 0 ? (
             <View style={styles.metaChip}>
-              <Text style={[styles.metaChipText, { color: colors.accentText }]}>★ {detail.rating.toFixed(1)}</Text>
+              {/* Yanındaki Metacritic rengi DEĞERE bağlı (mcColor: 80+ yeşil,
+                  60+ amber, altı kırmızı). Puan ise değeri ne olursa olsun
+                  kırmızıydı — aynı satırda iki farklı renklendirme mantığı,
+                  üstelik kırmızı olumsuz okunduğu için 4.5/5 kötü görünüyordu.
+                  Kural: renk değere bağlıysa kalır, değilse nötrleşir. */}
+              <Text style={[styles.metaChipText, { color: colors.text }]}>★ {detail.rating.toFixed(1)}</Text>
               <Text style={styles.metaChipLabel}>Puan</Text>
             </View>
           ) : null}
@@ -519,10 +524,12 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: type.body, fontWeight: '800', color: colors.text, marginBottom: 12 },
   genreWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   genreChip: { backgroundColor: colors.bgInput, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 6 },
-  genreText: { color: '#ff8085', fontSize: type.footnote, fontWeight: '700' },
+  genreText: { color: colors.text2, fontSize: type.footnote, fontWeight: '700' },
   shot: { width: 264, height: 148, borderRadius: radius.md, backgroundColor: colors.card },
   desc: { fontSize: type.subhead, color: colors.text2, lineHeight: 21 },
-  moreLink: { color: colors.accentText, fontSize: type.footnote, fontWeight: '700', marginTop: 8 },
+  // Gerçek bir eylem (metni açıyor), o yüzden text2 değil text: nötr ama
+  // parlak. Vurgu rengi bu ekranda fiyat ve indirime ayrılmış durumda.
+  moreLink: { color: colors.text, fontSize: type.footnote, fontWeight: '700', marginTop: 8 },
   modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', alignItems: 'center', justifyContent: 'center' },
   modalImage: { width: '100%', height: '100%' },
   closeBtn: { position: 'absolute', top: 50, right: 20, width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center', zIndex: 10 },

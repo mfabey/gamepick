@@ -166,7 +166,12 @@ const styles = StyleSheet.create({
 
   catRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   catPill: { backgroundColor: colors.bgInput, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: 9, paddingVertical: 3 },
-  catPillText: { color: '#ff6b70', fontSize: type.caption2, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.4 },
+  // Kategori SABİT bir etiket, eylem değil. Kırmızıyken her haber satırında
+  // tekrarlıyor ve ekrandaki vurgu sayısını tek başına dörde katlıyordu —
+  // üstelik listedeki tüm satırlar aynı kategoriyi taşıdığında hiçbir şey
+  // ayırt etmiyor. Rolü zaten büyük harf + harf aralığı + 800 ağırlık
+  // anlatıyor; renge ihtiyaç yok.
+  catPillText: { color: colors.text2, fontSize: type.caption2, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.4 },
   metaText: { color: 'rgba(255,255,255,0.7)', fontSize: type.caption, fontWeight: '500' },
 
   chipsRow: { paddingHorizontal: spacing.lg, gap: 8, paddingVertical: 14 },
@@ -177,7 +182,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: 12, paddingHorizontal: spacing.lg, paddingVertical: 12 },
   thumb: { width: 108, height: 76, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.card },
   catPillSm: { alignSelf: 'flex-start', backgroundColor: colors.bgInput, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2, marginBottom: 5 },
-  catPillTextSm: { color: '#ff6b70', fontSize: type.caption2, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.3 },
+  catPillTextSm: { color: colors.text2, fontSize: type.caption2, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.3 },
   rowTitle: { color: colors.text, fontSize: type.subhead, fontWeight: '700', lineHeight: 18 },
   rowMeta: { color: colors.text3, fontSize: type.caption, marginTop: 5, fontWeight: '500' },
 

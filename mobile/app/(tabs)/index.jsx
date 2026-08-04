@@ -330,7 +330,10 @@ const styles = StyleSheet.create({
     fontSize: type.caption, fontWeight: '700', color: colors.text2,
     textTransform: 'uppercase', letterSpacing: 1.1,
   },
-  viewAll: { fontSize: type.footnote, color: colors.accentText, fontWeight: '700' },
+  // Bölüm başına bir tane olduğu için ekranda üç kez tekrarlıyordu. Gideceği
+  // yeri "›" zaten söylüyor; vurgu rengi buraya değil, sayfadaki tek gerçek
+  // eyleme (arama düğmesi) ait.
+  viewAll: { fontSize: type.footnote, color: colors.text2, fontWeight: '700' },
   row: { paddingHorizontal: spacing.lg, gap: 12 },
   card: { width: 132 },
 
