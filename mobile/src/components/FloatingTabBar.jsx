@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { View, Pressable, StyleSheet, Platform } from 'react-native';
+import { View, Pressable, StyleSheet, Platform, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassView, isLiquidGlassAvailable, isGlassEffectAPIAvailable } from 'expo-glass-effect';
@@ -42,6 +42,16 @@ const GLASS_OK = (() => {
 export default function FloatingTabBar({ state, descriptors, navigation }) {
   const insets = useSafeAreaInsets();
   const [barW, setBarW] = useState(0);
+  // Yatayda çubuk uzun kenarı baştan sona kaplıyordu (width: '100%'): 874pt'lik
+  // bir bant, hem görsel olarak ezici hem de video izlerken gereksiz yer
+  // kaplıyor. Genişlik sınırlanıyor, `wrap` zaten alignItems:'center' taşıdığı
+  // için kendiliğinden ortalanıyor.
+  //
+  // Yükseklik SABİT bırakıldı: BAR_H modül düzeyinde ve RADIUS ile hap
+  // konumunun (top: (BAR_H-42)/2) hesabı ona bağlı. Yüksekliği yöne göre
+  // değiştirmek bu üçünü birden oynatmak demekti; sorun genişlikteydi.
+  const { width: winW, height: winH } = useWindowDimensions();
+  const isLandscape = winW > winH;
   const reducedMotion = useReducedMotion();
   const compact = useTabBarCompact();
   const hidden = useTabBarHidden();
@@ -103,7 +113,7 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
   return (
     <View pointerEvents="box-none" style={[styles.wrap, { bottom: insets.bottom || 10 }]}>
       <Animated.View
-        style={[styles.bar, GLASS_OK ? styles.barGlass : styles.barSolid, barStyle]}
+        style={[styles.bar, isLandscape && styles.barLandscape, GLASS_OK ? styles.barGlass : styles.barSolid, barStyle]}
         onLayout={e => setBarW(e.nativeEvent.layout.width)}
       >
         {/* Cam katmanı içeriği SARMALAMAZ, arkasında durur — sekme öğeleri
@@ -173,6 +183,10 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS,
     overflow: 'hidden',
   },
+  // 420: beş sekmenin asgarisi 5×PILL_W + 2×PAD = 272pt, yani rahat sığıyor;
+  // 874pt'lik yatay kenarın yarısından azını kaplıyor. barW onLayout ile
+  // ölçüldüğü için hap konumu bu genişliğe kendiliğinden uyuyor.
+  barLandscape: { maxWidth: 420 },
   // iOS 26+: arka planı cam veriyor, altına düz renk KOYULMAZ
   barGlass: { backgroundColor: 'transparent' },
   // iOS 26 öncesi ve Android: eski görünüm

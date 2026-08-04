@@ -44,6 +44,11 @@ import { useLanguage } from '../../src/context/LanguageContext';
 
 const POOL = 3;
 
+// Yatayda ekranın köşe kavisinden kaçmak için üst çubuğa verilen paylar.
+// Dikeyde gerek yok: orada güvenli alan (~59pt) zaten bu işi görüyor.
+const LANDSCAPE_TOP_PAD = 14;
+const LANDSCAPE_SIDE_PAD = 22;
+
 export default function VideosScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -82,6 +87,10 @@ export default function VideosScreen() {
   // hâlâ dikey ekranın yüksekliği olurdu; sayfalama tamamen bozulurdu.
   const { width: winW, height: winH } = useWindowDimensions();
   const itemH = winH;
+  // Üst çubuğun yatay paylarında kullanılıyor. Ekranın `landscape` durumundan
+  // değil gerçek ölçüden okunuyor: kilit uygulanana kadar ikisi ayrışıyor ve
+  // geçiş anında düğme yanlış yere sıçrardı.
+  const isLandscape = winW > winH;
 
   // ── Sabit oynatıcı havuzu ───────────────────────────────────────────────
   const cfg = useCallback((p) => {
@@ -354,9 +363,28 @@ export default function VideosScreen() {
           düşüyordu ve içindeki mutlak konumlu çubuk ona göre hizalanıp
           görünmez oluyordu. */}
       <Animated.View style={[styles.topBarWrap, topBarStyle]} pointerEvents="box-none">
-      <SafeAreaView edges={['top']} style={styles.topBar} pointerEvents="box-none">
-        {/* Yatay/dikey geçişi — başlık ORTADA kalsın diye mutlak konumlu */}
-        <View style={styles.topRight}>
+      <SafeAreaView
+        edges={['top']}
+        style={[styles.topBar, isLandscape && { paddingTop: LANDSCAPE_TOP_PAD }]}
+        pointerEvents="box-none"
+      >
+        {/* Yatay/dikey geçişi — başlık ORTADA kalsın diye mutlak konumlu.
+            top AÇIKÇA insets.top: mutlak konumlu çocuk ebeveynin paddingTop'unu
+            yok saydığı için, bu satır olmadan düğme güvenli alanı da kapsayan
+            aralıkta ortalanıyor ve yarısı durum çubuğuna giriyordu. Orada iOS
+            "başa sar" hareketini tetikliyor, dokunuş düğmeye hiç ulaşmıyordu.
+
+            Yatayda insets.top 0'a düşüyor: düğmenin üst kenarı ekranın tam
+            tepesine değiyor, sağdan da köşe kavisinin içinde kalıyordu.
+            LANDSCAPE_TOP_PAD ikisine de uygulanıyor — çubuğa padding, düğmeye
+            aynı sayı — böylece düğme köşeden kurtulurken başlıkla hizası
+            bozulmuyor. Sağ pay ayrıca kavisi geçecek kadar açılıyor. */}
+        <View
+          style={[styles.topRight, {
+            top: insets.top + (isLandscape ? LANDSCAPE_TOP_PAD : 0),
+            right: spacing.md + insets.right + (isLandscape ? LANDSCAPE_SIDE_PAD : 0),
+          }]}
+        >
           <RotateGlowButton
             active={landscape}
             onPress={toggleOrientation}
@@ -389,6 +417,28 @@ const VideoItem = memo(function VideoItem({
   // Karartma gradyanı da dahil — o da bir arayüz katmanı ve kalsaydı
   // görüntünün alt/üstünü kirletirdi.
   const uiStyle = useAnimatedStyle(() => ({ opacity: uiOpacity?.value ?? 1 }), [uiOpacity]);
+
+  // ── Yatay mod ──
+  // Portre için ölçülmüş sabitler yatayda taşıyordu: sağ sütun alta 194pt ile
+  // bağlıydı ve kendi yüksekliği ~315pt'ydi, toplam 509pt. Yatayda ekran
+  // yüksekliği 402pt — sütunun tepesi ekran dışına çıkıyordu.
+  //
+  // Yön, prop olarak gelen gerçek ölçüden okunuyor; ekranın `landscape`
+  // durumundan DEĞİL. O durum kilit isteğini temsil ediyor, yerleşimin o an
+  // gerçekte ne olduğunu değil (kilit uygulanana kadar ikisi ayrışıyor).
+  const isLandscape = width > height;
+
+  // Yatayda çentik SOLA (ya da sağa) geçiyor ve yatay güvenli alan doğuyor.
+  // Bloklar `left: 16` / `right: 12` ile sabitti; oyun adının ilk harfleri
+  // sensör yuvasının altında kalıp kırpılıyordu. Dikeyde bu insetler 0, yani
+  // ekleme dikey görünümü değiştirmiyor.
+  const itemInsets = useSafeAreaInsets();
+
+  // Daireler ve boşluk küçülünce sütun 315 → ~254pt: 402'lik ekrana rahat
+  // sığıyor, üstelik video için ortada daha çok yer kalıyor.
+  const railGap = isLandscape ? 10 : 17;
+  const railBottom = isLandscape ? 94 : TAB_SPACE + 90;
+  const infoBottom = isLandscape ? 80 : TAB_SPACE + 6;
   const { isWatched, toggle } = useWishlist();
   const { account } = useAuth();
   const collections = useCollections();
@@ -522,21 +572,27 @@ const VideoItem = memo(function VideoItem({
       ) : null}
 
       {/* Sağ aksiyon sütunu */}
-      <Animated.View style={[styles.actions, { bottom: TAB_SPACE + 90 }, uiStyle]} pointerEvents={holding ? 'none' : 'auto'}>
+      <Animated.View
+        style={[styles.actions, { bottom: railBottom, gap: railGap, right: 12 + itemInsets.right }, uiStyle]}
+        pointerEvents={holding ? 'none' : 'auto'}
+      >
         <ActionBtn
+          compact={isLandscape}
           icon={watched ? 'notifications' : 'notifications-outline'}
           active={watched}
           label={t('vid.follow')}
           onPress={onWishlist}
         />
         <ActionBtn
+          compact={isLandscape}
           icon={inCollections.size > 0 ? 'albums' : 'albums-outline'}
           active={inCollections.size > 0}
           label={t('vid.save')}
           onPress={() => { if (requireAccount()) return; Haptics.selectionAsync(); setPickerOpen(true); }}
         />
-        <ActionBtn icon="cart-outline" label={t('vid.buy')} onPress={onBuy} />
+        <ActionBtn compact={isLandscape} icon="cart-outline" label={t('vid.buy')} onPress={onBuy} />
         <ActionBtn
+          compact={isLandscape}
           icon={muted ? 'volume-mute' : 'volume-high'}
           label={muted ? t('vid.unmute') : t('vid.mute')}
           onPress={onToggleMute}
@@ -544,7 +600,20 @@ const VideoItem = memo(function VideoItem({
       </Animated.View>
 
       {/* Alt bilgi */}
-      <Animated.View style={[styles.info, { bottom: TAB_SPACE + 6 }, uiStyle]} pointerEvents={holding ? 'none' : 'auto'}>
+      <Animated.View
+        style={[
+          styles.info,
+          {
+            bottom: infoBottom,
+            left: spacing.lg + itemInsets.left,
+            // Sağ pay sütunun gerçek genişliğine göre: yatayda daireler
+            // küçüldüğü için 84 gereğinden fazla yer harcıyordu.
+            right: (isLandscape ? 70 : 84) + itemInsets.right,
+          },
+          uiStyle,
+        ]}
+        pointerEvents={holding ? 'none' : 'auto'}
+      >
       <Pressable onPress={openDetail}>
         <Text numberOfLines={2} style={styles.name}>{item.name}</Text>
         {item.genres?.length > 0 && (
@@ -576,11 +645,18 @@ const VideoItem = memo(function VideoItem({
   );
 });
 
-function ActionBtn({ icon, label, active, onPress }) {
+// compact: yatay modda daire 47 → 38, ikon 23 → 19. Dokunma hedefi hitSlop 6
+// ile birlikte 50pt kalıyor, yani HIG'in 44pt asgarisinin altına düşmüyor —
+// küçülen şey görsel ağırlık, dokunulabilirlik değil.
+function ActionBtn({ icon, label, active, onPress, compact }) {
   return (
     <Pressable style={({ pressed }) => [styles.actionBtn, pressed && PRESSED]} onPress={onPress} hitSlop={6}>
-      <View style={[styles.actionCircle, active && styles.actionCircleOn]}>
-        <Ionicons name={icon} size={23} color="#fff" />
+      <View style={[
+        styles.actionCircle,
+        compact && styles.actionCircleCompact,
+        active && styles.actionCircleOn,
+      ]}>
+        <Ionicons name={icon} size={compact ? 19 : 23} color="#fff" />
       </View>
       <Text style={styles.actionLabel}>{label}</Text>
     </Pressable>
@@ -626,6 +702,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     borderWidth: 1, borderColor: 'rgba(255,255,255,0.16)',
   },
+  actionCircleCompact: { width: 38, height: 38, borderRadius: 19 },
   actionCircleOn: { backgroundColor: colors.accent, borderColor: colors.accent },
   actionLabel: { color: '#fff', fontSize: type.caption2, fontWeight: '700' },
 
