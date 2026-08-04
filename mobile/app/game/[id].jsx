@@ -9,7 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import { fetchCardPrice, fetchGameDetail, fetchGameByAppid, fetchPrices, fetchSteamReviews } from '../../src/api/games';
-import { colors, radius, spacing, PRESSED, type } from '../../src/theme';
+import { colors, radius, spacing, PRESSED, type, scale, metacriticColor } from '../../src/theme';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useWishlist } from '../../src/context/WishlistContext';
 import { useCollections, useCollectionsContaining } from '../../src/hooks/useCollections';
@@ -25,11 +25,11 @@ import IconButton from '../../src/components/IconButton';
 
 // Olumlu %'den inceleme tier'ı (etiket i18n + renk)
 function tierFor(pct) {
-  if (pct >= 90) return { key: 'review.veryPositive',    color: '#4ade80' };
-  if (pct >= 75) return { key: 'review.positive',        color: '#86efac' };
-  if (pct >= 60) return { key: 'review.mostlyPositive',  color: '#fbbf24' };
-  if (pct >= 40) return { key: 'review.mixed',           color: '#fb923c' };
-  return           { key: 'review.negative',             color: '#f87171' };
+  if (pct >= 90) return { key: 'review.veryPositive',    color: scale.best };
+  if (pct >= 75) return { key: 'review.positive',        color: scale.good };
+  if (pct >= 60) return { key: 'review.mostlyPositive',  color: scale.mid  };
+  if (pct >= 40) return { key: 'review.mixed',           color: scale.weak };
+  return           { key: 'review.negative',             color: scale.bad  };
 }
 
 // Binlik ayraçlı sayı (TR '.', EN ',')
@@ -195,7 +195,7 @@ export default function GameDetail() {
   const genres = detail?.genres || [];
   const shots = detail?.screenshots || [];
   const mc = detail?.metacritic;
-  const mcColor = mc >= 80 ? colors.green : mc >= 60 ? '#fbbf24' : '#f87171';
+  const mcColor = metacriticColor(mc);
 
   const stores = [];
   if (detail?.steamUrl || gameObj.hasSteam) stores.push({ key: 'steam', label: 'Steam', icon: 'logo-steam', color: '#1a9fff', url: detail?.steamUrl });

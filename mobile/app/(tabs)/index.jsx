@@ -10,7 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import { fetchTrending, fetchGames } from '../../src/api/games';
 import { fetchNews } from '../../src/api/news';
-import { colors, radius, spacing, TAB_SPACE, PRESSED, type } from '../../src/theme';
+import { colors, radius, spacing, TAB_SPACE, PRESSED, type, metacriticColor } from '../../src/theme';
 import { useTabBarScroll } from '../../src/context/TabBarContext';
 import { useLanguage } from '../../src/context/LanguageContext';
 import FadeIn from '../../src/components/FadeIn';
@@ -261,7 +261,7 @@ function Section({ title, games, router, onDismiss }) {
 }
 
 const HomeCard = memo(function HomeCard({ game, router, onDismiss }) {
-  const mcColor = game.metacritic >= 80 ? colors.green : game.metacritic >= 60 ? '#fbbf24' : '#f87171';
+  const mcColor = metacriticColor(game.metacritic);
   return (
     <Pressable
       style={({ pressed }) => [styles.card, pressed && { opacity: 0.85, transform: [{ scale: 0.96 }] }]}
