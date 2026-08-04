@@ -656,7 +656,9 @@ function ActionBtn({ icon, label, active, onPress, compact }) {
         compact && styles.actionCircleCompact,
         active && styles.actionCircleOn,
       ]}>
-        <Ionicons name={icon} size={compact ? 19 : 23} color="#fff" />
+        {/* Aktif yüzey açık olduğu için ikon koyuya dönüyor — oyun
+            detayındaki iconBtnActive ile aynı karar. */}
+        <Ionicons name={icon} size={compact ? 19 : 23} color={active ? colors.bg : '#fff'} />
       </View>
       <Text style={styles.actionLabel}>{label}</Text>
     </Pressable>
@@ -703,7 +705,10 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: 'rgba(255,255,255,0.16)',
   },
   actionCircleCompact: { width: 38, height: 38, borderRadius: 19 },
-  actionCircleOn: { backgroundColor: colors.accent, borderColor: colors.accent },
+  // "Takip"/"Kaydet" acikken: dolu notr yuzey. Video uzerinde durdugu icin
+  // acik yuzey her sahnede okunur; vurgu rengi burada durum degil dikkat
+  // cekiyordu.
+  actionCircleOn: { backgroundColor: colors.text, borderColor: colors.text },
   actionLabel: { color: '#fff', fontSize: type.caption2, fontWeight: '700' },
 
   info: { position: 'absolute', left: spacing.lg, right: 84 },
