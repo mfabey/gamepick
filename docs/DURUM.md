@@ -192,10 +192,23 @@ gezildi.
 detayı · reels (dikey **ve yatay**) · katlanır başlığın açık/kapalı hâli ·
 yön geçişi dikey→yatay→dikey.
 
+**Widget — ÇALIŞIYOR (4 Ağustos'ta doğrulandı).** Üç çeşidi de galeride
+gerçek veriyle render ediliyor ve ana ekrana eklenip görüldü:
+- *Günün Fırsatı* (küçük) — canlı veri: %95 indirim, üstü çizili fiyat
+- *Kütüphane Özet* (küçük) — Steam bağlı olmadığı için doğru boş durum
+- *Takip Listesi* (orta) — istek listesinde indirimli oyun yok, doğru mesaj
+
+**Share Extension — ÇALIŞIYOR (4 Ağustos'ta doğrulandı).** Uçtan uca:
+Safari'de Steam sayfası → Paylaş → Gamerisen → "Gamerisen'e Eklendi" uyarısı
+→ uygulama açılınca doğrudan o oyunun detayında. Kaynak dosyadaki "Mac/Xcode
+olmadan görsel test mümkün değil" notu artık geçersiz.
+
+*Küçük şüphe:* Steam olmayan bir link paylaşıldığında kodun göstermesi
+gereken "Desteklenmeyen Bağlantı" uyarısı **çıkmadı** (Google arama sayfasıyla
+denendi, sessizce kapandı). Muhtemelen `attachments?.first` URL değil başka
+bir tür geliyor. Ana işlev sağlam, bu yalnızca hata yolu.
+
 **Hâlâ görülmedi:**
-- **Widget ve Share Extension** — hedefleri derleniyor (`GamerisenWidget`,
-  `GamerisenShare`) ama kurulup çalıştırılmadı. Apple itiraz metninde "native
-  işlevsellik" kanıtı olarak sayılıyorlar, öncelikli.
 - Sekme çubuğunun basılı tutma sonrası geri gelmesi
 - **Hesap arkasındaki her şey:** sosyal akış, kütüphane çipleri, topluluk
   listeleri sekmeleri, reels "Takip/Kaydet" aktif hâli. Bu ekranlara yapılan
