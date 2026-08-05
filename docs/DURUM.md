@@ -156,8 +156,9 @@ gösteriyor. Yeni katlanır başlık yazarken oradan kopyala.
 
 4 Ağustos'ta bulundu. Ekranda sızıntı değil, **sunucuda kalıcı karışma**.
 
-**5 Ağustos: 1. adım (akış düzeltmesi) YAPILDI — aşağıda "Yapılan" bölümü.
-Kalan: sunucudaki kirli kayıtların sıfırlanması.**
+**5 Ağustos: 1. adım (akış düzeltmesi) YAPILDI ve OTA ile yayınlandı.
+2. adım (sunucu sıfırlaması) KARAR GEREĞİ BEKLİYOR — tetikleyici 2.3.0'ın
+App Store onayı.**
 
 **Ölçülen mimari:**
 
@@ -247,19 +248,36 @@ ikilileri bugünkü native bağımlılıkları (widget modülü, share extension
 `expo-glass-effect`) taşımıyor; uygulama açılışta çökebilir. `appVersion`
 politikası tam da bunun için var.
 
-Üç seçenek:
+Üç seçenek vardı:
 
-1. **Bekle.** 2.3.0 onaylanana kadar sıfırlamayı erteler. En basit; kirlenme
-   o zamana kadar sürer ama yeni kirlenme yalnız eski kurulumlarda olur.
+1. **Bekle.** 2.3.0 onaylanana kadar sıfırlamayı erteler.
 2. **Sunucu tarafında kapı koy.** `PUT /api/user/data` yalnız kapsamlı
    istemcinin gönderdiği bir başlığı (`x-gr-scoped: 1`) kabul etsin; eski
    istemciler okuyabilsin ama yazamasın. Vercel deploy + bir OTA daha
    gerektirir, native build gerektirmez.
 3. **Yine de sıfırla.** Hesapların hepsi test hesabıysa ve eski sürümlü cihaz
-   fiilen kullanılmıyorsa kabul edilebilir. Ölçüm bunu söyleyebilir:
-   `reset_user_data.mjs` ölçüm kipi kaç hesap olduğunu yazdırıyor.
+   fiilen kullanılmıyorsa kabul edilebilir.
 
-**Sıfırlama HENÜZ YAPILMADI — betik hazır, kimlik bilgisi bekliyor.**
+**KARAR (5 Ağustos): 1 — BEKLENECEK.** 2.3.0 App Store'da onaylanana kadar
+sıfırlama yapılmayacak.
+
+#### ⏸ Sıfırlama beklemede — tetikleyici: 2.3.0 onayı
+
+Bu madde 2.3.0 onaylanıp kullanıcılara inene kadar açık kalır. Onay geldiğinde
+sırayla:
+
+1. Kimlik bilgisi: `npx vercel login && npx vercel env pull .env.local`
+   (ya da Vercel panosundan `UPSTASH_REDIS_REST_URL` + `_TOKEN` elle).
+2. Ölç: `node scratch/reset_user_data.mjs` — kaç hesap, kaçında koleksiyon.
+3. Sayılar test hesabı beklentisiyle uyuşuyorsa sil:
+   `node scratch/reset_user_data.mjs --sil`
+4. Sıfırlamadan sonra bir hesapla girip listelerin boş geldiğini gör.
+
+Beklemenin bedeli: 2.3.0 öncesi kurulumlarda karışma sürüyor. Yeni karışma
+üretmiyor sayılmaz — eski JS hâlâ kapsamsız yazıyor. Onay uzarsa 2. seçenek
+(sunucu kapısı) yeniden değerlendirilmeli.
+
+**Sıfırlama HENÜZ YAPILMADI — karar gereği bekliyor.**
 
 Onay 5 Ağustos'ta alındı: kayıtlı hesapların hepsi test hesabı, verileri
 silinebilir; **hesapların kendisi silinmeyecek**.
@@ -277,13 +295,9 @@ dokunmaz.
 Vercel panosunda. Betiğin Redis yolu bu yüzden gerçek sunucuda denenmedi;
 sözdizimi ve kimlik-bilgisi-yok davranışı denendi.
 
-**Sıra hatırlatması:** OTA cihazlara indikten SONRA koş. Yeni JS eski
-kapsamsız anahtarları zaten siliyor (`owner.js:migrateLegacyKeys`), yani
-güncellenmiş cihazda geri yüklenecek kirli kopya kalmıyor. Güncellenmemiş bir
-cihaz ilk senkronda sıfırlamayı geri alır.
-
 **Sıra:** önce akışı düzelt (yeni karışma dursun), sonra sıfırlama.
-Tersi yapılırsa temizlenen hesaplar aynı hatayla yeniden kirlenir.
+Tersi yapılırsa temizlenen hesaplar aynı hatayla yeniden kirlenir. 1. adım
+5 Ağustos'ta yapıldı ve yayınlandı; 2. adım 2.3.0 onayını bekliyor.
 
 #### Yapılan — 1. adım, akış düzeltmesi (5 Ağustos, OTA)
 
