@@ -466,6 +466,62 @@ bir tür geliyor. Ana işlev sağlam, bu yalnızca hata yolu.
 
 ---
 
+### 7. Android — iki sürüm geride, 5 Ağustos'ta derlendi
+
+**Bulgu:** en yeni Android derlemesi **2.1.1**'di (2 Ağustos). iOS 2.3.0'dayken
+Android iki sürüm gerideydi ve `runtimeVersion` politikası `appVersion` olduğu
+için **Android OTA'ları boşluğa iniyordu** — 2.3.0 çalışma zamanlı Android
+kurulumu yoktu. Hesap kapsamı düzeltmesi dahil, 2 Ağustos'tan sonraki hiçbir
+şey Android kullanıcısına ulaşmamıştı.
+
+5 Ağustos'ta iki derleme kuyruğa alındı (ikisi de sürüm 2.3.0, commit
+`d69e053`): preview APK (versionCode 5) ve production AAB (versionCode 6).
+Production profili `production` kanalına bağlı, yani kurulduğunda cihaz
+mevcut Android OTA'sını da alabilir hâle geliyor.
+
+#### Android denetimi — ölçüldü, beklenenden temiz
+
+Cihaz olmadan yapılabilecek statik denetim yapıldı. Kırık sanılan yerlerin
+çoğu sağlam çıktı:
+
+| Alan | Ölçüm | Sonuç |
+|---|---|---|
+| iOS'a özel native parçalar | widget `platforms:["ios"]`, cam efekti `platforms:["apple"]`, Apple butonları `Platform.OS==='ios'` arkasında | Android'i bozmuyor |
+| Listeler | 14 dosyada FlashList, **0** FlatList; `ScrollView`+`map` yerleri kısa çip listeleri | sanallaştırma yerinde |
+| Gölge / elevation | `shadow*` 1 dosya, `elevation` 1 dosya; elevation'sız gölge yok | temiz |
+| Donanım geri tuşu | üç sheet de RN `<Modal>` + `onRequestClose` | çalışıyor |
+| Bildirim kanalı | `setNotificationChannelAsync('default')` var | Android'e uygun |
+| Edge-to-edge | **açık** — SDK 54 varsayılanı `edgeToEdgeEnabled !== false` | tab bar doğru oturuyor |
+
+**Önce yanlış teşhis kondu:** edge-to-edge "tanımsız, risk" diye işaretlenmişti.
+`@expo/prebuild-config/.../withEdgeToEdge.js:44` bunu çürütüyor — alan
+tanımsızken varsayılan AÇIK. Yapılandırma dosyasına bakıp "yok" demek yetmiyor,
+varsayılanı okumak gerekiyor.
+
+#### Kalan tek gerçek boşluk: FCM
+
+`google-services.json` yok ve `android.googleServicesFile` tanımsız. FCM V1
+olmadan `getExpoPushTokenAsync` Android'de fırlıyor;
+`notifications.js:53` bunu yakalayıp `token-failed` dönüyor, ayarlar ekranı da
+"geliştirme derlemesi gerekiyor" mesajını gösteriyor. Yani **çökme yok, sessiz
+kırık**: Android'de bildirim açılamıyor ve mesaj da yanıltıcı.
+
+Gereken: Firebase Console → Project settings → Your apps → Android
+(`com.gamerisen.app`) → `google-services.json` indir → `mobile/` köküne koy →
+`app.json`'a `android.googleServicesFile` ekle → yeni üretim derlemesi.
+Ayrıca FCM V1 servis hesabı anahtarının EAS'e yüklenmesi gerekiyor.
+
+#### Sınama yolu: cihaz yok
+
+Elde Android cihaz yok, bu makinede de Android araç zinciri yok (`adb`,
+emulator, SDK, Android Studio yok; Java 8). **Karar: Play Console iç test
+kanalı + pre-launch raporu** — Google uygulamayı gerçek cihazlarda koşturup
+çökme ve ekran görüntüsü raporu veriyor, cihaz gerektirmiyor.
+
+Somut bir hata listesi **yok**; "hata çıkıyor" beklentisi önceki Android
+sürümlerinden geliyordu, gözlem değil. Gerçek hata listesi pre-launch
+raporundan gelecek; düzeltme o zaman kanıtla yapılacak.
+
 ## Apple gönderimi
 
 - İtiraz metni: `mobile/APPEAL_4.2.2.md` (2.2.0 için yazıldı, 2.3.0'da iki
