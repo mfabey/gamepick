@@ -209,6 +209,56 @@ Yerel temizlik, daha önce yanlış hesaba yazılmış kayıtları geri almaz.
 Seçenekler A (dokunma) ve B (ayıklamaya çalış) elendi; koleksiyonlarda
 sahiplik bilgisi olmadığı için B zaten güvenilir değil.
 
+#### OTA yayınlandı — 5 Ağustos 16:43
+
+Doğrulandı (çıkarımla değil, EAS'e sorularak):
+
+| | |
+|---|---|
+| Güncelleme | `019fd22a-2cd2-716a-9217-7e569ddb0a99` (iOS) + Android eşi |
+| `gitCommitHash` | `086a2ee` — düzeltme commit'i `6e880e9`'un üstünde |
+| Dal / kanal | `production` / `production` |
+| Çalışma zamanı | **2.3.0** |
+
+Varlık CDN'i imzasız indirmeyi reddettiği (403) ve `expo export` ile
+`eas update` farklı ortam değişkeni gömdüğü için paket özeti karşılaştırması
+sonuç vermiyor; `gitCommitHash` yetkili kaynak.
+
+#### ⚠ Düzeltme 2.3.0 DIŞINDAKİ kurulumlara ULAŞMADI
+
+`runtimeVersion` politikası `appVersion` olduğu için OTA yalnız aynı sürüme
+iner. Yayın geçmişi dört ayrı çalışma zamanı gösteriyor:
+
+| Çalışma zamanı | Son OTA |
+|---|---|
+| **2.3.0** | bu düzeltme ✓ |
+| 2.1.1 | 2 gün önce |
+| 2.1.0 | 3 gün önce |
+| 1.0.0 | 1 hafta önce |
+
+2.3.0 hâlâ App Store incelemesindeyse mağazadaki sürüm daha eski demektir —
+yani **gerçek kullanıcıların çoğu hâlâ karışmaya yol açan JS'i taşıyor**.
+
+Bu, sıfırlamanın önündeki asıl engel: eski JS'li bir cihaz, sıfırlamadan sonra
+ilk senkronda kirli yerel kopyasını geri yükler ve hesabı yeniden kirletir.
+
+**Eski çalışma zamanlarına bu JS'i yayınlamak ÇÖZÜM DEĞİL** — 2.1.x ve 1.0.0
+ikilileri bugünkü native bağımlılıkları (widget modülü, share extension,
+`expo-glass-effect`) taşımıyor; uygulama açılışta çökebilir. `appVersion`
+politikası tam da bunun için var.
+
+Üç seçenek:
+
+1. **Bekle.** 2.3.0 onaylanana kadar sıfırlamayı erteler. En basit; kirlenme
+   o zamana kadar sürer ama yeni kirlenme yalnız eski kurulumlarda olur.
+2. **Sunucu tarafında kapı koy.** `PUT /api/user/data` yalnız kapsamlı
+   istemcinin gönderdiği bir başlığı (`x-gr-scoped: 1`) kabul etsin; eski
+   istemciler okuyabilsin ama yazamasın. Vercel deploy + bir OTA daha
+   gerektirir, native build gerektirmez.
+3. **Yine de sıfırla.** Hesapların hepsi test hesabıysa ve eski sürümlü cihaz
+   fiilen kullanılmıyorsa kabul edilebilir. Ölçüm bunu söyleyebilir:
+   `reset_user_data.mjs` ölçüm kipi kaç hesap olduğunu yazdırıyor.
+
 **Sıfırlama HENÜZ YAPILMADI — betik hazır, kimlik bilgisi bekliyor.**
 
 Onay 5 Ağustos'ta alındı: kayıtlı hesapların hepsi test hesabı, verileri
