@@ -6,6 +6,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import * as SecureStore from 'expo-secure-store';
 import { loginAccount, refreshSession, appleSignIn } from '../api/account';
+import { bindOwner, ownerKeyFor, wipeOwnerData } from './owner';
 
 const KEY = 'gr_account_session';
 const SKEW_MS = 5 * 60 * 1000;   // süre dolmadan 5 dk önce yenile
@@ -17,27 +18,47 @@ const listeners = new Set();
 
 function emit() { listeners.forEach((l) => l()); }
 
+// Kalıcı depoların sahibi buradan sürülür — oturumun kime ait olduğunu bilen
+// tek yer burası. bindOwner aynı sahip için tekrar çağrıldığında hiçbir şey
+// yapmaz, o yüzden jeton yenilemesi depoları boşuna sarsmaz.
 async function persist(s) {
   session = s;
   try {
     if (s) await SecureStore.setItemAsync(KEY, JSON.stringify(s));
     else await SecureStore.deleteItemAsync(KEY);
   } catch { /* depo yazılamadıysa bellekte devam */ }
+  await bindOwner(s?.user?.uid || null);
   emit();
 }
+
+// Eşzamanlı çağrılar tekilleniyor: depolar ownerReady()'yi bekliyor ve iki
+// paralel yükleme sahibi iki kez bağlardı.
+let loadPromise = null;
 
 export async function loadSession() {
   if (loaded) return session;
-  try {
-    const raw = await SecureStore.getItemAsync(KEY);
-    if (raw) session = JSON.parse(raw);
-  } catch { /* bozuk kayıt → oturumsuz başla */ }
-  loaded = true;
-  emit();
-  return session;
+  if (!loadPromise) {
+    loadPromise = (async () => {
+      try {
+        const raw = await SecureStore.getItemAsync(KEY);
+        if (raw) session = JSON.parse(raw);
+      } catch { /* bozuk kayıt → oturumsuz başla */ }
+      loaded = true;
+      // Oturum yoksa da çağrılmalı: sahip 'anon' olarak çözülmeden depolar
+      // okumaya başlayamaz.
+      await bindOwner(session?.user?.uid || null);
+      emit();
+      return session;
+    })();
+  }
+  return loadPromise;
 }
 
+// loadSession ÖNCE bekleniyor: diskten yükleme hâlâ uçuşuyorken giriş
+// yapılırsa, geç gelen yükleme bindOwner(null) diyip sahibi 'anon'a geri
+// çevirir ve yeni oturumun verisi yanlış kovaya düşer.
 export async function signIn(email, password) {
+  await loadSession();
   const r = await loginAccount({ email, password });
   await persist({
     user: { ...r.user, provider: 'password' },
@@ -52,6 +73,7 @@ export async function signIn(email, password) {
 // account.provider === 'apple' olur → delete-account ekranı şifre yerine
 // Apple ile yeniden doğrulama isteyecek.
 export async function signInWithApple(identityToken, fullName) {
+  await loadSession();
   const r = await appleSignIn({ identityToken, fullName });
   await persist({
     user: r.user,
@@ -62,8 +84,39 @@ export async function signInWithApple(identityToken, fullName) {
   return r.user;
 }
 
-export async function signOut() {
+/**
+ * Çıkış — sıra kritik.
+ *
+ * 1. SON SENKRON: bu oturumda yapılan değişiklikler sunucuya ancak burada
+ *    ulaşır. syncAccountData yalnızca açılışta ve oturum değişiminde koşuyor;
+ *    akıtmadan silersek "koleksiyon yap → hemen çık" verisi kaybolur.
+ * 2. Oturumu kapat: persist(null) sahibi 'anon'a çevirir, depolar önce eski
+ *    kovaya yazılır sonra yenisinden yüklenir.
+ * 3. Yerel kopyayı sil: sunucuda duruyor, tekrar girişte geri geliyor. Ortak
+ *    cihazda bir sonraki kullanıcının A'nın koleksiyonlarını görmesi bundan
+ *    daha kötü.
+ *
+ * sync dinamik import ile geliyor — sync.js zaten bu modülü import ediyor,
+ * statik olsa döngü olurdu.
+ *
+ * @param wishlist  akıtılacak takip listesi (ekrandan gelir; hesapsız çalışan
+ *                  uygulamada tek kaynağı React durumu)
+ */
+export async function signOut(wishlist) {
+  const owner = session?.user?.uid ? ownerKeyFor(session.user.uid) : null;
+
+  // Liste verilmediyse akıtma yok. delete-account.jsx da buradan geçiyor ve
+  // silinmiş bir hesap için sunucuya veri göndermenin anlamı yok.
+  if (owner && Array.isArray(wishlist)) {
+    try {
+      const { syncAccountData, resetSyncThrottle } = await import('./sync');
+      resetSyncThrottle();                          // 30 sn kısıtlayıcısı son senkronu yutmasın
+      await syncAccountData(wishlist);
+    } catch { /* ağ yoksa çıkış yine de tamamlanmalı */ }
+  }
+
   await persist(null);
+  if (owner) await wipeOwnerData(owner);
 }
 
 /**
@@ -89,7 +142,12 @@ export async function getValidToken() {
         });
         return r.idToken;
       } catch {
-        await persist(null);      // refreshToken geçersiz → oturumu kapat
+        // refreshToken geçersiz → oturumu kapat. Yerel kopya da gitmeli:
+        // jetonu iptal edilmiş hesabın verisi cihazda kalıp bir sonraki
+        // kullanıcıya görünmemeli. Akıtma yok — geçerli jeton yok.
+        const owner = session?.user?.uid ? ownerKeyFor(session.user.uid) : null;
+        await persist(null);
+        if (owner) await wipeOwnerData(owner);
         return null;
       } finally {
         refreshing = null;

@@ -7,8 +7,9 @@
 // beğenilerini geri görebilmesi için oyun kimliği + zaman damgası gerekiyor.
 // ─────────────────────────────────────────────────────────────────────────────
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { scopedKey, ownerReady, registerScopedStore } from './owner';
 
-const STORAGE_KEY = 'gr_liked';
+const STORAGE_KEY = 'gr_liked';   // taban ad — gerçek anahtar sahibe göre türetilir
 const MAX_ITEMS   = 500;
 
 let liked = {};            // { id: { ts, name, image, genres } }
@@ -34,8 +35,9 @@ export function loadLiked() {
   if (loaded) return Promise.resolve(liked);
   if (!loadPromise) {
     loadPromise = (async () => {
+      await ownerReady();   // sahip çözülmeden okuma yanlış kovaya bakar
       try {
-        const raw = await AsyncStorage.getItem(STORAGE_KEY);
+        const raw = await AsyncStorage.getItem(scopedKey(STORAGE_KEY));
         if (raw) liked = JSON.parse(raw) || {};
         // Damga sayacını diskteki en yüksek değerden devral
         for (const k in liked) lastTs = Math.max(lastTs, liked[k]?.ts || 0);
@@ -48,12 +50,26 @@ export function loadLiked() {
   return loadPromise;
 }
 
+function writeNow() {
+  if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+  return AsyncStorage.setItem(scopedKey(STORAGE_KEY), JSON.stringify(liked)).catch(() => {});
+}
+
 function scheduleSave() {
   if (saveTimer) clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => {
-    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(liked)).catch(() => {});
-  }, 800);
+  saveTimer = setTimeout(writeNow, 800);
 }
+
+// Hesap değişiminde: bekleyen yazma ESKİ kovaya iner, sonra yenisinden yüklenir.
+registerScopedStore({
+  keys: [STORAGE_KEY],
+  flush: () => (saveTimer ? writeNow() : null),
+  rebind: async () => {
+    liked = {}; loaded = false; loadPromise = null; lastTs = 0;
+    if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+    await loadLiked();
+  },
+});
 
 /** Bir oyunu "ilgimi çekti" olarak işaretle. */
 export async function recordLike(game) {

@@ -156,12 +156,22 @@ gösteriyor. Yeni katlanır başlık yazarken oradan kopyala.
 
 4 Ağustos'ta bulundu. Ekranda sızıntı değil, **sunucuda kalıcı karışma**.
 
+**5 Ağustos: 1. adım (akış düzeltmesi) YAPILDI — aşağıda "Yapılan" bölümü.
+Kalan: sunucudaki kirli kayıtların sıfırlanması.**
+
 **Ölçülen mimari:**
+
+Tablo ilk yazıldığında eksikti: kapsamsız anahtar 4 değil **9**, sunucuya giden
+depo 2 değil **3** — zevk profili de `PUT /api/user/data` gövdesinde gidiyor ve
+sunucu tür ağırlıklarını **topluyor** (`route.js:113`), yani A'nın zevki B'nin
+önerilerine karışıyordu.
 
 | Depo | Anahtar | Kapsam |
 |---|---|---|
 | Koleksiyonlar | `gr_collections`, `gr_collections_deleted` | AsyncStorage, **hesap kapsamı yok** |
 | İstek listesi | `gr_wishlist`, `gr_notif_enabled` | AsyncStorage, **hesap kapsamı yok** |
+| Zevk profili | `gr_taste_profile` | AsyncStorage, **hesap kapsamı yok**, sunucuya gidiyor |
+| Beğeni/görülen/elenen | `gr_liked`, `gr_seen`, `gr_dismissed` | AsyncStorage, **hesap kapsamı yok** |
 | Steam hesapları | `gr_steam_accounts` | AsyncStorage, sunucuya **hiç** gitmiyor |
 | Xbox oturumu | `gr_xbox_session` | SecureStore, sunucuya **hiç** gitmiyor |
 
@@ -207,6 +217,74 @@ sahiplik bilgisi olmadığı için B zaten güvenilir değil.
 
 **Sıra:** önce akışı düzelt (yeni karışma dursun), sonra sıfırlama.
 Tersi yapılırsa temizlenen hesaplar aynı hatayla yeniden kirlenir.
+
+#### Yapılan — 1. adım, akış düzeltmesi (5 Ağustos, OTA)
+
+Yeni dosya `src/services/owner.js`. Her kalıcı anahtar artık sahibine göre
+türetiliyor: `gr_seen__anon` · `gr_seen__u_<uid>`. Depoların **tüketicileri
+değişmedi** (25 dosya + `useWishlist`/`useAuth` kullanan 14 dosya); kapsam
+depoların içinde.
+
+| Ne | Nerede |
+|---|---|
+| 9 anahtarın hepsi hesaba kapsandı | 5 servis deposu + 2 context |
+| Çıkışta: son senkron → oturumu kapat → yerel kopyayı sil | `session.js:signOut` |
+| Sahibi bilinmeyen veri senkron edilmiyor | `sync.js` |
+| Hesap değişince 30 sn kısıtlayıcı sıfırlanıyor | `sync.js` |
+| Misafir verisi devri artık **soruluyor** | `account.jsx:offerAnonTransfer` |
+| Eski kapsamsız anahtarlar tek seferde siliniyor | `owner.js:migrateLegacyKeys` |
+
+**Üç ince nokta, üçü de düzeltmenin parçası:**
+
+1. *Sönümleme yarışı.* Depolar 600–800 ms sönümlemeyle yazıyor. Sahip
+   çevrilirken bekleyen zamanlayıcı önce **eski** kovaya indiriliyor; ters
+   sırada A'nın verisi B'nin kovasına boşalırdı — düzeltilen hatanın kılık
+   değiştirmiş hâli.
+2. *Yanıt sırasında hesap değişimi.* `syncAccountData` uid'i başta mühürlüyor;
+   jeton alındıktan sonra ve yanıt geldikten sonra iki kez doğruluyor.
+3. *Eski veri taşınmıyor, siliniyor.* Sahibi bilinmediği için taşımak
+   karışmayı yeni kovaya devrederdi — ve sunucu sıfırlaması kalıcı olmazdı,
+   ilk senkronda cihazdaki kirli kopya geri yüklenirdi.
+
+**Ölçüm — iki yöntem:**
+
+1. *Node.* Kaynak dosyalar (yalnız iki native modül saplanarak) koşturuldu:
+   depo kapsamı 18/18, senkron sahipliği 11/11. Sönümleme yarışı ve "yanıt
+   gelirken hesap değişti" ayrı ayrı sınandı.
+2. *Simülatörde, gerçek eski veri üstünde.* Cihazda 4 Ağustos'tan kalma
+   kapsamsız `gr_seen`, `gr_taste_profile`, `gr_wishlist` duruyordu. Yeni
+   derleme kurulduktan sonra App Group plist'i değil, doğrudan AsyncStorage
+   manifest'i okundu:
+
+   | | Kurulum öncesi | Sonrası |
+   |---|---|---|
+   | Kapsamsız kullanıcı anahtarı | 3 | **0** |
+   | `gr_scope_migrated` | yok | **var** |
+   | Cihaz düzeyi (`gr_onboarded`, `gr_query_cache`) | 2 | 2 (dokunulmadı) |
+
+   Ardından bir oyun detayı açılıp takibe alındı → yeni kayıtlar
+   `gr_seen__anon`, `gr_taste_profile__anon`, `gr_wishlist__anon` olarak düştü.
+   Ana sayfa, oyun detayı ve profil ekranı hesapsız durumda doğru render
+   ediliyor; depolar sahip çözülmesini beklerken takılmıyor.
+
+**Doğrulanmadı:** iki gerçek hesapla uçtan uca tur (A koleksiyon yap → çık →
+B gir). Şifre girmeyi gerektirdiği için yapılmadı — bu turu insan yapmalı.
+
+**Derleme notu:** `npx expo run:ios` bu makinede çalışmıyor; Xcode 26.6'nın
+`devicectl` sürüm çıktısını Expo CLI çözemiyor ve simülatörü fiziksel cihaz
+sanıp imzalama sertifikası istiyor. `npx expo start` de ayrıca takılıyor
+(`modules/gamerisen-widget-module/index.ts` yüzünden TypeScript bağımlılığı
+istiyor). İşleyen yol:
+
+```bash
+cd mobile/ios && LANG=en_US.UTF-8 xcodebuild -workspace Gamerisen.xcworkspace \
+  -scheme Gamerisen -configuration Release -sdk iphonesimulator \
+  -destination "id=<UDID>" -derivedDataPath build/dd -quiet build
+xcrun simctl install <UDID> build/dd/Build/Products/Release-iphonesimulator/Gamerisen.app
+xcrun simctl launch <UDID> com.gamerisen.app
+```
+
+Release ŞART: Debug, Metro ister. Temiz derleme ~9 dk.
 
 ### 1. Kimlik alanı çakışması — ZAMANLA BÜYÜYEN HATA
 

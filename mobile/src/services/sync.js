@@ -4,23 +4,39 @@
 // Akış: cihazdaki veriyi gönder → sunucu BİRLEŞTİRİR → birleşmiş hâli geri al
 // → yerele uygula. Böylece hiçbir tarafta veri kaybı olmaz.
 // ─────────────────────────────────────────────────────────────────────────────
-import { getValidToken } from './session';
+import { getValidToken, getAccount } from './session';
 import { pushUserData } from '../api/account';
 import { getProfile, mergeRemoteTaste } from './tasteProfile';
 import { loadCollections, syncPayload, applyMergedCollections } from './collectionsStore';
 
 let running = false;
 let lastRun = 0;
+let lastOwner = null;        // en son hangi hesap için koştu
 const MIN_GAP = 30 * 1000;   // gereksiz sık senkronu engelle
+
+/** Hesap değişimi ve çıkış öncesi akıtma kısıtlayıcıya takılmasın. */
+export function resetSyncThrottle() { lastRun = 0; }
 
 /**
  * @param wishlist  cihazdaki takip listesi
  * @param applyWishlist  birleşmiş listeyi yerele yazan geri çağrı
  */
 export async function syncAccountData(wishlist = [], applyWishlist) {
+  // Sahibi bilinmeyen veri senkron EDİLMEZ. Eski hâlde bu kontrol yoktu:
+  // jeton kimindiyse cihazdaki veri onun hesabına yazılıyordu.
+  const uid = getAccount()?.uid || null;
+  if (!uid) return false;
+
+  // Hesap değiştiyse kısıtlayıcı sıfırlanır — yoksa B'nin ilk senkronu,
+  // A'nın 30 sn içindeki senkronu yüzünden atlanırdı.
+  if (uid !== lastOwner) { lastRun = 0; lastOwner = uid; }
+
   if (running || Date.now() - lastRun < MIN_GAP) return false;
   const token = await getValidToken();
   if (!token) return false;            // oturum yok → sessizce geç
+  // getValidToken yenileme yapabilir; yenileme başarısızsa oturum kapanır.
+  // Jetonu aldıktan sonra sahibin hâlâ aynı olduğunu doğrula.
+  if (getAccount()?.uid !== uid) return false;
 
   running = true;
   try {
@@ -36,6 +52,11 @@ export async function syncAccountData(wishlist = [], applyWishlist) {
       collections: cols.collections,
       deleted: cols.deleted,
     });
+
+    // Yanıt beklenirken kullanıcı çıkmış ya da başka hesaba geçmiş olabilir.
+    // Birleşmiş veri O ANKİ sahibe değil, isteği başlatan sahibe ait —
+    // uygulamak tam da düzeltmeye çalıştığımız karışmayı üretirdi.
+    if (getAccount()?.uid !== uid) return false;
 
     if (res?.taste?.genres) {
       await mergeRemoteTaste(res.taste.genres, res.taste.events);

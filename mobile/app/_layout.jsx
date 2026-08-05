@@ -8,6 +8,7 @@ import * as Notifications from 'expo-notifications';
 import { LanguageProvider } from '../src/context/LanguageContext';
 import { AuthProvider } from '../src/context/AuthContext';
 import { WishlistProvider } from '../src/context/WishlistContext';
+import { loadSession } from '../src/services/session';
 import { loadProfile } from '../src/services/tasteProfile';
 import { loadSeen } from '../src/services/seenStore';
 import { loadDismissed } from '../src/services/dismissStore';
@@ -21,7 +22,12 @@ import { colors } from '../src/theme';
 
 export default function RootLayout() {
   // Zevk profilini açılışta belleğe yükle (keşif algoritması için) ve önbelleği geri yükle
+  //
+  // loadSession ÖNCE: depolar artık hesaba göre kapsanıyor ve sahip
+  // çözülmeden okuma yapmıyorlar (ownerReady). Oturumu yüklemeyen bir açılış
+  // depoları süresiz bekletirdi.
   useEffect(() => {
+    loadSession();
     initQueryCache().finally(() => {
       loadProfile();
       loadSeen();
