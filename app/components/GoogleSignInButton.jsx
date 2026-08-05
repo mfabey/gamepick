@@ -17,7 +17,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 
 const SDK_SRC = 'https://accounts.google.com/gsi/client';
-const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
+const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '554716473983-pc6au7o7nquofb6k7b25ll7mge502pp8.apps.googleusercontent.com';
 
 function loadSdk() {
   return new Promise((resolve, reject) => {
