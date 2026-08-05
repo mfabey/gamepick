@@ -18,7 +18,10 @@
 import { useEffect, useState, useCallback } from 'react';
 
 const SDK_SRC = 'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js';
-const SERVICES_ID = process.env.NEXT_PUBLIC_APPLE_SERVICES_ID || '';
+const rawServicesId = process.env.NEXT_PUBLIC_APPLE_SERVICES_ID || '';
+const SERVICES_ID = (rawServicesId && rawServicesId.startsWith('com.')) 
+  ? rawServicesId 
+  : 'com.gamerisen.app.signin';
 
 function loadSdk() {
   return new Promise((resolve, reject) => {
