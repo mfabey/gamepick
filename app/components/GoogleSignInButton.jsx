@@ -49,7 +49,7 @@ export default function GoogleSignInButton({ lang = 'tr', onError }) {
   const handleCredential = useCallback(async (res) => {
     const idToken = res?.credential;
     if (!idToken) {
-      onErrorRef.current?.(lang === 'tr' ? 'Google ile giriş yapılamadı.' : 'Could not sign in with Google.');
+      onErrorRef.current?.(lang === 'tr' ? 'Google ile giriş yapılamadı (Kimlik doğrulaması alınamadı).' : 'Could not sign in with Google (Identity token not found).');
       return;
     }
     setBusy(true);
@@ -64,7 +64,9 @@ export default function GoogleSignInButton({ lang = 'tr', onError }) {
       window.location.href = '/';
     } catch (e) {
       onErrorRef.current?.(
-        lang === 'tr' ? 'Google ile giriş yapılamadı.' : 'Could not sign in with Google.'
+        lang === 'tr' 
+          ? `Google ile giriş yapılamadı: ${e?.message || 'Bilinmeyen Hata'}` 
+          : `Could not sign in with Google: ${e?.message || 'Unknown Error'}`
       );
       console.error('google-signin:', e?.message);
     } finally {
