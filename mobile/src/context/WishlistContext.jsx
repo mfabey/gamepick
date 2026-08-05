@@ -5,9 +5,19 @@ import { registerForPushToken } from '../notifications';
 import { registerPush, unregisterPush } from '../api/push';
 import { subscribeSession } from '../services/session';
 import { syncAccountData } from '../services/sync';
+import { scopedKey, ownerReady, subscribeOwner, registerScopedStore } from '../services/owner';
 
+// Taban adlar — gerçek anahtarlar sahibe göre türetilir (owner.js).
 const WISH_KEY  = 'gr_wishlist';
 const NOTIF_KEY = 'gr_notif_enabled';
+
+// Silme için kayıt; yeniden yükleme React tarafında (subscribeOwner).
+registerScopedStore({ keys: [WISH_KEY, NOTIF_KEY] });
+
+// Bildirim sunucusunun beklediği biçim — saf dönüşüm, bileşene bağlı değil.
+const watchPayload = (list) => list.map(g => ({
+  id: g.id, appid: g.appid || null, slug: g.slug || null, name: g.name, hasSteam: !!g.hasSteam,
+}));
 
 const WishlistContext = createContext(null);
 
@@ -21,14 +31,37 @@ export function WishlistProvider({ children }) {
   const [sessionTick, setSessionTick] = useState(0);
   useEffect(() => subscribeSession(() => setSessionTick(n => n + 1)), []);
 
-  // Açılışta yükle
+  // Sahip değişimini izle → liste yeni hesabın kovasından okunsun
+  const [ownerTick, setOwnerTick] = useState(0);
+  useEffect(() => subscribeOwner(() => setOwnerTick(n => n + 1)), []);
+
+  // Açılışta ve her hesap değişiminde yükle.
+  //
+  // Bildirim kaydı da burada tazeleniyor: push jetonu CİHAZA, izleme listesi
+  // HESABA ait. Yeniden kaydetmezsek A'nın izlediği oyunların fiyat bildirimi
+  // A çıktıktan sonra da aynı cihaza düşmeye devam ederdi.
   useEffect(() => {
+    let alive = true;
     (async () => {
-      try { const i = await AsyncStorage.getItem(WISH_KEY); if (i) setItems(JSON.parse(i)); } catch {}
-      try { const e = await AsyncStorage.getItem(NOTIF_KEY); if (e === '1') setEnabled(true); } catch {}
+      await ownerReady();
+      let list = [];
+      let on = false;
+      try { const i = await AsyncStorage.getItem(scopedKey(WISH_KEY)); if (i) list = JSON.parse(i) || []; } catch {}
+      try { on = (await AsyncStorage.getItem(scopedKey(NOTIF_KEY))) === '1'; } catch {}
+      if (!alive) return;
+      setItems(list);
+      setEnabled(on);
       setReady(true);
+
+      if (tokenRef.current) {
+        try {
+          if (on) await registerPush(tokenRef.current, watchPayload(list), Platform.OS);
+          else await unregisterPush(tokenRef.current);
+        } catch {}
+      }
     })();
-  }, []);
+    return () => { alive = false; };
+  }, [ownerTick]);
 
   // ── Eksik appid'leri tamamla ──
   // Detay ekranı uzun süre appid'i iletmeden ekleme yapıyordu; o kayıtlar
@@ -131,25 +164,21 @@ export function WishlistProvider({ children }) {
     syncAccountData(items, async (merged) => {
       if (!alive || !Array.isArray(merged)) return;
       setItems(merged);
-      try { await AsyncStorage.setItem(WISH_KEY, JSON.stringify(merged)); } catch {}
+      try { await AsyncStorage.setItem(scopedKey(WISH_KEY), JSON.stringify(merged)); } catch {}
     });
     return () => { alive = false; };
-    // Oturum değişince (giriş/çıkış) tekrar dene
+    // Oturum ya da sahip değişince (giriş/çıkış/devir) tekrar dene
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, sessionTick]);
-
-  const watchPayload = useCallback((list) => list.map(g => ({
-    id: g.id, appid: g.appid || null, slug: g.slug || null, name: g.name, hasSteam: !!g.hasSteam,
-  })), []);
+  }, [ready, sessionTick, ownerTick]);
 
   const syncBackend = useCallback(async (list) => {
     if (!enabled || !tokenRef.current) return;
     try { await registerPush(tokenRef.current, watchPayload(list), Platform.OS); } catch {}
-  }, [enabled, watchPayload]);
+  }, [enabled]);
 
   const persist = useCallback(async (list) => {
     setItems(list);
-    try { await AsyncStorage.setItem(WISH_KEY, JSON.stringify(list)); } catch {}
+    try { await AsyncStorage.setItem(scopedKey(WISH_KEY), JSON.stringify(list)); } catch {}
     syncBackend(list);
   }, [syncBackend]);
 
@@ -183,14 +212,14 @@ export function WishlistProvider({ children }) {
     tokenRef.current = r.token;
     try { await registerPush(r.token, watchPayload(items), Platform.OS); } catch {}
     setEnabled(true);
-    try { await AsyncStorage.setItem(NOTIF_KEY, '1'); } catch {}
+    try { await AsyncStorage.setItem(scopedKey(NOTIF_KEY), '1'); } catch {}
     return { ok: true };
-  }, [items, watchPayload]);
+  }, [items]);
 
   const disableNotifications = useCallback(async () => {
     if (tokenRef.current) await unregisterPush(tokenRef.current);
     setEnabled(false);
-    try { await AsyncStorage.setItem(NOTIF_KEY, '0'); } catch {}
+    try { await AsyncStorage.setItem(scopedKey(NOTIF_KEY), '0'); } catch {}
   }, []);
 
   // Bildirimler açıksa açılışta token'ı tazele + kaydı yenile

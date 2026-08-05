@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback, useMemo } 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { loadSession, getAccount, subscribeSession } from '../services/session';
+import { scopedKey, ownerReady, subscribeOwner, registerScopedStore } from '../services/owner';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 import { API_BASE } from '../api/client';
@@ -9,8 +10,15 @@ import { API_BASE } from '../api/client';
 // Tarayıcı auth oturumlarının düzgün tamamlanması için
 WebBrowser.maybeCompleteAuthSession();
 
+// Taban adlar — gerçek anahtarlar sahibe göre türetilir (owner.js).
+// Steam/Xbox bağlantısı hesabın kendisi değil, hesaba TAKILAN bir bağlantı:
+// kapsamsız kaldığında B, A'nın Steam kütüphanesini ve gamertag'ini görüyordu.
 const STEAM_KEY = 'gr_steam_accounts';   // AsyncStorage (hassas değil)
 const XBOX_KEY  = 'gr_xbox_session';     // SecureStore (refreshToken içerir)
+
+// Silme için kayıt; yeniden yükleme React tarafında (subscribeOwner).
+registerScopedStore({ keys: [STEAM_KEY] });
+registerScopedStore({ keys: [XBOX_KEY], secure: true });
 
 const AuthContext = createContext(null);
 
@@ -44,31 +52,45 @@ export function AuthProvider({ children }) {
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  // Açılışta kalıcı oturumları yükle
+  // Sahip değişimini izle → bağlantılar yeni hesabın kovasından okunsun
+  const [ownerTick, setOwnerTick] = useState(0);
+  useEffect(() => subscribeOwner(() => setOwnerTick(n => n + 1)), []);
+
+  // Açılışta ve her hesap değişiminde kalıcı bağlantıları yükle.
+  // Bulunamayınca durumu SIFIRLAMAK şart: yalnızca "varsa yaz" deseydik
+  // önceki hesabın Steam listesi ekranda asılı kalırdı.
   useEffect(() => {
+    let alive = true;
     (async () => {
+      await ownerReady();
+      let steam = [];
+      let xb = null;
       try {
-        const s = await AsyncStorage.getItem(STEAM_KEY);
-        if (s) setSteamAccounts(JSON.parse(s));
+        const s = await AsyncStorage.getItem(scopedKey(STEAM_KEY));
+        if (s) steam = JSON.parse(s) || [];
       } catch {}
       try {
-        const x = await SecureStore.getItemAsync(XBOX_KEY);
-        if (x) setXbox(JSON.parse(x));
+        const x = await SecureStore.getItemAsync(scopedKey(XBOX_KEY));
+        if (x) xb = JSON.parse(x);
       } catch {}
+      if (!alive) return;
+      setSteamAccounts(steam);
+      setXbox(xb);
       setReady(true);
     })();
-  }, []);
+    return () => { alive = false; };
+  }, [ownerTick]);
 
   const persistSteam = useCallback(async (list) => {
     setSteamAccounts(list);
-    try { await AsyncStorage.setItem(STEAM_KEY, JSON.stringify(list)); } catch {}
+    try { await AsyncStorage.setItem(scopedKey(STEAM_KEY), JSON.stringify(list)); } catch {}
   }, []);
 
   const persistXbox = useCallback(async (session) => {
     setXbox(session);
     try {
-      if (session) await SecureStore.setItemAsync(XBOX_KEY, JSON.stringify(session));
-      else await SecureStore.deleteItemAsync(XBOX_KEY);
+      if (session) await SecureStore.setItemAsync(scopedKey(XBOX_KEY), JSON.stringify(session));
+      else await SecureStore.deleteItemAsync(scopedKey(XBOX_KEY));
     } catch {}
   }, []);
 
