@@ -572,9 +572,12 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     borderWidth: 1, borderColor: colors.cardBorder,
   },
-  tabOn: { backgroundColor: colors.accentBg, borderColor: colors.accentBorder },
+  // games/news çipleriyle aynı seçim dili: dolu nötr yüzey, koyu metin.
+  // Öncesinde accentBg + accentBorder + accentText ile ÜÇ kanaldan birden
+  // marka rengi taşıyordu.
+  tabOn: { backgroundColor: colors.text, borderColor: colors.text },
   tabText: { color: colors.text2, fontSize: type.footnote, fontWeight: '700' },
-  tabTextOn: { color: colors.accentText },
+  tabTextOn: { color: colors.bg },
 
   list: { paddingHorizontal: spacing.md, paddingBottom: 30 },
   sectionLabel: {
@@ -653,5 +656,5 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', marginTop: 22, paddingHorizontal: 24,
   },
   ctaOff: { opacity: 0.4 },
-  ctaText: { color: '#fff', fontSize: type.subhead, fontWeight: '800' },
+  ctaText: { color: '#fff', fontSize: type.subhead, fontWeight: '800' },
 });

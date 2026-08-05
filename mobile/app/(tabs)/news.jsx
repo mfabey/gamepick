@@ -2,7 +2,8 @@ import { memo, useState, useMemo, useCallback , useRef} from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { TopFade, BottomFade } from '../../src/components/EdgeFade';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import { fetchNews } from '../../src/api/news';
@@ -20,6 +21,12 @@ export default function NewsScreen() {
   useTabPressAction(useCallback(() => scrollRefToTop(listRef), []));
   const onTabScroll = useTabBarScroll();
   const { t, lang } = useLanguage();
+  const insets = useSafeAreaInsets();
+  // Başlık listenin DIŞINDA ve sabit: sönümleme bandı onun altına, listenin
+  // gerçek üst kenarına oturmalı. Üstüne binerse başlığı karartır.
+  // Yükseklik ölçülüyor, sabit yazılmıyor — yazı tipi boyutu ve dil değiştikçe
+  // değişiyor (games.jsx'te aynı gerekçe).
+  const [headerH, setHeaderH] = useState(0);
   const [cat, setCat] = useState('all');
 
   // Cache-first: yeniden açılışta anında; arka planda tazelenir
@@ -69,7 +76,14 @@ export default function NewsScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <Text style={styles.header}>{t('news.title')}</Text>
+      <Text
+        style={styles.header}
+        onLayout={(e) => setHeaderH(e.nativeEvent.layout.height)}
+      >
+        {t('news.title')}
+      </Text>
+      {headerH > 0 ? <TopFade top={insets.top + headerH} /> : null}
+      <BottomFade />
       <FlashList
         ref={listRef}
         onScroll={onTabScroll}
@@ -104,7 +118,7 @@ export default function NewsScreen() {
                 const label = c === 'all' ? t('news.all') : c;
                 return (
                   <Pressable key={c} onPress={() => setCat(c)} style={[styles.chip, active && styles.chipActive]}>
-                    <Text style={[styles.chipText, active && { color: '#fff', fontWeight: '700' }]}>{label}</Text>
+                    <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
                   </Pressable>
                 );
               })}
@@ -152,18 +166,25 @@ const styles = StyleSheet.create({
 
   catRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   catPill: { backgroundColor: colors.bgInput, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: 9, paddingVertical: 3 },
-  catPillText: { color: '#ff6b70', fontSize: type.caption2, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.4 },
+  // Kategori SABİT bir etiket, eylem değil. Kırmızıyken her haber satırında
+  // tekrarlıyor ve ekrandaki vurgu sayısını tek başına dörde katlıyordu —
+  // üstelik listedeki tüm satırlar aynı kategoriyi taşıdığında hiçbir şey
+  // ayırt etmiyor. Rolü zaten büyük harf + harf aralığı + 800 ağırlık
+  // anlatıyor; renge ihtiyaç yok.
+  catPillText: { color: colors.text2, fontSize: type.caption2, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.4 },
   metaText: { color: 'rgba(255,255,255,0.7)', fontSize: type.caption, fontWeight: '500' },
 
   chipsRow: { paddingHorizontal: spacing.lg, gap: 8, paddingVertical: 14 },
   chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.pill, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder },
-  chipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  // games.jsx ile ayni secim dili: dolu notr yuzey, koyu metin, agirlik.
+  chipActive: { backgroundColor: colors.text, borderColor: colors.text },
+  chipTextActive: { color: colors.bg, fontWeight: '700' },
   chipText: { fontSize: type.footnote, color: colors.text2, fontWeight: '500' },
 
   row: { flexDirection: 'row', gap: 12, paddingHorizontal: spacing.lg, paddingVertical: 12 },
   thumb: { width: 108, height: 76, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.card },
   catPillSm: { alignSelf: 'flex-start', backgroundColor: colors.bgInput, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2, marginBottom: 5 },
-  catPillTextSm: { color: '#ff6b70', fontSize: type.caption2, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.3 },
+  catPillTextSm: { color: colors.text2, fontSize: type.caption2, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.3 },
   rowTitle: { color: colors.text, fontSize: type.subhead, fontWeight: '700', lineHeight: 18 },
   rowMeta: { color: colors.text3, fontSize: type.caption, marginTop: 5, fontWeight: '500' },
 

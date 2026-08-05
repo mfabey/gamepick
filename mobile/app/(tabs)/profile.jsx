@@ -16,7 +16,8 @@
 import { useRef, useCallback, useEffect, useState } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { Image } from 'expo-image';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { TopFade, BottomFade } from '../../src/components/EdgeFade';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius, spacing, type, TAB_SPACE, PRESSED, PRESSED_CARD, NUMERIC } from '../../src/theme';
@@ -37,6 +38,7 @@ export default function ProfileScreen() {
   const onTabScroll = useTabBarScroll();
   const { t } = useLanguage();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { steamAccounts, xbox, busy, loginSteam, loginXbox, logoutSteam, logoutXbox, account } = useAuth();
 
   const { items } = useWishlist();
@@ -70,6 +72,13 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
+      {/* Kenar sönümlemesi — "Profil" başlığı ScrollView'ün İÇİNDE, yani
+          kayıp gidiyor ve içerik tepeye kadar çıkıyor. Bant güvenli alanın
+          bittiği yere, tam da kesme çizgisine oturuyor.
+          (Mutlak konum SafeAreaView'ün paddingTop'unu yok saydığı için
+          top burada açıkça veriliyor.) */}
+      <TopFade top={insets.top} />
+      <BottomFade />
       <ScrollView
         ref={scrollRef}
         contentContainerStyle={styles.body}

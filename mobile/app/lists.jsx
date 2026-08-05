@@ -236,9 +236,10 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     borderWidth: 1, borderColor: colors.cardBorder,
   },
-  tabOn: { backgroundColor: colors.accentBg, borderColor: colors.accentBorder },
+  // social.jsx sekmeleriyle ayni dil: dolu notr yuzey, koyu metin.
+  tabOn: { backgroundColor: colors.text, borderColor: colors.text },
   tabText: { color: colors.text2, fontSize: type.footnote, fontWeight: '700' },
-  tabTextOn: { color: colors.accentText },
+  tabTextOn: { color: colors.bg },
 
   list: { paddingHorizontal: spacing.md, paddingBottom: 30 },
   card: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11 },

@@ -2,7 +2,7 @@ import { memo } from 'react';
 import { Pressable, View, Text, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { colors, radius, type } from '../theme';
+import { colors, radius, type, metacriticColor } from '../theme';
 import { useLanguage } from '../context/LanguageContext';
 import { usePrice } from '../hooks/usePrice';
 import PosterImage from './PosterImage';
@@ -18,8 +18,7 @@ function GameCard({ game }) {
   const isFree = game.isFree || price?.isFree;
   const onSale = price?.discount > 0 && !isFree;
 
-  const mcColor = game.metacritic >= 80 ? colors.green
-    : game.metacritic >= 60 ? '#fbbf24' : '#f87171';
+  const mcColor = metacriticColor(game.metacritic);
 
   return (
     <Pressable

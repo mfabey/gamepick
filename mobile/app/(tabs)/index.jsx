@@ -4,12 +4,13 @@ import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { BottomFade } from '../../src/components/EdgeFade';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import { fetchTrending, fetchGames } from '../../src/api/games';
 import { fetchNews } from '../../src/api/news';
-import { colors, radius, spacing, TAB_SPACE, PRESSED, type } from '../../src/theme';
+import { colors, radius, spacing, TAB_SPACE, PRESSED, type, metacriticColor } from '../../src/theme';
 import { useTabBarScroll } from '../../src/context/TabBarContext';
 import { useLanguage } from '../../src/context/LanguageContext';
 import FadeIn from '../../src/components/FadeIn';
@@ -59,12 +60,24 @@ export default function HomeScreen() {
     if (sale && sale.length > 0) {
       const best = [...sale].sort((a, b) => (b.discount || 0) - (a.discount || 0))[0];
       if (best) {
-        import('../../modules/gamerisen-widget-module').then(({ setWidgetData }) => {
+        // Kapak görseli base64 olarak yükün İÇİNDE gidiyor: WidgetKit render
+        // sırasında ağdan görsel çekemiyor, hazır bayt bekliyor.
+        //
+        // İndirme başarısız olursa image null kalıyor ve widget görselsiz
+        // düzenine düşüyor — bu yüzden setWidgetData indirmeyi BEKLEMİYOR
+        // olsaydı yarış oluşurdu; await ile sıralı tutuluyor.
+        Promise.all([
+          import('../../modules/gamerisen-widget-module'),
+          import('../../src/utils/widgetImage'),
+        ]).then(async ([{ setWidgetData }, { fetchImageBase64, steamHeaderUrl }]) => {
+          const url = best.image || steamHeaderUrl(best.appid);
+          const image = await fetchImageBase64(url);
           const payload = {
             name: best.name,
             discount: best.discount || 0,
             currentPrice: formatPrice(best.price),
-            originalPrice: formatPrice(best.original)
+            originalPrice: formatPrice(best.original),
+            image,
           };
           setWidgetData('gamerisen_deal', JSON.stringify(payload));
         }).catch(() => {});
@@ -206,6 +219,12 @@ export default function HomeScreen() {
   return (
     <View style={styles.root}>
       <SafeAreaView edges={['top']} />
+      {/* ÜST bant burada YOK, bilerek: bu ekranda listenin tepesinde boşluk
+          yok — "GAMERISEN" başlığı doğrudan üst kenarda başlıyor ve bandın
+          içinde kalıp okunmaz hâle geliyordu. Diğer sekmelerde bant ya opak
+          bir başlığın altında (oyunlar, haberler) ya da başlık üstündeki
+          boşlukta (profil) duruyor; burada duracak yer yok. */}
+      <BottomFade />
       <FlashList
         ref={listRef}
         onScroll={onTabScroll}
@@ -254,7 +273,7 @@ function Section({ title, games, router, onDismiss }) {
 }
 
 const HomeCard = memo(function HomeCard({ game, router, onDismiss }) {
-  const mcColor = game.metacritic >= 80 ? colors.green : game.metacritic >= 60 ? '#fbbf24' : '#f87171';
+  const mcColor = metacriticColor(game.metacritic);
   return (
     <Pressable
       style={({ pressed }) => [styles.card, pressed && { opacity: 0.85, transform: [{ scale: 0.96 }] }]}
@@ -323,7 +342,10 @@ const styles = StyleSheet.create({
     fontSize: type.caption, fontWeight: '700', color: colors.text2,
     textTransform: 'uppercase', letterSpacing: 1.1,
   },
-  viewAll: { fontSize: type.footnote, color: colors.accentText, fontWeight: '700' },
+  // Bölüm başına bir tane olduğu için ekranda üç kez tekrarlıyordu. Gideceği
+  // yeri "›" zaten söylüyor; vurgu rengi buraya değil, sayfadaki tek gerçek
+  // eyleme (arama düğmesi) ait.
+  viewAll: { fontSize: type.footnote, color: colors.text2, fontWeight: '700' },
   row: { paddingHorizontal: spacing.lg, gap: 12 },
   card: { width: 132 },
 

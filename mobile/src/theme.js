@@ -40,6 +40,35 @@ export const colors = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Değere bağlı renk ölçeği
+//
+// Kural: RENK DEĞERE BAĞLIYSA KALIR, SABİT ETİKETSE NOTRLEŞIR. Metacritic
+// puanı, yorum oranı gibi ölçütlerin rengi bilgi taşıyor — vurgu rengiyle
+// karıştırılmamalı, o dikkat çekmek için. Bu yüzden accent'ten AYRI grup.
+//
+// Değerler dört dosyaya dağılmış ham hex olarak duruyordu; buraya taşınırken
+// AYNEN korundu, yani görsel bir değişiklik yok.
+export const scale = {
+  best: '#4ade80',
+  good: '#86efac',
+  mid:  '#fbbf24',
+  weak: '#fb923c',
+  bad:  '#f87171',
+};
+
+// Metacritic eşik kuralı ÜÇ yerde birebir kopyalanmıştı: anasayfa kartı,
+// oyun detayı ve GameCard. Eşik değişirse üçünü birden değiştirmek
+// gerekiyordu — tek kaynak.
+//
+// 80+ için scale.best değil colors.green kullanılıyor: mevcut davranış buydu
+// ve değiştirmek görsel bir karar olurdu. İki yeşilin ayrışması ayrı bir iş.
+export function metacriticColor(n) {
+  if (n >= 80) return colors.green;
+  if (n >= 60) return scale.mid;
+  return scale.bad;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Tipografi ölçeği
 //
 // Öncesinde kodda 27 farklı font boyutu vardı (11.5, 12.5, 13.5 gibi keyfi ara

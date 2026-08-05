@@ -9,7 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import { fetchCardPrice, fetchGameDetail, fetchGameByAppid, fetchPrices, fetchSteamReviews } from '../../src/api/games';
-import { colors, radius, spacing, PRESSED, type } from '../../src/theme';
+import { colors, radius, spacing, PRESSED, type, scale, metacriticColor } from '../../src/theme';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useWishlist } from '../../src/context/WishlistContext';
 import { useCollections, useCollectionsContaining } from '../../src/hooks/useCollections';
@@ -25,11 +25,11 @@ import IconButton from '../../src/components/IconButton';
 
 // Olumlu %'den inceleme tier'ı (etiket i18n + renk)
 function tierFor(pct) {
-  if (pct >= 90) return { key: 'review.veryPositive',    color: '#4ade80' };
-  if (pct >= 75) return { key: 'review.positive',        color: '#86efac' };
-  if (pct >= 60) return { key: 'review.mostlyPositive',  color: '#fbbf24' };
-  if (pct >= 40) return { key: 'review.mixed',           color: '#fb923c' };
-  return           { key: 'review.negative',             color: '#f87171' };
+  if (pct >= 90) return { key: 'review.veryPositive',    color: scale.best };
+  if (pct >= 75) return { key: 'review.positive',        color: scale.good };
+  if (pct >= 60) return { key: 'review.mostlyPositive',  color: scale.mid  };
+  if (pct >= 40) return { key: 'review.mixed',           color: scale.weak };
+  return           { key: 'review.negative',             color: scale.bad  };
 }
 
 // Binlik ayraçlı sayı (TR '.', EN ',')
@@ -195,7 +195,7 @@ export default function GameDetail() {
   const genres = detail?.genres || [];
   const shots = detail?.screenshots || [];
   const mc = detail?.metacritic;
-  const mcColor = mc >= 80 ? colors.green : mc >= 60 ? '#fbbf24' : '#f87171';
+  const mcColor = metacriticColor(mc);
 
   const stores = [];
   if (detail?.steamUrl || gameObj.hasSteam) stores.push({ key: 'steam', label: 'Steam', icon: 'logo-steam', color: '#1a9fff', url: detail?.steamUrl });
@@ -229,10 +229,21 @@ export default function GameDetail() {
               onPress={() => { Haptics.selectionAsync(); setPickerOpen(true); }}
               hitSlop={10}
             >
-              <Ionicons name={inAnyCollection ? 'albums' : 'albums-outline'} size={20} color="#fff" />
+              <Ionicons
+                name={inAnyCollection ? 'albums' : 'albums-outline'}
+                size={20}
+                color={inAnyCollection ? colors.bg : '#fff'}
+              />
             </Pressable>
             <Pressable style={[styles.iconBtn, watched && styles.iconBtnActive]} onPress={onToggleWishlist} hitSlop={10}>
-              <Ionicons name={watched ? 'notifications' : 'notifications-outline'} size={20} color={watched ? '#fff' : '#fff'} />
+              {/* Aktif yüzey açık olduğu için ikon koyuya dönüyor. Eskiden
+                  `watched ? '#fff' : '#fff'` yazıyordu — iki dalı da aynı
+                  olan işlevsiz bir üçlüydü. */}
+              <Ionicons
+                name={watched ? 'notifications' : 'notifications-outline'}
+                size={20}
+                color={watched ? colors.bg : '#fff'}
+              />
             </Pressable>
           </View>
         </SafeAreaView>
@@ -252,7 +263,12 @@ export default function GameDetail() {
           ) : null}
           {detail?.rating > 0 ? (
             <View style={styles.metaChip}>
-              <Text style={[styles.metaChipText, { color: colors.accentText }]}>★ {detail.rating.toFixed(1)}</Text>
+              {/* Yanındaki Metacritic rengi DEĞERE bağlı (mcColor: 80+ yeşil,
+                  60+ amber, altı kırmızı). Puan ise değeri ne olursa olsun
+                  kırmızıydı — aynı satırda iki farklı renklendirme mantığı,
+                  üstelik kırmızı olumsuz okunduğu için 4.5/5 kötü görünüyordu.
+                  Kural: renk değere bağlıysa kalır, değilse nötrleşir. */}
+              <Text style={[styles.metaChipText, { color: colors.text }]}>★ {detail.rating.toFixed(1)}</Text>
               <Text style={styles.metaChipLabel}>Puan</Text>
             </View>
           ) : null}
@@ -478,7 +494,10 @@ const styles = StyleSheet.create({
   coverWrap: { height: 320, backgroundColor: '#0d0f12' },
   topBar: { paddingHorizontal: spacing.md, paddingTop: 6, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   iconBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
-  iconBtnActive: { backgroundColor: colors.accent },
+  // Aktif durum dolu nötr yüzeyle: ikon zaten outline→dolu değişiyor, yani
+  // renk olmadan da iki sinyal var (biçim + yüzey). Kapak görselinin üstünde
+  // durduğu için açık yüzey her sahnede okunur kalıyor.
+  iconBtnActive: { backgroundColor: colors.text },
   body: { flex: 1, marginTop: -48 },
   name: { fontSize: type.title1, fontWeight: '900', color: colors.text, letterSpacing: -0.5, lineHeight: 30 },
 
@@ -519,10 +538,12 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: type.body, fontWeight: '800', color: colors.text, marginBottom: 12 },
   genreWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   genreChip: { backgroundColor: colors.bgInput, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 6 },
-  genreText: { color: '#ff8085', fontSize: type.footnote, fontWeight: '700' },
+  genreText: { color: colors.text2, fontSize: type.footnote, fontWeight: '700' },
   shot: { width: 264, height: 148, borderRadius: radius.md, backgroundColor: colors.card },
   desc: { fontSize: type.subhead, color: colors.text2, lineHeight: 21 },
-  moreLink: { color: colors.accentText, fontSize: type.footnote, fontWeight: '700', marginTop: 8 },
+  // Gerçek bir eylem (metni açıyor), o yüzden text2 değil text: nötr ama
+  // parlak. Vurgu rengi bu ekranda fiyat ve indirime ayrılmış durumda.
+  moreLink: { color: colors.text, fontSize: type.footnote, fontWeight: '700', marginTop: 8 },
   modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', alignItems: 'center', justifyContent: 'center' },
   modalImage: { width: '100%', height: '100%' },
   closeBtn: { position: 'absolute', top: 50, right: 20, width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center', zIndex: 10 },

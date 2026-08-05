@@ -5,12 +5,13 @@ import {
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import Animated, { useAnimatedStyle, interpolate, Extrapolation } from 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchGames } from '../../src/api/games';
 import { fetchQuery, getEntry, isFresh } from '../../src/services/queryCache';
 import GameCard from '../../src/components/GameCard';
 import { GamesGridSkeleton } from '../../src/components/Skeleton';
+import { TopFade, BottomFade } from '../../src/components/EdgeFade';
 import { prefetchImages } from '../../src/utils/prefetch';
 import { useTimeToData } from '../../src/dev/perf';
 import { colors, radius, spacing, TAB_SPACE, type } from '../../src/theme';
@@ -136,6 +137,7 @@ export default function GamesScreen() {
   const [headerH, setHeaderH] = useState(0);
   const compact = useTabBarCompact();
   const reducedMotion = useReducedMotion();
+  const insets = useSafeAreaInsets();
 
   const headerStyle = useAnimatedStyle(() => {
     if (reducedMotion || !compact || headerH === 0) return {};
@@ -159,7 +161,26 @@ export default function GamesScreen() {
   ), []);
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <View style={styles.safe}>
+      {/* Durum çubuğu şeridi — katlanan başlıktan BAĞIMSIZ, hiç hareket etmez.
+          Başlığı eksik kaydırarak şerit bırakmayı denemek işe yaramıyor:
+          geriye başlığın ALTI kalıyor, yani chip satırları saatin arkasına
+          giriyor. Ayrı katman gerekiyor.
+
+          zIndex başlığınkinden (10) büyük: başlık yukarı kayarken bunun
+          ARKASINA girsin, kenarı şeridin altından görünmesin. */}
+      <View
+        style={[styles.statusStrip, { height: insets.top }]}
+        pointerEvents="none"
+      />
+
+      {/* Kenar sönümlemesi — şeridin ALTINDAN başlıyor ki onun keskin alt
+          kenarını yumuşatsın. Başlık açıkken zaten görünmüyor (zIndex 9,
+          başlık 10): yalnızca başlık katlanıp içerik yukarı geçtiğinde
+          devreye giriyor, tam da sertliğin göründüğü an. */}
+      <TopFade top={insets.top} />
+      <BottomFade />
+
       {/* ── Katlanır üst bölüm ──
           Aşağı kaydırınca yukarı kayıp gözden kayboluyor, yukarı kaydırınca
           geri geliyor.
@@ -177,6 +198,17 @@ export default function GamesScreen() {
         style={[styles.headerWrap, headerStyle]}
         onLayout={(e) => setHeaderH(e.nativeEvent.layout.height)}
       >
+      {/* Güvenli alan SARMALAYICININ İÇİNDE — sıra önemli.
+          Dışarıda olduğunda başlık durum çubuğunun üstüne biniyordu: Yoga'da
+          mutlak konumlu çocuk `top: 0` derken ebeveynin paddingTop'unu yok
+          sayar, SafeAreaView ise güvenli alanı tam olarak paddingTop ile
+          uygular. İçeri alınca dolgu normal akıştaki çocuklara işliyor.
+          videos.jsx'teki üst çubuk da aynı sırayla kurulu.
+
+          onLayout bu yüzden artık inset'i de ölçüyor; headerH kendiliğinden
+          büyüdüğü için listenin üst dolgusu ve katlanma mesafesi ayrıca
+          düzeltilmek zorunda değil. */}
+      <SafeAreaView edges={['top']}>
       {/* Başlık + arama */}
       <View style={styles.header}>
         <Text style={styles.title}>{t('games.title')}</Text>
@@ -208,9 +240,10 @@ export default function GamesScreen() {
       {/* Mod chip'leri */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll} contentContainerStyle={[styles.chipsRow, { paddingBottom: 6 }]}>
         {MODES.map(m => (
-          <Chip key={m.v} active={mode === m.v} label={m.label} accent="#6ea8ff" onPress={() => setMode(m.v)} />
+          <Chip key={m.v} active={mode === m.v} label={m.label} onPress={() => setMode(m.v)} />
         ))}
       </ScrollView>
+      </SafeAreaView>
       </Animated.View>
 
       {/* Grid.
@@ -251,17 +284,21 @@ export default function GamesScreen() {
           />
         )}
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
-function Chip({ active, label, onPress, accent = colors.accent }) {
+// Seçim RENKLE değil, dolu nötr yüzey + koyu metin + ağırlıkla gösteriliyor.
+//
+// Önceden tür satırı kırmızı, mod satırı mavi (#6ea8ff) dolguyla seçiliyordu:
+// yan yana duran iki filtre satırı, aynı jest için iki farklı dil. Üstelik
+// seçili çip ekranın tek gerçek CTA'sıyla aynı ağırlıktaydı.
+//
+// `accent` prop'u kaldırıldı — artık seçimin rengi diye bir şey yok.
+function Chip({ active, label, onPress }) {
   return (
-    <Pressable
-      onPress={onPress}
-      style={[styles.chip, active && { backgroundColor: accent, borderColor: accent }]}
-    >
-      <Text style={[styles.chipText, active && { color: '#0b0d10', fontWeight: '700' }]}>{label}</Text>
+    <Pressable onPress={onPress} style={[styles.chip, active && styles.chipOn]}>
+      <Text style={[styles.chipText, active && styles.chipTextOn]}>{label}</Text>
     </Pressable>
   );
 }
@@ -273,6 +310,10 @@ const styles = StyleSheet.create({
   // üst üste binerdi. zIndex de gerekli, yoksa liste üstünü örter.
   headerWrap: {
     position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
+    backgroundColor: colors.bg,
+  },
+  statusStrip: {
+    position: 'absolute', top: 0, left: 0, right: 0, zIndex: 11,
     backgroundColor: colors.bg,
   },
   header: { paddingHorizontal: spacing.lg, paddingTop: 8, paddingBottom: 6 },
@@ -290,6 +331,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder,
   },
   chipText: { fontSize: type.footnote, color: colors.text2, fontWeight: '500' },
+  chipOn: { backgroundColor: colors.text, borderColor: colors.text },
+  chipTextOn: { color: colors.bg, fontWeight: '700' },
   cell: { flex: 1, paddingHorizontal: 6, paddingBottom: spacing.md },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   emptyText: { color: colors.text3, fontSize: type.subhead, fontWeight: '600' },
