@@ -152,6 +152,62 @@ gösteriyor. Yeni katlanır başlık yazarken oradan kopyala.
 
 ## Açık maddeler
 
+### 0. Hesap verisi cihaza bağlı — VERİ KARIŞMASI (EN ÖNCELİKLİ)
+
+4 Ağustos'ta bulundu. Ekranda sızıntı değil, **sunucuda kalıcı karışma**.
+
+**Ölçülen mimari:**
+
+| Depo | Anahtar | Kapsam |
+|---|---|---|
+| Koleksiyonlar | `gr_collections`, `gr_collections_deleted` | AsyncStorage, **hesap kapsamı yok** |
+| İstek listesi | `gr_wishlist`, `gr_notif_enabled` | AsyncStorage, **hesap kapsamı yok** |
+| Steam hesapları | `gr_steam_accounts` | AsyncStorage, sunucuya **hiç** gitmiyor |
+| Xbox oturumu | `gr_xbox_session` | SecureStore, sunucuya **hiç** gitmiyor |
+
+`signOut()` (`src/services/session.js:65`) yalnızca `persist(null)` yapıyor —
+oturum jetonunu siliyor, yerel depoların **hiçbirine dokunmuyor**.
+`app/account.jsx` de temizlemiyor.
+
+**Arıza zinciri:**
+
+1. A kullanıcısı koleksiyon yapar → `gr_collections`
+2. Çıkar → yalnızca jeton silinir, veri kalır
+3. B girer → `WishlistContext.jsx:131` → `syncAccountData` A'nın verisini
+   **B'nin jetonuyla** gönderir
+4. Sunucu (`app/api/user/data/route.js`) birleştirir, birleşmiş hâli döner
+5. **A'nın koleksiyonları artık B'nin hesabında** — B başka cihazdan girse
+   bile görür
+
+`syncAccountData` aslında iki yönlü: PUT yanıtı birleşmiş veriyi taşıyor.
+`fetchUserData` bu yüzden **0 çağrılı**. Sorun senkronun eksikliği değil,
+**kimin verisi olduğunun hiç sorulmaması**.
+
+**Düzeltme yolu — native build GEREKMİYOR:**
+
+| Parça | Nasıl |
+|---|---|
+| Depoları hesaba göre kapsa, çıkışta temizle | **OTA** (saf JS) |
+| Kimin verisi bilinmeden senkron etme | **OTA** (saf JS) |
+| Steam/Xbox'ı hesaba bağla | **OTA + Vercel deploy** — sunucu kaydı `steamAccounts` taşımalı |
+
+`AsyncStorage` ve `expo-secure-store` zaten bağlı native modüller.
+
+**KARAR: C — etkilenen hesaplar sıfırlanacak.**
+
+Yerel temizlik, daha önce yanlış hesaba yazılmış kayıtları geri almaz.
+Seçenekler A (dokunma) ve B (ayıklamaya çalış) elendi; koleksiyonlarda
+sahiplik bilgisi olmadığı için B zaten güvenilir değil.
+
+**Sıfırlama HENÜZ YAPILMADI.** Geri alınamaz olduğu için önce şunlar gerekiyor:
+1. Hangi hesapların etkilendiğini belirlemek (sunucu kayıtlarına bakmak)
+2. Kaç kullanıcı olduğunu ölçmek — 2.3.0 incelemede olduğu için sayı düşük
+   olabilir, bu kapsamı değiştirir
+3. Sıfırlamadan önce açık onay
+
+**Sıra:** önce akışı düzelt (yeni karışma dursun), sonra sıfırlama.
+Tersi yapılırsa temizlenen hesaplar aynı hatayla yeniden kirlenir.
+
 ### 1. Kimlik alanı çakışması — ZAMANLA BÜYÜYEN HATA
 
 Kod tabanı tek bir `rawg_` öneki kullanıyor ama onu **iki uyumsuz sayı
