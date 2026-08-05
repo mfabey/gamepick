@@ -100,6 +100,39 @@ grep -rEo "['\"]#[0-9a-fA-F]{3,8}['\"]" app src --include='*.jsx' \
 Bir sayıyı rapora ya da commit mesajına yazmadan önce ikinci bir yöntemle
 doğrula.
 
+### Widget — tema ve görseller (4 Ağustos)
+
+**Tema saptı, düzeltildi.** Widget kendi paletini (`AppColors`) taşıyor ve
+`withIosWidget.js` Swift dosyasını olduğu gibi kopyaladığı için senkronu
+koruyan mekanizma yok. Vurgu kehribar (`#e0a72e`) kalmıştı, uygulama
+kırmızıya (`#e8242b`) geçtiği hâlde. Tüm değerler `theme.js` ile hizalandı,
+`accentText` eklendi (marka kırmızısı metin olarak 4.5:1'in altında).
+**theme.js'te renk değiştirirsen widget'taki paleti de değiştir.**
+
+**Görseller eklendi.** Sorun "gözükmüyor" değildi — veri modelinde görsel
+alanı hiç yoktu, widget sadece SF Symbol çiziyordu.
+
+WidgetKit render sırasında ağdan görsel çekemez; uygulama indirip **bayt
+olarak** geçirmeli. Mevcut `setWidgetData(key, string)` kanalı base64 ile
+kullanıldı — native modüle dokunmaya gerek kalmadı.
+`src/utils/widgetImage.js` saf JS (fetch + blob + FileReader), yeni bağımlılık
+yok. Boyutlar: fırsat için `header` 460×215, istek listesi için `capsule`
+231×87. Tavan 90 KB ham (base64 ~%33 şişiriyor).
+
+Ölçüldü (ekran görüntüsü değil, App Group plist'i):
+`gamerisen_deal.image` = 65.688 karakter base64, `/9j/4AAQ...` → JPEG imzası.
+Yani yazma tarafı çalışıyor. **Widget'ın kapağı ÇİZDİĞİ görsel olarak teyit
+edilmedi** — fırsat widget'ı ana ekranda ekli değildi.
+
+**Açık kalan:** `gamerisen_wishlist` = `[]`. İstek listesine indirimli bir
+oyun (GTA V, -%50) eklendiği hâlde filtreden geçen öğe yok. Muhtemelen detay
+ekranından eklenen kaydın `appid`'i eksik ve fiyat eşleşmiyor —
+`WishlistContext.jsx:33-60`'ta bunun için tamamlama mekanizması var, ya
+koşmadı ya çalışmıyor. Görsellerle ilgisi yok, ayrı iş.
+
+**OTA notu:** widget uzantısı native. Bu iki değişiklik (tema + görseller)
+OTA ile gidemez, yeni binary gerektirir. Bugünkü diğer her şey saf JS'ti.
+
 ### Tekrar eden hata sınıfı — SafeAreaView + mutlak konum
 
 Bugün **üç ayrı örneği** bulundu ve düzeltildi. Yoga'da mutlak konumlu çocuk
