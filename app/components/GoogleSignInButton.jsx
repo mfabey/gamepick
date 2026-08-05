@@ -133,9 +133,11 @@ export default function GoogleSignInButton({ lang = 'tr', onError }) {
           }
         });
       }
-    } catch {
+    } catch (e) {
       onErrorRef.current?.(
-        lang === 'tr' ? 'Google ile giriş yapılamadı.' : 'Could not sign in with Google.'
+        lang === 'tr' 
+          ? `Google ile giriş yapılamadı (SDK hatası: ${e?.message || 'Yüklenemedi'}).` 
+          : `Could not sign in with Google (SDK error: ${e?.message || 'Failed to load'}).`
       );
     }
   }, [busy, lang]);
