@@ -209,11 +209,28 @@ Yerel temizlik, daha önce yanlış hesaba yazılmış kayıtları geri almaz.
 Seçenekler A (dokunma) ve B (ayıklamaya çalış) elendi; koleksiyonlarda
 sahiplik bilgisi olmadığı için B zaten güvenilir değil.
 
-**Sıfırlama HENÜZ YAPILMADI.** Geri alınamaz olduğu için önce şunlar gerekiyor:
-1. Hangi hesapların etkilendiğini belirlemek (sunucu kayıtlarına bakmak)
-2. Kaç kullanıcı olduğunu ölçmek — 2.3.0 incelemede olduğu için sayı düşük
-   olabilir, bu kapsamı değiştirir
-3. Sıfırlamadan önce açık onay
+**Sıfırlama HENÜZ YAPILMADI — betik hazır, kimlik bilgisi bekliyor.**
+
+Onay 5 Ağustos'ta alındı: kayıtlı hesapların hepsi test hesabı, verileri
+silinebilir; **hesapların kendisi silinmeyecek**.
+
+`scratch/reset_user_data.mjs` bu iş için yazıldı. Varsayılan kipi **yalnız
+ölçüm**: dört anahtar ailesini `SCAN` ile sayar, tekil uid ve koleksiyon
+taşıyan hesap sayısını yazdırır (DURUM.md'nin önkoşulları 1 ve 2). Silmek için
+açıkça `--sil` gerekiyor; silme sonrası tekrar sayarak doğruluyor.
+
+Siler: `user_taste:*` · `user_wishlist:*` · `user_collections:*` ·
+`user_collections_deleted:*`. Kimlik kaydına, sosyal profile, kullanıcı adına
+dokunmaz.
+
+**Koşulmadı** — bu makinede `.env.local` yok, `UPSTASH_REDIS_REST_URL/TOKEN`
+Vercel panosunda. Betiğin Redis yolu bu yüzden gerçek sunucuda denenmedi;
+sözdizimi ve kimlik-bilgisi-yok davranışı denendi.
+
+**Sıra hatırlatması:** OTA cihazlara indikten SONRA koş. Yeni JS eski
+kapsamsız anahtarları zaten siliyor (`owner.js:migrateLegacyKeys`), yani
+güncellenmiş cihazda geri yüklenecek kirli kopya kalmıyor. Güncellenmemiş bir
+cihaz ilk senkronda sıfırlamayı geri alır.
 
 **Sıra:** önce akışı düzelt (yeni karışma dursun), sonra sıfırlama.
 Tersi yapılırsa temizlenen hesaplar aynı hatayla yeniden kirlenir.
