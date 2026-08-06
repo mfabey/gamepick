@@ -204,20 +204,33 @@ export function AuthProvider({ children }) {
   // Xbox'ta refreshToken sunucuda TUTULMUYOR (kasıtlı). O yüzden yalnızca
   // cihazda oturum yoksa sunucudaki kayıt yazılır — varsa yerel olan korunur,
   // aksi hâlde kütüphane çekimi için gereken belirteci kaybederdik.
+  // ownerReady() BEKLENMEK ZORUNDA ve ownerTick bağımlılıkta olmalı.
+  //
+  // Yoksa yarış oluşuyor: bu efekt `account` değişince başlıyor ama depo
+  // kapsaması (owner) henüz bağlanmamış olabiliyor. Ağ hızlı dönerse
+  // persistSteam sunucudan geleni ESKİ sahibin kovasına yazıyor; hemen
+  // ardından yerel yükleme efekti yeni (boş) kovayı okuyup üzerine yazıyor
+  // ve sunucudan gelen bağlantılar kayboluyor.
+  //
+  // Bekleyince sıra garanti: önce kova bağlanır, sonra ağ turu tamamlanır ve
+  // yetkili olan sunucu verisi en son yazılır.
   useEffect(() => {
     if (!account) return;
     let alive = true;
-    fetchConnections()
-      .then((r) => {
+    (async () => {
+      await ownerReady();
+      if (!alive) return;
+      try {
+        const r = await fetchConnections();
         if (!alive) return;
         if (Array.isArray(r?.steamAccounts)) persistSteam(r.steamAccounts);
         if (r?.xbox && !xbox) persistXbox(r.xbox);
-      })
-      .catch(() => { /* ağ yoksa yereldekiyle devam */ });
+      } catch { /* ağ yoksa yereldekiyle devam */ }
+    })();
     return () => { alive = false; };
     // xbox bilerek dışarıda: her değişimde yeniden çekmek gereksiz tur olurdu
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [account, persistSteam, persistXbox]);
+  }, [account, ownerTick, persistSteam, persistXbox]);
 
   const value = useMemo(
     () => ({
