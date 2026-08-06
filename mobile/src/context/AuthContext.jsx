@@ -2,6 +2,10 @@ import { createContext, useContext, useState, useEffect, useCallback, useMemo } 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { loadSession, getAccount, subscribeSession } from '../services/session';
+import {
+  fetchConnections, putSteamConnection, putXboxConnection,
+  removeSteamConnection, removeXboxConnection,
+} from '../api/connections';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 import { API_BASE } from '../api/client';
@@ -72,8 +76,24 @@ export function AuthProvider({ children }) {
     } catch {}
   }, []);
 
+  // ── Mağaza bağlama ön koşulu ──
+  // Bağlantı artık Gamerisen HESABINA yazılıyor, cihaza değil. Hesap yoksa
+  // yazacak bir yer yok: bağlantı ilk oturum kapanışında ya da cihaz
+  // değişiminde sessizce kaybolurdu.
+  //
+  // Kapı BURADA, çağıranlarda değil. Arayüzde de kilit var (profil ve
+  // kütüphane ekranları) ama tek başına yeterli değil — yeni bir ekran
+  // eklendiğinde yine atlanabilirdi. Nitekim kilidi ilk koyduğumuzda
+  // kütüphane ekranı kapıyı atlatıyordu.
+  const requireAccount = useCallback(() => {
+    if (getAccount()) return null;
+    return { ok: false, error: 'ACCOUNT_REQUIRED' };
+  }, []);
+
   // ── Steam girişi ──
   const loginSteam = useCallback(async () => {
+    const gate = requireAccount();
+    if (gate) return gate;
     if (busy) return { ok: false };
     setBusy(true);
     try {
@@ -88,6 +108,10 @@ export function AuthProvider({ children }) {
           if (idx >= 0) list[idx] = payload.account;
           else if (list.length < 5) list.push(payload.account);
           await persistSteam(list);
+          // Hesaba da yaz — cihaz degisiminde kaybolmasin. Basarisiz olursa
+          // yerel baglanti duruyor; kullanici islemi tamamlanmis sayilir ve
+          // bir sonraki acilista senkron tekrar dener.
+          putSteamConnection(payload.account).catch(() => {});
           return { ok: true };
         }
         if (payload?.error) return { ok: false, error: payload.error };
@@ -102,6 +126,8 @@ export function AuthProvider({ children }) {
 
   // ── Xbox girişi ──
   const loginXbox = useCallback(async () => {
+    const gate = requireAccount();
+    if (gate) return gate;
     if (busy) return { ok: false };
     setBusy(true);
     try {
@@ -112,6 +138,8 @@ export function AuthProvider({ children }) {
         const payload = decodePayload(result.url);
         if (payload?.platform === 'xbox' && payload.session?.xuid) {
           await persistXbox(payload.session);
+          // refreshToken GONDERILMEZ — cihazda SecureStore'da kalir.
+          putXboxConnection(payload.session).catch(() => {});
           return { ok: true };
         }
         if (payload?.error) return { ok: false, error: payload.error };
@@ -126,10 +154,12 @@ export function AuthProvider({ children }) {
 
   const logoutSteam = useCallback(async (steamId) => {
     await persistSteam(steamAccounts.filter(a => a.steamId !== steamId));
+    removeSteamConnection(steamId).catch(() => {});
   }, [steamAccounts, persistSteam]);
 
   const logoutXbox = useCallback(async () => {
     await persistXbox(null);
+    removeXboxConnection().catch(() => {});
   }, [persistXbox]);
 
   // ── Hesap oturumu (e-posta/şifre) ──────────────────────────────────────────
@@ -139,6 +169,33 @@ export function AuthProvider({ children }) {
     loadSession().then(() => setAccount(getAccount()));
     return subscribeSession(() => setAccount(getAccount()));
   }, []);
+
+  // ── Hesaptaki bağlantıları çek ──
+  // İSTENEN DAVRANIŞIN ÖZÜ BURASI: kullanıcı hangi cihazdan girerse girsin,
+  // Steam/Xbox bağlantısı hesabıyla birlikte geliyor.
+  //
+  // Sunucu OTORİTE kabul ediliyor, birleştirme yapılmıyor: bağlama artık hesap
+  // zorunlu olduğu için sunucuda olmayan bir bağlantının meşru kaynağı yok.
+  // Birleştirseydik, başka cihazda koparılan hesap buradaki yerel kopyadan
+  // geri dirilir ve kullanıcı onu bir daha silemezdi.
+  //
+  // Xbox'ta refreshToken sunucuda TUTULMUYOR (kasıtlı). O yüzden yalnızca
+  // cihazda oturum yoksa sunucudaki kayıt yazılır — varsa yerel olan korunur,
+  // aksi hâlde kütüphane çekimi için gereken belirteci kaybederdik.
+  useEffect(() => {
+    if (!account) return;
+    let alive = true;
+    fetchConnections()
+      .then((r) => {
+        if (!alive) return;
+        if (Array.isArray(r?.steamAccounts)) persistSteam(r.steamAccounts);
+        if (r?.xbox && !xbox) persistXbox(r.xbox);
+      })
+      .catch(() => { /* ağ yoksa yereldekiyle devam */ });
+    return () => { alive = false; };
+    // xbox bilerek dışarıda: her değişimde yeniden çekmek gereksiz tur olurdu
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [account, persistSteam, persistXbox]);
 
   const value = useMemo(
     () => ({
