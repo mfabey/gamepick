@@ -6,8 +6,9 @@
 // Sinyal → decay(mevcut) → türlere ağırlık ekle → kaydet → abonelere bildir.
 // ─────────────────────────────────────────────────────────────────────────────
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { scopedKey, ownerReady, registerScopedStore } from './owner';
 
-const STORAGE_KEY   = 'gr_taste_profile';
+const STORAGE_KEY   = 'gr_taste_profile';   // taban ad — anahtar sahibe göre türetilir
 const HALF_LIFE_DAYS = 30;     // 30 günde ağırlık yarıya düşer (tazelik)
 const COLD_THRESHOLD = 3;      // bu kadar sinyalden az → "soğuk" (kişiselleştirme güvenilmez)
 const MAX_GENRES     = 50;     // bellek koruması
@@ -64,8 +65,9 @@ export function loadProfile() {
   if (loaded) return Promise.resolve(profile);
   if (!loadPromise) {
     loadPromise = (async () => {
+      await ownerReady();   // sahip çözülmeden okuma yanlış kovaya bakar
       try {
-        const raw = await AsyncStorage.getItem(STORAGE_KEY);
+        const raw = await AsyncStorage.getItem(scopedKey(STORAGE_KEY));
         if (raw) profile = { ...emptyProfile(), ...JSON.parse(raw) };
       } catch { /* boş profille devam */ }
       loaded = true;
@@ -76,12 +78,28 @@ export function loadProfile() {
   return loadPromise;
 }
 
+function writeNow() {
+  if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+  return AsyncStorage.setItem(scopedKey(STORAGE_KEY), JSON.stringify(profile)).catch(() => {});
+}
+
 function scheduleSave() {
   if (saveTimer) clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => {
-    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(profile)).catch(() => {});
-  }, 800);
+  saveTimer = setTimeout(writeNow, 800);
 }
+
+// Zevk profili sunucuya da gidiyor (sync.js → PUT /api/user/data, tür
+// ağırlıkları TOPLANIYOR). Kapsamsız kaldığı sürece A'nın zevki B'nin
+// önerilerine kalıcı olarak karışırdı.
+registerScopedStore({
+  keys: [STORAGE_KEY],
+  flush: () => (saveTimer ? writeNow() : null),
+  rebind: async () => {
+    profile = emptyProfile(); loaded = false; loadPromise = null;
+    if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+    await loadProfile();
+  },
+});
 
 // Sinyal kaydet. genres: string[] (oyunun türleri), type: 'view' | 'wishlist'
 export async function recordSignal({ genres = [], type = 'view' } = {}) {

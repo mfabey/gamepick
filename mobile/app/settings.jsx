@@ -21,7 +21,7 @@ export default function SettingsScreen() {
   const router = useRouter();
   const { t, lang, setLang } = useLanguage();
   const { account } = useAuth();
-  const { enabled, enableNotifications, disableNotifications } = useWishlist();
+  const { items, enabled, enableNotifications, disableNotifications } = useWishlist();
 
   const onToggleNotif = async (val) => {
     if (val) {
@@ -51,7 +51,10 @@ export default function SettingsScreen() {
   const onSignOut = () => {
     Alert.alert(t('acc.signOut'), account?.email || '', [
       { text: t('common.cancel'), style: 'cancel' },
-      { text: t('acc.signOut'), style: 'destructive', onPress: () => signOut() },
+      // Takip listesi çıkışta sunucuya akıtılıyor: yerel kopya siliniyor ve
+      // senkron yalnızca açılışta/oturum değişiminde koştuğu için bu oturumda
+      // eklenenler aksi hâlde kaybolurdu.
+      { text: t('acc.signOut'), style: 'destructive', onPress: () => signOut(items) },
     ]);
   };
 

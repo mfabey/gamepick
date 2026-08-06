@@ -4,8 +4,9 @@
 // Saf JS singleton + AsyncStorage (tasteProfile deseni). Süre + cap ile sınırlı.
 // ─────────────────────────────────────────────────────────────────────────────
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { scopedKey, ownerReady, registerScopedStore } from './owner';
 
-const STORAGE_KEY = 'gr_seen';
+const STORAGE_KEY = 'gr_seen';   // taban ad — gerçek anahtar sahibe göre türetilir
 const EXPIRY_DAYS = 45;    // bu süre sonra oyun tekrar yüzeye çıkabilir
 const MAX_SEEN    = 500;   // depo sınırı — en eskiyi at
 const DAY         = 86400000;
@@ -23,8 +24,9 @@ export function loadSeen() {
   if (loaded) return Promise.resolve(seen);
   if (!loadPromise) {
     loadPromise = (async () => {
+      await ownerReady();   // sahip çözülmeden okuma yanlış kovaya bakar
       try {
-        const raw = await AsyncStorage.getItem(STORAGE_KEY);
+        const raw = await AsyncStorage.getItem(scopedKey(STORAGE_KEY));
         if (raw) seen = JSON.parse(raw) || {};
       } catch { /* boş depoyla devam */ }
       loaded = true;
@@ -35,12 +37,26 @@ export function loadSeen() {
   return loadPromise;
 }
 
+function writeNow() {
+  if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+  return AsyncStorage.setItem(scopedKey(STORAGE_KEY), JSON.stringify(seen)).catch(() => {});
+}
+
 function scheduleSave() {
   if (saveTimer) clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => {
-    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(seen)).catch(() => {});
-  }, 800);
+  saveTimer = setTimeout(writeNow, 800);
 }
+
+// Hesap değişiminde: bekleyen yazma ESKİ kovaya iner, sonra yenisinden yüklenir.
+registerScopedStore({
+  keys: [STORAGE_KEY],
+  flush: () => (saveTimer ? writeNow() : null),
+  rebind: async () => {
+    seen = {}; loaded = false; loadPromise = null;
+    if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+    await loadSeen();
+  },
+});
 
 // Bir oyunu "görüldü" olarak işaretle (detay açılışında)
 export async function recordSeen(id) {

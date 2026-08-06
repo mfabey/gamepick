@@ -42,6 +42,17 @@ const ART_PALETTE = [
   'linear-gradient(145deg,#2f7d32 0%,#a3c93a 60%,#13361a 100%)',
 ];
 
+// Sayısal varlığın kod noktasını karaktere çevirir.
+// Geçersiz/aralık dışı değerlerde boş döner — bozuk bir beslemenin
+// çıktıyı kirletmesindense o parçanın düşmesi yeğ.
+function fromCodePointSafe(n) {
+  if (!Number.isFinite(n) || n < 0 || n > 0x10ffff) return '';
+  // Kontrol karakterleri metne girmesin (sekme ve satır sonu hariç);
+  // aşağıdaki \s+ sadeleştirmesi bunları zaten tek boşluğa indiriyor.
+  if (n < 0x20 && n !== 0x09 && n !== 0x0a) return ' ';
+  try { return String.fromCodePoint(n); } catch { return ''; }
+}
+
 function decodeEntities(str = '') {
   return str
     .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1')
@@ -54,6 +65,16 @@ function decodeEntities(str = '') {
     .replace(/&#0?39;|&apos;|&rsquo;|&#8217;/g, '’')
     .replace(/&#0?34;|&ldquo;|&rdquo;/g, '"')
     .replace(/&hellip;|&#8230;/g, '…')
+    // ── Sayısal varlıklar ──
+    // Bunlar aşağıdaki harfli yakalayıcıya TAKILMIYOR: /&[a-z]+;/ deseni '#'
+    // içeren dizgiyle eşleşmiyor, dolayısıyla &#8211; &#x27; &#252; gibi
+    // varlıklar ekrana ham hâlde düşüyordu ("kod gibi yazı"). Türkçe
+    // beslemelerde ayrıca kelimeyi bozuyorlardı — &#252; = ü.
+    //
+    // Harfli yakalayıcıdan ÖNCE gelmeleri şart, sonra gelseler o desen
+    // ';' ile biten parçayı çoktan boşluğa çevirmiş olurdu.
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex) => fromCodePointSafe(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, dec) => fromCodePointSafe(parseInt(dec, 10)))
     .replace(/&[a-z]+;/gi, ' ')
     .replace(/\s+/g, ' ')
     .trim();

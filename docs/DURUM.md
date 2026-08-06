@@ -100,6 +100,39 @@ grep -rEo "['\"]#[0-9a-fA-F]{3,8}['\"]" app src --include='*.jsx' \
 Bir sayıyı rapora ya da commit mesajına yazmadan önce ikinci bir yöntemle
 doğrula.
 
+### Widget — tema ve görseller (4 Ağustos)
+
+**Tema saptı, düzeltildi.** Widget kendi paletini (`AppColors`) taşıyor ve
+`withIosWidget.js` Swift dosyasını olduğu gibi kopyaladığı için senkronu
+koruyan mekanizma yok. Vurgu kehribar (`#e0a72e`) kalmıştı, uygulama
+kırmızıya (`#e8242b`) geçtiği hâlde. Tüm değerler `theme.js` ile hizalandı,
+`accentText` eklendi (marka kırmızısı metin olarak 4.5:1'in altında).
+**theme.js'te renk değiştirirsen widget'taki paleti de değiştir.**
+
+**Görseller eklendi.** Sorun "gözükmüyor" değildi — veri modelinde görsel
+alanı hiç yoktu, widget sadece SF Symbol çiziyordu.
+
+WidgetKit render sırasında ağdan görsel çekemez; uygulama indirip **bayt
+olarak** geçirmeli. Mevcut `setWidgetData(key, string)` kanalı base64 ile
+kullanıldı — native modüle dokunmaya gerek kalmadı.
+`src/utils/widgetImage.js` saf JS (fetch + blob + FileReader), yeni bağımlılık
+yok. Boyutlar: fırsat için `header` 460×215, istek listesi için `capsule`
+231×87. Tavan 90 KB ham (base64 ~%33 şişiriyor).
+
+Ölçüldü (ekran görüntüsü değil, App Group plist'i):
+`gamerisen_deal.image` = 65.688 karakter base64, `/9j/4AAQ...` → JPEG imzası.
+Yani yazma tarafı çalışıyor. **Widget'ın kapağı ÇİZDİĞİ görsel olarak teyit
+edilmedi** — fırsat widget'ı ana ekranda ekli değildi.
+
+**Açık kalan:** `gamerisen_wishlist` = `[]`. İstek listesine indirimli bir
+oyun (GTA V, -%50) eklendiği hâlde filtreden geçen öğe yok. Muhtemelen detay
+ekranından eklenen kaydın `appid`'i eksik ve fiyat eşleşmiyor —
+`WishlistContext.jsx:33-60`'ta bunun için tamamlama mekanizması var, ya
+koşmadı ya çalışmıyor. Görsellerle ilgisi yok, ayrı iş.
+
+**OTA notu:** widget uzantısı native. Bu iki değişiklik (tema + görseller)
+OTA ile gidemez, yeni binary gerektirir. Bugünkü diğer her şey saf JS'ti.
+
 ### Tekrar eden hata sınıfı — SafeAreaView + mutlak konum
 
 Bugün **üç ayrı örneği** bulundu ve düzeltildi. Yoga'da mutlak konumlu çocuk
@@ -118,6 +151,221 @@ gösteriyor. Yeni katlanır başlık yazarken oradan kopyala.
 ---
 
 ## Açık maddeler
+
+### 0. Hesap verisi cihaza bağlı — VERİ KARIŞMASI (EN ÖNCELİKLİ)
+
+4 Ağustos'ta bulundu. Ekranda sızıntı değil, **sunucuda kalıcı karışma**.
+
+**5 Ağustos: 1. adım (akış düzeltmesi) YAPILDI ve OTA ile yayınlandı.
+2. adım (sunucu sıfırlaması) KARAR GEREĞİ BEKLİYOR — tetikleyici 2.3.0'ın
+App Store onayı.**
+
+**Ölçülen mimari:**
+
+Tablo ilk yazıldığında eksikti: kapsamsız anahtar 4 değil **9**, sunucuya giden
+depo 2 değil **3** — zevk profili de `PUT /api/user/data` gövdesinde gidiyor ve
+sunucu tür ağırlıklarını **topluyor** (`route.js:113`), yani A'nın zevki B'nin
+önerilerine karışıyordu.
+
+| Depo | Anahtar | Kapsam |
+|---|---|---|
+| Koleksiyonlar | `gr_collections`, `gr_collections_deleted` | AsyncStorage, **hesap kapsamı yok** |
+| İstek listesi | `gr_wishlist`, `gr_notif_enabled` | AsyncStorage, **hesap kapsamı yok** |
+| Zevk profili | `gr_taste_profile` | AsyncStorage, **hesap kapsamı yok**, sunucuya gidiyor |
+| Beğeni/görülen/elenen | `gr_liked`, `gr_seen`, `gr_dismissed` | AsyncStorage, **hesap kapsamı yok** |
+| Steam hesapları | `gr_steam_accounts` | AsyncStorage, sunucuya **hiç** gitmiyor |
+| Xbox oturumu | `gr_xbox_session` | SecureStore, sunucuya **hiç** gitmiyor |
+
+`signOut()` (`src/services/session.js:65`) yalnızca `persist(null)` yapıyor —
+oturum jetonunu siliyor, yerel depoların **hiçbirine dokunmuyor**.
+`app/account.jsx` de temizlemiyor.
+
+**Arıza zinciri:**
+
+1. A kullanıcısı koleksiyon yapar → `gr_collections`
+2. Çıkar → yalnızca jeton silinir, veri kalır
+3. B girer → `WishlistContext.jsx:131` → `syncAccountData` A'nın verisini
+   **B'nin jetonuyla** gönderir
+4. Sunucu (`app/api/user/data/route.js`) birleştirir, birleşmiş hâli döner
+5. **A'nın koleksiyonları artık B'nin hesabında** — B başka cihazdan girse
+   bile görür
+
+`syncAccountData` aslında iki yönlü: PUT yanıtı birleşmiş veriyi taşıyor.
+`fetchUserData` bu yüzden **0 çağrılı**. Sorun senkronun eksikliği değil,
+**kimin verisi olduğunun hiç sorulmaması**.
+
+**Düzeltme yolu — native build GEREKMİYOR:**
+
+| Parça | Nasıl |
+|---|---|
+| Depoları hesaba göre kapsa, çıkışta temizle | **OTA** (saf JS) |
+| Kimin verisi bilinmeden senkron etme | **OTA** (saf JS) |
+| Steam/Xbox'ı hesaba bağla | **OTA + Vercel deploy** — sunucu kaydı `steamAccounts` taşımalı |
+
+`AsyncStorage` ve `expo-secure-store` zaten bağlı native modüller.
+
+**KARAR: C — etkilenen hesaplar sıfırlanacak.**
+
+Yerel temizlik, daha önce yanlış hesaba yazılmış kayıtları geri almaz.
+Seçenekler A (dokunma) ve B (ayıklamaya çalış) elendi; koleksiyonlarda
+sahiplik bilgisi olmadığı için B zaten güvenilir değil.
+
+#### OTA yayınlandı — 5 Ağustos 16:43
+
+Doğrulandı (çıkarımla değil, EAS'e sorularak):
+
+| | |
+|---|---|
+| Güncelleme | `019fd22a-2cd2-716a-9217-7e569ddb0a99` (iOS) + Android eşi |
+| `gitCommitHash` | `086a2ee` — düzeltme commit'i `6e880e9`'un üstünde |
+| Dal / kanal | `production` / `production` |
+| Çalışma zamanı | **2.3.0** |
+
+Varlık CDN'i imzasız indirmeyi reddettiği (403) ve `expo export` ile
+`eas update` farklı ortam değişkeni gömdüğü için paket özeti karşılaştırması
+sonuç vermiyor; `gitCommitHash` yetkili kaynak.
+
+#### ⚠ Düzeltme 2.3.0 DIŞINDAKİ kurulumlara ULAŞMADI
+
+`runtimeVersion` politikası `appVersion` olduğu için OTA yalnız aynı sürüme
+iner. Yayın geçmişi dört ayrı çalışma zamanı gösteriyor:
+
+| Çalışma zamanı | Son OTA |
+|---|---|
+| **2.3.0** | bu düzeltme ✓ |
+| 2.1.1 | 2 gün önce |
+| 2.1.0 | 3 gün önce |
+| 1.0.0 | 1 hafta önce |
+
+2.3.0 hâlâ App Store incelemesindeyse mağazadaki sürüm daha eski demektir —
+yani **gerçek kullanıcıların çoğu hâlâ karışmaya yol açan JS'i taşıyor**.
+
+Bu, sıfırlamanın önündeki asıl engel: eski JS'li bir cihaz, sıfırlamadan sonra
+ilk senkronda kirli yerel kopyasını geri yükler ve hesabı yeniden kirletir.
+
+**Eski çalışma zamanlarına bu JS'i yayınlamak ÇÖZÜM DEĞİL** — 2.1.x ve 1.0.0
+ikilileri bugünkü native bağımlılıkları (widget modülü, share extension,
+`expo-glass-effect`) taşımıyor; uygulama açılışta çökebilir. `appVersion`
+politikası tam da bunun için var.
+
+Üç seçenek vardı:
+
+1. **Bekle.** 2.3.0 onaylanana kadar sıfırlamayı erteler.
+2. **Sunucu tarafında kapı koy.** `PUT /api/user/data` yalnız kapsamlı
+   istemcinin gönderdiği bir başlığı (`x-gr-scoped: 1`) kabul etsin; eski
+   istemciler okuyabilsin ama yazamasın. Vercel deploy + bir OTA daha
+   gerektirir, native build gerektirmez.
+3. **Yine de sıfırla.** Hesapların hepsi test hesabıysa ve eski sürümlü cihaz
+   fiilen kullanılmıyorsa kabul edilebilir.
+
+**KARAR (5 Ağustos): 1 — BEKLENECEK.** 2.3.0 App Store'da onaylanana kadar
+sıfırlama yapılmayacak.
+
+#### ⏸ Sıfırlama beklemede — tetikleyici: 2.3.0 onayı
+
+Bu madde 2.3.0 onaylanıp kullanıcılara inene kadar açık kalır. Onay geldiğinde
+sırayla:
+
+1. Kimlik bilgisi: `npx vercel login && npx vercel env pull .env.local`
+   (ya da Vercel panosundan `UPSTASH_REDIS_REST_URL` + `_TOKEN` elle).
+2. Ölç: `node scratch/reset_user_data.mjs` — kaç hesap, kaçında koleksiyon.
+3. Sayılar test hesabı beklentisiyle uyuşuyorsa sil:
+   `node scratch/reset_user_data.mjs --sil`
+4. Sıfırlamadan sonra bir hesapla girip listelerin boş geldiğini gör.
+
+Beklemenin bedeli: 2.3.0 öncesi kurulumlarda karışma sürüyor. Yeni karışma
+üretmiyor sayılmaz — eski JS hâlâ kapsamsız yazıyor. Onay uzarsa 2. seçenek
+(sunucu kapısı) yeniden değerlendirilmeli.
+
+**Sıfırlama HENÜZ YAPILMADI — karar gereği bekliyor.**
+
+Onay 5 Ağustos'ta alındı: kayıtlı hesapların hepsi test hesabı, verileri
+silinebilir; **hesapların kendisi silinmeyecek**.
+
+`scratch/reset_user_data.mjs` bu iş için yazıldı. Varsayılan kipi **yalnız
+ölçüm**: dört anahtar ailesini `SCAN` ile sayar, tekil uid ve koleksiyon
+taşıyan hesap sayısını yazdırır (DURUM.md'nin önkoşulları 1 ve 2). Silmek için
+açıkça `--sil` gerekiyor; silme sonrası tekrar sayarak doğruluyor.
+
+Siler: `user_taste:*` · `user_wishlist:*` · `user_collections:*` ·
+`user_collections_deleted:*`. Kimlik kaydına, sosyal profile, kullanıcı adına
+dokunmaz.
+
+**Koşulmadı** — bu makinede `.env.local` yok, `UPSTASH_REDIS_REST_URL/TOKEN`
+Vercel panosunda. Betiğin Redis yolu bu yüzden gerçek sunucuda denenmedi;
+sözdizimi ve kimlik-bilgisi-yok davranışı denendi.
+
+**Sıra:** önce akışı düzelt (yeni karışma dursun), sonra sıfırlama.
+Tersi yapılırsa temizlenen hesaplar aynı hatayla yeniden kirlenir. 1. adım
+5 Ağustos'ta yapıldı ve yayınlandı; 2. adım 2.3.0 onayını bekliyor.
+
+#### Yapılan — 1. adım, akış düzeltmesi (5 Ağustos, OTA)
+
+Yeni dosya `src/services/owner.js`. Her kalıcı anahtar artık sahibine göre
+türetiliyor: `gr_seen__anon` · `gr_seen__u_<uid>`. Depoların **tüketicileri
+değişmedi** (25 dosya + `useWishlist`/`useAuth` kullanan 14 dosya); kapsam
+depoların içinde.
+
+| Ne | Nerede |
+|---|---|
+| 9 anahtarın hepsi hesaba kapsandı | 5 servis deposu + 2 context |
+| Çıkışta: son senkron → oturumu kapat → yerel kopyayı sil | `session.js:signOut` |
+| Sahibi bilinmeyen veri senkron edilmiyor | `sync.js` |
+| Hesap değişince 30 sn kısıtlayıcı sıfırlanıyor | `sync.js` |
+| Misafir verisi devri artık **soruluyor** | `account.jsx:offerAnonTransfer` |
+| Eski kapsamsız anahtarlar tek seferde siliniyor | `owner.js:migrateLegacyKeys` |
+
+**Üç ince nokta, üçü de düzeltmenin parçası:**
+
+1. *Sönümleme yarışı.* Depolar 600–800 ms sönümlemeyle yazıyor. Sahip
+   çevrilirken bekleyen zamanlayıcı önce **eski** kovaya indiriliyor; ters
+   sırada A'nın verisi B'nin kovasına boşalırdı — düzeltilen hatanın kılık
+   değiştirmiş hâli.
+2. *Yanıt sırasında hesap değişimi.* `syncAccountData` uid'i başta mühürlüyor;
+   jeton alındıktan sonra ve yanıt geldikten sonra iki kez doğruluyor.
+3. *Eski veri taşınmıyor, siliniyor.* Sahibi bilinmediği için taşımak
+   karışmayı yeni kovaya devrederdi — ve sunucu sıfırlaması kalıcı olmazdı,
+   ilk senkronda cihazdaki kirli kopya geri yüklenirdi.
+
+**Ölçüm — iki yöntem:**
+
+1. *Node.* Kaynak dosyalar (yalnız iki native modül saplanarak) koşturuldu:
+   depo kapsamı 18/18, senkron sahipliği 11/11. Sönümleme yarışı ve "yanıt
+   gelirken hesap değişti" ayrı ayrı sınandı.
+2. *Simülatörde, gerçek eski veri üstünde.* Cihazda 4 Ağustos'tan kalma
+   kapsamsız `gr_seen`, `gr_taste_profile`, `gr_wishlist` duruyordu. Yeni
+   derleme kurulduktan sonra App Group plist'i değil, doğrudan AsyncStorage
+   manifest'i okundu:
+
+   | | Kurulum öncesi | Sonrası |
+   |---|---|---|
+   | Kapsamsız kullanıcı anahtarı | 3 | **0** |
+   | `gr_scope_migrated` | yok | **var** |
+   | Cihaz düzeyi (`gr_onboarded`, `gr_query_cache`) | 2 | 2 (dokunulmadı) |
+
+   Ardından bir oyun detayı açılıp takibe alındı → yeni kayıtlar
+   `gr_seen__anon`, `gr_taste_profile__anon`, `gr_wishlist__anon` olarak düştü.
+   Ana sayfa, oyun detayı ve profil ekranı hesapsız durumda doğru render
+   ediliyor; depolar sahip çözülmesini beklerken takılmıyor.
+
+**Doğrulanmadı:** iki gerçek hesapla uçtan uca tur (A koleksiyon yap → çık →
+B gir). Şifre girmeyi gerektirdiği için yapılmadı — bu turu insan yapmalı.
+
+**Derleme notu:** `npx expo run:ios` bu makinede çalışmıyor; Xcode 26.6'nın
+`devicectl` sürüm çıktısını Expo CLI çözemiyor ve simülatörü fiziksel cihaz
+sanıp imzalama sertifikası istiyor. `npx expo start` de ayrıca takılıyor
+(`modules/gamerisen-widget-module/index.ts` yüzünden TypeScript bağımlılığı
+istiyor). İşleyen yol:
+
+```bash
+cd mobile/ios && LANG=en_US.UTF-8 xcodebuild -workspace Gamerisen.xcworkspace \
+  -scheme Gamerisen -configuration Release -sdk iphonesimulator \
+  -destination "id=<UDID>" -derivedDataPath build/dd -quiet build
+xcrun simctl install <UDID> build/dd/Build/Products/Release-iphonesimulator/Gamerisen.app
+xcrun simctl launch <UDID> com.gamerisen.app
+```
+
+Release ŞART: Debug, Metro ister. Temiz derleme ~9 dk.
 
 ### 1. Kimlik alanı çakışması — ZAMANLA BÜYÜYEN HATA
 
@@ -217,6 +465,62 @@ bir tür geliyor. Ana işlev sağlam, bu yalnızca hata yolu.
   gönderimi için zaten gerekiyor (aşağıya bak).
 
 ---
+
+### 7. Android — iki sürüm geride, 5 Ağustos'ta derlendi
+
+**Bulgu:** en yeni Android derlemesi **2.1.1**'di (2 Ağustos). iOS 2.3.0'dayken
+Android iki sürüm gerideydi ve `runtimeVersion` politikası `appVersion` olduğu
+için **Android OTA'ları boşluğa iniyordu** — 2.3.0 çalışma zamanlı Android
+kurulumu yoktu. Hesap kapsamı düzeltmesi dahil, 2 Ağustos'tan sonraki hiçbir
+şey Android kullanıcısına ulaşmamıştı.
+
+5 Ağustos'ta iki derleme kuyruğa alındı (ikisi de sürüm 2.3.0, commit
+`d69e053`): preview APK (versionCode 5) ve production AAB (versionCode 6).
+Production profili `production` kanalına bağlı, yani kurulduğunda cihaz
+mevcut Android OTA'sını da alabilir hâle geliyor.
+
+#### Android denetimi — ölçüldü, beklenenden temiz
+
+Cihaz olmadan yapılabilecek statik denetim yapıldı. Kırık sanılan yerlerin
+çoğu sağlam çıktı:
+
+| Alan | Ölçüm | Sonuç |
+|---|---|---|
+| iOS'a özel native parçalar | widget `platforms:["ios"]`, cam efekti `platforms:["apple"]`, Apple butonları `Platform.OS==='ios'` arkasında | Android'i bozmuyor |
+| Listeler | 14 dosyada FlashList, **0** FlatList; `ScrollView`+`map` yerleri kısa çip listeleri | sanallaştırma yerinde |
+| Gölge / elevation | `shadow*` 1 dosya, `elevation` 1 dosya; elevation'sız gölge yok | temiz |
+| Donanım geri tuşu | üç sheet de RN `<Modal>` + `onRequestClose` | çalışıyor |
+| Bildirim kanalı | `setNotificationChannelAsync('default')` var | Android'e uygun |
+| Edge-to-edge | **açık** — SDK 54 varsayılanı `edgeToEdgeEnabled !== false` | tab bar doğru oturuyor |
+
+**Önce yanlış teşhis kondu:** edge-to-edge "tanımsız, risk" diye işaretlenmişti.
+`@expo/prebuild-config/.../withEdgeToEdge.js:44` bunu çürütüyor — alan
+tanımsızken varsayılan AÇIK. Yapılandırma dosyasına bakıp "yok" demek yetmiyor,
+varsayılanı okumak gerekiyor.
+
+#### Kalan tek gerçek boşluk: FCM
+
+`google-services.json` yok ve `android.googleServicesFile` tanımsız. FCM V1
+olmadan `getExpoPushTokenAsync` Android'de fırlıyor;
+`notifications.js:53` bunu yakalayıp `token-failed` dönüyor, ayarlar ekranı da
+"geliştirme derlemesi gerekiyor" mesajını gösteriyor. Yani **çökme yok, sessiz
+kırık**: Android'de bildirim açılamıyor ve mesaj da yanıltıcı.
+
+Gereken: Firebase Console → Project settings → Your apps → Android
+(`com.gamerisen.app`) → `google-services.json` indir → `mobile/` köküne koy →
+`app.json`'a `android.googleServicesFile` ekle → yeni üretim derlemesi.
+Ayrıca FCM V1 servis hesabı anahtarının EAS'e yüklenmesi gerekiyor.
+
+#### Sınama yolu: cihaz yok
+
+Elde Android cihaz yok, bu makinede de Android araç zinciri yok (`adb`,
+emulator, SDK, Android Studio yok; Java 8). **Karar: Play Console iç test
+kanalı + pre-launch raporu** — Google uygulamayı gerçek cihazlarda koşturup
+çökme ve ekran görüntüsü raporu veriyor, cihaz gerektirmiyor.
+
+Somut bir hata listesi **yok**; "hata çıkıyor" beklentisi önceki Android
+sürümlerinden geliyordu, gözlem değil. Gerçek hata listesi pre-launch
+raporundan gelecek; düzeltme o zaman kanıtla yapılacak.
 
 ## Apple gönderimi
 

@@ -246,6 +246,103 @@ const STATIC_FREE_GAMES = [
   { id: 'rawg_1085660', rawgId: 1085660, rawgSlug: 'destiny-2', name: 'Destiny 2', image: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1085660/header.jpg', metacritic: 83, reviewScore: 82, totalReviews: 29500, isFree: true, onSale: false, price: null, noData: false, platforms: ['pc'], source: 'steam', hasSteam: true, hasEpic: false, hasStores: true, genres: ['Aksiyon', 'Nişancı'], released: '2019-10-01' }
 ];
 
+const STEAM_GENRE_MAP = {
+  'action': 'Action',
+  'role-playing-games-rpg': 'RPG',
+  'strategy': 'Strategy',
+  'adventure': 'Adventure',
+  'sports': 'Sports',
+  'racing': 'Racing',
+  'simulation': 'Simulation'
+};
+const STEAM_TAG_MAP = {
+  'shooter': '1662',
+  'horror': '1667',
+  'platformer': '1625',
+  'puzzle': '1664',
+  'card': '1738'
+};
+
+async function fetchSteamSearchPaginated(searchUrl, isFree = false, isOnSale = false, fetchReleaseDates = false) {
+  try {
+    const res = await fetch(searchUrl, { next: { revalidate: 1800 } });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const items = data.items || [];
+    
+    const detailedItems = await Promise.all(
+      items.map(async (item) => {
+        const appidMatch = item.logo.match(/\/apps\/(\d+)\//);
+        const appid = appidMatch ? parseInt(appidMatch[1]) : null;
+        if (!appid) return null;
+
+        let releasedDate = null;
+        try {
+          const steamData = await getSteamDetailsCached(appid);
+          if (steamData) {
+            if (isSteamDataAdult(steamData)) {
+              return null;
+            }
+            if (fetchReleaseDates && steamData.release_date?.coming_soon) {
+              return null;
+            }
+            releasedDate = steamData.release_date?.date || null;
+          }
+        } catch {}
+
+        const slug = generateSlug(item.name);
+        const g = {
+          id: 'rawg_' + appid,
+          rawgId: appid,
+          rawgSlug: slug,
+          name: item.name,
+          image: appid ? `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/header.jpg` : item.logo,
+          logo: item.logo,
+          metacritic: null,
+          reviewScore: 0,
+          totalReviews: 0,
+          isFree,
+          onSale: isOnSale,
+          price: null,
+          noData: false,
+          platforms: ['pc'],
+          source: 'steam',
+          hasSteam: true,
+          hasEpic: false,
+          hasStores: true,
+          genres: [],
+          released: releasedDate
+        };
+
+        // Cross-reference with our fallback database for rich metadata
+        const dbMatch = FALLBACK_GAMES.find(dg => dg.rawgId === appid);
+        if (dbMatch) {
+          g.genres = dbMatch.genres || [];
+          g.metacritic = dbMatch.metacritic || null;
+          g.reviewScore = dbMatch.reviewScore || 0;
+          g.totalReviews = dbMatch.totalReviews || 0;
+          g.isFree = dbMatch.isFree ?? isFree;
+        }
+
+        return g;
+      })
+    );
+
+    const filtered = detailedItems
+      .filter(Boolean)
+      .filter(g => !isAdultTitleOrSlug(g.name, g.rawgSlug) && !isDlc(g));
+
+    if (fetchReleaseDates) {
+      filtered.sort((a, b) => new Date(b.released || 0) - new Date(a.released || 0));
+    }
+
+    return filtered;
+  } catch (err) {
+    console.error("Steam search fallback failed:", err);
+    return [];
+  }
+}
+
 async function fetchSteamFeatured(category) {
   try {
     const rate = await getUsdToTry();
@@ -510,11 +607,30 @@ export async function GET(request) {
     return NextResponse.json({ error: 'RAWG_API_KEY eksik', results: [] }, { status: 500 });
   }
 
+  let results = [];
+  let total = 0;
+
   try {
-    // Kategori aramalarında filtrelemeden sonra yeterli sayıda oyun kalması için RAWG'dan daha fazla oyun çekelim
-    const fetchNum = section === 'sale' ? 60 : (section && section !== '') ? 40 : num;
-    const base = { platforms: 4, page, page_size: fetchNum, exclude_additions: true };
-    let params = { ...base };
+    // ── GÜNLÜK FIRSATLAR / İNDİRİMLER (Steam Specials'dan canlı veri çekme) ──
+    if (section === 'sale' && !q) {
+      const fetchCount = rotate ? 40 : num;
+      let url = `https://store.steampowered.com/search/results/?specials=1&category1=998&cc=tr&l=tr&json=1&start=${(page - 1) * fetchCount}&count=${fetchCount}`;
+      if (genres) {
+        if (STEAM_GENRE_MAP[genres]) url += `&genre=${STEAM_GENRE_MAP[genres]}`;
+        if (STEAM_TAG_MAP[genres]) url += `&tags=${STEAM_TAG_MAP[genres]}`;
+      }
+      const steamDeals = await fetchSteamSearchPaginated(url, false, true);
+      if (steamDeals && steamDeals.length > 0) {
+        results = steamDeals;
+        total = page * fetchCount + 48; // paging'i açık tut
+      }
+    }
+
+    if (results.length === 0) {
+      // Kategori aramalarında filtrelemeden sonra yeterli sayıda oyun kalması için RAWG'dan daha fazla oyun çekelim
+      const fetchNum = section === 'sale' ? 60 : (section && section !== '') ? 40 : num;
+      const base = { platforms: 4, page, page_size: fetchNum, exclude_additions: true };
+      let params = { ...base };
 
     if (store === 'steam') {
       params.stores = '1';
@@ -600,8 +716,8 @@ export async function GET(request) {
       if (clean) params.tags = params.tags ? `${params.tags},${clean}` : clean;
     }
 
-    let results = [];
-    let total = 0;
+    results = [];
+    total = 0;
 
     try {
       if (section === 'new') {
@@ -667,27 +783,12 @@ export async function GET(request) {
     } catch (err) {
       console.warn('RAWG API fetch failed, proceeding to fallback:', err.message);
     }
+    } // end of RAWG wrap block
 
     // Fallback logic for sections when RAWG is limited or returns no results
     if (results.length === 0) {
       console.log(`Applying paginated fallback for section: ${section || 'all'}, page: ${page}, query: ${q}`);
 
-      const STEAM_GENRE_MAP = {
-        'action': 'Action',
-        'role-playing-games-rpg': 'RPG',
-        'strategy': 'Strategy',
-        'adventure': 'Adventure',
-        'sports': 'Sports',
-        'racing': 'Racing',
-        'simulation': 'Simulation'
-      };
-      const STEAM_TAG_MAP = {
-        'shooter': '1662',
-        'horror': '1667',
-        'platformer': '1625',
-        'puzzle': '1664',
-        'card': '1738'
-      };
       const GENRE_MAP = {
         'action': 'Aksiyon',
         'role-playing-games-rpg': 'RPG',
@@ -703,87 +804,7 @@ export async function GET(request) {
         'simulation': 'Simülasyon'
       };
 
-      // Helper to fetch and format search results from Steam
-      async function fetchSteamSearchPaginated(searchUrl, isFree = false, isOnSale = false, fetchReleaseDates = false) {
-        try {
-          const res = await fetch(searchUrl, { next: { revalidate: 1800 } });
-          if (!res.ok) return [];
-          const data = await res.json();
-          const items = data.items || [];
-          
-          const detailedItems = await Promise.all(
-            items.map(async (item) => {
-              const appidMatch = item.logo.match(/\/apps\/(\d+)\//);
-              const appid = appidMatch ? parseInt(appidMatch[1]) : null;
-              if (!appid) return null;
-
-              let releasedDate = null;
-              try {
-                const steamData = await getSteamDetailsCached(appid);
-                if (steamData) {
-                  if (isSteamDataAdult(steamData)) {
-                    return null;
-                  }
-                  if (fetchReleaseDates && steamData.release_date?.coming_soon) {
-                    return null;
-                  }
-                  releasedDate = steamData.release_date?.date || null;
-                }
-              } catch {}
-
-              const slug = generateSlug(item.name);
-              const g = {
-                id: 'rawg_' + appid,
-                rawgId: appid,
-                rawgSlug: slug,
-                name: item.name,
-                image: appid ? `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/header.jpg` : item.logo,
-                logo: item.logo,
-                metacritic: null,
-                reviewScore: 0,
-                totalReviews: 0,
-                isFree,
-                onSale: isOnSale,
-                price: null,
-                noData: false,
-                platforms: ['pc'],
-                source: 'steam',
-                hasSteam: true,
-                hasEpic: false,
-                hasStores: true,
-                genres: [],
-                released: releasedDate
-              };
-
-              // Cross-reference with our fallback database for rich metadata
-              const dbMatch = FALLBACK_GAMES.find(dg => dg.rawgId === appid);
-              if (dbMatch) {
-                g.genres = dbMatch.genres || [];
-                g.metacritic = dbMatch.metacritic || null;
-                g.reviewScore = dbMatch.reviewScore || 0;
-                g.totalReviews = dbMatch.totalReviews || 0;
-                g.isFree = dbMatch.isFree ?? isFree;
-              }
-
-              return g;
-            })
-          );
-
-          const filtered = detailedItems
-            .filter(Boolean)
-            .filter(g => !isAdultTitleOrSlug(g.name, g.rawgSlug) && !isDlc(g));
-
-          // Sort by release date locally if requested
-          if (fetchReleaseDates) {
-            filtered.sort((a, b) => new Date(b.released || 0) - new Date(a.released || 0));
-          }
-
-          return filtered;
-        } catch (err) {
-          console.error("Steam search fallback failed:", err);
-          return [];
-        }
-      }
+      // fetchSteamSearchPaginated is now in module scope
 
       // Try fetching dynamically from Steam search results first for dynamic categories
       let dynamicResults = [];

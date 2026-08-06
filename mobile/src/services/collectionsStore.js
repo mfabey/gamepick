@@ -10,7 +10,9 @@
 // birleştirmede zaman damgası karşılaştırılır.
 // ─────────────────────────────────────────────────────────────────────────────
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { scopedKey, ownerReady, registerScopedStore } from './owner';
 
+// Taban adlar — gerçek anahtarlar sahibe göre türetilir (owner.js).
 const STORAGE_KEY = 'gr_collections';
 const TOMB_KEY    = 'gr_collections_deleted';
 
@@ -56,10 +58,11 @@ export function loadCollections() {
   if (loaded) return Promise.resolve(collections);
   if (!loadPromise) {
     loadPromise = (async () => {
+      await ownerReady();   // sahip çözülmeden okuma yanlış kovaya bakar
       try {
         const [rawCols, rawTombs] = await Promise.all([
-          AsyncStorage.getItem(STORAGE_KEY),
-          AsyncStorage.getItem(TOMB_KEY),
+          AsyncStorage.getItem(scopedKey(STORAGE_KEY)),
+          AsyncStorage.getItem(scopedKey(TOMB_KEY)),
         ]);
         if (rawCols) collections = JSON.parse(rawCols) || [];
         if (rawTombs) tombstones = JSON.parse(rawTombs) || {};
@@ -80,8 +83,11 @@ function pruneTombstones() {
 }
 
 function writeNow() {
-  AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(collections)).catch(() => {});
-  AsyncStorage.setItem(TOMB_KEY, JSON.stringify(tombstones)).catch(() => {});
+  if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+  return Promise.all([
+    AsyncStorage.setItem(scopedKey(STORAGE_KEY), JSON.stringify(collections)).catch(() => {}),
+    AsyncStorage.setItem(scopedKey(TOMB_KEY), JSON.stringify(tombstones)).catch(() => {}),
+  ]);
 }
 
 /**
@@ -220,3 +226,17 @@ export async function resetCollections() {
   scheduleSave();
   emit();
 }
+
+// Hesap değişiminde: bekleyen yazma ESKİ kovaya iner, sonra yenisinden yüklenir.
+// Mezar taşları da hesaba özel — A'nın sildiği koleksiyonun mezar taşı B'nin
+// senkronuna karışırsa B'nin aynı id'li kaydını sunucuda öldürebilirdi.
+registerScopedStore({
+  keys: [STORAGE_KEY, TOMB_KEY],
+  flush: () => (saveTimer ? writeNow() : null),
+  rebind: async () => {
+    collections = []; tombstones = {}; lastTs = 0;
+    loaded = false; loadPromise = null;
+    if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+    await loadCollections();
+  },
+});

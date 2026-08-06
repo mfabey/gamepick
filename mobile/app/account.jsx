@@ -9,6 +9,8 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { signIn, signInWithApple } from '../src/services/session';
+import { anonDataSummary, transferAnonData } from '../src/services/owner';
+import { resetSyncThrottle } from '../src/services/sync';
 import { registerAccount, requestPasswordReset, checkUsernameAvailable } from '../src/api/account';
 import { colors, radius, spacing, PRESSED, type } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
@@ -78,6 +80,45 @@ export default function AccountScreen() {
     }
     return null;
   };
+
+  // ── Misafir verisinin devri ────────────────────────────────────────────────
+  // Hesapsız kullanılırken biriken koleksiyon ve takip listesi kullanıcının
+  // emeği; kaydolunca yok olmamalı. Ama devir SESSİZ de olmamalı: ortak bir
+  // cihazda sessiz devir, başkasının verisini yeni hesaba yazmak demek —
+  // düzeltmeye çalıştığımız hatanın ta kendisi. Bu yüzden soruluyor.
+  //
+  // submit ve onApple'ın bağımlılık dizisinde yer aldığı için ikisinden de
+  // ÖNCE tanımlanmak zorunda (const → TDZ, dizi render sırasında okunuyor).
+  const offerAnonTransfer = useCallback(async () => {
+    const s = await anonDataSummary();
+    if (!s.collections && !s.wishlist) return;
+
+    const parts = [];
+    if (s.collections) parts.push(t('acc.transferCollections').replace('{n}', s.collections));
+    if (s.wishlist) parts.push(t('acc.transferWishlist').replace('{n}', s.wishlist));
+    const what = parts.join(lang === 'tr' ? ' ve ' : ' and ');
+
+    await new Promise((resolve) => {
+      Alert.alert(
+        t('acc.transferTitle'),
+        t('acc.transferBody').replace('{n}', what),
+        [
+          { text: t('acc.transferNo'), style: 'cancel', onPress: () => resolve() },
+          {
+            text: t('acc.transferYes'),
+            onPress: async () => {
+              try {
+                await transferAnonData();
+                resetSyncThrottle();   // devredilen veri hemen sunucuya gitsin
+              } catch {}
+              resolve();
+            },
+          },
+        ],
+        { cancelable: false }
+      );
+    });
+  }, [t, lang]);
 
   const submit = useCallback(async () => {
     if (busy) return;
@@ -156,6 +197,7 @@ export default function AccountScreen() {
       } else {
         await signIn(email.trim(), password);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        await offerAnonTransfer();
         router.back();
       }
     } catch (e) {
@@ -166,7 +208,7 @@ export default function AccountScreen() {
     } finally {
       setBusy(false);
     }
-  }, [busy, mode, email, name, username, uname, unameMsg, password, t, router, lang, isForgot, isSignup]);
+  }, [busy, mode, email, name, username, uname, unameMsg, password, t, router, lang, isForgot, isSignup, offerAnonTransfer]);
 
   // Sign in with Apple — Apple yalnızca İLK onayda tam adı verir, o yüzden
   // credential.fullName'i hemen backend'e iletiyoruz (sonraki girişlerde gelmez).
@@ -178,6 +220,7 @@ export default function AccountScreen() {
         : '';
       await signInWithApple(credential.identityToken, fullName);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      await offerAnonTransfer();
       router.back();
     } catch (e) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -187,7 +230,7 @@ export default function AccountScreen() {
     } finally {
       setBusy(false);
     }
-  }, [router]);
+  }, [router, offerAnonTransfer]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
