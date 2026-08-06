@@ -21,6 +21,9 @@ import {
   redisCmd, redisGetJSON, redisPipeline, redisSetJSONStrict, parseJSON,
 } from './redis';
 import { getProfiles, getHiddenUids } from './social-store';
+import {
+  CURATED_LISTS, CURATOR_UID, CURATOR_PROFILE, isCuratedId,
+} from './curated-lists';
 
 export const MAX_LISTS_PER_USER = 20;
 export const MAX_GAMES_PER_LIST = 300;
