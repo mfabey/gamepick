@@ -80,6 +80,10 @@ export const deletePublicList = (id) =>
 export const toggleListLike  = (id) =>
   authed('/api/social/lists', { method: 'POST', body: { action: 'like', id } });
 
+// ── Avatar ───────────────────────────────────────────────────────────────────
+export const setAvatar = (presetId) =>
+  authed('/api/social/avatar', { method: 'POST', body: { avatar: presetId } });
+
 // ── Gizlilik ────────────────────────────────────────────────────────────────
 export const getPrivacy        = ()      => authed('/api/social/privacy');
 export const setPrivacy        = (patch) => authed('/api/social/privacy', { method: 'POST', body: patch });

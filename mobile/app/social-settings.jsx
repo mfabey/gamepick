@@ -16,6 +16,7 @@ import * as Haptics from 'expo-haptics';
 import { getPrivacy, setPrivacy, getBlocked, unblockUser } from '../src/api/social';
 import { colors, radius, spacing, PRESSED, type } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
+import { getAvatarPreset } from '../src/utils/avatar';
 
 export default function SocialSettingsScreen() {
   const router = useRouter();
@@ -116,11 +117,23 @@ export default function SocialSettingsScreen() {
                 <View key={p.uid}>
                   {i > 0 && <View style={styles.divider} />}
                   <View style={styles.blockRow}>
-                    <View style={styles.avatar}>
-                      <Text style={styles.avatarText}>
-                        {(p.displayName || p.username || '?').charAt(0).toUpperCase()}
-                      </Text>
-                    </View>
+                    {(() => {
+                      const preset = getAvatarPreset(p.avatar);
+                      if (preset) {
+                        return (
+                          <View style={[styles.avatar, { backgroundColor: preset.bg }]}>
+                            <Ionicons name={preset.icon} size={18} color={preset.iconColor} />
+                          </View>
+                        );
+                      }
+                      return (
+                        <View style={styles.avatar}>
+                          <Text style={styles.avatarText}>
+                            {(p.displayName || p.username || '?').charAt(0).toUpperCase()}
+                          </Text>
+                        </View>
+                      );
+                    })()}
                     <View style={{ flex: 1 }}>
                       <Text numberOfLines={1} style={styles.blockName}>
                         {p.displayName || p.username || p.uid}

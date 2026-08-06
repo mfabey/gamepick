@@ -31,6 +31,7 @@ function shape(uids, profiles) {
     uid,
     username: profiles[uid]?.username || null,
     displayName: profiles[uid]?.displayName || profiles[uid]?.username || null,
+    avatar: profiles[uid]?.avatar || null,
   }));
 }
 

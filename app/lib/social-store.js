@@ -105,6 +105,9 @@ export async function claimUsername(uid, username, extra = {}) {
     usernameLower: lower,
     displayName: extra.displayName ?? existing?.displayName ?? String(username),
     bio: extra.bio ?? existing?.bio ?? '',
+    // KORUNMAK ZORUNDA: bu nesne sıfırdan kuruluyor, taşınmayan her alan
+    // kullanıcı adı değiştirildiğinde sessizce siliniyor.
+    avatar: existing?.avatar ?? null,
     createdAt: existing?.createdAt || now,
     updatedAt: now,
   };
@@ -163,7 +166,7 @@ export async function searchUsers(query, viewerUid, limit = 20) {
     if (hidden.has(uid)) continue;        // engel varsa iki yönde de gizle
     const p = profiles[uid];
     if (!p) continue;
-    out.push({ uid, username: p.username, displayName: p.displayName || p.username });
+    out.push({ uid, username: p.username, displayName: p.displayName || p.username, avatar: p.avatar || null });
     if (out.length >= limit) break;
   }
   return out;
@@ -345,6 +348,7 @@ export async function getFriendActivity(uid, limit = 40) {
     ...i,
     username: profiles[i.uid]?.username || null,
     displayName: profiles[i.uid]?.displayName || profiles[i.uid]?.username || null,
+    avatar: profiles[i.uid]?.avatar || null,
   }));
 }
 

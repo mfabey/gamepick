@@ -29,6 +29,7 @@ import EmptyState from '../src/components/EmptyState';
 import { colors, radius, spacing, PRESSED, type } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
 import IconButton from '../src/components/IconButton';
+import { getAvatarPreset } from '../src/utils/avatar';
 
 const TABS = ['feed', 'friends', 'requests'];
 
@@ -143,7 +144,15 @@ function Gate({ icon, text, ctaLabel, onPress, onBack, title }) {
   );
 }
 
-function Avatar({ name, size = 42 }) {
+function Avatar({ name, size = 42, presetId }) {
+  const preset = getAvatarPreset(presetId);
+  if (preset) {
+    return (
+      <View style={[styles.avatar, { width: size, height: size, borderRadius: size / 2, backgroundColor: preset.bg }]}>
+        <Ionicons name={preset.icon} size={size * 0.48} color={preset.iconColor} />
+      </View>
+    );
+  }
   const letter = (name || '?').trim().charAt(0).toUpperCase();
   return (
     <View style={[styles.avatar, { width: size, height: size, borderRadius: size / 2 }]}>
@@ -306,7 +315,7 @@ function FeedTab() {
             params: { id: it.gameId, name: it.gameName || '', image: it.gameImage || '' },
           })}
         >
-          <Avatar name={it.displayName || it.username} size={38} />
+          <Avatar name={it.displayName || it.username} size={38} presetId={it.avatar} />
           <View style={styles.actBody}>
             <Text style={styles.actText}>
               <Text style={styles.actName}>{it.displayName || it.username}</Text>
@@ -528,7 +537,7 @@ function RequestsTab() {
 function PersonRow({ person, right, onLongPress }) {
   return (
     <Pressable style={styles.personRow} onLongPress={onLongPress} delayLongPress={400}>
-      <Avatar name={person.displayName || person.username} />
+      <Avatar name={person.displayName || person.username} presetId={person.avatar} />
       <View style={styles.personBody}>
         <Text numberOfLines={1} style={styles.personName}>{person.displayName || person.username}</Text>
         <Text numberOfLines={1} style={styles.personHandle}>@{person.username}</Text>

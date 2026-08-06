@@ -29,6 +29,7 @@ export async function GET(request) {
       uid,
       username: profiles[uid]?.username || null,
       displayName: profiles[uid]?.displayName || null,
+      avatar: profiles[uid]?.avatar || null,
     })),
   });
 }
