@@ -11,7 +11,11 @@
 // ilişkiyi gizliyordu.
 //
 // SOĞUKLUK: profilde kişiye ait tek bir sayı yoktu. Kimlik başlığındaki üç
-// sayaç (koleksiyon / takipte / oyun) sayfayı "senin" yapan şey.
+// sayaç sayfayı "senin" yapan şey — arkadaş / takipte / oyun.
+//
+// Sayaçta KOLEKSİYON YOK: o sayı zaten hemen aşağıdaki "İçeriğim" satırında
+// duruyordu ve sayaçta tekrar ediyordu. Yeri arkadaş sayısına verildi çünkü
+// arkadaş sayısı hiçbir yerde görünmüyordu.
 // ─────────────────────────────────────────────────────────────────────────────
 import { useRef, useCallback, useEffect, useState } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet, Alert, ActivityIndicator } from 'react-native';
@@ -27,7 +31,7 @@ import { useAuth } from '../../src/context/AuthContext';
 import { useWishlist } from '../../src/context/WishlistContext';
 import { useCollections } from '../../src/hooks/useCollections';
 import { useConnectedLibrary } from '../../src/hooks/useConnectedLibrary';
-import { getMyProfile } from '../../src/api/social';
+import { getMyProfile, getFriends } from '../../src/api/social';
 import IconButton from '../../src/components/IconButton';
 import { useTabPressAction, scrollRefToTop } from '../../src/hooks/useTabPressAction';
 
@@ -54,6 +58,30 @@ export default function ProfileScreen() {
     let alive = true;
     getMyProfile()
       .then((r) => { if (alive) setUsername(r?.profile?.username || null); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [account]);
+
+  // Arkadaş sayısı — sayaçta koleksiyonun yerini aldı.
+  //
+  // Koleksiyon ve takip listesi sayıları zaten hemen aşağıdaki "İçeriğim"
+  // satırlarında duruyordu; sayaçta tekrar ediyorlardı. Arkadaş sayısı ise
+  // hiçbir yerde görünmüyordu — sayaç yeni bilgi taşısın.
+  //
+  // `incoming` de tutuluyor: bekleyen istek varsa rozetle gösteriliyor,
+  // yoksa kullanıcı isteği hiç fark etmiyor.
+  const [friends, setFriends] = useState({ count: 0, incoming: 0 });
+  useEffect(() => {
+    if (!account) { setFriends({ count: 0, incoming: 0 }); return; }
+    let alive = true;
+    getFriends()
+      .then((r) => {
+        if (!alive) return;
+        setFriends({
+          count: Array.isArray(r?.friends) ? r.friends.length : 0,
+          incoming: Array.isArray(r?.incoming) ? r.incoming.length : 0,
+        });
+      })
       .catch(() => {});
     return () => { alive = false; };
   }, [account]);
@@ -113,12 +141,17 @@ export default function ProfileScreen() {
               </Text>
             </Pressable>
 
+            {/* Sayaçlar dokunulabilir: profilin en üstünde duran bu üç sayı
+                zaten kısayol gibi okunuyordu, tepki vermemeleri yanıltıcıydı. */}
             <View style={styles.stats}>
-              <Stat n={collections.length} label={t('prof.statCollections')} />
+              <Stat n={friends.count} label={t('prof.statFriends')}
+                    badge={friends.incoming} onPress={() => router.push('/social')} />
               <View style={styles.statDiv} />
-              <Stat n={items.length} label={t('prof.statWishlist')} />
+              <Stat n={items.length} label={t('prof.statWishlist')}
+                    onPress={() => router.push('/wishlist')} />
               <View style={styles.statDiv} />
-              <Stat n={gameCount} label={t('prof.statGames')} />
+              <Stat n={gameCount} label={t('prof.statGames')}
+                    onPress={() => router.push('/library')} />
             </View>
           </View>
         ) : (
@@ -252,12 +285,31 @@ export default function ProfileScreen() {
 }
 
 /** Kimlik başlığındaki tek sayaç. */
-function Stat({ n, label }) {
+/**
+ * Kimlik başlığındaki tek sayaç.
+ *
+ * `badge` bekleyen arkadaşlık isteği sayısı: rakamın köşesinde duruyor.
+ * Olmadan kullanıcı kendisine gelen isteği hiç fark etmiyordu — sosyal
+ * ekrana girmek için bir sebebi olmuyordu.
+ */
+function Stat({ n, label, badge, onPress }) {
   return (
-    <View style={styles.stat}>
-      <Text style={styles.statN}>{n}</Text>
+    <Pressable
+      style={({ pressed }) => [styles.stat, pressed && PRESSED]}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`${n} ${label}`}
+    >
+      <View>
+        <Text style={styles.statN}>{n}</Text>
+        {badge > 0 ? (
+          <View style={styles.statBadge}>
+            <Text style={styles.statBadgeText}>{badge > 9 ? '9+' : badge}</Text>
+          </View>
+        ) : null}
+      </View>
       <Text style={styles.statLabel}>{label}</Text>
-    </View>
+    </Pressable>
   );
 }
 
@@ -317,6 +369,15 @@ const styles = StyleSheet.create({
   // Tablo rakamları: sayı değiştikçe sütun genişliği oynamasın
   statN: { fontSize: type.headline, fontWeight: '700', color: colors.text, ...NUMERIC },
   statLabel: { fontSize: type.caption, color: colors.text3, marginTop: 2 },
+  // Bekleyen istek rozeti — rakamın sağ üst köşesi. Sayıya bitişik olmalı,
+  // etikete değil: bilgi "kaç arkadaş" değil, "kaç bekleyen istek".
+  statBadge: {
+    position: 'absolute', top: -3, right: -14,
+    minWidth: 17, height: 17, borderRadius: 9, paddingHorizontal: 4,
+    backgroundColor: colors.accent,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  statBadgeText: { color: '#fff', fontSize: type.caption2, fontWeight: '800' },
   statDiv: { width: 1, height: 26, backgroundColor: colors.cardBorder },
 
   signInCard: {
