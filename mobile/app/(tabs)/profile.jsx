@@ -60,7 +60,12 @@ export default function ProfileScreen() {
 
   const doLogin = async (fn) => {
     const r = await fn();
-    if (!r.ok && r.error) Alert.alert(t('auth.loginFailed'), r.error);
+    if (!r.ok && r.error) {
+      // Bağlam kod döndürüyor (ACCOUNT_REQUIRED / STEAM_LIMIT / SYNC_FAILED);
+      // çevirisi varsa onu göster, yoksa ham metne düş.
+      const k = `auth.err.${r.error}`;
+      Alert.alert(t('auth.loginFailed'), t(k) !== k ? t(k) : r.error);
+    }
   };
 
   // Profil olmadan kilitli olan bölümler. Kilitli bir karoya dokunmak HİÇBİR

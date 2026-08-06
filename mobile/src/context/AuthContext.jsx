@@ -127,14 +127,25 @@ export function AuthProvider({ children }) {
         if (payload?.platform === 'steam' && payload.account?.steamId) {
           const list = [...steamAccounts];
           const idx = list.findIndex(a => a.steamId === payload.account.steamId);
-          if (idx >= 0) list[idx] = payload.account;
-          else if (list.length < 5) list.push(payload.account);
-          await persistSteam(list);
-          // Hesaba da yaz — cihaz degisiminde kaybolmasin. Basarisiz olursa
-          // yerel baglanti duruyor; kullanici islemi tamamlanmis sayilir ve
-          // bir sonraki acilista senkron tekrar dener.
-          putSteamConnection(payload.account).catch(() => {});
-          return { ok: true };
+          // ÖNCE SUNUCUYA, sonra yerele.
+          //
+          // Eskiden tersiydi ve yazma `.catch(() => {})` ile sessizdi. Sunucu
+          // okuması OTORİTE olduğu için sonuç şuydu: yazma başarısız olunca
+          // bağlantı ekranda görünüyor, uygulama yeniden açılınca sunucudan
+          // boş liste gelip yereli de siliyordu. Kullanıcı "bağladım ama yok"
+          // diyordu — çünkü gerçekten yoktu.
+          //
+          // Sunucunun döndürdüğü liste doğrudan yazılıyor: tek doğruluk
+          // kaynağı, yerelde ayrı bir birleştirme mantığı yok.
+          try {
+            const r = await putSteamConnection(payload.account);
+            await persistSteam(Array.isArray(r?.steamAccounts) ? r.steamAccounts : list);
+            return { ok: true };
+          } catch (e) {
+            // Bağlanamadıysa YEREL DE YAZILMIYOR — hayalet durum bırakmaktansa
+            // açıkça başarısız olmak doğru.
+            return { ok: false, error: e?.code === 'STEAM_LIMIT' ? 'STEAM_LIMIT' : 'SYNC_FAILED' };
+          }
         }
         if (payload?.error) return { ok: false, error: payload.error };
       }
@@ -159,10 +170,17 @@ export function AuthProvider({ children }) {
       if (result.type === 'success' && result.url) {
         const payload = decodePayload(result.url);
         if (payload?.platform === 'xbox' && payload.session?.xuid) {
-          await persistXbox(payload.session);
-          // refreshToken GONDERILMEZ — cihazda SecureStore'da kalir.
-          putXboxConnection(payload.session).catch(() => {});
-          return { ok: true };
+          // Steam ile aynı sıra: önce sunucu, sonra cihaz.
+          // refreshToken GÖNDERİLMEZ — kütüphane çekimi için gereken gizli
+          // bilgi yalnızca SecureStore'da kalıyor, o yüzden yerele TAM oturum
+          // yazılıyor, sunucuya yalnızca kimlik alanları gidiyor.
+          try {
+            await putXboxConnection(payload.session);
+            await persistXbox(payload.session);
+            return { ok: true };
+          } catch {
+            return { ok: false, error: 'SYNC_FAILED' };
+          }
         }
         if (payload?.error) return { ok: false, error: payload.error };
       }
