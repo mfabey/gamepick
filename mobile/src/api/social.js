@@ -87,3 +87,12 @@ export const setAvatar = (presetId) =>
 // ── Gizlilik ────────────────────────────────────────────────────────────────
 export const getPrivacy        = ()      => authed('/api/social/privacy');
 export const setPrivacy        = (patch) => authed('/api/social/privacy', { method: 'POST', body: patch });
+
+// ── Steam grafiği ───────────────────────────────────────────────────────────
+// Steam arkadaşları + kütüphane kesişimi. Arkadaşın Gamerisen'i kurmuş olması
+// GEREKMİYOR — grafiği Steam'den ödünç alıyoruz.
+//
+// Yavaş bir uç: soğuk önbellekte arkadaş başına bir Steam çağrısı var.
+// authed() varsayılanında zaman aşımı yok, o yüzden çağıran tarafta bekleme
+// durumu göstermek şart.
+export const getSteamFriends   = ()      => authed('/api/social/steam-friends');

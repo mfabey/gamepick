@@ -235,6 +235,11 @@ export default function ProfileScreen() {
         <View style={styles.card}>
           <Row icon="people-outline" label={t('soc.entry')} beta onPress={() => router.push('/social')} />
           <Div />
+          {/* Steam arkadaşları: hesap gerektiriyor (go() kilitliyse /account'a
+              yönlendiriyor). Steam bağlı değilse ekranın kendisi açıklıyor. */}
+          <Row icon="logo-steam" label={t('sf.title')} beta
+               locked={locked} hint={hint} onPress={go('/steam-friends')} />
+          <Div />
           <Row icon="list-outline" label={t('pl.entry')} beta onPress={() => router.push('/lists')} />
         </View>
 
