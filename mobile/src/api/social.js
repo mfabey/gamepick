@@ -96,3 +96,8 @@ export const setPrivacy        = (patch) => authed('/api/social/privacy', { meth
 // authed() varsayılanında zaman aşımı yok, o yüzden çağıran tarafta bekleme
 // durumu göstermek şart.
 export const getSteamFriends   = ()      => authed('/api/social/steam-friends');
+
+// Oyun kartları. `lang` KART GÖRSELİNE gömülüyor — paylaşıldıktan sonra
+// değiştirilemediği için istek anında doğru dili göndermek şart.
+export const getGameCards      = (lang = 'tr') =>
+  authed(`/api/social/game-cards?lang=${lang === 'en' ? 'en' : 'tr'}`);

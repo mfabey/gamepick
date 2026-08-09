@@ -255,6 +255,11 @@ export default function ProfileScreen() {
           <Row icon="stats-chart-outline" label={t('stats.entry')}
                locked={locked} hint={hint} onPress={go('/stats')} />
           <Div />
+          {/* Kartlar kütüphaneden hesaplanıyor, o yüzden bu grupta — rapor ve
+              kütüphaneyle aynı veriye dayanıyorlar. */}
+          <Row icon="trophy-outline" label={t('gc.title')} beta
+               locked={locked} hint={hint} onPress={go('/game-cards')} />
+          <Div />
           <Row icon="sparkles-outline" label={t('discover.entry')} onPress={() => router.push('/discover')} />
         </View>
 
