@@ -22,7 +22,12 @@ let lastUid = null;
 let started = false;
 
 async function sync() {
-  const uid = getSession()?.uid || null;
+  // uid `session.user.uid` içinde — `session` nesnesi
+  // { user, idToken, refreshToken, expiresAt } şeklinde. Önce `session.uid`
+  // yazılmıştı ve daima undefined dönüyordu: token hiç kaydedilmiyor, dolayısıyla
+  // hiç bildirim gitmiyordu. Sessiz bir hataydı, çünkü kod "oturum yok" sanıp
+  // usulca çıkıyordu.
+  const uid = getSession()?.user?.uid || null;
 
   // Çıkış yapıldı → önceki kaydı düşür.
   if (!uid) {
@@ -36,10 +41,10 @@ async function sync() {
   // Aynı kullanıcı, aynı token → tekrar yazmanın anlamı yok.
   if (uid === lastUid && lastToken) return;
 
-  // İzin YOKSA istemiyoruz: bu sessiz bir arka plan işi ve kullanıcıya
-  // bağlamsız bir izin penceresi açmak kötü bir deneyim. İzin, kullanıcı
-  // bildirimleri açıkça açtığında isteniyor; burada yalnızca zaten verilmiş
-  // izinden token alınıyor.
+  // DİKKAT: registerForPushToken() izin verilmemişse İZİN İSTER — yalnızca
+  // okumaz. Yukarıdaki erken çıkışlar sayesinde bu ancak OTURUM AÇILDIKTAN
+  // sonra oluyor, yani kullanıcı ilk açılışta bağlamsız bir pencereyle
+  // karşılaşmıyor. Girişten hemen sonra sorulması kabul edilebilir bir an.
   const r = await registerForPushToken();
   if (r?.error || !r?.token) return;
 

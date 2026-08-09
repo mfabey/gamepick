@@ -51,7 +51,9 @@ export default function ChatScreen() {
   const [sending, setSending] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
 
-  const myUid = session?.uid || null;
+  // uid `session.user.uid` içinde. `session.uid` yazılırsa daima null olur ve
+  // KENDİ mesajların da karşı tarafınmış gibi sola hizalı çizilir.
+  const myUid = session?.user?.uid || null;
 
   /** Kimliğe göre tekilleştirerek ekler; en yeni başta düzeni korunur. */
   const addMessage = useCallback((m) => {
