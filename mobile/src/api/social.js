@@ -127,8 +127,24 @@ export const getChatList   = ()  => authed('/api/social/chat/list');
 export const getChatConfig = ()  => authed('/api/social/chat/config');
 export const getChat       = (withUid, before) =>
   authed(`/api/social/chat?with=${encodeURIComponent(withUid)}${before ? `&before=${before}` : ''}`);
-export const sendChat      = (to, text, media) =>
-  authed('/api/social/chat', { method: 'POST', body: { to, text, media } });
+/**
+ * Mesaj gönderir.
+ * @param {object} [share] Reels paylaşımı — YALNIZCA `{ appid }`. Ad ve görsel
+ *   sunucuda çözülüyor; istemciden gelen metin saklanmıyor.
+ */
+export const sendChat      = (to, text, media, share) =>
+  authed('/api/social/chat', { method: 'POST', body: { to, text, media, share } });
+
+// Mesajı geri alır. Sunucu YALNIZCA gönderenin kendi mesajını silmesine izin
+// veriyor; başkasınınkinde NOT_OWNER döner.
+export const deleteChatMessage = (withUid, id) =>
+  authed('/api/social/chat', { method: 'DELETE', body: { with: withUid, id } });
+
+// Çevrimiçi nabzı. Kendi durumumu tazeler ve istenirse karşı tarafınkini
+// aynı turda döndürür — nabız ve okuma tek istekte birleşiyor.
+export const pingPresence = (withUid) =>
+  authed(`/api/social/presence${withUid ? `?with=${encodeURIComponent(withUid)}` : ''}`,
+    { method: 'POST', body: {} });
 
 /**
  * Sohbet görseli yükler.

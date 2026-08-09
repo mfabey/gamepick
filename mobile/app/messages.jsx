@@ -127,14 +127,21 @@ function ConversationRow({ item, onPress, t, lang }) {
         </View>
       )}
 
+      {/* Cevrimici noktasi avatarin uzerinde. presence null ise (kullanici
+          paylasmiyorsa) hicbir sey cizilmiyor. */}
+      {item.presence?.online ? <View style={styles.onlineDot} /> : null}
+
       <View style={styles.rowMid}>
         <Text style={styles.name} numberOfLines={1}>{name}</Text>
         {/* Metinsiz medya mesajında sunucu `lastKind` gönderiyor; etiket burada
             çevriliyor çünkü kullanıcının dili sunucuda değil, istemcide belli.
             Metin varsa metin kazanır. */}
         <Text style={[styles.preview, item.unread && styles.previewUnread]} numberOfLines={1}>
-          {item.lastText
+          {item.lastDeleted
+            ? t('msg.wasUndone')
+            : item.lastText
             ? item.lastText
+            : item.lastKind === 'reel'  ? `🎬 ${t('msg.sharedReel')}`
             : item.lastKind === 'video' ? `🎬 ${t('msg.video')}`
             : item.lastKind === 'photo' ? `📷 ${t('msg.photo')}`
             : ''}
@@ -176,6 +183,12 @@ const styles = StyleSheet.create({
   },
   avatarLetter: { color: colors.text2, fontSize: type.subhead, fontWeight: '800' },
 
+  // Avatarin sag altina oturuyor; koyu cerceve arka planla ayirtiyor.
+  onlineDot: {
+    position: 'absolute', left: 50, top: 46,
+    width: 13, height: 13, borderRadius: 7,
+    backgroundColor: colors.green, borderWidth: 2.5, borderColor: colors.bg,
+  },
   rowMid:  { flex: 1, gap: 2 },
   name:    { color: colors.text, fontSize: type.subhead, fontWeight: '700' },
   preview: { color: colors.text3, fontSize: type.footnote },

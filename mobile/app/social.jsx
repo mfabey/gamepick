@@ -39,7 +39,11 @@ export default function SocialScreen() {
 
   const [session, setSession] = useState(() => getSession());
   const [profile, setProfile] = useState(undefined);   // undefined = yükleniyor
-  const [tab, setTab] = useState('feed');
+  // AÇILIŞ SEKMESİ 'friends', 'feed' DEĞİL. Bu ekrana profildeki arkadaş
+  // sayacından geliniyor — kullanıcı arkadaşlarını görmeye geliyor, akışa
+  // değil. Ayrıca akış yeni bir hesapta boş olur ve ilk izlenim boş ekran
+  // olmamalı; arkadaş listesi en azından arama kutusunu sunuyor.
+  const [tab, setTab] = useState('friends');
 
   useEffect(() => subscribeSession(() => setSession(getSession())), []);
 

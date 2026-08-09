@@ -69,6 +69,40 @@ export async function triggerMessage(cid, message) {
 }
 
 /**
+ * Geri alınan mesajı kanala bildirir.
+ * `triggerMessage` gibi HATA FIRLATMAZ: karşı taraf ekranı yenilediğinde
+ * mesajı zaten geri alınmış olarak görecek.
+ */
+export async function triggerDelete(cid, msgId) {
+  const p = getClient();
+  if (!p) return false;
+  try {
+    await p.trigger(dmChannel(cid), 'delete', { id: msgId });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Okundu bilgisini kanala bildirir.
+ *
+ * `by` ALANI ŞART: kanal iki taraflı, olay ikisine de düşüyor. Kimin okuduğunu
+ * yazmazsak istemci kendi okuma olayını karşı tarafınki sanıp kendi
+ * mesajlarına yanlışlıkla "görüldü" koyar.
+ */
+export async function triggerRead(cid, byUid, at) {
+  const p = getClient();
+  if (!p) return false;
+  try {
+    await p.trigger(dmChannel(cid), 'read', { by: byUid, at });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Özel kanal yetkilendirmesi.
  * ÇAĞIRAN, kullanıcının bu konuşmanın tarafı olduğunu ÖNCEDEN doğrulamalı —
  * bu fonksiyon yalnızca imzayı üretiyor, yetki kontrolü yapmıyor.

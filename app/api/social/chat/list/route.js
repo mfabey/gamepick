@@ -3,6 +3,7 @@ import { verifyMobileToken } from '../../../../lib/mobile-auth';
 import { rateLimit, tooManyRequests } from '../../../../lib/rate-limit';
 import { getProfiles, getHiddenUids } from '../../../../lib/social-store';
 import { listConversations } from '../../../../lib/chat-store';
+import { getPresences } from '../../../../lib/presence';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Konuşma listesi — sohbet sekmesinin kökü.
@@ -25,7 +26,9 @@ export async function GET(request) {
   const hidden = await getHiddenUids(user.uid);
   const visible = rows.filter((r) => r.otherUid && !hidden.has(r.otherUid));
 
-  const profiles = await getProfiles(visible.map((r) => r.otherUid));
+  const uids = visible.map((r) => r.otherUid);
+  // Profiller ve durumlar PARALEL — ikisi de aynı uid listesini kullanıyor.
+  const [profiles, presences] = await Promise.all([getProfiles(uids), getPresences(uids)]);
 
   const conversations = visible.map((r) => {
     const p = profiles[r.otherUid];
@@ -37,6 +40,8 @@ export async function GET(request) {
       lastKind: r.lastKind,
       lastAt: r.lastAt,
       unread: r.unread,
+      // null = kullanıcı durumunu paylaşmıyor; arayüz nokta göstermiyor.
+      presence: presences[r.otherUid] || null,
       other: {
         uid: r.otherUid,
         username: p?.username || null,

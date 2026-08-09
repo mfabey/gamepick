@@ -22,7 +22,9 @@ import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 
-import { getChat, sendChat, uploadChatMedia } from '../../src/api/social';
+import {
+  getChat, sendChat, uploadChatMedia, deleteChatMessage, pingPresence,
+} from '../../src/api/social';
 import { subscribeDM } from '../../src/services/realtime';
 import { getSession, subscribeSession } from '../../src/services/session';
 import EmptyState from '../../src/components/EmptyState';
@@ -33,9 +35,32 @@ import { useLanguage } from '../../src/context/LanguageContext';
 
 const MAX_TEXT = 1000;
 
+/**
+ * "Son görülme" etiketi.
+ *
+ * DAKİKA HASSASİYETİ YOK. "3 dakika önce" gibi bir ifade, kişinin ne zaman
+ * telefonuna baktığını dakika dakika bildirmek demek — istenen bilgi bu değil,
+ * "yakınlarda mıydı" bilgisi. Bugün / dün / tarih yeterli ve daha az açık ediyor.
+ */
+function lastSeenLabel(ts, t, lang) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  const now = new Date();
+  const loc = lang === 'tr' ? 'tr-TR' : 'en-US';
+
+  if (d.toDateString() === now.toDateString()) {
+    return `${t('msg.lastSeen')} ${d.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit' })}`;
+  }
+  const dun = new Date(now);
+  dun.setDate(now.getDate() - 1);
+  if (d.toDateString() === dun.toDateString()) return `${t('msg.lastSeen')} ${t('msg.yesterday')}`;
+
+  return `${t('msg.lastSeen')} ${d.toLocaleDateString(loc, { day: 'numeric', month: 'short' })}`;
+}
+
 export default function ChatScreen() {
   const router = useRouter();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { uid } = useLocalSearchParams();
   const other = String(uid || '');
 
@@ -50,6 +75,10 @@ export default function ChatScreen() {
   const [text, setText]     = useState('');
   const [sending, setSending] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  // Karşı tarafın en son okuma zamanı. Kendi mesajlarımdan `at`'i bundan
+  // küçük veya eşit olanlar görülmüş sayılıyor.
+  const [otherReadAt, setOtherReadAt] = useState(0);
+  const [presence, setPresence] = useState(null);   // null = paylaşmıyor
 
   // uid `session.user.uid` içinde. `session.uid` yazılırsa daima null olur ve
   // KENDİ mesajların da karşı tarafınmış gibi sola hizalı çizilir.
@@ -59,6 +88,41 @@ export default function ChatScreen() {
   const addMessage = useCallback((m) => {
     setMsgs((cur) => (cur.some((x) => x.id === m.id) ? cur : [m, ...cur]));
   }, []);
+
+  /**
+   * Mesajı geri alınmış olarak işaretler — LİSTEDEN ÇIKARMAZ.
+   * Sunucu da aynısını yapıyor: çıkarmak sayfalamayı kaydırır ve arayüzde
+   * mesaj atlanmasına yol açar.
+   */
+  const markDeleted = useCallback((id) => {
+    setMsgs((cur) => cur.map((m) => (
+      m.id === id ? { id: m.id, from: m.from, at: m.at, deleted: true } : m
+    )));
+  }, []);
+
+  const confirmDelete = useCallback((msg) => {
+    // Yalnızca KENDİ mesajın; sunucu da ayrıca doğruluyor ama kullanıcıya
+    // yapamayacağı bir seçenek göstermenin anlamı yok.
+    if (msg.from !== myUid || msg.deleted) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    Alert.alert(t('msg.undoTitle'), t('msg.undoText'), [
+      { text: t('msg.cancel'), style: 'cancel' },
+      {
+        text: t('msg.undo'),
+        style: 'destructive',
+        onPress: async () => {
+          // İYİMSER GÜNCELLEME YOK: sunucu reddederse mesaj geri gelmeli ve
+          // "silindi sandım ama silinmemiş" durumu mesajlaşmada en kötü hata.
+          try {
+            await deleteChatMessage(other, msg.id);
+            markDeleted(msg.id);
+          } catch {
+            Alert.alert(t('msg.undoFailed'));
+          }
+        },
+      },
+    ]);
+  }, [myUid, other, markDeleted, t]);
 
   useEffect(() => {
     if (!session || !other) { setLoading(false); return; }
@@ -70,6 +134,8 @@ export default function ChatScreen() {
         setMsgs(r?.messages || []);
         setPeer(r?.other || null);
         setCid(r?.cid || null);
+        setOtherReadAt(r?.otherReadAt || 0);
+        setPresence(r?.presence ?? null);
         setError(null);
       } catch (e) {
         if (alive) setError(e?.code || 'UNKNOWN');
@@ -86,11 +152,36 @@ export default function ChatScreen() {
     if (!cid) return;
     let off = null;
     let alive = true;
-    subscribeDM(cid, addMessage).then((fn) => {
+    // Karşı taraf mesajını geri alırsa açık ekran da anında güncellensin.
+    subscribeDM(
+      cid,
+      addMessage,
+      (p) => markDeleted(p?.id),
+      // KENDİ okuma olayımı ELEMEK ŞART: olay iki tarafa da düşüyor ve
+      // filtrelenmezse kendi mesajlarıma "görüldü" koyarım.
+      (p) => { if (p?.by && p.by !== myUid) setOtherReadAt((cur) => Math.max(cur, p.at || 0)); },
+    ).then((fn) => {
       if (alive) off = fn; else fn();
     });
     return () => { alive = false; off?.(); };
-  }, [cid, addMessage]);
+  }, [cid, addMessage, markDeleted, myUid]);
+
+  // ── Çevrimiçi nabzı ──
+  // Ekran açıkken 45 saniyede bir. Sunucudaki eşik 90 saniye, yani bir nabız
+  // kaçsa bile durum titremiyor. Ekran kapanınca aralık temizleniyor —
+  // aksi hâlde uygulama arka plandayken de "çevrimiçi" görünürdük.
+  useEffect(() => {
+    if (!session || !other) return;
+    let alive = true;
+    const beat = async () => {
+      try {
+        const r = await pingPresence(other);
+        if (alive && r?.presence !== undefined) setPresence(r.presence);
+      } catch { /* çevrimdışı — sonraki nabızda düzelir */ }
+    };
+    const id = setInterval(beat, 45000);
+    return () => { alive = false; clearInterval(id); };
+  }, [session, other]);
 
   const send = useCallback(async () => {
     const body = text.trim();
@@ -179,6 +270,15 @@ export default function ChatScreen() {
     }
   }, [sending, other, addMessage, t]);
 
+  // Goruldu isareti YALNIZCA EN YENI okunmus kendi mesajimda. Her okunmus
+  // mesaja koymak sohbeti isaret cop luguna cevirir; kullanicinin bilmek
+  // istedigi tek sey nereye kadar okundugu.
+  const seenId = (() => {
+    if (!otherReadAt || !myUid) return null;
+    // Liste EN YENI BASTA; ilk eslesme en yenisi.
+    const m = msgs.find((x) => x.from === myUid && !x.deleted && x.at <= otherReadAt);
+    return m ? m.id : null;
+  })();
   const preset = getAvatarPreset(peer?.avatar);
   const name = peer?.displayName || peer?.username || '…';
 
@@ -216,7 +316,16 @@ export default function ChatScreen() {
           </View>
         )}
 
-        <Text style={styles.title} numberOfLines={1}>{name}</Text>
+        <View style={styles.titleWrap}>
+          <Text style={styles.title} numberOfLines={1}>{name}</Text>
+          {/* Durum satırı yalnızca paylaşan kullanıcılarda çiziliyor; kapalıysa
+              boş satır bile bırakmıyoruz. */}
+          {presence ? (
+            <Text style={styles.status} numberOfLines={1}>
+              {presence.online ? t('msg.online') : lastSeenLabel(presence.lastSeen, t, lang)}
+            </Text>
+          ) : null}
+        </View>
 
         <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]}
                    onPress={() => setReportOpen(true)} hitSlop={10}>
@@ -236,7 +345,19 @@ export default function ChatScreen() {
             keyExtractor={(m) => m.id}
             contentContainerStyle={styles.listPad}
             keyboardDismissMode="interactive"
-            renderItem={({ item }) => <Bubble msg={item} mine={item.from === myUid} />}
+            renderItem={({ item }) => (
+              <Bubble
+                msg={item}
+                mine={item.from === myUid}
+                seen={item.id === seenId}
+                onLongPress={() => confirmDelete(item)}
+                onOpenShare={() => item.share?.appid && router.push({
+                  pathname: '/game/[id]',
+                  params: { id: `rawg_${item.share.appid}`, appid: item.share.appid, name: item.share.name, image: item.share.image },
+                })}
+                t={t}
+              />
+            )}
             ListEmptyComponent={
               <View style={styles.emptyWrap}>
                 <Text style={styles.emptyText}>{t('msg.startText')}</Text>
@@ -292,13 +413,51 @@ export default function ChatScreen() {
   );
 }
 
-function Bubble({ msg, mine }) {
+function Bubble({ msg, mine, seen, onLongPress, onOpenShare, t }) {
+  // Geri alınan mesaj listeden ÇIKMIYOR, yerinde bir iz bırakıyor — sıra ve
+  // sayfalama bozulmasın, karşı taraf da bir şeyin geri alındığını görsün.
+  if (msg.deleted) {
+    return (
+      <View style={[styles.bubbleRow, mine ? styles.rowMine : styles.rowTheirs]}>
+        <View style={[styles.bubble, styles.bubbleGone]}>
+          <Text style={styles.goneText}>{t('msg.wasUndone')}</Text>
+        </View>
+      </View>
+    );
+  }
+
+  // ── Paylasilan Reels ──
+  // Kendi baloncugu var: medya degil, bir OYUNA REFERANS. Dokununca oyun
+  // sayfasi aciliyor — paylasimin amaci zaten karsi tarafin oyunu gormesi.
+  if (msg.share?.appid) {
+    return (
+      <Pressable
+        style={[styles.bubbleRow, mine ? styles.rowMine : styles.rowTheirs]}
+        onLongPress={mine ? onLongPress : undefined}
+        delayLongPress={400}
+        onPress={onOpenShare}
+      >
+        <View style={styles.shareCard}>
+          <Image source={msg.share.image} style={styles.shareImg} contentFit="cover" transition={140} />
+          <View style={styles.shareBody}>
+            <Text style={styles.shareName} numberOfLines={2}>{msg.share.name}</Text>
+            <Text style={styles.shareHint}>{t('msg.sharedReel')}</Text>
+          </View>
+        </View>
+      </Pressable>
+    );
+  }
+
   const hasMedia = !!msg.media?.url;
   const hasText = !!msg.text;
   const isVideo = !!msg.media?.type?.startsWith('video/');
 
   return (
-    <View style={[styles.bubbleRow, mine ? styles.rowMine : styles.rowTheirs]}>
+    <Pressable
+      style={[styles.bubbleRow, mine ? styles.rowMine : styles.rowTheirs]}
+      onLongPress={mine ? onLongPress : undefined}
+      delayLongPress={400}
+    >
       <View style={[
         styles.bubble,
         mine ? styles.bubbleMine : styles.bubbleTheirs,
@@ -320,7 +479,10 @@ function Bubble({ msg, mine }) {
           </Text>
         )}
       </View>
-    </View>
+      {/* Goruldu YALNIZCA en yeni okunmus kendi mesajimda (bkz. seenId) —
+          her okunmus mesaja koymak sohbeti isaret coplugune cevirir. */}
+      {seen ? <Text style={styles.seen}>{t('msg.seen')}</Text> : null}
+    </Pressable>
   );
 }
 
@@ -361,7 +523,12 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   avatarLetter: { color: colors.text2, fontSize: type.footnote, fontWeight: '800' },
-  title: { flex: 1, color: colors.text, fontSize: type.body, fontWeight: '700' },
+  titleWrap: { flex: 1, minWidth: 0 },
+  title: { color: colors.text, fontSize: type.body, fontWeight: '700' },
+  // Durum satiri kucuk ve sessiz: bilgi tasiyor ama ada rakip olmamali.
+  status: { color: colors.text3, fontSize: type.caption2, marginTop: 1 },
+  // Goruldu isareti baloncugun ALTINDA ve saga dayali; icerigin parcasi degil.
+  seen: { color: colors.text3, fontSize: type.caption2, marginTop: 3, marginRight: 4 },
 
   listPad: { paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
 
@@ -376,6 +543,22 @@ const styles = StyleSheet.create({
   bubbleMine:   { backgroundColor: colors.accent, borderBottomRightRadius: 4 },
   bubbleTheirs: { backgroundColor: colors.card, borderBottomLeftRadius: 4 },
   bubbleMediaOnly: { padding: 0, overflow: 'hidden' },
+  // Paylasim karti baloncuk degil kart: icerik bizim degil, bir oyuna isaret.
+  shareCard: {
+    width: 240, backgroundColor: colors.card, borderRadius: radius.md,
+    borderWidth: 1, borderColor: colors.cardBorder, overflow: 'hidden',
+  },
+  shareImg:  { width: 240, height: 112, backgroundColor: colors.bgInput },
+  shareBody: { padding: spacing.sm, gap: 2 },
+  shareName: { color: colors.text, fontSize: type.footnote, fontWeight: '700' },
+  shareHint: { color: colors.text3, fontSize: type.caption2 },
+  // Geri alınan mesaj: dolgusuz, kesikli çerçeve — baloncuk olduğu belli olsun
+  // ama içerik taşımadığı da anlaşılsın.
+  bubbleGone: {
+    backgroundColor: 'transparent',
+    borderWidth: 1, borderColor: colors.cardBorder, borderStyle: 'dashed',
+  },
+  goneText: { color: colors.text3, fontSize: type.footnote, fontStyle: 'italic' },
   bubbleText:     { color: colors.text, fontSize: type.subhead, lineHeight: 20 },
   bubbleTextMine: { color: '#fff' },
   bubbleTextUnderMedia: { marginTop: 7 },

@@ -1,14 +1,22 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Profil.
 //
-// BİLGİ MİMARİSİ: eskiden yedi karo TEK bir "İçeriğim" başlığı altında, bağlı
-// hesaplar da sayfanın en altında ayrı bir bölümdeydi. Sonuç: kendi ürettiğin
-// şey (koleksiyon), sosyal olan (arkadaş) ve bağlantıya bağlı olan (kütüphane)
-// aynı düzlemde duruyordu — hiçbiri diğerinden ayrışmıyordu.
+// BİLGİ MİMARİSİ — İKİ KEZ DEĞİŞTİ, ikincisi önemli.
 //
-// Artık üç anlamlı grup var ve bağlı hesaplar "Oyunlarım" grubunun İÇİNDE:
-// kütüphane ve haftalık rapor zaten o bağlantıya bağımlı, ayrı yerde durmaları
-// ilişkiyi gizliyordu.
+// Sorun: profil aynı anda İKİ iş yapıyordu — kimlik sayfası VE gezinme menüsü.
+// Ölçüm (yeniden yazımdan önce): 10 tam genişlik satır, 3 bölüm başlığı,
+// 10 ayırıcı, 7 BETA rozeti. Yaklaşık 560 piksel dikey alan, üç ekran boyu.
+// Hepsi aynı görsel ağırlıktaydı; kullanıcı neye sık ihtiyaç duyduğunu
+// ekrandan çıkaramıyordu.
+//
+// Çözüm: satırlar KISAYOL IZGARASINA döndü (bkz. `Tile`). Aynı on hedef
+// ~230 piksele indi. Liste okunur, ızgara GÖRÜLÜR — on eşit ağırlıklı ve
+// simgeyle tanınan hedef için ızgara doğru biçim.
+//
+// Gruplar üçten ikiye indi ("Senin" ve "Sosyal"); bağlı hesaplar aşağıda
+// kaldı çünkü kütüphane ve rapor onlara bağımlı.
+//
+// BETA rozeti 7'den 1'e: her şey beta olduğunda hiçbiri beta okunmuyor.
 //
 // SOĞUKLUK: profilde kişiye ait tek bir sayı yoktu. Kimlik başlığındaki üç
 // sayaç sayfayı "senin" yapan şey — arkadaş / takipte / oyun.
@@ -220,51 +228,46 @@ export default function ProfileScreen() {
           </Pressable>
         )}
 
-        {/* ── İçeriğim ── kullanıcının kendi ürettiği şeyler */}
-        <Text style={styles.sectionLabel}>{t('prof.myContent')}</Text>
-        <View style={styles.card}>
-          <Row icon="albums-outline" label={t('col.entry')} count={collections.length}
-               locked={locked} hint={hint} onPress={go('/collections')} />
-          <Div />
-          <Row icon="bookmark-outline" label={t('wishlist.title')} count={items.length}
-               locked={locked} hint={hint} onPress={go('/wishlist')} />
+        {/* ── Kısayollar ──
+            ÖNCE 10 TAM GENİŞLİK SATIRDI, üç bölüm başlığı ve on ayırıcıyla.
+            Ölçüm: ~560 piksel dikey alan, üç ekran boyu kaydırma. Hepsi aynı
+            görsel ağırlıktaydı, yani kullanıcı neye sık ihtiyaç duyduğunu
+            ekrandan çıkaramıyordu.
+            Izgara aynı hedefleri ~230 piksele indiriyor ve tek bakışta
+            taranabilir kılıyor — liste okunur, ızgara görülür. */}
+        <Text style={styles.sectionLabel}>{t('prof.yours')}</Text>
+        <View style={styles.grid}>
+          <Tile icon="albums-outline"      label={t('prof.gCollections')} n={collections.length}
+                locked={locked} onPress={go('/collections')} />
+          <Tile icon="bookmark-outline"    label={t('prof.gWishlist')}    n={items.length}
+                locked={locked} onPress={go('/wishlist')} />
+          <Tile icon="library-outline"     label={t('prof.gLibrary')}     n={gameCount || undefined}
+                onPress={() => router.push('/library')} />
+          <Tile icon="stats-chart-outline" label={t('prof.gStats')}
+                locked={locked} onPress={go('/stats')} />
+          <Tile icon="trophy-outline"      label={t('prof.gCards')}
+                locked={locked} onPress={go('/game-cards')} />
+          <Tile icon="sparkles-outline"    label={t('prof.gDiscover')}
+                onPress={() => router.push('/discover')} />
         </View>
 
-        {/* ── Sosyal ── başkalarıyla kesişen her şey tek yerde */}
-        <Text style={styles.sectionLabel}>{t('prof.social')}</Text>
-        <View style={styles.card}>
-          <Row icon="people-outline" label={t('soc.entry')} beta onPress={() => router.push('/social')} />
-          <Div />
-          {/* Mesajlaşma yalnızca arkadaşlar arasında; hesap şart. */}
-          <Row icon="chatbubble-ellipses-outline" label={t('msg.title')} beta
-               locked={locked} hint={hint} onPress={go('/messages')} />
-          <Div />
-          {/* Steam arkadaşları: hesap gerektiriyor (go() kilitliyse /account'a
-              yönlendiriyor). Steam bağlı değilse ekranın kendisi açıklıyor. */}
-          <Row icon="logo-steam" label={t('sf.title')} beta
-               locked={locked} hint={hint} onPress={go('/steam-friends')} />
-          <Div />
-          <Row icon="list-outline" label={t('pl.entry')} beta onPress={() => router.push('/lists')} />
+        {/* TEK BETA ROZETİ. Önce dört ayrı satırda dört rozet vardı; her şey
+            beta olduğunda hiçbiri beta okunmuyor, rozet bilgi taşımayı bırakıp
+            gürültüye dönüşüyordu. Bölüm başlığında bir kez söylemek yeterli. */}
+        <View style={styles.sectionHead}>
+          <Text style={styles.sectionLabel}>{t('prof.social')}</Text>
+          <View style={styles.betaChip}><Text style={styles.betaChipText}>BETA</Text></View>
         </View>
-
-        {/* ── Oyunlarım ──
-            Kütüphane ve rapor bağlı hesaplara DAYANIYOR, o yüzden bağlantılar
-            da bu grubun içinde. Ayrı bir bölümde dururken bu bağ görünmüyordu
-            ve kullanıcı boş bir kütüphaneyle karşılaşıp nedenini anlamıyordu. */}
-        <Text style={styles.sectionLabel}>{t('prof.myGames')}</Text>
-        <View style={styles.card}>
-          <Row icon="library-outline" label={t('nav.library')} count={gameCount || undefined}
-               onPress={() => router.push('/library')} />
-          <Div />
-          <Row icon="stats-chart-outline" label={t('stats.entry')}
-               locked={locked} hint={hint} onPress={go('/stats')} />
-          <Div />
-          {/* Kartlar kütüphaneden hesaplanıyor, o yüzden bu grupta — rapor ve
-              kütüphaneyle aynı veriye dayanıyorlar. */}
-          <Row icon="trophy-outline" label={t('gc.title')} beta
-               locked={locked} hint={hint} onPress={go('/game-cards')} />
-          <Div />
-          <Row icon="sparkles-outline" label={t('discover.entry')} onPress={() => router.push('/discover')} />
+        {/* ARKADAŞ KAROSU YOK. Kimlik başlığındaki arkadaş sayacı zaten aynı
+            yere götürüyor ve bekleyen istek rozetini de o taşıyor — karo,
+            aynı hedefe ikinci bir kapıydı. */}
+        <View style={styles.grid}>
+          <Tile icon="chatbubble-ellipses-outline" label={t('prof.gMessages')}
+                locked={locked} onPress={go('/messages')} />
+          <Tile icon="logo-steam"                  label={t('prof.gSteam')}
+                locked={locked} onPress={go('/steam-friends')} />
+          <Tile icon="list-outline"                label={t('prof.gLists')}
+                onPress={() => router.push('/lists')} />
         </View>
 
         {/* Bağlı mağazalar — aynı grubun devamı, ayrı görsel dil YOK.
@@ -454,25 +457,39 @@ function AvatarPicker({ visible, current, onSelect, onClose }) {
  * Kilitliyken kilit simgesi çıkıyor ve dokunuş kayıt ekranına gidiyor —
  * tepkisiz bir satır bozukluk gibi görünür.
  */
-function Row({ icon, label, count, beta, locked, hint, onPress }) {
+/**
+ * Kısayol karosu — eski tam genişlik `Row`'un yerini aldı.
+ *
+ * SAYI VE ROZET SİMGENİN ÜSTÜNDE, etiketin yanında değil: dört sütunda etiket
+ * zaten dar ve yanına sayı koymak etiketi kırpıyordu.
+ *
+ * KİLİT durumunda karo soluyor ama TIKLANABİLİR kalıyor — `go()` kullanıcıyı
+ * kayıt ekranına götürüyor. Tıklanamaz yapmak, dokunup tepki alamamak
+ * anlamına gelir ve bozukluk gibi görünür.
+ */
+function Tile({ icon, label, n, badge, locked, onPress }) {
   return (
     <Pressable
-      style={({ pressed }) => [styles.row, pressed && PRESSED]}
+      style={({ pressed }) => [styles.tile, pressed && PRESSED_CARD]}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label}
-      accessibilityHint={locked ? hint : undefined}
     >
-      <View style={styles.rowIcon}>
-        <Ionicons name={icon} size={19} color={locked ? colors.text3 : colors.text2} />
+      <View style={styles.tileIconWrap}>
+        <Ionicons name={icon} size={22} color={locked ? colors.text3 : colors.text} />
+        {/* Bekleyen istek gibi ilgi isteyen şeyler nokta ile; sayılar sessiz. */}
+        {badge > 0 ? <View style={styles.tileDot} /> : null}
       </View>
-      <Text style={[styles.rowLabel, locked && { color: colors.text2 }]} numberOfLines={1}>{label}</Text>
-
-      {beta ? <View style={styles.betaChip}><Text style={styles.betaChipText}>BETA</Text></View> : null}
-      {count > 0 && !locked ? <Text style={styles.rowCount}>{count}</Text> : null}
-      {locked ? <Ionicons name="lock-closed" size={14} color={colors.text3} /> : null}
-
-      <Ionicons name="chevron-forward" size={18} color={colors.text3} />
+      <Text style={[styles.tileLabel, locked && { color: colors.text3 }]} numberOfLines={1}>
+        {label}
+      </Text>
+      {/* Sayı yoksa da yükseklik ayrılıyor — aksi hâlde sayısı olan ve olmayan
+          karolar farklı boyda çıkıp ızgara satırı dalgalanıyor. Boş bir metin
+          düğümü yerine sabit yükseklikli bir kutu: boşluk karakteri yazmak
+          kırılgan (bir kez kodlama sırasında bozuldu). */}
+      {n > 0 && !locked
+        ? <Text style={[styles.tileN, NUMERIC]}>{n}</Text>
+        : <View style={styles.tileNSpacer} />}
     </Pressable>
   );
 }
@@ -533,11 +550,42 @@ const styles = StyleSheet.create({
   },
 
   // ── Gruplar ──
+  sectionHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   sectionLabel: {
     fontSize: type.caption, fontWeight: '700', color: colors.text3,
     textTransform: 'uppercase', letterSpacing: 1.1,
     marginTop: 28, marginBottom: 9,
   },
+  // ── Kısayol ızgarası ──
+  // Dört sütun. Üç sütun daha ferah olurdu ama on hedef dört satıra yayılır ve
+  // "tek bakışta gör" kazancı kaybolurdu; dört sütunda altı hedef iki satıra
+  // sığıyor. Sütun genişliği yüzdeyle değil `flexBasis` ile: yüzde, `gap` ile
+  // birlikte satır başına üçe düşürüyordu.
+  grid: {
+    flexDirection: 'row', flexWrap: 'wrap',
+    gap: spacing.sm, marginBottom: spacing.md,
+  },
+  tile: {
+    flexGrow: 1, flexBasis: '22%',
+    alignItems: 'center', justifyContent: 'center',
+    paddingVertical: spacing.md, paddingHorizontal: 4,
+    backgroundColor: colors.card, borderRadius: radius.md,
+    borderWidth: 1, borderColor: colors.cardBorder,
+    // 44pt HIG dokunma hedefinin üstünde
+    minHeight: 78,
+  },
+  tileIconWrap: { position: 'relative' },
+  tileDot: {
+    position: 'absolute', top: -2, right: -4,
+    width: 8, height: 8, borderRadius: 4, backgroundColor: colors.accent,
+  },
+  tileLabel: {
+    marginTop: 6, color: colors.text2,
+    fontSize: type.caption2, fontWeight: '600', textAlign: 'center',
+  },
+  tileN: { marginTop: 1, color: colors.text3, fontSize: type.caption2 },
+  tileNSpacer: { height: 14 },
+
   card: {
     backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1,
     borderRadius: radius.lg, overflow: 'hidden',
@@ -551,8 +599,6 @@ const styles = StyleSheet.create({
   rowIcon: { width: 30, alignItems: 'center' },
   rowLabel: { flex: 1, fontSize: type.subhead, fontWeight: '600', color: colors.text },
   rowSub: { fontSize: type.caption, color: colors.text3, marginTop: 2 },
-  rowCount: { fontSize: type.footnote, fontWeight: '700', color: colors.text3, ...NUMERIC },
-
   storeAvatar: { width: 30, height: 30, borderRadius: 15 },
   avatarFallback: { alignItems: 'center', justifyContent: 'center' },
   avatarInitial: { color: '#fff', fontWeight: '800', fontSize: type.footnote },

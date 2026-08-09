@@ -174,7 +174,9 @@ export async function searchUsers(query, viewerUid, limit = 20) {
 
 // ── Gizlilik ────────────────────────────────────────────────────────────────
 
-const DEFAULT_PRIVACY = { shareActivity: true, discoverable: true };
+// showPresence: cevrimici durumum ve son gorulmem arkadaslarima gorunsun mu.
+// Varsayilan ACIK — mesajlasmanin dogal parcasi; kapatmak kullanicinin secimi.
+const DEFAULT_PRIVACY = { shareActivity: true, discoverable: true, showPresence: true };
 
 export async function getPrivacy(uid) {
   const p = await redisGetJSON(privacyKey(uid)).catch(() => null);
@@ -186,6 +188,7 @@ export async function setPrivacy(uid, patch = {}) {
   const next = {
     shareActivity: patch.shareActivity != null ? !!patch.shareActivity : cur.shareActivity,
     discoverable: patch.discoverable != null ? !!patch.discoverable : cur.discoverable,
+    showPresence: patch.showPresence != null ? !!patch.showPresence : cur.showPresence,
     updatedAt: Date.now(),
   };
   await redisSetJSONStrict(privacyKey(uid), next);

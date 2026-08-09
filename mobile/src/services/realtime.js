@@ -74,17 +74,24 @@ async function getClient() {
  * @returns {Promise<() => void>} abonelikten çıkış — ÇAĞRILMASI ŞART, aksi
  *   hâlde ekran kapandıktan sonra da kanal açık kalır ve bağlantı sızar.
  */
-export async function subscribeDM(cid, onMessage) {
+export async function subscribeDM(cid, onMessage, onDelete, onRead) {
   const p = await getClient();
   if (!p) return () => {};
 
   const name = `private-dm-${cid}`;
   const ch = p.subscribe(name);
   ch.bind('message', onMessage);
+  // Geri alma ayrı bir olay: mesaj listeden çıkmıyor, içeriği boşalıyor.
+  if (onDelete) ch.bind('delete', onDelete);
+  // Okundu bilgisi. Olay İKİ TARAFA da düşüyor; çağıran `by` alanına bakıp
+  // kendi okumasını elemek zorunda, yoksa kendi mesajlarına "görüldü" koyar.
+  if (onRead) ch.bind('read', onRead);
 
   return () => {
     try {
       ch.unbind('message', onMessage);
+      if (onDelete) ch.unbind('delete', onDelete);
+      if (onRead) ch.unbind('read', onRead);
       p.unsubscribe(name);
     } catch { /* zaten kapanmış */ }
   };

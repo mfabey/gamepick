@@ -4,9 +4,11 @@ import { rateLimit, tooManyRequests } from '../../../lib/rate-limit';
 import { validateFreeText } from '../../../lib/content-filter';
 import { areFriends, getHiddenUids, getProfile } from '../../../lib/social-store';
 import {
-  convId, appendMessage, getMessages, markRead, MAX_TEXT,
+  convId, appendMessage, getMessages, markRead, deleteMessage, getReadAt, MAX_TEXT,
 } from '../../../lib/chat-store';
-import { triggerMessage } from '../../../lib/pusher-server';
+import { triggerMessage, triggerDelete, triggerRead } from '../../../lib/pusher-server';
+import { touchPresence, getPresence } from '../../../lib/presence';
+import { resolveShare } from '../../../lib/chat-share';
 import { sendPush } from '../../../lib/push';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -58,18 +60,30 @@ export async function GET(request) {
   if (deny) return NextResponse.json({ error: deny }, { status: 403 });
 
   const cid = convId(user.uid, other);
-  const [messages, profile] = await Promise.all([
+  const [messages, profile, otherReadAt, presence] = await Promise.all([
     getMessages(cid, { before }),
     getProfile(other).catch(() => null),
+    // KARŞI TARAFIN okuma zamanı — kendi mesajlarıma "görüldü" koymak için.
+    getReadAt(cid, other),
+    getPresence(other),
   ]);
 
   // Geçmişi okumak = okundu. Sayfalama isteklerinde de zararsız: zaten
   // en yeni mesajı görmüş olan biri geriye kaydırıyor demektir.
   await markRead(cid, user.uid);
 
+  // Sohbeti açmak etkinlik sayılıyor; nabız da bu ucu kullanıyor.
+  await touchPresence(user.uid);
+
+  // Karşı tarafın açık ekranı "görüldü" işaretini anında görsün.
+  await triggerRead(cid, user.uid, Date.now());
+
   return NextResponse.json({
     cid,
     messages,
+    otherReadAt,
+    // `null` = kullanıcı durumunu paylaşmıyor (gizlilik ayarı kapalı)
+    presence,
     other: profile ? {
       uid: other,
       username: profile.username || null,
@@ -109,17 +123,29 @@ export async function POST(request) {
     media = { url: String(body.media.url), type: String(body.media.type || 'image/jpeg') };
   }
 
+  // Reels paylaşımı. MODERASYONA GİRMİYOR ve girmemeli: içerik kullanıcı
+  // yüklemesi değil, zaten akışımızda servis ettiğimiz Steam fragmanı.
+  //
+  // İstemciden YALNIZCA appid alınıyor; ad ve görsel sunucuda çözülüyor.
+  // İstemcinin gönderdiği metni saklasaydık sohbet baloncuğu istenen her şeyin
+  // yazdırılabildiği bir yüzeye dönüşürdü.
+  let share = null;
+  if (body.share?.appid != null) {
+    share = await resolveShare(body.share.appid, body.lang === 'en' ? 'en' : 'tr');
+    if (!share) return NextResponse.json({ error: 'INVALID_SHARE' }, { status: 400 });
+  }
+
   const text = String(body.text || '');
 
-  // Medya varken metin ZORUNLU DEĞİL — sadece fotoğraf göndermek geçerli.
-  if (text.trim() || !media) {
+  // Medya veya paylaşım varken metin ZORUNLU DEĞİL.
+  if (text.trim() || (!media && !share)) {
     const v = validateFreeText(text, { maxLength: MAX_TEXT });
     if (!v.ok) return NextResponse.json({ error: v.error }, { status: 400 });
   }
 
   try {
     const msg = await appendMessage({
-      from: user.uid, to: other, text: text.trim(), media,
+      from: user.uid, to: other, text: text.trim(), media, share,
     });
 
     // Anlık teslim ve bildirim DENENIYOR ama ikisi de gönderimi bağlamıyor:
@@ -135,8 +161,9 @@ export async function POST(request) {
       triggerMessage(convId(user.uid, other), msg),
       sendPush(other, {
         title: senderName,
-        // Metinsiz görsel mesajında önizleme boş kalmasın.
-        body: msg.text || '📷',
+        // Metinsiz mesajlarda önizleme boş kalmasın. Paylaşımda oyun adı
+        // yazılıyor — bildirimde "📷" görmek hiçbir şey anlatmazdı.
+        body: msg.text || (share ? `🎬 ${share.name}` : '📷'),
         // İstemci bu veriyle doğrudan sohbete açılıyor.
         data: { type: 'dm', from: user.uid },
       }),
@@ -148,4 +175,46 @@ export async function POST(request) {
     // bilmeli, aksi hâlde gönderdiğini sanıp bekler.
     return NextResponse.json({ error: 'SEND_FAILED' }, { status: 503 });
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Mesajı geri al.
+//
+// SAHİPLİK İKİ KEZ DOĞRULANIYOR: burada oturum sahibi belirleniyor,
+// chat-store.deleteMessage ise mesajın `from` alanının o kişi olduğunu ayrıca
+// kontrol ediyor. Yalnızca kendi mesajını geri alabilirsin.
+//
+// Mesaj listeden SİLİNMİYOR, içeriği boşaltılıyor — sıralama ve sayfalama
+// bozulmasın diye (bkz. chat-store.js).
+// ─────────────────────────────────────────────────────────────────────────────
+export async function DELETE(request) {
+  const user = await verifyMobileToken(request);
+  if (!user) return unauthorized();
+
+  const rl = await rateLimit(`rl:dmdel:${user.uid}`, 60, 3600);
+  if (!rl.ok) return NextResponse.json(tooManyRequests(), { status: 429 });
+
+  let body = {};
+  try { body = await request.json(); } catch { /* boş gövde */ }
+
+  const other = String(body.with || '');
+  const msgId = String(body.id || '');
+  if (!msgId) return NextResponse.json({ error: 'ID_REQUIRED' }, { status: 400 });
+
+  // Engel/arkadaşlık kapısı gönderimle aynı — engellenen biriyle olan
+  // konuşmaya dokunulamıyor.
+  const deny = await canTalk(user.uid, other);
+  if (deny) return NextResponse.json({ error: deny }, { status: 403 });
+
+  const cid = convId(user.uid, other);
+  const r = await deleteMessage(cid, msgId, user.uid);
+  if (!r.ok) {
+    return NextResponse.json(
+      { error: r.error },
+      { status: r.error === 'NOT_OWNER' ? 403 : 404 },
+    );
+  }
+
+  await triggerDelete(cid, msgId);
+  return NextResponse.json({ ok: true });
 }

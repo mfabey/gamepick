@@ -36,6 +36,7 @@ import { useCollections, useCollectionsContaining } from '../../src/hooks/useCol
 import { toggleGameInCollection, createCollection } from '../../src/services/collectionsStore';
 import CollectionPicker from '../../src/components/CollectionPicker';
 import RotateGlowButton from '../../src/components/RotateGlowButton';
+import ShareToFriendSheet from '../../src/components/ShareToFriendSheet';
 import { recordSignal } from '../../src/services/tasteProfile';
 import { reportActivity } from '../../src/api/social';
 import { recordSeen } from '../../src/services/seenStore';
@@ -444,6 +445,7 @@ const VideoItem = memo(function VideoItem({
   const collections = useCollections();
   const inCollections = useCollectionsContaining(item.id);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [ready, setReady] = useState(false);
 
   const watched = isWatched(item.id);
@@ -591,6 +593,14 @@ const VideoItem = memo(function VideoItem({
           onPress={() => { if (requireAccount()) return; Haptics.selectionAsync(); setPickerOpen(true); }}
         />
         <ActionBtn compact={isLandscape} icon="cart-outline" label={t('vid.buy')} onPress={onBuy} />
+        {/* Arkadasa gonder. Hesap sart: gonderim arkadaslik gerektiriyor,
+            arkadaslik da hesap gerektiriyor. */}
+        <ActionBtn
+          compact={isLandscape}
+          icon="paper-plane-outline"
+          label={t('vid.share')}
+          onPress={() => { if (requireAccount()) return; Haptics.selectionAsync(); setShareOpen(true); }}
+        />
         <ActionBtn
           compact={isLandscape}
           icon={muted ? 'volume-mute' : 'volume-high'}
@@ -640,6 +650,12 @@ const VideoItem = memo(function VideoItem({
           id: item.id, name: item.name, image: item.image, appid: item.appid, hasSteam: true, slug: '',
         })}
         onCreate={(nm) => createCollection(nm)}
+      />
+      <ShareToFriendSheet
+        visible={shareOpen}
+        onClose={() => setShareOpen(false)}
+        appid={item.appid}
+        gameName={item.name}
       />
     </View>
   );
