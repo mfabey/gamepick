@@ -2,9 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { View, Pressable, StyleSheet, Platform, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { GlassView, isLiquidGlassAvailable, isGlassEffectAPIAvailable } from 'expo-glass-effect';
 import Animated, {
-  useAnimatedStyle, useSharedValue, withSpring, interpolate, Extrapolation,
+  useAnimatedStyle, useSharedValue, withSpring, withTiming, withSequence,
+  interpolate, Extrapolation,
 } from 'react-native-reanimated';
 
 import { useReducedMotion } from '../hooks/useReducedMotion';
@@ -75,6 +77,27 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
     });
   }, [state.index, pos, reducedMotion]);
 
+  // ── Çubuk sekmesi ──
+  // Sekme degisiminde tum cubuk kisa bir "otur" hareketi yapiyor: once
+  // hafifce basiliyor, sonra yayla geri geliyor.
+  //
+  // BURADA ASMA (overshoot) ISTENIYOR — pill konumunun tam TERSI. Orada
+  // ζ=1 secilmisti cunku vurgunun hedefi asip geri gelmesi bozukluk gibi
+  // gorunuyordu. Burada asma hareketin KENDISI; ζ<1 olmadan tepki olmez.
+  //   ζ = damping / (2·√(stiffness·mass)) = 12 / (2·√220) ≈ 0.40
+  const bounce = useSharedValue(0);
+  const firstRun = useRef(true);
+  useEffect(() => {
+    // Ilk cizimde tetiklenmesin: uygulama acilisinda cubugun zipllamasi
+    // hareketi anlamsizlastirir.
+    if (firstRun.current) { firstRun.current = false; return; }
+    if (reducedMotion) return;
+    bounce.value = withSequence(
+      withTiming(1, { duration: 90 }),
+      withSpring(0, { stiffness: 220, damping: 12 }),
+    );
+  }, [state.index, bounce, reducedMotion]);
+
   const N = state.routes.length;
   const cellW = barW > 0 ? (barW - PAD * 2) / N : 0;
 
@@ -98,17 +121,25 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
     const h = hidden ? hidden.value : 0;
     const hideY = interpolate(h, [0, 1], [0, BAR_H + 60], Extrapolation.CLAMP);
 
-    if (reducedMotion || !compact) return { transform: [{ translateY: hideY }] };
+    // Sekme tepkisi: 0 -> 1 arasinda hafif bir basilma. Deger kucuk
+    // (0.965) cunku bu bir vurgu degil, bir DOKUNMA hissi.
+    const b = interpolate(bounce.value, [0, 1], [1, 0.965], Extrapolation.CLAMP);
+
+    if (reducedMotion || !compact) {
+      return { transform: [{ translateY: hideY }, { scale: b }] };
+    }
 
     const c = compact.value;
     return {
       transform: [
         { translateY: hideY },
-        { scale: interpolate(c, [0, 1], [1, 0.86], Extrapolation.CLAMP) },
+        // Daralma ve sekme olcekleri CARPILIYOR, ust uste yazilmiyor:
+        // iki ayri scale girisi birbirini eziyordu.
+        { scale: interpolate(c, [0, 1], [1, 0.86], Extrapolation.CLAMP) * b },
         { translateY: interpolate(c, [0, 1], [0, 10], Extrapolation.CLAMP) },
       ],
     };
-  }, [reducedMotion, compact, hidden]);
+  }, [reducedMotion, compact, hidden, bounce]);
 
   return (
     <View pointerEvents="box-none" style={[styles.wrap, { bottom: insets.bottom || 10 }]}>
@@ -135,6 +166,9 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
           const base = ICONS[route.name] || 'ellipse';
 
           const onPress = () => {
+            // Instagram sekmelerde hafif bir dokunsal tepki veriyor;
+            // "premium" hissin buyuk kismi gorsel degil dokunsal.
+            if (!focused) Haptics.selectionAsync().catch(() => {});
             const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
             if (!focused && !event.defaultPrevented) navigation.navigate(route.name);
           };
@@ -153,16 +187,53 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
               style={({ pressed }) => [styles.item, pressed && { opacity: 0.55 }]}
               hitSlop={8}
             >
-              <Ionicons
-                name={focused ? base : `${base}-outline`}
-                size={25}
-                color={focused ? colors.accent : colors.text3}
-              />
+              <TabIcon base={base} focused={focused} reducedMotion={reducedMotion} />
             </Pressable>
           );
         })}
       </Animated.View>
     </View>
+  );
+}
+
+/**
+ * Sekme simgesi — secildiginde kisa bir buyume tepkisi veriyor.
+ *
+ * HER SIMGENIN KENDI degeri var, ortak bir deger degil: ortak olsaydi tum
+ * simgeler ayni anda buyur ve tepki "hangi sekmeye gectim" bilgisini
+ * tasimazdi. Tepki, secilen sekmeyi ISARET etmeli.
+ *
+ * OPACITY YOK — bu bilesen cam katmaninin kardesi ve GlassView'in
+ * ebeveyninde opacity<1 cami bozuyor (bkz. dosya basi). Yalnizca transform.
+ */
+function TabIcon({ base, focused, reducedMotion }) {
+  const pop = useSharedValue(0);
+  const wasFocused = useRef(focused);
+
+  useEffect(() => {
+    // YALNIZCA odaklanma ANINDA: her cizimde degil. Odak kaybinda tepki yok,
+    // cunku ayrilan sekme dikkat cekmemeli.
+    if (focused && !wasFocused.current && !reducedMotion) {
+      pop.value = withSequence(
+        withTiming(1, { duration: 110 }),
+        withSpring(0, { stiffness: 260, damping: 14 }),
+      );
+    }
+    wasFocused.current = focused;
+  }, [focused, pop, reducedMotion]);
+
+  const style = useAnimatedStyle(() => ({
+    transform: [{ scale: interpolate(pop.value, [0, 1], [1, 1.22], Extrapolation.CLAMP) }],
+  }));
+
+  return (
+    <Animated.View style={style}>
+      <Ionicons
+        name={focused ? base : `${base}-outline`}
+        size={25}
+        color={focused ? colors.accent : colors.text3}
+      />
+    </Animated.View>
   );
 }
 

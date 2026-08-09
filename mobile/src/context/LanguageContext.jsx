@@ -152,6 +152,7 @@ const STRINGS = {
     'gc.locFailed': 'Şehir bulunamadı.',
     // ── Mesajlar ──
     'msg.title': 'Mesajlar',
+    'set.language': 'Dil',
     'msg.sharedReel': 'Video paylaştı',
     'share.title': 'Arkadaşa gönder',
     'share.send': 'Gönder',
@@ -599,6 +600,7 @@ const STRINGS = {
     'gc.locFailed': 'Could not determine city.',
     // ── Messages ──
     'msg.title': 'Messages',
+    'set.language': 'Language',
     'msg.sharedReel': 'Shared a video',
     'share.title': 'Send to a friend',
     'share.send': 'Send',

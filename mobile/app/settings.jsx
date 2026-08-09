@@ -16,6 +16,7 @@ import { useLanguage } from '../src/context/LanguageContext';
 import { useAuth } from '../src/context/AuthContext';
 import { useWishlist } from '../src/context/WishlistContext';
 import { signOut } from '../src/services/session';
+import { SettingsGroup, SettingsRow } from '../src/components/SettingsList';
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -69,74 +70,56 @@ export default function SettingsScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
-        {/* Genel */}
-        <Text style={styles.sectionLabel}>{t('prof.general')}</Text>
+        {/* BÖLÜM BAŞLIĞI YOK — gruplama boşlukla yapılıyor. Kategori adları
+            ("Genel", "Gizlilik", "Hesap") bilgi taşımıyordu; kullanıcı satırı
+            zaten okuyor. Ekranı üretilmiş bir taksonomi gibi gösteriyorlardı. */}
+        <SettingsGroup>
+          <SettingsRow
+            icon="notifications-outline"
+            label={t('notif.enable')}
+            desc={t('notif.desc')}
+            right={(
+              <Switch
+                value={enabled}
+                onValueChange={onToggleNotif}
+                trackColor={{ false: colors.cardBorder, true: colors.accent }}
+                thumbColor="#fff"
+              />
+            )}
+          />
+          <SettingsRow
+            icon="language-outline"
+            label={t('set.language')}
+            value={lang === 'tr' ? 'Türkçe' : 'English'}
+            onPress={showLanguagePicker}
+          />
+          <SettingsRow
+            icon="sparkles-outline"
+            label={t('onb.retake')}
+            onPress={() => router.push('/onboarding')}
+          />
+        </SettingsGroup>
 
-        <View style={styles.card}>
-          <View style={styles.row}>
-            <Ionicons name="notifications" size={20} color={colors.accent} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.rowText}>{t('notif.enable')}</Text>
-              <Text style={styles.rowDesc} numberOfLines={2}>{t('notif.desc')}</Text>
-            </View>
-            <Switch
-              value={enabled}
-              onValueChange={onToggleNotif}
-              trackColor={{ false: colors.cardBorder, true: colors.accent }}
-              thumbColor="#fff"
-            />
-          </View>
+        <SettingsGroup>
+          <SettingsRow
+            icon="lock-closed-outline"
+            label={t('soc.privacyTitle')}
+            onPress={() => router.push('/social-settings')}
+          />
+        </SettingsGroup>
 
-          <View style={styles.divider} />
-
-          <Pressable style={({ pressed }) => [styles.row, pressed && PRESSED]} onPress={showLanguagePicker}>
-            <Ionicons name="language" size={20} color={colors.accent} />
-            <Text style={styles.rowText}>
-              {lang === 'tr' ? 'Dil: Türkçe' : 'Language: English'}
-            </Text>
-            <Ionicons name="chevron-forward" size={18} color={colors.text3} />
-          </Pressable>
-
-          <View style={styles.divider} />
-
-          <Pressable style={({ pressed }) => [styles.row, pressed && PRESSED]} onPress={() => router.push('/onboarding')}>
-            <Ionicons name="sparkles" size={20} color={colors.accent} />
-            <Text style={styles.rowText}>{t('onb.retake')}</Text>
-            <Ionicons name="chevron-forward" size={18} color={colors.text3} />
-          </Pressable>
-        </View>
-
-        {/* Gizlilik */}
-        <Text style={styles.sectionLabel}>{t('prof.privacy')}</Text>
-        <View style={styles.card}>
-          <Pressable style={({ pressed }) => [styles.row, pressed && PRESSED]} onPress={() => router.push('/social-settings')}>
-            <Ionicons name="lock-closed" size={20} color={colors.accent} />
-            <Text style={styles.rowText}>{t('soc.privacyTitle')}</Text>
-            <Ionicons name="chevron-forward" size={18} color={colors.text3} />
-          </Pressable>
-        </View>
-
-        {/* Hesap — yalnızca oturum açıkken */}
         {account && (
-          <>
-            <Text style={styles.sectionLabel}>{t('prof.account')}</Text>
-            <View style={styles.card}>
-              <Pressable style={({ pressed }) => [styles.row, pressed && PRESSED]} onPress={onSignOut}>
-                <Ionicons name="log-out-outline" size={20} color={colors.text2} />
-                <Text style={styles.rowText}>{t('acc.signOut')}</Text>
-                <Ionicons name="chevron-forward" size={18} color={colors.text3} />
-              </Pressable>
-
-              <View style={styles.divider} />
-
-              {/* Apple zorunlu: uygulama içinden hesap silme */}
-              <Pressable style={({ pressed }) => [styles.row, pressed && PRESSED]} onPress={() => router.push('/delete-account')}>
-                <Ionicons name="trash-outline" size={20} color={colors.danger} />
-                <Text style={[styles.rowText, { color: colors.danger }]}>{t('acc.deleteTitle')}</Text>
-                <Ionicons name="chevron-forward" size={18} color={colors.text3} />
-              </Pressable>
-            </View>
-          </>
+          <SettingsGroup>
+            <SettingsRow icon="log-out-outline" label={t('acc.signOut')} onPress={onSignOut} />
+            {/* Apple zorunlu: uygulama içinden hesap silme.
+                TEK RENK İSTİSNASI — burada kırmızı gerçek bir uyarı taşıyor. */}
+            <SettingsRow
+              icon="trash-outline"
+              label={t('acc.deleteTitle')}
+              danger
+              onPress={() => router.push('/delete-account')}
+            />
+          </SettingsGroup>
         )}
       </ScrollView>
     </SafeAreaView>
@@ -154,17 +137,4 @@ const styles = StyleSheet.create({
   iconBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
 
   body: { padding: spacing.lg, paddingBottom: 40 },
-  sectionLabel: {
-    fontSize: type.caption, fontWeight: '800', color: colors.text3,
-    textTransform: 'uppercase', letterSpacing: 1,
-    marginBottom: 10, marginTop: 22,
-  },
-  card: {
-    backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1,
-    borderRadius: radius.lg, paddingHorizontal: 14,
-  },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 52, paddingVertical: 11 },
-  rowText: { flex: 1, fontSize: type.subhead, color: colors.text, fontWeight: '500' },
-  rowDesc: { fontSize: type.caption, color: colors.text3, marginTop: 2, lineHeight: 16 },
-  divider: { height: 1, backgroundColor: colors.cardBorder },
 });
