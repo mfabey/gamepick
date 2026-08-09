@@ -346,6 +346,7 @@ function timeAgo(ts, t) {
 
 function FriendsTab() {
   const { t } = useLanguage();
+  const router = useRouter();
   const [data, setData] = useState(null);
   const [q, setQ] = useState('');
   const [results, setResults] = useState(null);
@@ -454,9 +455,17 @@ function FriendsTab() {
               key={f.uid}
               person={f}
               right={
-                <Pressable onPress={() => confirmRemove(f)} hitSlop={8} style={styles.moreBtn}>
-                  <Ionicons name="ellipsis-horizontal" size={19} color={colors.text3} />
-                </Pressable>
+                <View style={styles.rowBtns}>
+                  {/* Sohbete GIRIS NOKTASI. Mesajlar ekrani yalnizca var olan
+                      konusmalari listeliyor; ilk mesaj buradan basliyor. Bu
+                      dugme olmadan sohbet hic baslatilamiyordu. */}
+                  <Pressable onPress={() => router.push(`/chat/${f.uid}`)} hitSlop={8} style={styles.moreBtn}>
+                    <Ionicons name="chatbubble-outline" size={19} color={colors.text2} />
+                  </Pressable>
+                  <Pressable onPress={() => confirmRemove(f)} hitSlop={8} style={styles.moreBtn}>
+                    <Ionicons name="ellipsis-horizontal" size={19} color={colors.text3} />
+                  </Pressable>
+                </View>
               }
               onLongPress={() => confirmBlock(f)}
             />
