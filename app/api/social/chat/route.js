@@ -55,13 +55,15 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const other = searchParams.get('with');
   const before = Number(searchParams.get('before')) || undefined;
+  // `after` = yedek yoklama modu: yalnızca yeni mesajlar isteniyor.
+  const after = Number(searchParams.get('after')) || undefined;
 
   const deny = await canTalk(user.uid, other);
   if (deny) return NextResponse.json({ error: deny }, { status: 403 });
 
   const cid = convId(user.uid, other);
   const [messages, profile, otherReadAt, presence] = await Promise.all([
-    getMessages(cid, { before }),
+    getMessages(cid, { before, after }),
     getProfile(other).catch(() => null),
     // KARŞI TARAFIN okuma zamanı — kendi mesajlarıma "görüldü" koymak için.
     getReadAt(cid, other),

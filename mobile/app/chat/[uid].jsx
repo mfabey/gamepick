@@ -23,7 +23,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 
 import {
-  getChat, sendChat, uploadChatMedia, deleteChatMessage, pingPresence,
+  getChat, sendChat, uploadChatMedia, deleteChatMessage, pingPresence, sendTyping,
 } from '../../src/api/social';
 import { subscribeDM } from '../../src/services/realtime';
 import { getSession, subscribeSession } from '../../src/services/session';
@@ -79,10 +79,22 @@ export default function ChatScreen() {
   // küçük veya eşit olanlar görülmüş sayılıyor.
   const [otherReadAt, setOtherReadAt] = useState(0);
   const [presence, setPresence] = useState(null);   // null = paylaşmıyor
+  // Karsi taraf yaziyor: SURE DAMGASI tutuluyor, boolean degil. Boolean
+  // olsaydi "yaziyor" olayindan sonra kapatan bir zamanlayici gerekirdi ve
+  // her yeni olay onu sifirlamak zorunda kalirdi.
+  const [typingUntil, setTypingUntil] = useState(0);
+  const [typingNow, setTypingNow] = useState(false);
+  // Pusher bagli mi? Degilse yedek yoklama sikilasiyor.
+  const liveRef = useRef(false);
+  // Yoklama araligi kapanista yeniden kurulmasin diye mesajlar REF ile
+  // okunuyor; bagimliliga koysaydik her mesajda yeni bir aralik acilirdi.
+  const msgsRef = useRef([]);
 
   // uid `session.user.uid` içinde. `session.uid` yazılırsa daima null olur ve
   // KENDİ mesajların da karşı tarafınmış gibi sola hizalı çizilir.
   const myUid = session?.user?.uid || null;
+
+  useEffect(() => { msgsRef.current = msgs; }, [msgs]);
 
   /** Kimliğe göre tekilleştirerek ekler; en yeni başta düzeni korunur. */
   const addMessage = useCallback((m) => {
@@ -160,11 +172,39 @@ export default function ChatScreen() {
       // KENDİ okuma olayımı ELEMEK ŞART: olay iki tarafa da düşüyor ve
       // filtrelenmezse kendi mesajlarıma "görüldü" koyarım.
       (p) => { if (p?.by && p.by !== myUid) setOtherReadAt((cur) => Math.max(cur, p.at || 0)); },
-    ).then((fn) => {
-      if (alive) off = fn; else fn();
+      // Kendi yazma olayimi ele: kanal iki tarafli.
+      (p) => { if (p?.by && p.by !== myUid) setTypingUntil(Date.now() + 4000); },
+    ).then((r) => {
+      liveRef.current = !!r?.live;
+      if (alive) off = r?.off; else r?.off?.();
     });
     return () => { alive = false; off?.(); };
   }, [cid, addMessage, markDeleted, myUid]);
+
+  // ── YEDEK YOKLAMA ──
+  // Sohbet TEK BIR DIS SERVISE bagimli olmamali. Pusher yapilandirilmamissa
+  // (veya baglanti dustuyse) mesajlar yalnizca ekran yeniden acilinca
+  // goruluyordu; kullanicinin yasadigi hata tam olarak buydu.
+  //
+  // Pusher bagliyken de yavas bir tur donuyor: emniyet agi. Kanal sessizce
+  // dusebilir ve bunu istemci fark etmez.
+  useEffect(() => {
+    if (!session || !other || loading) return;
+    let alive = true;
+    const tick = async () => {
+      // En yeni mesajin zamani; sunucudan YALNIZCA farki istiyoruz.
+      const newest = msgsRef.current[0]?.at || 0;
+      try {
+        const r = await getChat(other, undefined, newest || undefined);
+        if (!alive) return;
+        (r?.messages || []).forEach(addMessage);
+        if (r?.otherReadAt) setOtherReadAt((c) => Math.max(c, r.otherReadAt));
+        if (r?.presence !== undefined) setPresence(r.presence);
+      } catch { /* cevrimdisi — sonraki turda duzelir */ }
+    };
+    const id = setInterval(tick, liveRef.current ? 20000 : 4000);
+    return () => { alive = false; clearInterval(id); };
+  }, [session, other, loading, addMessage]);
 
   // ── Çevrimiçi nabzı ──
   // Ekran açıkken 45 saniyede bir. Sunucudaki eşik 90 saniye, yani bir nabız
@@ -182,6 +222,29 @@ export default function ChatScreen() {
     const id = setInterval(beat, 45000);
     return () => { alive = false; clearInterval(id); };
   }, [session, other]);
+
+  // "Yaziyor" 4 saniye sonra kendiliginden sonuyor. Karsi taraf yazmayi
+  // birakinca ayrica bir "durdu" olayi gondermeye gerek yok — bir olay
+  // daha az, bir yaris kosulu daha az.
+  useEffect(() => {
+    if (!typingUntil) { setTypingNow(false); return; }
+    const kalan = typingUntil - Date.now();
+    if (kalan <= 0) { setTypingNow(false); return; }
+    setTypingNow(true);
+    const id = setTimeout(() => setTypingNow(false), kalan);
+    return () => clearTimeout(id);
+  }, [typingUntil]);
+
+  // Yazarken karsi tarafa haber ver — EN FAZLA 3 saniyede bir.
+  const lastTypingRef = useRef(0);
+  const onChangeText = useCallback((v) => {
+    setText(v);
+    const now = Date.now();
+    if (v && now - lastTypingRef.current > 3000) {
+      lastTypingRef.current = now;
+      sendTyping(other).catch(() => {});
+    }
+  }, [other]);
 
   const send = useCallback(async () => {
     const body = text.trim();
@@ -320,7 +383,11 @@ export default function ChatScreen() {
           <Text style={styles.title} numberOfLines={1}>{name}</Text>
           {/* Durum satırı yalnızca paylaşan kullanıcılarda çiziliyor; kapalıysa
               boş satır bile bırakmıyoruz. */}
-          {presence ? (
+          {/* YAZIYOR, DURUMUN YERINE gecer — ikisini alt alta gostermek
+              basligi sisiriyor ve "yaziyor" zaten cevrimici demek. */}
+          {typingNow ? (
+            <Text style={[styles.status, styles.typing]} numberOfLines={1}>{t('msg.typing')}</Text>
+          ) : presence ? (
             <Text style={styles.status} numberOfLines={1}>
               {presence.online ? t('msg.online') : lastSeenLabel(presence.lastSeen, t, lang)}
             </Text>
@@ -377,7 +444,7 @@ export default function ChatScreen() {
             <TextInput
               style={styles.input}
               value={text}
-              onChangeText={setText}
+              onChangeText={onChangeText}
               placeholder={t('msg.placeholder')}
               placeholderTextColor={colors.text3}
               maxLength={MAX_TEXT}
@@ -527,6 +594,7 @@ const styles = StyleSheet.create({
   title: { color: colors.text, fontSize: type.body, fontWeight: '700' },
   // Durum satiri kucuk ve sessiz: bilgi tasiyor ama ada rakip olmamali.
   status: { color: colors.text3, fontSize: type.caption2, marginTop: 1 },
+  typing: { color: colors.green, fontWeight: '700' },
   // Goruldu isareti baloncugun ALTINDA ve saga dayali; icerigin parcasi degil.
   seen: { color: colors.text3, fontSize: type.caption2, marginTop: 3, marginRight: 4 },
 
@@ -535,9 +603,12 @@ const styles = StyleSheet.create({
   emptyWrap: { paddingVertical: spacing.xl, alignItems: 'center', transform: [{ scaleY: -1 }] },
   emptyText: { color: colors.text3, fontSize: type.footnote, textAlign: 'center' },
 
-  bubbleRow:  { flexDirection: 'row', marginBottom: 6 },
-  rowMine:    { justifyContent: 'flex-end' },
-  rowTheirs:  { justifyContent: 'flex-start' },
+  // SÜTUN, satır DEĞİL. Önce `row` idi ve "Görüldü" metni baloncuğun kardeşi
+  // olduğu için altında değil YANINDA çiziliyordu (üstelik flex-end yüzünden
+  // solunda). Sütunda baloncuk ve etiket alt alta, hizalama alignItems ile.
+  bubbleRow:  { flexDirection: 'column', marginBottom: 6 },
+  rowMine:    { alignItems: 'flex-end' },
+  rowTheirs:  { alignItems: 'flex-start' },
 
   bubble: { maxWidth: '78%', paddingHorizontal: 13, paddingVertical: 9, borderRadius: radius.lg },
   bubbleMine:   { backgroundColor: colors.accent, borderBottomRightRadius: 4 },

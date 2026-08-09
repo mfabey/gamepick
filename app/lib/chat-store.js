@@ -111,7 +111,7 @@ export async function appendMessage({ from, to, text, media, share }) {
  * Mesaj geçmişi — en yeniden eskiye.
  * @param {number} [before] bu zamandan ESKİ mesajlar (sayfalama)
  */
-export async function getMessages(cid, { before, limit = PAGE } = {}) {
+export async function getMessages(cid, { before, after, limit = PAGE } = {}) {
   // Mesajlar ve geri alınanlar TEK turda okunuyor.
   const [raw, deleted] = await redisPipeline([
     ['LRANGE', msgsKey(cid), '0', String(MAX_MESSAGES - 1)],
@@ -123,6 +123,9 @@ export async function getMessages(cid, { before, limit = PAGE } = {}) {
 
   let msgs = raw.map(parseJSON).filter(Boolean);
   if (before) msgs = msgs.filter((m) => m.at < before);
+  // `after`: yalnızca YENİ mesajlar. Yedek yoklama bunu kullanıyor — her
+  // turda 50 mesajın tamamını çekmek yerine yalnızca farkı istiyor.
+  if (after) msgs = msgs.filter((m) => m.at > after);
 
   return msgs.slice(0, limit).map((m) => (
     // Geri alınan mesaj LİSTEDEN ÇIKARILMIYOR, içeriği boşaltılıyor. Sıra ve

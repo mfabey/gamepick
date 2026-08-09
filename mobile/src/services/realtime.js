@@ -74,9 +74,15 @@ async function getClient() {
  * @returns {Promise<() => void>} abonelikten çıkış — ÇAĞRILMASI ŞART, aksi
  *   hâlde ekran kapandıktan sonra da kanal açık kalır ve bağlantı sızar.
  */
-export async function subscribeDM(cid, onMessage, onDelete, onRead) {
+/**
+ * @returns {Promise<{off: () => void, live: boolean}>}
+ *   `live: false` = Pusher yapılandırılmamış. ÇAĞIRAN BUNA GÖRE YEDEK YOKLAMA
+ *   KURMALI; aksi hâlde sohbet tek bir dış servise bağımlı kalır ve o servis
+ *   yoksa mesajlar yalnızca ekran yeniden açılınca görünür.
+ */
+export async function subscribeDM(cid, onMessage, onDelete, onRead, onTyping) {
   const p = await getClient();
-  if (!p) return () => {};
+  if (!p) return { off: () => {}, live: false };
 
   const name = `private-dm-${cid}`;
   const ch = p.subscribe(name);
@@ -86,14 +92,20 @@ export async function subscribeDM(cid, onMessage, onDelete, onRead) {
   // Okundu bilgisi. Olay İKİ TARAFA da düşüyor; çağıran `by` alanına bakıp
   // kendi okumasını elemek zorunda, yoksa kendi mesajlarına "görüldü" koyar.
   if (onRead) ch.bind('read', onRead);
+  // Yazıyor bilgisi. Kalıcı bir şey değil, kaçırılması zararsız.
+  if (onTyping) ch.bind('typing', onTyping);
 
-  return () => {
-    try {
-      ch.unbind('message', onMessage);
-      if (onDelete) ch.unbind('delete', onDelete);
-      if (onRead) ch.unbind('read', onRead);
-      p.unsubscribe(name);
-    } catch { /* zaten kapanmış */ }
+  return {
+    live: true,
+    off: () => {
+      try {
+        ch.unbind('message', onMessage);
+        if (onDelete) ch.unbind('delete', onDelete);
+        if (onRead) ch.unbind('read', onRead);
+        if (onTyping) ch.unbind('typing', onTyping);
+        p.unsubscribe(name);
+      } catch { /* zaten kapanmış */ }
+    },
   };
 }
 

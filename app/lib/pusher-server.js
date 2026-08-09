@@ -112,3 +112,20 @@ export function authorizeChannel(socketId, channel) {
   if (!p) return null;
   return p.authorizeChannel(socketId, channel);
 }
+
+/**
+ * "Yazıyor" bildirimi.
+ *
+ * `by` ALANI ŞART — kanal iki taraflı. Kimin yazdığını belirtmezsek istemci
+ * kendi olayını görüp "karşı taraf yazıyor" gösterir.
+ */
+export async function triggerTyping(cid, byUid) {
+  const p = getClient();
+  if (!p) return false;
+  try {
+    await p.trigger(dmChannel(cid), 'typing', { by: byUid });
+    return true;
+  } catch {
+    return false;
+  }
+}

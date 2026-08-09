@@ -125,8 +125,15 @@ export const unregisterDmPush = (token) =>
 // Mesajlaşma YALNIZCA arkadaşlar arasında; sunucu NOT_FRIENDS ile reddediyor.
 export const getChatList   = ()  => authed('/api/social/chat/list');
 export const getChatConfig = ()  => authed('/api/social/chat/config');
-export const getChat       = (withUid, before) =>
-  authed(`/api/social/chat?with=${encodeURIComponent(withUid)}${before ? `&before=${before}` : ''}`);
+/**
+ * Sohbet geçmişi.
+ * @param {number} [before] sayfalama — bu zamandan eski mesajlar
+ * @param {number} [after]  yedek yoklama — yalnızca bu zamandan yeni mesajlar
+ */
+export const getChat       = (withUid, before, after) =>
+  authed(`/api/social/chat?with=${encodeURIComponent(withUid)}`
+    + (before ? `&before=${before}` : '')
+    + (after ? `&after=${after}` : ''));
 /**
  * Mesaj gönderir.
  * @param {object} [share] Reels paylaşımı — YALNIZCA `{ appid }`. Ad ve görsel
@@ -139,6 +146,11 @@ export const sendChat      = (to, text, media, share) =>
 // veriyor; başkasınınkinde NOT_OWNER döner.
 export const deleteChatMessage = (withUid, id) =>
   authed('/api/social/chat', { method: 'DELETE', body: { with: withUid, id } });
+
+// "Yazıyor" bildirimi. Hiçbir yere yazılmıyor, yalnızca kanala düşüyor;
+// kaybolması zararsız olduğu için çağıran hatasını yutabilir.
+export const sendTyping = (to) =>
+  authed('/api/social/chat/typing', { method: 'POST', body: { to } });
 
 // Çevrimiçi nabzı. Kendi durumumu tazeler ve istenirse karşı tarafınkini
 // aynı turda döndürür — nabız ve okuma tek istekte birleşiyor.
