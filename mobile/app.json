@@ -2,7 +2,7 @@
   "expo": {
     "name": "Gamerisen",
     "slug": "gamerisen",
-    "version": "2.3.0",
+    "version": "2.4.0",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "scheme": "gamerisen",
@@ -56,7 +56,23 @@
       ],
       "./plugins/withIosWidget",
       "./plugins/withIosShareExtension",
-      "expo-apple-authentication"
+      "expo-apple-authentication",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Gamerisen, arkadaşlarınıza sohbette fotoğraf gönderebilmeniz için galerinize erişir.",
+          "cameraPermission": "Gamerisen, sohbette fotoğraf çekip gönderebilmeniz için kameranıza erişir."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": false,
+          "isIosBackgroundLocationEnabled": false,
+          "isAndroidBackgroundLocationEnabled": false,
+          "locationWhenInUsePermission": "Gamerisen, paylaştığınız oyun kartına yalnızca şehir adını eklemek için konumunuzu kullanır. Konum bilginiz cihazınızdan çıkmaz."
+        }
+      ]
     ],
     "extra": {
       "router": {},

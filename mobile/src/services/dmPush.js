@@ -1,0 +1,59 @@
+import { getSession, subscribeSession } from './session';
+import { registerForPushToken } from '../notifications';
+import { registerDmPush, unregisterDmPush } from '../api/social';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Mesaj bildirimleri için push token eşitlemesi.
+//
+// İSTEK LİSTESİ UYARILARINDAN AYRI. WishlistContext de token alıyor ama o
+// sistem fiyat düşüşleri için ve kullanıcı onu kapalı tutabilir; mesaj
+// bildirimi buna bağlanamaz.
+//
+// TOKEN ZAMANLA DEĞİŞİYOR (yeniden kurulum, bazı işletim sistemi
+// güncellemeleri). Girişte bir kez yazıp bırakmak yetmiyor — her oturum
+// değişiminde tazeleniyor.
+//
+// ÇIKIŞTA SİLİNİYOR: silinmezse cihazı devralan kişi önceki kullanıcının
+// mesaj bildirimlerini almaya devam eder.
+// ─────────────────────────────────────────────────────────────────────────────
+
+let lastToken = null;
+let lastUid = null;
+let started = false;
+
+async function sync() {
+  const uid = getSession()?.uid || null;
+
+  // Çıkış yapıldı → önceki kaydı düşür.
+  if (!uid) {
+    if (lastToken && lastUid) {
+      try { await unregisterDmPush(lastToken); } catch { /* çevrimdışı olabilir */ }
+    }
+    lastUid = null;
+    return;
+  }
+
+  // Aynı kullanıcı, aynı token → tekrar yazmanın anlamı yok.
+  if (uid === lastUid && lastToken) return;
+
+  // İzin YOKSA istemiyoruz: bu sessiz bir arka plan işi ve kullanıcıya
+  // bağlamsız bir izin penceresi açmak kötü bir deneyim. İzin, kullanıcı
+  // bildirimleri açıkça açtığında isteniyor; burada yalnızca zaten verilmiş
+  // izinden token alınıyor.
+  const r = await registerForPushToken();
+  if (r?.error || !r?.token) return;
+
+  try {
+    await registerDmPush(r.token);
+    lastToken = r.token;
+    lastUid = uid;
+  } catch { /* sonraki oturum değişiminde yeniden denenir */ }
+}
+
+/** Uygulama açılışında BİR KEZ çağrılır. */
+export function startDmPushSync() {
+  if (started) return;
+  started = true;
+  sync();
+  subscribeSession(() => { sync(); });
+}

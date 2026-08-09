@@ -19,7 +19,8 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
-import { getGameCards } from '../src/api/social';
+import { getGameCards, getCardUrl } from '../src/api/social';
+import { resolveCity } from '../src/services/location';
 import { getSession, subscribeSession } from '../src/services/session';
 import EmptyState from '../src/components/EmptyState';
 import { colors, radius, spacing, type, PRESSED, NUMERIC, TAB_SPACE } from '../src/theme';
@@ -59,19 +60,41 @@ export default function GameCardsScreen() {
     load();
   }, [session, load]);
 
+  // Şehir etiketi — VARSAYILAN KAPALI, kullanıcı açıkça açıyor. Açıldığında
+  // hemen çözülüyor ki paylaşmadan ÖNCE ne ekleneceğini görsün.
+  const [city, setCity] = useState(null);
+  const [cityBusy, setCityBusy] = useState(false);
+
+  const toggleCity = useCallback(async () => {
+    if (city) { setCity(null); return; }        // kapatmak izin gerektirmez
+    setCityBusy(true);
+    const r = await resolveCity();
+    setCityBusy(false);
+    if (r.ok) setCity(r.city);
+    else Alert.alert(r.reason === 'DENIED' ? t('gc.locDenied') : t('gc.locFailed'));
+  }, [city, t]);
+
   const share = useCallback(async (card) => {
-    if (!card.shareUrl) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     try {
+      // Şehir seçiliyse adres YENİDEN imzalanmalı: önceden imzalanmış adres
+      // boş şehirle üretildi ve imza tüm alanları kapsıyor.
+      let url = card.shareUrl;
+      if (city) {
+        const r = await getCardUrl(card.appid, city, lang);
+        url = r?.url || url;
+      }
+      if (!url) return;
+
       // iOS'ta `url` ayrı bir alan: paylaşım sayfası önizlemeyi ondan üretiyor.
       await Share.share({
-        url: card.shareUrl,
+        url,
         message: `${card.name} — ${Math.round(card.hours)}${t('gc.hoursShort')}`,
       });
     } catch {
       Alert.alert(t('gc.shareFailed'));
     }
-  }, [t]);
+  }, [t, city, lang]);
 
   // ── Kapılar ───────────────────────────────────────────────────────────────
   let body = null;
@@ -117,7 +140,9 @@ export default function GameCardsScreen() {
           keyExtractor={(c) => String(c.appid)}
           estimatedItemSize={72}
           contentContainerStyle={{ paddingBottom: TAB_SPACE }}
-          ListHeaderComponent={<Summary s={data.summary} t={t} />}
+          ListHeaderComponent={
+            <Summary s={data.summary} t={t} city={city} busy={cityBusy} onToggleCity={toggleCity} />
+          }
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.text2} />
           }
@@ -132,19 +157,45 @@ export default function GameCardsScreen() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-function Summary({ s, t }) {
+function Summary({ s, t, city, busy, onToggleCity }) {
   if (!s) return null;
   return (
-    <View style={styles.hero}>
-      <Text style={[styles.heroNum, NUMERIC]}>{s.totalHours.toLocaleString()}</Text>
-      <Text style={styles.heroLabel}>{t('gc.totalHours')}</Text>
+    <View>
+      <View style={styles.hero}>
+        <Text style={[styles.heroNum, NUMERIC]}>{s.totalHours.toLocaleString()}</Text>
+        <Text style={styles.heroLabel}>{t('gc.totalHours')}</Text>
 
-      <View style={styles.heroRow}>
-        <Cell n={s.games} label={t('gc.games')} />
-        {/* "Alıp oynamadıkların" — kütüphane sahiplerinin en çok konuştuğu sayı */}
-        <Cell n={s.untouched} label={t('gc.untouched')} tint={colors.mid} />
-        <Cell n={s.friends} label={t('gc.friends')} tint={colors.steam} />
+        <View style={styles.heroRow}>
+          <Cell n={s.games} label={t('gc.games')} />
+          {/* "Alıp oynamadıkların" — kütüphane sahiplerinin en çok konuştuğu sayı */}
+          <Cell n={s.untouched} label={t('gc.untouched')} tint={colors.mid} />
+          <Cell n={s.friends} label={t('gc.friends')} tint={colors.steam} />
+        </View>
       </View>
+
+      {/* Şehir etiketi. Çözülen şehir BURADA GÖRÜNÜYOR — kullanıcı paylaşmadan
+          önce karta tam olarak neyin ekleneceğini görmeli. Koordinat hiçbir
+          zaman gönderilmiyor, çözümleme cihazda yapılıyor. */}
+      <Pressable
+        style={({ pressed }) => [styles.locRow, pressed && PRESSED]}
+        onPress={onToggleCity}
+        disabled={busy}
+      >
+        <Ionicons
+          name={city ? 'location' : 'location-outline'}
+          size={18}
+          color={city ? colors.green : colors.text3}
+        />
+        <View style={styles.locMid}>
+          <Text style={styles.locLabel}>{t('gc.addCity')}</Text>
+          <Text style={styles.locHint} numberOfLines={1}>
+            {busy ? t('gc.locResolving') : (city || t('gc.locOff'))}
+          </Text>
+        </View>
+        <View style={[styles.switch, city && styles.switchOn]}>
+          <View style={[styles.knob, city && styles.knobOn]} />
+        </View>
+      </Pressable>
     </View>
   );
 }
@@ -217,6 +268,25 @@ const styles = StyleSheet.create({
   heroNum:   { color: colors.text, fontSize: type.hero, fontWeight: '900', letterSpacing: -1.5 },
   heroLabel: { color: colors.text3, fontSize: type.footnote, marginTop: -2 },
   heroRow:   { flexDirection: 'row', marginTop: spacing.lg },
+
+  locRow: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.md,
+    marginHorizontal: spacing.lg, marginBottom: spacing.md,
+    paddingVertical: spacing.md, paddingHorizontal: spacing.md,
+    backgroundColor: colors.card, borderRadius: radius.md,
+    borderWidth: 1, borderColor: colors.cardBorder,
+  },
+  locMid:   { flex: 1, gap: 1 },
+  locLabel: { color: colors.text, fontSize: type.footnote, fontWeight: '700' },
+  locHint:  { color: colors.text3, fontSize: type.caption2 },
+
+  switch: {
+    width: 44, height: 26, borderRadius: 13, padding: 3,
+    backgroundColor: colors.bgInput, justifyContent: 'center',
+  },
+  switchOn: { backgroundColor: colors.green },
+  knob:     { width: 20, height: 20, borderRadius: 10, backgroundColor: colors.text3 },
+  knobOn:   { backgroundColor: '#fff', alignSelf: 'flex-end' },
 
   cell:      { flex: 1 },
   cellNum:   { color: colors.text, fontSize: type.title3, fontWeight: '800' },

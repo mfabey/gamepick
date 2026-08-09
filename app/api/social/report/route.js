@@ -17,7 +17,10 @@ import { redisCmd, redisSetJSONStrict } from '../../../lib/redis';
 //   report_dupe:{uid}:{targetType}:{targetId} → aynı şeyi tekrar raporlamayı engeller
 // ─────────────────────────────────────────────────────────────────────────────
 
-const VALID_TARGETS = ['user', 'collection', 'list', 'comment'];
+// `message`: birebir sohbet mesajı. Apple Guideline 1.2 kullanıcı üretimi
+// içeriğin RAPORLANABİLİR olmasını istiyor ve özel mesajlaşma da buna dahil;
+// sohbet açılırken bu tür eklenmeseydi moderasyonda görünmez bir boşluk kalırdı.
+const VALID_TARGETS = ['user', 'collection', 'list', 'comment', 'message'];
 const VALID_REASONS = [
   'spam', 'harassment', 'hate', 'sexual', 'violence',
   'impersonation', 'illegal', 'other',

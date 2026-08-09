@@ -235,6 +235,10 @@ export default function ProfileScreen() {
         <View style={styles.card}>
           <Row icon="people-outline" label={t('soc.entry')} beta onPress={() => router.push('/social')} />
           <Div />
+          {/* Mesajlaşma yalnızca arkadaşlar arasında; hesap şart. */}
+          <Row icon="chatbubble-ellipses-outline" label={t('msg.title')} beta
+               locked={locked} hint={hint} onPress={go('/messages')} />
+          <Div />
           {/* Steam arkadaşları: hesap gerektiriyor (go() kilitliyse /account'a
               yönlendiriyor). Steam bağlı değilse ekranın kendisi açıklıyor. */}
           <Row icon="logo-steam" label={t('sf.title')} beta

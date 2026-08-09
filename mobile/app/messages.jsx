@@ -1,0 +1,187 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Mesajlar — konuşma listesi.  [BETA]
+//
+// Mesajlaşma YALNIZCA arkadaşlar arasında. Bu, yabancıdan gelen spam'i kökten
+// kapatan kural; sunucu da aynı kuralı uyguluyor (NOT_FRIENDS).
+// ─────────────────────────────────────────────────────────────────────────────
+import { useState, useEffect, useCallback } from 'react';
+import {
+  View, Text, Pressable, StyleSheet, ActivityIndicator, RefreshControl,
+} from 'react-native';
+import { FlashList } from '@shopify/flash-list';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter, useFocusEffect } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+
+import { getChatList } from '../src/api/social';
+import { getSession, subscribeSession } from '../src/services/session';
+import EmptyState from '../src/components/EmptyState';
+import { getAvatarPreset } from '../src/utils/avatar';
+import { colors, radius, spacing, type, PRESSED, TAB_SPACE } from '../src/theme';
+import { useLanguage } from '../src/context/LanguageContext';
+
+/** Kısa zaman: bugünse saat, bu haftaysa gün, değilse tarih. */
+function shortTime(ts, lang) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  const now = new Date();
+  const sameDay = d.toDateString() === now.toDateString();
+  const loc = lang === 'tr' ? 'tr-TR' : 'en-US';
+  if (sameDay) return d.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit' });
+  if (now - d < 7 * 86400000) return d.toLocaleDateString(loc, { weekday: 'short' });
+  return d.toLocaleDateString(loc, { day: 'numeric', month: 'short' });
+}
+
+export default function MessagesScreen() {
+  const router = useRouter();
+  const { t, lang } = useLanguage();
+
+  const [session, setSession] = useState(() => getSession());
+  useEffect(() => subscribeSession(() => setSession(getSession())), []);
+
+  const [rows, setRows]       = useState(null);
+  const [error, setError]     = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const load = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    try {
+      const r = await getChatList();
+      setRows(r?.conversations || []);
+      setError(null);
+    } catch (e) {
+      setError(e?.code || 'UNKNOWN');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  // Sohbetten geri dönünce liste TAZELENMELİ: son mesaj ve okundu durumu
+  // değişmiş olabilir. useEffect tek başına bunu yakalamıyor.
+  useFocusEffect(useCallback(() => {
+    if (session) load();
+  }, [session, load]));
+
+  let body = null;
+  if (!session) {
+    body = <EmptyState icon="person-circle-outline" title={t('sf.needAccount')}
+      text={t('sf.needAccountText')} actionLabel={t('sf.goAccount')}
+      onAction={() => router.push('/account')} />;
+  } else if (loading) {
+    body = <View style={styles.center}><ActivityIndicator color={colors.accent} /></View>;
+  } else if (error) {
+    body = <EmptyState icon="cloud-offline-outline" title={t('sf.error')} text={t('sf.errorText')}
+      actionLabel={t('sf.retry')} onAction={() => load()} />;
+  } else if (!rows?.length) {
+    body = <EmptyState icon="chatbubbles-outline" title={t('msg.empty')} text={t('msg.emptyText')}
+      actionLabel={t('msg.goFriends')} onAction={() => router.push('/social')} />;
+  }
+
+  return (
+    <SafeAreaView style={styles.safe} edges={['top']}>
+      <View style={styles.header}>
+        <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]}
+                   onPress={() => router.back()} hitSlop={10}>
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
+        </Pressable>
+        <Text style={styles.title}>{t('msg.title')}</Text>
+        <View style={styles.betaChip}><Text style={styles.betaText}>{t('soc.beta')}</Text></View>
+      </View>
+
+      {body || (
+        <FlashList
+          data={rows}
+          keyExtractor={(r) => r.cid}
+          estimatedItemSize={72}
+          contentContainerStyle={{ paddingBottom: TAB_SPACE }}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.text2} />
+          }
+          renderItem={({ item }) => (
+            <ConversationRow
+              item={item} t={t} lang={lang}
+              onPress={() => router.push(`/chat/${item.other.uid}`)}
+            />
+          )}
+        />
+      )}
+    </SafeAreaView>
+  );
+}
+
+function ConversationRow({ item, onPress, t, lang }) {
+  const preset = getAvatarPreset(item.other.avatar);
+  const name = item.other.displayName || item.other.username || '?';
+
+  return (
+    <Pressable style={({ pressed }) => [styles.row, pressed && PRESSED]} onPress={onPress}>
+      {preset ? (
+        <View style={[styles.avatar, { backgroundColor: preset.bg }]}>
+          <Ionicons name={preset.icon} size={21} color={preset.iconColor} />
+        </View>
+      ) : (
+        <View style={styles.avatar}>
+          <Text style={styles.avatarLetter}>{name.charAt(0).toUpperCase()}</Text>
+        </View>
+      )}
+
+      <View style={styles.rowMid}>
+        <Text style={styles.name} numberOfLines={1}>{name}</Text>
+        {/* Metinsiz medya mesajında sunucu `lastKind` gönderiyor; etiket burada
+            çevriliyor çünkü kullanıcının dili sunucuda değil, istemcide belli.
+            Metin varsa metin kazanır. */}
+        <Text style={[styles.preview, item.unread && styles.previewUnread]} numberOfLines={1}>
+          {item.lastText
+            ? item.lastText
+            : item.lastKind === 'video' ? `🎬 ${t('msg.video')}`
+            : item.lastKind === 'photo' ? `📷 ${t('msg.photo')}`
+            : ''}
+        </Text>
+      </View>
+
+      <View style={styles.rowEnd}>
+        <Text style={styles.time}>{shortTime(item.lastAt, lang)}</Text>
+        {item.unread && <View style={styles.dot} />}
+      </View>
+    </Pressable>
+  );
+}
+
+const styles = StyleSheet.create({
+  safe:   { flex: 1, backgroundColor: colors.bg },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+
+  header: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+    paddingHorizontal: spacing.lg, paddingBottom: spacing.md,
+  },
+  iconBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginLeft: -10 },
+  title:   { flex: 1, color: colors.text, fontSize: type.title3, fontWeight: '800', letterSpacing: -0.4 },
+
+  betaChip: {
+    paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: radius.pill,
+    backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accentBorder,
+  },
+  betaText: { color: colors.accentText, fontSize: type.caption2, fontWeight: '800', letterSpacing: 0.4 },
+
+  row: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.md,
+    paddingVertical: spacing.md, paddingHorizontal: spacing.lg,
+  },
+  avatar: {
+    width: 46, height: 46, borderRadius: 23, backgroundColor: colors.bgInput,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  avatarLetter: { color: colors.text2, fontSize: type.subhead, fontWeight: '800' },
+
+  rowMid:  { flex: 1, gap: 2 },
+  name:    { color: colors.text, fontSize: type.subhead, fontWeight: '700' },
+  preview: { color: colors.text3, fontSize: type.footnote },
+  previewUnread: { color: colors.text, fontWeight: '600' },
+
+  rowEnd: { alignItems: 'flex-end', gap: 6 },
+  time:   { color: colors.text3, fontSize: type.caption2 },
+  dot:    { width: 9, height: 9, borderRadius: 5, backgroundColor: colors.accent },
+});

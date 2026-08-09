@@ -72,6 +72,11 @@ export async function GET(request) {
         o: c.owners > 1 ? String(c.owners) : '',
         u: uname,
         l: lang,
+        // `c` (şehir) BURADA DA OLMALI, boş olsa bile. canonical() tüm
+        // anahtarları birleştirdiği için, alanı bir tarafta atlamak iki farklı
+        // dizge üretir ve imza tutmaz — önceden imzalanmış adresler 403 alır.
+        // Şehir yalnızca /api/social/card-url ucundan dolduruluyor.
+        c: '',
       };
       const sig = await signCard(p);
       const qs = new URLSearchParams({ ...p, sig });

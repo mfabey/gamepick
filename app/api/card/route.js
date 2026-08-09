@@ -40,6 +40,9 @@ export async function GET(request) {
     o: searchParams.get('o') || '',
     u: searchParams.get('u') || '',
     l: searchParams.get('l') || 'tr',
+    // Şehir — İSTEĞE BAĞLI ve yalnızca şehir adı. Koordinat asla buraya
+    // gelmiyor: cihaz kendi içinde çözümleyip yalnızca adı gönderiyor.
+    c: searchParams.get('c') || '',
     sig: searchParams.get('sig') || '',
   };
 
@@ -52,16 +55,20 @@ export async function GET(request) {
   const game  = clamp(params.g, 48);
   const hours = clamp(params.h, 8);
   const user  = clamp(params.u, 24);
+  const city  = clamp(params.c, 28);
   const rank  = params.r ? Number(params.r) : null;
   const owners = params.o ? Number(params.o) : null;
   const showRank = Number.isFinite(rank) && Number.isFinite(owners) && owners > 1;
 
   // Kart bir GÖRSEL — paylaşıldıktan sonra dili değiştirilemez, o yüzden dil
-  // de imzalı parametrelerin içinde. Satori'nin varsayılan yazı tipi Türkçe
-  // harfleri kapsamadığı için burada aksansız yazım tercih edildi.
+  // de imzalı parametrelerin içinde.
+  //
+  // Türkçe harfler ÇALIŞIYOR: Satori'nin varsayılan yazı tipi ş/ğ/ı/İ dahil
+  // Latin-Extended kapsıyor (İstanbul etiketiyle doğrulandı). Önce aksansız
+  // yazılmıştı, gereksizmiş.
   const L = params.l === 'en'
     ? { hours: 'hours', among: 'among your friends' }
-    : { hours: 'saat',  among: 'arkadaslarin arasinda' };
+    : { hours: 'saat',  among: 'arkadaşların arasında' };
 
   return new ImageResponse(
     (
@@ -108,7 +115,10 @@ export async function GET(request) {
             </div>
           ) : <div style={{ display: 'flex' }} />}
 
-          {!!user && <div style={{ fontSize: 30, color: C.text3 }}>{`@${user}`}</div>}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+            {!!user && <div style={{ fontSize: 30, color: C.text3 }}>{`@${user}`}</div>}
+            {!!city && <div style={{ fontSize: 24, color: C.text3, marginTop: 4 }}>{city}</div>}
+          </div>
         </div>
       </div>
     ),

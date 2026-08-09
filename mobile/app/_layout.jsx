@@ -17,6 +17,7 @@ import { loadCollections } from '../src/services/collectionsStore';
 import { loadOnboarding } from '../src/services/onboarding';
 import { initQueryCache } from '../src/services/queryCache';
 import { startSharedLinkWatcher } from '../src/services/sharedLink';
+import { startDmPushSync } from '../src/services/dmPush';
 import FpsMeter from '../src/dev/FpsMeter';
 import { colors } from '../src/theme';
 
@@ -48,6 +49,9 @@ export default function RootLayout() {
 
   // Share Extension'dan gelen bekleyen bir Steam linki varsa oyuna git
   useEffect(() => { startSharedLinkWatcher(); }, []);
+
+  // Mesaj bildirimleri icin push token esitlemesi (istek listesinden ayri)
+  useEffect(() => { startDmPushSync(); }, []);
 
   // ── Yön politikası ──
   // app.json'da orientation "default" YAPILMAK ZORUNDAYDI: iOS'ta Info.plist
@@ -100,6 +104,8 @@ export default function RootLayout() {
                 <Stack.Screen name="social" />
                 <Stack.Screen name="steam-friends" />
                 <Stack.Screen name="game-cards" />
+                <Stack.Screen name="messages" />
+                <Stack.Screen name="chat/[uid]" />
                 <Stack.Screen name="settings" />
                 <Stack.Screen name="social-settings" />
                 <Stack.Screen name="lists" />

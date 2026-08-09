@@ -101,3 +101,72 @@ export const getSteamFriends   = ()      => authed('/api/social/steam-friends');
 // değiştirilemediği için istek anında doğru dili göndermek şart.
 export const getGameCards      = (lang = 'tr') =>
   authed(`/api/social/game-cards?lang=${lang === 'en' ? 'en' : 'tr'}`);
+
+/**
+ * Paylaşım anında imzalı kart adresi üretir — şehir etiketi buradan geçiyor.
+ * Saat/sıra değerleri SUNUCUDA yeniden hesaplanıyor; istemci yalnızca hangi
+ * oyun ve (isterse) hangi şehir olduğunu söylüyor.
+ */
+export const getCardUrl = (appid, city, lang = 'tr') =>
+  authed('/api/social/card-url', {
+    method: 'POST',
+    body: { appid, city: city || '', lang: lang === 'en' ? 'en' : 'tr' },
+  });
+
+// ── Push (mesaj bildirimleri) ───────────────────────────────────────────────
+// İstek listesi fiyat uyarılarından AYRI tutuluyor: kullanıcı fiyat uyarısı
+// istemeden mesaj bildirimi isteyebilir, tersi de geçerli.
+export const registerDmPush   = (token) =>
+  authed('/api/social/push-token', { method: 'POST', body: { token } });
+export const unregisterDmPush = (token) =>
+  authed('/api/social/push-token', { method: 'DELETE', body: { token } });
+
+// ── Sohbet ──────────────────────────────────────────────────────────────────
+// Mesajlaşma YALNIZCA arkadaşlar arasında; sunucu NOT_FRIENDS ile reddediyor.
+export const getChatList   = ()  => authed('/api/social/chat/list');
+export const getChatConfig = ()  => authed('/api/social/chat/config');
+export const getChat       = (withUid, before) =>
+  authed(`/api/social/chat?with=${encodeURIComponent(withUid)}${before ? `&before=${before}` : ''}`);
+export const sendChat      = (to, text, media) =>
+  authed('/api/social/chat', { method: 'POST', body: { to, text, media } });
+
+/**
+ * Sohbet görseli yükler.
+ *
+ * `authed` KULLANILMIYOR: o yardımcı gövdeyi JSON'a çeviriyor, burada
+ * multipart gerekiyor. Content-Type ELLE YAZILMAMALI — fetch, FormData için
+ * sınır (boundary) değerini kendi üretiyor ve elle yazılan başlık onu bozar.
+ *
+ * @param {string} to    alıcı uid
+ * @param {string} uri   yerel dosya adresi (küçültülmüş olmalı)
+ * @param {string} type  image/jpeg gibi
+ */
+export async function uploadChatMedia(to, uri, type = 'image/jpeg') {
+  const token = await getValidToken();
+  if (!token) throw Object.assign(new Error('NO_SESSION'), { code: 'NO_SESSION' });
+
+  const EXT = {
+    'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp',
+    'video/mp4': 'mp4', 'video/quicktime': 'mov',
+  };
+
+  const form = new FormData();
+  form.append('to', to);
+  form.append('file', { uri, name: `dm.${EXT[type] || 'jpg'}`, type });
+
+  const res = await fetch(`${API_BASE}/api/social/chat/media`, {
+    method: 'POST',
+    headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+    body: form,
+  });
+
+  let data = null;
+  try { data = await res.json(); } catch { /* gövdesiz yanıt */ }
+
+  if (!res.ok) {
+    throw Object.assign(new Error(data?.error || `HTTP ${res.status}`), {
+      status: res.status, code: data?.error || null,
+    });
+  }
+  return data;
+}
