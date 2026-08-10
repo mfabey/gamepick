@@ -11,9 +11,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, TextInput, Pressable, StyleSheet, FlatList,
-  ActivityIndicator, KeyboardAvoidingView, Platform, Alert,
+  ActivityIndicator, KeyboardAvoidingView, Platform, Alert, Keyboard,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
@@ -26,6 +26,7 @@ import {
   getChat, sendChat, uploadChatMedia, deleteChatMessage, pingPresence, sendTyping,
 } from '../../src/api/social';
 import { subscribeDM } from '../../src/services/realtime';
+import { setActiveChat } from '../../src/notifications';
 import { getSession, subscribeSession } from '../../src/services/session';
 import EmptyState from '../../src/components/EmptyState';
 import ReportSheet from '../../src/components/ReportSheet';
@@ -61,6 +62,26 @@ function lastSeenLabel(ts, t, lang) {
 export default function ChatScreen() {
   const router = useRouter();
   const { t, lang } = useLanguage();
+  const insets = useSafeAreaInsets();
+
+  // Bu sohbet açıkken o kişiden gelen bildirim GÖSTERİLMİYOR — mesaj zaten
+  // ekranda beliriyor. Temizlik şart: ekran kapandıktan sonra da susturmak
+  // gerçek bildirimleri kaybettirirdi.
+  useEffect(() => {
+    setActiveChat(other);
+    return () => setActiveChat(null);
+  }, [other]);
+
+  // Klavye acikken alt guvenli alan dolgusu KALDIRILMALI: KeyboardAvoidingView
+  // zaten klavye yuksekligi kadar itiyor, ustune ana ekran cizgisi payini da
+  // eklersek arada bosluk kaliyor.
+  const [kbVisible, setKbVisible] = useState(false);
+  useEffect(() => {
+    const show = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', () => setKbVisible(true));
+    const hide = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide', () => setKbVisible(false));
+    return () => { show.remove(); hide.remove(); };
+  }, []);
+
   const { uid } = useLocalSearchParams();
   const other = String(uid || '');
 
@@ -148,6 +169,7 @@ export default function ChatScreen() {
         setCid(r?.cid || null);
         setOtherReadAt(r?.otherReadAt || 0);
         setPresence(r?.presence ?? null);
+        if (r?.otherTyping) setTypingUntil(Date.now() + 5000);
         setError(null);
       } catch (e) {
         if (alive) setError(e?.code || 'UNKNOWN');
@@ -200,6 +222,11 @@ export default function ChatScreen() {
         (r?.messages || []).forEach(addMessage);
         if (r?.otherReadAt) setOtherReadAt((c) => Math.max(c, r.otherReadAt));
         if (r?.presence !== undefined) setPresence(r.presence);
+        // YALNIZCA Pusher YOKKEN: Pusher bagliyken yoklama 20 saniyede bir
+        // donuyor ve taze bir "yaziyor" durumunu yanlislikla silebilirdi.
+        if (!liveRef.current) {
+          setTypingUntil(r?.otherTyping ? Date.now() + 5000 : 0);
+        }
       } catch { /* cevrimdisi — sonraki turda duzelir */ }
     };
     const id = setInterval(tick, liveRef.current ? 20000 : 4000);
@@ -432,7 +459,14 @@ export default function ChatScreen() {
             }
           />
 
-          <View style={styles.composer}>
+          {/* ALT GUVENLI ALAN: SafeAreaView yalnizca ust kenari isliyor
+              (edges={['top']}) cunku liste tepeye kadar uzanmali. Alt kenar
+              burada elle veriliyor — verilmezse gonderme dugmesi ana ekran
+              cizgisinin altinda kaliyordu. */}
+          <View style={[
+            styles.composer,
+            { paddingBottom: kbVisible ? spacing.sm : Math.max(insets.bottom, spacing.sm) },
+          ]}>
             <Pressable
               style={({ pressed }) => [styles.attachBtn, pressed && PRESSED]}
               onPress={pickAndSend}

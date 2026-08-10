@@ -4,7 +4,7 @@ import { rateLimit, tooManyRequests } from '../../../lib/rate-limit';
 import { validateFreeText } from '../../../lib/content-filter';
 import { areFriends, getHiddenUids, getProfile } from '../../../lib/social-store';
 import {
-  convId, appendMessage, getMessages, markRead, deleteMessage, getReadAt, MAX_TEXT,
+  convId, appendMessage, getMessages, markRead, deleteMessage, getReadAt, isTyping, MAX_TEXT,
 } from '../../../lib/chat-store';
 import { triggerMessage, triggerDelete, triggerRead } from '../../../lib/pusher-server';
 import { touchPresence, getPresence } from '../../../lib/presence';
@@ -62,12 +62,13 @@ export async function GET(request) {
   if (deny) return NextResponse.json({ error: deny }, { status: 403 });
 
   const cid = convId(user.uid, other);
-  const [messages, profile, otherReadAt, presence] = await Promise.all([
+  const [messages, profile, otherReadAt, presence, otherTyping] = await Promise.all([
     getMessages(cid, { before, after }),
     getProfile(other).catch(() => null),
     // KARŞI TARAFIN okuma zamanı — kendi mesajlarıma "görüldü" koymak için.
     getReadAt(cid, other),
     getPresence(other),
+    isTyping(cid, other),
   ]);
 
   // Geçmişi okumak = okundu. Sayfalama isteklerinde de zararsız: zaten
@@ -84,6 +85,8 @@ export async function GET(request) {
     cid,
     messages,
     otherReadAt,
+    // Pusher yoksa yoklama bunu okuyor.
+    otherTyping,
     // `null` = kullanıcı durumunu paylaşmıyor (gizlilik ayarı kapalı)
     presence,
     other: profile ? {

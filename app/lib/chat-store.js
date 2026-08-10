@@ -37,6 +37,7 @@ const metaKey = (cid)       => `dm_meta:${cid}`;
 const userKey = (uid)       => `user_dms:${uid}`;
 const readKey = (cid, uid)  => `dm_read:${cid}:${uid}`;
 const delKey  = (cid)       => `dm_deleted:${cid}`;
+const typingKey = (cid, uid) => `dm_typing:${cid}:${uid}`;
 
 /**
  * İki uid'den kararlı bir konuşma kimliği üretir.
@@ -221,4 +222,25 @@ export async function markRead(cid, uid) {
 export async function getReadAt(cid, uid) {
   const r = await redisCmd(['GET', readKey(cid, uid)]);
   return Number(r) || 0;
+}
+
+// ── Yazıyor durumu ──
+//
+// KENDİNİ SİLEN bir anahtar (5 sn TTL) — kalıcı bir kayıt DEĞİL. Önce
+// hiçbir yere yazmıyordu ve yalnızca Pusher kanalından geçiyordu; Pusher
+// yapılandırılmamış kurulumlarda özellik tamamen ölüydü. Kısa ömürlü bir
+// anahtar, yedek yoklamanın da okuyabilmesini sağlıyor.
+//
+// "Kimin ne zaman yazdığı" saklanmıyor: anahtar 5 saniyede kendiliğinden
+// yok oluyor ve geçmişi tutulmuyor.
+const TYPING_TTL_SEC = 5;
+
+export async function setTyping(cid, uid) {
+  await redisCmd(['SET', typingKey(cid, uid), '1', 'EX', String(TYPING_TTL_SEC)]);
+}
+
+/** Karşı taraf şu an yazıyor mu? */
+export async function isTyping(cid, uid) {
+  const r = await redisCmd(['GET', typingKey(cid, uid)]);
+  return r === "1";
 }

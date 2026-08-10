@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { verifyMobileToken } from '../../../../lib/mobile-auth';
 import { rateLimit, tooManyRequests } from '../../../../lib/rate-limit';
 import { areFriends, getHiddenUids } from '../../../../lib/social-store';
-import { convId } from '../../../../lib/chat-store';
+import { convId, setTyping } from '../../../../lib/chat-store';
 import { triggerTyping } from '../../../../lib/pusher-server';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -44,6 +44,9 @@ export async function POST(request) {
     return NextResponse.json({ error: 'NOT_FRIENDS' }, { status: 403 });
   }
 
-  await triggerTyping(convId(user.uid, other), user.uid);
+  const cid = convId(user.uid, other);
+  // İKİ YOL BİRDEN: Pusher anlık teslim için, Redis anahtarı yedek yoklama
+  // için. Pusher yapılandırılmamışsa ikincisi devreye giriyor.
+  await Promise.all([triggerTyping(cid, user.uid), setTyping(cid, user.uid)]);
   return NextResponse.json({ ok: true });
 }

@@ -136,6 +136,7 @@ const STRINGS = {
     'stats.genreTitle': 'Tür dağılımın',
     'stats.emptyTitle': 'Henüz veri yok',
     'stats.emptyText': 'Biraz oyun keşfet, kaydır ve listeler oluştur — haftalık raporun burada oluşacak.',
+    'stats.startBrowsing': 'Oyunlara göz at',
     'stats.startSwiping': 'Kaydırarak başla',
     'stats.share': 'Paylaş',
     'stats.decisions': 'karar verdin',
@@ -153,6 +154,8 @@ const STRINGS = {
     // ── Mesajlar ──
     'msg.title': 'Mesajlar',
     'set.language': 'Dil',
+    'soc.showPresence': 'Çevrimiçi durumum',
+    'soc.showPresenceDesc': 'Arkadaşların çevrimiçi olduğunu ve son görülme zamanını görebilir.',
     'msg.sharedReel': 'Video paylaştı',
     'share.title': 'Arkadaşa gönder',
     'share.send': 'Gönder',
@@ -584,6 +587,7 @@ const STRINGS = {
     'stats.genreTitle': 'Your genre mix',
     'stats.emptyTitle': 'Nothing to show yet',
     'stats.emptyText': 'Discover some games, swipe and build lists — your weekly report will appear here.',
+    'stats.startBrowsing': 'Browse games',
     'stats.startSwiping': 'Start swiping',
     'stats.share': 'Share',
     'stats.decisions': 'decisions made',
@@ -601,6 +605,8 @@ const STRINGS = {
     // ── Messages ──
     'msg.title': 'Messages',
     'set.language': 'Language',
+    'soc.showPresence': 'Online status',
+    'soc.showPresenceDesc': 'Friends can see when you are online and your last seen time.',
     'msg.sharedReel': 'Shared a video',
     'share.title': 'Send to a friend',
     'share.send': 'Send',

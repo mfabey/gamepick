@@ -25,7 +25,7 @@ import { useDismissed } from '../../src/hooks/useDismissed';
 import { useForYouFeed } from '../../src/hooks/useForYouFeed';
 import { recordDismiss } from '../../src/services/dismissStore';
 import GamePostCard from '../../src/components/GamePostCard';
-import SwipeGlowButton from '../../src/components/SwipeGlowButton';
+import MessagesButton from '../../src/components/MessagesButton';
 import { fetchForYouCandidates } from '../../src/api/recommend';
 import { genreSlugsFor, rankCandidates } from '../../src/services/recommend';
 import { useTabPressAction, scrollRefToTop } from '../../src/hooks/useTabPressAction';
@@ -153,15 +153,20 @@ export default function HomeScreen() {
   const header = (
     <View style={styles.headerWrap}>
 
-        {/* ── Üst: marka (ortalı) + kaydırarak keşif ──
+        {/* ── Üst: marka (ortalı) + mesajlar ──
             Marka ORTADA kalsın diye ikon akışa girmiyor, mutlak konumlu.
-            Aksi hâlde marka sola kayardı. */}
+            Aksi hâlde marka sola kayardı.
+
+            BURASI ÖNCE KAYDIRARAK KEŞİF (swipe) GİRİŞİYDİ. Arşive alındı:
+            eşleştirme mantığı kullanıcı sayısı arttığında anlam kazanacak,
+            boş havuzda kaydırmak kimseye bir şey vermiyordu. Ekran ve rota
+            duruyor, yalnızca giriş noktası kaldırıldı. */}
         <View style={styles.topBar}>
           <Text style={styles.brand}>GAMERISEN</Text>
           <View style={styles.topRight}>
-            <SwipeGlowButton
-              onPress={() => router.push('/swipe')}
-              accessibilityLabel={t('swipe.entry')}
+            <MessagesButton
+              onPress={() => router.push('/messages')}
+              accessibilityLabel={t('msg.title')}
             />
           </View>
         </View>
@@ -321,9 +326,15 @@ const styles = StyleSheet.create({
   // iki sütunlu ızgara bitişik duruyordu, ızgara o bölümün devamı gibi
   // görünüyordu. 26 = bölümler arası boşlukla aynı ritim.
   headerWrap: { paddingBottom: 26 },
-  topBar: { alignItems: 'center', paddingHorizontal: spacing.lg, paddingTop: 6, paddingBottom: 4, justifyContent: 'center' },
+  // Dikey dolgu 6/4 idi ve 40px ikon bandı taşırıyordu; marka ile ikon
+  // birbirine değiyordu. Bant ikonun boyuna göre açıldı.
+  topBar: {
+    alignItems: 'center', justifyContent: 'center',
+    paddingHorizontal: spacing.lg, paddingTop: 10, paddingBottom: 10,
+    minHeight: 52,
+  },
   // İkon akıştan çıkarıldı: normal akışta olsaydı marka ortadan kayardı.
-  topRight: { position: 'absolute', right: spacing.lg - 4, top: 2 },
+  topRight: { position: 'absolute', right: spacing.lg - 6, top: 6 },
   brand: { fontSize: type.headline, fontWeight: '900', color: colors.text, letterSpacing: 1.5 },
 
   // Arama artık hero'nun içinde değil, doğrudan başlıkta duruyor — yatay

@@ -44,6 +44,7 @@ import { getMyProfile, getFriends, setAvatar as apiSetAvatar } from '../../src/a
 import IconButton from '../../src/components/IconButton';
 import { useTabPressAction, scrollRefToTop } from '../../src/hooks/useTabPressAction';
 import { AVATAR_PRESET_IDS, getAvatarPreset } from '../../src/utils/avatar';
+import { SettingsGroup, SettingsRow } from '../../src/components/SettingsList';
 
 export default function ProfileScreen() {
   // Sekmeye tekrar basınca listeyi başa sar (iOS'ta beklenen davranış)
@@ -270,83 +271,59 @@ export default function ProfileScreen() {
                 onPress={() => router.push('/lists')} />
         </View>
 
-        {/* Bağlı mağazalar — aynı grubun devamı, ayrı görsel dil YOK.
-            Eskiden kesikli çerçeveli düğmelerdi ve sayfadaki hiçbir şeye
-            benzemiyorlardı. */}
-        <View style={[styles.card, { marginTop: 10 }]}>
-          {locked ? (
-            <Pressable style={({ pressed }) => [styles.row, pressed && PRESSED]} onPress={() => router.push('/account')}>
-              <View style={styles.rowIcon}><Ionicons name="lock-closed-outline" size={19} color={colors.text2} /></View>
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <Text style={styles.rowLabel}>{t('prof.lockCta')}</Text>
-                <Text style={styles.rowSub} numberOfLines={2}>{t('prof.connectHint')}</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.text3} />
-            </Pressable>
-          ) : (
-            <>
-              {steamAccounts.map((acc, i) => (
-                <View key={acc.steamId}>
-                  {i > 0 && <Div />}
-                  <View style={styles.row}>
-                    {acc.avatar ? (
-                      <Image source={acc.avatar} style={styles.storeAvatar} contentFit="cover" />
-                    ) : (
-                      <View style={[styles.storeAvatar, styles.avatarFallback, { backgroundColor: colors.steam }]}>
-                        <Text style={styles.avatarInitial}>{acc.name?.slice(0, 1).toUpperCase()}</Text>
-                      </View>
-                    )}
-                    <View style={{ flex: 1, minWidth: 0 }}>
-                      <Text style={styles.rowLabel} numberOfLines={1}>{acc.name}</Text>
-                      <Text style={styles.rowSub}>Steam · {t('auth.connected')}</Text>
-                    </View>
-                    <IconButton icon="close" size={18} color={colors.text3} onPress={() => logoutSteam(acc.steamId)} />
-                  </View>
-                </View>
-              ))}
-              {steamAccounts.length > 0 && <Div />}
+        {/* Bağlı hesaplar — ayarlar listesiyle AYNI görsel dil.
+            Kontur simge, içeriden ayırıcı, bölüm başlığı yok
+            (bkz. components/SettingsList.jsx). */}
+        {locked ? (
+          <SettingsGroup>
+            <SettingsRow
+              icon="lock-closed-outline"
+              label={t('prof.lockCta')}
+              desc={t('prof.connectHint')}
+              onPress={() => router.push('/account')}
+            />
+          </SettingsGroup>
+        ) : (
+          <SettingsGroup>
+            {steamAccounts.map((acc) => (
+              <SettingsRow
+                key={acc.steamId}
+                icon="logo-steam"
+                label={acc.name}
+                desc={`Steam · ${t('auth.connected')}`}
+                right={(
+                  <IconButton icon="close" size={18} color={colors.text3}
+                              onPress={() => logoutSteam(acc.steamId)} />
+                )}
+              />
+            ))}
 
-              <Pressable style={({ pressed }) => [styles.row, pressed && PRESSED]} disabled={busy} onPress={() => doLogin(loginSteam)}>
-                <View style={styles.rowIcon}>
-                  {busy ? <ActivityIndicator size="small" color={colors.steam} />
-                        : <Ionicons name="logo-steam" size={19} color={colors.steam} />}
-                </View>
-                <Text style={styles.rowLabel}>
-                  {steamAccounts.length > 0 ? t('auth.addSteam') : t('auth.connectSteam')}
-                </Text>
-                <Ionicons name="chevron-forward" size={18} color={colors.text3} />
-              </Pressable>
+            <SettingsRow
+              icon="add-circle-outline"
+              label={steamAccounts.length > 0 ? t('auth.addSteam') : t('auth.connectSteam')}
+              onPress={busy ? undefined : () => doLogin(loginSteam)}
+              disabled={busy}
+              right={busy ? <ActivityIndicator size="small" color={colors.steam} /> : undefined}
+            />
 
-              <Div />
-
-              {xbox ? (
-                <View style={styles.row}>
-                  {xbox.avatar ? (
-                    <Image source={xbox.avatar} style={styles.storeAvatar} contentFit="cover" />
-                  ) : (
-                    <View style={[styles.storeAvatar, styles.avatarFallback, { backgroundColor: 'rgba(16,124,16,0.3)' }]}>
-                      <Ionicons name="logo-xbox" size={19} color={colors.xbox} />
-                    </View>
-                  )}
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={styles.rowLabel} numberOfLines={1}>{xbox.gamertag}</Text>
-                    <Text style={styles.rowSub}>Xbox · {t('auth.connected')}</Text>
-                  </View>
-                  <IconButton icon="close" size={18} color={colors.text3} onPress={logoutXbox} />
-                </View>
-              ) : (
-                <Pressable style={({ pressed }) => [styles.row, pressed && PRESSED]} disabled={busy} onPress={() => doLogin(loginXbox)}>
-                  <View style={styles.rowIcon}>
-                    {busy ? <ActivityIndicator size="small" color={colors.xbox} />
-                          : <Ionicons name="logo-xbox" size={19} color={colors.xbox} />}
-                  </View>
-                  <Text style={styles.rowLabel}>{t('auth.connectXbox')}</Text>
-                  <Ionicons name="chevron-forward" size={18} color={colors.text3} />
-                </Pressable>
-              )}
-            </>
-          )}
-        </View>
+            {xbox ? (
+              <SettingsRow
+                icon="logo-xbox"
+                label={xbox.gamertag}
+                desc={`Xbox · ${t('auth.connected')}`}
+                right={<IconButton icon="close" size={18} color={colors.text3} onPress={logoutXbox} />}
+              />
+            ) : (
+              <SettingsRow
+                icon="logo-xbox"
+                label={t('auth.connectXbox')}
+                onPress={busy ? undefined : () => doLogin(loginXbox)}
+                disabled={busy}
+                right={busy ? <ActivityIndicator size="small" color={colors.xbox} /> : undefined}
+              />
+            )}
+          </SettingsGroup>
+        )}
       </ScrollView>
 
       {/* ── Avatar seçici ── */}
@@ -586,22 +563,8 @@ const styles = StyleSheet.create({
   tileN: { marginTop: 1, color: colors.text3, fontSize: type.caption2 },
   tileNSpacer: { height: 14 },
 
-  card: {
-    backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1,
-    borderRadius: radius.lg, overflow: 'hidden',
-  },
   div: { height: 1, backgroundColor: colors.cardBorder, marginLeft: 56 },
 
-  row: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    minHeight: 56, paddingHorizontal: 14, paddingVertical: 10,
-  },
-  rowIcon: { width: 30, alignItems: 'center' },
-  rowLabel: { flex: 1, fontSize: type.subhead, fontWeight: '600', color: colors.text },
-  rowSub: { fontSize: type.caption, color: colors.text3, marginTop: 2 },
-  storeAvatar: { width: 30, height: 30, borderRadius: 15 },
-  avatarFallback: { alignItems: 'center', justifyContent: 'center' },
-  avatarInitial: { color: '#fff', fontWeight: '800', fontSize: type.footnote },
 
   betaChip: {
     paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.sm,

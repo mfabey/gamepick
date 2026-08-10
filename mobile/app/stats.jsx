@@ -90,14 +90,18 @@ function StatsScreenContent() {
         )}
       </View>
 
+      {/* Swipe arşive alındı; boş durum artık oyun listesine yönlendiriyor —
+          rapor için gereken sinyal oradan da toplanıyor.
+          Yorum ÜÇLÜNÜN ÜSTÜNDE: ne öznitelik listesinin içine ne de üçlünün
+          dalına konulabiliyor, ikisi de ifade bağlamı. */}
       {!report.hasActivity ? (
         <EmptyState
           icon="stats-chart-outline"
           title={t('stats.emptyTitle')}
           text={t('stats.emptyText')}
-          actionLabel={t('stats.startSwiping')}
-          actionIcon="layers"
-          onAction={() => router.replace('/swipe')}
+          actionLabel={t('stats.startBrowsing')}
+          actionIcon="search"
+          onAction={() => router.replace('/games')}
         />
       ) : (
         <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
@@ -236,7 +240,7 @@ const styles = StyleSheet.create({
   saleSide: { alignItems: 'flex-end' },
   saleSideNum: { color: colors.text, fontSize: type.headline, fontWeight: '900' },
   saleSideLabel: { color: colors.text2, fontSize: type.caption, fontWeight: '600' },
-  saleSideMeta: { color: colors.text3, fontSize: type.caption2, marginTop: 5 },
+  saleSideMeta: { color: colors.text3, fontSize: type.caption2, marginTop: 5 },
   cta: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     height: 50, paddingHorizontal: 22, borderRadius: radius.lg,

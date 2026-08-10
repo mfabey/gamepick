@@ -17,6 +17,7 @@ import { getPrivacy, setPrivacy, getBlocked, unblockUser } from '../src/api/soci
 import { colors, radius, spacing, PRESSED, type } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
 import { getAvatarPreset } from '../src/utils/avatar';
+import { SettingsGroup, SettingsRow } from '../src/components/SettingsList';
 
 export default function SocialSettingsScreen() {
   const router = useRouter();
@@ -86,28 +87,47 @@ export default function SocialSettingsScreen() {
         <View style={styles.center}><ActivityIndicator color={colors.accent} /></View>
       ) : (
         <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
-          <View style={styles.card}>
-            <View style={styles.switchRow}>
-              <Text style={styles.switchLabel}>{t('soc.shareActivity')}</Text>
-              <Switch
-                value={!!privacy.shareActivity}
-                onValueChange={(v) => toggle('shareActivity', v)}
-                trackColor={{ false: colors.cardBorder, true: colors.accent }}
-                thumbColor="#fff"
-              />
-            </View>
-            <View style={styles.divider} />
-            <View style={styles.switchRow}>
-              <Text style={styles.switchLabel}>{t('soc.discoverable')}</Text>
-              <Switch
-                value={!!privacy.discoverable}
-                onValueChange={(v) => toggle('discoverable', v)}
-                trackColor={{ false: colors.cardBorder, true: colors.accent }}
-                thumbColor="#fff"
-              />
-            </View>
-          </View>
-
+          <SettingsGroup>
+            <SettingsRow
+              icon="pulse-outline"
+              label={t('soc.shareActivity')}
+              right={(
+                <Switch
+                  value={!!privacy.shareActivity}
+                  onValueChange={(v) => toggle('shareActivity', v)}
+                  trackColor={{ false: colors.cardBorder, true: colors.accent }}
+                  thumbColor="#fff"
+                />
+              )}
+            />
+            <SettingsRow
+              icon="search-outline"
+              label={t('soc.discoverable')}
+              right={(
+                <Switch
+                  value={!!privacy.discoverable}
+                  onValueChange={(v) => toggle('discoverable', v)}
+                  trackColor={{ false: colors.cardBorder, true: colors.accent }}
+                  thumbColor="#fff"
+                />
+              )}
+            />
+            {/* Sunucu tarafi bu ayari zaten okuyordu ama arayuzde anahtari
+                yoktu — kullanici cevrimici gorunmeyi kapatamiyordu. */}
+            <SettingsRow
+              icon="ellipse-outline"
+              label={t('soc.showPresence')}
+              desc={t('soc.showPresenceDesc')}
+              right={(
+                <Switch
+                  value={!!privacy.showPresence}
+                  onValueChange={(v) => toggle('showPresence', v)}
+                  trackColor={{ false: colors.cardBorder, true: colors.accent }}
+                  thumbColor="#fff"
+                />
+              )}
+            />
+          </SettingsGroup>
           <Text style={styles.sectionLabel}>{t('soc.blocked')}</Text>
           {blocked === null ? null : blocked.length === 0 ? (
             <Text style={styles.emptyText}>{t('soc.noBlocked')}</Text>
@@ -170,9 +190,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card, borderRadius: radius.lg,
     borderWidth: 1, borderColor: colors.cardBorder, paddingHorizontal: 15,
   },
-  switchRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14 },
-  switchLabel: { flex: 1, color: colors.text, fontSize: type.subhead, fontWeight: '600' },
-  divider: { height: 1, backgroundColor: colors.cardBorder },
+  // Iceriden: avatar sutununu gectikten sonra basliyor — ayar listesiyle
+  // ayni dil (bkz. components/SettingsList.jsx).
+  divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.cardBorder, marginLeft: 60 },
 
   sectionLabel: {
     color: colors.text3, fontSize: type.caption, fontWeight: '800',
