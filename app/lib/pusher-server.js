@@ -129,3 +129,19 @@ export async function triggerTyping(cid, byUid) {
     return false;
   }
 }
+
+/**
+ * Beğeni değişimini kanala bildirir.
+ * `by` alanı ŞART — kanal iki taraflı; kimin beğendiğini yazmazsak istemci
+ * kendi olayını görüp durumu iki kez çevirir.
+ */
+export async function triggerLike(cid, msgId, likes, byUid) {
+  const p = getClient();
+  if (!p) return false;
+  try {
+    await p.trigger(dmChannel(cid), 'like', { id: msgId, likes, by: byUid });
+    return true;
+  } catch {
+    return false;
+  }
+}

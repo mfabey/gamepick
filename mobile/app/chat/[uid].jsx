@@ -24,12 +24,14 @@ import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 
 import {
   getChat, sendChat, uploadChatMedia, deleteChatMessage, pingPresence, sendTyping,
+  likeChatMessage,
 } from '../../src/api/social';
 import { subscribeDM } from '../../src/services/realtime';
 import { setActiveChat } from '../../src/notifications';
 import { getSession, subscribeSession } from '../../src/services/session';
 import EmptyState from '../../src/components/EmptyState';
 import ReportSheet from '../../src/components/ReportSheet';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { getAvatarPreset } from '../../src/utils/avatar';
 import { colors, radius, spacing, type, PRESSED } from '../../src/theme';
 import { useLanguage } from '../../src/context/LanguageContext';
@@ -64,26 +66,29 @@ export default function ChatScreen() {
   const { t, lang } = useLanguage();
   const insets = useSafeAreaInsets();
 
+  const { uid } = useLocalSearchParams();
+  const other = String(uid || '');
+
   // Bu sohbet açıkken o kişiden gelen bildirim GÖSTERİLMİYOR — mesaj zaten
   // ekranda beliriyor. Temizlik şart: ekran kapandıktan sonra da susturmak
   // gerçek bildirimleri kaybettirirdi.
+  //
+  // `other` TANIMINDAN SONRA olmak zorunda: önce yukarıdaydı ve `other`'a
+  // tanımlanmadan erişiyordu (geçici ölü bölge hatası).
   useEffect(() => {
     setActiveChat(other);
     return () => setActiveChat(null);
   }, [other]);
 
-  // Klavye acikken alt guvenli alan dolgusu KALDIRILMALI: KeyboardAvoidingView
-  // zaten klavye yuksekligi kadar itiyor, ustune ana ekran cizgisi payini da
-  // eklersek arada bosluk kaliyor.
+  // Klavye açıkken alt güvenli alan dolgusu KALDIRILMALI: KeyboardAvoidingView
+  // zaten klavye yüksekliği kadar itiyor, üstüne ana ekran çizgisi payını da
+  // eklersek arada boşluk kalıyor.
   const [kbVisible, setKbVisible] = useState(false);
   useEffect(() => {
     const show = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', () => setKbVisible(true));
     const hide = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide', () => setKbVisible(false));
     return () => { show.remove(); hide.remove(); };
   }, []);
-
-  const { uid } = useLocalSearchParams();
-  const other = String(uid || '');
 
   const [session, setSession] = useState(() => getSession());
   useEffect(() => subscribeSession(() => setSession(getSession())), []);
@@ -132,6 +137,32 @@ export default function ChatScreen() {
       m.id === id ? { id: m.id, from: m.from, at: m.at, deleted: true } : m
     )));
   }, []);
+
+  /**
+   * Beğeniyi yerel olarak çevirir — sunucu yanıtını beklemeden.
+   * Çift dokunuş anlık tepki vermeli; beğeni yıkıcı olmayan bir eylem,
+   * ters giderse sunucunun döndürdüğü liste durumu düzeltiyor.
+   */
+  const toggleLikeLocal = useCallback((id, likes) => {
+    setMsgs((cur) => cur.map((m) => (m.id === id ? { ...m, likes } : m)));
+  }, []);
+
+  const onLike = useCallback(async (msg) => {
+    if (!msg?.id || msg.deleted || String(msg.id).startsWith('tmp-')) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+
+    const cur = Array.isArray(msg.likes) ? msg.likes : [];
+    const varMi = cur.includes(myUid);
+    toggleLikeLocal(msg.id, varMi ? cur.filter((u) => u !== myUid) : [...cur, myUid]);
+
+    try {
+      const r = await likeChatMessage(other, msg.id);
+      if (Array.isArray(r?.likes)) toggleLikeLocal(msg.id, r.likes);
+    } catch {
+      // Sunucu reddetti — yerel değişikliği geri al.
+      toggleLikeLocal(msg.id, cur);
+    }
+  }, [myUid, other, toggleLikeLocal]);
 
   const confirmDelete = useCallback((msg) => {
     // Yalnızca KENDİ mesajın; sunucu da ayrıca doğruluyor ama kullanıcıya
@@ -196,12 +227,15 @@ export default function ChatScreen() {
       (p) => { if (p?.by && p.by !== myUid) setOtherReadAt((cur) => Math.max(cur, p.at || 0)); },
       // Kendi yazma olayimi ele: kanal iki tarafli.
       (p) => { if (p?.by && p.by !== myUid) setTypingUntil(Date.now() + 4000); },
+      // Beğeni HER İKİ TARAFTAN da gelebilir; kendi olayımı elemiyorum
+      // çünkü sunucunun döndürdüğü liste zaten doğru olan.
+      (p) => { if (p?.id && Array.isArray(p.likes)) toggleLikeLocal(p.id, p.likes); },
     ).then((r) => {
       liveRef.current = !!r?.live;
       if (alive) off = r?.off; else r?.off?.();
     });
     return () => { alive = false; off?.(); };
-  }, [cid, addMessage, markDeleted, myUid]);
+  }, [cid, addMessage, markDeleted, myUid, toggleLikeLocal]);
 
   // ── YEDEK YOKLAMA ──
   // Sohbet TEK BIR DIS SERVISE bagimli olmamali. Pusher yapilandirilmamissa
@@ -273,16 +307,43 @@ export default function ChatScreen() {
     }
   }, [other]);
 
+  /**
+   * İYİMSER GÖNDERİM.
+   *
+   * Metin ANINDA temizleniyor ve baloncuk hemen listeye giriyor; sunucu
+   * yanıtı beklenmiyor. Önce beklenirdi ve yazdığın şey kutuda asılı kalıyordu
+   * — mesajlaşmada en çok hissedilen yavaşlık buydu.
+   *
+   * SİLMEDE İYİMSER DAVRANMIYORUZ ama göndermede davranıyoruz. Fark şu:
+   * silme yıkıcı ve geri alınamaz, "sildim sandım" en kötü hata. Gönderim
+   * ise başarısız olursa baloncuk EKRANDA KALIYOR ve hata işareti alıyor —
+   * kullanıcı ne olduğunu görüyor, hiçbir şey kaybolmuyor.
+   */
   const send = useCallback(async () => {
     const body = text.trim();
-    if (!body || sending) return;
-    setSending(true);
+    if (!body) return;
+
+    // Geçici kimlik: sunucu gerçeğini döndürünce bununla değiştiriliyor.
+    const tempId = 'tmp-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7);
+    const optimistic = { id: tempId, from: myUid, text: body, at: Date.now(), pending: true };
+
+    setText('');
+    addMessage(optimistic);
+    Haptics.selectionAsync().catch(() => {});
+
     try {
       const r = await sendChat(other, body);
-      setText('');
-      if (r?.message) addMessage(r.message);
-      Haptics.selectionAsync().catch(() => {});
+      // Geçici baloncuğu gerçeğiyle değiştir. Kaldırıp yeniden eklemek
+      // listede zıplama yaratırdı.
+      if (r?.message) {
+        setMsgs((cur) => cur.map((m) => (m.id === tempId ? r.message : m)));
+      }
     } catch (e) {
+      // Baloncuk KALIYOR, hata işaretiyle. Kaldırsaydık kullanıcı yazdığı
+      // metni de kaybederdi.
+      setMsgs((cur) => cur.map((m) => (
+        m.id === tempId ? { ...m, pending: false, failed: true } : m
+      )));
       // Sunucu kodlarını kullanıcı diline çeviriyoruz — ham kod göstermek
       // kullanıcıya hiçbir şey anlatmaz.
       const code = e?.code;
@@ -293,10 +354,8 @@ export default function ChatScreen() {
           : code === 'BLOCKED'        ? t('msg.blocked')
           : t('msg.sendFailed')
       );
-    } finally {
-      setSending(false);
     }
-  }, [text, sending, other, addMessage, t]);
+  }, [text, other, myUid, addMessage, t]);
 
   /**
    * Galeriden görsel seç, KÜÇÜLT, yükle, mesaj olarak gönder.
@@ -348,7 +407,8 @@ export default function ChatScreen() {
     } catch (e) {
       const code = e?.code;
       Alert.alert(
-        code === 'MEDIA_DISABLED' || code === 'STORAGE_DISABLED' ? t('msg.mediaOff')
+        code === 'VIDEO_DISABLED' ? t('msg.videoOff')
+          : code === 'MEDIA_DISABLED' || code === 'STORAGE_DISABLED' ? t('msg.mediaOff')
           : code === 'MEDIA_REJECTED'  ? t('msg.mediaRejected')
           // Video sınırı aştığında genel "çok büyük" mesajı yardımcı olmuyor —
           // kullanıcı ne yapacağını bilmeli: daha kısa klip.
@@ -445,6 +505,8 @@ export default function ChatScreen() {
                 mine={item.from === myUid}
                 seen={item.id === seenId}
                 onLongPress={() => confirmDelete(item)}
+                onLike={() => onLike(item)}
+                myUid={myUid}
                 onOpenShare={() => item.share?.appid && router.push({
                   pathname: '/game/[id]',
                   params: { id: `rawg_${item.share.appid}`, appid: item.share.appid, name: item.share.name, image: item.share.image },
@@ -514,7 +576,19 @@ export default function ChatScreen() {
   );
 }
 
-function Bubble({ msg, mine, seen, onLongPress, onOpenShare, t }) {
+function Bubble({ msg, mine, seen, onLongPress, onOpenShare, onLike, myUid, t }) {
+  // Çift dokunuş — React Native'de yerleşik değil, elle ölçülüyor. 280 ms:
+  // altında yanlışlıkla tetikleniyor, üstünde iki ayrı dokunuş gibi geliyor.
+  const lastTapRef = useRef(0);
+  const onTap = useCallback(() => {
+    const now = Date.now();
+    if (now - lastTapRef.current < 280) { lastTapRef.current = 0; onLike?.(); }
+    else lastTapRef.current = now;
+  }, [onLike]);
+
+  const likes = Array.isArray(msg.likes) ? msg.likes : [];
+  const liked = likes.includes(myUid);
+
   // Geri alınan mesaj listeden ÇIKMIYOR, yerinde bir iz bırakıyor — sıra ve
   // sayfalama bozulmasın, karşı taraf da bir şeyin geri alındığını görsün.
   if (msg.deleted) {
@@ -554,10 +628,15 @@ function Bubble({ msg, mine, seen, onLongPress, onOpenShare, t }) {
   const isVideo = !!msg.media?.type?.startsWith('video/');
 
   return (
+    // GİRİŞ ANİMASYONU sade: liste ters çevrilmiş, yönlü animasyonlar
+    // (FadeInDown gibi) çevrilmiş eksende ters görünüyor. Yönsüz belirme
+    // her iki eksende de doğru duruyor.
+    <Animated.View entering={FadeIn.duration(160)}>
     <Pressable
       style={[styles.bubbleRow, mine ? styles.rowMine : styles.rowTheirs]}
       onLongPress={mine ? onLongPress : undefined}
       delayLongPress={400}
+      onPress={onTap}
     >
       <View style={[
         styles.bubble,
@@ -582,8 +661,20 @@ function Bubble({ msg, mine, seen, onLongPress, onOpenShare, t }) {
       </View>
       {/* Goruldu YALNIZCA en yeni okunmus kendi mesajimda (bkz. seenId) —
           her okunmus mesaja koymak sohbeti isaret coplugune cevirir. */}
-      {seen ? <Text style={styles.seen}>{t('msg.seen')}</Text> : null}
+      {/* Kalp baloncuğun ALT KENARINA oturuyor, içine değil: metnin akışını
+          bozmuyor ve medya baloncuğunda da aynı yerde duruyor. */}
+      {likes.length > 0 ? (
+        <View style={[styles.heart, mine ? styles.heartMine : styles.heartTheirs]}>
+          <Ionicons name="heart" size={11} color={liked ? colors.accent : colors.text2} />
+        </View>
+      ) : null}
+
+      {/* Gönderiliyor / başarısız — iyimser gönderimin görünen tarafı. */}
+      {msg.pending ? <Text style={styles.state}>{t('msg.sending')}</Text> : null}
+      {msg.failed ? <Text style={[styles.state, styles.stateFail]}>{t('msg.notSent')}</Text> : null}
+      {seen && !msg.pending && !msg.failed ? <Text style={styles.seen}>{t('msg.seen')}</Text> : null}
     </Pressable>
+    </Animated.View>
   );
 }
 
@@ -631,6 +722,18 @@ const styles = StyleSheet.create({
   typing: { color: colors.green, fontWeight: '700' },
   // Goruldu isareti baloncugun ALTINDA ve saga dayali; icerigin parcasi degil.
   seen: { color: colors.text3, fontSize: type.caption2, marginTop: 3, marginRight: 4 },
+  state: { color: colors.text3, fontSize: type.caption2, marginTop: 3, marginRight: 4 },
+  stateFail: { color: colors.danger },
+  // Baloncuğun alt kenarına binen küçük madalyon.
+  heart: {
+    position: 'absolute', bottom: -7,
+    width: 20, height: 20, borderRadius: 10,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.bgElevated,
+    borderWidth: 1.5, borderColor: colors.bg,
+  },
+  heartMine:   { right: 8 },
+  heartTheirs: { left: 8 },
 
   listPad: { paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
 
@@ -640,7 +743,7 @@ const styles = StyleSheet.create({
   // SÜTUN, satır DEĞİL. Önce `row` idi ve "Görüldü" metni baloncuğun kardeşi
   // olduğu için altında değil YANINDA çiziliyordu (üstelik flex-end yüzünden
   // solunda). Sütunda baloncuk ve etiket alt alta, hizalama alignItems ile.
-  bubbleRow:  { flexDirection: 'column', marginBottom: 6 },
+  bubbleRow:  { flexDirection: 'column', marginBottom: 6, position: 'relative' },
   rowMine:    { alignItems: 'flex-end' },
   rowTheirs:  { alignItems: 'flex-start' },
 

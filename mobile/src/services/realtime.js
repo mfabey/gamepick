@@ -80,7 +80,7 @@ async function getClient() {
  *   KURMALI; aksi hâlde sohbet tek bir dış servise bağımlı kalır ve o servis
  *   yoksa mesajlar yalnızca ekran yeniden açılınca görünür.
  */
-export async function subscribeDM(cid, onMessage, onDelete, onRead, onTyping) {
+export async function subscribeDM(cid, onMessage, onDelete, onRead, onTyping, onLike) {
   const p = await getClient();
   if (!p) return { off: () => {}, live: false };
 
@@ -94,6 +94,7 @@ export async function subscribeDM(cid, onMessage, onDelete, onRead, onTyping) {
   if (onRead) ch.bind('read', onRead);
   // Yazıyor bilgisi. Kalıcı bir şey değil, kaçırılması zararsız.
   if (onTyping) ch.bind('typing', onTyping);
+  if (onLike) ch.bind('like', onLike);
 
   return {
     live: true,
@@ -103,6 +104,7 @@ export async function subscribeDM(cid, onMessage, onDelete, onRead, onTyping) {
         if (onDelete) ch.unbind('delete', onDelete);
         if (onRead) ch.unbind('read', onRead);
         if (onTyping) ch.unbind('typing', onTyping);
+        if (onLike) ch.unbind('like', onLike);
         p.unsubscribe(name);
       } catch { /* zaten kapanmış */ }
     },

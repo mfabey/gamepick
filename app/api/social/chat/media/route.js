@@ -93,6 +93,11 @@ export async function POST(request) {
 
   const verdict = await moderateMedia(bytes, type);
   if (!verdict.ok) {
+    // Video AYRI KOD: kullanıcıya "bu görsel gönderilemez" demek yanıltıcı
+    // olurdu — video reddedilmiyor, henüz denetlenemediği için kapalı.
+    if (verdict.reason === 'VIDEO_NOT_SUPPORTED') {
+      return NextResponse.json({ error: 'VIDEO_DISABLED' }, { status: 422 });
+    }
     return NextResponse.json(
       { error: 'MEDIA_REJECTED', reason: verdict.reason || null },
       { status: 422 },

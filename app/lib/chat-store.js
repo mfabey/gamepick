@@ -38,6 +38,7 @@ const userKey = (uid)       => `user_dms:${uid}`;
 const readKey = (cid, uid)  => `dm_read:${cid}:${uid}`;
 const delKey  = (cid)       => `dm_deleted:${cid}`;
 const typingKey = (cid, uid) => `dm_typing:${cid}:${uid}`;
+const likesKey  = (cid)      => `dm_likes:${cid}`;
 
 /**
  * İki uid'den kararlı bir konuşma kimliği üretir.
@@ -113,10 +114,14 @@ export async function appendMessage({ from, to, text, media, share }) {
  * @param {number} [before] bu zamandan ESKİ mesajlar (sayfalama)
  */
 export async function getMessages(cid, { before, after, limit = PAGE } = {}) {
-  // Mesajlar ve geri alınanlar TEK turda okunuyor.
-  const [raw, deleted] = await redisPipeline([
+  // Mesajlar, geri alınanlar ve beğeniler TEK turda okunuyor.
+  //
+  // Beğeniler TEK BİR HASH içinde (konuşma başına), mesaj başına ayrı anahtar
+  // değil: 50 mesaj için 50 ayrı okuma yapmak yerine tek HGETALL yetiyor.
+  const [raw, deleted, likeMap] = await redisPipeline([
     ['LRANGE', msgsKey(cid), '0', String(MAX_MESSAGES - 1)],
     ['SMEMBERS', delKey(cid)],
+    ['HGETALL', likesKey(cid)],
   ]) || [];
 
   if (!Array.isArray(raw)) return [];
@@ -134,7 +139,7 @@ export async function getMessages(cid, { before, after, limit = PAGE } = {}) {
     // sayfalamayı kaydırır ve arayüzde mesaj atlanmasına yol açar.
     gone.has(m.id)
       ? { id: m.id, from: m.from, at: m.at, deleted: true }
-      : m
+      : { ...m, likes: likesOf(likeMap, m.id) }
   ));
 }
 
@@ -243,4 +248,50 @@ export async function setTyping(cid, uid) {
 export async function isTyping(cid, uid) {
   const r = await redisCmd(['GET', typingKey(cid, uid)]);
   return r === "1";
+}
+
+/**
+ * Upstash HGETALL yanıtı dizi olarak gelebiliyor ([alan, değer, alan, değer]).
+ * İki biçimi de kabul ediyoruz; yalnızca nesne beklemek sessizce boş beğeni
+ * listesi döndürürdü.
+ */
+function likesOf(map, msgId) {
+  if (!map) return [];
+  let raw = null;
+  if (Array.isArray(map)) {
+    for (let i = 0; i < map.length; i += 2) if (map[i] === msgId) { raw = map[i + 1]; break; }
+  } else {
+    raw = map[msgId];
+  }
+  const arr = parseJSON(raw);
+  return Array.isArray(arr) ? arr : [];
+}
+
+/**
+ * Beğeniyi açar/kapatır.
+ *
+ * OKU-DEĞİŞTİR-YAZ yarışa açık ama konuşmada YALNIZCA İKİ KİŞİ var; aynı
+ * mesajı aynı anda beğenme olasılığı ihmal edilebilir ve sonucu da zararsız
+ * (bir beğeni kaybolur, veri bozulmaz). Atomik bir betik yazmak bu bedele
+ * değmiyor.
+ *
+ * @returns {Promise<{likes: string[], liked: boolean}>}
+ */
+export async function toggleLike(cid, msgId, uid) {
+  const raw = await redisCmd(['HGET', likesKey(cid), msgId]);
+  const cur = parseJSON(raw);
+  const list = Array.isArray(cur) ? cur : [];
+
+  const i = list.indexOf(uid);
+  if (i >= 0) list.splice(i, 1); else list.push(uid);
+
+  if (list.length) {
+    await redisCmd(['HSET', likesKey(cid), msgId, JSON.stringify(list)]);
+  } else {
+    // Boş kalan alanı SİL — beğenisi kalmayan mesajlar hash içinde
+    // birikirse okuma her seferinde büyür.
+    await redisCmd(['HDEL', likesKey(cid), msgId]);
+  }
+
+  return { likes: list, liked: list.includes(uid) };
 }

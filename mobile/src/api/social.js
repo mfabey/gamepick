@@ -142,6 +142,11 @@ export const getChat       = (withUid, before, after) =>
 export const sendChat      = (to, text, media, share) =>
   authed('/api/social/chat', { method: 'POST', body: { to, text, media, share } });
 
+// Mesaj beğenisini açar/kapatır. Sunucu güncel listeyi döndürüyor —
+// istemcinin kendi hesabını tutmasına gerek yok.
+export const likeChatMessage = (withUid, id) =>
+  authed('/api/social/chat/like', { method: 'POST', body: { with: withUid, id } });
+
 // Mesajı geri alır. Sunucu YALNIZCA gönderenin kendi mesajını silmesine izin
 // veriyor; başkasınınkinde NOT_OWNER döner.
 export const deleteChatMessage = (withUid, id) =>
