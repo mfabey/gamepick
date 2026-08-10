@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -18,6 +18,7 @@ import { loadOnboarding } from '../src/services/onboarding';
 import { initQueryCache } from '../src/services/queryCache';
 import { startSharedLinkWatcher } from '../src/services/sharedLink';
 import { startDmPushSync } from '../src/services/dmPush';
+import { useLastNotificationResponse } from 'expo-notifications';
 import FpsMeter from '../src/dev/FpsMeter';
 import { colors } from '../src/theme';
 
@@ -65,16 +66,43 @@ export default function RootLayout() {
     ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch(() => {});
   }, []);
 
-  // Bildirime dokununca ilgili oyuna git
+  // ── Bildirime dokunma ──
+  //
+  // Yönlendirme TEK BİR YERDE toplandı: hem uygulama açıkken gelen yanıt
+  // hem de KAPALIYKEN dokunulup açılan yanıt aynı işleve gidiyor.
+  //
+  // Önce yalnızca `data.slug` (istek listesi fiyat uyarısı) ele alınıyordu;
+  // mesaj bildirimleri `{ type: "dm", from }` gönderdiği için hiçbir şey
+  // yapmıyordu — dokunulunca uygulama açılıyor ama sohbete gitmiyordu.
+  const handleResponse = useCallback((resp) => {
+    const data = resp?.notification?.request?.content?.data;
+    if (!data) return;
+    if (data.type === 'dm' && data.from) {
+      router.push('/chat/' + String(data.from));
+      return;
+    }
+    if (data.slug) {
+      router.push({ pathname: '/game/[id]', params: { id: String(data.slug), name: data.name || '', slug: String(data.slug) } });
+    }
+  }, [router]);
+
+  // Uygulama AÇIKKEN dokunulan bildirim
   useEffect(() => {
-    const sub = Notifications.addNotificationResponseReceivedListener(resp => {
-      const data = resp?.notification?.request?.content?.data;
-      if (data?.slug) {
-        router.push({ pathname: '/game/[id]', params: { id: String(data.slug), name: data.name || '', slug: String(data.slug) } });
-      }
-    });
+    const sub = Notifications.addNotificationResponseReceivedListener(handleResponse);
     return () => sub.remove();
-  }, []);
+  }, [handleResponse]);
+
+  // Uygulama KAPALIYKEN dokunulan bildirim.
+  // Kanca aynı yanıtı vermeye devam ediyor; işlenen kimliği tutmazsak
+  // her çizimde yeniden yönlendirir ve kullanıcı ekrandan çıkamaz.
+  const sonYanit = useLastNotificationResponse();
+  const islenenRef = useRef(null);
+  useEffect(() => {
+    const id = sonYanit?.notification?.request?.identifier;
+    if (!id || islenenRef.current === id) return;
+    islenenRef.current = id;
+    handleResponse(sonYanit);
+  }, [sonYanit, handleResponse]);
 
   return (
     // Jest sistemi kökten sarmalanmalı — swipe (Faz 1) ve diğer jest tabanlı

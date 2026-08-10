@@ -27,7 +27,7 @@ import {
   likeChatMessage,
 } from '../../src/api/social';
 import { subscribeDM } from '../../src/services/realtime';
-import { setActiveChat } from '../../src/notifications';
+import { setActiveChat, dismissChatNotifications } from '../../src/notifications';
 import { getSession, subscribeSession } from '../../src/services/session';
 import EmptyState from '../../src/components/EmptyState';
 import ReportSheet from '../../src/components/ReportSheet';
@@ -77,6 +77,10 @@ export default function ChatScreen() {
   // tanımlanmadan erişiyordu (geçici ölü bölge hatası).
   useEffect(() => {
     setActiveChat(other);
+    // Bu kişiden gelen ESKİ bildirimleri merkezden düşür. Mesajı okumak
+    // bildirimi kendiliğinden kaldırmıyor; kullanıcı okuduktan sonra da
+    // bildirimi görmeye devam ediyordu.
+    dismissChatNotifications(other);
     return () => setActiveChat(null);
   }, [other]);
 

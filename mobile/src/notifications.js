@@ -75,3 +75,25 @@ export async function registerForPushToken() {
     return { error: 'token-failed', detail: e.message };
   }
 }
+
+// ── Okunan sohbetin bildirimlerini temizle ──
+//
+// Mesajı ekranda okumak bildirimi merkezden DÜŞÜRMÜYOR: iOS bildirimi
+// teslim edildiği anda merkeze koyuyor ve orada kalıyor. Kullanıcı mesajı
+// okuduktan sonra bildirimi görmeye devam ediyor — okunmamış bir şey
+// varmış gibi.
+//
+// YALNIZCA O KİŞİNİN bildirimleri düşürülüyor, hepsi değil: başka
+// sohbetlerden gelen okunmamış bildirimler durmalı.
+export async function dismissChatNotifications(uid) {
+  if (!uid) return;
+  try {
+    const list = await Notifications.getPresentedNotificationsAsync();
+    await Promise.all(list
+      .filter((x) => {
+        const d = x?.request?.content?.data || {};
+        return d.type === 'dm' && d.from === uid;
+      })
+      .map((x) => Notifications.dismissNotificationAsync(x.request.identifier)));
+  } catch { /* izin yoksa veya platform desteklemiyorsa sessiz geç */ }
+}
