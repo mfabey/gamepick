@@ -121,6 +121,25 @@ export const registerDmPush   = (token) =>
 export const unregisterDmPush = (token) =>
   authed('/api/social/push-token', { method: 'DELETE', body: { token } });
 
+// ── Doğrulanmış incelemeler ────────────────────────────────────────────────
+// SAAT İSTEMCİDEN GÖNDERİLMİYOR: sunucu Steam kütüphanesinden okuyor.
+// Özelliğin tüm değeri buradan geliyor.
+export const getGameReviews = (appid) =>
+  authed('/api/social/reviews?appid=' + encodeURIComponent(appid));
+
+export const writeReview = (appid, text, recommended) =>
+  authed('/api/social/reviews', { method: 'POST', body: { appid, text, recommended } });
+
+// Genel akış veya kendi incelemelerim.
+export const getReviewFeed = (mine = false) =>
+  authed('/api/social/reviews/feed' + (mine ? '?mine=1' : ''));
+
+// Yazabileceğim oyunlar — sayfanın boş görünmemesini sağlayan liste.
+export const getEligibleGames = () => authed('/api/social/reviews/eligible');
+
+export const removeReview = (appid) =>
+  authed('/api/social/reviews', { method: 'DELETE', body: { appid } });
+
 // ── Sohbet ──────────────────────────────────────────────────────────────────
 // Mesajlaşma YALNIZCA arkadaşlar arasında; sunucu NOT_FRIENDS ile reddediyor.
 export const getChatList   = ()  => authed('/api/social/chat/list');
