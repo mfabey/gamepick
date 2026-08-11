@@ -133,6 +133,7 @@ export default function RootLayout() {
                 <Stack.Screen name="steam-friends" />
                 <Stack.Screen name="game-cards" />
                 <Stack.Screen name="messages" />
+                <Stack.Screen name="reviews" />
                 <Stack.Screen name="chat/[uid]" />
                 <Stack.Screen name="settings" />
                 <Stack.Screen name="social-settings" />

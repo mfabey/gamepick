@@ -248,6 +248,10 @@ export default function ProfileScreen() {
                 locked={locked} onPress={go('/stats')} />
           <Tile icon="trophy-outline"      label={t('prof.gCards')}
                 locked={locked} onPress={go('/game-cards')} />
+          {/* İncelemeler — uygulamadaki tek kullanıcı üretimi içerik türü.
+              Oyun sayfalarında DEĞİL burada (bkz. app/reviews.jsx). */}
+          <Tile icon="chatbox-ellipses-outline" label={t('prof.gReviews')}
+                locked={locked} onPress={go('/reviews')} />
           <Tile icon="sparkles-outline"    label={t('prof.gDiscover')}
                 onPress={() => router.push('/discover')} />
         </View>
