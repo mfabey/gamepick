@@ -139,7 +139,12 @@ export default function HomeScreen() {
     [profile]
   );
   // Şeritte zaten gösterilenler akışta tekrarlanmasın
-  const excludeIds = useMemo(() => new Set(forYou.map((g) => String(g.id))), [forYou]);
+  // Şeritlerde gösterilen her şey akıştan elenir: aynı oyunu hem şeritte hem
+  // akışta görmek listeyi bozuk gösteriyor.
+  const excludeIds = useMemo(
+    () => new Set([...forYou, ...fresh, ...sale].map((g) => String(g.id))),
+    [forYou, fresh, sale]
+  );
   const { items: feedItems, loadMore, loadingMore } = useForYouFeed({
     enabled: true,
     slugs: feedSlugs,
@@ -193,11 +198,13 @@ export default function HomeScreen() {
   }, [friendGames, isCold, forYou]);
 
   // Lider olarak kullanılan liste akışa TEKRAR girmiyor.
+  // Yeni Çıkanlar ve İndirimdekiler AKIŞTAN ÇIKTI, kendi şeritlerine döndüler:
+  // ikisi de niyetle aranan bölümler ("indirime ne girmiş?") ve akışın içine
+  // dağılınca o niyet karşılanamıyordu. Akışa karışan tek şey trend — o zaten
+  // "şuna da bak" cinsinden, aranan bir şey değil.
   const highlights = useMemo(() => orderHighlights({
     trend: lead === 'trend' ? [] : trend,
-    new: fresh,
-    sale,
-  }), [lead, trend, fresh, sale]);
+  }), [lead, trend]);
 
   const feed = useMemo(() => {
     const hlIds = highlightIds(highlights);
@@ -328,6 +335,12 @@ export default function HomeScreen() {
         {lead === 'trend' && (
           <FadeIn delay={140}><Section title={t('home.trend')} games={trend} router={router} /></FadeIn>
         )}
+
+        {/* Yeni Çıkanlar ve İndirimdekiler LİDERİN ALTINDA, tam ağırlıkta.
+            Akışa karıştırılmışlardı; geri alındı çünkü ikisi de NİYETLE
+            aranıyor — "indirime ne girmiş" sorusunun akışta karşılığı yok. */}
+        <FadeIn delay={200}><Section title={t('home.new')} games={fresh} router={router} /></FadeIn>
+        <FadeIn delay={260}><Section title={t('home.sale')} games={sale} router={router} /></FadeIn>
     </View>
   );
 
