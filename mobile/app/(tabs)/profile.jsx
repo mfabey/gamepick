@@ -288,11 +288,15 @@ export default function ProfileScreen() {
         {/* Bağlı hesaplar — ayarlar listesiyle AYNI görsel dil.
             Kontur simge, içeriden ayırıcı, bölüm başlığı yok
             (bkz. components/SettingsList.jsx). */}
+        {/* KENDİ anahtarı var, prof.lockCta DEĞİL: o anahtar ProfileGate ve
+            kütüphane ekranında "hesap oluştur" anlamında kullanılıyor. Bu satır
+            mağaza bağlamayı anlatıyor; aynı metni paylaşmak, tepedeki hesap
+            kartıyla birebir aynı başlığın iki kez çıkmasına yol açıyordu. */}
         {locked ? (
           <SettingsGroup>
             <SettingsRow
               icon="lock-closed-outline"
-              label={t('prof.lockCta')}
+              label={t('prof.connectTitle')}
               desc={t('prof.connectHint')}
               onPress={() => router.push('/account')}
             />
