@@ -39,26 +39,29 @@ function isOwnBlob(url, uid) {
   return u.pathname.startsWith(`/dm/${uid}/`);
 }
 
+// KLIPY medya sunucuları — dokümanlarındaki ağ gereksinimleri listesi.
+// Tam eşitlik, sonek değil: `endsWith` kullansaydık `evil-static.klipy.com`
+// gibi bir ad da geçerdi.
+const GIF_HOSTS = new Set(['static.klipy.com', 'static1.klipy.com', 'static2.klipy.com']);
+
 /**
- * Adres Tenor CDN'inde mi?
+ * Adres GIF sağlayıcısının CDN'inde mi?
  *
  * `isOwnBlob` ile AYNI mantık: istemcinin gönderdiği serbest adres kabul
  * edilemez, yoksa sohbet baloncuğu istenen her görselin gösterilebildiği
  * bir yüzeye dönüşür.
  *
- * BİLİNEN SINIR: arama vekilimiz `contentfilter=high` uyguluyor ama bu
- * yalnızca ARAMA sonuçlarını süzüyor. Ucumuzu tersine çevirip elle Tenor
- * adresi gönderen biri süzgeçten geçmeyen bir GIF iliştirebilir. İçerik
- * yine de Tenor'un kendi denetiminden geçmiş oluyor; serbest URL kabul
- * etmekle arasında büyük fark var. Orantılı bir savunma.
+ * BİLİNEN SINIR: istemci aramada `content_filter=high` gönderiyor ama bu
+ * yalnızca ARAMA sonuçlarını süzüyor. Elle bir KLIPY adresi gönderen biri
+ * süzgeçten geçmemiş bir GIF iliştirebilir. İçerik yine de sağlayıcının
+ * kendi denetiminden geçmiş oluyor; serbest URL kabul etmekle arasında
+ * büyük fark var. Orantılı bir savunma.
  */
-function isTenorUrl(url) {
+function isGifUrl(url) {
   let u;
   try { u = new URL(url); } catch { return false; }
   if (u.protocol !== 'https:') return false;
-  return u.hostname === 'media.tenor.com'
-      || u.hostname === 'c.tenor.com'
-      || u.hostname.endsWith('.media.tenor.com');
+  return GIF_HOSTS.has(u.hostname);
 }
 
 /** İki taraf da yazışabiliyor mu? Tek yerde, GET ve POST aynı kuralı kullansın. */
@@ -165,11 +168,13 @@ export async function POST(request) {
     if (!share) return NextResponse.json({ error: 'INVALID_SHARE' }, { status: 400 });
   }
 
-  // GIF — Tenor CDN adresi. Bizim depomuza inmiyor, o yüzden moderasyon
-  // hattına da girmiyor; içerik Tenor tarafında denetleniyor.
+  // GIF — sağlayıcının CDN adresi. Bizim depomuza inmiyor, o yüzden
+  // moderasyon hattına da girmiyor; içerik sağlayıcı tarafında denetleniyor.
+  // Sağlayıcı ayrıca medyanın yeniden barındırılmasını yasaklıyor — adresi
+  // olduğu gibi saklamak zaten şartlarının gereği.
   let gif = null;
   if (body.gif?.url) {
-    if (!isTenorUrl(String(body.gif.url))) {
+    if (!isGifUrl(String(body.gif.url))) {
       return NextResponse.json({ error: 'INVALID_GIF' }, { status: 400 });
     }
     gif = {

@@ -6,25 +6,31 @@ import {
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 
-import { searchGifs } from '../api/social';
+import { searchGifs } from '../services/klipy';
 import { colors, radius, spacing, type, PRESSED } from '../theme';
 import { useLanguage } from '../context/LanguageContext';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// GIF seçici — Tenor.
+// GIF seçici — KLIPY.
 //
 // ARAMA KUTUSU ŞART, liste değil: insanlar GIF'i arayarak buluyor ("gülme",
 // "tamam", "şok"). Kategorilere bölünmüş bir tarama ekranı, aradığını bilen
 // kullanıcıyı yavaşlatıyor.
 //
-// GECİKTİRME (debounce) 350 ms: her tuş vuruşunda istek atmak hem Tenor
-// kotasını hem sunucu hız sınırını gereksiz yere tüketiyordu.
+// GECİKTİRME (debounce) 350 ms: her tuş vuruşunda istek atmak sağlayıcı
+// kotasını gereksiz yere tüketiyor. İstek artık doğrudan cihazdan gittiği
+// için sunucu tarafı hız sınırımız da devrede değil — geciktirme tek fren.
 //
 // ÖNİZLEMEDE `tinygif` KULLANILIYOR, tam boy değil. Izgarada 24 tane tam boy
 // GIF oynatmak hem veriyi hem pili bitirir; gönderilen ise tam boy.
 //
-// TENOR ATIF İSTİYOR — "Powered by Tenor" etiketi kullanım şartlarının
-// gereği, kozmetik bir tercih değil.
+// ATIF ŞARTLARIN GEREĞİ, kozmetik bir tercih değil: KLIPY hem arama
+// kutusunda "Search KLIPY" yazmasını hem de markasının görünmesini
+// istiyor. İkisi de çevrilmiyor — marka adı her dilde aynı.
+//
+// SONUÇLAR OLDUĞU SIRADA çiziliyor. Şartlar arama ve trend sonuçlarının
+// yeniden sıralanmasını, süzülmesini veya araya başka içerik sokulmasını
+// yasaklıyor.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function GifPicker({ visible, onClose, onPick }) {
@@ -42,7 +48,7 @@ export default function GifPicker({ visible, onClose, onPick }) {
       setGifs(r?.gifs || []);
       setDisabled(false);
     } catch (e) {
-      // Tenor anahtarı tanımlı değilse özellik kapalı; kullanıcıya boş bir
+      // Sağlayıcı anahtarı tanımlı değilse özellik kapalı; kullanıcıya boş bir
       // ızgara yerine sebebini söylüyoruz.
       if (e?.code === 'GIFS_DISABLED') setDisabled(true);
       setGifs([]);
@@ -79,7 +85,7 @@ export default function GifPicker({ visible, onClose, onPick }) {
             style={styles.input}
             value={q}
             onChangeText={onChange}
-            placeholder={t('gif.search')}
+            placeholder="Search KLIPY"
             placeholderTextColor={colors.text3}
             autoCorrect={false}
             returnKeyType="search"
@@ -116,8 +122,8 @@ export default function GifPicker({ visible, onClose, onPick }) {
           />
         )}
 
-        {/* Tenor kullanım şartlarının gereği — kaldırılamaz. */}
-        <Text style={styles.attribution}>Powered by Tenor</Text>
+        {/* Sağlayıcının kullanım şartlarının gereği — kaldırılamaz. */}
+        <Text style={styles.attribution}>Powered by KLIPY</Text>
       </View>
     </Modal>
   );

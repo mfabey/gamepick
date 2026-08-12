@@ -556,7 +556,7 @@ export default function ChatScreen() {
 
   /**
    * GIF gönder — İYİMSER, metin gönderimiyle aynı mantık.
-   * GIF bizim depomuza inmiyor, o yüzden yükleme adımı yok: Tenor adresi
+   * GIF bizim depomuza inmiyor, o yüzden yükleme adımı yok: sağlayıcının
    * doğrudan mesaja iliştiriliyor.
    */
   const sendGif = useCallback(async (g) => {

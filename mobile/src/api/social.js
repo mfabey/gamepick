@@ -159,16 +159,14 @@ export const getChat       = (withUid, before, after) =>
   authed(`/api/social/chat?with=${encodeURIComponent(withUid)}`
     + (before ? `&before=${before}` : '')
     + (after ? `&after=${after}` : ''));
-// GIF arama — SUNUCU VEKİLİ üzerinden. Tenor anahtarı istemcide değil:
-// pakete konsaydı çıkarılırdı. Boş sorgu = öne çıkanlar.
-export const searchGifs = (q, lang = 'tr') =>
-  authed('/api/social/gifs?q=' + encodeURIComponent(q || '') + '&lang=' + (lang === 'en' ? 'en' : 'tr'));
+// GIF arama BURADA DEĞİL: sağlayıcının şartları isteğin son kullanıcı
+// cihazından gelmesini istiyor, vekil sunucu yasak. Bkz. src/services/klipy.js
 
 /**
  * Mesaj gönderir.
  * @param {object} [share] Reels paylaşımı — YALNIZCA `{ appid }`. Ad ve görsel
  *   sunucuda çözülüyor; istemciden gelen metin saklanmıyor.
- * @param {object} [gif] Tenor GIF'i — `{ url, w, h }`. Adres sunucuda alan adı
+ * @param {object} [gif] GIF — `{ url, w, h }`. Adres sunucuda alan adı
  *   listesine karşı doğrulanıyor; serbest URL kabul edilmiyor.
  * @param {string} [replyTo] Yanıtlanan mesajın KİMLİĞİ — kopyası değil.
  *   Alıntı sunucuda çözülüyor, böylece geri alınan mesaj alıntıda da

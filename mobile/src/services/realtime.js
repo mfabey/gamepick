@@ -127,6 +127,8 @@ export async function chatCapabilities() {
     photos: !!cfg?.photos,
     videos: !!cfg?.videos,
     gifs:   !!cfg?.gifs,
+    // GIF sağlayıcı anahtarı — istemci doğrudan çağrı yapıyor (bkz. klipy.js).
+    gifKey: cfg?.gifKey || null,
   };
 }
 

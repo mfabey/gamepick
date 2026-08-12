@@ -43,6 +43,12 @@ export async function GET(request) {
       // özelliği kapalı tutuyoruz (bkz. media-moderation.js).
       videos: false,
       gifs: isGifConfigured(),
+      // ANAHTAR İSTEMCİYE VERİLİYOR. KLIPY'nin şartları isteklerin son
+      // kullanıcı cihazından gelmesini istiyor; vekil sunucu yazılı onay
+      // gerektiriyor. Anahtar yine de PAKETTE DEĞİL — burada duruyor ve
+      // değişince yeni build gerekmiyor. Yanıt `private` önbellekli,
+      // yalnızca kimliği doğrulanmış kullanıcıya gidiyor.
+      gifKey: process.env.GIF_API_KEY || null,
     },
     { headers: { 'Cache-Control': 'private, max-age=300' } },
   );
