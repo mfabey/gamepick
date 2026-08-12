@@ -308,6 +308,19 @@ export default function VideosScreen() {
     } catch { setLandscape(!next); }   // kilitlenemedi → durumu geri al
   }, [landscape]);
 
+  // SEKME ÇUBUĞU YATAYDA GİZLENİYOR.
+  //
+  // Yatay, izleme kipi: çubuk hem alt şeridi yiyor hem de dar kenarda
+  // sıkışıp bozuk görünüyordu (maxWidth 420 ile daraltılmıştı ama sorun
+  // genişlik değil, orada DURUYOR olmasıydı).
+  //
+  // Sekme değiştirmek için dikeye dönmek gerekiyor; ekrandan çıkış zaten
+  // dikeye dönerek yapılıyor (bkz. useFocusEffect).
+  useEffect(() => {
+    if (!tabHidden) return;
+    tabHidden.value = withTiming(isLandscape ? 1 : 0, { duration: 160 });
+  }, [isLandscape, tabHidden]);
+
   const renderItem = useCallback(({ item, index }) => (
     <VideoItem
       item={item}
@@ -436,8 +449,14 @@ const VideoItem = memo(function VideoItem({
 
   // Daireler ve boşluk küçülünce sütun 315 → ~254pt: 402'lik ekrana rahat
   // sığıyor, üstelik video için ortada daha çok yer kalıyor.
-  const railGap = isLandscape ? 10 : 17;
-  const railBottom = isLandscape ? 94 : TAB_SPACE + 90;
+  // ŞERİT YATAYDA YATAY OLUYOR.
+  //
+  // Ölçüm: dikey şerit 5 düğme × ~62pt = 310pt. Yatayda ekran yüksekliği
+  // 402pt ve şerit alttan 94pt yukarıdan başlıyordu → 404pt gerekiyordu,
+  // 2pt taşıyordu ve üstteki düğmeler kırpılıyordu. Dikey bir sütunu dar
+  // kenara sığdırmaya çalışmak yanlış yöndü; geniş ekranın yönü yatay.
+  const railGap = isLandscape ? 14 : 17;
+  const railBottom = isLandscape ? 10 + itemInsets.bottom : TAB_SPACE + 90;
   const infoBottom = isLandscape ? 80 : TAB_SPACE + 6;
   const { isWatched, toggle } = useWishlist();
   const { account } = useAuth();
@@ -574,7 +593,13 @@ const VideoItem = memo(function VideoItem({
 
       {/* Sağ aksiyon sütunu */}
       <Animated.View
-        style={[styles.actions, { bottom: railBottom, gap: railGap, right: 12 + itemInsets.right }, uiStyle]}
+        style={[
+          styles.actions,
+          isLandscape && styles.actionsLandscape,
+          { bottom: railBottom, gap: railGap, right: 12 + itemInsets.right },
+          isLandscape && { left: 12 + itemInsets.left },
+          uiStyle,
+        ]}
         pointerEvents={holding ? 'none' : 'auto'}
       >
         <ActionBtn
@@ -660,9 +685,10 @@ const VideoItem = memo(function VideoItem({
   );
 });
 
-// compact: yatay modda daire 47 → 38, ikon 23 → 19. Dokunma hedefi hitSlop 6
-// ile birlikte 50pt kalıyor, yani HIG'in 44pt asgarisinin altına düşmüyor —
-// küçülen şey görsel ağırlık, dokunulabilirlik değil.
+// compact: yatay modda daire 47 → 34, ikon 23 → 17. Dokunma hedefi hitSlop 6
+// ile birlikte 46pt kalıyor, yani HIG'in 44pt asgarisinin ALTINA DÜŞMÜYOR —
+// küçülen şey görsel ağırlık, dokunulabilirlik değil. 34'ün altına inilirse
+// hitSlop artırılmadan 44pt korunamaz.
 function ActionBtn({ icon, label, active, onPress, compact }) {
   return (
     <Pressable style={({ pressed }) => [styles.actionBtn, pressed && PRESSED]} onPress={onPress} hitSlop={6}>
@@ -673,7 +699,7 @@ function ActionBtn({ icon, label, active, onPress, compact }) {
       ]}>
         {/* Aktif yüzey açık olduğu için ikon koyuya dönüyor — oyun
             detayındaki iconBtnActive ile aynı karar. */}
-        <Ionicons name={icon} size={compact ? 19 : 23} color={active ? colors.bg : '#fff'} />
+        <Ionicons name={icon} size={compact ? 17 : 23} color={active ? colors.bg : '#fff'} />
       </View>
       <Text style={styles.actionLabel}>{label}</Text>
     </Pressable>
@@ -707,6 +733,13 @@ const styles = StyleSheet.create({
   titleWrap: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   topTitle: { color: '#fff', fontSize: type.body, fontWeight: '900', letterSpacing: -0.2 },
   actions: { position: 'absolute', right: 12, alignItems: 'center', gap: 17 },
+  // Yatayda satır: sağa yaslı, alt kenarda. `left` de veriliyor ki uzun
+  // etiketlerde satır ekranın dışına taşmasın, sıkışsın.
+  actionsLandscape: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'flex-end',
+  },
   actionBtn: { alignItems: 'center', gap: 5 },
   actionCircle: {
     width: 47, height: 47, borderRadius: 24,
@@ -714,7 +747,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     borderWidth: 1, borderColor: 'rgba(255,255,255,0.16)',
   },
-  actionCircleCompact: { width: 38, height: 38, borderRadius: 19 },
+  actionCircleCompact: { width: 34, height: 34, borderRadius: 17 },
   // "Takip"/"Kaydet" acikken: dolu notr yuzey. Video uzerinde durdugu icin
   // acik yuzey her sahnede okunur; vurgu rengi burada durum degil dikkat
   // cekiyordu.
