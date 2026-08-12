@@ -26,7 +26,7 @@
 // duruyordu ve sayaçta tekrar ediyordu. Yeri arkadaş sayısına verildi çünkü
 // arkadaş sayısı hiçbir yerde görünmüyordu.
 // ─────────────────────────────────────────────────────────────────────────────
-import { useRef, useCallback, useEffect, useState } from 'react';
+import { useRef, useCallback, useEffect, useState, useMemo } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet, Alert, ActivityIndicator, Modal, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -45,6 +45,7 @@ import { getMyProfile, getFriends, setAvatar as apiSetAvatar } from '../../src/a
 import IconButton from '../../src/components/IconButton';
 import { useTabPressAction, scrollRefToTop } from '../../src/hooks/useTabPressAction';
 import { AVATAR_PRESET_IDS, getAvatarPreset } from '../../src/utils/avatar';
+import { weeklyReport } from '../../src/services/stats';
 import { SettingsGroup, SettingsRow } from '../../src/components/SettingsList';
 
 // ── Kısayol ızgarası ölçüleri ───────────────────────────────────────────────
@@ -72,6 +73,15 @@ export default function ProfileScreen() {
   const collections = useCollections();
   const { steamGames, xboxGames } = useConnectedLibrary();
   const gameCount = steamGames.length + xboxGames.length;
+
+  // HAFTALIK ÖNE ÇIKAN. Tamamen yerel depolardan hesaplanıyor (görülen,
+  // beğenilen, elenen, koleksiyon, zevk profili) — profil açılırken ağ isteği
+  // eklemiyor. Amaç: sayfayı açan kişi ilk olarak KENDİ verisini görsün.
+  // Sayaçlar "kaç" diyor, bu satır "ne yaptın" diyor.
+  const week = useMemo(
+    () => weeklyReport({ wishlistCount: items.length }),
+    [items.length]
+  );
 
   // Kullanıcı adı — arkadaş eklemenin temeli, o yüzden profilde GÖRÜNÜR olmalı.
   // Eskiden hiçbir yerde yazmıyordu; kullanıcı kendi etiketini bilmiyordu.
@@ -174,6 +184,11 @@ export default function ProfileScreen() {
 
         {account ? (
           <View style={styles.identity}>
+           {/* KİMLİK YATAY. Eskiden dikey ve ortalıydı: avatar 68pt + ad +
+               kullanıcı adı + sayaçlar, "SENİN" başlığına kadar 386pt yani
+               ekranın %44'ü, taşıdığı bilgi 5 parça. Yatıya alınınca aynı
+               bilgi ~150pt'ye iniyor ve kazanılan yer içeriğe gidiyor. */}
+           <View style={styles.idRow}>
             {/* Avatar — dokunulabilir, seçici açar. Ön ayar varsa renk+simge,
                 yoksa baş harf fallback. Küçük kalem rozeti değişebileceğini
                 ima ediyor. */}
@@ -206,12 +221,26 @@ export default function ProfileScreen() {
                 </View>
               ) : null}
             </Pressable>
-            <Text style={styles.idName} numberOfLines={1}>{account.name}</Text>
-            <Pressable onPress={() => router.push('/social')} hitSlop={6}>
-              <Text style={styles.idHandle} numberOfLines={1}>
-                {username ? `@${username}` : t('prof.noUsername')}
-              </Text>
-            </Pressable>
+            <View style={styles.idText}>
+              <Text style={styles.idName} numberOfLines={1}>{account.name}</Text>
+              <Pressable onPress={() => router.push('/social')} hitSlop={6}>
+                <Text style={styles.idHandle} numberOfLines={1}>
+                  {username ? `@${username}` : t('prof.noUsername')}
+                </Text>
+              </Pressable>
+              {/* Bağlı mağaza kimliğin bir parçası — en altta değil, adının
+                  yanında. "Bu hesap bana ait" hissini en çok bu veriyor. */}
+              {steamAccounts[0]?.name ? (
+                <View style={styles.idStore}>
+                  <Ionicons name="logo-steam" size={12} color={colors.text3} />
+                  <Text style={styles.idStoreName} numberOfLines={1}>
+                    {steamAccounts[0].name}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+
+           </View>
 
             {/* Sayaçlar dokunulabilir: profilin en üstünde duran bu üç sayı
                 zaten kısayol gibi okunuyordu, tepki vermemeleri yanıltıcıydı. */}
@@ -225,6 +254,31 @@ export default function ProfileScreen() {
               <Stat n={gameCount} label={t('prof.statGames')}
                     onPress={() => router.push('/library')} />
             </View>
+
+            {/* ── Bu hafta ──
+                Sayaçlar "kaç" diyor; bu satır "NE YAPTIN" diyor. Profilin
+                kişiselleşmesi buradan geçiyor — veri tamamen yerel, ağ isteği
+                yok. Haftası boş olan kullanıcıda gizleniyor: boş bir "wrapped"
+                sayfayı canlı değil ölü gösterir. */}
+            {week.hasActivity ? (
+              <Pressable
+                onPress={() => router.push('/stats')}
+                style={({ pressed }) => [styles.week, pressed && PRESSED_CARD]}
+              >
+                <View style={styles.weekMain}>
+                  <Text style={styles.weekTitle} numberOfLines={1}>
+                    {t('prof.weekTitle')}
+                  </Text>
+                  <Text style={styles.weekLine} numberOfLines={2}>
+                    <Text style={[styles.weekNum, NUMERIC]}>{week.discovered}</Text>
+                    {' ' + t('prof.weekDiscovered')}
+                    {week.topGenre ? ` · ${t('prof.weekGenre')} ` : ''}
+                    {week.topGenre ? <Text style={styles.weekStrong}>{week.topGenre}</Text> : null}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={colors.text3} />
+              </Pressable>
+            ) : null}
           </View>
         ) : (
           /* Giriş yapılmamışsa kimlik yerine tek bir davet — sayfanın
@@ -500,9 +554,29 @@ const styles = StyleSheet.create({
   h1: { flex: 1, fontSize: type.title1, fontWeight: '800', color: colors.text, letterSpacing: -0.6 },
 
   // ── Kimlik ──
-  identity: { alignItems: 'center', paddingVertical: 20 },
+  identity: { paddingTop: 8, paddingBottom: 16 },
+  idRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  idText: { flex: 1, minWidth: 0 },
+  idStore: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 5 },
+  idStoreName: { fontSize: type.caption, color: colors.text3, flexShrink: 1 },
+
+  // Bu hafta satırı — kart değil satır: kimliğin devamı, ayrı bir bölüm değil.
+  week: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    marginTop: 16, paddingHorizontal: 14, paddingVertical: 12,
+    backgroundColor: colors.card, borderRadius: radius.md,
+    borderWidth: 1, borderColor: colors.cardBorder,
+  },
+  weekMain: { flex: 1, minWidth: 0 },
+  weekTitle: {
+    fontSize: type.caption2, fontWeight: '800', color: colors.text3,
+    textTransform: 'uppercase', letterSpacing: 1,
+  },
+  weekLine: { fontSize: type.footnote, color: colors.text2, marginTop: 3, lineHeight: 18 },
+  weekNum: { color: colors.text, fontWeight: '800' },
+  weekStrong: { color: colors.text, fontWeight: '700' },
   avatarLg: {
-    width: 68, height: 68, borderRadius: 34,
+    width: 56, height: 56, borderRadius: 28,
     backgroundColor: colors.bgInput,
     borderWidth: 1.5, borderColor: colors.cardBorder,
     alignItems: 'center', justifyContent: 'center',
@@ -515,10 +589,10 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   avatarInitialLg: { fontSize: type.title2, fontWeight: '800', color: colors.text2 },
-  idName: { fontSize: type.headline, fontWeight: '700', color: colors.text, marginTop: 12 },
-  idHandle: { fontSize: type.footnote, color: colors.text3, marginTop: 2 },
+  idName: { fontSize: type.headline, fontWeight: '700', color: colors.text },
+  idHandle: { fontSize: type.footnote, color: colors.text3, marginTop: 1 },
 
-  stats: { flexDirection: 'row', alignItems: 'center', marginTop: 18 },
+  stats: { flexDirection: 'row', alignItems: 'center', marginTop: 16 },
   stat: { alignItems: 'center', paddingHorizontal: 22 },
   // Tablo rakamları: sayı değiştikçe sütun genişliği oynamasın
   statN: { fontSize: type.headline, fontWeight: '700', color: colors.text, ...NUMERIC },
