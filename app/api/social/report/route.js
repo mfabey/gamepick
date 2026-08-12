@@ -22,7 +22,7 @@ import { redisCmd, redisSetJSONStrict } from '../../../lib/redis';
 // moderasyonda görünmez bir boşluk olarak kalıyor.
 //   `message` — birebir sohbet mesajı (özel yazışma da UGC sayılıyor)
 //   `review`  — doğrulanmış oyun incelemesi
-const VALID_TARGETS = ['user', 'collection', 'list', 'comment', 'message', 'review'];
+const VALID_TARGETS = ['user', 'collection', 'list', 'comment', 'message', 'review', 'post'];
 const VALID_REASONS = [
   'spam', 'harassment', 'hate', 'sexual', 'violence',
   'impersonation', 'illegal', 'other',

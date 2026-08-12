@@ -22,10 +22,12 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
-import { getReviewFeed, getEligibleGames } from '../src/api/social';
+import { getReviewFeed, getEligibleGames, fetchPosts } from '../src/api/social';
 import { getSession, subscribeSession } from '../src/services/session';
 import ReviewComposer from '../src/components/ReviewComposer';
 import ReviewCard from '../src/components/ReviewCard';
+import PostCard from '../src/components/PostCard';
+import PostComposer from '../src/components/PostComposer';
 import ReportSheet from '../src/components/ReportSheet';
 import { colors, radius, spacing, type, PRESSED, NUMERIC, TAB_SPACE } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
@@ -39,7 +41,10 @@ export default function ReviewsScreen() {
 
   const [eligible, setEligible] = useState(null);
   const [feed, setFeed] = useState(null);
-  const [tab, setTab] = useState('community');   // community | mine
+  // Sayfanın ASIL işi artık tartışma; incelemeler ikinci sekmede duruyor.
+  const [tab, setTab] = useState('talk');   // talk | community | mine
+  const [posts, setPosts] = useState(null);
+  const [composing, setComposing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [composer, setComposer] = useState(null); // { appid, name, existing }
@@ -51,12 +56,19 @@ export default function ReviewsScreen() {
   const load = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
     try {
-      const [e, f] = await Promise.all([
-        session ? getEligibleGames().catch(() => null) : Promise.resolve(null),
-        getReviewFeed(session && tab === 'mine').catch(() => null),
-      ]);
-      setEligible(e);
-      setFeed(f?.reviews || []);
+      // Tartışma sekmesi hesapsız da okunur; inceleme uçları kendi
+      // kurallarında kalıyor.
+      if (tab === 'talk') {
+        const p = await fetchPosts().catch(() => null);
+        setPosts(p?.posts || []);
+      } else {
+        const [e, f] = await Promise.all([
+          session ? getEligibleGames().catch(() => null) : Promise.resolve(null),
+          getReviewFeed(session && tab === 'mine').catch(() => null),
+        ]);
+        setEligible(e);
+        setFeed(f?.reviews || []);
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -66,9 +78,13 @@ export default function ReviewsScreen() {
   useEffect(() => { load(); }, [load]);
 
   // Yazma denemesi oturum ister; hata vermek yerine kayıt ekranına götürüyoruz.
+  // PostCard/PostComposer bu fonksiyonun "engelledim mi" bilgisini bekliyor:
+  // true dönerse çağıran eylemi iptal ediyor.
   const requireAccount = useCallback(() => {
+    if (session) return false;
     router.push('/account');
-  }, [router]);
+    return true;
+  }, [session, router]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -87,7 +103,7 @@ export default function ReviewsScreen() {
           {/* ── Yazabileceğin oyunlar ──
               Sayfanın boş görünmemesini sağlayan kısım. Steam bağlıysa ilk
               günden dolu; topluluk akışı boş olsa bile sayfa ölü durmuyor. */}
-          {eligible?.games?.length > 0 && (
+          {tab !== 'talk' && eligible?.games?.length > 0 && (
             <>
               <Text style={styles.sectionLabel}>{t('rev.canWrite')}</Text>
               <ScrollView
@@ -115,7 +131,7 @@ export default function ReviewsScreen() {
             </>
           )}
 
-          {eligible?.games?.length === 0 && (
+          {tab !== 'talk' && eligible?.games?.length === 0 && (
             <Text style={styles.hint}>{t('rev.noEligible')}</Text>
           )}
 
@@ -124,7 +140,7 @@ export default function ReviewsScreen() {
               karşılığı yok; sekmeyi gizlemek yerine kayıt ekranına götürüyoruz
               — özelliğin varlığını göstermek, yokmuş gibi yapmaktan iyi. */}
           <View style={styles.tabs}>
-            {['community', 'mine'].map((k) => (
+            {['talk', 'community', 'mine'].map((k) => (
               <Pressable
                 key={k}
                 style={({ pressed }) => [styles.tab, tab === k && styles.tabOn, pressed && PRESSED]}
@@ -135,13 +151,33 @@ export default function ReviewsScreen() {
                 }}
               >
                 <Text style={[styles.tabText, tab === k && styles.tabTextOn]}>
-                  {k === 'community' ? t('rev.community') : t('rev.mine')}
+                  {k === 'talk' ? t('rev.talk') : k === 'community' ? t('rev.community') : t('rev.mine')}
                 </Text>
               </Pressable>
             ))}
           </View>
 
-          {feed?.length === 0 ? (
+          {tab === 'talk' ? (
+            <>
+              {/* Yazma çağrısı akışın ÜSTÜNDE: sayfanın işi konuşmak, bunu
+                  söylemenin yeri en görünür nokta. */}
+              <Pressable
+                onPress={() => { if (!requireAccount()) setComposing(true); }}
+                style={({ pressed }) => [styles.composeBar, pressed && PRESSED]}
+              >
+                <Ionicons name="create-outline" size={17} color={colors.text3} />
+                <Text style={styles.composeText}>{t('post.hint')}</Text>
+              </Pressable>
+
+              {posts?.length === 0 ? (
+                <Text style={styles.hint}>{t('post.feedEmpty')}</Text>
+              ) : (
+                posts?.map((p) => (
+                  <PostCard key={p.id} post={p} onRequireAccount={requireAccount} compact />
+                ))
+              )}
+            </>
+          ) : feed?.length === 0 ? (
             <Text style={styles.hint}>
               {tab === 'mine'
                 ? t('rev.mineEmpty')
@@ -165,6 +201,12 @@ export default function ReviewsScreen() {
           )}
         </ScrollView>
       )}
+
+      <PostComposer
+        visible={composing}
+        onClose={() => setComposing(false)}
+        onPosted={() => load(true)}
+      />
 
       <ReviewComposer
         visible={!!composer}
@@ -197,6 +239,14 @@ function Header({ t, onBack }) {
 }
 
 const styles = StyleSheet.create({
+  composeBar: {
+    flexDirection: 'row', alignItems: 'center', gap: 9,
+    marginHorizontal: spacing.lg, marginTop: 4, marginBottom: 10,
+    paddingHorizontal: 14, paddingVertical: 12,
+    backgroundColor: colors.card, borderRadius: 999,
+  },
+  composeText: { color: colors.text3, fontSize: type.footnote },
+
   safe:   { flex: 1, backgroundColor: colors.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 

@@ -164,6 +164,18 @@ export const getEligibleGames = () => authed('/api/social/reviews/eligible');
 export const removeReview = (appid) =>
   authed('/api/social/reviews', { method: 'DELETE', body: { appid } });
 
+// ── Tartışma gönderileri ────────────────────────────────────────────────────
+// Okuma hesapsız (openRead), yazma jetonlu. Yanıt da bir gönderi: aynı uçtan
+// `replyTo` ile yazılıyor, ayrı yazma yolu yok.
+export const fetchPosts   = (offset = 0) => openRead(`/api/social/posts?offset=${offset}`);
+export const fetchPost    = (id) => openRead(`/api/social/posts/${encodeURIComponent(id)}`);
+export const createPost   = ({ text, game, replyTo }) =>
+  authed('/api/social/posts', { method: 'POST', body: { action: 'create', text, game, replyTo } });
+export const deletePost   = (id) =>
+  authed('/api/social/posts', { method: 'POST', body: { action: 'delete', id } });
+export const togglePostLike = (id) =>
+  authed('/api/social/posts', { method: 'POST', body: { action: 'like', id } });
+
 // ── Sohbet ──────────────────────────────────────────────────────────────────
 // Mesajlaşma YALNIZCA arkadaşlar arasında; sunucu NOT_FRIENDS ile reddediyor.
 export const getChatList   = ()  => authed('/api/social/chat/list');
