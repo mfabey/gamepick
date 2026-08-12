@@ -17,6 +17,7 @@ import { useLanguage } from '../src/context/LanguageContext';
 import { useAuth } from '../src/context/AuthContext';
 import { useWishlist } from '../src/context/WishlistContext';
 import { signOut } from '../src/services/session';
+import { LANGUAGES } from '../src/services/locale';
 import { SettingsGroup, SettingsRow } from '../src/components/SettingsList';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -66,14 +67,25 @@ export default function SettingsScreen() {
     WebBrowser.openBrowserAsync(`${SITE}${path}`).catch(() => {});
   };
 
+  /**
+   * Dil seçici.
+   *
+   * Diller KENDİ ADLARIYLA yazılı ("Español", "Português" — "İspanyolca"
+   * değil): bir kullanıcı uygulamayı anlamadığı bir dilde açtığında,
+   * aradığı satırı ancak kendi dilinin adından bulabilir.
+   *
+   * Liste `LANGUAGES` üzerinden kuruluyor; yeni dil eklemek tek satır.
+   */
   const showLanguagePicker = () => {
     Alert.alert(
-      lang === 'tr' ? 'Dil Seçimi' : 'Language Selection',
-      lang === 'tr' ? 'Lütfen tercih ettiğiniz dili seçin:' : 'Please select your preferred language:',
+      t('set.language'),
+      undefined,
       [
-        { text: lang === 'tr' ? '✓ Türkçe' : 'Türkçe', onPress: () => { if (lang !== 'tr') setLang('tr'); } },
-        { text: lang === 'en' ? '✓ English' : 'English', onPress: () => { if (lang !== 'en') setLang('en'); } },
-        { text: lang === 'tr' ? 'İptal' : 'Cancel', style: 'cancel' },
+        ...LANGUAGES.map((l) => ({
+          text: lang === l.code ? `✓ ${l.name}` : l.name,
+          onPress: () => { if (lang !== l.code) setLang(l.code); },
+        })),
+        { text: t('common.cancel'), style: 'cancel' },
       ],
       { cancelable: true }
     );
@@ -120,7 +132,7 @@ export default function SettingsScreen() {
           <SettingsRow
             icon="language-outline"
             label={t('set.language')}
-            value={lang === 'tr' ? 'Türkçe' : 'English'}
+            value={LANGUAGES.find((l) => l.code === lang)?.name || lang}
             onPress={showLanguagePicker}
           />
           <SettingsRow
