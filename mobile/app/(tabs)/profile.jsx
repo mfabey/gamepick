@@ -27,7 +27,7 @@
 // arkadaş sayısı hiçbir yerde görünmüyordu.
 // ─────────────────────────────────────────────────────────────────────────────
 import { useRef, useCallback, useEffect, useState } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet, Alert, ActivityIndicator, Modal } from 'react-native';
+import { View, Text, Pressable, ScrollView, StyleSheet, Alert, ActivityIndicator, Modal, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TopFade, BottomFade } from '../../src/components/EdgeFade';
@@ -46,6 +46,17 @@ import IconButton from '../../src/components/IconButton';
 import { useTabPressAction, scrollRefToTop } from '../../src/hooks/useTabPressAction';
 import { AVATAR_PRESET_IDS, getAvatarPreset } from '../../src/utils/avatar';
 import { SettingsGroup, SettingsRow } from '../../src/components/SettingsList';
+
+// ── Kısayol ızgarası ölçüleri ───────────────────────────────────────────────
+// Karo genişliği flex'e bırakılmıyor; ayrıntı ve ölçüm için styles.grid yorumu.
+const GRID_COLS = 4;
+const GRID_GAP = spacing.sm;
+
+/** Pencere genişliğinden tek karo genişliği. body yatay dolgusu spacing.lg×2. */
+function tileWidth(windowWidth) {
+  const inner = windowWidth - spacing.lg * 2;
+  return (inner - GRID_GAP * (GRID_COLS - 1)) / GRID_COLS;
+}
 
 export default function ProfileScreen() {
   // Sekmeye tekrar basınca listeyi başa sar (iOS'ta beklenen davranış)
@@ -446,9 +457,12 @@ function AvatarPicker({ visible, current, onSelect, onClose }) {
  * anlamına gelir ve bozukluk gibi görünür.
  */
 function Tile({ icon, label, n, badge, locked, onPress }) {
+  // Genişlik pencereden türetiliyor: flex'e bırakılırsa eksik son satır
+  // kendini şişiriyor (bkz. styles.grid yorumu).
+  const { width } = useWindowDimensions();
   return (
     <Pressable
-      style={({ pressed }) => [styles.tile, pressed && PRESSED_CARD]}
+      style={({ pressed }) => [styles.tile, { width: tileWidth(width) }, pressed && PRESSED_CARD]}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label}
@@ -536,15 +550,20 @@ const styles = StyleSheet.create({
   },
   // ── Kısayol ızgarası ──
   // Dört sütun. Üç sütun daha ferah olurdu ama on hedef dört satıra yayılır ve
-  // "tek bakışta gör" kazancı kaybolurdu; dört sütunda altı hedef iki satıra
-  // sığıyor. Sütun genişliği yüzdeyle değil `flexBasis` ile: yüzde, `gap` ile
-  // birlikte satır başına üçe düşürüyordu.
+  // "tek bakışta gör" kazancı kaybolurdu; dört sütunda yedi hedef iki satıra
+  // sığıyor.
+  //
+  // Genişlik `tileWidth()` ile ARİTMETİKTEN geliyor, flex'ten değil. Önce
+  // `flexGrow: 1` + `flexBasis: '22%'` vardı; eksik son satırda artan boşluk o
+  // satırın karolarına dağılıyordu. Ölçüm (402pt ekran): SENİN satır 1 dört
+  // karo 86,5pt, satır 2 üç karo 118pt, SOSYAL üç karo 118pt — tek ekranda üç
+  // ayrı genişlik. Yüzdeye de dönülmedi: `gap` ile birlikte satır başına üçe
+  // düşürüyor.
   grid: {
     flexDirection: 'row', flexWrap: 'wrap',
-    gap: spacing.sm, marginBottom: spacing.md,
+    gap: GRID_GAP, marginBottom: spacing.md,
   },
   tile: {
-    flexGrow: 1, flexBasis: '22%',
     alignItems: 'center', justifyContent: 'center',
     paddingVertical: spacing.md, paddingHorizontal: 4,
     backgroundColor: colors.card, borderRadius: radius.md,
