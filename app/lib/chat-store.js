@@ -39,6 +39,11 @@ const readKey = (cid, uid)  => `dm_read:${cid}:${uid}`;
 const delKey  = (cid)       => `dm_deleted:${cid}`;
 const typingKey = (cid, uid) => `dm_typing:${cid}:${uid}`;
 const likesKey  = (cid)      => `dm_likes:${cid}`;
+// KONUŞMA BAŞINA TEK sabit mesaj, kullanıcı başına değil: sabitlemek ortak
+// bir eylem, "ikimizin de üstünde durduğu şey" demek. Kişiye özel olsaydı
+// karşı tarafın gördüğü sabit farklı olurdu ve "sabitledim" demek anlamsız
+// hâle gelirdi.
+const pinKey    = (cid)      => `dm_pin:${cid}`;
 
 /**
  * İki uid'den kararlı bir konuşma kimliği üretir.
@@ -61,7 +66,7 @@ export function partiesOf(cid) {
  *
  * @throws {Error} Redis yazamazsa — çağıran kullanıcıya hata döndürmeli
  */
-export async function appendMessage({ from, to, text, media, share, gif }) {
+export async function appendMessage({ from, to, text, media, share, gif, replyTo }) {
   const cid = convId(from, to);
   if (!cid) throw new Error('INVALID_CONVERSATION');
 
@@ -76,6 +81,16 @@ export async function appendMessage({ from, to, text, media, share, gif }) {
   if (media) msg.media = media;
   if (share) msg.share = share;
   if (gif) msg.gif = gif;
+  // YALNIZCA KİMLİK SAKLANIYOR, alıntının kopyası değil.
+  //
+  // Anlık görüntü saklamak okumayı ucuzlatırdı ama GERİ ALMAYI DELERDİ:
+  // kullanıcı mesajını geri aldığında metni her yerden gitmeli, ona verilmiş
+  // bir yanıtın içinde durmaya devam etmemeli. Kimlikten çözünce geri alınan
+  // mesaj alıntıda da "geri alındı" görünüyor.
+  //
+  // Çözüm maliyetsiz: `getMessages` zaten listenin tamamını tek LRANGE ile
+  // okuyor, alıntı o listeden bellek içi bir eşlemeyle bulunuyor.
+  if (replyTo) msg.replyTo = String(replyTo);
 
   // Mesajın KENDİSİ katı: kaybolursa kullanıcı yazdığını sanır ama gitmemiştir.
   await redisCmdStrict(['LPUSH', msgsKey(cid), JSON.stringify(msg)]);
@@ -112,37 +127,126 @@ export async function appendMessage({ from, to, text, media, share, gif }) {
 }
 
 /**
- * Mesaj geçmişi — en yeniden eskiye.
+ * Mesaj geçmişi + sabit mesaj — TEK Redis turunda.
+ *
+ * İkisi birlikte okunuyor çünkü sabit mesajı çözmek için listenin kendisi
+ * gerekiyor: sabit yalnızca bir KİMLİK olarak saklanıyor (geri alma
+ * gerekçesi alıntılarla aynı, bkz. quoteOf). Ayrı bir çağrı, 500 kayıtlık
+ * listeyi ikinci kez çekmek demekti.
+ *
  * @param {number} [before] bu zamandan ESKİ mesajlar (sayfalama)
+ * @returns {Promise<{messages: Array, pinned: object|null}>}
  */
-export async function getMessages(cid, { before, after, limit = PAGE } = {}) {
+export async function getHistory(cid, { before, after, limit = PAGE } = {}) {
   // Mesajlar, geri alınanlar ve beğeniler TEK turda okunuyor.
   //
   // Beğeniler TEK BİR HASH içinde (konuşma başına), mesaj başına ayrı anahtar
   // değil: 50 mesaj için 50 ayrı okuma yapmak yerine tek HGETALL yetiyor.
-  const [raw, deleted, likeMap] = await redisPipeline([
+  const [raw, deleted, likeMap, pinRaw] = await redisPipeline([
     ['LRANGE', msgsKey(cid), '0', String(MAX_MESSAGES - 1)],
     ['SMEMBERS', delKey(cid)],
     ['HGETALL', likesKey(cid)],
+    // Sabit mesaj AYNI TURDA okunuyor. Ayrı bir çağrı, listeyi ikinci kez
+    // (500 kayıt) çekmek anlamına gelirdi.
+    ['GET', pinKey(cid)],
   ]) || [];
 
-  if (!Array.isArray(raw)) return [];
+  if (!Array.isArray(raw)) return { messages: [], pinned: null };
   const gone = new Set(Array.isArray(deleted) ? deleted : []);
 
-  let msgs = raw.map(parseJSON).filter(Boolean);
+  const all = raw.map(parseJSON).filter(Boolean);
+
+  // Alıntı çözümü SAYFALAMADAN ÖNCEKİ tam liste üzerinden: yanıtlanan mesaj
+  // sayfanın dışında kalmış olabilir ve o zaman alıntı boş görünürdü.
+  const byId = new Map(all.map((m) => [m.id, m]));
+
+  let msgs = all;
   if (before) msgs = msgs.filter((m) => m.at < before);
   // `after`: yalnızca YENİ mesajlar. Yedek yoklama bunu kullanıyor — her
   // turda 50 mesajın tamamını çekmek yerine yalnızca farkı istiyor.
   if (after) msgs = msgs.filter((m) => m.at > after);
 
-  return msgs.slice(0, limit).map((m) => (
+  const messages = msgs.slice(0, limit).map((m) => (
     // Geri alınan mesaj LİSTEDEN ÇIKARILMIYOR, içeriği boşaltılıyor. Sıra ve
     // sayfalama bozulmasın diye: mesajı listeden silmek `before` ile yapılan
     // sayfalamayı kaydırır ve arayüzde mesaj atlanmasına yol açar.
     gone.has(m.id)
       ? { id: m.id, from: m.from, at: m.at, deleted: true }
-      : { ...m, likes: likesOf(likeMap, m.id) }
+      // `likes` DE gönderiliyor: sunucu uygulamadan önce dağıtılıyor ve
+      // güncellenmemiş kurulumlar hâlâ bu alanı okuyor. Kalp listesinin
+      // kopyası, tepki nesnesinden türetiliyor.
+      : (() => {
+          const reactions = reactionsOf(likeMap, m.id);
+          const out = { ...m, reactions, likes: reactions[DEFAULT_REACTION] || [] };
+          if (m.replyTo) out.quote = quoteOf(m.replyTo, byId, gone);
+          return out;
+        })()
   ));
+
+  // SABİT MESAJ, geri alınmış veya pencerenin dışına düşmüşse GÖSTERİLMİYOR.
+  // Alıntıdan farkı bu: alıntı 'bu mesaj geri alındı' diye bir iz bırakıyor
+  // çünkü yanıtın bağlamı o. Sabit ise ekranın tepesinde duran bir bant;
+  // içi boş bir bant yer kaplamaktan başka bir şey yapmaz.
+  let pinned = null;
+  const pin = parseJSON(pinRaw);
+  if (pin?.id) {
+    const q = quoteOf(pin.id, byId, gone);
+    if (!q.deleted && !q.missing) pinned = { ...q, by: pin.by || null, at: pin.at || 0 };
+  }
+
+  return { messages, pinned };
+}
+
+/** Yalnızca mesajlar — sabit mesaja ihtiyacı olmayan çağıranlar için. */
+export async function getMessages(cid, opts) {
+  return (await getHistory(cid, opts)).messages;
+}
+
+/**
+ * Mesajı sabitler / sabitlemeyi kaldırır.
+ *
+ * HER İKİ TARAF DA yapabiliyor. Sabit ortak bir işaret; yalnızca
+ * sabitleyenin kaldırabilmesi, karşı tarafı başkasının koyduğu bir bandın
+ * altında bırakırdı.
+ *
+ * VARLIK DOĞRULANMIYOR — alıntılardaki gerekçenin aynısı: bilinmeyen bir
+ * kimlik okuma yolunda zaten eleniyor ve bant hiç çizilmiyor.
+ */
+export async function setPin(cid, msgId, byUid) {
+  if (!msgId) {
+    await redisCmd(['DEL', pinKey(cid)]);
+    return { pinned: null };
+  }
+  const row = { id: String(msgId), by: byUid, at: Date.now() };
+  await redisCmd(['SET', pinKey(cid), JSON.stringify(row)]);
+  return { pinned: row };
+}
+
+/**
+ * Alıntı özeti — yanıtlanan mesajın çizilebilir hâli.
+ *
+ * ÜÇ DURUM var ve üçü de arayüzde farklı görünmeli:
+ *   • bulundu       → yazar + kısa metin (veya medya türü)
+ *   • geri alınmış  → `deleted: true`, metin YOK
+ *   • bulunamadı    → `missing: true` (500 mesajlık pencerenin dışına düşmüş)
+ *
+ * Metin 120 karaktere kırpılıyor: alıntı bir bağlam ipucu, mesajın kendisi
+ * değil. Uzun bir alıntı kendi yanıtından uzun görünürdü.
+ */
+function quoteOf(id, byId, gone) {
+  const src = byId.get(id);
+  if (!src) return { id, missing: true };
+  if (gone.has(id)) return { id, from: src.from, deleted: true };
+  return {
+    id,
+    from: src.from,
+    text: src.text ? src.text.slice(0, 120) : '',
+    // Metinsiz mesajda arayüz "📷 Fotoğraf" gibi bir etiket çiziyor; tür
+    // burada, çeviri istemcide (kullanıcının dili sunucuda belli değil).
+    kind: src.gif ? 'gif'
+      : src.share ? 'reel'
+      : src.media ? (src.media.type?.startsWith('video/') ? 'video' : 'photo') : null,
+  };
 }
 
 /**
@@ -252,48 +356,113 @@ export async function isTyping(cid, uid) {
   return r === "1";
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// TEPKİLER
+//
+// SABİT LİSTE, serbest metin değil. Bu bir güvenlik sınırı, tasarım tercihi
+// değil: tepki değeri doğrudan baloncuğun altına yazılıyor. İstemcinin
+// gönderdiği herhangi bir metni kabul etseydik sohbet baloncuğu, istenen her
+// şeyin yazdırılabildiği bir yüzeye dönüşürdü — medya ve GIF uçlarında
+// verdiğimiz kararın aynısı.
+//
+// ALTI TANE. Daha fazlası seçiciyi tarama işine çeviriyor; WhatsApp ve
+// Instagram da altıda durmuş.
+export const REACTIONS = ['❤️', '😂', '😮', '😢', '🔥', '👍'];
+
+// Kalp AYRICALIKLI: çift dokunuşun karşılığı ve eski istemcilerin bildiği
+// tek tepki (bkz. aşağıdaki geriye dönük uyum).
+export const DEFAULT_REACTION = '❤️';
+
+export function isReaction(e) {
+  return REACTIONS.includes(e);
+}
+
+/**
+ * Ham hash değerini tepki nesnesine çevirir.
+ *
+ * GERİYE DÖNÜK UYUM: eski kayıtlar düz bir uid dizisi (`["uidA","uidB"]`),
+ * çünkü tek tür tepki vardı. O biçim kalp tepkisi olarak okunuyor —
+ * göç betiği yazmaya gerek yok, eski beğeniler olduğu yerde doğru
+ * görünmeye devam ediyor ve bir sonraki yazımda yeni biçime geçiyor.
+ */
+function normalize(raw) {
+  const v = parseJSON(raw);
+  if (Array.isArray(v)) return v.length ? { [DEFAULT_REACTION]: v } : {};
+  if (v && typeof v === 'object') {
+    const out = {};
+    for (const [e, list] of Object.entries(v)) {
+      // Depoda bozuk/eski bir emoji kalmışsa okurken eleniyor: listeyi
+      // daralttığımızda eski kayıtların ekrana sızmasını istemiyoruz.
+      if (isReaction(e) && Array.isArray(list) && list.length) out[e] = list;
+    }
+    return out;
+  }
+  return {};
+}
+
 /**
  * Upstash HGETALL yanıtı dizi olarak gelebiliyor ([alan, değer, alan, değer]).
- * İki biçimi de kabul ediyoruz; yalnızca nesne beklemek sessizce boş beğeni
+ * İki biçimi de kabul ediyoruz; yalnızca nesne beklemek sessizce boş tepki
  * listesi döndürürdü.
  */
-function likesOf(map, msgId) {
-  if (!map) return [];
+function reactionsOf(map, msgId) {
+  if (!map) return {};
   let raw = null;
   if (Array.isArray(map)) {
     for (let i = 0; i < map.length; i += 2) if (map[i] === msgId) { raw = map[i + 1]; break; }
   } else {
     raw = map[msgId];
   }
-  const arr = parseJSON(raw);
-  return Array.isArray(arr) ? arr : [];
+  return normalize(raw);
 }
 
 /**
- * Beğeniyi açar/kapatır.
+ * Tepkiyi açar/kapatır.
+ *
+ * KİŞİ BAŞINA TEK TEPKİ. Yeni bir emojiye basmak öncekinin yerini alıyor,
+ * yanına eklenmiyor — aynı kişinin bir mesaja hem 😂 hem 😢 koyması bir şey
+ * anlatmıyor ve baloncuğun altını rozet çöplüğüne çeviriyor. WhatsApp ve
+ * Instagram da böyle davranıyor.
+ *
+ * AYNI EMOJİYE TEKRAR BASMAK KALDIRIYOR — çift dokunuşun kalbi kaldırması
+ * bu kuralın özel hâli.
  *
  * OKU-DEĞİŞTİR-YAZ yarışa açık ama konuşmada YALNIZCA İKİ KİŞİ var; aynı
- * mesajı aynı anda beğenme olasılığı ihmal edilebilir ve sonucu da zararsız
- * (bir beğeni kaybolur, veri bozulmaz). Atomik bir betik yazmak bu bedele
- * değmiyor.
+ * mesaja aynı anda tepki verme olasılığı ihmal edilebilir ve sonucu da
+ * zararsız (bir tepki kaybolur, veri bozulmaz). Atomik bir betik yazmak bu
+ * bedele değmiyor.
  *
- * @returns {Promise<{likes: string[], liked: boolean}>}
+ * @param {string} emoji  REACTIONS içinde olmalı — çağıran doğrulamalı
+ * @returns {Promise<{reactions: object, likes: string[], mine: string|null}>}
  */
-export async function toggleLike(cid, msgId, uid) {
+export async function toggleReaction(cid, msgId, uid, emoji = DEFAULT_REACTION) {
   const raw = await redisCmd(['HGET', likesKey(cid), msgId]);
-  const cur = parseJSON(raw);
-  const list = Array.isArray(cur) ? cur : [];
+  const cur = normalize(raw);
 
-  const i = list.indexOf(uid);
-  if (i >= 0) list.splice(i, 1); else list.push(uid);
+  // Zaten bu emojide miyim? Cevabı TEMİZLEMEDEN ÖNCE almak zorundayız.
+  const had = (cur[emoji] || []).includes(uid);
 
-  if (list.length) {
-    await redisCmd(['HSET', likesKey(cid), msgId, JSON.stringify(list)]);
+  // Her emojiden çık — tek tepki kuralı.
+  for (const e of Object.keys(cur)) {
+    const list = cur[e].filter((u) => u !== uid);
+    if (list.length) cur[e] = list; else delete cur[e];
+  }
+
+  if (!had) cur[emoji] = [...(cur[emoji] || []), uid];
+
+  if (Object.keys(cur).length) {
+    await redisCmd(['HSET', likesKey(cid), msgId, JSON.stringify(cur)]);
   } else {
-    // Boş kalan alanı SİL — beğenisi kalmayan mesajlar hash içinde
-    // birikirse okuma her seferinde büyür.
+    // Boş kalan alanı SİL — tepkisi kalmayan mesajlar hash içinde birikirse
+    // okuma her seferinde büyür.
     await redisCmd(['HDEL', likesKey(cid), msgId]);
   }
 
-  return { likes: list, liked: list.includes(uid) };
+  return {
+    reactions: cur,
+    // `likes` ESKİ İSTEMCİLER İÇİN. Sunucu uygulamadan önce dağıtılıyor;
+    // bu alan olmasaydı güncellenmemiş kurulumlarda kalp rozeti kaybolurdu.
+    likes: cur[DEFAULT_REACTION] || [],
+    mine: had ? null : emoji,
+  };
 }

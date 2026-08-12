@@ -135,11 +135,17 @@ export async function triggerTyping(cid, byUid) {
  * `by` alanı ŞART — kanal iki taraflı; kimin beğendiğini yazmazsak istemci
  * kendi olayını görüp durumu iki kez çevirir.
  */
-export async function triggerLike(cid, msgId, likes, byUid) {
+export async function triggerLike(cid, msgId, likes, byUid, reactions) {
   const p = getClient();
   if (!p) return false;
   try {
-    await p.trigger(dmChannel(cid), 'like', { id: msgId, likes, by: byUid });
+    // OLAY ADI 'like' KALDI, 'reaction' olmadi: guncellenmemis kurulumlar
+    // bu ada abone ve isim degisseydi onlarda anlik tepki tamamen kesilirdi.
+    // Yuk iki alani birden tasiyor — eski istemci `likes`i, yeni istemci
+    // `reactions`i okuyor.
+    await p.trigger(dmChannel(cid), 'like', {
+      id: msgId, likes, reactions: reactions || {}, by: byUid,
+    });
     return true;
   } catch {
     return false;

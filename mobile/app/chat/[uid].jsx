@@ -24,7 +24,7 @@ import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 
 import {
   getChat, sendChat, uploadChatMedia, deleteChatMessage, pingPresence, sendTyping,
-  likeChatMessage,
+  likeChatMessage, pinChatMessage,
 } from '../../src/api/social';
 import { subscribeDM } from '../../src/services/realtime';
 import { setActiveChat, dismissChatNotifications } from '../../src/notifications';
@@ -35,10 +35,38 @@ import MessageMenu from '../../src/components/MessageMenu';
 import GifPicker from '../../src/components/GifPicker';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { getAvatarPreset } from '../../src/utils/avatar';
+import { REACTIONS, reactionList } from '../../src/services/reactions';
 import { colors, radius, spacing, type, PRESSED } from '../../src/theme';
 import { useLanguage } from '../../src/context/LanguageContext';
 
 const MAX_TEXT = 1000;
+
+/**
+ * Metinsiz mesajin etiketi — '📷 Fotoğraf' gibi.
+ *
+ * Tür SUNUCUDAN geliyor (`kind`), çeviri BURADA: kullanıcının dili
+ * sunucuda belli değil. Hem yanıt çubuğu hem baloncuktaki alıntı aynı
+ * etiketi kullanıyor.
+ */
+function kindLabel(x, t) {
+  const k = x?.kind || (x?.gif ? 'gif' : x?.share ? 'reel'
+    : x?.media ? (x.media.type?.startsWith('video/') ? 'video' : 'photo') : null);
+  return k === 'gif'   ? `🖼️ ${t('msg.gif')}`
+    : k === 'reel'     ? `🎬 ${t('msg.sharedReel')}`
+    : k === 'video'    ? `🎬 ${t('msg.video')}`
+    : k === 'photo'    ? `📷 ${t('msg.photo')}`
+    : '';
+}
+
+/** Bu mesaja BEN hangi tepkiyi verdim? (yoksa null) */
+function myReactionOf(msg, myUid) {
+  const r = msg?.reactions;
+  if (!r || typeof r !== 'object' || !myUid) return null;
+  for (const [emoji, list] of Object.entries(r)) {
+    if (Array.isArray(list) && list.includes(myUid)) return emoji;
+  }
+  return null;
+}
 
 /**
  * "Son görülme" etiketi.
@@ -114,6 +142,13 @@ export default function ChatScreen() {
   // Uzun basılan mesaj: { msg, mine, anchor }. `anchor` baloncuğun pencere
   // koordinatı — menü ona tutturuluyor.
   const [menu, setMenu] = useState(null);
+  // Yanıtlanan mesaj: gönderim kutusunun üstünde önizlemesi duruyor.
+  // TAM MESAJ tutuluyor, yalnızca kimlik değil — önizlemeyi çizmek için
+  // metin ve yazar gerekiyor ve mesaj zaten elimizde.
+  const [replyTo, setReplyTo] = useState(null);
+  // Sabit mesaj — konuşma başına tek, iki taraf da değiştirebiliyor.
+  // Sunucu her geçmiş yanıtında gönderiyor; sayfalamadan bağımsız.
+  const [pinned, setPinned] = useState(null);
   // Karşı tarafın en son okuma zamanı. Kendi mesajlarımdan `at`'i bundan
   // küçük veya eşit olanlar görülmüş sayılıyor.
   const [otherReadAt, setOtherReadAt] = useState(0);
@@ -128,6 +163,8 @@ export default function ChatScreen() {
   // Yoklama araligi kapanista yeniden kurulmasin diye mesajlar REF ile
   // okunuyor; bagimliliga koysaydik her mesajda yeni bir aralik acilirdi.
   const msgsRef = useRef([]);
+  // Alıntıya dokununca aslına kaydırmak için (bkz. jumpTo).
+  const listRef = useRef(null);
 
   // uid `session.user.uid` içinde. `session.uid` yazılırsa daima null olur ve
   // KENDİ mesajların da karşı tarafınmış gibi sola hizalı çizilir.
@@ -152,30 +189,45 @@ export default function ChatScreen() {
   }, []);
 
   /**
-   * Beğeniyi yerel olarak çevirir — sunucu yanıtını beklemeden.
-   * Çift dokunuş anlık tepki vermeli; beğeni yıkıcı olmayan bir eylem,
-   * ters giderse sunucunun döndürdüğü liste durumu düzeltiyor.
+   * Tepkileri yerel olarak yazar — sunucu yanıtını beklemeden.
+   * Dokunuş anlık tepki vermeli; tepki yıkıcı olmayan bir eylem, ters
+   * giderse sunucunun döndürdüğü nesne durumu düzeltiyor.
    */
-  const toggleLikeLocal = useCallback((id, likes) => {
-    setMsgs((cur) => cur.map((m) => (m.id === id ? { ...m, likes } : m)));
+  const setReactionsLocal = useCallback((id, reactions) => {
+    setMsgs((cur) => cur.map((m) => (m.id === id ? { ...m, reactions } : m)));
   }, []);
 
-  const onLike = useCallback(async (msg) => {
+  /**
+   * Tepki ver / kaldır.
+   *
+   * KİŞİ BAŞINA TEK TEPKİ — sunucudaki kuralın istemci aynası. Yerel tahmini
+   * sunucuyla aynı mantıkla kurmak zorundayız, yoksa iyimser güncelleme bir
+   * an farklı bir şey gösterip sunucu yanıtı gelince zıplar.
+   */
+  const react = useCallback(async (msg, emoji = REACTIONS[0]) => {
     if (!msg?.id || msg.deleted || String(msg.id).startsWith('tmp-')) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
 
-    const cur = Array.isArray(msg.likes) ? msg.likes : [];
-    const varMi = cur.includes(myUid);
-    toggleLikeLocal(msg.id, varMi ? cur.filter((u) => u !== myUid) : [...cur, myUid]);
+    const cur = msg.reactions && typeof msg.reactions === 'object' ? msg.reactions : {};
+    const zatenVar = (cur[emoji] || []).includes(myUid);
+
+    // Önce her emojiden çık, sonra (basılan emojide değildiysem) ekle.
+    const next = {};
+    for (const [e, list] of Object.entries(cur)) {
+      const kalan = list.filter((u) => u !== myUid);
+      if (kalan.length) next[e] = kalan;
+    }
+    if (!zatenVar) next[emoji] = [...(next[emoji] || []), myUid];
+    setReactionsLocal(msg.id, next);
 
     try {
-      const r = await likeChatMessage(other, msg.id);
-      if (Array.isArray(r?.likes)) toggleLikeLocal(msg.id, r.likes);
+      const r = await likeChatMessage(other, msg.id, emoji);
+      if (r?.reactions && typeof r.reactions === 'object') setReactionsLocal(msg.id, r.reactions);
     } catch {
       // Sunucu reddetti — yerel değişikliği geri al.
-      toggleLikeLocal(msg.id, cur);
+      setReactionsLocal(msg.id, cur);
     }
-  }, [myUid, other, toggleLikeLocal]);
+  }, [myUid, other, setReactionsLocal]);
 
   const confirmDelete = useCallback((msg) => {
     // Yalnızca KENDİ mesajın; sunucu da ayrıca doğruluyor ama kullanıcıya
@@ -215,6 +267,46 @@ export default function ChatScreen() {
   }, []);
 
   /**
+   * Alıntıya dokununca aslına git.
+   *
+   * Mesaj YÜKLÜ DEĞİLSE sessizce hiçbir şey yapmıyoruz. Alternatif, o mesaja
+   * kadar sayfa sayfa geri yüklemek olurdu — uzun bir bekleme ve belirsiz bir
+   * kaydırma; dokunuşun karşılığı olarak ikisi de kötü.
+   */
+  /**
+   * Sabitle / sabitlemeyi kaldır.
+   *
+   * İYİMSER DEĞİL: sabit iki tarafın da gördüğü ortak bir işaret ve
+   * sunucu reddederse 'sabitledim sandım ama sabitlenmemiş' durumu
+   * oluşurdu. Sunucunun döndürdüğü değer yazılıyor.
+   */
+  const togglePin = useCallback(async (msg) => {
+    const kaldir = pinned?.id === msg.id;
+    try {
+      const r = await pinChatMessage(other, kaldir ? '' : msg.id);
+      // Uç ham kaydı döndürüyor (id/by/at); banttaki metni çizmek için
+      // mesajın kendisinden tamamlıyoruz — ikinci bir istek gerekmesin.
+      setPinned(r?.pinned
+        ? { ...r.pinned, from: msg.from, text: msg.text || '',
+            kind: msg.gif ? 'gif' : msg.share ? 'reel'
+              : msg.media ? (msg.media.type?.startsWith('video/') ? 'video' : 'photo') : null }
+        : null);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    } catch {
+      Alert.alert(t('msg.pinFailed'));
+    }
+  }, [other, pinned, t]);
+
+  const jumpTo = useCallback((id) => {
+    const i = msgsRef.current.findIndex((m) => m.id === id);
+    if (i < 0) return;
+    Haptics.selectionAsync().catch(() => {});
+    // viewPosition 0.5 = ekranın ortası. Tepeye yaslamak, ters çevrilmiş
+    // listede mesajı klavyenin altında bırakabiliyor.
+    listRef.current?.scrollToIndex({ index: i, animated: true, viewPosition: 0.5 });
+  }, []);
+
+  /**
    * Menü satırları. Mesajın TÜRÜNE göre kuruluyor: yapılamayacak bir eylemi
    * soluk göstermek yerine hiç göstermiyoruz — soluk satır "neden çalışmıyor"
    * sorusunu doğuruyor, olmayan satır soru doğurmuyor.
@@ -233,6 +325,20 @@ export default function ChatScreen() {
         },
       });
     }
+    // YANITLA en üstte: menünün en sık kullanılan eylemi ve iOS bağlam
+    // menülerinde de ilk sırada duruyor.
+    rows.unshift({
+      key: 'reply', icon: 'arrow-undo-outline', label: t('msg.reply'),
+      onPress: () => setReplyTo(msg),
+    });
+    // SABİTLE her iki tarafın mesajında da var: sabit ortak bir işaret,
+    // kimin yazdığıyla ilgisi yok.
+    rows.push({
+      key: 'pin',
+      icon: pinned?.id === msg.id ? 'pin' : 'pin-outline',
+      label: pinned?.id === msg.id ? t('msg.unpin') : t('msg.pin'),
+      onPress: () => togglePin(msg),
+    });
     if (mine) {
       rows.push({
         key: 'delete', icon: 'trash-outline', label: t('msg.undo'),
@@ -245,7 +351,7 @@ export default function ChatScreen() {
       });
     }
     return rows;
-  }, [t, confirmDelete, cid, other]);
+  }, [t, confirmDelete, cid, other, pinned, togglePin]);
 
   useEffect(() => {
     if (!session || !other) { setLoading(false); return; }
@@ -255,6 +361,7 @@ export default function ChatScreen() {
         const r = await getChat(other);
         if (!alive) return;
         setMsgs(r?.messages || []);
+        setPinned(r?.pinned || null);
         setPeer(r?.other || null);
         setCid(r?.cid || null);
         setOtherReadAt(r?.otherReadAt || 0);
@@ -286,9 +393,16 @@ export default function ChatScreen() {
       (p) => { if (p?.by && p.by !== myUid) setOtherReadAt((cur) => Math.max(cur, p.at || 0)); },
       // Kendi yazma olayimi ele: kanal iki tarafli.
       (p) => { if (p?.by && p.by !== myUid) setTypingUntil(Date.now() + 4000); },
-      // Beğeni HER İKİ TARAFTAN da gelebilir; kendi olayımı elemiyorum
-      // çünkü sunucunun döndürdüğü liste zaten doğru olan.
-      (p) => { if (p?.id && Array.isArray(p.likes)) toggleLikeLocal(p.id, p.likes); },
+      // Tepki HER İKİ TARAFTAN da gelebilir; kendi olayımı elemiyorum
+      // çünkü sunucunun döndürdüğü nesne zaten doğru olan.
+      //
+      // `reactions` YOKSA `likes`e düşüyoruz: sunucu güncellenmeden önce
+      // dağıtılan bir uygulamada olay yalnızca eski alanı taşıyor olabilir.
+      (p) => {
+        if (!p?.id) return;
+        if (p.reactions && typeof p.reactions === 'object') setReactionsLocal(p.id, p.reactions);
+        else if (Array.isArray(p.likes)) setReactionsLocal(p.id, p.likes.length ? { [REACTIONS[0]]: p.likes } : {});
+      },
     ).then((r) => {
       liveRef.current = !!r?.live;
       if (alive) off = r?.off; else r?.off?.();
@@ -313,6 +427,9 @@ export default function ChatScreen() {
         const r = await getChat(other, undefined, newest || undefined);
         if (!alive) return;
         (r?.messages || []).forEach(addMessage);
+        // Sabit her yanıtta geliyor; karşı taraf değiştirdiyse yoklama
+        // bunu yakalıyor (anlık bildirim yok, bkz. pin ucu).
+        setPinned(r?.pinned || null);
         if (r?.otherReadAt) setOtherReadAt((c) => Math.max(c, r.otherReadAt));
         if (r?.presence !== undefined) setPresence(r.presence);
         // YALNIZCA Pusher YOKKEN: Pusher bagliyken yoklama 20 saniyede bir
@@ -385,13 +502,27 @@ export default function ChatScreen() {
     // Geçici kimlik: sunucu gerçeğini döndürünce bununla değiştiriliyor.
     const tempId = 'tmp-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7);
     const optimistic = { id: tempId, from: myUid, text: body, at: Date.now(), pending: true };
+    // İYİMSER ALINTI: sunucu `quote`u yanıtla döndürüyor ama baloncuk o ana
+    // kadar alıntısız kalırsa mesaj gönderilir gönderilmez bağlamını
+    // kaybediyor. Yerel kopya yalnızca çizim için; sunucu yanıtı üzerine yazıyor.
+    const yanit = replyTo;
+    if (yanit) {
+      optimistic.replyTo = yanit.id;
+      optimistic.quote = {
+        id: yanit.id, from: yanit.from,
+        text: yanit.text ? yanit.text.slice(0, 120) : '',
+        kind: yanit.gif ? 'gif' : yanit.share ? 'reel'
+          : yanit.media ? (yanit.media.type?.startsWith('video/') ? 'video' : 'photo') : null,
+      };
+    }
 
     setText('');
+    setReplyTo(null);
     addMessage(optimistic);
     Haptics.selectionAsync().catch(() => {});
 
     try {
-      const r = await sendChat(other, body);
+      const r = await sendChat(other, body, undefined, undefined, undefined, yanit?.id);
       // Geçici baloncuğu gerçeğiyle değiştir. Kaldırıp yeniden eklemek
       // listede zıplama yaratırdı.
       if (r?.message) {
@@ -414,7 +545,7 @@ export default function ChatScreen() {
           : t('msg.sendFailed')
       );
     }
-  }, [text, other, myUid, addMessage, t]);
+  }, [text, other, myUid, addMessage, replyTo, t]);
 
   /**
    * GIF gönder — İYİMSER, metin gönderimiyle aynı mantık.
@@ -428,18 +559,30 @@ export default function ChatScreen() {
       id: tempId, from: myUid, text: '', at: Date.now(), pending: true,
       gif: { url: g.url, w: g.w, h: g.h },
     };
+    // Yanıt kipindeysek alıntıyı iyimser olarak da taşıyoruz (bkz. send).
+    const yanit = replyTo;
+    if (yanit) {
+      optimistic.replyTo = yanit.id;
+      optimistic.quote = {
+        id: yanit.id, from: yanit.from,
+        text: yanit.text ? yanit.text.slice(0, 120) : '',
+        kind: yanit.gif ? 'gif' : yanit.share ? 'reel'
+          : yanit.media ? (yanit.media.type?.startsWith('video/') ? 'video' : 'photo') : null,
+      };
+    }
+    setReplyTo(null);
     addMessage(optimistic);
     Haptics.selectionAsync().catch(() => {});
 
     try {
-      const r = await sendChat(other, '', undefined, undefined, { url: g.url, w: g.w, h: g.h });
+      const r = await sendChat(other, '', undefined, undefined, { url: g.url, w: g.w, h: g.h }, yanit?.id);
       if (r?.message) setMsgs((cur) => cur.map((m) => (m.id === tempId ? r.message : m)));
     } catch {
       setMsgs((cur) => cur.map((m) => (
         m.id === tempId ? { ...m, pending: false, failed: true } : m
       )));
     }
-  }, [other, myUid, addMessage]);
+  }, [other, myUid, addMessage, replyTo]);
 
   /**
    * Galeriden görsel seç, KÜÇÜLT, yükle, mesaj olarak gönder.
@@ -468,6 +611,10 @@ export default function ChatScreen() {
     const asset = picked.assets[0];
     const isVideo = asset.type === 'video';
 
+    // Yanıt kipi YÜKLEMEDEN ÖNCE okunuyor: yükleme saniyeler sürüyor ve o
+    // sırada kullanıcı çubuğu kapatırsa gönderim yine doğru yanıta bağlanmalı.
+    const yanitFoto = replyTo;
+    setReplyTo(null);
     setSending(true);
     try {
       let uri = asset.uri;
@@ -485,7 +632,8 @@ export default function ChatScreen() {
       }
 
       const up = await uploadChatMedia(other, uri, mime);
-      const r = await sendChat(other, '', { url: up.url, type: up.contentType });
+      const r = await sendChat(other, '', { url: up.url, type: up.contentType },
+                               undefined, undefined, yanitFoto?.id);
       if (r?.message) addMessage(r.message);
       Haptics.selectionAsync().catch(() => {});
     } catch (e) {
@@ -502,7 +650,7 @@ export default function ChatScreen() {
     } finally {
       setSending(false);
     }
-  }, [sending, other, addMessage, t]);
+  }, [sending, other, addMessage, replyTo, t]);
 
   // Goruldu isareti YALNIZCA EN YENI okunmus kendi mesajimda. Her okunmus
   // mesaja koymak sohbeti isaret cop luguna cevirir; kullanicinin bilmek
@@ -571,6 +719,41 @@ export default function ChatScreen() {
         </Pressable>
       </View>
 
+      {/* ── Sabit mesaj bandı ──
+          KLAVYE ALANININ DIŞINDA, listenin üstünde: bant her zaman görünmeli.
+          KeyboardAvoidingView'ın içine koysaydım klavye açılınca listeyle
+          birlikte yukarı itilir ve başlığın altında kaybolurdu.
+
+          Dokununca mesaja gidiyor, X sabitlemeyi kaldırıyor. Sabit ortak bir
+          işaret olduğu için kaldırma da iki tarafa açık. */}
+      {body ? null : pinned ? (
+        <Animated.View entering={FadeIn.duration(160)} style={styles.pinBar}>
+          <Pressable
+            style={({ pressed }) => [styles.pinMain, pressed && PRESSED]}
+            onPress={() => jumpTo(pinned.id)}
+            accessibilityRole="button"
+            accessibilityLabel={t('msg.pinned')}
+          >
+            <Ionicons name="pin" size={14} color={colors.accentText} />
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={styles.pinLabel}>{t('msg.pinned')}</Text>
+              <Text style={styles.pinText} numberOfLines={1}>
+                {pinned.text || kindLabel(pinned, t)}
+              </Text>
+            </View>
+          </Pressable>
+          <Pressable
+            style={({ pressed }) => [styles.pinClose, pressed && PRESSED]}
+            onPress={() => togglePin({ id: pinned.id })}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={t('msg.unpin')}
+          >
+            <Ionicons name="close" size={16} color={colors.text3} />
+          </Pressable>
+        </Animated.View>
+      ) : null}
+
       {body || (
         <KeyboardAvoidingView
           style={styles.flex}
@@ -578,18 +761,30 @@ export default function ChatScreen() {
           keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}
         >
           <FlatList
+            ref={listRef}
             data={msgs}
             inverted
             keyExtractor={(m) => m.id}
             contentContainerStyle={styles.listPad}
             keyboardDismissMode="interactive"
+            // scrollToIndex, henüz çizilmemiş bir satır istendiğinde HATA
+            // ATIYOR. Alıntıya dokunmak eski bir mesaja gidiyor ve o mesaj
+            // çoğu zaman çizilmemiş oluyor — bu işleyici olmadan uygulama
+            // çöker.
+            onScrollToIndexFailed={({ index, averageItemLength }) => {
+              listRef.current?.scrollToOffset({
+                offset: index * (averageItemLength || 64), animated: true,
+              });
+            }}
             renderItem={({ item }) => (
               <Bubble
                 msg={item}
                 mine={item.from === myUid}
                 seen={item.id === seenId}
                 onLongPress={openMenu}
-                onLike={() => onLike(item)}
+                onReact={(emoji) => react(item, emoji)}
+                onJumpTo={jumpTo}
+                peerName={peer?.displayName || peer?.username || ''}
                 myUid={myUid}
                 onOpenShare={() => item.share?.appid && router.push({
                   pathname: '/game/[id]',
@@ -604,6 +799,36 @@ export default function ChatScreen() {
               </View>
             }
           />
+
+          {/* ── Yanıt önizlemesi ──
+              Gönderme kutusunun ÜSTÜNDE, klavyeyle birlikte yükseliyor.
+              Neye yanıt verdiğini yazarken görmek zorundasın; menüyü kapattıktan
+              sonra tek hatırlatıcı bu.
+
+              Kapatma düğmesi ŞART: yanlış mesaja basıp yanıt kipinde sıkışmak,
+              menüyü tekrar açmaktan başka çıkışı olmayan bir tuzak olurdu. */}
+          {replyTo ? (
+            <Animated.View entering={FadeIn.duration(140)} style={styles.replyBar}>
+              <View style={styles.replyStripe} />
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={styles.replyWho} numberOfLines={1}>
+                  {replyTo.from === myUid ? t('msg.replyToSelf') : (peer?.displayName || peer?.username || '')}
+                </Text>
+                <Text style={styles.replyText} numberOfLines={1}>
+                  {replyTo.text || kindLabel(replyTo, t)}
+                </Text>
+              </View>
+              <Pressable
+                style={({ pressed }) => [styles.replyClose, pressed && PRESSED]}
+                onPress={() => setReplyTo(null)}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel={t('msg.cancel')}
+              >
+                <Ionicons name="close" size={17} color={colors.text2} />
+              </Pressable>
+            </Animated.View>
+          ) : null}
 
           {/* ALT GUVENLI ALAN: SafeAreaView yalnizca ust kenari isliyor
               (edges={['top']}) cunku liste tepeye kadar uzanmali. Alt kenar
@@ -663,6 +888,8 @@ export default function ChatScreen() {
         anchor={menu?.anchor}
         mine={!!menu?.mine}
         actions={menu ? menuActions(menu) : []}
+        onReact={(emoji) => react(menu.msg, emoji)}
+        myReaction={menu ? myReactionOf(menu.msg, myUid) : null}
       />
 
       <GifPicker
@@ -681,7 +908,7 @@ export default function ChatScreen() {
   );
 }
 
-function Bubble({ msg, mine, seen, onLongPress, onOpenShare, onLike, myUid, t }) {
+function Bubble({ msg, mine, seen, onLongPress, onOpenShare, onReact, onJumpTo, myUid, peerName, t }) {
   // Menu baloncuga TUTTURULUYOR, ekranin altina degil — hangi mesaja ait
   // oldugunu konumu soylemeli. Bunun icin baloncugun pencere koordinati
   // gerekiyor ve o ancak olculerek bulunuyor.
@@ -701,12 +928,13 @@ function Bubble({ msg, mine, seen, onLongPress, onOpenShare, onLike, myUid, t })
   const lastTapRef = useRef(0);
   const onTap = useCallback(() => {
     const now = Date.now();
-    if (now - lastTapRef.current < 280) { lastTapRef.current = 0; onLike?.(); }
+    if (now - lastTapRef.current < 280) { lastTapRef.current = 0; onReact?.(REACTIONS[0]); }
     else lastTapRef.current = now;
-  }, [onLike]);
+  }, [onReact]);
 
-  const likes = Array.isArray(msg.likes) ? msg.likes : [];
-  const liked = likes.includes(myUid);
+  // Sunucu `reactions` gonderiyor; `likes` yalnizca eski istemciler icin
+  // tasindigindan burada okunmuyor.
+  const chips = reactionList(msg.reactions, myUid);
 
   // Geri alınan mesaj listeden ÇIKMIYOR, yerinde bir iz bırakıyor — sıra ve
   // sayfalama bozulmasın, karşı taraf da bir şeyin geri alındığını görsün.
@@ -756,17 +984,20 @@ function Bubble({ msg, mine, seen, onLongPress, onOpenShare, onLike, myUid, t })
           delayLongPress={400}
           onPress={onTap}
         >
+          {/* GIF'in ustunde alinti: GIF'le yanit vermek de mumkun. */}
+          {msg.quote ? (
+            <View style={styles.gifQuoteWrap}>
+              <Quote quote={msg.quote} mine={mine} myUid={myUid} peerName={peerName}
+                     onPress={() => onJumpTo?.(msg.quote.id)} t={t} />
+            </View>
+          ) : null}
           <Image
             source={msg.gif.url}
             style={styles.gifBubble}
             contentFit="contain"
             transition={120}
           />
-          {likes.length > 0 ? (
-            <View style={[styles.heart, mine ? styles.heartMine : styles.heartTheirs]}>
-              <Ionicons name="heart" size={11} color={liked ? colors.accent : colors.text2} />
-            </View>
-          ) : null}
+          <Reactions chips={chips} mine={mine} onPress={onReact} />
           {msg.pending ? <Text style={styles.state}>{t('msg.sending')}</Text> : null}
           {msg.failed ? <Text style={[styles.state, styles.stateFail]}>{t('msg.notSent')}</Text> : null}
           {seen && !msg.pending && !msg.failed ? <Text style={styles.seen}>{t('msg.seen')}</Text> : null}
@@ -798,6 +1029,8 @@ function Bubble({ msg, mine, seen, onLongPress, onOpenShare, onLike, myUid, t })
         // gerekiyor, aksi hâlde kenarlarda renkli bir çerçeve kalıyor.
         hasMedia && !hasText && styles.bubbleMediaOnly,
       ]}>
+        <Quote quote={msg.quote} mine={mine} myUid={myUid} peerName={peerName}
+               onPress={() => onJumpTo?.(msg.quote.id)} t={t} />
         {hasMedia && (isVideo
           ? <VideoBubble url={msg.media.url} />
           : <Image source={msg.media.url} style={styles.media} contentFit="cover" transition={140} />
@@ -816,11 +1049,7 @@ function Bubble({ msg, mine, seen, onLongPress, onOpenShare, onLike, myUid, t })
           her okunmus mesaja koymak sohbeti isaret coplugune cevirir. */}
       {/* Kalp baloncuğun ALT KENARINA oturuyor, içine değil: metnin akışını
           bozmuyor ve medya baloncuğunda da aynı yerde duruyor. */}
-      {likes.length > 0 ? (
-        <View style={[styles.heart, mine ? styles.heartMine : styles.heartTheirs]}>
-          <Ionicons name="heart" size={11} color={liked ? colors.accent : colors.text2} />
-        </View>
-      ) : null}
+      <Reactions chips={chips} mine={mine} onPress={onReact} />
 
       {/* Gönderiliyor / başarısız — iyimser gönderimin görünen tarafı. */}
       {msg.pending ? <Text style={styles.state}>{t('msg.sending')}</Text> : null}
@@ -852,6 +1081,71 @@ function VideoBubble({ url }) {
   );
 }
 
+/**
+ * Baloncugun ICINDE, metnin ustunde duran alinti.
+ *
+ * BALONCUGUN ICINDE, ustunde degil: alinti yanitin bir parcasi, ayri bir
+ * mesaj degil. Disarida dursaydi listede iki satir gibi okunurdu.
+ *
+ * UC DURUM ayri ayri ciziliyor — sunucu hangisi oldugunu soyluyor:
+ *   • normal      -> yazar + kisa metin
+ *   • geri alinmis-> 'bu mesaj geri alindi'
+ *   • bulunamadi  -> 500 mesajlik pencerenin disina dusmus
+ *
+ * DOKUNULUNCA ASLINA GIDIYOR. Baglami gormek icin elle kaydirmak, uzun
+ * sohbetlerde alintiyi islevsiz birakiyor.
+ */
+function Quote({ quote, mine, myUid, peerName, onPress, t }) {
+  if (!quote) return null;
+  const kim = quote.from === myUid ? t('msg.replyToSelf') : (peerName || '');
+  return (
+    <Pressable
+      style={({ pressed }) => [styles.quote, mine && styles.quoteMine, pressed && PRESSED]}
+      onPress={quote.missing ? undefined : onPress}
+    >
+      <View style={[styles.quoteStripe, mine && styles.quoteStripeMine]} />
+      <View style={{ flex: 1, minWidth: 0 }}>
+        {quote.missing ? null : <Text style={styles.quoteWho} numberOfLines={1}>{kim}</Text>}
+        <Text style={[styles.quoteText, (quote.deleted || quote.missing) && styles.quoteGone]} numberOfLines={2}>
+          {quote.missing ? t('msg.quoteMissing')
+            : quote.deleted ? t('msg.wasUndone')
+            : (quote.text || kindLabel(quote, t))}
+        </Text>
+      </View>
+    </Pressable>
+  );
+}
+
+/**
+ * Baloncugun altina oturan tepki rozetleri.
+ *
+ * AKISA GIRIYOR, mutlak konumlu DEGIL. Onceki kalp rozeti baloncugun
+ * uzerine biniyordu; tek bir kucuk simge icin sorun degildi ama uc dort
+ * rozet metnin son satirini kapatir.
+ *
+ * ROZETE BASMAK O TEPKIYI ACIP KAPATIYOR — menuyu acmadan hizli yol.
+ * Sayi YALNIZCA birden fazlaysa yaziliyor: "1" bilgi tasimiyor,
+ * rozetin varligi zaten onu soyluyor.
+ */
+function Reactions({ chips, mine, onPress }) {
+  if (!chips.length) return null;
+  return (
+    <View style={[styles.chips, mine ? styles.chipsMine : styles.chipsTheirs]}>
+      {chips.map((c) => (
+        <Pressable
+          key={c.emoji}
+          style={({ pressed }) => [styles.chip, c.mine && styles.chipMine, pressed && PRESSED]}
+          onPress={() => onPress?.(c.emoji)}
+          hitSlop={6}
+        >
+          <Text style={styles.chipEmoji}>{c.emoji}</Text>
+          {c.count > 1 ? <Text style={styles.chipCount}>{c.count}</Text> : null}
+        </Pressable>
+      ))}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   safe:   { flex: 1, backgroundColor: colors.bg },
   flex:   { flex: 1 },
@@ -878,15 +1172,71 @@ const styles = StyleSheet.create({
   state: { color: colors.text3, fontSize: type.caption2, marginTop: 3, marginRight: 4 },
   stateFail: { color: colors.danger },
   // Baloncuğun alt kenarına binen küçük madalyon.
-  heart: {
-    position: 'absolute', bottom: -7,
-    width: 20, height: 20, borderRadius: 10,
-    alignItems: 'center', justifyContent: 'center',
-    backgroundColor: colors.bgElevated,
-    borderWidth: 1.5, borderColor: colors.bg,
+  // Rozetler AKIŞTA, mutlak konumlu değil (eski tek kalp öyleydi). Üç dört
+  // rozet mutlak konumda metnin son satırını kapatıyordu.
+  //
+  // marginTop NEGATİF: rozet baloncuğun alt kenarına hafifçe biniyor —
+  // ayrı bir satır gibi değil, baloncuğa ait bir eklenti gibi okunsun.
+  // ── Alıntı (baloncuğun içinde) ──
+  // Şeritli sol kenar, sohbet uygulamalarının ortak dili: alıntıyı metinden
+  // ayıran şey renk değil o dikey çizgi. Renk tek başına yeterli olmazdı,
+  // kendi baloncuğumda zemin zaten renkli.
+  quote: {
+    flexDirection: 'row', gap: 8,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderRadius: radius.sm,
+    padding: 7, marginBottom: 6,
   },
-  heartMine:   { right: 8 },
-  heartTheirs: { left: 8 },
+  // Kendi baloncuğumun zemini vurgu renginde; aynı beyaz katman orada
+  // yeterince ayrışmıyordu.
+  quoteMine:       { backgroundColor: 'rgba(0,0,0,0.18)' },
+  quoteStripe:     { width: 3, borderRadius: 2, backgroundColor: colors.accent },
+  quoteStripeMine: { backgroundColor: 'rgba(255,255,255,0.55)' },
+  quoteWho:  { color: colors.text2, fontSize: type.caption2, fontWeight: '800' },
+  quoteText: { color: colors.text2, fontSize: type.caption, lineHeight: 16 },
+  quoteGone: { fontStyle: 'italic', color: colors.text3 },
+
+  // ── Sabit mesaj bandı (başlığın hemen altında) ──
+  // Alt kenarlık ŞART: bant listeyle aynı zeminde duruyor ve çizgi olmadan
+  // ilk mesaj bandın devamı gibi okunuyordu.
+  pinBar: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: spacing.lg, paddingVertical: 7,
+    backgroundColor: colors.bgElevated,
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.cardBorder,
+  },
+  pinMain:  { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 34 },
+  pinLabel: { color: colors.accentText, fontSize: type.caption2, fontWeight: '800' },
+  pinText:  { color: colors.text2, fontSize: type.caption },
+  pinClose: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
+
+  // ── Yanıt önizlemesi (gönderme kutusunun üstünde) ──
+  replyBar: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    marginHorizontal: spacing.lg, marginBottom: 6,
+    paddingVertical: 7, paddingHorizontal: 9,
+    backgroundColor: colors.card,
+    borderRadius: radius.md,
+    borderWidth: 1, borderColor: colors.cardBorder,
+  },
+  replyStripe: { width: 3, alignSelf: 'stretch', borderRadius: 2, backgroundColor: colors.accent },
+  replyWho:    { color: colors.accentText, fontSize: type.caption2, fontWeight: '800' },
+  replyText:   { color: colors.text2, fontSize: type.caption },
+  replyClose:  { width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
+
+  chips: { flexDirection: 'row', gap: 4, marginTop: -6, marginBottom: 2 },
+  chipsMine:   { alignSelf: 'flex-end' },
+  chipsTheirs: { alignSelf: 'flex-start' },
+  chip: {
+    flexDirection: 'row', alignItems: 'center', gap: 3,
+    paddingHorizontal: 7, height: 24, borderRadius: 12,
+    backgroundColor: colors.bgElevated,
+    borderWidth: 1, borderColor: colors.cardBorder,
+  },
+  // Kendi tepkim vurgulu: hangi rozetin bana ait olduğunu renk söylüyor.
+  chipMine:  { borderColor: colors.accentBorder, backgroundColor: colors.accentSoft },
+  chipEmoji: { fontSize: 12 },
+  chipCount: { color: colors.text2, fontSize: type.caption2, fontWeight: '700' },
 
   listPad: { paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
 
@@ -928,6 +1278,9 @@ const styles = StyleSheet.create({
   media: { width: 220, height: 165, borderRadius: radius.md, backgroundColor: colors.bgInput },
   // GIF oranlari cok degisken (kare, genis, uzun). Sabit yukseklik yerine
   // en-boy orani birakip contain kullaniyoruz — kirpma olmuyor.
+  // GIF'in kendi baloncugu yok; alintiya bir kap gerekiyor ki genislik
+  // GIF'e uysun ve metin tasmasin.
+  gifQuoteWrap: { width: 200 },
   gifBubble: { width: 200, height: 200, borderRadius: radius.md, backgroundColor: colors.bgInput },
 
   composer: {

@@ -4,7 +4,7 @@ import { rateLimit, tooManyRequests } from '../../../lib/rate-limit';
 import { validateFreeText } from '../../../lib/content-filter';
 import { areFriends, getHiddenUids, getProfile } from '../../../lib/social-store';
 import {
-  convId, appendMessage, getMessages, markRead, deleteMessage, getReadAt, isTyping, MAX_TEXT,
+  convId, appendMessage, getHistory, markRead, deleteMessage, getReadAt, isTyping, MAX_TEXT,
 } from '../../../lib/chat-store';
 import { triggerMessage, triggerDelete, triggerRead } from '../../../lib/pusher-server';
 import { touchPresence, getPresence } from '../../../lib/presence';
@@ -84,8 +84,8 @@ export async function GET(request) {
   if (deny) return NextResponse.json({ error: deny }, { status: 403 });
 
   const cid = convId(user.uid, other);
-  const [messages, profile, otherReadAt, presence, otherTyping] = await Promise.all([
-    getMessages(cid, { before, after }),
+  const [history, profile, otherReadAt, presence, otherTyping] = await Promise.all([
+    getHistory(cid, { before, after }),
     getProfile(other).catch(() => null),
     // KARŞI TARAFIN okuma zamanı — kendi mesajlarıma "görüldü" koymak için.
     getReadAt(cid, other),
@@ -105,7 +105,10 @@ export async function GET(request) {
 
   return NextResponse.json({
     cid,
-    messages,
+    messages: history.messages,
+    // Sabit mesaj HER YANITTA geliyor (sayfalamada da): bant ekranın
+    // tepesinde sabit duruyor ve hangi sayfaya bakıldığından bağımsız.
+    pinned: history.pinned,
     otherReadAt,
     // Pusher yoksa yoklama bunu okuyor.
     otherTyping,
@@ -176,6 +179,14 @@ export async function POST(request) {
     };
   }
 
+  // Yanıtlanan mesajın KİMLİĞİ. Varlığı burada DOĞRULANMIYOR: doğrulamak
+  // gönderim başına fazladan bir LRANGE demek ve bilinmeyen bir kimlik zaten
+  // zararsız — okuma yolunda "bulunamadı" olarak çiziliyor.
+  //
+  // Başka bir konuşmanın kimliğini göndermek de bir şey kazandırmıyor: alıntı
+  // yalnızca BU konuşmanın listesinden çözülüyor, yabancı kimlik eşleşmiyor.
+  const replyTo = body.replyTo ? String(body.replyTo).slice(0, 64) : null;
+
   const text = String(body.text || '');
 
   // Medya, paylaşım veya GIF varken metin ZORUNLU DEĞİL.
@@ -186,7 +197,7 @@ export async function POST(request) {
 
   try {
     const msg = await appendMessage({
-      from: user.uid, to: other, text: text.trim(), media, share, gif,
+      from: user.uid, to: other, text: text.trim(), media, share, gif, replyTo,
     });
 
     // Anlık teslim ve bildirim DENENIYOR ama ikisi de gönderimi bağlamıyor:

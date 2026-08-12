@@ -2,59 +2,53 @@ import { NextResponse } from 'next/server';
 import { verifyMobileToken } from '../../../../lib/mobile-auth';
 import { rateLimit, tooManyRequests } from '../../../../lib/rate-limit';
 import { areFriends, getHiddenUids } from '../../../../lib/social-store';
-import { convId, toggleReaction, isReaction, DEFAULT_REACTION } from '../../../../lib/chat-store';
-import { triggerLike } from '../../../../lib/pusher-server';
+import { convId, setPin } from '../../../../lib/chat-store';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Mesaj beğenisi — çift dokunuşla açılıp kapanıyor.
+// Sabit mesaj — konuşmanın tepesinde duran bant.
 //
-// KENDİ MESAJINI DA BEĞENEBİLİRSİN. Engellemek teknik olarak kolay ama
-// gereksiz bir kural: Instagram'da da serbest ve kimse bunu istismar olarak
-// görmüyor.
+// KONUŞMA BAŞINA TEK sabit ve HER İKİ TARAF DA değiştirebiliyor. Sabitlemek
+// ortak bir işaret: "ikimizin de üstünde durduğu şey". Kişiye özel olsaydı
+// karşı tarafın gördüğü sabit farklı olur ve "sabitledim" demek anlamını
+// yitirirdi; yalnızca sabitleyen kaldırabilseydi de karşı taraf başkasının
+// koyduğu bandın altında sıkışırdı.
 //
-// ALTI TÜR: kalp + beş emoji. Eskiden yalnızca kalp vardı; emoji seçici
-// mesaj menüsüyle birlikte geldi.
+// `id` BOŞ GÖNDERMEK = sabitlemeyi kaldır. Ayrı bir DELETE ucu yerine tek
+// giriş: istemci tarafında "sabitle/kaldır" zaten tek bir düğme.
 //
-// EMOJİ SUNUCUDA DOĞRULANIYOR. Değer baloncuğun altına yazıldığı için
-// serbest metin kabul etmek, sohbeti istenen her şeyin yazdırılabildiği bir
-// yüzeye çevirirdi — medya ve GIF uçlarındaki kuralın aynısı.
-//
-// EMOJİSİZ İSTEK = KALP. Güncellenmemiş kurulumlar bu alanı hiç
-// göndermiyor ve onlarda çift dokunuş çalışmaya devam etmeli.
+// ANLIK BİLDİRİM YOK, bilerek. Karşı taraf sabiti bir sonraki geçmiş
+// çekiminde görüyor (yedek yoklamada en geç 20 sn). Sabit zamana duyarlı bir
+// bilgi değil ve yalnızca bunun için beşinci bir Pusher olayı bağlamak,
+// kazandırdığından fazlasını karmaşıklaştırırdı.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function POST(request) {
   const user = await verifyMobileToken(request);
   if (!user) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
 
-  // Çift dokunuş hızlı tekrarlanabiliyor; sınır cömert ama sonsuz değil.
-  const rl = await rateLimit(`rl:dmlike:${user.uid}`, 300, 3600);
+  // Sabitleme nadir bir eylem; sınır dar tutulabilir.
+  const rl = await rateLimit(`rl:dmpin:${user.uid}`, 60, 3600);
   if (!rl.ok) return NextResponse.json(tooManyRequests(), { status: 429 });
 
   let body = {};
   try { body = await request.json(); } catch { /* boş gövde */ }
 
   const other = String(body.with || '');
-  const msgId = String(body.id || '');
-  if (!other || other === user.uid || !msgId) {
+  if (!other || other === user.uid) {
     return NextResponse.json({ error: 'BAD_REQUEST' }, { status: 400 });
   }
 
-  // Mesaj gönderimiyle aynı kapı.
+  // Mesaj gönderimiyle AYNI kapı: engellenen biriyle olan konuşmaya
+  // dokunulamıyor, arkadaş olmayan yazamıyor.
   const hidden = await getHiddenUids(user.uid);
   if (hidden.has(other)) return NextResponse.json({ error: 'BLOCKED' }, { status: 403 });
   if (!(await areFriends(user.uid, other))) {
     return NextResponse.json({ error: 'NOT_FRIENDS' }, { status: 403 });
   }
 
-  const emoji = body.emoji == null ? DEFAULT_REACTION : String(body.emoji);
-  if (!isReaction(emoji)) {
-    return NextResponse.json({ error: 'INVALID_REACTION' }, { status: 400 });
-  }
-
+  const msgId = body.id ? String(body.id).slice(0, 64) : '';
   const cid = convId(user.uid, other);
-  const r = await toggleReaction(cid, msgId, user.uid, emoji);
+  const r = await setPin(cid, msgId, user.uid);
 
-  await triggerLike(cid, msgId, r.likes, user.uid, r.reactions);
   return NextResponse.json({ ok: true, ...r });
 }

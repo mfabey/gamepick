@@ -170,14 +170,25 @@ export const searchGifs = (q, lang = 'tr') =>
  *   sunucuda çözülüyor; istemciden gelen metin saklanmıyor.
  * @param {object} [gif] Tenor GIF'i — `{ url, w, h }`. Adres sunucuda alan adı
  *   listesine karşı doğrulanıyor; serbest URL kabul edilmiyor.
+ * @param {string} [replyTo] Yanıtlanan mesajın KİMLİĞİ — kopyası değil.
+ *   Alıntı sunucuda çözülüyor, böylece geri alınan mesaj alıntıda da
+ *   geri alınmış görünüyor.
  */
-export const sendChat      = (to, text, media, share, gif) =>
-  authed('/api/social/chat', { method: 'POST', body: { to, text, media, share, gif } });
+export const sendChat      = (to, text, media, share, gif, replyTo) =>
+  authed('/api/social/chat', { method: 'POST', body: { to, text, media, share, gif, replyTo } });
 
 // Mesaj beğenisini açar/kapatır. Sunucu güncel listeyi döndürüyor —
 // istemcinin kendi hesabını tutmasına gerek yok.
-export const likeChatMessage = (withUid, id) =>
-  authed('/api/social/chat/like', { method: 'POST', body: { with: withUid, id } });
+/**
+ * Mesajı sabitler; `id` verilmezse sabitlemeyi kaldırır.
+ * Konuşma başına tek sabit var ve iki taraf da değiştirebiliyor.
+ */
+export const pinChatMessage = (withUid, id) =>
+  authed('/api/social/chat/pin', { method: 'POST', body: { with: withUid, id: id || '' } });
+
+// `emoji` verilmezse sunucu kalbe düşüyor — çift dokunuşun karşılığı.
+export const likeChatMessage = (withUid, id, emoji) =>
+  authed('/api/social/chat/like', { method: 'POST', body: { with: withUid, id, emoji } });
 
 // Mesajı geri alır. Sunucu YALNIZCA gönderenin kendi mesajını silmesine izin
 // veriyor; başkasınınkinde NOT_OWNER döner.

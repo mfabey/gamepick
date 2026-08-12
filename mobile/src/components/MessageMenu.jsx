@@ -9,6 +9,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { anchorMenu } from '../services/menuAnchor';
+import { REACTIONS } from '../services/reactions';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { colors, radius, spacing, type, PRESSED } from '../theme';
 
@@ -35,9 +36,16 @@ import { colors, radius, spacing, type, PRESSED } from '../theme';
 // açılıp huzursuz görünüyor.
 export const MENU_W = 232;
 const ROW_H = 48;          // HIG alt sınırı 44; ikon + metin için 48 rahat
+// Tepki düğmeleri 32×32 çiziliyor: altısı 232 puntoluk menüye ancak böyle
+// sığıyor. HIG'in 44pt alt sınırının altında kalan GÖRSEL boyut; dokunma
+// alanı hitSlop ile 40'a çıkıyor ve satır yüksekliği 52.
+//
+// Bu bilinçli bir taviz: emoji seçicisi bir eylem listesi değil, iOS'un
+// kendi tepki satırı da aynı ölçülerde. Yine de en dar dokunma hedefimiz.
+const REACT_ROW_H = 52;
 const PAD_V = 6;
 
-export default function MessageMenu({ visible, onClose, actions = [], anchor, mine }) {
+export default function MessageMenu({ visible, onClose, actions = [], anchor, mine, onReact, myReaction }) {
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const reducedMotion = useReducedMotion();
@@ -53,7 +61,9 @@ export default function MessageMenu({ visible, onClose, actions = [], anchor, mi
     p.value = withSpring(1, { stiffness: 260, damping: 16 });
   }, [visible, p, reducedMotion]);
 
-  const menuH = actions.length * ROW_H + PAD_V * 2;
+  // Tepki satırı menünün yüksekliğine DAHİL: konumlandırma bu sayıyla
+  // hesaplanıyor ve satır unutulursa menü ekranın altından taşıyor.
+  const menuH = actions.length * ROW_H + PAD_V * 2 + (onReact ? REACT_ROW_H : 0);
   const pos = anchor
     ? anchorMenu({
         bubble: anchor,
@@ -98,6 +108,34 @@ export default function MessageMenu({ visible, onClose, actions = [], anchor, mi
         style={[styles.menu, { left: pos.x, top: pos.y, width: MENU_W }, menuStyle]}
         accessibilityViewIsModal
       >
+        {/* ── Hızlı tepki satırı ──
+            EN ÜSTTE ve yatay: bir eylem listesi değil, tek dokunuşluk bir
+            seçim. Listeye altı satır olarak eklenseydi menü iki katına çıkar
+            ve asıl eylemler (sil, şikayet) kıvrımın altına düşerdi.
+
+            Seçili emoji vurgulu — hangi tepkiyi verdiğimi menü de söylüyor,
+            baloncuktaki rozete bakmak zorunda kalmıyorum. */}
+        {onReact ? (
+          <View style={styles.reactRow}>
+            {REACTIONS.map((e) => (
+              <Pressable
+                key={e}
+                style={({ pressed }) => [
+                  styles.reactBtn,
+                  myReaction === e && styles.reactBtnOn,
+                  pressed && PRESSED,
+                ]}
+                onPress={() => run(() => onReact(e))}
+                accessibilityRole="button"
+                accessibilityLabel={e}
+                hitSlop={4}
+              >
+                <Text style={styles.reactEmoji}>{e}</Text>
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
+
         {actions.map((a, i) => (
           <Pressable
             key={a.key}
@@ -105,7 +143,7 @@ export default function MessageMenu({ visible, onClose, actions = [], anchor, mi
               styles.row,
               // Ayırıcı satırlar ARASINDA, sonuncudan sonra yok — son çizgi
               // menünün kendi kenarıyla çakışıp kalın görünüyordu.
-              i > 0 && styles.rowDivider,
+              (i > 0 || onReact) && styles.rowDivider,
               pressed && PRESSED,
             ]}
             onPress={() => run(a.onPress)}
@@ -150,6 +188,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   rowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.cardBorder },
+
+  reactRow: {
+    height: REACT_ROW_H,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: spacing.sm,
+  },
+  reactBtn: {
+    width: 32, height: 32, borderRadius: 16,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  reactBtnOn: { backgroundColor: colors.accentSoft },
+  reactEmoji: { fontSize: 21 },
   label:    { color: colors.text, fontSize: type.subhead, fontWeight: '600' },
   labelBad: { color: colors.danger },
 });
