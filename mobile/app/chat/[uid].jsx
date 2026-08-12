@@ -26,7 +26,7 @@ import {
   getChat, sendChat, uploadChatMedia, deleteChatMessage, pingPresence, sendTyping,
   likeChatMessage, pinChatMessage,
 } from '../../src/api/social';
-import { subscribeDM } from '../../src/services/realtime';
+import { subscribeDM, chatCapabilities } from '../../src/services/realtime';
 import { setActiveChat, dismissChatNotifications } from '../../src/notifications';
 import { getSession, subscribeSession } from '../../src/services/session';
 import EmptyState from '../../src/components/EmptyState';
@@ -149,6 +149,13 @@ export default function ChatScreen() {
   // Sabit mesaj — konuşma başına tek, iki taraf da değiştirebiliyor.
   // Sunucu her geçmiş yanıtında gönderiyor; sayfalamadan bağımsız.
   const [pinned, setPinned] = useState(null);
+  // Kompozitör yetenekleri sunucudan geliyor: fotoğraf ve GIF gönderimi
+  // ortam değişkenlerine bağlı ve istemcinin bunu bilmesinin başka yolu yok.
+  //
+  // BAŞLANGIÇ HEPSİ KAPALI — yanıt gelene kadar düğme göstermek, bir an
+  // görünüp kaybolan düğme demek olurdu.
+  const [caps, setCaps] = useState({ photos: false, videos: false, gifs: false });
+  useEffect(() => { chatCapabilities().then(setCaps).catch(() => {}); }, []);
   // Karşı tarafın en son okuma zamanı. Kendi mesajlarımdan `at`'i bundan
   // küçük veya eşit olanlar görülmüş sayılıyor.
   const [otherReadAt, setOtherReadAt] = useState(0);
@@ -597,7 +604,10 @@ export default function ChatScreen() {
     if (!perm.granted) { Alert.alert(t('msg.needPhotoPerm')); return; }
 
     const picked = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images', 'videos'],
+      // Video KAPALIYKEN SEÇİCİDE DE YOK. Gösterip sunucuda reddetmek,
+      // kullanıcıya sıkıştırmayı bekletip sonra hata vermek demekti —
+      // garantili bir başarısızlık yolu.
+      mediaTypes: caps.videos ? ['images', 'videos'] : ['images'],
       quality: 1,          // fotoğraf sıkıştırmasını biz yapıyoruz
       allowsMultipleSelection: false,
       // Video 4,5 MB sunucu sınırının ALTINDA kalmak zorunda. 15 saniye + orta
@@ -650,7 +660,7 @@ export default function ChatScreen() {
     } finally {
       setSending(false);
     }
-  }, [sending, other, addMessage, replyTo, t]);
+  }, [sending, other, addMessage, replyTo, caps.videos, t]);
 
   // Goruldu isareti YALNIZCA EN YENI okunmus kendi mesajimda. Her okunmus
   // mesaja koymak sohbeti isaret cop luguna cevirir; kullanicinin bilmek
@@ -838,21 +848,33 @@ export default function ChatScreen() {
             styles.composer,
             { paddingBottom: kbVisible ? spacing.sm : Math.max(insets.bottom, spacing.sm) },
           ]}>
-            <Pressable
-              style={({ pressed }) => [styles.attachBtn, pressed && PRESSED]}
-              onPress={pickAndSend}
-              disabled={sending}
-              hitSlop={6}
-            >
-              <Ionicons name="image-outline" size={22} color={colors.text2} />
-            </Pressable>
-            <Pressable
-              style={({ pressed }) => [styles.attachBtn, pressed && PRESSED]}
-              onPress={() => setGifOpen(true)}
-              hitSlop={6}
-            >
-              <Ionicons name="happy-outline" size={22} color={colors.text2} />
-            </Pressable>
+            {/* DÜĞMELER YETENEĞE BAĞLI. Yapılandırma eksikken çizilmiyorlar:
+                basınca "şu an kapalı" diyen bir düğme uygulamayı yarım
+                gösteriyor (Guideline 2.2). Ortam değişkeni eklendiği anda
+                yeni build olmadan geri geliyorlar. */}
+            {caps.photos ? (
+              <Pressable
+                style={({ pressed }) => [styles.attachBtn, pressed && PRESSED]}
+                onPress={pickAndSend}
+                disabled={sending}
+                hitSlop={6}
+                accessibilityRole="button"
+                accessibilityLabel={t('msg.photo')}
+              >
+                <Ionicons name="image-outline" size={22} color={colors.text2} />
+              </Pressable>
+            ) : null}
+            {caps.gifs ? (
+              <Pressable
+                style={({ pressed }) => [styles.attachBtn, pressed && PRESSED]}
+                onPress={() => setGifOpen(true)}
+                hitSlop={6}
+                accessibilityRole="button"
+                accessibilityLabel={t('msg.gif')}
+              >
+                <Ionicons name="happy-outline" size={22} color={colors.text2} />
+              </Pressable>
+            ) : null}
             <TextInput
               style={styles.input}
               value={text}

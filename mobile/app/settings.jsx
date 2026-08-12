@@ -10,6 +10,7 @@ import { View, Text, Pressable, StyleSheet, ScrollView, Switch, Alert } from 're
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as WebBrowser from 'expo-web-browser';
 
 import { colors, radius, spacing, type, PRESSED } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
@@ -17,6 +18,24 @@ import { useAuth } from '../src/context/AuthContext';
 import { useWishlist } from '../src/context/WishlistContext';
 import { signOut } from '../src/services/session';
 import { SettingsGroup, SettingsRow } from '../src/components/SettingsList';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// YASAL VE İLETİŞİM
+//
+// App Store Guideline 1.2, kullanıcı içeriği barındıran uygulamalarda dört
+// önlem sayıyor ve dördüncüsü "insanların size kolayca ulaşabilmesi için
+// YAYINLANMIŞ İLETİŞİM BİLGİSİ". Sayfalar web'de zaten vardı ama uygulamadan
+// erişilemiyordu — yani önlem karşılanmıyordu.
+//
+// E-POSTA ADRESİ SATIRIN ALTINDA AÇIKÇA YAZIYOR, bir dokunuşun arkasında
+// değil. "Yayınlanmış" olmasının anlamı bu: aranan bilgi ekranda görünüyor,
+// bulmak için gezinmek gerekmiyor.
+//
+// Sayfalar uygulama İÇİ tarayıcıda açılıyor (Safari'ye atılmıyor): kullanıcı
+// bir sözleşmeyi okuyup ayarlara dönerken uygulamadan çıkmış olmamalı.
+// ─────────────────────────────────────────────────────────────────────────────
+const SITE = 'https://www.gamerisen.com';
+const SUPPORT_EMAIL = 'support@gamerisen.com';
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -34,6 +53,17 @@ export default function SettingsScreen() {
     } else {
       await disableNotifications();
     }
+  };
+
+  /**
+   * Yasal sayfayı uygulama içi tarayıcıda açar.
+   *
+   * Hata SESSİZ: tarayıcı açılamazsa (nadiren, bazı kurumsal profillerde)
+   * kullanıcıya gösterilecek bir çözüm yok ve e-posta adresi zaten satırın
+   * altında yazılı — ulaşma yolu kapanmıyor.
+   */
+  const openPage = (path) => {
+    WebBrowser.openBrowserAsync(`${SITE}${path}`).catch(() => {});
   };
 
   const showLanguagePicker = () => {
@@ -105,6 +135,26 @@ export default function SettingsScreen() {
             icon="lock-closed-outline"
             label={t('soc.privacyTitle')}
             onPress={() => router.push('/social-settings')}
+          />
+        </SettingsGroup>
+
+        {/* Destek ve yasal metinler — bkz. dosya başındaki gerekçe. */}
+        <SettingsGroup>
+          <SettingsRow
+            icon="mail-outline"
+            label={t('set.support')}
+            desc={SUPPORT_EMAIL}
+            onPress={() => openPage('/support')}
+          />
+          <SettingsRow
+            icon="shield-checkmark-outline"
+            label={t('set.privacyPolicy')}
+            onPress={() => openPage('/privacy')}
+          />
+          <SettingsRow
+            icon="document-text-outline"
+            label={t('set.terms')}
+            onPress={() => openPage('/terms')}
           />
         </SettingsGroup>
 

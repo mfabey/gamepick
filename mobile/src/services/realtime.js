@@ -112,6 +112,24 @@ export async function subscribeDM(cid, onMessage, onDelete, onRead, onTyping, on
 }
 
 /** Oturum kapanışında çağrılır — bağlantıyı ve önbelleği bırakır. */
+/**
+ * Kompozitör yetenekleri — `{ photos, videos, gifs }`.
+ *
+ * AYNI YANITTAN okunuyor: Pusher ayarlarıyla birlikte tek istekte geliyor
+ * ve `loadConfig` onu zaten önbelleğe alıyor, yani ek ağ trafiği yok.
+ *
+ * HATA DURUMUNDA HEPSİ KAPALI. Sunucuya ulaşılamıyorsa düğmeyi gösterip
+ * kullanıcıyı başarısız bir yüklemeye sokmaktansa gizlemek doğru.
+ */
+export async function chatCapabilities() {
+  const cfg = await loadConfig();
+  return {
+    photos: !!cfg?.photos,
+    videos: !!cfg?.videos,
+    gifs:   !!cfg?.gifs,
+  };
+}
+
 export function disconnectRealtime() {
   try { client?.disconnect(); } catch { /* zaten kapalı */ }
   client = null;

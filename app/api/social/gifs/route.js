@@ -1,9 +1,23 @@
 import { NextResponse } from 'next/server';
 import { verifyMobileToken } from '../../../lib/mobile-auth';
 import { rateLimit, tooManyRequests } from '../../../lib/rate-limit';
+import { isGifConfigured } from '../../../lib/gif-provider';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Tenor GIF arama — SUNUCU VEKİLİ.
+// GIF arama — SUNUCU VEKİLİ.
+//
+// ŞU AN KAPALI. Tenor API'si 30 Haziran 2026'da kapatıldı (duyuru 13 Ocak
+// 2026, yeni anahtar kaydı o gün durdu). Sağlayıcı kararı verilmedi;
+// adaylar GIPHY (üretim anahtarı başvuru + ücret) ve KLIPY (ücretsiz ama
+// filigran + reklam modeli).
+//
+// GÖÇ İKİ DOSYA: buranın içi (uç adresi + yanıt eşlemesi) ve sohbet
+// ucundaki alan adı listesi. Seçici, gönderim, baloncuk çizimi ve depolama
+// sağlayıcıdan bağımsız.
+//
+// ANAHTAR ADI SAĞLAYICIDAN BAĞIMSIZ (`GIF_API_KEY`): kodda ölü bir şirket
+// adı taşımanın anlamı yok ve sağlayıcı değişince tekrar yeniden
+// adlandırmak gerekmesin.
 //
 // NEDEN VEKİL: API anahtarı istemciye konsaydı uygulama paketinden çıkarılırdı.
 // Anahtar burada kalıyor; istemci yalnızca arama metnini gönderiyor.
@@ -21,18 +35,11 @@ const TENOR = 'https://tenor.googleapis.com/v2';
 const TIMEOUT_MS = 6000;
 const LIMIT = 24;
 
-// DIŞA AKTARILMIYOR: Next.js route dosyalarında yalnızca yol işleyicileri
-// (GET/POST/…) ve bilinen ayar alanları dışa aktarılabilir; başka bir isim
-// `is not a valid Route export field` diyerek derlemeyi düşürüyor.
-function isTenorConfigured() {
-  return !!process.env.TENOR_API_KEY;
-}
-
 export async function GET(request) {
   const user = await verifyMobileToken(request);
   if (!user) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
 
-  if (!isTenorConfigured()) {
+  if (!isGifConfigured()) {
     return NextResponse.json({ error: 'GIFS_DISABLED' }, { status: 503 });
   }
 
@@ -48,7 +55,7 @@ export async function GET(request) {
   // Arama boşsa öne çıkanlar — seçici açılır açılmaz dolu görünsün.
   const path = q ? '/search' : '/featured';
   const qs = new URLSearchParams({
-    key: process.env.TENOR_API_KEY,
+    key: process.env.GIF_API_KEY,
     limit: String(LIMIT),
     contentfilter: 'high',
     media_filter: 'tinygif,gif',
