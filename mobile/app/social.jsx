@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Sosyal ekran — akış / arkadaşlar / istekler.  [BETA]
+// Sosyal ekran — akış / arkadaşlar / istekler.
 //
 // Üç kapı var, sırayla:
 //   1. Oturum yoksa   → giriş yapmaya yönlendir
@@ -94,7 +94,7 @@ export default function SocialScreen() {
   // ── Kapı 3: içerik ────────────────────────────────────────────────────────
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <Header title={t('soc.title')} beta onBack={() => router.back()} />
+      <Header title={t('soc.title')} onBack={() => router.back()} />
 
       <View style={styles.tabs}>
         {TABS.map((k) => (
@@ -119,14 +119,12 @@ export default function SocialScreen() {
 
 // ─── Ortak parçalar ─────────────────────────────────────────────────────────
 
-function Header({ title, beta, onBack }) {
-  const { t } = useLanguage();
+function Header({ title, onBack }) {
   return (
     <View style={styles.head}>
       <IconButton icon='chevron-back' size={24} color={colors.text} onPress={onBack} style={styles.iconBtn} />
       <View style={styles.headTitleWrap}>
         <Text style={styles.headTitle}>{title}</Text>
-        {beta ? <View style={styles.betaBadge}><Text style={styles.betaText}>{t('soc.beta')}</Text></View> : null}
       </View>
       <View style={styles.iconBtn} />
     </View>
@@ -214,7 +212,7 @@ function UsernameSetup({ onDone, onBack }) {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <Header title={t('soc.title')} beta onBack={onBack} />
+      <Header title={t('soc.title')} onBack={onBack} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.setupBody} keyboardShouldPersistTaps="handled">
           <Ionicons name="people-circle-outline" size={58} color={colors.accent} />
@@ -582,8 +580,6 @@ const styles = StyleSheet.create({
   },
   headTitleWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
   headTitle: { fontSize: type.body, fontWeight: '900', color: colors.text, letterSpacing: -0.3 },
-  betaBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.sm, backgroundColor: colors.accent },
-  betaText: { color: '#fff', fontSize: type.caption2, fontWeight: '900', letterSpacing: 0.5 },
   iconBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
 
   tabs: {

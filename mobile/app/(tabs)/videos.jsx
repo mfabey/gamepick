@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Oyun videoları — dikey, tam ekran, Reels tarzı akış.  [BETA]
+// Oyun videoları — dikey, tam ekran, Reels tarzı akış.
 //
 // AKICILIĞIN SIRRI: OYNATICI HAVUZU.
 // Liste elemanı başına oynatıcı oluşturmak klasik hatadır — 20 AVPlayer aynı
@@ -261,7 +261,7 @@ export default function VideosScreen() {
   // ama arayüz KALMALI; yalnızca basılı tutmak onu gizliyor.
   const uiOpacity = useSharedValue(1);
 
-  // Ekranin ust cubugu (BETA rozeti) de ayni kanaldan soluyor.
+  // Ekranin ust cubugu (baslik) de ayni kanaldan soluyor.
   const topBarStyle = useAnimatedStyle(() => ({ opacity: uiOpacity.value }), [uiOpacity]);
 
   const onTapVideo = useCallback(() => {
@@ -356,7 +356,7 @@ export default function VideosScreen() {
         decelerationRate="fast"
       />
 
-      {/* Üst çubuk — BETA rozeti.
+      {/* Üst çubuk — başlık + döndürme düğmesi.
           Geri butonu YOK: bu artık bir sekme, geri dönülecek bir yer yok. */}
       {/* KONUMLANDIRMA SARMALAYICIDA olmak zorunda. Daha önce yalnızca
           opacity taşıyordu; sarmalayıcı flex:1 olan listeden SONRA akışta
@@ -394,7 +394,6 @@ export default function VideosScreen() {
         </View>
         <View style={styles.titleWrap}>
           <Text style={styles.topTitle}>{t('vid.title')}</Text>
-          <View style={styles.betaBadge}><Text style={styles.betaText}>BETA</Text></View>
         </View>
       </SafeAreaView>
       </Animated.View>
@@ -707,11 +706,6 @@ const styles = StyleSheet.create({
   },
   titleWrap: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   topTitle: { color: '#fff', fontSize: type.body, fontWeight: '900', letterSpacing: -0.2 },
-  betaBadge: {
-    paddingHorizontal: 7, paddingVertical: 2.5, borderRadius: radius.sm,
-    backgroundColor: colors.accent,
-  },
-  betaText: { color: '#fff', fontSize: type.caption2, fontWeight: '900', letterSpacing: 0.6 },
   actions: { position: 'absolute', right: 12, alignItems: 'center', gap: 17 },
   actionBtn: { alignItems: 'center', gap: 5 },
   actionCircle: {

@@ -1,26 +1,32 @@
-import { memo, useState, useMemo, useCallback , useRef} from 'react';
+// ─────────────────────────────────────────────────────────────────────────────
+// Haberler.
+//
+// ARTIK BİR SEKME DEĞİL, yığın ekranı. Alt navigasyondaki yerini Mesajlar
+// aldı; buraya anasayfanın sağ üstündeki gazete simgesinden geliniyor.
+//
+// Sebep: alt navigasyon uygulamanın kendini nasıl tanıttığı yer. Orada
+// "Haberler" yazması, uygulamayı bir haber okuyucusu gibi gösteriyordu —
+// oysa haberler tamamlayıcı bir bölüm, ana iş değil.
+// ─────────────────────────────────────────────────────────────────────────────
+import { memo, useState, useMemo, useCallback } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { TopFade, BottomFade } from '../../src/components/EdgeFade';
+import { TopFade } from '../src/components/EdgeFade';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { fetchNews } from '../../src/api/news';
-import { NewsListSkeleton } from '../../src/components/Skeleton';
-import NewsImage from '../../src/components/NewsImage';
-import { colors, radius, spacing, TAB_SPACE, PRESSED, type } from '../../src/theme';
-import { useTabBarScroll } from '../../src/context/TabBarContext';
-import { useLanguage } from '../../src/context/LanguageContext';
-import { useQuery } from '../../src/hooks/useQuery';
-import { useTabPressAction, scrollRefToTop } from '../../src/hooks/useTabPressAction';
+import { fetchNews } from '../src/api/news';
+import { NewsListSkeleton } from '../src/components/Skeleton';
+import NewsImage from '../src/components/NewsImage';
+import { colors, radius, spacing, PRESSED, type } from '../src/theme';
+import { useLanguage } from '../src/context/LanguageContext';
+import { useQuery } from '../src/hooks/useQuery';
 
 export default function NewsScreen() {
-  // Sekmeye tekrar basınca listeyi başa sar (iOS'ta beklenen davranış)
-  const listRef = useRef(null);
-  useTabPressAction(useCallback(() => scrollRefToTop(listRef), []));
-  const onTabScroll = useTabBarScroll();
   const { t, lang } = useLanguage();
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   // Başlık listenin DIŞINDA ve sabit: sönümleme bandı onun altına, listenin
   // gerçek üst kenarına oturmalı. Üstüne binerse başlığı karartır.
@@ -53,10 +59,24 @@ export default function NewsScreen() {
   const keyExtractor = useCallback((item) => item.id, []);
   const renderNews = useCallback(({ item }) => <NewsRow item={item} onPress={open} />, [open]);
 
+  // Geri düğmesi ÜÇ DALDA DA gerekiyor (yükleniyor / hata / liste). Ayrı bir
+  // bileşen olmasının sebebi bu: üç kez elle yazılsaydı biri unutulur ve o
+  // durumda ekranda mahsur kalınırdı.
+  const head = (onLayout) => (
+    <View style={styles.header} onLayout={onLayout}>
+      <Pressable style={({ pressed }) => [styles.backBtn, pressed && PRESSED]}
+                 onPress={() => router.back()} hitSlop={10}
+                 accessibilityRole="button" accessibilityLabel={t('common.back')}>
+        <Ionicons name="chevron-back" size={24} color={colors.text} />
+      </Pressable>
+      <Text style={styles.headerText}>{t('news.title')}</Text>
+    </View>
+  );
+
   if (loading) {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
-        <Text style={styles.header}>{t('news.title')}</Text>
+        {head()}
         <NewsListSkeleton />
       </SafeAreaView>
     );
@@ -65,7 +85,7 @@ export default function NewsScreen() {
   if (error) {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
-        <Text style={styles.header}>{t('news.title')}</Text>
+        {head()}
         <View style={styles.center}>
           <Ionicons name="cloud-offline-outline" size={44} color={colors.text3} />
           <Pressable style={({ pressed }) => [styles.retryBtn, pressed && PRESSED]} onPress={refetch}><Text style={styles.retryText}>{t('common.retry')}</Text></Pressable>
@@ -76,22 +96,13 @@ export default function NewsScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <Text
-        style={styles.header}
-        onLayout={(e) => setHeaderH(e.nativeEvent.layout.height)}
-      >
-        {t('news.title')}
-      </Text>
+      {head((e) => setHeaderH(e.nativeEvent.layout.height))}
       {headerH > 0 ? <TopFade top={insets.top + headerH} /> : null}
-      <BottomFade />
       <FlashList
-        ref={listRef}
-        onScroll={onTabScroll}
-        scrollEventThrottle={16}
         data={filtered}
         keyExtractor={keyExtractor}
         renderItem={renderNews}
-        contentContainerStyle={{ paddingBottom: TAB_SPACE }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xl }}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <View>
@@ -155,7 +166,12 @@ const NewsRow = memo(function NewsRow({ item, onPress }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
-  header: { fontSize: type.title1, fontWeight: '800', color: colors.text, letterSpacing: -0.6, paddingHorizontal: spacing.lg, paddingTop: 8, paddingBottom: 8 },
+  // Başlık artık bir satır: geri düğmesi + metin. Sol dolgu, düğmenin negatif
+  // kenar boşluğuyla dengeleniyor ki metin diğer ekranlarla AYNI hizada
+  // başlasın — düğme kadar sağa kaymasın.
+  header: { flexDirection: 'row', alignItems: 'center', gap: 2, paddingHorizontal: spacing.lg, paddingTop: 8, paddingBottom: 8 },
+  backBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginLeft: -12 },
+  headerText: { fontSize: type.title1, fontWeight: '800', color: colors.text, letterSpacing: -0.6 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 },
 
   featured: { marginHorizontal: spacing.lg, height: 210, borderRadius: radius.lg, overflow: 'hidden', backgroundColor: colors.card, marginBottom: 4 },

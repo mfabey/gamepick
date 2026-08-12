@@ -61,7 +61,7 @@ export function partiesOf(cid) {
  *
  * @throws {Error} Redis yazamazsa — çağıran kullanıcıya hata döndürmeli
  */
-export async function appendMessage({ from, to, text, media, share }) {
+export async function appendMessage({ from, to, text, media, share, gif }) {
   const cid = convId(from, to);
   if (!cid) throw new Error('INVALID_CONVERSATION');
 
@@ -75,6 +75,7 @@ export async function appendMessage({ from, to, text, media, share }) {
   const msg = { id, from, text, at };
   if (media) msg.media = media;
   if (share) msg.share = share;
+  if (gif) msg.gif = gif;
 
   // Mesajın KENDİSİ katı: kaybolursa kullanıcı yazdığını sanır ama gitmemiştir.
   await redisCmdStrict(['LPUSH', msgsKey(cid), JSON.stringify(msg)]);
@@ -91,7 +92,8 @@ export async function appendMessage({ from, to, text, media, share }) {
       // bayt olarak yazılıp karşılaştırmayı sessizce bozdu. Tür AYRI BİR
       // ALANDA duruyor; arayüz onu kendi diline çeviriyor.
       lastText: text ? text.slice(0, 140) : '',
-      lastKind: share ? 'reel'
+      lastKind: gif ? 'gif'
+        : share ? 'reel'
         : media ? (media.type?.startsWith('video/') ? 'video' : 'photo') : null,
       // Son mesajın kimliği. Geri alma bunu kullanıyor: silinen mesaj SON
       // mesajsa önizleme temizlenmeli, yoksa konuşma listesi geri alınmış

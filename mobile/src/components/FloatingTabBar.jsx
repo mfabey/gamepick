@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { View, Pressable, StyleSheet, Platform, useWindowDimensions } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Platform, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -11,16 +11,22 @@ import Animated, {
 
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { useTabBarCompact, useTabBarHidden } from '../context/TabBarContext';
-import { colors } from '../theme';
+import { useUnread, refreshUnread } from '../services/unread';
+import { colors, type, NUMERIC } from '../theme';
 
 const ICONS = {
-  index:   'home',
-  games:   'game-controller',
-  videos:  'play-circle',
-  news:    'newspaper',
-  library: 'library',
-  profile: 'person',
+  index:    'home',
+  games:    'game-controller',
+  videos:   'play-circle',
+  messages: 'chatbubble-ellipses',
+  news:     'newspaper',
+  library:  'library',
+  profile:  'person',
 };
+
+// Rozet taşıyan sekmeler. Şimdilik tek; harita olarak duruyor ki ikinci bir
+// sayaç (ör. arkadaşlık istekleri) eklenince koşul dallanmasın.
+const BADGED = { messages: true };
 
 const PAD = 6;
 const PILL_W = 52;
@@ -97,6 +103,13 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
       withSpring(0, { stiffness: 220, damping: 12 }),
     );
   }, [state.index, bounce, reducedMotion]);
+
+  // ── Okunmamış rozeti ──
+  // Sekme her değiştiğinde tazeleniyor. Aralıklı yoklamaya göre tercih
+  // sebebi: kullanıcı zaten sekme değiştirerek dolaşıyor ve rozet o anda
+  // güncelleniyor; boşta duran uygulamada istek gitmiyor.
+  const unread = useUnread();
+  useEffect(() => { refreshUnread(); }, [state.index]);
 
   const N = state.routes.length;
   const cellW = barW > 0 ? (barW - PAD * 2) / N : 0;
@@ -187,7 +200,14 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
               style={({ pressed }) => [styles.item, pressed && { opacity: 0.55 }]}
               hitSlop={8}
             >
-              <TabIcon base={base} focused={focused} reducedMotion={reducedMotion} />
+              <TabIcon
+                base={base}
+                focused={focused}
+                reducedMotion={reducedMotion}
+                // Odaktaki sekmede rozet YOK: kullanıcı zaten oradaysa
+                // "bekleyen bir şey var" demenin anlamı kalmıyor.
+                badge={BADGED[route.name] && !focused ? unread : 0}
+              />
             </Pressable>
           );
         })}
@@ -206,7 +226,7 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
  * OPACITY YOK — bu bilesen cam katmaninin kardesi ve GlassView'in
  * ebeveyninde opacity<1 cami bozuyor (bkz. dosya basi). Yalnizca transform.
  */
-function TabIcon({ base, focused, reducedMotion }) {
+function TabIcon({ base, focused, reducedMotion, badge = 0 }) {
   const pop = useSharedValue(0);
   const wasFocused = useRef(focused);
 
@@ -233,6 +253,16 @@ function TabIcon({ base, focused, reducedMotion }) {
         size={25}
         color={focused ? colors.accent : colors.text3}
       />
+      {/* Rozet simgenin İÇİNDE, animasyonlu görünümün altında: sekme
+          seçilirken birlikte büyüyor. Dışarıda dursaydı simge büyürken
+          rozet yerinde kalır, ikisi ayrışmış görünürdü.
+
+          OPACITY YOK — cam katmanının kardeşi (bkz. dosya başı). */}
+      {badge > 0 ? (
+        <View style={styles.badge}>
+          <Text style={[styles.badgeText, NUMERIC]}>{badge > 9 ? '9+' : badge}</Text>
+        </View>
+      ) : null}
     </Animated.View>
   );
 }
@@ -291,4 +321,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     height: '100%',
   },
+
+  // Simgenin sağ üst köşesine biniyor. Çerçeve çubuk zemininin rengiyle
+  // değil, koyu arka planla çiziliyor: cam açıkken çubuğun rengi arkadaki
+  // içeriğe göre değişiyor ve sabit bir eşleşme tutturulamaz — koyu bir
+  // halka her iki durumda da rozeti simgeden ayırıyor.
+  badge: {
+    position: 'absolute', top: -4, right: -9,
+    minWidth: 17, height: 17, borderRadius: 9,
+    paddingHorizontal: 4,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.accent,
+    borderWidth: 2, borderColor: colors.bg,
+  },
+  badgeText: { color: '#fff', fontSize: type.caption2, fontWeight: '800' },
 });

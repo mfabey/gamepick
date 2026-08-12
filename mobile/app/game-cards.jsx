@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Oyun kartların — paylaşılabilir oyuncu istatistikleri.  [BETA]
+// Oyun kartların — paylaşılabilir oyuncu istatistikleri.
 //
 // KARTLAR YERELDE ÇİZİLİYOR, paylaşılan PNG sunucuda üretiliyor. Neden ikisi
 // birden: PNG 1200×630 yatay bir görsel, telefonda listeye hiç oturmuyor ve
@@ -131,7 +131,6 @@ export default function GameCardsScreen() {
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </Pressable>
         <Text style={styles.title}>{t('gc.title')}</Text>
-        <View style={styles.betaChip}><Text style={styles.betaText}>{t('soc.beta')}</Text></View>
       </View>
 
       {body || (
@@ -254,11 +253,6 @@ const styles = StyleSheet.create({
   iconBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginLeft: -10 },
   title:   { flex: 1, color: colors.text, fontSize: type.title3, fontWeight: '800', letterSpacing: -0.4 },
 
-  betaChip: {
-    paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: radius.pill,
-    backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accentBorder,
-  },
-  betaText: { color: colors.accentText, fontSize: type.caption2, fontWeight: '800', letterSpacing: 0.4 },
 
   hero: {
     marginHorizontal: spacing.lg, marginBottom: spacing.md, padding: spacing.lg,

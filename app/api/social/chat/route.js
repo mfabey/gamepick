@@ -39,6 +39,28 @@ function isOwnBlob(url, uid) {
   return u.pathname.startsWith(`/dm/${uid}/`);
 }
 
+/**
+ * Adres Tenor CDN'inde mi?
+ *
+ * `isOwnBlob` ile AYNI mantık: istemcinin gönderdiği serbest adres kabul
+ * edilemez, yoksa sohbet baloncuğu istenen her görselin gösterilebildiği
+ * bir yüzeye dönüşür.
+ *
+ * BİLİNEN SINIR: arama vekilimiz `contentfilter=high` uyguluyor ama bu
+ * yalnızca ARAMA sonuçlarını süzüyor. Ucumuzu tersine çevirip elle Tenor
+ * adresi gönderen biri süzgeçten geçmeyen bir GIF iliştirebilir. İçerik
+ * yine de Tenor'un kendi denetiminden geçmiş oluyor; serbest URL kabul
+ * etmekle arasında büyük fark var. Orantılı bir savunma.
+ */
+function isTenorUrl(url) {
+  let u;
+  try { u = new URL(url); } catch { return false; }
+  if (u.protocol !== 'https:') return false;
+  return u.hostname === 'media.tenor.com'
+      || u.hostname === 'c.tenor.com'
+      || u.hostname.endsWith('.media.tenor.com');
+}
+
 /** İki taraf da yazışabiliyor mu? Tek yerde, GET ve POST aynı kuralı kullansın. */
 async function canTalk(me, other) {
   if (!other || other === me) return 'INVALID_TARGET';
@@ -140,17 +162,31 @@ export async function POST(request) {
     if (!share) return NextResponse.json({ error: 'INVALID_SHARE' }, { status: 400 });
   }
 
+  // GIF — Tenor CDN adresi. Bizim depomuza inmiyor, o yüzden moderasyon
+  // hattına da girmiyor; içerik Tenor tarafında denetleniyor.
+  let gif = null;
+  if (body.gif?.url) {
+    if (!isTenorUrl(String(body.gif.url))) {
+      return NextResponse.json({ error: 'INVALID_GIF' }, { status: 400 });
+    }
+    gif = {
+      url: String(body.gif.url),
+      w: Number(body.gif.w) || 0,
+      h: Number(body.gif.h) || 0,
+    };
+  }
+
   const text = String(body.text || '');
 
-  // Medya veya paylaşım varken metin ZORUNLU DEĞİL.
-  if (text.trim() || (!media && !share)) {
+  // Medya, paylaşım veya GIF varken metin ZORUNLU DEĞİL.
+  if (text.trim() || (!media && !share && !gif)) {
     const v = validateFreeText(text, { maxLength: MAX_TEXT });
     if (!v.ok) return NextResponse.json({ error: v.error }, { status: 400 });
   }
 
   try {
     const msg = await appendMessage({
-      from: user.uid, to: other, text: text.trim(), media, share,
+      from: user.uid, to: other, text: text.trim(), media, share, gif,
     });
 
     // Anlık teslim ve bildirim DENENIYOR ama ikisi de gönderimi bağlamıyor:
@@ -168,7 +204,7 @@ export async function POST(request) {
         title: senderName,
         // Metinsiz mesajlarda önizleme boş kalmasın. Paylaşımda oyun adı
         // yazılıyor — bildirimde "📷" görmek hiçbir şey anlatmazdı.
-        body: msg.text || (share ? `🎬 ${share.name}` : '📷'),
+        body: msg.text || (share ? `🎬 ${share.name}` : gif ? 'GIF' : '📷'),
         // İstemci bu veriyle doğrudan sohbete açılıyor.
         data: { type: 'dm', from: user.uid },
       }),

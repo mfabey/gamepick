@@ -1,10 +1,14 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Mesajlar — konuşma listesi.  [BETA]
+// Mesajlar — konuşma listesi.
+//
+// ARTIK BİR SEKME, yığın ekranı değil. Haberler'in yerini aldı: alt
+// navigasyon uygulamanın kendini nasıl tanıttığı yer, orada bir mesaj
+// simgesi olması "burası insanların konuştuğu bir yer" diyor.
 //
 // Mesajlaşma YALNIZCA arkadaşlar arasında. Bu, yabancıdan gelen spam'i kökten
 // kapatan kural; sunucu da aynı kuralı uyguluyor (NOT_FRIENDS).
 // ─────────────────────────────────────────────────────────────────────────────
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, Pressable, StyleSheet, ActivityIndicator, RefreshControl,
 } from 'react-native';
@@ -13,12 +17,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-import { getChatList } from '../src/api/social';
-import { getSession, subscribeSession } from '../src/services/session';
-import EmptyState from '../src/components/EmptyState';
-import { getAvatarPreset } from '../src/utils/avatar';
-import { colors, radius, spacing, type, PRESSED, TAB_SPACE } from '../src/theme';
-import { useLanguage } from '../src/context/LanguageContext';
+import { getChatList } from '../../src/api/social';
+import { getSession, subscribeSession } from '../../src/services/session';
+import { refreshUnread } from '../../src/services/unread';
+import EmptyState from '../../src/components/EmptyState';
+import { getAvatarPreset } from '../../src/utils/avatar';
+import { colors, radius, spacing, type, PRESSED, TAB_SPACE } from '../../src/theme';
+import { useTabBarScroll } from '../../src/context/TabBarContext';
+import { useLanguage } from '../../src/context/LanguageContext';
+import { useTabPressAction, scrollRefToTop } from '../../src/hooks/useTabPressAction';
 
 /** Kısa zaman: bugünse saat, bu haftaysa gün, değilse tarih. */
 function shortTime(ts, lang) {
@@ -35,6 +42,10 @@ function shortTime(ts, lang) {
 export default function MessagesScreen() {
   const router = useRouter();
   const { t, lang } = useLanguage();
+  // Sekmeye tekrar basınca listeyi başa sar (diğer sekmelerle aynı davranış)
+  const listRef = useRef(null);
+  useTabPressAction(useCallback(() => scrollRefToTop(listRef), []));
+  const onTabScroll = useTabBarScroll();
 
   const [session, setSession] = useState(() => getSession());
   useEffect(() => subscribeSession(() => setSession(getSession())), []);
@@ -60,8 +71,11 @@ export default function MessagesScreen() {
 
   // Sohbetten geri dönünce liste TAZELENMELİ: son mesaj ve okundu durumu
   // değişmiş olabilir. useEffect tek başına bunu yakalamıyor.
+  //
+  // Sekme rozeti de burada tazeleniyor: bir sohbet okunduğunda sekme
+  // indeksi değişmiyor, dolayısıyla çubuğun kendi tetikleyicisi çalışmıyor.
   useFocusEffect(useCallback(() => {
-    if (session) load();
+    if (session) { load(); refreshUnread(); }
   }, [session, load]));
 
   let body = null;
@@ -81,17 +95,18 @@ export default function MessagesScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
+      {/* Geri düğmesi YOK: burası artık bir sekme kökü, geri dönülecek bir
+          yer yok. Başlık da sola hizalandı — diğer sekmelerin başlıklarıyla
+          aynı hizada dursun. */}
       <View style={styles.header}>
-        <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]}
-                   onPress={() => router.back()} hitSlop={10}>
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </Pressable>
         <Text style={styles.title}>{t('msg.title')}</Text>
-        <View style={styles.betaChip}><Text style={styles.betaText}>{t('soc.beta')}</Text></View>
       </View>
 
       {body || (
         <FlashList
+          ref={listRef}
+          onScroll={onTabScroll}
+          scrollEventThrottle={16}
           data={rows}
           keyExtractor={(r) => r.cid}
           estimatedItemSize={72}
@@ -141,6 +156,7 @@ function ConversationRow({ item, onPress, t, lang }) {
             ? t('msg.wasUndone')
             : item.lastText
             ? item.lastText
+            : item.lastKind === 'gif'   ? `🖼️ ${t('msg.gif')}`
             : item.lastKind === 'reel'  ? `🎬 ${t('msg.sharedReel')}`
             : item.lastKind === 'video' ? `🎬 ${t('msg.video')}`
             : item.lastKind === 'photo' ? `📷 ${t('msg.photo')}`
@@ -164,14 +180,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
     paddingHorizontal: spacing.lg, paddingBottom: spacing.md,
   },
-  iconBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginLeft: -10 },
   title:   { flex: 1, color: colors.text, fontSize: type.title3, fontWeight: '800', letterSpacing: -0.4 },
 
-  betaChip: {
-    paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: radius.pill,
-    backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accentBorder,
-  },
-  betaText: { color: colors.accentText, fontSize: type.caption2, fontWeight: '800', letterSpacing: 0.4 },
 
   row: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.md,

@@ -16,7 +16,8 @@
 // Gruplar üçten ikiye indi ("Senin" ve "Sosyal"); bağlı hesaplar aşağıda
 // kaldı çünkü kütüphane ve rapor onlara bağımlı.
 //
-// BETA rozeti 7'den 1'e: her şey beta olduğunda hiçbiri beta okunmuyor.
+// BETA rozeti 7'den 1'e, sonra 0'a: önce "her şey beta olunca hiçbiri
+// beta okunmuyor" diye teke indi, v2.0'da tamamen kalktı.
 //
 // SOĞUKLUK: profilde kişiye ait tek bir sayı yoktu. Kimlik başlığındaki üç
 // sayaç sayfayı "senin" yapan şey — arkadaş / takipte / oyun.
@@ -256,12 +257,8 @@ export default function ProfileScreen() {
                 onPress={() => router.push('/discover')} />
         </View>
 
-        {/* TEK BETA ROZETİ. Önce dört ayrı satırda dört rozet vardı; her şey
-            beta olduğunda hiçbiri beta okunmuyor, rozet bilgi taşımayı bırakıp
-            gürültüye dönüşüyordu. Bölüm başlığında bir kez söylemek yeterli. */}
         <View style={styles.sectionHead}>
           <Text style={styles.sectionLabel}>{t('prof.social')}</Text>
-          <View style={styles.betaChip}><Text style={styles.betaChipText}>BETA</Text></View>
         </View>
         {/* ARKADAŞ KAROSU YOK. Kimlik başlığındaki arkadaş sayacı zaten aynı
             yere götürüyor ve bekleyen istek rozetini de o taşıyor — karo,
@@ -570,11 +567,6 @@ const styles = StyleSheet.create({
   div: { height: 1, backgroundColor: colors.cardBorder, marginLeft: 56 },
 
 
-  betaChip: {
-    paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.sm,
-    backgroundColor: colors.bgInput, borderWidth: 1, borderColor: colors.cardBorder,
-  },
-  betaChipText: { color: colors.text3, fontSize: type.caption2, fontWeight: '900', letterSpacing: 0.5 },
 
   // ── Avatar seçici ──
   pickerOverlay: {

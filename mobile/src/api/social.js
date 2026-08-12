@@ -97,6 +97,12 @@ export const setPrivacy        = (patch) => authed('/api/social/privacy', { meth
 // durumu göstermek şart.
 export const getSteamFriends   = ()      => authed('/api/social/steam-friends');
 
+// Arkadaşların son iki haftada oynadıkları — oyun bazında toplanmış.
+// getSteamFriends'in AKSİNE hızlı: veri zaten önbellekteki kütüphane
+// kayıtlarının içinde, sunucu ayrıca sonucu 30 dk saklıyor.
+// Steam bağlı değilse hata değil, boş liste döner (anasayfa şeridi çizilmez).
+export const getFriendActivity = ()      => authed('/api/social/friend-activity');
+
 // Oyun kartları. `lang` KART GÖRSELİNE gömülüyor — paylaşıldıktan sonra
 // değiştirilemediği için istek anında doğru dili göndermek şart.
 export const getGameCards      = (lang = 'tr') =>
@@ -153,13 +159,20 @@ export const getChat       = (withUid, before, after) =>
   authed(`/api/social/chat?with=${encodeURIComponent(withUid)}`
     + (before ? `&before=${before}` : '')
     + (after ? `&after=${after}` : ''));
+// GIF arama — SUNUCU VEKİLİ üzerinden. Tenor anahtarı istemcide değil:
+// pakete konsaydı çıkarılırdı. Boş sorgu = öne çıkanlar.
+export const searchGifs = (q, lang = 'tr') =>
+  authed('/api/social/gifs?q=' + encodeURIComponent(q || '') + '&lang=' + (lang === 'en' ? 'en' : 'tr'));
+
 /**
  * Mesaj gönderir.
  * @param {object} [share] Reels paylaşımı — YALNIZCA `{ appid }`. Ad ve görsel
  *   sunucuda çözülüyor; istemciden gelen metin saklanmıyor.
+ * @param {object} [gif] Tenor GIF'i — `{ url, w, h }`. Adres sunucuda alan adı
+ *   listesine karşı doğrulanıyor; serbest URL kabul edilmiyor.
  */
-export const sendChat      = (to, text, media, share) =>
-  authed('/api/social/chat', { method: 'POST', body: { to, text, media, share } });
+export const sendChat      = (to, text, media, share, gif) =>
+  authed('/api/social/chat', { method: 'POST', body: { to, text, media, share, gif } });
 
 // Mesaj beğenisini açar/kapatır. Sunucu güncel listeyi döndürüyor —
 // istemcinin kendi hesabını tutmasına gerek yok.

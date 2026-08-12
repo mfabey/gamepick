@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Topluluk listeleri — keşif akışı.  [BETA]
+// Topluluk listeleri — keşif akışı.
 //
 // Sıralama: popüler (beğeni) veya yeni (tarih). Engellenen kullanıcıların
 // listeleri sunucuda zaten eleniyor.
@@ -109,7 +109,6 @@ export default function ListsScreen() {
         </Pressable>
         <View style={styles.titleWrap}>
           <Text style={styles.title}>{t('pl.title')}</Text>
-          <View style={styles.betaBadge}><Text style={styles.betaText}>BETA</Text></View>
         </View>
         <View style={styles.iconBtn} />
       </View>
@@ -226,8 +225,6 @@ const styles = StyleSheet.create({
   },
   titleWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
   title: { fontSize: type.body, fontWeight: '900', color: colors.text, letterSpacing: -0.3 },
-  betaBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.sm, backgroundColor: colors.accent },
-  betaText: { color: '#fff', fontSize: type.caption2, fontWeight: '900', letterSpacing: 0.5 },
   iconBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
 
   tabs: { flexDirection: 'row', gap: 6, paddingHorizontal: spacing.md, paddingBottom: 10 },

@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Steam arkadaşları — kütüphane kesişimi.  [BETA]
+// Steam arkadaşları — kütüphane kesişimi.
 //
 // NEDEN VAR: yeni bir sosyal ekranın klasik ölüm sebebi, ilk kullanıcının boş
 // bir listeye bakmasıdır. Burada liste ASLA boş açılmıyor, çünkü grafiği
@@ -157,7 +157,6 @@ export default function SteamFriendsScreen() {
             </Text>
           )}
         </View>
-        <View style={styles.betaChip}><Text style={styles.betaText}>{t('soc.beta')}</Text></View>
       </View>
 
       {body || (
@@ -267,11 +266,6 @@ const styles = StyleSheet.create({
   title:     { color: colors.text, fontSize: type.title3, fontWeight: '800', letterSpacing: -0.4 },
   subtitle:  { color: colors.text3, fontSize: type.caption, marginTop: 1 },
 
-  betaChip: {
-    paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: radius.pill,
-    backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accentBorder,
-  },
-  betaText: { color: colors.accentText, fontSize: type.caption2, fontWeight: '800', letterSpacing: 0.4 },
 
   card: {
     marginHorizontal: spacing.lg, marginBottom: spacing.sm,

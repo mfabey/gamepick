@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Sohbet ekranı — birebir mesajlaşma.  [BETA]
+// Sohbet ekranı — birebir mesajlaşma.
 //
 // LİSTE TERS ÇEVRİLMİŞ (inverted) ve veri EN YENİ BAŞTA geliyor. Sunucu da
 // aynı düzende saklıyor (LPUSH), yani hiçbir yerde ters çevirme yapılmıyor.
@@ -11,7 +11,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, TextInput, Pressable, StyleSheet, FlatList,
-  ActivityIndicator, KeyboardAvoidingView, Platform, Alert, Keyboard,
+  ActivityIndicator, KeyboardAvoidingView, Platform, Alert, Keyboard, Clipboard,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -31,6 +31,8 @@ import { setActiveChat, dismissChatNotifications } from '../../src/notifications
 import { getSession, subscribeSession } from '../../src/services/session';
 import EmptyState from '../../src/components/EmptyState';
 import ReportSheet from '../../src/components/ReportSheet';
+import MessageMenu from '../../src/components/MessageMenu';
+import GifPicker from '../../src/components/GifPicker';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { getAvatarPreset } from '../../src/utils/avatar';
 import { colors, radius, spacing, type, PRESSED } from '../../src/theme';
@@ -104,7 +106,14 @@ export default function ChatScreen() {
   const [loading, setLoading] = useState(true);
   const [text, setText]     = useState('');
   const [sending, setSending] = useState(false);
-  const [reportOpen, setReportOpen] = useState(false);
+  // Raporlama hedefi METİN olarak tutuluyor, boolean değil: başlıktaki düğme
+  // KONUŞMAYI, mesaj menüsü ise TEK MESAJI raporluyor. İki ayrı state yerine
+  // tek hedef, iki çağıran.
+  const [reportTarget, setReportTarget] = useState(null);
+  const [gifOpen, setGifOpen] = useState(false);
+  // Uzun basılan mesaj: { msg, mine, anchor }. `anchor` baloncuğun pencere
+  // koordinatı — menü ona tutturuluyor.
+  const [menu, setMenu] = useState(null);
   // Karşı tarafın en son okuma zamanı. Kendi mesajlarımdan `at`'i bundan
   // küçük veya eşit olanlar görülmüş sayılıyor.
   const [otherReadAt, setOtherReadAt] = useState(0);
@@ -172,7 +181,8 @@ export default function ChatScreen() {
     // Yalnızca KENDİ mesajın; sunucu da ayrıca doğruluyor ama kullanıcıya
     // yapamayacağı bir seçenek göstermenin anlamı yok.
     if (msg.from !== myUid || msg.deleted) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    // ONAY KUTUSU KALIYOR, menüye rağmen. Menü bir eylem listesi; silme ise
+    // geri alınamayan tek eylem ve onu tek dokunuşa indirmek yanlış olurdu.
     Alert.alert(t('msg.undoTitle'), t('msg.undoText'), [
       { text: t('msg.cancel'), style: 'cancel' },
       {
@@ -191,6 +201,51 @@ export default function ChatScreen() {
       },
     ]);
   }, [myUid, other, markDeleted, t]);
+
+  /**
+   * Baloncuğa uzun basıldı — menüyü aç.
+   *
+   * ARTIK KARŞI TARAFIN MESAJINDA DA ÇALIŞIYOR. Önceden yalnızca kendi
+   * mesajıma basılabiliyordu (tek eylem silmekti); gelen bir mesajı
+   * kopyalamanın ya da tek tek raporlamanın yolu yoktu.
+   */
+  const openMenu = useCallback((msg, mine, anchor) => {
+    if (msg.deleted) return;      // geri alınmış mesajda yapılacak bir şey yok
+    setMenu({ msg, mine, anchor });
+  }, []);
+
+  /**
+   * Menü satırları. Mesajın TÜRÜNE göre kuruluyor: yapılamayacak bir eylemi
+   * soluk göstermek yerine hiç göstermiyoruz — soluk satır "neden çalışmıyor"
+   * sorusunu doğuruyor, olmayan satır soru doğurmuyor.
+   *
+   * Yanıtla / Sabitle / Çevir buraya eklenecek; menü onları taşıyacak
+   * şekilde kuruldu (bkz. MessageMenu — satır sayısı yüksekliği belirliyor).
+   */
+  const menuActions = useCallback(({ msg, mine }) => {
+    const rows = [];
+    if (msg.text) {
+      rows.push({
+        key: 'copy', icon: 'copy-outline', label: t('msg.copy'),
+        onPress: () => {
+          Clipboard.setString(msg.text);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+        },
+      });
+    }
+    if (mine) {
+      rows.push({
+        key: 'delete', icon: 'trash-outline', label: t('msg.undo'),
+        destructive: true, onPress: () => confirmDelete(msg),
+      });
+    } else {
+      rows.push({
+        key: 'report', icon: 'flag-outline', label: t('msg.reportMessage'),
+        destructive: true, onPress: () => setReportTarget(`${cid || other}:${msg.id}`),
+      });
+    }
+    return rows;
+  }, [t, confirmDelete, cid, other]);
 
   useEffect(() => {
     if (!session || !other) { setLoading(false); return; }
@@ -362,6 +417,31 @@ export default function ChatScreen() {
   }, [text, other, myUid, addMessage, t]);
 
   /**
+   * GIF gönder — İYİMSER, metin gönderimiyle aynı mantık.
+   * GIF bizim depomuza inmiyor, o yüzden yükleme adımı yok: Tenor adresi
+   * doğrudan mesaja iliştiriliyor.
+   */
+  const sendGif = useCallback(async (g) => {
+    setGifOpen(false);
+    const tempId = 'tmp-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7);
+    const optimistic = {
+      id: tempId, from: myUid, text: '', at: Date.now(), pending: true,
+      gif: { url: g.url, w: g.w, h: g.h },
+    };
+    addMessage(optimistic);
+    Haptics.selectionAsync().catch(() => {});
+
+    try {
+      const r = await sendChat(other, '', undefined, undefined, { url: g.url, w: g.w, h: g.h });
+      if (r?.message) setMsgs((cur) => cur.map((m) => (m.id === tempId ? r.message : m)));
+    } catch {
+      setMsgs((cur) => cur.map((m) => (
+        m.id === tempId ? { ...m, pending: false, failed: true } : m
+      )));
+    }
+  }, [other, myUid, addMessage]);
+
+  /**
    * Galeriden görsel seç, KÜÇÜLT, yükle, mesaj olarak gönder.
    *
    * Küçültme şart, kozmetik değil: sunucusuz işlevlerde istek gövdesi 4,5 MB
@@ -486,7 +566,7 @@ export default function ChatScreen() {
         </View>
 
         <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]}
-                   onPress={() => setReportOpen(true)} hitSlop={10}>
+                   onPress={() => setReportTarget(cid || other)} hitSlop={10}>
           <Ionicons name="ellipsis-horizontal" size={20} color={colors.text2} />
         </Pressable>
       </View>
@@ -508,7 +588,7 @@ export default function ChatScreen() {
                 msg={item}
                 mine={item.from === myUid}
                 seen={item.id === seenId}
-                onLongPress={() => confirmDelete(item)}
+                onLongPress={openMenu}
                 onLike={() => onLike(item)}
                 myUid={myUid}
                 onOpenShare={() => item.share?.appid && router.push({
@@ -541,6 +621,13 @@ export default function ChatScreen() {
             >
               <Ionicons name="image-outline" size={22} color={colors.text2} />
             </Pressable>
+            <Pressable
+              style={({ pressed }) => [styles.attachBtn, pressed && PRESSED]}
+              onPress={() => setGifOpen(true)}
+              hitSlop={6}
+            >
+              <Ionicons name="happy-outline" size={22} color={colors.text2} />
+            </Pressable>
             <TextInput
               style={styles.input}
               value={text}
@@ -570,17 +657,45 @@ export default function ChatScreen() {
 
       {/* Mesaj raporlama — Apple Guideline 1.2 kullanıcı içeriğinin
           raporlanabilir olmasını istiyor, özel mesajlar dahil. */}
+      <MessageMenu
+        visible={!!menu}
+        onClose={() => setMenu(null)}
+        anchor={menu?.anchor}
+        mine={!!menu?.mine}
+        actions={menu ? menuActions(menu) : []}
+      />
+
+      <GifPicker
+        visible={gifOpen}
+        onClose={() => setGifOpen(false)}
+        onPick={sendGif}
+      />
+
       <ReportSheet
-        visible={reportOpen}
-        onClose={() => setReportOpen(false)}
+        visible={!!reportTarget}
+        onClose={() => setReportTarget(null)}
         targetType="message"
-        targetId={cid || other}
+        targetId={reportTarget || ''}
       />
     </SafeAreaView>
   );
 }
 
 function Bubble({ msg, mine, seen, onLongPress, onOpenShare, onLike, myUid, t }) {
+  // Menu baloncuga TUTTURULUYOR, ekranin altina degil — hangi mesaja ait
+  // oldugunu konumu soylemeli. Bunun icin baloncugun pencere koordinati
+  // gerekiyor ve o ancak olculerek bulunuyor.
+  //
+  // Tek ref, dort dalin hepsinde: ayni anda yalnizca biri ciziliyor.
+  const rowRef = useRef(null);
+  const handleLongPress = useCallback(() => {
+    const node = rowRef.current;
+    if (!node?.measureInWindow) { onLongPress?.(msg, mine, { x: 0, y: 0, width: 0, height: 0 }); return; }
+    node.measureInWindow((x, y, width, height) => {
+      onLongPress?.(msg, mine, { x, y, width, height });
+    });
+  }, [msg, mine, onLongPress]);
+
   // Çift dokunuş — React Native'de yerleşik değil, elle ölçülüyor. 280 ms:
   // altında yanlışlıkla tetikleniyor, üstünde iki ayrı dokunuş gibi geliyor.
   const lastTapRef = useRef(0);
@@ -612,7 +727,8 @@ function Bubble({ msg, mine, seen, onLongPress, onOpenShare, onLike, myUid, t })
     return (
       <Pressable
         style={[styles.bubbleRow, mine ? styles.rowMine : styles.rowTheirs]}
-        onLongPress={mine ? onLongPress : undefined}
+        ref={rowRef}
+        onLongPress={handleLongPress}
         delayLongPress={400}
         onPress={onOpenShare}
       >
@@ -627,6 +743,38 @@ function Bubble({ msg, mine, seen, onLongPress, onOpenShare, onLike, myUid, t })
     );
   }
 
+  // ── GIF ──
+  // Kendi baloncugu: dolgusuz, cerceve yok. GIF zaten kendi kenarina sahip
+  // ve etrafina renkli bir baloncuk koymak gorseli kalabaliklastiriyor.
+  if (msg.gif?.url) {
+    return (
+      <Animated.View entering={FadeIn.duration(160)}>
+        <Pressable
+          style={[styles.bubbleRow, mine ? styles.rowMine : styles.rowTheirs]}
+          ref={rowRef}
+          onLongPress={handleLongPress}
+          delayLongPress={400}
+          onPress={onTap}
+        >
+          <Image
+            source={msg.gif.url}
+            style={styles.gifBubble}
+            contentFit="contain"
+            transition={120}
+          />
+          {likes.length > 0 ? (
+            <View style={[styles.heart, mine ? styles.heartMine : styles.heartTheirs]}>
+              <Ionicons name="heart" size={11} color={liked ? colors.accent : colors.text2} />
+            </View>
+          ) : null}
+          {msg.pending ? <Text style={styles.state}>{t('msg.sending')}</Text> : null}
+          {msg.failed ? <Text style={[styles.state, styles.stateFail]}>{t('msg.notSent')}</Text> : null}
+          {seen && !msg.pending && !msg.failed ? <Text style={styles.seen}>{t('msg.seen')}</Text> : null}
+        </Pressable>
+      </Animated.View>
+    );
+  }
+
   const hasMedia = !!msg.media?.url;
   const hasText = !!msg.text;
   const isVideo = !!msg.media?.type?.startsWith('video/');
@@ -638,7 +786,8 @@ function Bubble({ msg, mine, seen, onLongPress, onOpenShare, onLike, myUid, t })
     <Animated.View entering={FadeIn.duration(160)}>
     <Pressable
       style={[styles.bubbleRow, mine ? styles.rowMine : styles.rowTheirs]}
-      onLongPress={mine ? onLongPress : undefined}
+      ref={rowRef}
+      onLongPress={handleLongPress}
       delayLongPress={400}
       onPress={onTap}
     >
@@ -777,6 +926,9 @@ const styles = StyleSheet.create({
 
   // 4:3 — telefon fotoğraflarının çoğunda üstten/alttan kırpma az oluyor
   media: { width: 220, height: 165, borderRadius: radius.md, backgroundColor: colors.bgInput },
+  // GIF oranlari cok degisken (kare, genis, uzun). Sabit yukseklik yerine
+  // en-boy orani birakip contain kullaniyoruz — kirpma olmuyor.
+  gifBubble: { width: 200, height: 200, borderRadius: radius.md, backgroundColor: colors.bgInput },
 
   composer: {
     flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm,

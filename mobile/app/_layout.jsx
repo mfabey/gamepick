@@ -132,7 +132,11 @@ export default function RootLayout() {
                 <Stack.Screen name="social" />
                 <Stack.Screen name="steam-friends" />
                 <Stack.Screen name="game-cards" />
-                <Stack.Screen name="messages" />
+                {/* "messages" BURADAN KALKTI: alt navigasyona taşındı, artık
+                    (tabs) altında. Burada bırakılsaydı expo-router var
+                    olmayan bir çocuk rota için uyarı verirdi.
+                    Yerini haberler aldı — o da ters yönde taşındı. */}
+                <Stack.Screen name="news" />
                 <Stack.Screen name="reviews" />
                 <Stack.Screen name="chat/[uid]" />
                 <Stack.Screen name="settings" />

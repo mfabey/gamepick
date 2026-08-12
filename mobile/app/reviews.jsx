@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// İncelemeler — kullanıcı içeriğinin kendi sayfası.  [BETA]
+// İncelemeler — kullanıcı içeriğinin kendi sayfası.
 //
 // OYUN SAYFALARINDA DEĞİL, BURADA. Oyun sayfaları uygulamanın kendi verdiği
 // bilgiyi göstermeye devam ediyor (Steam'in toplu analizi). Sebebi terk
@@ -25,9 +25,9 @@ import * as Haptics from 'expo-haptics';
 import { getReviewFeed, getEligibleGames } from '../src/api/social';
 import { getSession, subscribeSession } from '../src/services/session';
 import ReviewComposer from '../src/components/ReviewComposer';
+import ReviewCard from '../src/components/ReviewCard';
 import ReportSheet from '../src/components/ReportSheet';
 import EmptyState from '../src/components/EmptyState';
-import { getAvatarPreset } from '../src/utils/avatar';
 import { colors, radius, spacing, type, PRESSED, NUMERIC, TAB_SPACE } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
 
@@ -154,8 +154,6 @@ export default function ReviewsScreen() {
               <ReviewCard
                 key={`${r.appid}:${r.uid}`}
                 review={r}
-                t={t}
-                lang={lang}
                 onPress={() => router.push({
                   pathname: '/game/[id]',
                   params: { id: `rawg_${r.appid}`, appid: r.appid, name: r.gameName || '', image: r.image },
@@ -196,62 +194,7 @@ function Header({ t, onBack }) {
         <Ionicons name="chevron-back" size={24} color={colors.text} />
       </Pressable>
       <Text style={styles.h1}>{t('rev.section')}</Text>
-      <View style={styles.betaChip}><Text style={styles.betaText}>{t('soc.beta')}</Text></View>
     </View>
-  );
-}
-
-function ReviewCard({ review, t, lang, onPress, onLongPress, onEdit }) {
-  const preset = getAvatarPreset(review.author?.avatar);
-  const name = review.author?.displayName || review.author?.username || '?';
-
-  return (
-    <Pressable
-      style={({ pressed }) => [styles.card, pressed && PRESSED]}
-      onPress={onPress}
-      onLongPress={onLongPress}
-      delayLongPress={400}
-    >
-      <View style={styles.cardHead}>
-        <Image source={review.image} style={styles.cardImg} contentFit="cover" transition={140} />
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={styles.cardGame} numberOfLines={1}>{review.gameName || review.appid}</Text>
-          <View style={styles.byline}>
-            {preset ? (
-              <View style={[styles.avatar, { backgroundColor: preset.bg }]}>
-                <Ionicons name={preset.icon} size={10} color={preset.iconColor} />
-              </View>
-            ) : (
-              <View style={styles.avatar}>
-                <Text style={styles.avatarLetter}>{name.charAt(0).toUpperCase()}</Text>
-              </View>
-            )}
-            <Text style={styles.author} numberOfLines={1}>{name}</Text>
-            {/* DOĞRULANMIŞ SAAT — bu sayfanın var oluş sebebi. Sayı
-                kullanıcıdan değil Steam'den geliyor; başka hiçbir platform
-                bunu gösteremiyor. */}
-            <Ionicons name="shield-checkmark" size={11} color={colors.green} />
-            <Text style={[styles.hours, NUMERIC]}>
-              {Math.round(review.hours)}{lang === 'tr' ? ' saat' : ' h'}
-            </Text>
-          </View>
-        </View>
-        <Ionicons
-          name={review.recommended ? 'thumbs-up' : 'thumbs-down'}
-          size={17}
-          color={review.recommended ? colors.green : colors.text3}
-        />
-      </View>
-
-      <Text style={styles.body} numberOfLines={6}>{review.text}</Text>
-
-      {onEdit && (
-        <Pressable style={({ pressed }) => [styles.editBtn, pressed && PRESSED]} onPress={onEdit}>
-          <Ionicons name="create-outline" size={14} color={colors.text2} />
-          <Text style={styles.editText}>{t('rev.edit')}</Text>
-        </Pressable>
-      )}
-    </Pressable>
   );
 }
 
@@ -265,11 +208,6 @@ const styles = StyleSheet.create({
   },
   iconBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginLeft: -10 },
   h1: { flex: 1, color: colors.text, fontSize: type.title3, fontWeight: '800', letterSpacing: -0.4 },
-  betaChip: {
-    paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: radius.pill,
-    backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accentBorder,
-  },
-  betaText: { color: colors.accentText, fontSize: type.caption2, fontWeight: '800', letterSpacing: 0.4 },
 
   sectionLabel: {
     color: colors.text3, fontSize: type.caption, fontWeight: '800',
@@ -297,25 +235,5 @@ const styles = StyleSheet.create({
   tabText:    { color: colors.text3, fontSize: type.footnote, fontWeight: '700' },
   tabTextOn:  { color: colors.text },
 
-  card: {
-    marginHorizontal: spacing.lg, marginBottom: spacing.sm,
-    backgroundColor: colors.card, borderRadius: radius.md,
-    borderWidth: 1, borderColor: colors.cardBorder,
-    padding: spacing.md, gap: spacing.sm,
-  },
-  cardHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  cardImg:  { width: 56, height: 26, borderRadius: 4, backgroundColor: colors.bgInput },
-  cardGame: { color: colors.text, fontSize: type.footnote, fontWeight: '700' },
-  byline:   { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
-  avatar: {
-    width: 16, height: 16, borderRadius: 8, backgroundColor: colors.bgInput,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  avatarLetter: { color: colors.text2, fontSize: 9, fontWeight: '800' },
-  author: { color: colors.text3, fontSize: type.caption2, maxWidth: 110 },
-  hours:  { color: colors.green, fontSize: type.caption2, fontWeight: '700' },
-  body:   { color: colors.text2, fontSize: type.footnote, lineHeight: 19 },
 
-  editBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, minHeight: 36 },
-  editText:{ color: colors.text2, fontSize: type.caption, fontWeight: '700' },
 });

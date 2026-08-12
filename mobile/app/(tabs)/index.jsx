@@ -1,4 +1,4 @@
-import { memo, useMemo, useCallback, useEffect , useRef} from 'react';
+import { memo, useMemo, useCallback, useEffect, useState, useRef } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
@@ -7,15 +7,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomFade } from '../../src/components/EdgeFade';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import * as WebBrowser from 'expo-web-browser';
 import { fetchTrending, fetchGames } from '../../src/api/games';
-import { fetchNews } from '../../src/api/news';
 import { colors, radius, spacing, TAB_SPACE, PRESSED, type, metacriticColor } from '../../src/theme';
 import { useTabBarScroll } from '../../src/context/TabBarContext';
 import { useLanguage } from '../../src/context/LanguageContext';
 import FadeIn from '../../src/components/FadeIn';
 import PosterImage from '../../src/components/PosterImage';
-import NewsImage from '../../src/components/NewsImage';
 import { useQuery } from '../../src/hooks/useQuery';
 import { useTasteProfile } from '../../src/hooks/useTasteProfile';
 import { useOwnedGames } from '../../src/hooks/useOwnedGames';
@@ -25,14 +22,34 @@ import { useDismissed } from '../../src/hooks/useDismissed';
 import { useForYouFeed } from '../../src/hooks/useForYouFeed';
 import { recordDismiss } from '../../src/services/dismissStore';
 import GamePostCard from '../../src/components/GamePostCard';
-import MessagesButton from '../../src/components/MessagesButton';
+import ReviewCard from '../../src/components/ReviewCard';
+import ReviewPrompt from '../../src/components/ReviewPrompt';
+import FriendActivity from '../../src/components/FriendActivity';
+import ReportSheet from '../../src/components/ReportSheet';
 import { fetchForYouCandidates } from '../../src/api/recommend';
+import { getReviewFeed, getEligibleGames, getFriendActivity } from '../../src/api/social';
+import { getSession, subscribeSession } from '../../src/services/session';
 import { genreSlugsFor, rankCandidates } from '../../src/services/recommend';
+import { interleaveReviews } from '../../src/services/homeFeed';
 import { useTabPressAction, scrollRefToTop } from '../../src/hooks/useTabPressAction';
 
 // Stabil fetcher'lar (key'in saf fonksiyonu)
 const fetchNewGames = () => fetchGames({ section: 'new', num: 12 });
 const fetchSaleGames = () => fetchGames({ section: 'sale', num: 12 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SOĞUK KULLANICI İÇİN YEDEK TÜRLER.
+//
+// Akış `useForYouFeed`'e boş bir slug listesiyle gidiyordu ve boş listede
+// hiçbir sayfa çekilmiyor. Sonuç: zevk profili oluşmamış bir kullanıcıda —
+// yani TAZE KURULUMDA — anasayfa başlıkta bitiyor, sonsuz akış hiç
+// başlamıyordu. Uygulama incelemecisinin gördüğü ekran tam olarak buydu.
+//
+// Bu beş tür RAWG'ın en geniş havuzları; kişiselleştirme değil, TABAN.
+// Kullanıcı bir şeylere dokundukça profil oluşuyor ve liste kendiliğinden
+// gerçek zevke kayıyor.
+// ─────────────────────────────────────────────────────────────────────────────
+const FALLBACK_SLUGS = ['action', 'adventure', 'role-playing-games-rpg', 'indie', 'strategy'];
 
 export default function HomeScreen() {
   // Sekmeye tekrar basınca listeyi başa sar (iOS'ta beklenen davranış)
@@ -50,10 +67,9 @@ export default function HomeScreen() {
   const fresh = useMemo(() => (newData?.results || []).slice(0, 12), [newData]);
   const sale  = useMemo(() => (saleData?.results || []).slice(0, 12), [saleData]);
 
-  // Haberler — News sekmesiyle AYNI cache anahtarı → çift fetch yok, anlık
-  const { data: newsData } = useQuery(`news:${lang}`, () => fetchNews(lang), { ttl: 10 * 60 * 1000 });
-  const news = useMemo(() => (newsData?.results || []).slice(0, 8), [newsData]);
-  const openNews = (url) => { if (url) WebBrowser.openBrowserAsync(url); };
+  // Haber verisi ARTIK BURADA ÇEKİLMİYOR. Anasayfada haber şeridi yokken
+  // her açılışta haber isteği atmak boşa ağ trafiğiydi; /news kendi
+  // isteğini kendi yapıyor (aynı cache anahtarı, aynı hız).
 
   // ── Günün Fırsatı Widget'ını Güncelle ──
   useEffect(() => {
@@ -109,9 +125,14 @@ export default function HomeScreen() {
     [candData, ownedNames, seenIds, dismissedIds, profile]
   );
 
-  // ── Sonsuz keşif akışı ("Senin İçin" oluştuktan sonra açılır) ──
+  // ── Sonsuz keşif akışı ──
+  // AKIŞ ARTIK HER ZAMAN AÇIK. Önceden `enabled: !isCold` ile kapalıydı ve
+  // soğuk kullanıcıda anasayfa başlıkta bitiyordu (bkz. FALLBACK_SLUGS).
   const slugsKey = forYouSlugs.join(',');
-  const feedSlugs = useMemo(() => (slugsKey ? slugsKey.split(',') : []), [slugsKey]);
+  const feedSlugs = useMemo(
+    () => (slugsKey ? slugsKey.split(',') : FALLBACK_SLUGS),
+    [slugsKey]
+  );
   const genreWeights = useMemo(
     () => normalizedGenres(),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -120,18 +141,42 @@ export default function HomeScreen() {
   // Şeritte zaten gösterilenler akışta tekrarlanmasın
   const excludeIds = useMemo(() => new Set(forYou.map((g) => String(g.id))), [forYou]);
   const { items: feedItems, loadMore, loadingMore } = useForYouFeed({
-    enabled: !isCold,
+    enabled: true,
     slugs: feedSlugs,
     genreWeights,
     ownedNames,
     seenIds,
     excludeIds,
   });
-  // "İlgilenmiyorum" anında yansısın (sıralama bozulmadan)
-  const feed = useMemo(
-    () => feedItems.filter((g) => !dismissedIds.has(String(g.id))),
-    [feedItems, dismissedIds]
-  );
+
+  // ── Topluluk incelemeleri ──
+  // İki uç PARALEL: biri diğerini beklemiyor ve ikisi de akışı bağlamıyor —
+  // düşerlerse anasayfa yalnızca incelemesiz açılıyor, boş değil.
+  const [session, setSession] = useState(() => getSession());
+  useEffect(() => subscribeSession(() => setSession(getSession())), []);
+  const [reviews, setReviews] = useState([]);
+  const [eligible, setEligible] = useState([]);
+  const [friendGames, setFriendGames] = useState([]);
+  const [reportTarget, setReportTarget] = useState(null);
+
+  const loadSocial = useCallback(() => {
+    if (!session) { setReviews([]); setEligible([]); setFriendGames([]); return; }
+    getReviewFeed().then((r) => setReviews(r?.reviews || [])).catch(() => {});
+    getEligibleGames().then((r) => setEligible((r?.games || []).slice(0, 10))).catch(() => {});
+    // Steam bağlı değilse boş liste dönüyor (hata değil) → şerit çizilmiyor.
+    getFriendActivity().then((r) => setFriendGames(r?.games || [])).catch(() => {});
+  }, [session]);
+  useEffect(() => { loadSocial(); }, [loadSocial]);
+
+  // "İlgilenmiyorum" anında yansısın (sıralama bozulmadan), ardından
+  // incelemeler oyun gönderilerinin arasına giriyor.
+  //
+  // HARMANLAMA ELEMEDEN SONRA: önce harmanlanıp sonra elenseydi bir oyun
+  // kartı düştüğünde inceleme aralıkları kayardı.
+  const feed = useMemo(() => {
+    const games = feedItems.filter((g) => !dismissedIds.has(String(g.id)));
+    return interleaveReviews(games, reviews);
+  }, [feedItems, dismissedIds, reviews]);
 
   // "İlgilenmiyorum" — uzun-bas → onay → feed'den kaldır
   const handleDismiss = useCallback((game) => {
@@ -141,33 +186,65 @@ export default function HomeScreen() {
     ]);
   }, [t]);
 
-  const keyExtractor = useCallback((item) => String(item.id), []);
+  const keyExtractor = useCallback((item) => item.key, []);
+  // FlashList'e TÜR bildiriliyor: iki farklı yükseklikte kart var ve tür
+  // bilgisi olmadan liste bir inceleme kartını oyun kartının yerine geri
+  // dönüştürmeye çalışıp kaydırmada sıçrama yapıyor.
+  const getItemType = useCallback((item) => item.kind, []);
+
   // Keşif akışı artık iki sütunlu kapak ızgarası değil, tek sütunlu gönderi
   // akışı: oyun içi ekran görüntüsü + açıklama. Öneri MANTIĞI aynı kaldı
   // (zevk profili + Steam kütüphanesi), değişen yalnızca sunum.
+  //
+  // Aralarına topluluk incelemeleri giriyor. UZUN BASMA = RAPORLA: kullanıcı
+  // içeriğinin gösterildiği her yüzeyde bulunmak zorunda (Guideline 1.2).
   const renderFeedItem = useCallback(({ item }) => (
-    <GamePostCard game={item} onDismiss={handleDismiss} />
-  ), [handleDismiss]);
+    item.kind === 'review' ? (
+      <ReviewCard
+        review={item.review}
+        onPress={() => router.push({
+          pathname: '/game/[id]',
+          params: {
+            id: `rawg_${item.review.appid}`, appid: item.review.appid,
+            name: item.review.gameName || '', image: item.review.image,
+          },
+        })}
+        onLongPress={() => setReportTarget(item.review)}
+        style={styles.feedReview}
+      />
+    ) : (
+      <GamePostCard game={item.game} onDismiss={handleDismiss} />
+    )
+  ), [handleDismiss, router]);
 
   // Mevcut bölümlerin tamamı listenin başlığı olur → tek kaydırma, tek liste.
   const header = (
     <View style={styles.headerWrap}>
 
-        {/* ── Üst: marka (ortalı) + mesajlar ──
+        {/* ── Üst: marka (ortalı) + haberler ──
             Marka ORTADA kalsın diye ikon akışa girmiyor, mutlak konumlu.
             Aksi hâlde marka sola kayardı.
 
-            BURASI ÖNCE KAYDIRARAK KEŞİF (swipe) GİRİŞİYDİ. Arşive alındı:
-            eşleştirme mantığı kullanıcı sayısı arttığında anlam kazanacak,
-            boş havuzda kaydırmak kimseye bir şey vermiyordu. Ekran ve rota
-            duruyor, yalnızca giriş noktası kaldırıldı. */}
+            BU KÖŞENİN GEÇMİŞİ: önce kaydırarak keşif (swipe) girişiydi,
+            sonra mesajlar. Kaydırma arşive alındı, mesajlar ise alt
+            navigasyona terfi etti — orada rozetiyle birlikte duruyor.
+
+            Şimdi haberlerin girişi burada. Haberler eskiden anasayfanın en
+            üstünde 8 kartlık bir şerit ve alt navigasyonda bir sekmeydi;
+            ikisi de kalktı. Dış siteye çıkan içerik uygulamanın ilk
+            perdesini dolduramaz. */}
         <View style={styles.topBar}>
           <Text style={styles.brand}>GAMERISEN</Text>
           <View style={styles.topRight}>
-            <MessagesButton
-              onPress={() => router.push('/messages')}
-              accessibilityLabel={t('msg.title')}
-            />
+            <Pressable
+              style={({ pressed }) => [styles.topBtn, pressed && PRESSED]}
+              onPress={() => router.push('/news')}
+              accessibilityRole="button"
+              accessibilityLabel={t('news.title')}
+              hitSlop={6}
+            >
+              <Ionicons name="newspaper-outline" size={22} color={colors.text} />
+            </Pressable>
           </View>
         </View>
 
@@ -194,23 +271,25 @@ export default function HomeScreen() {
             ikinci kez, üstelik başlıksız gösterdiği için haberlerin önünü
             gereksiz kapatıyordu. */}
 
-        {/* ── Bölümler ── */}
-        {/* Haberler (en üstte) */}
-        {news.length > 0 && (
-          <FadeIn delay={130}>
-            <View style={{ marginTop: 26 }}>
-              <View style={styles.sectionHead}>
-                <Text style={styles.sectionTitle}>{t('news.title')}</Text>
-                <Pressable onPress={() => router.push('/news')} hitSlop={8}>
-                  <Text style={styles.viewAll}>{t('home.viewAll')} ›</Text>
-                </Pressable>
-              </View>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-                {news.map(n => <NewsCard key={n.id} item={n} onPress={() => openNews(n.url)} />)}
-              </ScrollView>
-            </View>
-          </FadeIn>
-        )}
+        {/* ── Sıra sende ──
+            HABER ŞERİDİ BURADAYDI, en üstte, 8 kart ≈ 250 punto. Kaldırıldı:
+            dokunulunca dış tarayıcı açan tek bölümdü ve ilk perdede
+            duruyordu. Girişi sağ üstteki gazete simgesine taşındı.
+
+            Yerini kullanıcının KENDİ oynadığı oyunlar aldı. Aramadan hemen
+            sonra gelmesi bilinçli: ilk perdede görünen ilk içerik bölümü
+            artık dışarı çıkaran değil, üretmeye çağıran bölüm. */}
+        <FadeIn delay={100}>
+          <ReviewPrompt games={eligible} onWritten={loadSocial} />
+        </FadeIn>
+
+        {/* Arkadaş etkinliği KATALOG ŞERİTLERİNDEN ÖNCE. Sıra bilinçli:
+            "Trend" ve "Yeni" herkese aynı şeyi gösteriyor, bu şerit ise
+            yalnızca bu kullanıcıya ait. Kişiye özel olan, genel olanın
+            üstünde durmalı. */}
+        <FadeIn delay={120}>
+          <FriendActivity games={friendGames} />
+        </FadeIn>
 
         {!isCold && forYou.length > 0 && (
           <FadeIn delay={140}><Section title={t('home.forYou')} games={forYou} router={router} onDismiss={handleDismiss} /></FadeIn>
@@ -236,6 +315,7 @@ export default function HomeScreen() {
         scrollEventThrottle={16}
         data={feed}
         keyExtractor={keyExtractor}
+        getItemType={getItemType}
         renderItem={renderFeedItem}
         ListHeaderComponent={header}
         onEndReached={loadMore}
@@ -247,6 +327,14 @@ export default function HomeScreen() {
             {loadingMore ? <ActivityIndicator color={colors.accent} /> : null}
           </View>
         }
+      />
+
+      {/* Raporlama, akıştaki inceleme kartlarına uzun basınca açılıyor. */}
+      <ReportSheet
+        visible={!!reportTarget}
+        onClose={() => setReportTarget(null)}
+        targetType="review"
+        targetId={reportTarget ? `${reportTarget.appid}:${reportTarget.uid}` : ''}
       />
     </View>
   );
@@ -301,20 +389,6 @@ const HomeCard = memo(function HomeCard({ game, router, onDismiss }) {
   );
 });
 
-const NewsCard = memo(function NewsCard({ item, onPress }) {
-  return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.newsCard, pressed && { opacity: 0.85 }]}>
-      <View style={styles.newsCover}>
-        <NewsImage item={item} style={StyleSheet.absoluteFill} />
-        <LinearGradient colors={['transparent', 'rgba(6,7,9,0.45)']} style={StyleSheet.absoluteFill} />
-        {item.cat ? <View style={styles.newsCat}><Text style={styles.newsCatText}>{item.cat}</Text></View> : null}
-      </View>
-      <Text numberOfLines={2} style={styles.newsTitle}>{item.title}</Text>
-      <Text numberOfLines={1} style={styles.newsMeta}>{item.source} · {item.date}</Text>
-    </Pressable>
-  );
-});
-
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   // Tek sütuna geçilince listenin yatay dolgusu kaldırıldı: gönderi kartı
@@ -326,6 +400,10 @@ const styles = StyleSheet.create({
   // iki sütunlu ızgara bitişik duruyordu, ızgara o bölümün devamı gibi
   // görünüyordu. 26 = bölümler arası boşlukla aynı ritim.
   headerWrap: { paddingBottom: 26 },
+  // Akıştaki inceleme kartı, oyun gönderileriyle AYNI dikey ritmi tutuyor
+  // (GamePostCard marginBottom: 26). Bileşenin kendi 8'lik boşluğu kalsaydı
+  // incelemeler bir sonraki oyuna yapışık görünürdü.
+  feedReview: { marginBottom: 26 },
   // Dikey dolgu 6/4 idi ve 40px ikon bandı taşırıyordu; marka ile ikon
   // birbirine değiyordu. Bant ikonun boyuna göre açıldı.
   topBar: {
@@ -335,6 +413,8 @@ const styles = StyleSheet.create({
   },
   // İkon akıştan çıkarıldı: normal akışta olsaydı marka ortadan kayardı.
   topRight: { position: 'absolute', right: spacing.lg - 6, top: 6 },
+  // 40×40 + hitSlop 6 → etkin dokunma alanı 52×52, HIG alt sınırının üstünde
+  topBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   brand: { fontSize: type.headline, fontWeight: '900', color: colors.text, letterSpacing: 1.5 },
 
   // Arama artık hero'nun içinde değil, doğrudan başlıkta duruyor — yatay
@@ -360,12 +440,6 @@ const styles = StyleSheet.create({
   row: { paddingHorizontal: spacing.lg, gap: 12 },
   card: { width: 132 },
 
-  newsCard: { width: 236 },
-  newsCover: { width: '100%', height: 132, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.card },
-  newsCat: { position: 'absolute', top: 8, left: 8, backgroundColor: 'rgba(0,0,0,0.55)', borderColor: colors.cardBorder, borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 3 },
-  newsCatText: { color: colors.text2, fontSize: type.caption2, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.3 },
-  newsTitle: { color: colors.text, fontSize: type.footnote, fontWeight: '700', lineHeight: 17, marginTop: 8 },
-  newsMeta: { color: colors.text3, fontSize: type.caption2, fontWeight: '600', marginTop: 4 },
   cardCover: { width: '100%', aspectRatio: 3 / 4, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.card },
   cardName: { position: 'absolute', left: 10, right: 10, bottom: 9, color: '#fff', fontSize: type.footnote, fontWeight: '700', lineHeight: 16 },
   mcBadge: { position: 'absolute', top: 7, right: 7, backgroundColor: 'rgba(8,10,14,0.75)', borderRadius: 7, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' },
