@@ -408,7 +408,7 @@ export default function ChatScreen() {
       if (alive) off = r?.off; else r?.off?.();
     });
     return () => { alive = false; off?.(); };
-  }, [cid, addMessage, markDeleted, myUid, toggleLikeLocal]);
+  }, [cid, addMessage, markDeleted, myUid, setReactionsLocal]);
 
   // ── YEDEK YOKLAMA ──
   // Sohbet TEK BIR DIS SERVISE bagimli olmamali. Pusher yapilandirilmamissa
