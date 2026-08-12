@@ -54,7 +54,9 @@ export default function ListsScreen() {
     }
   }, []);
 
-  useEffect(() => { if (session) load(sort, 1); else setItems([]); }, [sort, load, session]);
+  // Topluluk listeleri HESAPSIZ okunur. Eskiden oturum yoksa liste boş
+  // bırakılıyordu; karo profilde kilitsiz olduğu için ekran "bozuk" görünüyordu.
+  useEffect(() => { load(sort, 1); }, [sort, load, session]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -70,6 +72,9 @@ export default function ListsScreen() {
   }, [hasMore, loadingMore, sort, page, load]);
 
   const onLike = useCallback(async (item) => {
+    // Beğeni yazma işlemi; hesapsız kullanıcıyı sessizce başarısız bırakmak
+    // yerine kayda yönlendiriyoruz (iyimser güncelleme de geri sarardı).
+    if (!session) { router.push('/account'); return; }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     // İyimser güncelleme — beğeni anında görünsün
     setItems((prev) => prev.map((x) => (
@@ -90,7 +95,7 @@ export default function ListsScreen() {
           : x
       )));
     }
-  }, []);
+  }, [session, router]);
 
   const renderItem = useCallback(({ item }) => (
     <ListCard
@@ -130,13 +135,16 @@ export default function ListsScreen() {
       {items === null ? (
         <View style={styles.center}><ActivityIndicator color={colors.accent} /></View>
       ) : items.length === 0 ? (
+        /* Boş durum izleyiciye göre değişiyor: sayfa artık hesapsız da
+           açılıyor ve "koleksiyonlarından birini paylaş" çağrısı hesapsız
+           kullanıcıyı kilitli ekrana götürüyordu. */
         <EmptyState
           icon="list-outline"
           title={t('pl.empty')}
-          text={t('pl.emptyText')}
-          actionLabel={t('col.entry')}
-          actionIcon="albums"
-          onAction={() => router.push('/collections')}
+          text={session ? t('pl.emptyText') : t('pl.emptyGuest')}
+          actionLabel={session ? t('col.entry') : t('acc.goSignIn')}
+          actionIcon={session ? 'albums' : 'person-circle-outline'}
+          onAction={() => router.push(session ? '/collections' : '/account')}
         />
       ) : (
         <FlashList

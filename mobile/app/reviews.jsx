@@ -27,7 +27,6 @@ import { getSession, subscribeSession } from '../src/services/session';
 import ReviewComposer from '../src/components/ReviewComposer';
 import ReviewCard from '../src/components/ReviewCard';
 import ReportSheet from '../src/components/ReportSheet';
-import EmptyState from '../src/components/EmptyState';
 import { colors, radius, spacing, type, PRESSED, NUMERIC, TAB_SPACE } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
 
@@ -46,15 +45,15 @@ export default function ReviewsScreen() {
   const [composer, setComposer] = useState(null); // { appid, name, existing }
   const [reportTarget, setReportTarget] = useState(null);
 
+  // Topluluk akışı HESAPSIZ okunur — inceleme okumak kayıt gerektirmiyor.
+  // Oturumsuzken "yazabileceğin oyunlar" sorulmuyor: o uç jetonlu ve
+  // hesapsız kullanıcının zaten yazamayacağı bir liste.
   const load = useCallback(async (isRefresh = false) => {
-    if (!session) { setLoading(false); return; }
     if (isRefresh) setRefreshing(true);
     try {
-      // İkisi PARALEL: biri diğerini beklemek zorunda değil ve sayfa ancak
-      // ikisi de gelince tam görünüyor.
       const [e, f] = await Promise.all([
-        getEligibleGames().catch(() => null),
-        getReviewFeed(tab === 'mine').catch(() => null),
+        session ? getEligibleGames().catch(() => null) : Promise.resolve(null),
+        getReviewFeed(session && tab === 'mine').catch(() => null),
       ]);
       setEligible(e);
       setFeed(f?.reviews || []);
@@ -66,20 +65,10 @@ export default function ReviewsScreen() {
 
   useEffect(() => { load(); }, [load]);
 
-  if (!session) {
-    return (
-      <SafeAreaView style={styles.safe} edges={['top']}>
-        <Header t={t} onBack={() => router.back()} />
-        <EmptyState
-          icon="person-circle-outline"
-          title={t('sf.needAccount')}
-          text={t('sf.needAccountText')}
-          actionLabel={t('sf.goAccount')}
-          onAction={() => router.push('/account')}
-        />
-      </SafeAreaView>
-    );
-  }
+  // Yazma denemesi oturum ister; hata vermek yerine kayıt ekranına götürüyoruz.
+  const requireAccount = useCallback(() => {
+    router.push('/account');
+  }, [router]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -130,13 +119,20 @@ export default function ReviewsScreen() {
             <Text style={styles.hint}>{t('rev.noEligible')}</Text>
           )}
 
-          {/* ── Topluluk / Benimkiler ── */}
+          {/* ── Topluluk / Benimkiler ──
+              Hesapsız kullanıcı topluluğu okuyabiliyor ama "Benimkiler"in
+              karşılığı yok; sekmeyi gizlemek yerine kayıt ekranına götürüyoruz
+              — özelliğin varlığını göstermek, yokmuş gibi yapmaktan iyi. */}
           <View style={styles.tabs}>
             {['community', 'mine'].map((k) => (
               <Pressable
                 key={k}
                 style={({ pressed }) => [styles.tab, tab === k && styles.tabOn, pressed && PRESSED]}
-                onPress={() => { Haptics.selectionAsync().catch(() => {}); setTab(k); }}
+                onPress={() => {
+                  Haptics.selectionAsync().catch(() => {});
+                  if (k === 'mine' && !session) { requireAccount(); return; }
+                  setTab(k);
+                }}
               >
                 <Text style={[styles.tabText, tab === k && styles.tabTextOn]}>
                   {k === 'community' ? t('rev.community') : t('rev.mine')}
@@ -147,7 +143,9 @@ export default function ReviewsScreen() {
 
           {feed?.length === 0 ? (
             <Text style={styles.hint}>
-              {tab === 'mine' ? t('rev.mineEmpty') : t('rev.communityEmpty')}
+              {tab === 'mine'
+                ? t('rev.mineEmpty')
+                : (session ? t('rev.communityEmpty') : t('rev.communityEmptyGuest'))}
             </Text>
           ) : (
             feed?.map((r) => (

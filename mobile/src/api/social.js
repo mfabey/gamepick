@@ -1,19 +1,23 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Sosyal uçlar — hepsi oturum gerektirir (Bearer token).
+// Sosyal uçlar. Yazan her uç oturum ister; OKUMA uçlarının bir kısmı istemez.
 // Token yönetimi çağıranda değil, burada: getValidToken tazeleme dahil hallediyor.
+//
+// İki yol var:
+//   authed()  → jeton ŞART. Yoksa istek atılmadan NO_SESSION.
+//   openRead()→ jeton VARSA gönderilir, yoksa gönderilmez. Herkese açık okuma
+//               uçları için. Jeton gidince sunucu kişisel bayrakları da
+//               dolduruyor ("beğendim", "benim listem"); gitmeyince genel
+//               görünüm dönüyor.
 // ─────────────────────────────────────────────────────────────────────────────
 import { API_BASE } from './client';
 import { getValidToken } from '../services/session';
 
-async function authed(path, { method = 'GET', body } = {}) {
-  const token = await getValidToken();
-  if (!token) throw Object.assign(new Error('NO_SESSION'), { code: 'NO_SESSION' });
-
+async function request(path, { method = 'GET', body, token } = {}) {
   const res = await fetch(`${API_BASE}${path}`, {
     method,
     headers: {
       Accept: 'application/json',
-      Authorization: `Bearer ${token}`,
+      ...(token ? { Authorization: `Bearer ${token}` } : null),
       ...(body ? { 'Content-Type': 'application/json' } : null),
     },
     ...(body ? { body: JSON.stringify(body) } : null),
@@ -29,6 +33,18 @@ async function authed(path, { method = 'GET', body } = {}) {
     });
   }
   return data;
+}
+
+async function authed(path, opts = {}) {
+  const token = await getValidToken();
+  if (!token) throw Object.assign(new Error('NO_SESSION'), { code: 'NO_SESSION' });
+  return request(path, { ...opts, token });
+}
+
+/** Hesapsız da okunabilen uçlar. Jeton varsa yine gönderilir. */
+async function openRead(path) {
+  const token = await getValidToken().catch(() => null);
+  return request(path, { token: token || undefined });
 }
 
 // ── Kimlik ──────────────────────────────────────────────────────────────────
@@ -69,9 +85,10 @@ export const reportContent     = ({ targetType, targetId, reason, note }) =>
   authed('/api/social/report', { method: 'POST', body: { targetType, targetId, reason, note } });
 
 // ── Topluluk listeleri ──────────────────────────────────────────────────────
+// Topluluk listeleri hesapsız da okunur (yayınlama/beğenme jetonlu kalır).
 export const fetchListFeed   = (sort = 'popular', page = 1) =>
-  authed(`/api/social/lists?sort=${sort}&page=${page}`);
-export const fetchList       = (id) => authed(`/api/social/lists?id=${encodeURIComponent(id)}`);
+  openRead(`/api/social/lists?sort=${sort}&page=${page}`);
+export const fetchList       = (id) => openRead(`/api/social/lists?id=${encodeURIComponent(id)}`);
 export const fetchUserLists  = (owner) => authed(`/api/social/lists?owner=${encodeURIComponent(owner)}`);
 export const publishList     = ({ id, title, description, emoji, games }) =>
   authed('/api/social/lists', { method: 'POST', body: { action: 'publish', id, title, description, emoji, games } });
@@ -137,8 +154,9 @@ export const writeReview = (appid, text, recommended) =>
   authed('/api/social/reviews', { method: 'POST', body: { appid, text, recommended } });
 
 // Genel akış veya kendi incelemelerim.
+// Genel akış hesapsız da okunur; "benimkiler" doğal olarak oturum ister.
 export const getReviewFeed = (mine = false) =>
-  authed('/api/social/reviews/feed' + (mine ? '?mine=1' : ''));
+  mine ? authed('/api/social/reviews/feed?mine=1') : openRead('/api/social/reviews/feed');
 
 // Yazabileceğim oyunlar — sayfanın boş görünmemesini sağlayan liste.
 export const getEligibleGames = () => authed('/api/social/reviews/eligible');

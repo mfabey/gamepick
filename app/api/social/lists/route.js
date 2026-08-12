@@ -22,28 +22,36 @@ function unauthorized() {
   return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
 }
 
+// Topluluk listeleri HESAPSIZ okunabilir; POST (yayınla/sil/beğen) jetonlu.
+// Gerekçe: liste okumak kayıt gerektirmeyen bir iş, kayıt arkasına almak
+// Guideline 5.1.1(v) itirazına açık kapı.
+//
+// İzleyen uid'i null geçmek güvenli — veri katmanı bunu zaten karşılıyor:
+// getListDetail'de `isOwner` false kalıyor ve `status !== 'public'` olan liste
+// düşüyor (lists-store.js:325), beğeni kümesi boş dönüyor (a.g.e.:334),
+// getHiddenUids(null) boş küme (social-store.js:389).
 export async function GET(request) {
   const user = await verifyMobileToken(request);
-  if (!user) return unauthorized();
+  const viewerUid = user?.uid || null;
 
   const { searchParams } = new URL(request.url);
   const id = searchParams.get('id');
   const owner = searchParams.get('owner');
 
   if (id) {
-    const list = await getListDetail(id, user.uid);
+    const list = await getListDetail(id, viewerUid);
     if (!list) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
     return NextResponse.json({ list });
   }
 
   if (owner) {
-    return NextResponse.json({ items: await getUserLists(owner, user.uid) });
+    return NextResponse.json({ items: await getUserLists(owner, viewerUid) });
   }
 
   const sort = searchParams.get('sort') === 'new' ? 'new' : 'popular';
   const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
 
-  const feed = await getListFeed(user.uid, { sort, page });
+  const feed = await getListFeed(viewerUid, { sort, page });
   return NextResponse.json({ ...feed, sort, page });
 }
 

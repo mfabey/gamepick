@@ -23,25 +23,39 @@ import { listRecentReviews, listUserReviews } from '../../../../lib/review-store
 const headerImage = (appid) =>
   `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/header.jpg`;
 
+// Genel akış HESAPSIZ okunabilir: inceleme okumak kayıt gerektirmeyen bir iş
+// ve kayıt arkasına almak App Store Guideline 5.1.1(v) itirazına açık kapı.
+// Yazma uçları (POST/DELETE, ayrı dosyada) jetonlu kalıyor.
+//
+// Jeton GÖNDERİLİRSE yine okunuyor — engel süzgeci ancak o zaman çalışabilir.
 export async function GET(request) {
   const user = await verifyMobileToken(request);
-  if (!user) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
-
-  const rl = await rateLimit(`rl:revfeed:${user.uid}`, 120, 3600);
-  if (!rl.ok) return NextResponse.json(tooManyRequests(), { status: 429 });
 
   const { searchParams } = new URL(request.url);
   const mine = searchParams.get('mine') === '1';
   const offset = Math.max(0, Number(searchParams.get('offset')) || 0);
+
+  // "Benimkiler" oturumsuz anlamsız.
+  if (mine && !user) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
+
+  // Anonimde uid yok; sayaç IP'ye bağlanıyor. Vercel gerçek istemciyi
+  // x-forwarded-for ile veriyor; yoksa tek bir ortak kovaya düşüyor.
+  const rlKey = user
+    ? `rl:revfeed:${user.uid}`
+    : `rl:revfeed:ip:${(request.headers.get('x-forwarded-for') || 'unknown').split(',')[0].trim()}`;
+  const rl = await rateLimit(rlKey, 120, 3600);
+  if (!rl.ok) return NextResponse.json(tooManyRequests(), { status: 429 });
 
   let list;
   if (mine) {
     // Kendi incelemelerimde engel süzgeci gereksiz — hepsi benim.
     list = await listUserReviews(user.uid, { limit: 20 });
   } else {
+    // getHiddenUids(null) boş küme dönüyor (social-store.js:389) — anonim
+    // okuyucuda engel süzgeci doğal olarak devre dışı.
     const [rows, hidden] = await Promise.all([
       listRecentReviews({ limit: 20, offset }),
-      getHiddenUids(user.uid),
+      getHiddenUids(user?.uid || null),
     ]);
     list = rows.filter((r) => !hidden.has(r.uid));
   }
