@@ -1,6 +1,8 @@
+import { Appearance } from 'react-native';
+
 // Gamerisen mobil tema — web sitesinin (koyu tema) GERÇEK renkleriyle birebir
 // Kaynak: app/globals.css [data-theme] koyu değişkenleri. Vurgu = KIRMIZI.
-export const colors = {
+const dark = {
   // ── Zemin katmanları ──
   // Sadeleştirme turunda derinleştirildi. Amaç dekoratif değil: zemin
   // koyulaştıkça kapak görselleri kendiliğinden ayrışıyor ve kartların
@@ -38,6 +40,87 @@ export const colors = {
   danger:     '#ef4949',              // en açık yüzeyde 4.39 → 4.50:1
   overlay:    'rgba(0,0,0,0.6)',
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AÇIK TEMA
+//
+// Koyu paletin aynadaki karşılığı DEĞİL, rollerinin karşılığı: koyuda zemin
+// koyulaştıkça kartlar ayrışıyordu; açıkta tersi çalışıyor — sayfa hafif gri,
+// kartlar beyaz. Aynı hiyerarşi, ters yön.
+//
+// Kontrast ÖLÇÜLDÜ (WCAG, dört yüzeyin hepsinde): text 15.85–18.41,
+// text2 5.29–6.15, text3 4.83–5.61, accentText 4.93–5.73, danger 4.84–5.62,
+// green 4.72–5.48. En dar oran 4.72 — Apple'ın küçük metin için istediği
+// 4.5:1'in üstünde.
+//
+// MARKA RENGİ DOLGUDA DEĞİŞMİYOR: accent iki temada da #e8242b. Yalnızca
+// METİN tonu koyulaşıyor (accentText), çünkü açık zeminde marka kırmızısı
+// 4.5:1'i geçmiyor — koyu temadaki kuralın aynısı, ters yöne uygulanmış.
+const light = {
+  bg:         '#f4f5f7',
+  bgElevated: '#ffffff',
+  card:       '#ffffff',
+  bgInput:    '#eceef2',
+  bgHover:    '#e6e9ee',
+  cardBorder: 'rgba(0,0,0,0.10)',
+  borderHover:'rgba(0,0,0,0.22)',
+  text:       '#12141a',
+  text2:      '#5a6270',
+  text3:      '#616875',
+  accent:     '#e8242b',
+  accentText: '#c81e24',
+  accentBg:   '#fdecec',
+  accentSoft: 'rgba(232,36,43,0.10)',
+  accentBorder: 'rgba(232,36,43,0.35)',
+  accentGlow: 'rgba(232,36,43,0.28)',
+  green:      '#00794a',
+  steam:      '#0b74c4',
+  xbox:       '#107c10',
+  danger:     '#c62828',
+  overlay:    'rgba(0,0,0,0.45)',
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TEMA SEÇİMİ — AÇILIŞTA, BİR KEZ.
+//
+// `StyleSheet.create` modül yüklenirken değerlendiriliyor; yani palet o anda
+// neyse stiller onu yakalıyor. 51 dosyadaki 877 referansı çalışma zamanında
+// değiştirebilmek için hepsini `useThemedStyles` desenine çevirmek gerekirdi —
+// büyük bir yeniden yazım ve regresyon riski.
+//
+// `Appearance.getColorScheme()` EŞZAMANLI ve bu modül değerlendirilirken
+// okunabiliyor. Açılışta seçmek, 877 referansın hiçbirine dokunmadan iki temayı
+// da doğru çalıştırıyor.
+//
+// BEDELİ: uygulama AÇIKKEN sistem teması değişirse ekran anında dönmez.
+// `src/services/themeWatch.js` bunu karşılıyor — uygulama ön plana geldiğinde
+// tema değiştiyse paketi yeniden yüklüyor.
+//
+// null (cihaz belirtmiyor) → KOYU. Uygulamanın bugüne kadarki hâli bu.
+const scheme = Appearance.getColorScheme();
+export const isDarkTheme = scheme !== 'light';
+export const activeScheme = isDarkTheme ? 'dark' : 'light';
+export const colors = isDarkTheme ? dark : light;
+
+/**
+ * Aktif zeminin ALFA 0 hâli — kenar sönümlemesi gradyanının bitiş rengi.
+ *
+ * `transparent` kullanılamıyor: iOS gradyanı saydam SİYAHA doğru
+ * interpolasyona sokuyor ve açık zeminde gri bir leke bırakıyor
+ * (bkz. components/EdgeFade.jsx). Bitiş rengi zeminin kendisi olmalı,
+ * yalnızca alfası 0.
+ *
+ * Değer paletten TÜRETİLİYOR, elle yazılmıyor: EdgeFade'de 'rgba(6,7,10,0)'
+ * sabiti duruyordu ve açık temaya geçince tam bu lekeyi üretti.
+ */
+export const bgAlpha0 = (() => {
+  const h = colors.bg.replace('#', '');
+  const n = h.length === 3 ? h.split('').map((c) => c + c).join('') : h;
+  const r = parseInt(n.slice(0, 2), 16);
+  const g = parseInt(n.slice(2, 4), 16);
+  const b = parseInt(n.slice(4, 6), 16);
+  return `rgba(${r},${g},${b},0)`;
+})();
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Değere bağlı renk ölçeği

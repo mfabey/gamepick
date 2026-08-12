@@ -17,10 +17,11 @@ import { loadCollections } from '../src/services/collectionsStore';
 import { loadOnboarding } from '../src/services/onboarding';
 import { initQueryCache } from '../src/services/queryCache';
 import { startSharedLinkWatcher } from '../src/services/sharedLink';
+import { startThemeWatch } from '../src/services/themeWatch';
 import { startDmPushSync } from '../src/services/dmPush';
 import { useLastNotificationResponse } from 'expo-notifications';
 import FpsMeter from '../src/dev/FpsMeter';
-import { colors } from '../src/theme';
+import { colors, isDarkTheme } from '../src/theme';
 
 export default function RootLayout() {
   // Zevk profilini açılışta belleğe yükle (keşif algoritması için) ve önbelleği geri yükle
@@ -50,6 +51,9 @@ export default function RootLayout() {
 
   // Share Extension'dan gelen bekleyen bir Steam linki varsa oyuna git
   useEffect(() => { startSharedLinkWatcher(); }, []);
+
+  // Sistem teması değişince (uygulama ön plana döndüğünde) paleti tazele
+  useEffect(() => startThemeWatch(), []);
 
   // Mesaj bildirimleri icin push token esitlemesi (istek listesinden ayri)
   useEffect(() => { startDmPushSync(); }, []);
@@ -112,7 +116,8 @@ export default function RootLayout() {
         <LanguageProvider>
           <AuthProvider>
             <WishlistProvider>
-              <StatusBar style="light" />
+              {/* Açık temada koyu ikon: "light" sabit kalsaydı beyaz zeminde beyaz saat çıkardı. */}
+              <StatusBar style={isDarkTheme ? 'light' : 'dark'} />
               <Stack
                 screenOptions={{
                   headerShown: false,
@@ -138,6 +143,7 @@ export default function RootLayout() {
                     Yerini haberler aldı — o da ters yönde taşındı. */}
                 <Stack.Screen name="news" />
                 <Stack.Screen name="reviews" />
+                <Stack.Screen name="post/[id]" />
                 <Stack.Screen name="chat/[uid]" />
                 <Stack.Screen name="settings" />
                 <Stack.Screen name="social-settings" />

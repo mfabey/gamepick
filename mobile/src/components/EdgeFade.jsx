@@ -1,6 +1,6 @@
 import { StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors } from '../theme';
+import { colors, bgAlpha0 } from '../theme';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Kenar sönümlemesi — içerik ekranın üst/alt kenarında zemine karışarak
@@ -20,7 +20,7 @@ import { colors } from '../theme';
 // 'transparent' siyaha çözülüyor ve koyu olmayan zeminlerde geçiş griye
 // kaçıyor. Renk aynı kalıp yalnız alfa düşünce geçiş temiz oluyor.
 const BG = colors.bg;
-const BG_0 = 'rgba(6,7,10,0)'; // colors.bg (#06070a) alfa 0
+const BG_0 = bgAlpha0;   // aktif zeminin alfa 0 hâli (theme.js'ten türetiliyor)
 
 export function TopFade({ top = 0, height = 28 }) {
   return (
