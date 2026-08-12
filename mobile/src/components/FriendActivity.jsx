@@ -20,13 +20,37 @@ import { useLanguage } from '../context/LanguageContext';
 // SAAT GÖSTERİLMİYOR. Veri 24 saate kadar bayat olabiliyor (sunucudaki
 // kütüphane önbelleği); "6,2 saat" yazmak olduğundan kesin bir izlenim
 // verirdi. "Bu hafta oynadı" ifadesi o belirsizliği taşıyabiliyor.
+//
+// BOŞKEN DAVET YOK. Şerit ya anlamlı veriyle çıkar ya hiç çıkmaz; "arkadaşını
+// davet et" gibi bir yer tutucu, ana sayfanın en değerli yerini kalıcı olarak
+// boş göstermek olurdu.
 // ─────────────────────────────────────────────────────────────────────────────
+
+// ── Görünme eşiği ───────────────────────────────────────────────────────────
+// Sunucu zaten SON İKİ HAFTA süzmesi yapıyor (hours2w yoksa oyun hiç gelmiyor),
+// ama miktar eşiği yoktu: tek arkadaşın 10 dakikası şeridi açıyordu. Şerit
+// "çevren şunu oynuyor" iddiasında; tek kişinin yarım saati o iddiayı
+// taşımıyor ve özelliği değersizleştiriyor.
+//
+// İki yoldan biri yeterli:
+//   • aynı oyunu 2+ arkadaş oynamış  → şeridin asıl anlattığı şey bu
+//   • toplam 2 haftalık saat eşiği aşmış → tek ama gerçekten aktif arkadaş
+const MIN_FRIENDS_ON_A_GAME = 2;
+const MIN_TOTAL_HOURS_2W = 5;
+
+/** Şerit gösterilmeye değer mi? Saf fonksiyon — sınır durumları test edilebilir. */
+export function hasFriendSignal(games) {
+  if (!Array.isArray(games) || games.length === 0) return false;
+  if (games.some((g) => (Number(g?.count) || 0) >= MIN_FRIENDS_ON_A_GAME)) return true;
+  const total = games.reduce((s, g) => s + (Number(g?.hours) || 0), 0);
+  return total >= MIN_TOTAL_HOURS_2W;
+}
 
 export default function FriendActivity({ games }) {
   const { t } = useLanguage();
   const router = useRouter();
 
-  if (!games?.length) return null;
+  if (!hasFriendSignal(games)) return null;
 
   return (
     <View style={styles.wrap}>
