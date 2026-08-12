@@ -10,6 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import { fetchCardPrice, fetchGameDetail, fetchGameByAppid, fetchPrices, fetchSteamReviews } from '../../src/api/games';
 import { colors, radius, spacing, PRESSED, type, scale, metacriticColor } from '../../src/theme';
+import { stripHtml } from '../../src/utils/text';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useWishlist } from '../../src/context/WishlistContext';
 import { useCollections, useCollectionsContaining } from '../../src/hooks/useCollections';
@@ -35,18 +36,6 @@ function tierFor(pct) {
 // Binlik ayraçlı sayı (TR '.', EN ',')
 function groupNum(n, sep) {
   return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, sep);
-}
-
-function stripHtml(s) {
-  if (!s) return '';
-  return s
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/\s+/g, ' ')
-    .trim();
 }
 
 export default function GameDetail() {

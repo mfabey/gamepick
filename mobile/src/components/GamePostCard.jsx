@@ -24,7 +24,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { fetchGameDetail } from '../api/games';
 import { useQuery } from '../hooks/useQuery';
 import { useLanguage } from '../context/LanguageContext';
-import { colors, radius, spacing, PRESSED, type } from '../theme';
+import { usePrice } from '../hooks/usePrice';
+import { summarize } from '../utils/text';
+import { colors, radius, spacing, PRESSED, type, NUMERIC, metacriticColor } from '../theme';
 
 const DETAIL_TTL = 24 * 60 * 60 * 1000;   // ekran görüntüleri ve metin sık değişmez
 const CLAMP_LINES = 3;
@@ -42,7 +44,7 @@ function hash(str) {
 
 function GamePostCard({ game, onDismiss, tag }) {
   const router = useRouter();
-  const { t, lang } = useLanguage();
+  const { t, lang, formatPrice } = useLanguage();
   const { width } = useWindowDimensions();
   const [expanded, setExpanded] = useState(false);
   const [truncated, setTruncated] = useState(false);
@@ -63,7 +65,17 @@ function GamePostCard({ game, onDismiss, tag }) {
 
   // Ekran görüntüsü gelene kadar kapak dursun → boş gri kutu yok
   const source = shot || game?.image || null;
-  const text = detail?.description || '';
+  // HAM HTML BASILMIYOR. detail.description Steam'den etiketleriyle geliyor;
+  // temizlenmeden basıldığında akışta `<p class="bb_paragraph"><strong>&quot;`
+  // görünüyordu. summarize() hem temizliyor hem cümle sınırında kısaltıyor.
+  const text = useMemo(() => summarize(detail?.description), [detail]);
+
+  // KARAR SİNYALLERİ. Akış kartı, yerini aldığı şerit kartından (GameCard) az
+  // bilgi veriyordu: puan yok, fiyat yok, indirim yok. Kullanıcı "bu oyun ne,
+  // alayım mı" sorusunu kartta cevaplayamıyordu.
+  const price = usePrice(game);
+  const isFree = game?.isFree || price?.isFree;
+  const onSale = price?.discount > 0 && !isFree;
 
   const open = useCallback(() => {
     router.push({
@@ -114,6 +126,24 @@ function GamePostCard({ game, onDismiss, tag }) {
           </View>
         </View>
       </Pressable>
+
+      <View style={styles.meta}>
+        {game.metacritic ? (
+          <View style={styles.mc}>
+            <Text style={[styles.mcText, NUMERIC, { color: metacriticColor(game.metacritic) }]}>
+              {game.metacritic}
+            </Text>
+          </View>
+        ) : null}
+
+        {onSale ? <Text style={styles.sale}>-%{price.discount}</Text> : null}
+
+        {isFree ? (
+          <Text style={styles.price}>{t('card.free')}</Text>
+        ) : price?.price != null ? (
+          <Text style={[styles.price, NUMERIC]}>{formatPrice(price.price)}</Text>
+        ) : null}
+      </View>
 
       {text ? (
         <View style={styles.body}>
@@ -173,6 +203,22 @@ const styles = StyleSheet.create({
   overlay: { position: 'absolute', left: 14, right: 14, bottom: 12 },
   name: { color: '#fff', fontSize: type.headline, fontWeight: '800', letterSpacing: -0.3 },
   genres: { color: 'rgba(255,255,255,0.75)', fontSize: type.caption, fontWeight: '600', marginTop: 3 },
+
+  // Sinyal satırı görselin HEMEN altında: kullanıcı kapağa bakarken göz zaten
+  // orada, puan ve fiyat aramaya gitmiyor.
+  meta: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    paddingTop: 10,
+  },
+  mc: {
+    borderWidth: 1, borderColor: colors.cardBorder, borderRadius: radius.sm,
+    paddingHorizontal: 7, paddingVertical: 2,
+  },
+  mcText: { fontSize: type.caption, fontWeight: '800' },
+  sale: {
+    color: colors.accentText, fontSize: type.caption, fontWeight: '800',
+  },
+  price: { color: colors.text, fontSize: type.footnote, fontWeight: '700' },
 
   body: { paddingTop: 10 },
   desc: { color: colors.text2, fontSize: type.subhead, lineHeight: 20 },
