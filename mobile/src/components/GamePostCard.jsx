@@ -40,7 +40,7 @@ function hash(str) {
   return h >>> 0;
 }
 
-function GamePostCard({ game, onDismiss }) {
+function GamePostCard({ game, onDismiss, tag }) {
   const router = useRouter();
   const { t, lang } = useLanguage();
   const { width } = useWindowDimensions();
@@ -94,6 +94,15 @@ function GamePostCard({ game, onDismiss }) {
               cachePolicy="memory-disk" transition={220} />
           ) : null}
           <LinearGradient colors={['transparent', 'rgba(6,7,9,0.92)']} style={styles.scrim} />
+
+          {/* NEDEN BURADA. Trend/yeni/indirim oyunları artık ayrı şeritlerde
+              değil, akışın içinde. Etiket olmadan akış "neden bu oyun?"
+              sorusunu cevapsız bırakıyor ve rastgele bir yığın gibi okunuyor. */}
+          {tag ? (
+            <View style={styles.tagWrap}>
+              <Text style={styles.tagText}>{t('home.tag.' + tag)}</Text>
+            </View>
+          ) : null}
 
           <View style={styles.overlay}>
             <Text numberOfLines={2} style={styles.name}>{game.name}</Text>
@@ -151,6 +160,16 @@ const styles = StyleSheet.create({
   // Metnin okunabilirliği görselin karanlığına bırakılamaz — parlak bir
   // ekran görüntüsünde beyaz yazı kaybolurdu.
   scrim: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '55%' },
+  // Etiket üstte-solda: kartın alt şeridi ad ve türlerin, orayı paylaşmıyor.
+  tagWrap: {
+    position: 'absolute', top: 12, left: 14,
+    backgroundColor: 'rgba(6,7,9,0.72)',
+    paddingHorizontal: 9, paddingVertical: 4, borderRadius: radius.sm,
+  },
+  tagText: {
+    color: '#fff', fontSize: type.caption2, fontWeight: '700',
+    letterSpacing: 0.6, textTransform: 'uppercase',
+  },
   overlay: { position: 'absolute', left: 14, right: 14, bottom: 12 },
   name: { color: '#fff', fontSize: type.headline, fontWeight: '800', letterSpacing: -0.3 },
   genres: { color: 'rgba(255,255,255,0.75)', fontSize: type.caption, fontWeight: '600', marginTop: 3 },

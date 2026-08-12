@@ -48,3 +48,97 @@ export function interleaveReviews(games, reviews, { first = 2, every = 3 } = {})
 
   return out;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ÖNE ÇIKANLAR — trend / yeni çıkan / indirimdeki oyunlar.
+//
+// Eskiden bunlar anasayfanın başlığında üç ayrı yatay şeritti. Üçü de aynı
+// biçimdeydi (aynı başlık, aynı "Tümü ›", aynı kart boyu), yani göz aralarında
+// sıra kuramıyordu; üstelik hepsi `ListHeaderComponent` içinde olduğu için
+// asıl gövdeyi — oyun gönderisi + inceleme akışını — kıvrımın çok altına
+// itiyorlardı.
+//
+// Şeritler yerine akışa serpiştiriliyorlar. Ama serpiştirmenin şartı ETİKET:
+// bir oyun akışta neden karşına çıktığını söylemezse akış anlamsız bir yığına
+// döner. Her öne çıkan öğe "trend" | "new" | "sale" etiketiyle geliyor.
+//
+// TÜRLER SIRAYLA: trend, yeni, indirim, trend, yeni… Üç listeyi arka arkaya
+// dökmek yerine sırayla almak, akışın herhangi bir yerinde üç türün de
+// temsil edilmesini sağlıyor.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Etiketli öne çıkan oyunları tek listede sıraya dizer (round-robin).
+ *
+ * @param {object} lists  `{ trend: [], new: [], sale: [] }`
+ * @returns {Array} `{ game, tag }`
+ */
+export function orderHighlights(lists = {}) {
+  const order = ['trend', 'new', 'sale'];
+  const src = order.map((tag) => ({ tag, items: Array.isArray(lists[tag]) ? lists[tag] : [] }));
+  const out = [];
+  const max = Math.max(0, ...src.map((s) => s.items.length));
+  for (let i = 0; i < max; i++) {
+    for (const s of src) {
+      const game = s.items[i];
+      if (game && game.id != null) out.push({ game, tag: s.tag });
+    }
+  }
+  return out;
+}
+
+/**
+ * Akışa öne çıkan oyunları serpiştirir. `interleaveReviews`'un kardeşi;
+ * aynı desen, ama araya giren şey bir kart değil ETİKETLİ bir oyun gönderisi.
+ *
+ * İnceleme serpiştirmesinden SONRA çağrılmalı: incelemelerin aralığı oyun
+ * sayısına göre hesaplanıyor, araya oyun sokmak o aralığı kaydırırdı.
+ *
+ * @param {Array}  items       `interleaveReviews` çıktısı
+ * @param {Array}  highlights  `orderHighlights` çıktısı
+ * @param {object} [opts]
+ * @param {number} [opts.first=1]  ilk öne çıkan kaçıncı GÖNDERİDEN sonra
+ * @param {number} [opts.every=4]  sonrakiler kaç gönderide bir
+ */
+export function mergeHighlights(items, highlights, { first = 1, every = 4 } = {}) {
+  const list = Array.isArray(items) ? items : [];
+  const hl = Array.isArray(highlights) ? highlights : [];
+  if (!list.length || !hl.length) return list;
+
+  const out = [];
+  let hi = 0;
+  let posts = 0;   // yalnız oyun gönderileri sayılıyor
+
+  for (let i = 0; i < list.length; i++) {
+    const item = list[i];
+    out.push(item);
+    if (item.kind !== 'game') continue;
+    posts++;
+
+    const due = hi < hl.length && posts >= first && (posts - first) % every === 0;
+    if (!due) continue;
+
+    // İNCELEMENİN ÖNÜNE GİRME. Bir inceleme, kendinden önceki oyun gönderisine
+    // bağlı okunuyor; araya öne çıkan bir oyun sokmak o bağı koparıyor.
+    // Ölçüldü: incelemeler 2,5,8. oyunları takip ederken araya girince
+    // 2,102,8 oluyordu. Sıradaki öğe inceleme ise önce onu geçiriyoruz.
+    if (list[i + 1]?.kind === 'review') {
+      out.push(list[i + 1]);
+      i++;
+    }
+
+    const h = hl[hi++];
+    out.push({ kind: 'game', key: 'h:' + h.tag + ':' + h.game.id, game: h.game, tag: h.tag });
+  }
+
+  return out;
+}
+
+/** Akışta gösterilen öne çıkan id'leri — taban akıştan elenmeleri için. */
+export function highlightIds(highlights) {
+  const set = new Set();
+  for (const h of Array.isArray(highlights) ? highlights : []) {
+    if (h?.game?.id != null) set.add(String(h.game.id));
+  }
+  return set;
+}

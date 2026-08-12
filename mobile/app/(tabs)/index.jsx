@@ -24,13 +24,13 @@ import { recordDismiss } from '../../src/services/dismissStore';
 import GamePostCard from '../../src/components/GamePostCard';
 import ReviewCard from '../../src/components/ReviewCard';
 import ReviewPrompt from '../../src/components/ReviewPrompt';
-import FriendActivity from '../../src/components/FriendActivity';
+import FriendActivity, { hasFriendSignal } from '../../src/components/FriendActivity';
 import ReportSheet from '../../src/components/ReportSheet';
 import { fetchForYouCandidates } from '../../src/api/recommend';
 import { getReviewFeed, getEligibleGames, getFriendActivity } from '../../src/api/social';
 import { getSession, subscribeSession } from '../../src/services/session';
 import { genreSlugsFor, rankCandidates } from '../../src/services/recommend';
-import { interleaveReviews } from '../../src/services/homeFeed';
+import { interleaveReviews, orderHighlights, mergeHighlights, highlightIds } from '../../src/services/homeFeed';
 import { useTabPressAction, scrollRefToTop } from '../../src/hooks/useTabPressAction';
 
 // Stabil fetcher'lar (key'in saf fonksiyonu)
@@ -160,8 +160,13 @@ export default function HomeScreen() {
   const [reportTarget, setReportTarget] = useState(null);
 
   const loadSocial = useCallback(() => {
-    if (!session) { setReviews([]); setEligible([]); setFriendGames([]); return; }
+    // İncelemeler HESAPSIZ da okunuyor (bkz. api/social/reviews/feed). Eskiden
+    // oturum yoksa hepsi boşaltılıyordu; sonuç, hesapsız kullanıcının akışının
+    // %100 katalog olmasıydı — uygulamanın sosyal yanı hiç görünmüyordu.
     getReviewFeed().then((r) => setReviews(r?.reviews || [])).catch(() => {});
+
+    // Bu ikisi doğal olarak hesaba bağlı: ne yazabileceğin ve kimin arkadaşın.
+    if (!session) { setEligible([]); setFriendGames([]); return; }
     getEligibleGames().then((r) => setEligible((r?.games || []).slice(0, 10))).catch(() => {});
     // Steam bağlı değilse boş liste dönüyor (hata değil) → şerit çizilmiyor.
     getFriendActivity().then((r) => setFriendGames(r?.games || [])).catch(() => {});
@@ -173,10 +178,34 @@ export default function HomeScreen() {
   //
   // HARMANLAMA ELEMEDEN SONRA: önce harmanlanıp sonra elenseydi bir oyun
   // kartı düştüğünde inceleme aralıkları kayardı.
+  // ── Lider bölüm ──
+  // Header'da eskiden dört şerit vardı (arkadaşlar, Senin İçin, trend, yeni,
+  // indirim) ve hepsi aynı biçimdeydi; göz aralarında sıra kuramıyordu. Daha
+  // kötüsü hepsi ListHeaderComponent'te olduğu için asıl gövde — sosyal akış —
+  // kıvrımın ~1000pt altında başlıyordu.
+  //
+  // Artık TEK lider var ve hangisi olacağı veriye bakıyor: kişiye en özel olan
+  // hangisiyse o. Kalanlar akışa etiketli olarak karışıyor.
+  const lead = useMemo(() => {
+    if (hasFriendSignal(friendGames)) return 'friends';
+    if (!isCold && forYou.length > 0) return 'forYou';
+    return 'trend';
+  }, [friendGames, isCold, forYou]);
+
+  // Lider olarak kullanılan liste akışa TEKRAR girmiyor.
+  const highlights = useMemo(() => orderHighlights({
+    trend: lead === 'trend' ? [] : trend,
+    new: fresh,
+    sale,
+  }), [lead, trend, fresh, sale]);
+
   const feed = useMemo(() => {
-    const games = feedItems.filter((g) => !dismissedIds.has(String(g.id)));
-    return interleaveReviews(games, reviews);
-  }, [feedItems, dismissedIds, reviews]);
+    const hlIds = highlightIds(highlights);
+    const games = feedItems.filter(
+      (g) => !dismissedIds.has(String(g.id)) && !hlIds.has(String(g.id))
+    );
+    return mergeHighlights(interleaveReviews(games, reviews), highlights);
+  }, [feedItems, dismissedIds, reviews, highlights]);
 
   // "İlgilenmiyorum" — uzun-bas → onay → feed'den kaldır
   const handleDismiss = useCallback((game) => {
@@ -213,7 +242,7 @@ export default function HomeScreen() {
         style={styles.feedReview}
       />
     ) : (
-      <GamePostCard game={item.game} onDismiss={handleDismiss} />
+      <GamePostCard game={item.game} tag={item.tag} onDismiss={handleDismiss} />
     )
   ), [handleDismiss, router]);
 
@@ -287,16 +316,18 @@ export default function HomeScreen() {
             "Trend" ve "Yeni" herkese aynı şeyi gösteriyor, bu şerit ise
             yalnızca bu kullanıcıya ait. Kişiye özel olan, genel olanın
             üstünde durmalı. */}
-        <FadeIn delay={120}>
-          <FriendActivity games={friendGames} />
-        </FadeIn>
+        {lead === 'friends' && (
+          <FadeIn delay={120}>
+            <FriendActivity games={friendGames} />
+          </FadeIn>
+        )}
 
-        {!isCold && forYou.length > 0 && (
+        {lead === 'forYou' && (
           <FadeIn delay={140}><Section title={t('home.forYou')} games={forYou} router={router} onDismiss={handleDismiss} /></FadeIn>
         )}
-        <FadeIn delay={180}><Section title={t('home.trend')} games={trend} router={router} /></FadeIn>
-        <FadeIn delay={250}><Section title={t('home.new')} games={fresh} router={router} /></FadeIn>
-        <FadeIn delay={320}><Section title={t('home.sale')} games={sale} router={router} /></FadeIn>
+        {lead === 'trend' && (
+          <FadeIn delay={140}><Section title={t('home.trend')} games={trend} router={router} /></FadeIn>
+        )}
     </View>
   );
 
