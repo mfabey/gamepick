@@ -19,7 +19,6 @@ import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-na
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 
 import { fetchGameDetail } from '../api/games';
 import { useQuery } from '../hooks/useQuery';
@@ -167,10 +166,6 @@ function GamePostCard({ game, onDismiss, tag }) {
             </Pressable>
           ) : null}
 
-          <Pressable onPress={open} style={({ pressed }) => [styles.cta, pressed && PRESSED]} hitSlop={6}>
-            <Text style={styles.ctaText}>{t('post.detail')}</Text>
-            <Ionicons name="chevron-forward" size={15} color={colors.accentText} />
-          </Pressable>
         </View>
       ) : null}
     </View>
@@ -224,6 +219,4 @@ const styles = StyleSheet.create({
   desc: { color: colors.text2, fontSize: type.subhead, lineHeight: 20 },
   more: { color: colors.accentText, fontSize: type.subhead, fontWeight: '700', marginTop: 6 },
 
-  cta: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 10, minHeight: 32 },
-  ctaText: { color: colors.accentText, fontSize: type.subhead, fontWeight: '700' },
 });

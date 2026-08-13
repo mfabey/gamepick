@@ -16,10 +16,30 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Oyun gönderilerinin arasına inceleme kartları yerleştirir.
+ * İnceleme ve tartışma gönderilerini TEK bir sosyal akışta birleştirir.
+ *
+ * Neden birleşik: ikisi de "birinin yazdığı şey" ve akışa ayrı ayrı
+ * serpiştirilseydi iki ayrı aralık hesabı çakışırdı — bir oyundan sonra hem
+ * inceleme hem gönderi düşebilir, başka yerde ikisi de düşmezdi.
+ *
+ * Sıra EN YENİDEN eskiye: iki kaynak da kendi içinde sıralı geliyor ama
+ * aralarında ortak bir ölçü yok; zaman damgası o ölçü.
+ */
+export function mergeSocial(reviews, posts) {
+  const r = (Array.isArray(reviews) ? reviews : []).map((x) => ({
+    kind: 'review', at: Number(x.at ?? x.createdAt) || 0, data: x,
+  }));
+  const p = (Array.isArray(posts) ? posts : []).map((x) => ({
+    kind: 'post', at: Number(x.at) || 0, data: x,
+  }));
+  return [...r, ...p].sort((a, b) => b.at - a.at);
+}
+
+/**
+ * Oyun gönderilerinin arasına sosyal kartlar yerleştirir.
  *
  * @param {Array}  games    öneri motorunun sıraladığı oyunlar
- * @param {Array}  reviews  topluluk incelemeleri (en yeni önce)
+ * @param {Array}  reviews  `mergeSocial` çıktısı (inceleme + gönderi)
  * @param {object} [opts]
  * @param {number} [opts.first=2]  ilk inceleme kaçıncı oyundan SONRA
  * @param {number} [opts.every=3]  sonrakiler kaç oyunda bir
@@ -41,8 +61,15 @@ export function interleaveReviews(games, reviews, { first = 2, every = 3 } = {})
     // Kaçıncı oyunu yeni yazdık? (1 tabanlı)
     const n = i + 1;
     if (ri < r.length && n >= first && (n - first) % every === 0) {
-      const rev = r[ri++];
-      out.push({ kind: 'review', key: 'r:' + rev.appid + ':' + rev.uid, review: rev });
+      const item = r[ri++];
+      // mergeSocial çıktısı `{ kind, data }` taşıyor; eski çağrı biçimiyle
+      // (düz inceleme dizisi) gelen veriyi de kabul ediyoruz.
+      if (item?.kind === 'post') {
+        out.push({ kind: 'post', key: 'p:' + item.data.id, post: item.data });
+      } else {
+        const rev = item?.data || item;
+        out.push({ kind: 'review', key: 'r:' + rev.appid + ':' + rev.uid, review: rev });
+      }
     }
   }
 
@@ -118,11 +145,14 @@ export function mergeHighlights(items, highlights, { first = 1, every = 4 } = {}
     const due = hi < hl.length && posts >= first && (posts - first) % every === 0;
     if (!due) continue;
 
-    // İNCELEMENİN ÖNÜNE GİRME. Bir inceleme, kendinden önceki oyun gönderisine
-    // bağlı okunuyor; araya öne çıkan bir oyun sokmak o bağı koparıyor.
-    // Ölçüldü: incelemeler 2,5,8. oyunları takip ederken araya girince
-    // 2,102,8 oluyordu. Sıradaki öğe inceleme ise önce onu geçiriyoruz.
-    if (list[i + 1]?.kind === 'review') {
+    // SOSYAL KARTIN ÖNÜNE GİRME. Bir inceleme ya da gönderi, kendinden önceki
+    // oyun gönderisine bağlı okunuyor; araya öne çıkan bir oyun sokmak o bağı
+    // koparıyor. Ölçüldü: incelemeler 2,5,8. oyunları takip ederken araya
+    // girince 2,102,8 oluyordu.
+    //
+    // 'post' de kontrol ediliyor: akışa tartışma gönderileri katılınca yalnız
+    // 'review' aramak onları korumasız bırakıyordu.
+    if (list[i + 1]?.kind === 'review' || list[i + 1]?.kind === 'post') {
       out.push(list[i + 1]);
       i++;
     }

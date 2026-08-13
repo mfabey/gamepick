@@ -23,14 +23,15 @@ import { useForYouFeed } from '../../src/hooks/useForYouFeed';
 import { recordDismiss } from '../../src/services/dismissStore';
 import GamePostCard from '../../src/components/GamePostCard';
 import ReviewCard from '../../src/components/ReviewCard';
+import PostCard from '../../src/components/PostCard';
 import ReviewPrompt from '../../src/components/ReviewPrompt';
 import FriendActivity, { hasFriendSignal } from '../../src/components/FriendActivity';
 import ReportSheet from '../../src/components/ReportSheet';
 import { fetchForYouCandidates } from '../../src/api/recommend';
-import { getReviewFeed, getEligibleGames, getFriendActivity } from '../../src/api/social';
+import { getReviewFeed, getEligibleGames, getFriendActivity, fetchPosts } from '../../src/api/social';
 import { getSession, subscribeSession } from '../../src/services/session';
 import { genreSlugsFor, rankCandidates } from '../../src/services/recommend';
-import { interleaveReviews, orderHighlights, mergeHighlights, highlightIds } from '../../src/services/homeFeed';
+import { interleaveReviews, mergeSocial, orderHighlights, mergeHighlights, highlightIds } from '../../src/services/homeFeed';
 import { useTabPressAction, scrollRefToTop } from '../../src/hooks/useTabPressAction';
 
 // Stabil fetcher'lar (key'in saf fonksiyonu)
@@ -160,6 +161,7 @@ export default function HomeScreen() {
   const [session, setSession] = useState(() => getSession());
   useEffect(() => subscribeSession(() => setSession(getSession())), []);
   const [reviews, setReviews] = useState([]);
+  const [posts, setPosts] = useState([]);
   const [eligible, setEligible] = useState([]);
   const [friendGames, setFriendGames] = useState([]);
   const [reportTarget, setReportTarget] = useState(null);
@@ -169,6 +171,11 @@ export default function HomeScreen() {
     // oturum yoksa hepsi boşaltılıyordu; sonuç, hesapsız kullanıcının akışının
     // %100 katalog olmasıydı — uygulamanın sosyal yanı hiç görünmüyordu.
     getReviewFeed().then((r) => setReviews(r?.reviews || [])).catch(() => {});
+
+    // TARTIŞMA GÖNDERİLERİ. Anasayfa bunları hiç çekmiyordu: uygulamanın
+    // sosyal yanı ayrı bir sekmede kalıyor, ana sayfa katalog gibi
+    // okunuyordu. İncelemeler gibi hesapsız da okunabiliyor.
+    fetchPosts().then((r) => setPosts(r?.posts || [])).catch(() => {});
 
     // Bu ikisi doğal olarak hesaba bağlı: ne yazabileceğin ve kimin arkadaşın.
     if (!session) { setEligible([]); setFriendGames([]); return; }
@@ -211,8 +218,11 @@ export default function HomeScreen() {
     const games = feedItems.filter(
       (g) => !dismissedIds.has(String(g.id)) && !hlIds.has(String(g.id))
     );
-    return mergeHighlights(interleaveReviews(games, reviews), highlights);
-  }, [feedItems, dismissedIds, reviews, highlights]);
+    // İnceleme ve gönderiler TEK sosyal akışta birleşiyor (en yeni önce),
+    // sonra oyunların arasına serpiştiriliyor.
+    const social = mergeSocial(reviews, posts);
+    return mergeHighlights(interleaveReviews(games, social), highlights);
+  }, [feedItems, dismissedIds, reviews, posts, highlights]);
 
   // "İlgilenmiyorum" — uzun-bas → onay → feed'den kaldır
   const handleDismiss = useCallback((game) => {
@@ -234,8 +244,17 @@ export default function HomeScreen() {
   //
   // Aralarına topluluk incelemeleri giriyor. UZUN BASMA = RAPORLA: kullanıcı
   // içeriğinin gösterildiği her yüzeyde bulunmak zorunda (Guideline 1.2).
+  // Hesapsız kullanıcı beğenmeye/yanıtlamaya kalkarsa kayda yönlendirilir.
+  const requireAccount = useCallback(() => {
+    if (session) return false;
+    router.push('/account');
+    return true;
+  }, [session, router]);
+
   const renderFeedItem = useCallback(({ item }) => (
-    item.kind === 'review' ? (
+    item.kind === 'post' ? (
+      <PostCard post={item.post} onRequireAccount={requireAccount} compact />
+    ) : item.kind === 'review' ? (
       <ReviewCard
         review={item.review}
         onPress={() => router.push({
@@ -251,7 +270,7 @@ export default function HomeScreen() {
     ) : (
       <GamePostCard game={item.game} tag={item.tag} onDismiss={handleDismiss} />
     )
-  ), [handleDismiss, router]);
+  ), [handleDismiss, router, requireAccount]);
 
   // Mevcut bölümlerin tamamı listenin başlığı olur → tek kaydırma, tek liste.
   const header = (
