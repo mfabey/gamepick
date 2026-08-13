@@ -19,7 +19,25 @@ export const AVATAR_PRESETS = Object.freeze([
 
 const VALID = new Set(AVATAR_PRESETS);
 
-/** Geçerli bir ön ayar kimliği mi? `null` da geçerli — "avatar yok" demek. */
+// Yüklenen fotoğraflar Vercel Blob'da duruyor ve avatar alanı artık ön ayar
+// kimliği YA DA bir fotoğraf adresi taşıyabiliyor.
+//
+// ADRES SERBEST BIRAKILMIYOR: yalnızca bizim blob konağımız kabul ediliyor.
+// Aksi hâlde kullanıcı avatar alanına herhangi bir adres yazabilir ve profili
+// gören herkesin uygulaması o adrese istek atardı — izleme pikseli, IP
+// toplama ve harici içerik enjeksiyonu için açık kapı.
+const BLOB_HOST = /^https:\/\/[a-z0-9-]+\.public\.blob\.vercel-storage\.com\/avatars\//i;
+
+export function isAvatarPhoto(v) {
+  return typeof v === 'string' && BLOB_HOST.test(v);
+}
+
+/**
+ * Geçerli bir avatar mı?
+ * `null` (avatar yok) · ön ayar kimliği · kendi blob'umuzdaki fotoğraf adresi.
+ */
 export function isValidAvatar(v) {
-  return v === null || (typeof v === 'string' && VALID.has(v));
+  if (v === null) return true;
+  if (typeof v !== 'string') return false;
+  return VALID.has(v) || isAvatarPhoto(v);
 }

@@ -60,7 +60,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Gamerisen, arkadaşlarınıza sohbette fotoğraf gönderebilmeniz için galerinize erişir.",
+          "photosPermission": "Gamerisen, profil fotoğrafınızı seçebilmeniz ve arkadaşlarınıza sohbette fotoğraf gönderebilmeniz için galerinize erişir.",
           "cameraPermission": "Gamerisen, sohbette fotoğraf çekip gönderebilmeniz için kameranıza erişir."
         }
       ],

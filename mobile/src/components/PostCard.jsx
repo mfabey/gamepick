@@ -8,7 +8,7 @@ import * as Haptics from 'expo-haptics';
 import { colors, radius, spacing, type, PRESSED, NUMERIC } from '../theme';
 import { useLanguage } from '../context/LanguageContext';
 import { togglePostLike } from '../api/social';
-import { getAvatarPreset } from '../utils/avatar';
+import Avatar from './Avatar';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tartışma gönderisi.
@@ -58,7 +58,6 @@ function PostCard({ post, onOpen, onRequireAccount, compact = false }) {
     }
   }, [liked, post.id, onRequireAccount]);
 
-  const avatar = getAvatarPreset(post.author?.avatar);
   const name = post.author?.displayName || post.author?.username || t('post.someone');
 
   return (
@@ -66,18 +65,7 @@ function PostCard({ post, onOpen, onRequireAccount, compact = false }) {
       onPress={() => (onOpen ? onOpen(post) : router.push(`/post/${post.id}`))}
       style={({ pressed }) => [styles.row, pressed && PRESSED]}
     >
-      {/* Avatar çizimi ReviewCard ile AYNI: ön ayar bir görsel değil
-          `{ bg, icon, iconColor }` üçlüsü. İki bileşenin aynı kullanıcıyı
-          farklı göstermesi, onları farklı kişiler sanmaya yol açar. */}
-      {avatar ? (
-        <View style={[styles.avatar, { backgroundColor: avatar.bg }]}>
-          <Ionicons name={avatar.icon} size={17} color={avatar.iconColor} />
-        </View>
-      ) : (
-        <View style={styles.avatar}>
-          <Text style={styles.avatarLetter}>{String(name).charAt(0).toUpperCase()}</Text>
-        </View>
-      )}
+      <Avatar avatar={post.author?.avatar} name={name} size={AV} />
 
       <View style={styles.main}>
         <View style={styles.head}>
@@ -133,12 +121,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg, paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.cardBorder,
   },
-  avatar: {
-    width: AV, height: AV, borderRadius: AV / 2, overflow: 'hidden',
-    backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center',
-  },
-  avatarLetter: { color: colors.text2, fontSize: type.subhead, fontWeight: '800' },
-
   main: { flex: 1, minWidth: 0 },
   head: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   name: { color: colors.text, fontSize: type.footnote, fontWeight: '700', flexShrink: 1 },

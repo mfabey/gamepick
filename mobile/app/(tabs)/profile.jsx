@@ -41,10 +41,11 @@ import { useAuth } from '../../src/context/AuthContext';
 import { useWishlist } from '../../src/context/WishlistContext';
 import { useCollections } from '../../src/hooks/useCollections';
 import { useConnectedLibrary } from '../../src/hooks/useConnectedLibrary';
-import { getMyProfile, getFriends, setAvatar as apiSetAvatar } from '../../src/api/social';
+import { getMyProfile, getFriends, setAvatar as apiSetAvatar, uploadAvatarPhoto } from '../../src/api/social';
 import IconButton from '../../src/components/IconButton';
 import { useTabPressAction, scrollRefToTop } from '../../src/hooks/useTabPressAction';
 import { AVATAR_PRESET_IDS, getAvatarPreset } from '../../src/utils/avatar';
+import Avatar from '../../src/components/Avatar';
 import { weeklyReport } from '../../src/services/stats';
 import { SettingsGroup, SettingsRow } from '../../src/components/SettingsList';
 
@@ -101,6 +102,54 @@ export default function ProfileScreen() {
       .catch(() => {});
     return () => { alive = false; };
   }, [account]);
+
+  // ── Fotoğraf yükleme ──
+  // ÖNCE KÜÇÜLT, SONRA YÜKLE. Avatar ekranda en fazla 56pt çiziliyor; 4 MB'lık
+  // bir fotoğrafı olduğu gibi yüklemek hem kullanıcının verisini hem sunucu
+  // kotasını boşa harcar. 256px kenar, 3x ekranda bile yeterli ve dosya
+  // ~30–60 KB'a iniyor.
+  const [uploading, setUploading] = useState(false);
+  const pickPhoto = useCallback(async () => {
+    if (uploading) return;
+    const ImagePicker = await import('expo-image-picker');
+
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) { Alert.alert(t('prof.photoPerm')); return; }
+
+    const res = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],        // avatar daire; kare dışı kırpma zaten kesiliyor
+      quality: 1,            // kalite kaybı boyutlandırmadan SONRA veriliyor
+    });
+    if (res.canceled || !res.assets?.[0]?.uri) return;
+
+    setUploading(true);
+    setPickerOpen(false);
+    const prev = avatar;
+    try {
+      const Manipulator = await import('expo-image-manipulator');
+      const out = await Manipulator.manipulateAsync(
+        res.assets[0].uri,
+        [{ resize: { width: 256, height: 256 } }],
+        { compress: 0.85, format: Manipulator.SaveFormat.JPEG }
+      );
+      const r = await uploadAvatarPhoto(out.uri, 'image/jpeg');
+      setAvatarState(r?.avatar || prev);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    } catch (e) {
+      setAvatarState(prev);
+      const code = e?.code || '';
+      Alert.alert(
+        code === 'MEDIA_DISABLED' ? t('prof.photoDisabled')
+        : code === 'REJECTED' ? t('prof.photoRejected')
+        : code === 'TOO_LARGE' ? t('prof.photoTooLarge')
+        : t('soc.err.generic')
+      );
+    } finally {
+      setUploading(false);
+    }
+  }, [uploading, avatar, t]);
 
   // Avatar seçme — iyimser güncelleme + sunucu yazımı.
   const pickAvatar = useCallback(async (presetId) => {
@@ -198,23 +247,12 @@ export default function ProfileScreen() {
               accessibilityLabel={t('prof.chooseAvatar')}
               accessibilityRole="button"
             >
-              {(() => {
-                const preset = getAvatarPreset(avatar);
-                if (preset) {
-                  return (
-                    <View style={[styles.avatarLg, { backgroundColor: preset.bg, borderColor: preset.bg }]}>
-                      <Ionicons name={preset.icon} size={30} color={preset.iconColor} />
-                    </View>
-                  );
-                }
-                return (
-                  <View style={styles.avatarLg}>
-                    <Text style={styles.avatarInitialLg}>
-                      {(account.name || account.email || '?').slice(0, 1).toUpperCase()}
-                    </Text>
-                  </View>
-                );
-              })()}
+              <Avatar
+                avatar={avatar}
+                name={account.name || account.email}
+                size={56}
+                style={styles.avatarLg}
+              />
               {username ? (
                 <View style={styles.avatarEditBadge}>
                   <Ionicons name="pencil" size={10} color="#fff" />
@@ -404,6 +442,8 @@ export default function ProfileScreen() {
         current={avatar}
         onSelect={pickAvatar}
         onClose={() => setPickerOpen(false)}
+        onPickPhoto={pickPhoto}
+        uploading={uploading}
       />
     </SafeAreaView>
   );
@@ -444,7 +484,7 @@ const Div = () => <View style={styles.div} />;
 // RN Modal kullanılıyor — native kütüphane EKLENMEZ, OTA güvenli.
 // BottomSheet tarzı görünüm: arka plan karartılır, alt yarıda ızgara.
 
-function AvatarPicker({ visible, current, onSelect, onClose }) {
+function AvatarPicker({ visible, current, onSelect, onClose, onPickPhoto, uploading }) {
   const { t } = useLanguage();
   return (
     <Modal
@@ -459,6 +499,21 @@ function AvatarPicker({ visible, current, onSelect, onClose }) {
           {/* Tutamak */}
           <View style={styles.pickerHandle} />
           <Text style={styles.pickerTitle}>{t('prof.chooseAvatar')}</Text>
+
+          {/* FOTOĞRAF EN ÜSTTE. Ön ayarlar bir yedek; kişinin kendi fotoğrafı
+              "bu hesap benim" hissini veren asıl şey, o yüzden birincil eylem. */}
+          <Pressable
+            onPress={onPickPhoto}
+            disabled={uploading}
+            style={({ pressed }) => [styles.pickerPhoto, pressed && PRESSED, uploading && { opacity: 0.6 }]}
+          >
+            {uploading
+              ? <ActivityIndicator size="small" color={colors.text} />
+              : <Ionicons name="image-outline" size={19} color={colors.text} />}
+            <Text style={styles.pickerPhotoText}>
+              {uploading ? t('prof.photoUploading') : t('prof.photoPick')}
+            </Text>
+          </Pressable>
 
           {/* Izgara — 4 sütun */}
           <View style={styles.pickerGrid}>
@@ -575,12 +630,8 @@ const styles = StyleSheet.create({
   weekLine: { fontSize: type.footnote, color: colors.text2, marginTop: 3, lineHeight: 18 },
   weekNum: { color: colors.text, fontWeight: '800' },
   weekStrong: { color: colors.text, fontWeight: '700' },
-  avatarLg: {
-    width: 56, height: 56, borderRadius: 28,
-    backgroundColor: colors.bgInput,
-    borderWidth: 1.5, borderColor: colors.cardBorder,
-    alignItems: 'center', justifyContent: 'center',
-  },
+  // Boyut Avatar bileşeninden geliyor; burada yalnız kenarlık.
+  avatarLg: { borderWidth: 1.5, borderColor: colors.cardBorder },
   avatarEditBadge: {
     position: 'absolute', bottom: -2, right: -2,
     width: 22, height: 22, borderRadius: 11,
@@ -687,6 +738,14 @@ const styles = StyleSheet.create({
     fontSize: type.headline, fontWeight: '800', color: colors.text,
     textAlign: 'center', marginBottom: 20,
   },
+  pickerPhoto: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9,
+    marginTop: 16, paddingVertical: 13,
+    backgroundColor: colors.bgInput, borderRadius: radius.md,
+    borderWidth: 1, borderColor: colors.cardBorder,
+  },
+  pickerPhotoText: { color: colors.text, fontSize: type.subhead, fontWeight: '700' },
+
   pickerGrid: {
     flexDirection: 'row', flexWrap: 'wrap',
     justifyContent: 'center', gap: 14,

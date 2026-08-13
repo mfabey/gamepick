@@ -2,7 +2,7 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 
-import { getAvatarPreset } from '../utils/avatar';
+import Avatar from './Avatar';
 import { colors, radius, spacing, type, PRESSED, NUMERIC } from '../theme';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -24,7 +24,6 @@ import { useLanguage } from '../context/LanguageContext';
 
 export default function ReviewCard({ review, onPress, onLongPress, onEdit, style }) {
   const { t, lang } = useLanguage();
-  const preset = getAvatarPreset(review.author?.avatar);
   const name = review.author?.displayName || review.author?.username || '?';
 
   return (
@@ -39,15 +38,7 @@ export default function ReviewCard({ review, onPress, onLongPress, onEdit, style
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={styles.cardGame} numberOfLines={1}>{review.gameName || review.appid}</Text>
           <View style={styles.byline}>
-            {preset ? (
-              <View style={[styles.avatar, { backgroundColor: preset.bg }]}>
-                <Ionicons name={preset.icon} size={10} color={preset.iconColor} />
-              </View>
-            ) : (
-              <View style={styles.avatar}>
-                <Text style={styles.avatarLetter}>{name.charAt(0).toUpperCase()}</Text>
-              </View>
-            )}
+            <Avatar avatar={review.author?.avatar} name={name} size={18} />
             <Text style={styles.author} numberOfLines={1}>{name}</Text>
             <Ionicons name="shield-checkmark" size={11} color={colors.green} />
             <Text style={[styles.hours, NUMERIC]}>
