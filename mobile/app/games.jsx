@@ -7,30 +7,44 @@ import { FlashList } from '@shopify/flash-list';
 import Animated, { useAnimatedStyle, interpolate, Extrapolation } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { fetchGames } from '../../src/api/games';
-import { fetchQuery, getEntry, isFresh } from '../../src/services/queryCache';
-import GameCard from '../../src/components/GameCard';
-import { GamesGridSkeleton } from '../../src/components/Skeleton';
-import { TopFade, BottomFade } from '../../src/components/EdgeFade';
-import { prefetchImages } from '../../src/utils/prefetch';
-import { useTimeToData } from '../../src/dev/perf';
-import { colors, radius, spacing, TAB_SPACE, type } from '../../src/theme';
-import { useTabBarScroll } from '../../src/context/TabBarContext';
-import { useLanguage } from '../../src/context/LanguageContext';
+import { useRouter } from 'expo-router';
+import { fetchGames } from '../src/api/games';
+import IconButton from '../src/components/IconButton';
+import { fetchQuery, getEntry, isFresh } from '../src/services/queryCache';
+import GameCard from '../src/components/GameCard';
+import { GamesGridSkeleton } from '../src/components/Skeleton';
+import { TopFade, BottomFade } from '../src/components/EdgeFade';
+import { prefetchImages } from '../src/utils/prefetch';
+import { useTimeToData } from '../src/dev/perf';
+import { colors, radius, spacing, type } from '../src/theme';
+import { useScrollCollapse } from '../src/context/TabBarContext';
+import { useLanguage } from '../src/context/LanguageContext';
 
 const COLS = 2;
 const NUM = 24;
 const PAGE1_TTL = 5 * 60 * 1000;   // 1. sayfa önbellek ömrü
 
-import { useTabPressAction, scrollRefToTop } from '../../src/hooks/useTabPressAction';
-import { useTabBarCompact } from '../../src/context/TabBarContext';
-import { useReducedMotion } from '../../src/hooks/useReducedMotion';
+import { useReducedMotion } from '../src/hooks/useReducedMotion';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BU EKRAN ARTIK SEKME DEĞİL, YIĞIN EKRANI.
+//
+// Alt navigasyondaki yerini Topluluk aldı (bkz. (tabs)/_layout.jsx). Buraya
+// anasayfanın arama kutusundan ve beş boş durum bağlantısından geliniyor.
+//
+// Taşınmanın iki görünür sonucu vardı, ikisi de burada karşılandı:
+//   • Geri dönüş yolu yoktu — sekmeye "geri" gerekmiyordu, yığına gerekiyor.
+//   • Katlanır başlık sekme çubuğunun paylaşılan değerine bağlıydı; sağlayıcı
+//     dışında null döneceği için başlık sessizce katlanmayı bırakırdı.
+//     useScrollCollapse aynı mantığı yerel bir değerle sürdürüyor.
+//
+// `useTabPressAction` de kalktı: 'tabPress' olayı bir yığın ekranına hiç
+// gönderilmiyor, kanca sessizce ölü kalırdı.
+// ─────────────────────────────────────────────────────────────────────────────
 
 export default function GamesScreen() {
-  // Sekmeye tekrar basınca listeyi başa sar (iOS'ta beklenen davranış)
-  const listRef = useRef(null);
-  useTabPressAction(useCallback(() => scrollRefToTop(listRef), []));
-  const onTabScroll = useTabBarScroll();
+  const router = useRouter();
+  const { compact, onScroll: onTabScroll } = useScrollCollapse();
   const { t } = useLanguage();
 
   // Dil değişmedikçe yeniden oluşmasın
@@ -61,6 +75,14 @@ export default function GamesScreen() {
 
   // Dev-only: ekran mount'undan ilk oyunların gelişine kadar geçen süre
   useTimeToData('Games', games.length > 0);
+
+  // canGoBack KONTROLÜ ŞART: stats.jsx buraya `router.replace('/games')` ile
+  // geliyor, yani geri yığını BOŞ olabiliyor. Kontrolsüz bir back() orada
+  // hiçbir şey yapmaz ve kullanıcı ekrana sıkışırdı.
+  const goBack = useCallback(() => {
+    if (router.canGoBack()) router.back();
+    else router.replace('/');
+  }, [router]);
 
   const load = useCallback(async () => {
     const r = ref.current;
@@ -135,7 +157,6 @@ export default function GamesScreen() {
   // satırı cihaz/dil/yazı tipi boyutuna göre değişiyor. Sabit bir sayı
   // yazsaydım bazı cihazlarda başlık tam gizlenmez ya da fazla kayardı.
   const [headerH, setHeaderH] = useState(0);
-  const compact = useTabBarCompact();
   const reducedMotion = useReducedMotion();
   const insets = useSafeAreaInsets();
 
@@ -211,7 +232,16 @@ export default function GamesScreen() {
       <SafeAreaView edges={['top']}>
       {/* Başlık + arama */}
       <View style={styles.header}>
-        <Text style={styles.title}>{t('games.title')}</Text>
+        {/* Geri, başlıkla AYNI satırda. iOS'un büyük başlık düzeninde geri
+            düğmesi ayrı bir satırdadır ama bu başlık katlanıyor: ayrı satır
+            katlanacak yüksekliği ~44pt artırır, yani ekranın en dar olduğu
+            anda en çok yeri o alır. Yan yana dururken başlığın taban çizgisi
+            ile hizalı ve dokunma hedefi (44pt) korunuyor. */}
+        <View style={styles.titleRow}>
+          <IconButton icon="chevron-back" size={26} color={colors.text}
+            onPress={goBack} style={styles.backBtn} />
+          <Text style={styles.title}>{t('games.title')}</Text>
+        </View>
         <View style={styles.searchBox}>
           <Ionicons name="search" size={17} color={colors.text3} />
           <TextInput
@@ -265,7 +295,6 @@ export default function GamesScreen() {
           </View>
         ) : (
           <FlashList
-            ref={listRef}
             onScroll={onTabScroll}
             scrollEventThrottle={16}
             data={games}
@@ -277,7 +306,12 @@ export default function GamesScreen() {
             onEndReached={loadMore}
             onEndReachedThreshold={0.6}
             ListFooterComponent={
-              <View style={{ height: TAB_SPACE, alignItems: 'center', justifyContent: 'center' }}>
+              // TAB_SPACE (104pt) DEĞİL: o sayı yüzen sekme çubuğunun altına
+              // kayacak içerik için ayrılmıştı. Bu ekran artık sekme değil,
+              // altında çubuk yok — 104pt'lik boşluk listenin sonunda boş bir
+              // bant bırakırdı. Kalan tek gereksinim güvenli alan + göstergeye
+              // yer.
+              <View style={{ height: insets.bottom + 48, alignItems: 'center', justifyContent: 'center' }}>
                 {loadingMore ? <ActivityIndicator color={colors.accent} /> : null}
               </View>
             }
@@ -317,7 +351,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
   },
   header: { paddingHorizontal: spacing.lg, paddingTop: 8, paddingBottom: 6 },
-  title: { fontSize: type.title1, fontWeight: '800', color: colors.text, letterSpacing: -0.6, marginBottom: 12 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 2, marginBottom: 12 },
+  // IconButton 44pt'lik hedefi ortalıyor, yani chevron kendi kutusunda ~9pt
+  // içeride kalıyor. Negatif kenar boşluğu onu geri alıyor: aksi hâlde ok,
+  // altındaki arama kutusunun sol kenarına göre sağa kaçık görünüyordu.
+  backBtn: { marginLeft: -11 },
+  title: { fontSize: type.title1, fontWeight: '800', color: colors.text, letterSpacing: -0.6 },
   searchBox: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1,

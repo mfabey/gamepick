@@ -204,7 +204,7 @@ export default {
   'post.errBlocked': 'Dieser Text kann nicht geteilt werden.',
   'post.errSession': 'Melde dich an, um zu posten.',
   'post.errGeneric': 'Senden fehlgeschlagen. Versuch es erneut.',
-  'rev.community': 'Community',
+  'rev.community': 'Rezensionen',
   'rev.mine': 'Deine',
   'rev.communityEmpty': 'Noch keine Reviews. Sei der Erste — wähl ein Spiel aus deiner Bibliothek.',
   'rev.mineEmpty': 'Du hast noch keine Review geschrieben.',

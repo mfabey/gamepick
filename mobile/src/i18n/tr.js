@@ -197,7 +197,7 @@ export default {
   'post.errBlocked': 'Bu metin paylaşılamaz.',
   'post.errSession': 'Paylaşmak için giriş yap.',
   'post.errGeneric': 'Gönderilemedi, tekrar dene.',
-  'rev.community': 'Topluluk',
+  'rev.community': 'İncelemeler',
   'rev.mine': 'Benimkiler',
   'rev.communityEmpty': 'Henüz inceleme yok. İlk yazan sen ol — kütüphanendeki oyunlardan birini seç.',
   'rev.mineEmpty': 'Henüz inceleme yazmadın.',

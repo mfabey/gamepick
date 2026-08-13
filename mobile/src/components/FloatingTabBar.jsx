@@ -14,8 +14,11 @@ import { useTabBarCompact, useTabBarHidden } from '../context/TabBarContext';
 import { useUnread, refreshUnread } from '../services/unread';
 import { colors, type, NUMERIC } from '../theme';
 
+// Sekme olmayan rotalar da burada (games, news, library): harita üst küme
+// olarak tutuluyor ki bir rota sekmeye girip çıkınca simgesi kaybolmasın.
 const ICONS = {
   index:    'home',
+  reviews:  'people',
   games:    'game-controller',
   videos:   'play-circle',
   messages: 'chatbubble-ellipses',

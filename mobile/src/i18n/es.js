@@ -203,7 +203,7 @@ export default {
   'post.errBlocked': 'Este texto no se puede compartir.',
   'post.errSession': 'Inicia sesión para publicar.',
   'post.errGeneric': 'No se pudo publicar. Inténtalo de nuevo.',
-  'rev.community': 'Comunidad',
+  'rev.community': 'Reseñas',
   'rev.mine': 'Tuyas',
   'rev.communityEmpty': 'Aún no hay reseñas. Sé el primero: elige un juego de tu biblioteca.',
   'rev.mineEmpty': 'Todavía no has escrito ninguna reseña.',

@@ -135,6 +135,11 @@ export default function RootLayout() {
                 <Stack.Screen name="collection/[id]" />
                 <Stack.Screen name="stats" />
                 <Stack.Screen name="social" />
+                {/* Oyunlar BURAYA GELDİ: alt navigasyondaki yerini Topluluk
+                    (reviews) aldı. Rota yolu DEĞİŞMEDİ — (tabs) yol taşımayan
+                    bir grup olduğu için /games hâlâ /games, mevcut yedi
+                    bağlantının hiçbiri elden geçmedi. */}
+                <Stack.Screen name="games" />
                 <Stack.Screen name="steam-friends" />
                 <Stack.Screen name="game-cards" />
                 {/* "messages" BURADAN KALKTI: alt navigasyona taşındı, artık
@@ -142,7 +147,6 @@ export default function RootLayout() {
                     olmayan bir çocuk rota için uyarı verirdi.
                     Yerini haberler aldı — o da ters yönde taşındı. */}
                 <Stack.Screen name="news" />
-                <Stack.Screen name="reviews" />
                 <Stack.Screen name="post/[id]" />
                 <Stack.Screen name="chat/[uid]" />
                 <Stack.Screen name="settings" />

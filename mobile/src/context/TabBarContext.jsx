@@ -40,15 +40,14 @@ export function useTabBarHidden() {
 }
 
 /**
- * Ekranların ana dikey kaydırıcısına takılacak onScroll işleyicisi.
+ * Kaydırma yönünü bir daralma değerine çeviren ORTAK mantık.
  *
- *   const onScroll = useTabBarScroll();
- *   <FlashList onScroll={onScroll} scrollEventThrottle={16} … />
- *
- * Sağlayıcı yoksa (sekme dışı ekran) zararsız boş fonksiyon döner.
+ * Ayrı bir kanca olarak duruyor çünkü iki tüketicisi var: sekme çubuğu
+ * köprüsü (paylaşılan değer) ve sekme dışı ekranların kendi yerel değeri.
+ * Kopyalansaydı eşikler zamanla ayrışır, aynı jest iki ekranda farklı
+ * anlarda tetiklenirdi.
  */
-export function useTabBarScroll() {
-  const compact = useContext(TabBarCtx)?.compact ?? null;
+function useCollapseHandler(compact) {
   const lastY = useRef(0);
 
   return useCallback((e) => {
@@ -75,4 +74,33 @@ export function useTabBarScroll() {
     // Eşiğin altındaki hareketlerde lastY GÜNCELLENMEZ; yoksa yavaş kaydırmada
     // fark hiç birikmez ve durum asla değişmez.
   }, [compact]);
+}
+
+/**
+ * Ekranların ana dikey kaydırıcısına takılacak onScroll işleyicisi.
+ *
+ *   const onScroll = useTabBarScroll();
+ *   <FlashList onScroll={onScroll} scrollEventThrottle={16} … />
+ *
+ * Sağlayıcı yoksa (sekme dışı ekran) zararsız boş fonksiyon döner.
+ */
+export function useTabBarScroll() {
+  const compact = useContext(TabBarCtx)?.compact ?? null;
+  return useCollapseHandler(compact);
+}
+
+/**
+ * Sekme çubuğundan BAĞIMSIZ, ekrana ait daralma değeri.
+ *
+ *   const { compact, onScroll } = useScrollCollapse();
+ *
+ * Neden var: katlanır başlığı olan bir ekran sekme çubuğundan çıkarıldığında
+ * `useTabBarCompact()` null döner ve başlık sessizce katlanmayı bırakır —
+ * bozulmaz, sadece özellik kaybolur. Oyunlar ekranı sekmelerden yığına
+ * taşınınca tam bu oldu. Bu kanca aynı mantığı yerel bir değerle sürdürüyor.
+ */
+export function useScrollCollapse() {
+  const compact = useSharedValue(0);
+  const onScroll = useCollapseHandler(compact);
+  return useMemo(() => ({ compact, onScroll }), [compact, onScroll]);
 }

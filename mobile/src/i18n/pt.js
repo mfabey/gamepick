@@ -202,7 +202,7 @@ export default {
   'post.errBlocked': 'Este texto não pode ser compartilhado.',
   'post.errSession': 'Entre para publicar.',
   'post.errGeneric': 'Não foi possível publicar. Tente de novo.',
-  'rev.community': 'Comunidade',
+  'rev.community': 'Análises',
   'rev.mine': 'Suas',
   'rev.communityEmpty': 'Ainda não há análises. Seja o primeiro — escolha um jogo da sua biblioteca.',
   'rev.mineEmpty': 'Você ainda não escreveu nenhuma análise.',

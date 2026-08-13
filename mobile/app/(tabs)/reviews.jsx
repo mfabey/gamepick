@@ -22,15 +22,15 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
-import { getReviewFeed, getEligibleGames, fetchPosts } from '../src/api/social';
-import { getSession, subscribeSession } from '../src/services/session';
-import ReviewComposer from '../src/components/ReviewComposer';
-import ReviewCard from '../src/components/ReviewCard';
-import PostCard from '../src/components/PostCard';
-import PostComposer from '../src/components/PostComposer';
-import ReportSheet from '../src/components/ReportSheet';
-import { colors, radius, spacing, type, PRESSED, NUMERIC, TAB_SPACE } from '../src/theme';
-import { useLanguage } from '../src/context/LanguageContext';
+import { getReviewFeed, getEligibleGames, fetchPosts } from '../../src/api/social';
+import { getSession, subscribeSession } from '../../src/services/session';
+import ReviewComposer from '../../src/components/ReviewComposer';
+import ReviewCard from '../../src/components/ReviewCard';
+import PostCard from '../../src/components/PostCard';
+import PostComposer from '../../src/components/PostComposer';
+import ReportSheet from '../../src/components/ReportSheet';
+import { colors, radius, spacing, type, PRESSED, NUMERIC, TAB_SPACE } from '../../src/theme';
+import { useLanguage } from '../../src/context/LanguageContext';
 
 export default function ReviewsScreen() {
   const router = useRouter();
@@ -88,7 +88,7 @@ export default function ReviewsScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <Header t={t} onBack={() => router.back()} />
+      <Header t={t} />
 
       {loading ? (
         <View style={styles.center}><ActivityIndicator color={colors.accent} /></View>
@@ -227,12 +227,11 @@ export default function ReviewsScreen() {
   );
 }
 
-function Header({ t, onBack }) {
+// Geri düğmesi YOK: burası artık bir sekme, dönülecek önceki ekran yok.
+// Başlık da büyüdü (title3 → title1), üst düzey ekranların dili bu.
+function Header({ t }) {
   return (
     <View style={styles.head}>
-      <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={onBack} hitSlop={10}>
-        <Ionicons name="chevron-back" size={24} color={colors.text} />
-      </Pressable>
       <Text style={styles.h1}>{t('rev.section')}</Text>
     </View>
   );
@@ -250,12 +249,8 @@ const styles = StyleSheet.create({
   safe:   { flex: 1, backgroundColor: colors.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  head: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
-    paddingHorizontal: spacing.lg, paddingBottom: spacing.md,
-  },
-  iconBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginLeft: -10 },
-  h1: { flex: 1, color: colors.text, fontSize: type.title3, fontWeight: '800', letterSpacing: -0.4 },
+  head: { paddingHorizontal: spacing.lg, paddingTop: 8, paddingBottom: spacing.md },
+  h1: { color: colors.text, fontSize: type.title1, fontWeight: '800', letterSpacing: -0.6 },
 
   sectionLabel: {
     color: colors.text3, fontSize: type.caption, fontWeight: '800',

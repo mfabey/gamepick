@@ -195,7 +195,7 @@ export default {
   'post.errBlocked': 'This text can\'t be shared.',
   'post.errSession': 'Sign in to post.',
   'post.errGeneric': 'Couldn\'t post. Try again.',
-  'rev.community': 'Community',
+  'rev.community': 'Reviews',
   'rev.mine': 'Yours',
   'rev.communityEmpty': 'No reviews yet. Be the first — pick a game from your library.',
   'rev.mineEmpty': 'You have not written a review yet.',
