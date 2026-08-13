@@ -19,6 +19,7 @@ import { useTimeToData } from '../src/dev/perf';
 import { colors, radius, spacing, type } from '../src/theme';
 import { useScrollCollapse } from '../src/context/TabBarContext';
 import { useLanguage } from '../src/context/LanguageContext';
+import FilterSheet, { FilterButton, countFilters } from '../src/components/FilterSheet';
 
 const COLS = 2;
 const NUM = 24;
@@ -56,22 +57,23 @@ export default function GamesScreen() {
     { v: 'free',     label: t('section.free') },
     { v: 'topscore', label: t('section.topscore') },
   ], [t]);
-  const MODES = useMemo(() => [
-    { v: '',             label: t('mode.all') },
-    { v: 'singleplayer', label: t('mode.singleplayer') },
-    { v: 'multiplayer',  label: t('mode.multiplayer') },
-    { v: 'coop',         label: t('mode.coop') },
-  ], [t]);
 
   const [query, setQuery]       = useState('');   // arama kutusundaki canlı değer
   const [searchTerm, setSearchTerm] = useState(''); // isteğe giden değer (yalnızca bu debounce'lu)
   const [section, setSection]   = useState('');
-  const [mode, setMode]         = useState('');
   const [games, setGames]       = useState([]);
   const [loading, setLoading]   = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
 
-  const ref = useRef({ page: 1, canMore: true, fetching: false, seen: new Set(), section: '', mode: '', query: '' });
+  // ── Gelişmiş filtreler ──
+  // MOD ARTIK BURADA. Başlıkta ayrı bir çip satırıydı; tür/mağaza/puan/etiket
+  // eklenince altı çip satırı olurdu. Hepsi tek sayfaya taşınınca başlık bir
+  // çip satırına düştü — filtre KAZANIRKEN başlık kısaldı.
+  const [filters, setFilters] = useState({ genre: null, mode: null, store: null, mc: null, tags: [] });
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const filterCount = countFilters(filters);
+
+  const ref = useRef({ page: 1, canMore: true, fetching: false, seen: new Set(), section: '', query: '', filters: null });
 
   // Dev-only: ekran mount'undan ilk oyunların gelişine kadar geçen süre
   useTimeToData('Games', games.length > 0);
@@ -84,19 +86,37 @@ export default function GamesScreen() {
     else router.replace('/');
   }, [router]);
 
+  const clearFilters = useCallback(
+    () => setFilters({ genre: null, mode: null, store: null, mc: null, tags: [] }),
+    []
+  );
+
+  // Filtre durumunu istek parametrelerine çeviren TEK yer. load ve loadMore
+  // aynı dönüşümü kullanmak ZORUNDA: ayrı ayrı yazılsaydı ikinci sayfa
+  // birincisinden farklı bir sorgu olur ve liste kendi içinde tutarsızlaşırdı.
+  const apiFilters = useMemo(() => ({
+    genres:     filters.genre || '',
+    mode:       filters.mode  || '',
+    store:      filters.store || '',
+    metacritic: filters.mc ? String(filters.mc) : '',
+    tags:       filters.tags.join(','),
+  }), [filters]);
+
   const load = useCallback(async () => {
     const r = ref.current;
     r.page = 1; r.canMore = true; r.fetching = true; r.seen = new Set();
-    r.section = section; r.mode = mode; r.query = searchTerm;
+    r.section = section; r.query = searchTerm; r.filters = apiFilters;
 
-    // 1. sayfa filtre bazında önbellekli → aynı filtreye dönünce ağ isteği yok
-    const key = `games:${section}|${mode}|${searchTerm}`;
+    // 1. sayfa filtre bazında önbellekli → aynı filtreye dönünce ağ isteği yok.
+    // ANAHTAR TÜM FİLTRELERİ TAŞIMALI: taşımasaydı tür değiştirince önbellekten
+    // eski listenin 1. sayfası dönerdi ve filtre çalışmıyor görünürdü.
+    const key = `games:${section}|${searchTerm}|${Object.values(apiFilters).join('|')}`;
     const cacheHit = isFresh(getEntry(key), PAGE1_TTL);
     if (!cacheHit) setLoading(true);   // önbellekten geliyorsa skeleton yanıp sönmesin
     try {
       const data = await fetchQuery(
         key,
-        () => fetchGames({ page: 1, num: NUM, section, mode, q: searchTerm }),
+        () => fetchGames({ page: 1, num: NUM, section, q: searchTerm, ...apiFilters }),
         { ttl: PAGE1_TTL }
       );
       const results = (data.results || []).filter(g => {
@@ -113,7 +133,7 @@ export default function GamesScreen() {
       r.fetching = false;
       setLoading(false);
     }
-  }, [section, mode, searchTerm]);
+  }, [section, searchTerm, apiFilters]);
 
   // Yalnızca METİN aramasını geciktir (çip ve ilk açılış anında tetiklensin)
   useEffect(() => {
@@ -133,7 +153,7 @@ export default function GamesScreen() {
     setLoadingMore(true);
     try {
       const next = r.page + 1;
-      const data = await fetchGames({ page: next, num: NUM, section: r.section, mode: r.mode, q: r.query });
+      const data = await fetchGames({ page: next, num: NUM, section: r.section, q: r.query, ...r.filters });
       const fresh = (data.results || []).filter(g => {
         if (r.seen.has(g.id)) return false;
         r.seen.add(g.id); return true;
@@ -242,35 +262,38 @@ export default function GamesScreen() {
             onPress={goBack} style={styles.backBtn} />
           <Text style={styles.title}>{t('games.title')}</Text>
         </View>
-        <View style={styles.searchBox}>
-          <Ionicons name="search" size={17} color={colors.text3} />
-          <TextInput
-            value={query}
-            onChangeText={setQuery}
-            placeholder={t('games.searchPlaceholder')}
-            placeholderTextColor={colors.text3}
-            style={styles.searchInput}
-            returnKeyType="search"
-          />
-          {query ? (
-            <Pressable onPress={() => setQuery('')} hitSlop={8}>
-              <Ionicons name="close-circle" size={18} color={colors.text3} />
-            </Pressable>
-          ) : null}
+        {/* Arama + filtre AYNI SATIRDA: ikisi de "listeyi daralt" işi ve
+            filtre düğmesi kendi satırını hak etmiyor. Rozet etkin filtre
+            sayısını taşıyor — sayfa kapalıyken hangi filtrelerin açık
+            olduğunu gösteren tek işaret o. */}
+        <View style={styles.searchRow}>
+          <View style={styles.searchBox}>
+            <Ionicons name="search" size={17} color={colors.text3} />
+            <TextInput
+              value={query}
+              onChangeText={setQuery}
+              placeholder={t('games.searchPlaceholder')}
+              placeholderTextColor={colors.text3}
+              style={styles.searchInput}
+              returnKeyType="search"
+            />
+            {query ? (
+              <Pressable onPress={() => setQuery('')} hitSlop={8}>
+                <Ionicons name="close-circle" size={18} color={colors.text3} />
+              </Pressable>
+            ) : null}
+          </View>
+          <FilterButton count={filterCount} onPress={() => setSheetOpen(true)} />
         </View>
       </View>
 
-      {/* Bölüm chip'leri */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll} contentContainerStyle={styles.chipsRow}>
+      {/* Bölüm chip'leri.
+          MOD SATIRI BURADAN KALKTI — filtre sayfasına taşındı. Bölüm burada
+          kaldı çünkü o bir filtre değil, listenin ne olduğunu söyleyen ana
+          kip (indirimdekiler ayrı bir Steam yolundan geliyor). */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll} contentContainerStyle={[styles.chipsRow, { paddingBottom: 6 }]}>
         {SECTIONS.map(s => (
           <Chip key={s.v} active={section === s.v} label={s.label} onPress={() => setSection(s.v)} />
-        ))}
-      </ScrollView>
-
-      {/* Mod chip'leri */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll} contentContainerStyle={[styles.chipsRow, { paddingBottom: 6 }]}>
-        {MODES.map(m => (
-          <Chip key={m.v} active={mode === m.v} label={m.label} onPress={() => setMode(m.v)} />
         ))}
       </ScrollView>
       </SafeAreaView>
@@ -292,6 +315,14 @@ export default function GamesScreen() {
           <View style={[styles.center, { paddingTop: headerH }]}>
             <Ionicons name="search" size={44} color={colors.text3} />
             <Text style={styles.emptyText}>{t('games.noResults')}</Text>
+            {/* ÇIKIŞ YOLU. Beş filtre birleşince boş sonuç normal; kullanıcının
+                elinde yalnızca "sonuç yok" kalırsa hangi filtrenin daralttığını
+                bulmak için sayfayı açıp tek tek denemesi gerekir. */}
+            {filterCount > 0 ? (
+              <Pressable onPress={clearFilters} hitSlop={8}>
+                <Text style={styles.emptyAction}>{t('filter.clear')}</Text>
+              </Pressable>
+            ) : null}
           </View>
         ) : (
           <FlashList
@@ -318,6 +349,13 @@ export default function GamesScreen() {
           />
         )}
       </View>
+
+      <FilterSheet
+        visible={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        value={filters}
+        onApply={setFilters}
+      />
     </View>
   );
 }
@@ -357,7 +395,10 @@ const styles = StyleSheet.create({
   // altındaki arama kutusunun sol kenarına göre sağa kaçık görünüyordu.
   backBtn: { marginLeft: -11 },
   title: { fontSize: type.title1, fontWeight: '800', color: colors.text, letterSpacing: -0.6 },
+  searchRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   searchBox: {
+    // flex:1 — filtre düğmesi sabit 44pt, kalan genişliği arama kutusu alıyor
+    flex: 1,
     flexDirection: 'row', alignItems: 'center', gap: 8,
     backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1,
     borderRadius: radius.md, paddingHorizontal: 14, height: 44,
@@ -375,5 +416,6 @@ const styles = StyleSheet.create({
   cell: { flex: 1, paddingHorizontal: 6, paddingBottom: spacing.md },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   emptyText: { color: colors.text3, fontSize: type.subhead, fontWeight: '600' },
+  emptyAction: { color: colors.accentText, fontSize: type.subhead, fontWeight: '700' },
   footer: { paddingVertical: 24 },
 });

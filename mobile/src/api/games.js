@@ -7,8 +7,21 @@ export function smartSearch(query, lang = 'tr') {
 }
 
 // Oyun listesi — /api/games (RAWG + Steam merge, mod filtresi dahil)
-export function fetchGames({ page = 1, num = 24, section = '', q = '', genres = '', mode = '' } = {}) {
-  return apiGet('/api/games', { page, num, section, q, genres, mode });
+//
+// store/metacritic/tags SUNUCUDA ZATEN VARDI, buradan geçilmiyordu:
+// route.js bunları okuyup RAWG'a `stores`, `metacritic=mc,100` ve `tags`
+// olarak veriyor. Mobil arayüzde karşılıkları olmadığı için hiç kullanılmadılar.
+//
+// `price` BİLEREK YOK: sunucu o parametrede yalnızca 'free' uyguluyor ve
+// "Ücretsiz" zaten bir bölüm (section) çipi. Sayısal aralık eklemek, mobilde
+// kart kart tembel gelen fiyat verisiyle çalışmaz (bkz. FilterSheet başı).
+//
+// apiGet boş değerleri kendisi eliyor, çağıranın temizlemesi gerekmiyor.
+export function fetchGames({
+  page = 1, num = 24, section = '', q = '', genres = '', mode = '',
+  store = '', metacritic = '', tags = '',
+} = {}) {
+  return apiGet('/api/games', { page, num, section, q, genres, mode, store, metacritic, tags });
 }
 
 // Trend oyunlar — /api/trending

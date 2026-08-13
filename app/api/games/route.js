@@ -704,6 +704,17 @@ export async function GET(request) {
       }
     }
 
+    // ── KULLANICININ PUAN EŞİĞİ EN SON UYGULANIYOR ──
+    // Yukarıdaki üç dal da params.metacritic'e YAZIYOR: topscore ve sale
+    // '70,100', tür-varsayılanı '60,100'. Hepsi 642. satırdaki kullanıcı
+    // eşiğinin ÜSTÜNE yazıyordu, yani "90+" seçen bir kullanıcı tür de
+    // seçtiyse sessizce 60+ liste alıyordu.
+    //
+    // Hata eskiydi ama görünmezdi: hiçbir istemci `genres` ile `metacritic`i
+    // birlikte göndermiyordu. Mobil filtre sayfası ikisini birden gönderince
+    // ekranda çıktı — 90+ seçiliyken 86 puanlı oyunlar listeleniyordu.
+    if (mc) params.metacritic = `${mc},100`;
+
     // Oyun modu filtresi (tek oyunculu / çok oyunculu / co-op) — RAWG tag'leri ile sunucu tarafında
     const MODE_TAG = { singleplayer: 'singleplayer', multiplayer: 'multiplayer', coop: 'co-op' };
     if (mode && MODE_TAG[mode]) {
