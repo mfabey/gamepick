@@ -48,6 +48,9 @@ const POOL = 3;
 // Yatayda ekranın köşe kavisinden kaçmak için üst çubuğa verilen paylar.
 // Dikeyde gerek yok: orada güvenli alan (~59pt) zaten bu işi görüyor.
 const LANDSCAPE_TOP_PAD = 14;
+// FloatingTabBar'daki BAR_H ile aynı. Orada modül düzeyinde sabit ve dışa
+// açılmıyor; burada tekrar edilmesinin sebebi o.
+const TAB_BAR_H = 58;
 const LANDSCAPE_SIDE_PAD = 22;
 
 export default function VideosScreen() {
@@ -308,18 +311,14 @@ export default function VideosScreen() {
     } catch { setLandscape(!next); }   // kilitlenemedi → durumu geri al
   }, [landscape]);
 
-  // SEKME ÇUBUĞU YATAYDA GİZLENİYOR.
+  // SEKME ÇUBUĞU YATAYDA DA DURUYOR.
   //
-  // Yatay, izleme kipi: çubuk hem alt şeridi yiyor hem de dar kenarda
-  // sıkışıp bozuk görünüyordu (maxWidth 420 ile daraltılmıştı ama sorun
-  // genişlik değil, orada DURUYOR olmasıydı).
+  // Bir süre gizlenmişti (sürükleyici izleme kipi gerekçesiyle). Geri alındı:
+  // çubuk yokken videodan çıkmanın TEK yolu önce dikeye dönmek oluyordu —
+  // yani her çıkış iki adım. Kazanılan birkaç piksel, her seferinde ödenen o
+  // bedelin yanında değersiz.
   //
-  // Sekme değiştirmek için dikeye dönmek gerekiyor; ekrandan çıkış zaten
-  // dikeye dönerek yapılıyor (bkz. useFocusEffect).
-  useEffect(() => {
-    if (!tabHidden) return;
-    tabHidden.value = withTiming(isLandscape ? 1 : 0, { duration: 160 });
-  }, [isLandscape, tabHidden]);
+  // Şerit çubuğun ÜSTÜNE alındı (railBottom), ikisi çakışmıyor.
 
   const renderItem = useCallback(({ item, index }) => (
     <VideoItem
@@ -456,7 +455,11 @@ const VideoItem = memo(function VideoItem({
   // 2pt taşıyordu ve üstteki düğmeler kırpılıyordu. Dikey bir sütunu dar
   // kenara sığdırmaya çalışmak yanlış yöndü; geniş ekranın yönü yatay.
   const railGap = isLandscape ? 14 : 17;
-  const railBottom = isLandscape ? 10 + itemInsets.bottom : TAB_SPACE + 90;
+  // Yatayda şerit sekme çubuğunun ÜSTÜNDE duruyor: çubuk 58pt + güvenli alan,
+  // üstüne 12pt nefes payı. Aksi hâlde yatay şerit çubuğun altında kalıyordu.
+  const railBottom = isLandscape
+    ? TAB_BAR_H + itemInsets.bottom + 12
+    : TAB_SPACE + 90;
   const infoBottom = isLandscape ? 80 : TAB_SPACE + 6;
   const { isWatched, toggle } = useWishlist();
   const { account } = useAuth();
