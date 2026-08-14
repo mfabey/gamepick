@@ -164,6 +164,7 @@ export default function MessageMenu({ visible, onClose, actions = [], anchor, mi
 }
 
 const styles = StyleSheet.create({
+  // tema-bagimsiz: kipli katman ve golgesi
   backdrop: { backgroundColor: 'rgba(0,0,0,0.45)' },
 
   menu: {
@@ -174,6 +175,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: colors.cardBorder,
     // Gölge menüyü sohbetten ayırıyor; yarı saydam arka planla birlikte
     // "üstte duran katman" hissini veren şey bu.
+    // tema-bagimsiz: kipli katman ve golgesi
     shadowColor: '#000', shadowOpacity: 0.4,
     shadowRadius: 20, shadowOffset: { width: 0, height: 8 },
     elevation: 12,

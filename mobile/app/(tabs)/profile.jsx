@@ -720,7 +720,8 @@ const styles = StyleSheet.create({
 
   // ── Avatar seçici ──
   pickerOverlay: {
-    flex: 1, backgroundColor: 'rgba(0,0,0,0.55)',
+    // colors.overlay zaten var ve açık temada daha hafif (0.45).
+    flex: 1, backgroundColor: colors.overlay,
     justifyContent: 'flex-end',
   },
   pickerSheet: {

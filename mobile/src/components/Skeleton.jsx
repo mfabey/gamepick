@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { Animated, Easing, View, StyleSheet } from 'react-native';
-import { radius, spacing } from '../theme';
+import { colors, radius, spacing } from '../theme';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Paylaşılan nabız animasyonu — tüm iskelet blokları TEK loop'u paylaşır
@@ -83,7 +83,10 @@ export function NewsListSkeleton({ rows = 6 }) {
   );
 }
 
-const SK = '#1b1f26';
+// Sabit '#1b1f26' idi — koyu paletin bgInput değerinin TA KENDİSİ. Yani
+// belirteç zaten vardı, iskelet onu atlıyordu ve açık temada bütün yükleme
+// ekranları beyaz zeminde koyu gri kutulara dönüyordu.
+const SK = colors.bgInput;
 
 const styles = StyleSheet.create({
   box: { backgroundColor: SK, borderRadius: radius.sm },

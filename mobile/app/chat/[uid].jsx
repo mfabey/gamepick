@@ -1205,14 +1205,18 @@ const styles = StyleSheet.create({
   // kendi baloncuğumda zemin zaten renkli.
   quote: {
     flexDirection: 'row', gap: 8,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    // Karşı tarafın baloncuğu colors.card; beyaz katman açık temada beyaz
+    // üstünde beyazdı. bgHover her iki zeminde de ayrışıyor.
+    backgroundColor: colors.bgHover,
     borderRadius: radius.sm,
     padding: 7, marginBottom: 6,
   },
   // Kendi baloncuğumun zemini vurgu renginde; aynı beyaz katman orada
   // yeterince ayrışmıyordu.
+  // tema-bagimsiz: kendi baloncugumun zemini colors.accent; katman ona gore
   quoteMine:       { backgroundColor: 'rgba(0,0,0,0.18)' },
   quoteStripe:     { width: 3, borderRadius: 2, backgroundColor: colors.accent },
+  // tema-bagimsiz: kendi baloncugumun zemini colors.accent; katman ona gore
   quoteStripeMine: { backgroundColor: 'rgba(255,255,255,0.55)' },
   quoteWho:  { color: colors.text2, fontSize: type.caption2, fontWeight: '800' },
   quoteText: { color: colors.text2, fontSize: type.caption, lineHeight: 16 },

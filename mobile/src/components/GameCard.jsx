@@ -88,10 +88,15 @@ export default memo(GameCard);
 const styles = StyleSheet.create({
   card: { flex: 1, borderRadius: radius.lg, overflow: 'hidden', backgroundColor: colors.card },
   pressed: { opacity: 0.9, transform: [{ scale: 0.98 }] },
-  coverWrap: { width: '100%', aspectRatio: 3 / 4, backgroundColor: '#0d0f12' },
+  // Kapak yüklenene kadar görünen zemin. Sabit '#0d0f12' idi: açık temada
+  // beyaz kartın ortasında koyu bir kutu çakıyordu. colors.card kartın
+  // kendisiyle aynı, yani boşluk fark edilmiyor.
+  coverWrap: { width: '100%', aspectRatio: 3 / 4, backgroundColor: colors.card },
   mcBadge: {
+    // tema-bagimsiz: oyun kapaginin ustundeki rozet; zemin gorsel
     position: 'absolute', top: 8, right: 8, backgroundColor: 'rgba(8,10,14,0.75)',
     borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2,
+    // tema-bagimsiz: oyun kapaginin ustundeki rozet; zemin gorsel
     borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
   },
   mcText: { fontSize: type.caption, fontWeight: '800' },

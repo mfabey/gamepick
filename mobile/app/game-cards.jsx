@@ -280,6 +280,7 @@ const styles = StyleSheet.create({
   },
   switchOn: { backgroundColor: colors.green },
   knob:     { width: 20, height: 20, borderRadius: 10, backgroundColor: colors.text3 },
+  // tema-bagimsiz: acik anahtarin zemini colors.green; topuz ona gore beyaz
   knobOn:   { backgroundColor: '#fff', alignSelf: 'flex-end' },
 
   cell:      { flex: 1 },

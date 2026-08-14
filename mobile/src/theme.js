@@ -39,6 +39,13 @@ const dark = {
   xbox:       '#4ade80',
   danger:     '#ef4949',              // en açık yüzeyde 4.39 → 4.50:1
   overlay:    'rgba(0,0,0,0.6)',
+  // Yüzen sekme çubuğunun CAM OLMAYAN zemini (Android + iOS 26 öncesi).
+  // FloatingTabBar'da sabit kodluydu; açık temada çubuk koyu kalıyordu ve
+  // simülatörde görünmüyordu çünkü iOS 26 cam yolunu kullanıyor.
+  barSolid:   'rgba(18,21,27,0.94)',
+  // Sekme çubuğundaki kayan vurgu. accentBg opak, çubuğun üstünde ağır
+  // duruyor; bu saydam kalmalı.
+  accentPill: 'rgba(232,36,43,0.16)',
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -78,6 +85,10 @@ const light = {
   xbox:       '#107c10',
   danger:     '#c62828',
   overlay:    'rgba(0,0,0,0.45)',
+  barSolid:   'rgba(255,255,255,0.94)',
+  // Açık zeminde aynı opaklık soluk kalıyor; ton koyulaşıp opaklık düşüyor
+  // (accentText ile aynı karar — bkz. palet başı).
+  accentPill: 'rgba(200,30,36,0.14)',
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -714,13 +714,16 @@ const styles = StyleSheet.create({
   pauseWrap: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
   pauseBadge: {
     width: 78, height: 78, borderRadius: 39,
+    // tema-bagimsiz: tam ekran video oynatici; zemin videonun kendisi, tema yuzeyi degil
     backgroundColor: 'rgba(0,0,0,0.45)',
     alignItems: 'center', justifyContent: 'center',
   },
+  // tema-bagimsiz: tam ekran video oynatici; zemin videonun kendisi, tema yuzeyi degil
   root: { flex: 1, backgroundColor: '#000' },
   loadingRoot: { flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' },
   loadingText: { color: colors.text2, fontSize: type.footnote, marginTop: 12 },
 
+  // tema-bagimsiz: tam ekran video oynatici; zemin videonun kendisi, tema yuzeyi degil
   item: { backgroundColor: '#000' },
 
   // Dondurme dugmesi akista degil: baslik ortada kalsin
@@ -746,8 +749,10 @@ const styles = StyleSheet.create({
   actionBtn: { alignItems: 'center', gap: 5 },
   actionCircle: {
     width: 47, height: 47, borderRadius: 24,
+    // tema-bagimsiz: tam ekran video oynatici; zemin videonun kendisi, tema yuzeyi degil
     backgroundColor: 'rgba(0,0,0,0.42)',
     alignItems: 'center', justifyContent: 'center',
+    // tema-bagimsiz: tam ekran video oynatici; zemin videonun kendisi, tema yuzeyi degil
     borderWidth: 1, borderColor: 'rgba(255,255,255,0.16)',
   },
   actionCircleCompact: { width: 34, height: 34, borderRadius: 17 },
@@ -762,6 +767,7 @@ const styles = StyleSheet.create({
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 9 },
   tag: {
     paddingHorizontal: 9, paddingVertical: 4, borderRadius: radius.pill,
+    // tema-bagimsiz: tam ekran video oynatici; zemin videonun kendisi, tema yuzeyi degil
     backgroundColor: 'rgba(255,255,255,0.16)',
   },
   tagText: { color: '#fff', fontSize: type.caption2, fontWeight: '700' },

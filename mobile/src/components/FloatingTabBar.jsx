@@ -295,11 +295,12 @@ const styles = StyleSheet.create({
   barGlass: { backgroundColor: 'transparent' },
   // iOS 26 öncesi ve Android: eski görünüm
   barSolid: {
-    backgroundColor: 'rgba(18,21,27,0.94)',
+    backgroundColor: colors.barSolid,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: colors.cardBorder,
     ...Platform.select({
       ios: {
+        // tema-bagimsiz: golge her zaman siyah
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 10 },
         shadowOpacity: 0.45,
@@ -316,7 +317,7 @@ const styles = StyleSheet.create({
     width: PILL_W,
     height: 42,
     borderRadius: 21,
-    backgroundColor: 'rgba(232,36,43,0.16)',
+    backgroundColor: colors.accentPill,
   },
   item: {
     flex: 1,

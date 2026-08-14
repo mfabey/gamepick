@@ -77,13 +77,16 @@ const styles = StyleSheet.create({
   halo: {
     position: 'absolute',
     width: SIZE, height: SIZE, borderRadius: SIZE / 2,
+    // tema-bagimsiz: video karesinin ustunde duruyor; her sahnede ayni kalmali
     backgroundColor: '#fff',
   },
   // Video üstünde durduğu için nötr koyu bir zemin: her kareyle uyumlu kalıyor,
   // marka rengi parlak bir sahnede okunmaz hâle gelirdi.
   core: {
     width: 34, height: 34, borderRadius: 17,
+    // tema-bagimsiz: video karesinin ustunde duruyor; her sahnede ayni kalmali
     backgroundColor: 'rgba(0,0,0,0.42)',
+    // tema-bagimsiz: video karesinin ustunde duruyor; her sahnede ayni kalmali
     borderWidth: 1, borderColor: 'rgba(255,255,255,0.22)',
     alignItems: 'center', justifyContent: 'center',
   },

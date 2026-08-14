@@ -188,6 +188,7 @@ const styles = StyleSheet.create({
   // Etiket üstte-solda: kartın alt şeridi ad ve türlerin, orayı paylaşmıyor.
   tagWrap: {
     position: 'absolute', top: 12, left: 14,
+    // tema-bagimsiz: ekran goruntusunun ustundeki etiket
     backgroundColor: 'rgba(6,7,9,0.72)',
     paddingHorizontal: 9, paddingVertical: 4, borderRadius: radius.sm,
   },

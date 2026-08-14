@@ -505,6 +505,7 @@ const styles = StyleSheet.create({
 
   cardCover: { width: '100%', aspectRatio: 3 / 4, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.card },
   cardName: { position: 'absolute', left: 10, right: 10, bottom: 9, color: '#fff', fontSize: type.footnote, fontWeight: '700', lineHeight: 16 },
+  // tema-bagimsiz: oyun kapaginin ustundeki rozet; zemin gorsel
   mcBadge: { position: 'absolute', top: 7, right: 7, backgroundColor: 'rgba(8,10,14,0.75)', borderRadius: 7, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' },
   mcText: { fontSize: type.caption2, fontWeight: '800' },
   freeBadge: { position: 'absolute', top: 7, left: 7, backgroundColor: colors.green, borderRadius: 7, paddingHorizontal: 6, paddingVertical: 2 },

@@ -123,6 +123,7 @@ export default function PostComposer({ visible, onClose, onPosted, replyTo = nul
 }
 
 const styles = StyleSheet.create({
+  // tema-bagimsiz: medya onizlemesinin ustundeki karartma
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end' },
   sheet: {
     backgroundColor: colors.bg,

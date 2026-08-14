@@ -358,6 +358,7 @@ const styles = StyleSheet.create({
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 },
   tag: {
     paddingHorizontal: 10, paddingVertical: 4.5, borderRadius: radius.pill,
+    // tema-bagimsiz: kart gorselinin ustundeki etiket
     backgroundColor: 'rgba(255,255,255,0.14)',
   },
   tagText: { color: '#fff', fontSize: type.caption, fontWeight: '700' },
@@ -389,5 +390,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: colors.cardBorder,
   },
 
-  empty: { alignItems: 'center', paddingHorizontal: spacing.xl },
+  empty: { alignItems: 'center', paddingHorizontal: spacing.xl },
+
+
 });

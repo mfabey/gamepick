@@ -45,6 +45,7 @@ export default function FpsMeter() {
 const styles = StyleSheet.create({
   wrap: { position: 'absolute', top: 50, right: 10, zIndex: 9999 },
   badge: {
+    // tema-bagimsiz: yalnizca gelistirme araci
     backgroundColor: 'rgba(8,10,13,0.82)',
     borderWidth: 1.5,
     borderRadius: 8,

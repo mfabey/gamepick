@@ -480,8 +480,10 @@ function Section({ title, delay = 0, children }) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
-  coverWrap: { height: 320, backgroundColor: '#0d0f12' },
+  // Kapak yüklenene kadarki zemin — açık temada koyu bir bant çakıyordu.
+  coverWrap: { height: 320, backgroundColor: colors.card },
   topBar: { paddingHorizontal: spacing.md, paddingTop: 6, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  // tema-bagimsiz: kapak/ekran goruntusu ustundeki katman
   iconBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
   // Aktif durum dolu nötr yüzeyle: ikon zaten outline→dolu değişiyor, yani
   // renk olmadan da iki sinyal var (biçim + yüzey). Kapak görselinin üstünde
@@ -533,9 +535,12 @@ const styles = StyleSheet.create({
   // Gerçek bir eylem (metni açıyor), o yüzden text2 değil text: nötr ama
   // parlak. Vurgu rengi bu ekranda fiyat ve indirime ayrılmış durumda.
   moreLink: { color: colors.text, fontSize: type.footnote, fontWeight: '700', marginTop: 8 },
+  // tema-bagimsiz: kapak/ekran goruntusu ustundeki katman
   modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', alignItems: 'center', justifyContent: 'center' },
   modalImage: { width: '100%', height: '100%' },
+  // tema-bagimsiz: kapak/ekran goruntusu ustundeki katman
   closeBtn: { position: 'absolute', top: 50, right: 20, width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center', zIndex: 10 },
+  // tema-bagimsiz: kapak/ekran goruntusu ustundeki katman
   indicatorContainer: { position: 'absolute', bottom: 40, backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, zIndex: 10 },
   indicatorText: { color: '#fff', fontSize: type.subhead, fontWeight: '700', letterSpacing: 0.5 },
 });

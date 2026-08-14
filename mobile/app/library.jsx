@@ -196,10 +196,12 @@ export default function LibraryScreen() {
                 da uygulamak şart — aksi hâlde bu ekran kapıyı atlatıyordu. */}
             {account ? (
               <>
+                // tema-bagimsiz: magaza marka rengi (Steam / Xbox)
                 <Pressable disabled={busy} onPress={() => doLogin(loginSteam)} style={[styles.connectBtn, { backgroundColor: '#1b2838' }]}>
                   <Ionicons name="logo-steam" size={19} color="#fff" />
                   <Text style={styles.connectText}>{t('auth.connectSteam')}</Text>
                 </Pressable>
+                // tema-bagimsiz: magaza marka rengi (Steam / Xbox)
                 <Pressable disabled={busy} onPress={() => doLogin(loginXbox)} style={[styles.connectBtn, { backgroundColor: '#107C10' }]}>
                   <Ionicons name="logo-xbox" size={19} color="#fff" />
                   <Text style={styles.connectText}>{t('auth.connectXbox')}</Text>
@@ -319,6 +321,7 @@ function LibraryHeaderCard({ header, formatPrice, pricesLoading, t, lang }) {
   if (header.kind === 'combined') {
     const accent = colors.steam;
     return (
+      // tema-bagimsiz: magaza marka rengi (Steam / Xbox)
       <View style={[styles.headerCard, { borderColor: 'rgba(26,159,255,0.25)' }]}>
         <View style={[styles.accentBar, { backgroundColor: accent }]} />
         <View style={styles.headerRow}>
@@ -346,6 +349,7 @@ function LibraryHeaderCard({ header, formatPrice, pricesLoading, t, lang }) {
   if (header.kind === 'steam') {
     const a = header.account;
     return (
+      // tema-bagimsiz: magaza marka rengi (Steam / Xbox)
       <View style={[styles.headerCard, { borderColor: 'rgba(26,159,255,0.25)' }]}>
         <View style={[styles.accentBar, { backgroundColor: colors.steam }]} />
         <View style={styles.headerRow}>
@@ -369,11 +373,13 @@ function LibraryHeaderCard({ header, formatPrice, pricesLoading, t, lang }) {
 
   // xbox
   return (
+    // tema-bagimsiz: magaza marka rengi (Steam / Xbox)
     <View style={[styles.headerCard, { borderColor: 'rgba(16,124,16,0.3)' }]}>
       <View style={[styles.accentBar, { backgroundColor: colors.xbox }]} />
       <View style={styles.headerRow}>
         {header.avatar
           ? <Image source={header.avatar} style={styles.headerAvatar} contentFit="cover" />
+          // tema-bagimsiz: magaza marka rengi (Steam / Xbox)
           : <View style={[styles.headerAvatar, styles.avatarFallback, { backgroundColor: 'rgba(16,124,16,0.3)' }]}><Ionicons name="logo-xbox" size={24} color={colors.xbox} /></View>}
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={[styles.platformTag, { color: colors.xbox }]}>XBOX</Text>
@@ -437,12 +443,16 @@ const styles = StyleSheet.create({
   chipOn: { backgroundColor: colors.text, borderColor: colors.text },
   chipTextOn: { color: colors.bg, fontWeight: '700' },
 
-  headerCard: { borderRadius: radius.lg, borderWidth: 1, overflow: 'hidden', backgroundColor: 'rgba(20,23,30,0.6)', marginBottom: 14 },
+  // Zemin BELİRTEÇTEN: sabit 'rgba(20,23,30,0.6)' koyu bir uygulama yüzeyiydi
+  // ve açık temada kart koyu kalıyordu (görsel üstünde değil, sayfa üstünde).
+  headerCard: { borderRadius: radius.lg, borderWidth: 1, overflow: 'hidden', backgroundColor: colors.card, marginBottom: 14 },
   accentBar: { height: 3, width: '55%' },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingTop: 14 },
   headerAvatar: { width: 52, height: 52, borderRadius: 12 },
   avatarStack: { flexDirection: 'row' },
-  stackAvatar: { width: 46, height: 46, borderRadius: 11, borderWidth: 2, borderColor: '#0f141e' },
+  // Çerçeve kartın zeminiyle aynı olmalı — avatarları birbirinden ayıran şey
+  // o. Sabit '#0f141e' koyu zemin varsayıyordu.
+  stackAvatar: { width: 46, height: 46, borderRadius: 11, borderWidth: 2, borderColor: colors.card },
   avatarFallback: { alignItems: 'center', justifyContent: 'center' },
   avatarInitial: { color: '#fff', fontWeight: '800', fontSize: type.body },
   platformTag: { fontSize: type.caption2, fontWeight: '800', color: colors.steam, letterSpacing: 1, marginBottom: 2 },
@@ -459,7 +469,9 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, color: colors.text, fontSize: type.subhead },
   sortRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
   sortChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.pill, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder },
-  sortChipActive: { borderColor: colors.borderHover, backgroundColor: 'rgba(255,255,255,0.10)' },
+  // SEÇİM GÖRÜNMEZ OLUYORDU: 'rgba(255,255,255,0.10)' beyaz zeminde beyaz.
+  // bgHover iki temada da zeminden bir ton ayrışıyor.
+  sortChipActive: { borderColor: colors.borderHover, backgroundColor: colors.bgHover },
   sortChipText: { fontSize: type.footnote, color: colors.text2 },
   countText: { marginLeft: 'auto', fontSize: type.caption, color: colors.text3, fontWeight: '600' },
 
@@ -473,6 +485,7 @@ const styles = StyleSheet.create({
   tileSub: { color: colors.text3, fontSize: type.caption2, fontWeight: '600' },
   tilePrice: { color: '#fff', fontSize: type.footnote, fontWeight: '800' },
   tilePriceFree: { color: colors.green, fontSize: type.footnote, fontWeight: '800' },
+  // tema-bagimsiz: magaza marka rengi (Steam / Xbox)
   gpBadge: { position: 'absolute', top: 8, right: 8, backgroundColor: '#107c10', borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 },
   gpText: { color: '#fff', fontSize: type.caption2, fontWeight: '800' },
   saleBadge: { position: 'absolute', top: 8, left: 8, backgroundColor: colors.accent, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 },

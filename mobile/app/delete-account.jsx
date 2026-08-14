@@ -141,6 +141,7 @@ const styles = StyleSheet.create({
   body: { padding: spacing.lg },
   warnBox: {
     flexDirection: 'row', gap: 12, alignItems: 'flex-start',
+    // tema-bagimsiz: tehlike tonu; uyari her iki temada da kirmizi kalmali
     backgroundColor: 'rgba(248,113,113,0.08)', borderColor: 'rgba(248,113,113,0.35)',
     borderWidth: 1, borderRadius: radius.md, padding: 14, marginBottom: 22,
   },
