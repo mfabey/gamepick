@@ -23,7 +23,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
-import { getReviewFeed, getEligibleGames, fetchPosts } from '../../src/api/social';
+import { getReviewFeed, getEligibleGames, fetchPosts, getFriends } from '../../src/api/social';
 import { getSession, subscribeSession } from '../../src/services/session';
 import ReviewComposer from '../../src/components/ReviewComposer';
 import ReviewCard from '../../src/components/ReviewCard';
@@ -65,6 +65,18 @@ export default function ReviewsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [composer, setComposer] = useState(null); // { appid, name, existing }
   const [reportTarget, setReportTarget] = useState(null);
+  // Bekleyen arkadaşlık isteği sayısı — başlıktaki rozet için.
+  // OTURUM YOKSA İSTEK ATILMIYOR: /api/social/friend jetonlu, hesapsız
+  // kullanıcıda 401 döner ve boşuna bir ağ turu olurdu.
+  const [incoming, setIncoming] = useState(0);
+  useEffect(() => {
+    if (!session) { setIncoming(0); return; }
+    let alive = true;
+    getFriends()
+      .then((r) => { if (alive) setIncoming(Array.isArray(r?.incoming) ? r.incoming.length : 0); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [session]);
   useTimeToData('Community', !loading);
 
   const listRef = useRef(null);
@@ -259,7 +271,7 @@ export default function ReviewsScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <Header t={t} />
+      <Header t={t} router={router} incoming={incoming} />
 
       {loading ? (
         // Dönen çark DEĞİL. Ölçüldü: bu ekran 645ms boyunca ortada tek bir
@@ -327,10 +339,34 @@ export default function ReviewsScreen() {
 
 // Geri düğmesi YOK: burası artık bir sekme, dönülecek önceki ekran yok.
 // Başlık da büyüdü (title3 → title1), üst düzey ekranların dili bu.
-function Header({ t }) {
+//
+// SAĞDAKİ KISAYOL — "iki topluluk" sorununun bağı.
+// Bu ekran İÇERİK (gönderi, inceleme); /social ise KİŞİ (arkadaşlar,
+// istekler). İkisi de "topluluk" gibi okunuyordu ama birbirinden habersizdi:
+// içerik sekmedeyken kişiler Profil'in altında 2 derinlikte duruyordu.
+// İçerik ebeveyn oluyor, kişiler oradan ulaşılan yer.
+//
+// ROZET BURADA OLMAK ZORUNDA: bekleyen arkadaşlık isteği yalnızca Profil'de
+// görünüyordu. Kullanıcı Topluluk'ta gezerken kendisine gelen isteği
+// göremiyordu — bildirimi, ilgili olduğu yerde göstermek gerekiyor.
+function Header({ t, router, incoming }) {
   return (
     <View style={styles.head}>
       <Text style={styles.h1}>{t('rev.section')}</Text>
+      <Pressable
+        onPress={() => router.push('/social')}
+        hitSlop={8}
+        accessibilityRole="button"
+        accessibilityLabel={t('soc.title')}
+        style={({ pressed }) => [styles.friendsBtn, pressed && PRESSED]}
+      >
+        <Ionicons name="people-outline" size={22} color={colors.text2} />
+        {incoming > 0 ? (
+          <View style={styles.headBadge}>
+            <Text style={[styles.headBadgeText, NUMERIC]}>{incoming > 9 ? '9+' : incoming}</Text>
+          </View>
+        ) : null}
+      </Pressable>
     </View>
   );
 }
@@ -347,8 +383,22 @@ const styles = StyleSheet.create({
   safe:   { flex: 1, backgroundColor: colors.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  head: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.md },
-  h1: { color: colors.text, fontSize: type.title1, fontWeight: '800', letterSpacing: -0.6 },
+  head: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.md,
+  },
+  // flex:1 + shrink:0 — büyük yazı tipinde başlık sarınca kısayolu ezmesin
+  // (anasayfa bölüm başlığında ölçülen kırılmanın aynısı).
+  h1: { flex: 1, color: colors.text, fontSize: type.title1, fontWeight: '800', letterSpacing: -0.6 },
+  friendsBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  headBadge: {
+    position: 'absolute', top: 6, right: 4,
+    minWidth: 17, height: 17, borderRadius: 9, paddingHorizontal: spacing.s4,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.accent, borderWidth: 2, borderColor: colors.bg,
+  },
+  headBadgeText: { color: '#fff', fontSize: type.caption2, fontWeight: '800' },
 
   sectionLabel: {
     color: colors.text3, fontSize: type.caption, fontWeight: '800',
