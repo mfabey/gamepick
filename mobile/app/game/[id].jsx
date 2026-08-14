@@ -6,10 +6,11 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import { fetchCardPrice, fetchGameDetail, fetchGameByAppid, fetchPrices, fetchSteamReviews } from '../../src/api/games';
-import { colors, radius, spacing, PRESSED, type, scale, metacriticColor } from '../../src/theme';
+import { colors, radius, spacing, PRESSED, type, scale, metacriticColor, motion } from '../../src/theme';
 import { stripHtml } from '../../src/utils/text';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useTimeToData } from '../../src/dev/perf';
@@ -19,6 +20,7 @@ import { toggleGameInCollection, createCollection } from '../../src/services/col
 import CollectionPicker from '../../src/components/CollectionPicker';
 import { reportActivity } from '../../src/api/social';
 import { useQuery } from '../../src/hooks/useQuery';
+import { usePop } from '../../src/hooks/usePop';
 import { GenreChipsSkeleton, ShotStripSkeleton, TextBlockSkeleton } from '../../src/components/Skeleton';
 import { recordSignal } from '../../src/services/tasteProfile';
 import { recordSeen } from '../../src/services/seenStore';
@@ -179,6 +181,8 @@ export default function GameDetail() {
     } catch { /* kullanıcı iptal etti */ }
   }, [detail, name]);
 
+  const wishStyle = usePop(watched);
+
   const cover = detail?.image || image;
   const title = detail?.name || name;
   const isFree = price?.isFree;
@@ -200,7 +204,7 @@ export default function GameDetail() {
     <View style={styles.root}>
       {/* Kapak */}
       <View style={styles.coverWrap}>
-        {cover ? <Image source={cover} priority="high" cachePolicy="memory-disk" style={StyleSheet.absoluteFill} contentFit="cover" transition={250} /> : null}
+        {cover ? <Image source={cover} priority="high" cachePolicy="memory-disk" style={StyleSheet.absoluteFill} contentFit="cover" transition={motion.image} /> : null}
         {trailerUrl ? (
           <VideoView
             player={trailerPlayer}
@@ -231,11 +235,15 @@ export default function GameDetail() {
               {/* Aktif yüzey açık olduğu için ikon koyuya dönüyor. Eskiden
                   `watched ? '#fff' : '#fff'` yazıyordu — iki dalı da aynı
                   olan işlevsiz bir üçlüydü. */}
-              <Ionicons
-                name={watched ? 'notifications' : 'notifications-outline'}
-                size={20}
-                color={watched ? colors.bg : '#fff'}
-              />
+              {/* Listeye EKLERKEN kısa bir tepki; çıkarırken sessiz. */}
+              <Animated.View style={wishStyle}>
+                <Ionicons
+                  name={watched ? 'notifications' : 'notifications-outline'}
+                  size={20}
+                  // tema-bagimsiz: kapak görselinin üstünde duruyor
+                  color={watched ? colors.bg : '#fff'}
+                />
+              </Animated.View>
             </Pressable>
           </View>
         </SafeAreaView>
@@ -378,7 +386,7 @@ export default function GameDetail() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -spacing.lg }} contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: 10 }}>
               {shots.map((url, i) => (
                 <Pressable key={i} onPress={() => openShot(i)}>
-                  <Image source={url} cachePolicy="memory-disk" style={styles.shot} contentFit="cover" transition={200} />
+                  <Image source={url} cachePolicy="memory-disk" style={styles.shot} contentFit="cover" transition={motion.image} />
                 </Pressable>
               ))}
             </ScrollView>

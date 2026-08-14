@@ -1,7 +1,7 @@
 import { View } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radius } from '../theme';
+import { colors, radius, motion } from '../theme';
 
 // Mağaza adı → SimpleIcons slug + marka rengi (web StoreLogo ile birebir).
 // Xbox SimpleIcons'ta yok → Ionicons glyph.
@@ -32,7 +32,7 @@ export default function StoreLogo({ store, size = 26 }) {
           style={{ width: inner, height: inner }}
           contentFit="contain"
           cachePolicy="memory-disk"
-          transition={150}
+          transition={motion.image}
         />
       )}
     </View>

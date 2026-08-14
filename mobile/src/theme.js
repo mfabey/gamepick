@@ -218,14 +218,35 @@ export const NUMERIC = Object.freeze({ fontVariant: ['tabular-nums'] });
 
 // Hareket süreleri — tek yerden yönetilsin ki tüm uygulama aynı ritimde olsun.
 // Material/HIG: mikro etkileşim 150–300ms; çıkış girişten kısa olmalı.
+//
+// ÖLÇÜM (sonradan): bu ölçek vardı ama HİÇ KULLANILMIYORDU — uygulamada 16
+// farklı süre ve 4 farklı yay ayarı elle yazılmıştı. Ölçek yanlış değildi,
+// yalnızca eksikti: görsel çözülmesi ve yay ayarları için karşılığı yoktu,
+// o yüzden herkes kendi sayısını yazıyordu. Eksik basamaklar eklendi;
+// mevcut dördü DEĞİŞTİRİLMEDİ.
 export const motion = Object.freeze({
   fast:    150,   // basma, renk geçişi
   base:    240,   // giriş, açılma
   exit:    160,   // çıkış — girişin ~%65'i
   stagger:  40,   // liste öğeleri arası gecikme (MD: 30–50ms)
+
+  // Görsel çözülmesi TEK değer. Öncesinde 100/120/140/150/200/220/250 vardı —
+  // hiçbiri tek başına fark edilmiyor ama yan yana yükleyen iki görsel farklı
+  // hızda beliriyordu.
+  image:   200,
+
+  // ── Yaylar ──
+  // İkisi çelişmiyor, farklı işler. İkisi de zaten ölçülmüştü; burada
+  // yalnızca adlandırıldılar.
+  //   pop  → aşma İSTENEN yer: "bir şey oldu" hissi. ζ = 14/(2·√260) ≈ 0.43
+  //   firm → aşma İSTENMEYEN yer: hedefe en hızlı, hiç aşmadan. (Sekme
+  //          vurgusu: aşıp geri gelmesi bozukluk gibi görünüyordu.)
+  pop:  { stiffness: 260, damping: 14 },
+  firm: { duration: 300, dampingRatio: 1, overshootClamping: true },
 });
 
 export const radius = { sm: 8, md: 12, lg: 16, xl: 20, pill: 999 };
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // BOŞLUK ÖLÇEĞİ

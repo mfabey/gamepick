@@ -36,7 +36,7 @@ import GifPicker from '../../src/components/GifPicker';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { getAvatarPreset } from '../../src/utils/avatar';
 import { REACTIONS, reactionList } from '../../src/services/reactions';
-import { colors, radius, spacing, type, PRESSED } from '../../src/theme';
+import { colors, radius, spacing, type, PRESSED, motion } from '../../src/theme';
 import { useLanguage } from '../../src/context/LanguageContext';
 
 const MAX_TEXT = 1000;
@@ -983,7 +983,7 @@ function Bubble({ msg, mine, seen, onLongPress, onOpenShare, onReact, onJumpTo, 
         onPress={onOpenShare}
       >
         <View style={styles.shareCard}>
-          <Image source={msg.share.image} style={styles.shareImg} contentFit="cover" transition={140} />
+          <Image source={msg.share.image} style={styles.shareImg} contentFit="cover" transition={motion.image} />
           <View style={styles.shareBody}>
             <Text style={styles.shareName} numberOfLines={2}>{msg.share.name}</Text>
             <Text style={styles.shareHint}>{t('msg.sharedReel')}</Text>
@@ -1017,7 +1017,7 @@ function Bubble({ msg, mine, seen, onLongPress, onOpenShare, onReact, onJumpTo, 
             source={msg.gif.url}
             style={styles.gifBubble}
             contentFit="contain"
-            transition={120}
+            transition={motion.image}
           />
           <Reactions chips={chips} mine={mine} onPress={onReact} />
           {msg.pending ? <Text style={styles.state}>{t('msg.sending')}</Text> : null}
@@ -1055,7 +1055,7 @@ function Bubble({ msg, mine, seen, onLongPress, onOpenShare, onReact, onJumpTo, 
                onPress={() => onJumpTo?.(msg.quote.id)} t={t} />
         {hasMedia && (isVideo
           ? <VideoBubble url={msg.media.url} />
-          : <Image source={msg.media.url} style={styles.media} contentFit="cover" transition={140} />
+          : <Image source={msg.media.url} style={styles.media} contentFit="cover" transition={motion.image} />
         )}
         {hasText && (
           <Text style={[

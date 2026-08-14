@@ -7,7 +7,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchCardPrice } from '../src/api/games';
 import EmptyState from '../src/components/EmptyState';
-import { colors, radius, spacing, PRESSED, type } from '../src/theme';
+import { colors, radius, spacing, PRESSED, type, motion } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
 import { useWishlist } from '../src/context/WishlistContext';
 import ProfileGate from '../src/components/ProfileGate';
@@ -103,7 +103,7 @@ const WishRow = memo(function WishRow({ item, onOpen, onRemove }) {
   return (
     <Pressable style={({ pressed }) => [styles.row, pressed && PRESSED]} onPress={() => onOpen(item)}>
       <View style={styles.thumb}>
-        {item.image ? <Image source={item.image} recyclingKey={String(item.id)} cachePolicy="memory-disk" style={StyleSheet.absoluteFill} contentFit="cover" transition={200} /> : null}
+        {item.image ? <Image source={item.image} recyclingKey={String(item.id)} cachePolicy="memory-disk" style={StyleSheet.absoluteFill} contentFit="cover" transition={motion.image} /> : null}
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text numberOfLines={2} style={styles.rowName}>{item.name}</Text>

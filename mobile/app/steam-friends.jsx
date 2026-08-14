@@ -27,7 +27,7 @@ import { getSteamFriends } from '../src/api/social';
 import { getSession, subscribeSession } from '../src/services/session';
 import EmptyState from '../src/components/EmptyState';
 import { getAvatarPreset } from '../src/utils/avatar';
-import { colors, radius, spacing, type, PRESSED, NUMERIC, TAB_SPACE } from '../src/theme';
+import { colors, radius, spacing, type, PRESSED, NUMERIC, TAB_SPACE, motion } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
 
 export default function SteamFriendsScreen() {
@@ -193,7 +193,7 @@ function FriendRow({ item, open, onToggle, t }) {
         {/* Steam avatarı bir URL; Gamerisen ön ayarı ise ikon. İkisi farklı
             kaynak, o yüzden ayrı çiziliyor. */}
         {item.avatar
-          ? <Image source={item.avatar} style={styles.avatar} contentFit="cover" transition={120} />
+          ? <Image source={item.avatar} style={styles.avatar} contentFit="cover" transition={motion.image} />
           : <View style={[styles.avatar, styles.avatarFallback]}>
               <Text style={styles.avatarLetter}>{(item.name || '?').charAt(0).toUpperCase()}</Text>
             </View>}

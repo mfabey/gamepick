@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 import ReviewComposer from './ReviewComposer';
-import { colors, radius, spacing, type, PRESSED, NUMERIC } from '../theme';
+import { colors, radius, spacing, type, PRESSED, NUMERIC, motion } from '../theme';
 import { useLanguage } from '../context/LanguageContext';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -52,7 +52,7 @@ export default function ReviewPrompt({ games, onWritten }) {
             accessibilityRole="button"
             accessibilityLabel={`${g.name} — ${t('home.reviewPrompt')}`}
           >
-            <Image source={g.image} style={styles.img} contentFit="cover" transition={140} />
+            <Image source={g.image} style={styles.img} contentFit="cover" transition={motion.image} />
             <Text style={styles.name} numberOfLines={1}>{g.name}</Text>
             {/* Saat DOĞRULANMIŞ: sunucunun Steam'den okuduğu değer. Burada
                 görünmesi, yazacak olan kişiye de "senin gerçek saatin

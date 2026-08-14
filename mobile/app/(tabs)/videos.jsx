@@ -40,7 +40,7 @@ import ShareToFriendSheet from '../../src/components/ShareToFriendSheet';
 import { recordSignal } from '../../src/services/tasteProfile';
 import { reportActivity } from '../../src/api/social';
 import { recordSeen } from '../../src/services/seenStore';
-import { colors, radius, spacing, PRESSED, TAB_SPACE, type } from '../../src/theme';
+import { colors, radius, spacing, PRESSED, TAB_SPACE, type, motion } from '../../src/theme';
 import { useLanguage } from '../../src/context/LanguageContext';
 
 const POOL = 3;
@@ -540,7 +540,7 @@ const VideoItem = memo(function VideoItem({
           cachePolicy="memory-disk"
           style={StyleSheet.absoluteFill}
           contentFit="cover"
-          transition={150}
+          transition={motion.image}
         />
       )}
 

@@ -3,7 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 
-import { colors, type } from '../theme';
+import { colors, type, motion } from '../theme';
 import { getAvatarPreset } from '../utils/avatar';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -48,7 +48,7 @@ function Avatar({ avatar, name, size = 36, style }) {
           style={StyleSheet.absoluteFill}
           contentFit="cover"
           cachePolicy="memory-disk"
-          transition={140}
+          transition={motion.image}
         />
       </View>
     );

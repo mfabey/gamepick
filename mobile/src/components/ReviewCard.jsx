@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 
 import Avatar from './Avatar';
-import { colors, radius, spacing, type, PRESSED, NUMERIC } from '../theme';
+import { colors, radius, spacing, type, PRESSED, NUMERIC, motion } from '../theme';
 import { useLanguage } from '../context/LanguageContext';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -34,7 +34,7 @@ export default function ReviewCard({ review, onPress, onLongPress, onEdit, style
       delayLongPress={400}
     >
       <View style={styles.cardHead}>
-        <Image source={review.image} style={styles.cardImg} contentFit="cover" transition={140} />
+        <Image source={review.image} style={styles.cardImg} contentFit="cover" transition={motion.image} />
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={styles.cardGame} numberOfLines={1}>{review.gameName || review.appid}</Text>
           <View style={styles.byline}>

@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-import { colors, radius, spacing, type, PRESSED } from '../theme';
+import { colors, radius, spacing, type, PRESSED, motion } from '../theme';
 import { useLanguage } from '../context/LanguageContext';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -72,7 +72,7 @@ export default function FriendActivity({ games }) {
             accessibilityLabel={`${g.name} — ${names(g, t)}`}
           >
             <View style={styles.cover}>
-              <Image source={g.image} style={StyleSheet.absoluteFill} contentFit="cover" transition={140} />
+              <Image source={g.image} style={StyleSheet.absoluteFill} contentFit="cover" transition={motion.image} />
               {/* Avatar yığını görselin ÜSTÜNDE: kartın ilk okunan şeyi
                   oyun değil, oynayan kişiler olsun. */}
               <View style={styles.stack}>
@@ -82,7 +82,7 @@ export default function FriendActivity({ games }) {
                     source={f.avatar}
                     style={[styles.face, i > 0 && styles.faceOverlap]}
                     contentFit="cover"
-                    transition={100}
+                    transition={motion.image}
                   />
                 ))}
               </View>

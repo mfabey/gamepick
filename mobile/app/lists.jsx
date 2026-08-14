@@ -19,7 +19,7 @@ import { fetchListFeed, toggleListLike } from '../src/api/social';
 import { getSession, subscribeSession } from '../src/services/session';
 import EmptyState from '../src/components/EmptyState';
 import { posterImage } from '../src/utils/images';
-import { colors, radius, spacing, type, PRESSED } from '../src/theme';
+import { colors, radius, spacing, type, PRESSED, motion } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
 
 export default function ListsScreen() {
@@ -178,7 +178,7 @@ function ListCard({ item, onPress, onLike, t }) {
               cachePolicy="memory-disk"
               style={styles.cover}
               contentFit="cover"
-              transition={150}
+              transition={motion.image}
             />
           ))
         )}

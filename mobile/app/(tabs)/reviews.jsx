@@ -31,7 +31,7 @@ import PostCard from '../../src/components/PostCard';
 import PostComposer from '../../src/components/PostComposer';
 import ReportSheet from '../../src/components/ReportSheet';
 import { FeedSkeleton } from '../../src/components/Skeleton';
-import { colors, radius, spacing, type, PRESSED, NUMERIC, TAB_SPACE } from '../../src/theme';
+import { colors, radius, spacing, type, PRESSED, NUMERIC, TAB_SPACE, motion } from '../../src/theme';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useTimeToData } from '../../src/dev/perf';
 
@@ -206,7 +206,7 @@ export default function ReviewsScreen() {
                   setComposer({ appid: g.appid, name: g.name, existing: null });
                 }}
               >
-                <Image source={g.image} style={styles.gameImg} contentFit="cover" transition={140} />
+                <Image source={g.image} style={styles.gameImg} contentFit="cover" transition={motion.image} />
                 <Text style={styles.gameName} numberOfLines={2}>{g.name}</Text>
                 <Text style={[styles.gameHours, NUMERIC]}>
                   {Math.round(g.hours)}{lang === 'tr' ? ' saat' : ' h'}

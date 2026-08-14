@@ -17,7 +17,7 @@ import { useCollections } from '../src/hooks/useCollections';
 import { createCollection, deleteCollection } from '../src/services/collectionsStore';
 import EmptyState from '../src/components/EmptyState';
 import { posterImage } from '../src/utils/images';
-import { colors, radius, spacing, PRESSED, type } from '../src/theme';
+import { colors, radius, spacing, PRESSED, type, motion } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
 import ProfileGate from '../src/components/ProfileGate';
 
@@ -194,7 +194,7 @@ function CollectionRow({ col, onPress, onLongPress, t }) {
               cachePolicy="memory-disk"
               style={styles.thumb}
               contentFit="cover"
-              transition={150}
+              transition={motion.image}
             />
           ))
         )}

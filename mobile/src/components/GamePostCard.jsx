@@ -25,7 +25,7 @@ import { useQuery } from '../hooks/useQuery';
 import { useLanguage } from '../context/LanguageContext';
 import { usePrice } from '../hooks/usePrice';
 import { summarize } from '../utils/text';
-import { colors, radius, spacing, PRESSED, type, NUMERIC, metacriticColor } from '../theme';
+import { colors, radius, spacing, PRESSED, type, NUMERIC, metacriticColor, motion } from '../theme';
 
 const DETAIL_TTL = 24 * 60 * 60 * 1000;   // ekran görüntüleri ve metin sık değişmez
 const CLAMP_LINES = 3;
@@ -102,7 +102,7 @@ function GamePostCard({ game, onDismiss, tag }) {
         <View style={[styles.media, { height: mediaH }]}>
           {source ? (
             <Image source={source} style={StyleSheet.absoluteFill} contentFit="cover"
-              cachePolicy="memory-disk" transition={220} />
+              cachePolicy="memory-disk" transition={motion.image} />
           ) : null}
           <LinearGradient colors={['transparent', 'rgba(6,7,9,0.92)']} style={styles.scrim} />
 

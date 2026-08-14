@@ -10,6 +10,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { useReducedMotion } from '../hooks/useReducedMotion';
+import { usePop } from '../hooks/usePop';
 import { useTabBarCompact, useTabBarHidden } from '../context/TabBarContext';
 import { useUnread, refreshUnread } from '../services/unread';
 import { colors, type, NUMERIC, spacing} from '../theme';
@@ -206,7 +207,6 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
               <TabIcon
                 base={base}
                 focused={focused}
-                reducedMotion={reducedMotion}
                 // Odaktaki sekmede rozet YOK: kullanıcı zaten oradaysa
                 // "bekleyen bir şey var" demenin anlamı kalmıyor.
                 badge={BADGED[route.name] && !focused ? unread : 0}
@@ -229,25 +229,11 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
  * OPACITY YOK — bu bilesen cam katmaninin kardesi ve GlassView'in
  * ebeveyninde opacity<1 cami bozuyor (bkz. dosya basi). Yalnizca transform.
  */
-function TabIcon({ base, focused, reducedMotion, badge = 0 }) {
-  const pop = useSharedValue(0);
-  const wasFocused = useRef(focused);
-
-  useEffect(() => {
-    // YALNIZCA odaklanma ANINDA: her cizimde degil. Odak kaybinda tepki yok,
-    // cunku ayrilan sekme dikkat cekmemeli.
-    if (focused && !wasFocused.current && !reducedMotion) {
-      pop.value = withSequence(
-        withTiming(1, { duration: 110 }),
-        withSpring(0, { stiffness: 260, damping: 14 }),
-      );
-    }
-    wasFocused.current = focused;
-  }, [focused, pop, reducedMotion]);
-
-  const style = useAnimatedStyle(() => ({
-    transform: [{ scale: interpolate(pop.value, [0, 1], [1, 1.22], Extrapolation.CLAMP) }],
-  }));
+function TabIcon({ base, focused, badge = 0 }) {
+  // Mantik usePop'a tasindi: ayni hareket begeni ve istek listesinde de
+  // gerekiyordu ve kopyalanmasi besinci bir yay ayari uretirdi.
+  // `reducedMotion` prop'u kalkti — kanca kendisi bakiyor.
+  const style = usePop(focused);
 
   return (
     <Animated.View style={style}>

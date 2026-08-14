@@ -7,7 +7,7 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 
 import { searchGifs } from '../services/klipy';
-import { colors, radius, spacing, type, PRESSED } from '../theme';
+import { colors, radius, spacing, type, PRESSED, motion } from '../theme';
 import { useLanguage } from '../context/LanguageContext';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -115,7 +115,7 @@ export default function GifPicker({ visible, onClose, onPick }) {
                   source={item.preview}
                   style={styles.gif}
                   contentFit="cover"
-                  transition={100}
+                  transition={motion.image}
                 />
               </Pressable>
             )}

@@ -1,5 +1,6 @@
 import { memo, useCallback, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +10,7 @@ import { colors, radius, spacing, type, PRESSED, NUMERIC } from '../theme';
 import { useLanguage } from '../context/LanguageContext';
 import { togglePostLike } from '../api/social';
 import Avatar from './Avatar';
+import { usePop } from '../hooks/usePop';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tartışma gönderisi.
@@ -58,6 +60,8 @@ function PostCard({ post, onOpen, onRequireAccount, compact = false }) {
     }
   }, [liked, post.id, onRequireAccount]);
 
+  const likeStyle = usePop(liked);
+
   const name = post.author?.displayName || post.author?.username || t('post.someone');
 
   return (
@@ -98,11 +102,16 @@ function PostCard({ post, onOpen, onRequireAccount, compact = false }) {
           </View>
 
           <Pressable onPress={onLike} hitSlop={10} style={styles.action}>
-            <Ionicons
-              name={liked ? 'heart' : 'heart-outline'}
-              size={15}
-              color={liked ? colors.accent : colors.text3}
-            />
+            {/* Kalp ANINDA doluyordu: dokunsal geri bildirim vardı, görsel
+                yoktu. usePop yalnızca beğenirken tepki veriyor — geri almak
+                dikkat çekmemeli. */}
+            <Animated.View style={likeStyle}>
+              <Ionicons
+                name={liked ? 'heart' : 'heart-outline'}
+                size={15}
+                color={liked ? colors.accent : colors.text3}
+              />
+            </Animated.View>
             <Text style={[styles.actionText, NUMERIC, liked && { color: colors.accent }]}>{count}</Text>
           </Pressable>
         </View>
