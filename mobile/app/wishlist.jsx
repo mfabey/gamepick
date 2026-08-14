@@ -47,7 +47,7 @@ function WishlistScreenContent() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       {/* Başlık */}
       <View style={styles.head}>
-        <Pressable style={({ pressed }) => [styles.back, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10}>
+        <Pressable style={({ pressed }) => [styles.back, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </Pressable>
         <Text style={styles.title}>{t('wishlist.title')}</Text>
@@ -120,7 +120,7 @@ const WishRow = memo(function WishRow({ item, onOpen, onRemove }) {
           )}
         </View>
       </View>
-      <Pressable onPress={() => onRemove(item.id)} hitSlop={10} style={styles.remove}>
+      <Pressable onPress={() => onRemove(item.id)} hitSlop={10} style={styles.remove} accessibilityRole="button" accessibilityLabel={t('a11y.delete')}>
         <Ionicons name="trash-outline" size={19} color={colors.text3} />
       </Pressable>
     </Pressable>

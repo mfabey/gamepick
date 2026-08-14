@@ -694,7 +694,7 @@ export default function ChatScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
         <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]}
-                   onPress={() => router.back()} hitSlop={10}>
+                   onPress={() => router.back()} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </Pressable>
 
@@ -724,7 +724,7 @@ export default function ChatScreen() {
         </View>
 
         <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]}
-                   onPress={() => setReportTarget(cid || other)} hitSlop={10}>
+                   onPress={() => setReportTarget(cid || other)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.more')}>
           <Ionicons name="ellipsis-horizontal" size={20} color={colors.text2} />
         </Pressable>
       </View>

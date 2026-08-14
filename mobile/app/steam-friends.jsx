@@ -144,7 +144,7 @@ export default function SteamFriendsScreen() {
           style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]}
           onPress={() => router.back()}
           hitSlop={10}
-        >
+         accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </Pressable>
         <View style={styles.headerMid}>

@@ -267,7 +267,7 @@ export default function LibraryScreen() {
                 <Ionicons name="search" size={16} color={colors.text3} />
                 <TextInput value={search} onChangeText={setSearch} placeholder={t('lib.search')}
                   placeholderTextColor={colors.text3} style={styles.searchInput} />
-                {search ? <Pressable onPress={() => setSearch('')} hitSlop={8}><Ionicons name="close-circle" size={17} color={colors.text3} /></Pressable> : null}
+                {search ? <Pressable onPress={() => setSearch('')} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('a11y.clear')}><Ionicons name="close-circle" size={17} color={colors.text3} /></Pressable> : null}
               </View>
               <View style={styles.sortRow}>
                 {[

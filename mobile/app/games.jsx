@@ -278,7 +278,7 @@ export default function GamesScreen() {
               returnKeyType="search"
             />
             {query ? (
-              <Pressable onPress={() => setQuery('')} hitSlop={8}>
+              <Pressable onPress={() => setQuery('')} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('a11y.clear')}>
                 <Ionicons name="close-circle" size={18} color={colors.text3} />
               </Pressable>
             ) : null}

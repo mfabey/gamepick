@@ -95,7 +95,7 @@ export default function PublicListScreen() {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={styles.head}>
-          <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10}>
+          <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
             <Ionicons name="chevron-back" size={24} color={colors.text} />
           </Pressable>
         </View>
@@ -110,14 +110,14 @@ export default function PublicListScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.head}>
-        <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10}>
+        <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </Pressable>
         <View style={{ flex: 1 }} />
         {list.isOwner ? (
           <IconButton icon='trash-outline' size={19} color={colors.danger} onPress={onUnpublish} style={styles.iconBtn} />
         ) : (
-          <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => setReporting(true)} hitSlop={10}>
+          <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => setReporting(true)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.report')}>
             <Ionicons name="flag-outline" size={19} color={colors.text2} />
           </Pressable>
         )}

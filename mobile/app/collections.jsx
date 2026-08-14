@@ -78,11 +78,11 @@ function CollectionsScreenContent() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.head}>
-        <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10}>
+        <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </Pressable>
         <Text style={styles.title}>{t('col.title')}</Text>
-        <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => setCreating(true)} hitSlop={10}>
+        <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => setCreating(true)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.add')}>
           <Ionicons name="add" size={26} color={colors.accent} />
         </Pressable>
       </View>

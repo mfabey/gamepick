@@ -107,7 +107,7 @@ export default function CollectionDetailScreen() {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={styles.head}>
-          <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10}>
+          <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
             <Ionicons name="chevron-back" size={24} color={colors.text} />
           </Pressable>
         </View>
@@ -120,7 +120,7 @@ export default function CollectionDetailScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.head}>
-        <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10}>
+        <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </Pressable>
         <View style={styles.headText}>
@@ -128,7 +128,7 @@ export default function CollectionDetailScreen() {
           <Text style={styles.subtitle}>{games.length} {t('col.gameCount')}</Text>
         </View>
         {games.length > 0 && (
-          <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => setPublishing(true)} hitSlop={10}>
+          <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => setPublishing(true)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.share')}>
             <Ionicons name="share-social-outline" size={19} color={colors.accent} />
           </Pressable>
         )}

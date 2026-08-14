@@ -290,7 +290,12 @@ export default function HomeScreen() {
             ikisi de kalktı. Dış siteye çıkan içerik uygulamanın ilk
             perdesini dolduramaz. */}
         <View style={styles.topBar}>
-          <Text style={styles.brand}>GAMERISEN</Text>
+          {/* MARKA YAZISI, GÖVDE METNİ DEĞİL. Ölçüldü: erişilebilirlik
+              boyutlarında ekran genişliğini aşıp haber ikonunun üstüne
+              biniyordu. Ölçeklenmeyi tamamen KAPATMAK yanlış olurdu (büyük
+              yazıya ihtiyacı olan kullanıcı markayı da okuyamaz); üst sınır
+              konuyor — 1.4 kata kadar büyüyor, sonra duruyor. */}
+          <Text style={styles.brand} maxFontSizeMultiplier={1.4} numberOfLines={1}>GAMERISEN</Text>
           <View style={styles.topRight}>
             <Pressable
               style={({ pressed }) => [styles.topBtn, pressed && PRESSED]}
@@ -417,8 +422,13 @@ function Section({ title, games, router, onDismiss }) {
   return (
     <View style={{ marginTop: 26 }}>
       <View style={styles.sectionHead}>
-        <Text style={styles.sectionTitle}>{title}</Text>
-        <Pressable onPress={() => router.push('/games')} hitSlop={8}>
+        {/* BÜYÜK YAZI TİPİNDE ÜST ÜSTE BİNİYORDU. Ölçüldü (simülatör,
+            accessibility-extra-large): başlık iki satıra sarıyor ama satırda
+            yer bırakmıyor, "Tümü ›" onun üstüne çıkıyordu.
+            flex:1 + shrink:0 ikilisi: başlık kalan yeri alır, bağlantı
+            asla ezilmez. */}
+        <Text style={[styles.sectionTitle, { flex: 1 }]}>{title}</Text>
+        <Pressable onPress={() => router.push('/games')} hitSlop={8} style={{ flexShrink: 0 }}>
           <Text style={styles.viewAll}>{t('home.viewAll')} ›</Text>
         </Pressable>
       </View>
@@ -490,7 +500,8 @@ const styles = StyleSheet.create({
   searchText: { flex: 1, color: colors.text3, fontSize: type.subhead },
   searchBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
 
-  sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, marginBottom: spacing.md },
+  // gap eklendi: başlık sarınca iki öğe birbirine yapışıyordu.
+  sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md, paddingHorizontal: spacing.lg, marginBottom: spacing.md },
   sectionTitle: {
     fontSize: type.caption, fontWeight: '700', color: colors.text2,
     textTransform: 'uppercase', letterSpacing: 1.1,

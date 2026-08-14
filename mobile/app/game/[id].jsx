@@ -215,7 +215,7 @@ export default function GameDetail() {
         ) : null}
         <LinearGradient colors={['rgba(8,10,13,0.15)', 'rgba(8,10,13,0.45)', colors.bg]} locations={[0, 0.55, 1]} style={StyleSheet.absoluteFill} />
         <SafeAreaView edges={['top']} style={styles.topBar}>
-          <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10}>
+          <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
             <Ionicons name="chevron-back" size={24} color="#fff" />
           </Pressable>
           <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -445,7 +445,7 @@ export default function GameDetail() {
           </ScrollView>
 
           {/* Close button */}
-          <Pressable style={({ pressed }) => [styles.closeBtn, pressed && PRESSED]} onPress={() => setActiveShotIndex(null)} hitSlop={10}>
+          <Pressable style={({ pressed }) => [styles.closeBtn, pressed && PRESSED]} onPress={() => setActiveShotIndex(null)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.close')}>
             <Ionicons name="close" size={26} color="#fff" />
           </Pressable>
 

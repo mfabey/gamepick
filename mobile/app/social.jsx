@@ -425,7 +425,7 @@ function FriendsTab() {
           autoCorrect={false}
         />
         {q ? (
-          <Pressable onPress={() => setQ('')} hitSlop={8}>
+          <Pressable onPress={() => setQ('')} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('a11y.clear')}>
             <Ionicons name="close-circle" size={17} color={colors.text3} />
           </Pressable>
         ) : null}
@@ -464,7 +464,7 @@ function FriendsTab() {
                   <Pressable onPress={() => router.push(`/chat/${f.uid}`)} hitSlop={8} style={styles.moreBtn}>
                     <Ionicons name="chatbubble-outline" size={19} color={colors.text2} />
                   </Pressable>
-                  <Pressable onPress={() => confirmRemove(f)} hitSlop={8} style={styles.moreBtn}>
+                  <Pressable onPress={() => confirmRemove(f)} hitSlop={8} style={styles.moreBtn} accessibilityRole="button" accessibilityLabel={t('a11y.more')}>
                     <Ionicons name="ellipsis-horizontal" size={19} color={colors.text3} />
                   </Pressable>
                 </View>

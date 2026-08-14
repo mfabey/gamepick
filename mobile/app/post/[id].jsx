@@ -64,7 +64,7 @@ export default function PostThread() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.head}>
-        <Pressable onPress={() => router.back()} hitSlop={10} style={({ pressed }) => [styles.back, pressed && PRESSED]}>
+        <Pressable onPress={() => router.back()} hitSlop={10} style={({ pressed }) => [styles.back, pressed && PRESSED]} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </Pressable>
         <Text style={styles.title}>{t('post.threadTitle')}</Text>

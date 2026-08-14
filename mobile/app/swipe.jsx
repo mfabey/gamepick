@@ -137,7 +137,7 @@ export default function SwipeScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       {/* Üst çubuk */}
       <View style={styles.head}>
-        <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10}>
+        <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </Pressable>
         <View style={styles.headText}>
@@ -179,16 +179,16 @@ export default function SwipeScreen() {
           <Pressable
             style={[styles.actionBtn, styles.passBtn]}
             onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); commit(top, false); }}
-          >
+           accessibilityRole="button" accessibilityLabel={t('a11y.close')}>
             <Ionicons name="close" size={30} color="#fff" />
           </Pressable>
-          <Pressable style={({ pressed }) => [styles.infoBtn, pressed && PRESSED]} onPress={() => openDetail(top)}>
+          <Pressable style={({ pressed }) => [styles.infoBtn, pressed && PRESSED]} onPress={() => openDetail(top)} accessibilityRole="button" accessibilityLabel={t('a11y.info')}>
             <Ionicons name="information" size={20} color={colors.text2} />
           </Pressable>
           <Pressable
             style={[styles.actionBtn, styles.likeBtn]}
             onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); commit(top, true); }}
-          >
+           accessibilityRole="button" accessibilityLabel={t('a11y.like')}>
             <Ionicons name="heart" size={26} color="#fff" />
           </Pressable>
         </View>

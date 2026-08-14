@@ -127,7 +127,7 @@ export default function GameCardsScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
         <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]}
-                   onPress={() => router.back()} hitSlop={10}>
+                   onPress={() => router.back()} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </Pressable>
         <Text style={styles.title}>{t('gc.title')}</Text>
@@ -233,7 +233,7 @@ function CardRow({ card, place, onShare, t }) {
           bozuk bir bağlantıyla kullanıcıyı 403 sayfasına göndermektense yok. */}
       {!!card.shareUrl && (
         <Pressable style={({ pressed }) => [styles.shareBtn, pressed && PRESSED]}
-                   onPress={onShare} hitSlop={8}>
+                   onPress={onShare} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('a11y.share')}>
           <Ionicons name="share-outline" size={19} color={colors.text2} />
         </Pressable>
       )}
