@@ -35,15 +35,21 @@ for (const m of src.matchAll(/genres:\s*\[([^\]]*)\]/g)) {
 }
 const TOPLAM = [...src.matchAll(/rawgSlug:\s*'/g)].length;
 
+// ZAMAN AŞIMI 25s — 10s DEĞİL. Ölçüldü: RAWG'ın önündeki Cloudflare, origin
+// cevap vermediğinde 522'yi ~20 saniyede yolluyor. Daha kısa bir sınır
+// bağlantıyı biz kesiyoruz ve sonuç "hiç bağlantı yok" gibi okunuyor —
+// oysa sunucu bize NE OLDUĞUNU söyleyecek. 401 = ayakta (anahtar yok),
+// 522/523/524 = RAWG'ın kendi sunucusu düşük, 200 = tam çalışıyor.
 async function rawgAyakta() {
   try {
     const c = new AbortController();
-    const zaman = setTimeout(() => c.abort(), 10000);
+    const zaman = setTimeout(() => c.abort(), 25000);
     const r = await fetch('https://api.rawg.io/api/games?page_size=1', { signal: c.signal });
     clearTimeout(zaman);
-    return `HTTP ${r.status} (ayakta)`;
+    if (r.status >= 520 && r.status <= 527) return `HTTP ${r.status} — Cloudflare ayakta, RAWG origin CEVAP VERMIYOR`;
+    return `HTTP ${r.status} — ayakta`;
   } catch {
-    return 'ERISILEMIYOR';
+    return 'yanit yok (25s asildi)';
   }
 }
 
