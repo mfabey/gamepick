@@ -184,8 +184,13 @@ export const writeReview = (appid, text, recommended) =>
 
 // Genel akış veya kendi incelemelerim.
 // Genel akış hesapsız da okunur; "benimkiler" doğal olarak oturum ister.
-export const getReviewFeed = (mine = false) =>
-  mine ? authed('/api/social/reviews/feed?mine=1') : openRead('/api/social/reviews/feed');
+// offset İKİ YOLDA DA GEÇİYOR: sunucu hem `mine` hem genel akış için
+// sayfalıyor (listUserReviews / listRecentReviews), istemci geçmezse akış
+// 20'de biterdi.
+export const getReviewFeed = (mine = false, offset = 0) =>
+  mine
+    ? authed(`/api/social/reviews/feed?mine=1&offset=${offset}`)
+    : openRead(`/api/social/reviews/feed?offset=${offset}`);
 
 // Yazabileceğim oyunlar — sayfanın boş görünmemesini sağlayan liste.
 export const getEligibleGames = () => authed('/api/social/reviews/eligible');

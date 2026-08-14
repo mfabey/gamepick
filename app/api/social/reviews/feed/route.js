@@ -49,7 +49,9 @@ export async function GET(request) {
   let list;
   if (mine) {
     // Kendi incelemelerimde engel süzgeci gereksiz — hepsi benim.
-    list = await listUserReviews(user.uid, { limit: 20 });
+    // offset AKTARILIYOR: aksi hâlde "Benimkiler" sonsuz kaydırmada aynı
+    // ilk 20 kaydı tekrar tekrar döndürürdü.
+    list = await listUserReviews(user.uid, { limit: 20, offset });
   } else {
     // getHiddenUids(null) boş küme dönüyor (social-store.js:389) — anonim
     // okuyucuda engel süzgeci doğal olarak devre dışı.

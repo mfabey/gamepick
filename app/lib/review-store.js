@@ -107,9 +107,17 @@ export async function listReviews(appid, { limit = 20, offset = 0 } = {}) {
   return rows.map(parseJSON).filter(Boolean);
 }
 
-/** Kullanıcının yazdığı incelemeler — profilde göstermek için. */
-export async function listUserReviews(uid, { limit = 20 } = {}) {
-  const appids = await redisCmd(['ZREVRANGE', userKey(uid), '0', String(limit - 1)]);
+/**
+ * Kullanıcının yazdığı incelemeler — profilde ve "Benimkiler" sekmesinde.
+ *
+ * offset EKLENDİ: listRecentReviews zaten sayfalanıyordu, bu ise 20'de
+ * sabit duruyordu. Topluluk sekmesi sonsuz kaydırmaya geçince üç sekmeden
+ * ikisi sayfalanır, biri 20'de biterdi — çok yazan bir kullanıcı kendi
+ * 21. incelemesini hiçbir yerden göremezdi.
+ */
+export async function listUserReviews(uid, { limit = 20, offset = 0 } = {}) {
+  const start = Math.max(0, offset);
+  const appids = await redisCmd(['ZREVRANGE', userKey(uid), String(start), String(start + limit - 1)]);
   if (!Array.isArray(appids) || !appids.length) return [];
 
   const rows = await redisPipeline(appids.map((a) => ['GET', revKey(a, uid)])) || [];
