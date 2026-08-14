@@ -13,8 +13,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { View, Text, Pressable, StyleSheet, ActivityIndicator, Dimensions } from 'react-native';
-import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -36,10 +34,10 @@ import { recordDismiss } from '../src/services/dismissStore';
 import { recordSeen } from '../src/services/seenStore';
 import { recordLike, removeLike } from '../src/services/likeStore';
 import EmptyState from '../src/components/EmptyState';
-import { posterImage } from '../src/utils/images';
 import { colors, radius, spacing, PRESSED, type } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
 import IconButton from '../src/components/IconButton';
+import GameCover from '../src/components/GameCover';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const SWIPE_THRESHOLD = SCREEN_W * 0.28;   // bu mesafeden sonra bırakınca karar verilir
@@ -261,19 +259,7 @@ function SwipeCard({ game, index, isTop, onDecide, onPress, t }) {
     <GestureDetector gesture={pan}>
       <Animated.View style={[styles.card, cardStyle]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onPress} disabled={!isTop}>
-          <Image
-            source={posterImage(game.image)}
-            cachePolicy="memory-disk"
-            style={StyleSheet.absoluteFill}
-            contentFit="cover"
-            transition={200}
-          />
-          <LinearGradient
-            colors={['transparent', 'rgba(6,7,9,0.55)', 'rgba(6,7,9,0.97)']}
-            locations={[0.35, 0.68, 1]}
-            style={StyleSheet.absoluteFill}
-          />
-
+          <GameCover uri={game.image} style={StyleSheet.absoluteFill}>
           <View style={styles.cardBody}>
             <Text numberOfLines={2} style={styles.cardName}>{game.name}</Text>
             {game.genres?.length > 0 && (
@@ -302,6 +288,7 @@ function SwipeCard({ game, index, isTop, onDecide, onPress, t }) {
               </Animated.View>
             </>
           )}
+          </GameCover>
         </Pressable>
       </Animated.View>
     </GestureDetector>

@@ -5,12 +5,11 @@ import {
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { GamesGridSkeleton } from '../src/components/Skeleton';
-import PosterImage from '../src/components/PosterImage';
+import GameCover from '../src/components/GameCover';
 import { prefetchImages } from '../src/utils/prefetch';
 import { colors, radius, spacing, TAB_SPACE, type } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
@@ -401,9 +400,7 @@ const GameTile = memo(function GameTile({ game, steam, price }) {
   const isFree = price?.isFree;
   const onSale = price?.discount > 0 && !isFree;
   return (
-    <View style={styles.tile}>
-      <PosterImage uri={game.image} recyclingKey={String(game.appid ?? game.titleId)} cachePolicy="memory-disk" style={StyleSheet.absoluteFill} contentFit="cover" transition={200} />
-      <LinearGradient colors={['transparent', 'rgba(6,7,9,0.96)']} locations={[0.4, 1]} style={StyleSheet.absoluteFill} />
+    <GameCover uri={game.image} recyclingKey={String(game.appid ?? game.titleId)} style={styles.tile}>
       {!steam && game.isGamePass ? (
         <View style={styles.gpBadge}><Text style={styles.gpText}>GAME PASS</Text></View>
       ) : null}
@@ -429,7 +426,7 @@ const GameTile = memo(function GameTile({ game, steam, price }) {
           ) : null}
         </View>
       </View>
-    </View>
+    </GameCover>
   );
 });
 

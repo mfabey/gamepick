@@ -1,11 +1,10 @@
 import { memo } from 'react';
 import { Pressable, View, Text, StyleSheet } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { colors, radius, type, metacriticColor, spacing} from '../theme';
 import { useLanguage } from '../context/LanguageContext';
 import { usePrice } from '../hooks/usePrice';
-import PosterImage from './PosterImage';
+import GameCover from './GameCover';
 
 const BLUR_HASH = 'L03[?nof_3of~qWBofof00WB%MWB';
 
@@ -28,21 +27,12 @@ function GameCard({ game }) {
       })}
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
     >
-      <View style={styles.coverWrap}>
-        <PosterImage
-          uri={game.image}
-          placeholder={BLUR_HASH}
-          recyclingKey={String(game.id)}
-          cachePolicy="memory-disk"
-          style={StyleSheet.absoluteFill}
-          contentFit="cover"
-          transition={200}
-        />
-        <LinearGradient
-          colors={['transparent', 'rgba(6,7,9,0.55)', 'rgba(6,7,9,0.96)']}
-          locations={[0.35, 0.7, 1]}
-          style={StyleSheet.absoluteFill}
-        />
+      <GameCover
+        uri={game.image}
+        placeholder={BLUR_HASH}
+        recyclingKey={String(game.id)}
+        style={styles.coverWrap}
+      >
 
         {/* Metacritic */}
         {game.metacritic ? (
@@ -76,7 +66,7 @@ function GameCard({ game }) {
             ) : null}
           </View>
         </View>
-      </View>
+      </GameCover>
     </Pressable>
   );
 }

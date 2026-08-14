@@ -1,8 +1,6 @@
 import { memo, useMemo, useCallback, useEffect, useState, useRef } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomFade } from '../../src/components/EdgeFade';
 import { useRouter } from 'expo-router';
@@ -13,7 +11,7 @@ import { useTabBarScroll } from '../../src/context/TabBarContext';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useTimeToData } from '../../src/dev/perf';
 import FadeIn from '../../src/components/FadeIn';
-import PosterImage from '../../src/components/PosterImage';
+import GameCover from '../../src/components/GameCover';
 import { useQuery } from '../../src/hooks/useQuery';
 import { useTasteProfile } from '../../src/hooks/useTasteProfile';
 import { useOwnedGames } from '../../src/hooks/useOwnedGames';
@@ -440,9 +438,7 @@ const HomeCard = memo(function HomeCard({ game, router, onDismiss }) {
       onLongPress={onDismiss ? () => onDismiss(game) : undefined}
       delayLongPress={350}
     >
-      <View style={styles.cardCover}>
-        <PosterImage uri={game.image} cachePolicy="memory-disk" style={StyleSheet.absoluteFill} contentFit="cover" transition={250} />
-        <LinearGradient colors={['transparent', 'rgba(6,7,9,0.94)']} locations={[0.45, 1]} style={StyleSheet.absoluteFill} />
+      <GameCover uri={game.image} style={styles.cardCover}>
         {game.metacritic ? (
           <View style={styles.mcBadge}><Text style={[styles.mcText, { color: mcColor }]}>{game.metacritic}</Text></View>
         ) : null}
@@ -450,7 +446,7 @@ const HomeCard = memo(function HomeCard({ game, router, onDismiss }) {
           <View style={styles.freeBadge}><Text style={styles.freeText}>Ücretsiz</Text></View>
         ) : null}
         <Text numberOfLines={2} style={styles.cardName}>{game.name}</Text>
-      </View>
+      </GameCover>
     </Pressable>
   );
 });

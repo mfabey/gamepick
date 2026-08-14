@@ -6,8 +6,6 @@ import {
   View, Text, Pressable, StyleSheet, ActivityIndicator, Alert,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,10 +14,10 @@ import * as Haptics from 'expo-haptics';
 import { fetchList, toggleListLike, deletePublicList } from '../../src/api/social';
 import ReportSheet from '../../src/components/ReportSheet';
 import EmptyState from '../../src/components/EmptyState';
-import { posterImage } from '../../src/utils/images';
 import { colors, radius, spacing, PRESSED, type } from '../../src/theme';
 import { useLanguage } from '../../src/context/LanguageContext';
 import IconButton from '../../src/components/IconButton';
+import GameCover from '../../src/components/GameCover';
 
 export default function PublicListScreen() {
   const router = useRouter();
@@ -79,17 +77,9 @@ export default function PublicListScreen() {
 
   const renderItem = useCallback(({ item }) => (
     <Pressable style={({ pressed }) => [styles.cell, pressed && PRESSED]} onPress={() => openGame(item)}>
-      <View style={styles.cover}>
-        <Image
-          source={posterImage(item.image)}
-          cachePolicy="memory-disk"
-          style={StyleSheet.absoluteFill}
-          contentFit="cover"
-          transition={180}
-        />
-        <LinearGradient colors={['transparent', 'rgba(6,7,9,0.92)']} locations={[0.45, 1]} style={StyleSheet.absoluteFill} />
+      <GameCover uri={item.image} style={styles.cover}>
         <Text numberOfLines={2} style={styles.cellName}>{item.name}</Text>
-      </View>
+      </GameCover>
     </Pressable>
   ), [openGame]);
 

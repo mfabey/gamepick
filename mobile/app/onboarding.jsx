@@ -3,8 +3,6 @@ import {
   View, Text, Pressable, StyleSheet, ActivityIndicator,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,9 +11,9 @@ import { fetchGames } from '../src/api/games';
 import { useQuery } from '../src/hooks/useQuery';
 import { recordSignal } from '../src/services/tasteProfile';
 import { completeOnboarding } from '../src/services/onboarding';
-import { posterImage } from '../src/utils/images';
 import { colors, radius, spacing, PRESSED, type } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
+import GameCover from '../src/components/GameCover';
 
 const MIN_PICKS = 3;
 
@@ -131,15 +129,7 @@ export default function OnboardingScreen() {
 function PickCard({ game, selected, onPress }) {
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.cell, pressed && PRESSED]}>
-      <View style={[styles.cover, selected && styles.coverOn]}>
-        <Image
-          source={posterImage(game.image)}
-          cachePolicy="memory-disk"
-          style={StyleSheet.absoluteFill}
-          contentFit="cover"
-          transition={200}
-        />
-        <LinearGradient colors={['transparent', 'rgba(6,7,9,0.92)']} locations={[0.45, 1]} style={StyleSheet.absoluteFill} />
+      <GameCover uri={game.image} style={[styles.cover, selected && styles.coverOn]}>
         <Text numberOfLines={2} style={styles.name}>{game.name}</Text>
 
         {selected && (
@@ -147,7 +137,7 @@ function PickCard({ game, selected, onPress }) {
             <Ionicons name="checkmark" size={15} color="#fff" />
           </View>
         )}
-      </View>
+      </GameCover>
     </Pressable>
   );
 }

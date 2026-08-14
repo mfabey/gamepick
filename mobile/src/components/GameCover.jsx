@@ -1,0 +1,58 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Oyun kapağı katmanı — görsel + karartma + üstüne konan her şey.
+//
+// NEDEN VAR. Ölçüldü: aynı görsel iş için DÖRT ayrı karartma reçetesi vardı.
+//
+//   transparent → 0.92              onboarding, collection, list, GamePostCard
+//   transparent → 0.55 → 0.97       swipe
+//   transparent → 0.55 → 0.96       GameCard
+//   transparent → 0.96 / → 0.94     library / index
+//
+// 0.92 / 0.94 / 0.96 / 0.97 — tek başına hiçbiri ayırt edilemez, ama yan yana
+// gelen kartları birbirinden farklı gösteriyorlardı. Konumlar da ayrışmıştı
+// (0.35/0.7/1 · 0.4/1 · 0.45/1), görsel geçiş süresi de (180/200/250ms).
+// Yeni bir kart yazan kişinin hangisini seçeceğine dair bir cevap yoktu;
+// beşincisi eklenirdi.
+//
+// KART GÖVDELERİ BİRLEŞTİRİLMEDİ — bilerek. 2 sütunlu ızgara karesi, 132pt'lik
+// şerit kartı, tam ekran kaydırma destesi ve seçim ızgarası gerçekten farklı
+// şeyler; hepsini tek bileşene sıkıştırmak on proplu bir anahtar üretirdi.
+// Ortak olan yalnızca bu katman, paylaşılan da yalnızca o.
+//
+// ÜÇ DURAKLI REÇETE SEÇİLDİ. İki duraklı olan parlak kapaklarda metni
+// tutmuyordu: geçiş kartın alt üçte birinde başlayıp bir anda koyuluyor,
+// aradaki parlak şeritte beyaz yazı eriyordu. Orta durak o şeridi kapatıyor.
+// ─────────────────────────────────────────────────────────────────────────────
+import { View, StyleSheet } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+
+import PosterImage from './PosterImage';
+
+// tema-bagimsiz: oyun kapağının üstünde duruyor, zemin görselin kendisi
+const SCRIM = ['transparent', 'rgba(6,7,9,0.55)', 'rgba(6,7,9,0.96)'];
+const SCRIM_STOPS = [0.35, 0.7, 1];
+const FADE_MS = 200;
+
+/**
+ * @param {string}  uri           kapak adresi
+ * @param {string} [recyclingKey] FlashList geri dönüşümünde görsel karışmasın
+ * @param {object} [style]        dış kap (boyut/oran/köşe burayadan gelir)
+ * @param {node}   [children]     rozetler, ad — karartmanın ÜSTÜNDE çizilir
+ */
+export default function GameCover({ uri, recyclingKey, style, children, ...rest }) {
+  return (
+    <View style={style}>
+      <PosterImage
+        uri={uri}
+        recyclingKey={recyclingKey}
+        cachePolicy="memory-disk"
+        style={StyleSheet.absoluteFill}
+        contentFit="cover"
+        transition={FADE_MS}
+        {...rest}
+      />
+      <LinearGradient colors={SCRIM} locations={SCRIM_STOPS} style={StyleSheet.absoluteFill} />
+      {children}
+    </View>
+  );
+}
