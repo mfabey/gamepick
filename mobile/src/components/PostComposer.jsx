@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
   title: { color: colors.text, fontSize: type.subhead, fontWeight: '700' },
   send: {
     backgroundColor: colors.text, borderRadius: radius.pill,
-    paddingHorizontal: 16, paddingVertical: 7, minWidth: 74, alignItems: 'center',
+    paddingHorizontal: spacing.lg, paddingVertical: 7, minWidth: 74, alignItems: 'center',
   },
   sendOff: { opacity: 0.4 },
   sendText: { color: colors.bg, fontSize: type.footnote, fontWeight: '800' },
@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
   },
   gameName: { color: colors.text2, fontSize: type.caption, fontWeight: '600', flexShrink: 1 },
 
-  foot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 },
-  error: { color: colors.accentText, fontSize: type.caption, flexShrink: 1, paddingRight: 12 },
+  foot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.md },
+  error: { color: colors.accentText, fontSize: type.caption, flexShrink: 1, paddingRight: spacing.md },
   count: { color: colors.text3, fontSize: type.caption, fontWeight: '600' },
 });

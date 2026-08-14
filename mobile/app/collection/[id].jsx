@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: spacing.md, paddingTop: 6, paddingBottom: 10, gap: 6,
   },
-  headText: { flex: 1, paddingHorizontal: 4 },
+  headText: { flex: 1, paddingHorizontal: spacing.xs },
   title: { fontSize: type.body, fontWeight: '900', color: colors.text, letterSpacing: -0.3 },
   subtitle: { fontSize: type.footnote, color: colors.text2, marginTop: 2 },
   iconBtn: {
@@ -218,13 +218,16 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
 
-  list: { paddingHorizontal: 8, paddingBottom: 30 },
+  list: { paddingHorizontal: spacing.sm, paddingBottom: 30 },
   cell: { flex: 1, paddingHorizontal: 5, paddingBottom: 10 },
   cover: {
     width: '100%', aspectRatio: 3 / 4, borderRadius: radius.md, overflow: 'hidden',
     backgroundColor: colors.card,
   },
-  cellName: { position: 'absolute', left: 8, right: 8, bottom: 7, color: '#fff', fontSize: type.caption, fontWeight: '700', lineHeight: 14 },
+  cellName: { position: 'absolute', left: 8, right: 8, bottom: 7, color: '#fff', fontSize: type.caption, fontWeight: '700', lineHeight: 14 },
+
+
+
 
   backdrop: { flex: 1, backgroundColor: colors.overlay, alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
   sheet: {
@@ -238,8 +241,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14, height: 50, color: colors.text, fontSize: type.subhead,
     borderWidth: 1, borderColor: colors.cardBorder,
   },
-  sheetActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 16 },
-  ghostBtn: { paddingHorizontal: 16, height: 46, alignItems: 'center', justifyContent: 'center' },
+  sheetActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: spacing.lg },
+  ghostBtn: { paddingHorizontal: spacing.lg, height: 46, alignItems: 'center', justifyContent: 'center' },
   ghostText: { color: colors.text2, fontSize: type.subhead, fontWeight: '700' },
   cta: {
     minWidth: 110, height: 46, borderRadius: radius.lg, backgroundColor: colors.accent,

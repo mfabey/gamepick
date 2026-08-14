@@ -45,7 +45,9 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "check:theme": "node scripts/check-theme-colors.mjs"
+    "check:theme": "node scripts/check-theme-colors.mjs",
+    "check:spacing": "node scripts/check-spacing.mjs",
+    "check": "npm run check:theme && npm run check:spacing"
   },
   "private": true
 }

@@ -175,24 +175,24 @@ const styles = StyleSheet.create({
   title: { flex: 1, fontSize: type.headline, fontWeight: '800', color: colors.text, textAlign: 'center' },
 
   listContent: { paddingHorizontal: 10 },
-  headerWrap: { marginHorizontal: -10, paddingHorizontal: spacing.lg, paddingTop: 8 },
+  headerWrap: { marginHorizontal: -10, paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
   cell: { flex: 1, paddingHorizontal: 6, paddingBottom: spacing.md },
 
-  lead: { fontSize: type.subhead, color: colors.text2, lineHeight: 21, marginBottom: 16 },
+  lead: { fontSize: type.subhead, color: colors.text2, lineHeight: 21, marginBottom: spacing.lg },
   inputBox: {
     backgroundColor: colors.card, borderColor: colors.borderHover, borderWidth: 1.5,
-    borderRadius: radius.lg, paddingHorizontal: 16, paddingVertical: 12, minHeight: 96,
+    borderRadius: radius.lg, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, minHeight: 96,
   },
   input: { color: colors.text, fontSize: type.subhead, lineHeight: 22, textAlignVertical: 'top', minHeight: 72 },
 
   cta: {
-    marginTop: 12, height: 52, borderRadius: radius.lg, backgroundColor: colors.accent,
+    marginTop: spacing.md, height: 52, borderRadius: radius.lg, backgroundColor: colors.accent,
     alignItems: 'center', justifyContent: 'center',
   },
   ctaOff: { opacity: 0.45 },
   ctaText: { color: '#fff', fontSize: type.subhead, fontWeight: '800' },
 
-  examples: { gap: 8, paddingVertical: 16 },
+  examples: { gap: spacing.sm, paddingVertical: spacing.lg },
   example: {
     backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1,
     borderRadius: radius.pill, paddingHorizontal: 14, paddingVertical: 9,
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
   exampleText: { color: colors.text2, fontSize: type.footnote },
 
   understood: { marginTop: 18 },
-  understoodLabel: { fontSize: type.caption, color: colors.text3, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 8 },
+  understoodLabel: { fontSize: type.caption, color: colors.text3, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: spacing.sm },
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
   tag: {
     backgroundColor: colors.accentSoft, borderColor: colors.accentBorder, borderWidth: 1,
@@ -210,5 +210,5 @@ const styles = StyleSheet.create({
   // sabit bilgi, eylem değil. Vurgu rengi burada da gürültüydü.
   tagText: { color: colors.text2, fontSize: type.caption, fontWeight: '700' },
 
-  msg: { color: colors.text3, fontSize: type.subhead, lineHeight: 21, marginTop: 20, marginBottom: 8 },
+  msg: { color: colors.text3, fontSize: type.subhead, lineHeight: 21, marginTop: 20, marginBottom: spacing.sm },
 });

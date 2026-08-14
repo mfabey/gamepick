@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
   target: { color: colors.text2, fontSize: type.footnote, marginTop: 3 },
 
   list: { flexGrow: 0, marginTop: 10 },
-  row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12 },
+  row: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.md },
   rowText: { flex: 1, color: colors.text, fontSize: type.subhead, fontWeight: '600' },
   radio: {
     width: 24, height: 24, borderRadius: 12,
@@ -125,10 +125,10 @@ const styles = StyleSheet.create({
 
   input: {
     backgroundColor: colors.bgInput, borderRadius: radius.md,
-    paddingHorizontal: 13, paddingTop: 12, paddingBottom: 12,
+    paddingHorizontal: 13, paddingTop: spacing.md, paddingBottom: spacing.md,
     minHeight: 78, color: colors.text, fontSize: type.subhead,
     borderWidth: 1, borderColor: colors.cardBorder,
-    marginTop: 8, textAlignVertical: 'top',
+    marginTop: spacing.sm, textAlignVertical: 'top',
   },
 
   cta: {

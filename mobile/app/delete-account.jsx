@@ -98,10 +98,10 @@ export default function DeleteAccountScreen() {
               buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
               buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
               cornerRadius={radius.lg}
-              style={{ height: 52, marginTop: 12 }}
+              style={{ height: 52, marginTop: spacing.md }}
               onPress={confirmApple}
             />
-            {busy && <ActivityIndicator color={colors.accent} style={{ marginTop: 16 }} />}
+            {busy && <ActivityIndicator color={colors.accent} style={{ marginTop: spacing.lg }} />}
           </>
         ) : (
           <>
@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
 
   body: { padding: spacing.lg },
   warnBox: {
-    flexDirection: 'row', gap: 12, alignItems: 'flex-start',
+    flexDirection: 'row', gap: spacing.md, alignItems: 'flex-start',
     // tema-bagimsiz: tehlike tonu; uyari her iki temada da kirmizi kalmali
     backgroundColor: 'rgba(248,113,113,0.08)', borderColor: 'rgba(248,113,113,0.35)',
     borderWidth: 1, borderRadius: radius.md, padding: 14, marginBottom: 22,
@@ -154,11 +154,11 @@ const styles = StyleSheet.create({
     borderRadius: radius.md, paddingHorizontal: 14, height: 50,
     color: colors.text, fontSize: type.subhead,
   },
-  err: { color: colors.danger, fontSize: type.footnote, lineHeight: 20, marginTop: 16 },
+  err: { color: colors.danger, fontSize: type.footnote, lineHeight: 20, marginTop: spacing.lg },
 
   cta: {
     height: 52, borderRadius: radius.lg, backgroundColor: colors.danger,
-    alignItems: 'center', justifyContent: 'center', marginTop: 24,
+    alignItems: 'center', justifyContent: 'center', marginTop: spacing.xl,
   },
   ctaOff: { opacity: 0.4 },
   ctaText: { color: '#fff', fontSize: type.subhead, fontWeight: '800' },

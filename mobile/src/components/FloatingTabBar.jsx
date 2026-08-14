@@ -12,7 +12,7 @@ import Animated, {
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { useTabBarCompact, useTabBarHidden } from '../context/TabBarContext';
 import { useUnread, refreshUnread } from '../services/unread';
-import { colors, type, NUMERIC } from '../theme';
+import { colors, type, NUMERIC, spacing} from '../theme';
 
 // Sekme olmayan rotalar da burada (games, news, library): harita üst küme
 // olarak tutuluyor ki bir rota sekmeye girip çıkınca simgesi kaybolmasın.
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
   badge: {
     position: 'absolute', top: -4, right: -9,
     minWidth: 17, height: 17, borderRadius: 9,
-    paddingHorizontal: 4,
+    paddingHorizontal: spacing.xs,
     alignItems: 'center', justifyContent: 'center',
     backgroundColor: colors.accent,
     borderWidth: 2, borderColor: colors.bg,

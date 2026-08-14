@@ -75,13 +75,13 @@ const styles = StyleSheet.create({
     color: colors.text2,
     fontSize: type.subhead,
     textAlign: 'center',
-    marginTop: 8,
+    marginTop: spacing.sm,
     lineHeight: 21,
     maxWidth: 320,
   },
 
   action: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
     height: 50, paddingHorizontal: 22,
     borderRadius: radius.lg, backgroundColor: colors.accent,
     marginTop: 22,

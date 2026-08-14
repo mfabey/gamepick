@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
   hours:    { color: colors.text2, fontSize: type.caption, fontWeight: '700' },
 
   rankChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
+    flexDirection: 'row', alignItems: 'center', gap: spacing.xs,
     paddingHorizontal: 7, paddingVertical: 2, borderRadius: radius.pill,
     backgroundColor: colors.bgInput,
   },

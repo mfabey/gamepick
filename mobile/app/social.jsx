@@ -600,7 +600,7 @@ const styles = StyleSheet.create({
   list: { paddingHorizontal: spacing.md, paddingBottom: 30 },
   sectionLabel: {
     color: colors.text3, fontSize: type.caption, fontWeight: '800',
-    letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 6, marginTop: 4,
+    letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 6, marginTop: spacing.xs,
   },
   inlineEmpty: { color: colors.text2, fontSize: type.footnote, textAlign: 'center', marginTop: 26, lineHeight: 20 },
 
@@ -636,17 +636,17 @@ const styles = StyleSheet.create({
   actTime: { color: colors.text3, fontSize: type.caption, marginTop: 3 },
 
   searchWrap: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
     marginHorizontal: spacing.md, marginBottom: 10,
     backgroundColor: colors.bgInput, borderRadius: radius.md,
-    paddingHorizontal: 12, height: 44,
+    paddingHorizontal: spacing.md, height: 44,
     borderWidth: 1, borderColor: colors.cardBorder,
   },
   searchInput: { flex: 1, color: colors.text, fontSize: type.subhead },
 
   setupBody: { padding: spacing.xl, alignItems: 'center' },
   setupTitle: { color: colors.text, fontSize: type.title3, fontWeight: '900', marginTop: 14, textAlign: 'center', letterSpacing: -0.4 },
-  setupText: { color: colors.text2, fontSize: type.subhead, textAlign: 'center', marginTop: 8, lineHeight: 20 },
+  setupText: { color: colors.text2, fontSize: type.subhead, textAlign: 'center', marginTop: spacing.sm, lineHeight: 20 },
   label: {
     alignSelf: 'flex-start', color: colors.text3, fontSize: type.caption, fontWeight: '800',
     letterSpacing: 0.5, textTransform: 'uppercase', marginTop: 26, marginBottom: 7,
@@ -662,7 +662,7 @@ const styles = StyleSheet.create({
   hint: { alignSelf: 'flex-start', color: colors.text3, fontSize: type.footnote, marginTop: 7 },
 
   privacyNote: {
-    flexDirection: 'row', gap: 8, alignItems: 'flex-start',
+    flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-start',
     backgroundColor: colors.card, borderRadius: radius.md, padding: 13,
     borderWidth: 1, borderColor: colors.cardBorder, marginTop: 22,
   },
@@ -671,7 +671,7 @@ const styles = StyleSheet.create({
   gateText: { color: colors.text2, fontSize: type.subhead, textAlign: 'center', marginTop: 14, lineHeight: 21 },
   cta: {
     alignSelf: 'stretch', height: 52, borderRadius: radius.lg, backgroundColor: colors.accent,
-    alignItems: 'center', justifyContent: 'center', marginTop: 22, paddingHorizontal: 24,
+    alignItems: 'center', justifyContent: 'center', marginTop: 22, paddingHorizontal: spacing.xl,
   },
   ctaOff: { opacity: 0.4 },
   ctaText: { color: '#fff', fontSize: type.subhead, fontWeight: '800' },

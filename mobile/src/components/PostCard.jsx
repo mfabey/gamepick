@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
   text: { color: colors.text, fontSize: type.subhead, lineHeight: 21, marginTop: 3 },
 
   gameChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 9,
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: 9,
     backgroundColor: colors.card, borderRadius: radius.md,
     borderWidth: 1, borderColor: colors.cardBorder,
     paddingRight: 10, overflow: 'hidden', alignSelf: 'flex-start', maxWidth: '100%',

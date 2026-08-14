@@ -227,15 +227,15 @@ const styles = StyleSheet.create({
   clear: { color: colors.accentText, fontSize: type.footnote, fontWeight: '700' },
 
   body: { flexGrow: 0, marginTop: 6 },
-  group: { marginTop: 16 },
+  group: { marginTop: spacing.lg },
   groupLabel: {
     color: colors.text3, fontSize: type.caption, fontWeight: '800',
     letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 9,
   },
-  wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
 
   chip: {
-    paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.pill,
+    paddingHorizontal: 14, paddingVertical: spacing.sm, borderRadius: radius.pill,
     backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder,
   },
   chipText: { fontSize: type.footnote, color: colors.text2, fontWeight: '500' },

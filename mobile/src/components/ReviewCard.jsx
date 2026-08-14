@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
   cardHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   cardImg:  { width: 56, height: 26, borderRadius: 4, backgroundColor: colors.bgInput },
   cardGame: { color: colors.text, fontSize: type.footnote, fontWeight: '700' },
-  byline:   { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+  byline:   { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: 2 },
   avatar: {
     width: 16, height: 16, borderRadius: 8, backgroundColor: colors.bgInput,
     alignItems: 'center', justifyContent: 'center',

@@ -158,17 +158,17 @@ const styles = StyleSheet.create({
 
   head: { paddingHorizontal: spacing.lg, paddingTop: 10, paddingBottom: 14 },
   title: { fontSize: type.title1, fontWeight: '900', color: colors.text, letterSpacing: -0.5 },
-  subtitle: { fontSize: type.subhead, color: colors.text2, lineHeight: 21, marginTop: 8 },
+  subtitle: { fontSize: type.subhead, color: colors.text2, lineHeight: 21, marginTop: spacing.sm },
 
   // Doğal dil ile keşif girişi — anasayfadaki satırın aynısı
   discover: {
     flexDirection: 'row', alignItems: 'center', gap: 9, marginTop: 14,
     backgroundColor: colors.accentSoft, borderColor: colors.accentBorder, borderWidth: 1,
-    borderRadius: radius.lg, paddingHorizontal: 16, paddingVertical: 13,
+    borderRadius: radius.lg, paddingHorizontal: spacing.lg, paddingVertical: 13,
   },
   discoverText: { flex: 1, color: colors.text, fontSize: type.subhead, fontWeight: '600' },
 
-  list: { paddingHorizontal: 8 },
+  list: { paddingHorizontal: spacing.sm },
   cell: { flex: 1, paddingHorizontal: 5, paddingBottom: 10 },
   cover: {
     width: '100%', aspectRatio: 3 / 4, borderRadius: radius.md, overflow: 'hidden',
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
 
   bar: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg, paddingTop: 12, paddingBottom: 24,
+    paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.xl,
     borderTopWidth: 1, borderTopColor: colors.cardBorder, backgroundColor: colors.bg,
   },
   skip: { color: colors.text3, fontSize: type.subhead, fontWeight: '600' },

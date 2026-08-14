@@ -127,8 +127,8 @@ const styles = StyleSheet.create({
   gone: { color: colors.text2, fontSize: type.subhead },
 
   replyBar: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    marginHorizontal: spacing.lg, marginVertical: 12,
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+    marginHorizontal: spacing.lg, marginVertical: spacing.md,
     paddingHorizontal: 14, paddingVertical: 11,
     backgroundColor: colors.card, borderRadius: 999,
   },

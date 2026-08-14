@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
 
   head: {
     flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: spacing.md, paddingTop: 6, paddingBottom: 4,
+    paddingHorizontal: spacing.md, paddingTop: 6, paddingBottom: spacing.xs,
   },
   iconBtn: {
     width: 44, height: 44, borderRadius: 22, backgroundColor: colors.card,
@@ -200,21 +200,21 @@ const styles = StyleSheet.create({
 
   header: { paddingHorizontal: 5, paddingBottom: 14 },
   notice: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
     backgroundColor: colors.accentBg, borderRadius: radius.md,
     borderWidth: 1, borderColor: colors.accentBorder,
-    padding: 12, marginBottom: 14,
+    padding: spacing.md, marginBottom: 14,
   },
   noticeText: { flex: 1, color: colors.text, fontSize: type.footnote, lineHeight: 18 },
 
   title: { color: colors.text, fontSize: type.title2, fontWeight: '900', letterSpacing: -0.5 },
   desc: { color: colors.text2, fontSize: type.subhead, marginTop: 7, lineHeight: 20 },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 12 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: spacing.md },
   meta: { flex: 1, color: colors.text3, fontSize: type.footnote },
   likeBtn: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   likeCount: { color: colors.text3, fontSize: type.footnote, fontWeight: '700' },
 
-  list: { paddingHorizontal: 8, paddingBottom: 30 },
+  list: { paddingHorizontal: spacing.sm, paddingBottom: 30 },
   cell: { flex: 1, paddingHorizontal: 5, paddingBottom: 10 },
   cover: {
     width: '100%', aspectRatio: 3 / 4, borderRadius: radius.md, overflow: 'hidden',
@@ -225,5 +225,6 @@ const styles = StyleSheet.create({
     color: '#fff', fontSize: type.caption, fontWeight: '700', lineHeight: 14,
   },
 
-  emptyTitle: { color: colors.text, fontSize: type.body, fontWeight: '800', marginTop: 12 },
+  emptyTitle: { color: colors.text, fontSize: type.body, fontWeight: '800', marginTop: spacing.md },
+
 });

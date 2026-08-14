@@ -227,7 +227,27 @@ export const motion = Object.freeze({
 
 export const radius = { sm: 8, md: 12, lg: 16, xl: 20, pill: 999 };
 
-export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24 };
+// ─────────────────────────────────────────────────────────────────────────────
+// BOŞLUK ÖLÇEĞİ
+//
+// KANONİK OLAN SAYISAL AD (s4…s48). Sebebi ölçüldü: eksik basamaklardan biri
+// 20 ve onu tişört adlandırmasına sokmak `xl`i kaydırmayı gerektiriyordu —
+// `xl` şu an 24 olarak 60+ yerde kullanılıyor, yani sessiz bir kayma olurdu.
+//
+// Tişört adları ALIAS olarak duruyor: 186 kullanım var, hepsini dönüştürmek
+// davranış değiştirmeyen büyük bir kodmod demekti. İkisi de aynı sayıya
+// çıkıyor, yani karışıklık yalnızca isimde.
+//
+// ÖLÇEĞİN KENDİSİ SORUNU ÇÖZMÜYOR: ölçüm, ham boşluk değerlerinin %71'inin
+// ölçek DIŞINDA olduğunu gösterdi (en sık 10, 6, 14 — üçü de burada yok).
+// O borç scripts/check-spacing.mjs ile dondurulmuş durumda; ekranlara
+// dokunuldukça gözle doğrulanarak eritiliyor.
+// ─────────────────────────────────────────────────────────────────────────────
+export const spacing = {
+  s4: 4, s8: 8, s12: 12, s16: 16, s20: 20, s24: 24, s32: 32, s40: 40, s48: 48,
+  // Eski adlar — hâlâ geçerli, aynı değerler.
+  xs: 4, sm: 8, md: 12, lg: 16, xl: 24,
+};
 
 // Floating alt bar için ekran altına bırakılacak boşluk
 export const TAB_SPACE = 104;

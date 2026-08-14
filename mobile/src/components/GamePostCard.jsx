@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
     position: 'absolute', top: 12, left: 14,
     // tema-bagimsiz: ekran goruntusunun ustundeki etiket
     backgroundColor: 'rgba(6,7,9,0.72)',
-    paddingHorizontal: 9, paddingVertical: 4, borderRadius: radius.sm,
+    paddingHorizontal: 9, paddingVertical: spacing.xs, borderRadius: radius.sm,
   },
   tagText: {
     color: '#fff', fontSize: type.caption2, fontWeight: '700',

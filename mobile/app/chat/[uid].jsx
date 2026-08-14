@@ -1190,8 +1190,8 @@ const styles = StyleSheet.create({
   status: { color: colors.text3, fontSize: type.caption2, marginTop: 1 },
   typing: { color: colors.green, fontWeight: '700' },
   // Goruldu isareti baloncugun ALTINDA ve saga dayali; icerigin parcasi degil.
-  seen: { color: colors.text3, fontSize: type.caption2, marginTop: 3, marginRight: 4 },
-  state: { color: colors.text3, fontSize: type.caption2, marginTop: 3, marginRight: 4 },
+  seen: { color: colors.text3, fontSize: type.caption2, marginTop: 3, marginRight: spacing.xs },
+  state: { color: colors.text3, fontSize: type.caption2, marginTop: 3, marginRight: spacing.xs },
   stateFail: { color: colors.danger },
   // Baloncuğun alt kenarına binen küçük madalyon.
   // Rozetler AKIŞTA, mutlak konumlu değil (eski tek kalp öyleydi). Üç dört
@@ -1204,7 +1204,7 @@ const styles = StyleSheet.create({
   // ayıran şey renk değil o dikey çizgi. Renk tek başına yeterli olmazdı,
   // kendi baloncuğumda zemin zaten renkli.
   quote: {
-    flexDirection: 'row', gap: 8,
+    flexDirection: 'row', gap: spacing.sm,
     // Karşı tarafın baloncuğu colors.card; beyaz katman açık temada beyaz
     // üstünde beyazdı. bgHover her iki zeminde de ayrışıyor.
     backgroundColor: colors.bgHover,
@@ -1231,14 +1231,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bgElevated,
     borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.cardBorder,
   },
-  pinMain:  { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 34 },
+  pinMain:  { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 34 },
   pinLabel: { color: colors.accentText, fontSize: type.caption2, fontWeight: '800' },
   pinText:  { color: colors.text2, fontSize: type.caption },
   pinClose: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
 
   // ── Yanıt önizlemesi (gönderme kutusunun üstünde) ──
   replyBar: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
     marginHorizontal: spacing.lg, marginBottom: 6,
     paddingVertical: 7, paddingHorizontal: 9,
     backgroundColor: colors.card,
@@ -1250,7 +1250,7 @@ const styles = StyleSheet.create({
   replyText:   { color: colors.text2, fontSize: type.caption },
   replyClose:  { width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
 
-  chips: { flexDirection: 'row', gap: 4, marginTop: -6, marginBottom: 2 },
+  chips: { flexDirection: 'row', gap: spacing.xs, marginTop: -6, marginBottom: 2 },
   chipsMine:   { alignSelf: 'flex-end' },
   chipsTheirs: { alignSelf: 'flex-start' },
   chip: {

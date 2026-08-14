@@ -169,18 +169,18 @@ const styles = StyleSheet.create({
   // Başlık artık bir satır: geri düğmesi + metin. Sol dolgu, düğmenin negatif
   // kenar boşluğuyla dengeleniyor ki metin diğer ekranlarla AYNI hizada
   // başlasın — düğme kadar sağa kaymasın.
-  header: { flexDirection: 'row', alignItems: 'center', gap: 2, paddingHorizontal: spacing.lg, paddingTop: 8, paddingBottom: 8 },
+  header: { flexDirection: 'row', alignItems: 'center', gap: 2, paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.sm },
   backBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginLeft: -12 },
   headerText: { fontSize: type.title1, fontWeight: '800', color: colors.text, letterSpacing: -0.6 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.lg },
 
-  featured: { marginHorizontal: spacing.lg, height: 210, borderRadius: radius.lg, overflow: 'hidden', backgroundColor: colors.card, marginBottom: 4 },
-  featuredBadge: { position: 'absolute', top: 12, left: 12, backgroundColor: colors.accent, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 4 },
+  featured: { marginHorizontal: spacing.lg, height: 210, borderRadius: radius.lg, overflow: 'hidden', backgroundColor: colors.card, marginBottom: spacing.xs },
+  featuredBadge: { position: 'absolute', top: 12, left: 12, backgroundColor: colors.accent, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: spacing.xs },
   featuredBadgeText: { color: '#fff', fontSize: type.caption2, fontWeight: '800', letterSpacing: 0.5 },
   featuredInfo: { position: 'absolute', left: 16, right: 16, bottom: 14 },
-  featuredTitle: { color: '#fff', fontSize: type.body, fontWeight: '800', lineHeight: 22, marginTop: 8 },
+  featuredTitle: { color: '#fff', fontSize: type.body, fontWeight: '800', lineHeight: 22, marginTop: spacing.sm },
 
-  catRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  catRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   catPill: { backgroundColor: colors.bgInput, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: 9, paddingVertical: 3 },
   // Kategori SABİT bir etiket, eylem değil. Kırmızıyken her haber satırında
   // tekrarlıyor ve ekrandaki vurgu sayısını tek başına dörde katlıyordu —
@@ -190,14 +190,14 @@ const styles = StyleSheet.create({
   catPillText: { color: colors.text2, fontSize: type.caption2, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.4 },
   metaText: { color: 'rgba(255,255,255,0.7)', fontSize: type.caption, fontWeight: '500' },
 
-  chipsRow: { paddingHorizontal: spacing.lg, gap: 8, paddingVertical: 14 },
-  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.pill, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder },
+  chipsRow: { paddingHorizontal: spacing.lg, gap: spacing.sm, paddingVertical: 14 },
+  chip: { paddingHorizontal: 14, paddingVertical: spacing.sm, borderRadius: radius.pill, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder },
   // games.jsx ile ayni secim dili: dolu notr yuzey, koyu metin, agirlik.
   chipActive: { backgroundColor: colors.text, borderColor: colors.text },
   chipTextActive: { color: colors.bg, fontWeight: '700' },
   chipText: { fontSize: type.footnote, color: colors.text2, fontWeight: '500' },
 
-  row: { flexDirection: 'row', gap: 12, paddingHorizontal: spacing.lg, paddingVertical: 12 },
+  row: { flexDirection: 'row', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   thumb: { width: 108, height: 76, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.card },
   catPillSm: { alignSelf: 'flex-start', backgroundColor: colors.bgInput, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2, marginBottom: 5 },
   catPillTextSm: { color: colors.text2, fontSize: type.caption2, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.3 },

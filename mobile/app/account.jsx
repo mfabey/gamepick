@@ -374,7 +374,7 @@ const styles = StyleSheet.create({
   back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   title: { flex: 1, fontSize: type.headline, fontWeight: '800', color: colors.text, textAlign: 'center' },
 
-  body: { padding: spacing.lg, paddingTop: 8 },
+  body: { padding: spacing.lg, paddingTop: spacing.sm },
   lead: { fontSize: type.subhead, color: colors.text2, lineHeight: 21, marginBottom: 22 },
   dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 18 },
   dividerLine: { flex: 1, height: 1, backgroundColor: colors.cardBorder },

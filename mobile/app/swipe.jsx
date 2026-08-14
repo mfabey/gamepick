@@ -362,7 +362,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.14)',
   },
   tagText: { color: '#fff', fontSize: type.caption, fontWeight: '700' },
-  meta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 9 },
+  meta: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: 9 },
   metaText: { color: colors.text2, fontSize: type.footnote, fontWeight: '700' },
 
   badge: {

@@ -117,9 +117,9 @@ const styles = StyleSheet.create({
   title: { color: colors.text, fontSize: type.body, fontWeight: '900' },
 
   notice: {
-    flexDirection: 'row', gap: 8, alignItems: 'flex-start',
-    backgroundColor: colors.card, borderRadius: radius.md, padding: 12,
-    borderWidth: 1, borderColor: colors.cardBorder, marginTop: 12, marginBottom: 14,
+    flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-start',
+    backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.md,
+    borderWidth: 1, borderColor: colors.cardBorder, marginTop: spacing.md, marginBottom: 14,
   },
   noticeText: { flex: 1, color: colors.text2, fontSize: type.footnote, lineHeight: 18 },
 

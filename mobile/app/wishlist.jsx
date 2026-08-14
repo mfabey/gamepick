@@ -129,19 +129,24 @@ const WishRow = memo(function WishRow({ item, onOpen, onRemove }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
-  head: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: 8 },
+  head: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   title: { flex: 1, fontSize: type.headline, fontWeight: '800', color: colors.text, textAlign: 'center' },
-  count: { width: 40, textAlign: 'center', fontSize: type.subhead, fontWeight: '800', color: colors.accentText },
+  count: { width: 40, textAlign: 'center', fontSize: type.subhead, fontWeight: '800', color: colors.accentText },
 
-  notifBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.accentSoft, borderColor: colors.accentBorder, borderWidth: 1, borderRadius: radius.md, padding: 12, marginHorizontal: spacing.lg, marginTop: 12, marginBottom: 4 },
+
+
+
+
+
+  notifBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.accentSoft, borderColor: colors.accentBorder, borderWidth: 1, borderRadius: radius.md, padding: spacing.md, marginHorizontal: spacing.lg, marginTop: spacing.md, marginBottom: spacing.xs },
   notifText: { flex: 1, fontSize: type.caption, color: colors.text2, lineHeight: 16 },
   notifCta: { fontSize: type.footnote, fontWeight: '800', color: colors.accentText },
 
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: spacing.lg, paddingVertical: 11 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: 11 },
   thumb: { width: 96, height: 54, borderRadius: radius.sm, overflow: 'hidden', backgroundColor: colors.card },
   rowName: { fontSize: type.subhead, fontWeight: '700', color: colors.text, lineHeight: 18 },
-  rowPriceRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 5 },
+  rowPriceRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: 5 },
   price: { fontSize: type.subhead, fontWeight: '800', color: colors.text },
   priceDim: { fontSize: type.subhead, color: colors.text3 },
   free: { fontSize: type.subhead, fontWeight: '800', color: colors.green },

@@ -115,13 +115,13 @@ const styles = StyleSheet.create({
   wrap: { marginTop: 26 },
   head: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingHorizontal: spacing.lg, marginBottom: 12,
+    paddingHorizontal: spacing.lg, marginBottom: spacing.md,
   },
   title: {
     color: colors.text2, fontSize: type.caption, fontWeight: '700',
     textTransform: 'uppercase', letterSpacing: 1.1,
   },
-  strip: { paddingHorizontal: spacing.lg, gap: 12 },
+  strip: { paddingHorizontal: spacing.lg, gap: spacing.md },
   card:  { width: 150 },
   cover: {
     width: 150, height: 70, borderRadius: radius.md,

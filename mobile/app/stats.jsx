@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
 
   head: {
     flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: spacing.md, paddingTop: 6, paddingBottom: 10, gap: 8,
+    paddingHorizontal: spacing.md, paddingTop: 6, paddingBottom: 10, gap: spacing.sm,
   },
   headText: { flex: 1 },
   title: { fontSize: type.headline, fontWeight: '900', color: colors.text, letterSpacing: -0.3 },
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
   heroNum: { color: colors.accentText, fontSize: type.display, fontWeight: '900', letterSpacing: -2, lineHeight: 66 },
   heroLabel: { color: colors.text, fontSize: type.subhead, fontWeight: '700', marginTop: 2 },
 
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 12 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: spacing.md },
   card: {
     flexGrow: 1, flexBasis: '46%',
     backgroundColor: colors.card, borderRadius: radius.lg, padding: 15,
@@ -215,17 +215,17 @@ const styles = StyleSheet.create({
   cardLabel: { color: colors.text2, fontSize: type.caption, marginTop: 2, fontWeight: '600' },
 
   banner: {
-    marginTop: 12, backgroundColor: colors.card, borderRadius: radius.lg,
-    padding: 16, borderWidth: 1, borderColor: colors.cardBorder,
+    marginTop: spacing.md, backgroundColor: colors.card, borderRadius: radius.lg,
+    padding: spacing.lg, borderWidth: 1, borderColor: colors.cardBorder,
   },
   bannerLabel: { color: colors.text2, fontSize: type.footnote, fontWeight: '600' },
-  bannerValue: { color: colors.text, fontSize: type.title2, fontWeight: '900', marginTop: 4, letterSpacing: -0.5 },
+  bannerValue: { color: colors.text, fontSize: type.title2, fontWeight: '900', marginTop: spacing.xs, letterSpacing: -0.5 },
 
   section: {
-    marginTop: 12, backgroundColor: colors.card, borderRadius: radius.lg,
-    padding: 16, borderWidth: 1, borderColor: colors.cardBorder,
+    marginTop: spacing.md, backgroundColor: colors.card, borderRadius: radius.lg,
+    padding: spacing.lg, borderWidth: 1, borderColor: colors.cardBorder,
   },
-  sectionTitle: { color: colors.text, fontSize: type.subhead, fontWeight: '800', marginBottom: 12 },
+  sectionTitle: { color: colors.text, fontSize: type.subhead, fontWeight: '800', marginBottom: spacing.md },
 
   barRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 9 },
   barLabel: { width: 88, color: colors.text2, fontSize: type.footnote, fontWeight: '600' },
@@ -233,16 +233,18 @@ const styles = StyleSheet.create({
   barFill: { height: '100%', borderRadius: 4, backgroundColor: colors.accent },
   barCount: { width: 22, textAlign: 'right', color: colors.text3, fontSize: type.caption, fontWeight: '700' },
 
-  saleRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  saleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
   saleBig: { flex: 1 },
   saleNum: { color: colors.green, fontSize: type.hero, fontWeight: '900', letterSpacing: -1.5 },
   saleLabel: { color: colors.text2, fontSize: type.caption, fontWeight: '600', marginTop: 2 },
   saleSide: { alignItems: 'flex-end' },
   saleSideNum: { color: colors.text, fontSize: type.headline, fontWeight: '900' },
   saleSideLabel: { color: colors.text2, fontSize: type.caption, fontWeight: '600' },
-  saleSideMeta: { color: colors.text3, fontSize: type.caption2, marginTop: 5 },
+  saleSideMeta: { color: colors.text3, fontSize: type.caption2, marginTop: 5 },
+
+
   cta: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
     height: 50, paddingHorizontal: 22, borderRadius: radius.lg,
     backgroundColor: colors.accent, marginTop: 22,
   },

@@ -605,11 +605,11 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   body: { padding: spacing.lg, paddingBottom: TAB_SPACE + 16 },
 
-  headRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  headRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm },
   h1: { flex: 1, fontSize: type.title1, fontWeight: '800', color: colors.text, letterSpacing: -0.6 },
 
   // ── Kimlik ──
-  identity: { paddingTop: 8, paddingBottom: 16 },
+  identity: { paddingTop: spacing.sm, paddingBottom: spacing.lg },
   idRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   idText: { flex: 1, minWidth: 0 },
   idStore: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 5 },
@@ -618,7 +618,7 @@ const styles = StyleSheet.create({
   // Bu hafta satırı — kart değil satır: kimliğin devamı, ayrı bir bölüm değil.
   week: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
-    marginTop: 16, paddingHorizontal: 14, paddingVertical: 12,
+    marginTop: spacing.lg, paddingHorizontal: 14, paddingVertical: spacing.md,
     backgroundColor: colors.card, borderRadius: radius.md,
     borderWidth: 1, borderColor: colors.cardBorder,
   },
@@ -643,7 +643,7 @@ const styles = StyleSheet.create({
   idName: { fontSize: type.headline, fontWeight: '700', color: colors.text },
   idHandle: { fontSize: type.footnote, color: colors.text3, marginTop: 1 },
 
-  stats: { flexDirection: 'row', alignItems: 'center', marginTop: 16 },
+  stats: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.lg },
   stat: { alignItems: 'center', paddingHorizontal: 22 },
   // Tablo rakamları: sayı değiştikçe sütun genişliği oynamasın
   statN: { fontSize: type.headline, fontWeight: '700', color: colors.text, ...NUMERIC },
@@ -652,7 +652,7 @@ const styles = StyleSheet.create({
   // etikete değil: bilgi "kaç arkadaş" değil, "kaç bekleyen istek".
   statBadge: {
     position: 'absolute', top: -3, right: -14,
-    minWidth: 17, height: 17, borderRadius: 9, paddingHorizontal: 4,
+    minWidth: 17, height: 17, borderRadius: 9, paddingHorizontal: spacing.xs,
     backgroundColor: colors.accent,
     alignItems: 'center', justifyContent: 'center',
   },
@@ -660,9 +660,9 @@ const styles = StyleSheet.create({
   statDiv: { width: 1, height: 26, backgroundColor: colors.cardBorder },
 
   signInCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
+    flexDirection: 'row', alignItems: 'center', gap: spacing.md,
     backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1,
-    borderRadius: radius.lg, padding: 14, marginTop: 12,
+    borderRadius: radius.lg, padding: 14, marginTop: spacing.md,
   },
   signInTitle: { fontSize: type.subhead, fontWeight: '700', color: colors.text },
   signInDesc: { fontSize: type.footnote, color: colors.text2, marginTop: 3, lineHeight: 18 },
@@ -696,7 +696,7 @@ const styles = StyleSheet.create({
   },
   tile: {
     alignItems: 'center', justifyContent: 'center',
-    paddingVertical: spacing.md, paddingHorizontal: 4,
+    paddingVertical: spacing.md, paddingHorizontal: spacing.xs,
     backgroundColor: colors.card, borderRadius: radius.md,
     borderWidth: 1, borderColor: colors.cardBorder,
     // 44pt HIG dokunma hedefinin üstünde
@@ -733,7 +733,7 @@ const styles = StyleSheet.create({
   pickerHandle: {
     width: 36, height: 4, borderRadius: 2,
     backgroundColor: colors.text3, opacity: 0.4,
-    alignSelf: 'center', marginBottom: 16,
+    alignSelf: 'center', marginBottom: spacing.lg,
   },
   pickerTitle: {
     fontSize: type.headline, fontWeight: '800', color: colors.text,
@@ -741,7 +741,7 @@ const styles = StyleSheet.create({
   },
   pickerPhoto: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9,
-    marginTop: 16, paddingVertical: 13,
+    marginTop: spacing.lg, paddingVertical: 13,
     backgroundColor: colors.bgInput, borderRadius: radius.md,
     borderWidth: 1, borderColor: colors.cardBorder,
   },
@@ -752,7 +752,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center', gap: 14,
   },
   pickerItem: {
-    padding: 4, borderRadius: 32,
+    padding: spacing.xs, borderRadius: 32,
     borderWidth: 2.5, borderColor: 'transparent',
   },
   pickerItemActive: {

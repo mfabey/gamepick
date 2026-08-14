@@ -308,7 +308,7 @@ export default function GameDetail() {
         {/* Fiyat karşılaştırması */}
         {priceStores.length > 0 && (
           <Section title={t('detail.priceCompare')} delay={130}>
-            <View style={{ gap: 8 }}>
+            <View style={{ gap: spacing.sm }}>
               {priceStores.map((s, i) => (
                 <Pressable key={s.storeId || s.name} onPress={() => open(s.url)} disabled={!s.url}
                   style={[styles.cmpRow, i === 0 && styles.cmpBest]}>
@@ -471,7 +471,7 @@ export default function GameDetail() {
 
 function Section({ title, delay = 0, children }) {
   return (
-    <FadeIn delay={delay} style={{ marginTop: 24 }}>
+    <FadeIn delay={delay} style={{ marginTop: spacing.xl }}>
       <Text style={styles.sectionTitle}>{title}</Text>
       {children}
     </FadeIn>
@@ -493,18 +493,18 @@ const styles = StyleSheet.create({
   name: { fontSize: type.title1, fontWeight: '900', color: colors.text, letterSpacing: -0.5, lineHeight: 30 },
 
   metaRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
-  metaChip: { backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: radius.md, paddingHorizontal: 14, paddingVertical: 8, alignItems: 'center', minWidth: 68 },
+  metaChip: { backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: radius.md, paddingHorizontal: 14, paddingVertical: spacing.sm, alignItems: 'center', minWidth: 68 },
   metaChipText: { fontSize: type.body, fontWeight: '800' },
   metaChipText2: { fontSize: type.footnote, fontWeight: '700', color: colors.text },
   metaChipLabel: { fontSize: type.caption2, color: colors.text3, fontWeight: '600', marginTop: 2, textTransform: 'uppercase', letterSpacing: 0.3 },
-  dev: { fontSize: type.footnote, color: colors.text3, marginTop: 12, fontWeight: '600' },
+  dev: { fontSize: type.footnote, color: colors.text3, marginTop: spacing.md, fontWeight: '600' },
 
-  priceRow: { marginTop: 16, minHeight: 26, justifyContent: 'center', alignItems: 'flex-start' },
+  priceRow: { marginTop: spacing.lg, minHeight: 26, justifyContent: 'center', alignItems: 'flex-start' },
   price: { fontSize: type.title3, fontWeight: '800', color: colors.text },
   priceFree: { fontSize: type.title3, fontWeight: '800', color: colors.green },
   priceLoading: { fontSize: type.headline, color: colors.text3 },
   original: { fontSize: type.subhead, color: colors.text3, textDecorationLine: 'line-through' },
-  discountBadge: { backgroundColor: colors.accent, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
+  discountBadge: { backgroundColor: colors.accent, borderRadius: 8, paddingHorizontal: spacing.sm, paddingVertical: 3 },
   discountText: { color: '#fff', fontWeight: '800', fontSize: type.footnote },
 
   storeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 18 },
@@ -517,8 +517,8 @@ const styles = StyleSheet.create({
   cmpCheapest: { fontSize: type.caption2, fontWeight: '700', color: colors.accentText, marginTop: 1 },
   cmpPrice: { fontSize: type.subhead, fontWeight: '800', color: colors.text },
 
-  revCard: { backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: radius.md, padding: 16 },
-  revHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 12 },
+  revCard: { backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: radius.md, padding: spacing.lg },
+  revHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: spacing.md },
   revLabel: { fontSize: type.body, fontWeight: '800' },
   revPct: { fontSize: type.subhead, fontWeight: '800', color: colors.text },
   revPctLabel: { fontSize: type.footnote, fontWeight: '600', color: colors.text3 },
@@ -526,21 +526,21 @@ const styles = StyleSheet.create({
   revBarFill: { height: '100%', borderRadius: 4 },
   revCount: { fontSize: type.footnote, color: colors.text3, fontWeight: '600', marginTop: 10 },
 
-  sectionTitle: { fontSize: type.body, fontWeight: '800', color: colors.text, marginBottom: 12 },
-  genreWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  genreChip: { backgroundColor: colors.bgInput, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 6 },
+  sectionTitle: { fontSize: type.body, fontWeight: '800', color: colors.text, marginBottom: spacing.md },
+  genreWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  genreChip: { backgroundColor: colors.bgInput, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: spacing.md, paddingVertical: 6 },
   genreText: { color: colors.text2, fontSize: type.footnote, fontWeight: '700' },
   shot: { width: 264, height: 148, borderRadius: radius.md, backgroundColor: colors.card },
   desc: { fontSize: type.subhead, color: colors.text2, lineHeight: 21 },
   // Gerçek bir eylem (metni açıyor), o yüzden text2 değil text: nötr ama
   // parlak. Vurgu rengi bu ekranda fiyat ve indirime ayrılmış durumda.
-  moreLink: { color: colors.text, fontSize: type.footnote, fontWeight: '700', marginTop: 8 },
+  moreLink: { color: colors.text, fontSize: type.footnote, fontWeight: '700', marginTop: spacing.sm },
   // tema-bagimsiz: kapak/ekran goruntusu ustundeki katman
   modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', alignItems: 'center', justifyContent: 'center' },
   modalImage: { width: '100%', height: '100%' },
   // tema-bagimsiz: kapak/ekran goruntusu ustundeki katman
   closeBtn: { position: 'absolute', top: 50, right: 20, width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center', zIndex: 10 },
   // tema-bagimsiz: kapak/ekran goruntusu ustundeki katman
-  indicatorContainer: { position: 'absolute', bottom: 40, backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, zIndex: 10 },
+  indicatorContainer: { position: 'absolute', bottom: 40, backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: 20, zIndex: 10 },
   indicatorText: { color: '#fff', fontSize: type.subhead, fontWeight: '700', letterSpacing: 0.5 },
 });

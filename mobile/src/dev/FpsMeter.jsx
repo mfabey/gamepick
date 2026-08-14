@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
-import { type } from '../theme';
+import { type, spacing} from '../theme';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Canlı FPS ölçer — YALNIZCA geliştirmede (__DEV__).
@@ -49,7 +49,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(8,10,13,0.82)',
     borderWidth: 1.5,
     borderRadius: 8,
-    paddingHorizontal: 8,
+    paddingHorizontal: spacing.sm,
     paddingVertical: 3,
   },
   text: { fontSize: type.caption, fontWeight: '800', fontVariant: ['tabular-nums'] },

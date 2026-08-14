@@ -281,7 +281,7 @@ export default function ReviewsScreen() {
             </Text>
           }
           ListFooterComponent={
-            <View style={{ height: TAB_SPACE, alignItems: 'center', paddingTop: 12 }}>
+            <View style={{ height: TAB_SPACE, alignItems: 'center', paddingTop: spacing.md }}>
               {loadingMore ? <ActivityIndicator color={colors.accent} /> : null}
             </View>
           }
@@ -332,8 +332,8 @@ function Header({ t }) {
 const styles = StyleSheet.create({
   composeBar: {
     flexDirection: 'row', alignItems: 'center', gap: 9,
-    marginHorizontal: spacing.lg, marginTop: 4, marginBottom: 10,
-    paddingHorizontal: 14, paddingVertical: 12,
+    marginHorizontal: spacing.lg, marginTop: spacing.xs, marginBottom: 10,
+    paddingHorizontal: 14, paddingVertical: spacing.md,
     backgroundColor: colors.card, borderRadius: 999,
   },
   composeText: { color: colors.text3, fontSize: type.footnote },
@@ -341,7 +341,7 @@ const styles = StyleSheet.create({
   safe:   { flex: 1, backgroundColor: colors.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  head: { paddingHorizontal: spacing.lg, paddingTop: 8, paddingBottom: spacing.md },
+  head: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.md },
   h1: { color: colors.text, fontSize: type.title1, fontWeight: '800', letterSpacing: -0.6 },
 
   sectionLabel: {

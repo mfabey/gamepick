@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.text3, opacity: 0.5, marginBottom: 14,
   },
   title: { color: colors.text, fontSize: type.body, fontWeight: '900' },
-  gameName: { color: colors.text2, fontSize: type.footnote, marginTop: 3, marginBottom: 12 },
+  gameName: { color: colors.text2, fontSize: type.footnote, marginTop: 3, marginBottom: spacing.md },
 
   list: { flexGrow: 0 },
   emptyText: { color: colors.text2, fontSize: type.footnote, lineHeight: 20, paddingVertical: 10 },

@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
   tabTextOn: { color: colors.bg },
 
   list: { paddingHorizontal: spacing.md, paddingBottom: 30 },
-  card: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11 },
+  card: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: 11 },
   covers: {
     width: 66, height: 66, borderRadius: radius.md, overflow: 'hidden',
     flexDirection: 'row', flexWrap: 'wrap', backgroundColor: colors.card,
@@ -259,9 +259,9 @@ const styles = StyleSheet.create({
   cardBody: { flex: 1 },
   cardTitle: { color: colors.text, fontSize: type.subhead, fontWeight: '800' },
   cardDesc: { color: colors.text2, fontSize: type.footnote, marginTop: 3, lineHeight: 17 },
-  cardMeta: { color: colors.text3, fontSize: type.caption, marginTop: 4 },
+  cardMeta: { color: colors.text3, fontSize: type.caption, marginTop: spacing.xs },
 
-  likeBtn: { alignItems: 'center', gap: 2, paddingHorizontal: 4 },
+  likeBtn: { alignItems: 'center', gap: 2, paddingHorizontal: spacing.xs },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 },
   officialChip: {
     flexDirection: 'row', alignItems: 'center', gap: 3,

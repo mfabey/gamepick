@@ -721,7 +721,7 @@ const styles = StyleSheet.create({
   // tema-bagimsiz: tam ekran video oynatici; zemin videonun kendisi, tema yuzeyi degil
   root: { flex: 1, backgroundColor: '#000' },
   loadingRoot: { flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' },
-  loadingText: { color: colors.text2, fontSize: type.footnote, marginTop: 12 },
+  loadingText: { color: colors.text2, fontSize: type.footnote, marginTop: spacing.md },
 
   // tema-bagimsiz: tam ekran video oynatici; zemin videonun kendisi, tema yuzeyi degil
   item: { backgroundColor: '#000' },
@@ -766,7 +766,7 @@ const styles = StyleSheet.create({
   name: { color: '#fff', fontSize: type.title3, fontWeight: '900', letterSpacing: -0.4, lineHeight: 26 },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 9 },
   tag: {
-    paddingHorizontal: 9, paddingVertical: 4, borderRadius: radius.pill,
+    paddingHorizontal: 9, paddingVertical: spacing.xs, borderRadius: radius.pill,
     // tema-bagimsiz: tam ekran video oynatici; zemin videonun kendisi, tema yuzeyi degil
     backgroundColor: 'rgba(255,255,255,0.16)',
   },

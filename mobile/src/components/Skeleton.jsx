@@ -72,7 +72,7 @@ export function NewsListSkeleton({ rows = 6 }) {
       {Array.from({ length: rows }).map((_, i) => (
         <View key={i} style={styles.newsRow}>
           <Skeleton style={styles.newsThumb} />
-          <View style={{ flex: 1, gap: 8, paddingTop: 2 }}>
+          <View style={{ flex: 1, gap: spacing.sm, paddingTop: 2 }}>
             <Skeleton style={styles.lineSm} />
             <Skeleton style={styles.line} />
             <Skeleton style={styles.lineXs} />
@@ -98,9 +98,9 @@ const styles = StyleSheet.create({
 
   // news
   newsFeatured: { marginHorizontal: spacing.lg, height: 210, borderRadius: radius.lg },
-  chipsRow: { flexDirection: 'row', gap: 8, paddingHorizontal: spacing.lg, paddingVertical: 14 },
+  chipsRow: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: 14 },
   chip: { width: 72, height: 34, borderRadius: radius.pill },
-  newsRow: { flexDirection: 'row', gap: 12, paddingHorizontal: spacing.lg, paddingVertical: 12 },
+  newsRow: { flexDirection: 'row', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   newsThumb: { width: 108, height: 76, borderRadius: radius.md },
   lineSm: { width: 60, height: 10, borderRadius: 4 },
   line: { width: '92%', height: 14, borderRadius: 4 },

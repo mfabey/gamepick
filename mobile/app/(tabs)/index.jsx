@@ -486,12 +486,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 10,
     marginTop: 14, marginHorizontal: spacing.lg,
     backgroundColor: colors.card, borderColor: colors.borderHover, borderWidth: 1.5,
-    borderRadius: radius.lg, height: 56, paddingLeft: 18, paddingRight: 8,
+    borderRadius: radius.lg, height: 56, paddingLeft: 18, paddingRight: spacing.sm,
   },
   searchText: { flex: 1, color: colors.text3, fontSize: type.subhead },
   searchBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
 
-  sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, marginBottom: 12 },
+  sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, marginBottom: spacing.md },
   sectionTitle: {
     fontSize: type.caption, fontWeight: '700', color: colors.text2,
     textTransform: 'uppercase', letterSpacing: 1.1,
@@ -500,7 +500,7 @@ const styles = StyleSheet.create({
   // yeri "›" zaten söylüyor; vurgu rengi buraya değil, sayfadaki tek gerçek
   // eyleme (arama düğmesi) ait.
   viewAll: { fontSize: type.footnote, color: colors.text2, fontWeight: '700' },
-  row: { paddingHorizontal: spacing.lg, gap: 12 },
+  row: { paddingHorizontal: spacing.lg, gap: spacing.md },
   card: { width: 132 },
 
   cardCover: { width: '100%', aspectRatio: 3 / 4, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.card },
