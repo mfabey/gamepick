@@ -12,12 +12,14 @@ import { fetchCardPrice, fetchGameDetail, fetchGameByAppid, fetchPrices, fetchSt
 import { colors, radius, spacing, PRESSED, type, scale, metacriticColor } from '../../src/theme';
 import { stripHtml } from '../../src/utils/text';
 import { useLanguage } from '../../src/context/LanguageContext';
+import { useTimeToData } from '../../src/dev/perf';
 import { useWishlist } from '../../src/context/WishlistContext';
 import { useCollections, useCollectionsContaining } from '../../src/hooks/useCollections';
 import { toggleGameInCollection, createCollection } from '../../src/services/collectionsStore';
 import CollectionPicker from '../../src/components/CollectionPicker';
 import { reportActivity } from '../../src/api/social';
 import { useQuery } from '../../src/hooks/useQuery';
+import { GenreChipsSkeleton, ShotStripSkeleton, TextBlockSkeleton } from '../../src/components/Skeleton';
 import { recordSignal } from '../../src/services/tasteProfile';
 import { recordSeen } from '../../src/services/seenStore';
 import FadeIn from '../../src/components/FadeIn';
@@ -61,6 +63,7 @@ export default function GameDetail() {
   const [price, setPrice]     = useState(null);
   const [loadingPrice, setLoadingPrice] = useState(true);
   const [expanded, setExpanded] = useState(false);
+  useTimeToData('GameDetail', !!detail);
   const [activeShotIndex, setActiveShotIndex] = useState(null);
   const [currentScrollIndex, setCurrentScrollIndex] = useState(0);
   const { width: screenWidth } = Dimensions.get('window');
@@ -350,8 +353,11 @@ export default function GameDetail() {
           </Section>
         )}
 
-        {/* Türler */}
-        {genres.length > 0 && (
+        {/* Türler — veri gelene kadar iskelet.
+            TAM EKRAN İSKELET YOK: kapak ve ad rota parametrelerinden anında
+            çiziliyor, onları örtmek kazanç değil kayıp olurdu. Boş kalan
+            yalnızca ağdan gelen bu bölümler (ölçüldü: 868ms). */}
+        {genres.length > 0 ? (
           <Section title={t('detail.genres')} delay={100}>
             <View style={styles.genreWrap}>
               {genres.slice(0, 8).map((g, i) => (
@@ -359,9 +365,14 @@ export default function GameDetail() {
               ))}
             </View>
           </Section>
-        )}
+        ) : !detail ? (
+          <Section title={t('detail.genres')} delay={100}><GenreChipsSkeleton /></Section>
+        ) : null}
 
         {/* Ekran görüntüleri */}
+        {shots.length === 0 && !detail ? (
+          <Section title={t('detail.screenshots')} delay={160}><ShotStripSkeleton /></Section>
+        ) : null}
         {shots.length > 0 && (
           <Section title={t('detail.screenshots')} delay={160}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -spacing.lg }} contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: 10 }}>
@@ -375,6 +386,9 @@ export default function GameDetail() {
         )}
 
         {/* Açıklama */}
+        {!desc && !detail ? (
+          <Section title={t('detail.about')} delay={220}><TextBlockSkeleton /></Section>
+        ) : null}
         {desc ? (
           <Section title={t('detail.about')} delay={220}>
             <Text style={styles.desc} numberOfLines={expanded ? undefined : 5}>{desc}</Text>

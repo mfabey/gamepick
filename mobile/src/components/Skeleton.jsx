@@ -83,6 +83,67 @@ export function NewsListSkeleton({ rows = 6 }) {
   );
 }
 
+// ── Topluluk akışı iskeleti ──
+// Ölçüldü: bu ekran 645ms boyunca ortada dönen bir çarktan ibaretti ve
+// GERÇEK bir engelleyici yükleme durumu var (loading ? spinner : liste).
+// Çubuk şeridi + yazma çubuğu + kartlar, gerçek düzenin ritmini taşıyor.
+export function FeedSkeleton({ rows = 5 }) {
+  return (
+    <View>
+      <View style={styles.feedTabs}>
+        {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} style={styles.feedTab} />)}
+      </View>
+      <Skeleton style={styles.composeBar} />
+      {Array.from({ length: rows }).map((_, i) => (
+        <View key={i} style={styles.feedCard}>
+          <View style={styles.feedRow}>
+            <Skeleton style={styles.feedThumb} />
+            <View style={{ flex: 1, gap: spacing.sm }}>
+              <Skeleton style={styles.line} />
+              <Skeleton style={styles.lineSm} />
+            </View>
+          </View>
+          <Skeleton style={styles.lineWide} />
+          <Skeleton style={styles.lineMid} />
+        </View>
+      ))}
+    </View>
+  );
+}
+
+// ── Oyun detayı: BÖLÜM iskeletleri ──
+// TAM EKRAN İSKELET DEĞİL — bilerek. Ekran kapağı ve adı rota
+// parametrelerinden ANINDA çiziyor (detail?.image || image). Tam ekran bir
+// iskelet, zaten ekranda duran içeriğin üstünü örterdi. 868ms boyunca boş
+// kalan yalnızca ağdan gelen bölümler: tür, ekran görüntüleri, açıklama.
+export function GenreChipsSkeleton() {
+  return (
+    <View style={styles.genreWrap}>
+      {[74, 58, 88, 64].map((w, i) => <Skeleton key={i} style={[styles.genreChip, { width: w }]} />)}
+    </View>
+  );
+}
+
+export function ShotStripSkeleton() {
+  return (
+    <View style={styles.shotRow}>
+      {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} style={styles.shot} />)}
+    </View>
+  );
+}
+
+export function TextBlockSkeleton({ lines = 4 }) {
+  return (
+    <View style={{ gap: spacing.sm }}>
+      {Array.from({ length: lines }).map((_, i) => (
+        // Son satır kısa: gerçek paragraflar öyle biter, eşit uzunlukta
+        // satırlar iskeleti tablo gibi gösteriyordu.
+        <Skeleton key={i} style={i === lines - 1 ? styles.lineMid : styles.lineWide} />
+      ))}
+    </View>
+  );
+}
+
 // Sabit '#1b1f26' idi — koyu paletin bgInput değerinin TA KENDİSİ. Yani
 // belirteç zaten vardı, iskelet onu atlıyordu ve açık temada bütün yükleme
 // ekranları beyaz zeminde koyu gri kutulara dönüyordu.
@@ -105,4 +166,24 @@ const styles = StyleSheet.create({
   lineSm: { width: 60, height: 10, borderRadius: 4 },
   line: { width: '92%', height: 14, borderRadius: 4 },
   lineXs: { width: '55%', height: 11, borderRadius: 4 },
+  lineWide: { width: '100%', height: 12, borderRadius: 4 },
+  lineMid: { width: '62%', height: 12, borderRadius: 4 },
+
+  // feed (topluluk) — ölçüler reviews.jsx'teki gerçek kartlarla aynı ritimde
+  feedTabs: { flexDirection: 'row', gap: spacing.s8, paddingHorizontal: spacing.lg, paddingBottom: spacing.s12 },
+  feedTab: { flex: 1, height: 40, borderRadius: radius.md },
+  composeBar: { marginHorizontal: spacing.lg, height: 46, borderRadius: radius.pill, marginBottom: spacing.s12 },
+  feedCard: {
+    marginHorizontal: spacing.lg, marginBottom: spacing.md,
+    padding: spacing.s16, borderRadius: radius.lg, gap: spacing.sm,
+    borderWidth: 1, borderColor: colors.cardBorder,
+  },
+  feedRow: { flexDirection: 'row', gap: spacing.md, alignItems: 'center', marginBottom: spacing.s4 },
+  feedThumb: { width: 44, height: 44, borderRadius: radius.sm },
+
+  // oyun detayı bölümleri
+  genreWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  genreChip: { height: 30, borderRadius: radius.pill },
+  shotRow: { flexDirection: 'row', gap: spacing.s12 },
+  shot: { width: 208, height: 117, borderRadius: radius.md },
 });

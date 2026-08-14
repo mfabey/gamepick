@@ -37,6 +37,7 @@ import * as Haptics from 'expo-haptics';
 import { colors, radius, spacing, type, TAB_SPACE, PRESSED, PRESSED_CARD, NUMERIC } from '../../src/theme';
 import { useTabBarScroll } from '../../src/context/TabBarContext';
 import { useLanguage } from '../../src/context/LanguageContext';
+import { useTimeToData } from '../../src/dev/perf';
 import { useAuth } from '../../src/context/AuthContext';
 import { useWishlist } from '../../src/context/WishlistContext';
 import { useCollections } from '../../src/hooks/useCollections';
@@ -175,6 +176,7 @@ export default function ProfileScreen() {
   // `incoming` de tutuluyor: bekleyen istek varsa rozetle gösteriliyor,
   // yoksa kullanıcı isteği hiç fark etmiyor.
   const [friends, setFriends] = useState({ count: 0, incoming: 0 });
+  useTimeToData('Profile', friends.count >= 0 && username !== null);
   useEffect(() => {
     if (!account) { setFriends({ count: 0, incoming: 0 }); return; }
     let alive = true;

@@ -11,6 +11,7 @@ import { fetchTrending, fetchGames } from '../../src/api/games';
 import { colors, radius, spacing, TAB_SPACE, PRESSED, type, metacriticColor } from '../../src/theme';
 import { useTabBarScroll } from '../../src/context/TabBarContext';
 import { useLanguage } from '../../src/context/LanguageContext';
+import { useTimeToData } from '../../src/dev/perf';
 import FadeIn from '../../src/components/FadeIn';
 import PosterImage from '../../src/components/PosterImage';
 import { useQuery } from '../../src/hooks/useQuery';
@@ -165,6 +166,8 @@ export default function HomeScreen() {
   const [eligible, setEligible] = useState([]);
   const [friendGames, setFriendGames] = useState([]);
   const [reportTarget, setReportTarget] = useState(null);
+  // Dev-only ölçüm: iskelet gerekli mi kararını sayıya bağlamak için.
+  useTimeToData('Home', trend.length > 0);
 
   const loadSocial = useCallback(() => {
     // İncelemeler HESAPSIZ da okunuyor (bkz. api/social/reviews/feed). Eskiden

@@ -30,8 +30,10 @@ import ReviewCard from '../../src/components/ReviewCard';
 import PostCard from '../../src/components/PostCard';
 import PostComposer from '../../src/components/PostComposer';
 import ReportSheet from '../../src/components/ReportSheet';
+import { FeedSkeleton } from '../../src/components/Skeleton';
 import { colors, radius, spacing, type, PRESSED, NUMERIC, TAB_SPACE } from '../../src/theme';
 import { useLanguage } from '../../src/context/LanguageContext';
+import { useTimeToData } from '../../src/dev/perf';
 
 // Sunucunun sayfa boyutu (listFeed / listRecentReviews / listUserReviews
 // hepsi limit=20). "Devamı var mı" kararı bu sayıya bakıyor, o yüzden
@@ -63,6 +65,7 @@ export default function ReviewsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [composer, setComposer] = useState(null); // { appid, name, existing }
   const [reportTarget, setReportTarget] = useState(null);
+  useTimeToData('Community', !loading);
 
   const listRef = useRef(null);
   // seq = YARIŞ MÜHRÜ. Sekme, ağ isteği uçarken değişebiliyor; mühür
@@ -259,7 +262,10 @@ export default function ReviewsScreen() {
       <Header t={t} />
 
       {loading ? (
-        <View style={styles.center}><ActivityIndicator color={colors.accent} /></View>
+        // Dönen çark DEĞİL. Ölçüldü: bu ekran 645ms boyunca ortada tek bir
+        // çarktan ibaretti — akışın nasıl bir şey olduğuna dair hiçbir ipucu
+        // vermeden. İskelet aynı süreyi düzenin kendisini göstererek geçiriyor.
+        <FeedSkeleton />
       ) : (
         <FlashList
           ref={listRef}
