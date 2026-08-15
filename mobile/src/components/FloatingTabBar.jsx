@@ -13,7 +13,7 @@ import { useReducedMotion } from '../hooks/useReducedMotion';
 import { usePop } from '../hooks/usePop';
 import { useTabBarCompact, useTabBarHidden } from '../context/TabBarContext';
 import { useUnread, refreshUnread } from '../services/unread';
-import { colors, type, NUMERIC, spacing} from '../theme';
+import { colors, type, NUMERIC, spacing, shadows } from '../theme';
 
 // Sekme olmayan rotalar da burada (games, news, library): harita üst küme
 // olarak tutuluyor ki bir rota sekmeye girip çıkınca simgesi kaybolmasın.
@@ -284,16 +284,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.barSolid,
     borderWidth: 1,
     borderColor: colors.cardBorder,
-    ...Platform.select({
-      ios: {
-        // tema-bagimsiz: golge her zaman siyah
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.45,
-        shadowRadius: 20,
-      },
-      android: { elevation: 18 },
-    }),
+    // Gölge artık PALETTEN. Sabit kodluyken açık temada da koyu temanın
+    // gölgesini kullanıyordu (0.45 opaklık) ve beyaz zeminde ağır duruyordu.
+    // shadows.floating iki tema için ayrı ölçü taşıyor (handoff).
+    ...shadows.floating,
   },
   glassLayer: { borderRadius: RADIUS },
   pill: {

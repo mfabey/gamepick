@@ -1,81 +1,81 @@
 import { Appearance } from 'react-native';
 
-// Gamerisen mobil tema — web sitesinin (koyu tema) GERÇEK renkleriyle birebir
-// Kaynak: app/globals.css [data-theme] koyu değişkenleri. Vurgu = KIRMIZI.
+// Gamerisen mobil tema.
+// Kaynak: 2026-08 tasarım handoff'u (design_handoff_gamerisen). Vurgu = KIRMIZI.
+// Handoff jetonları birebir alındı; YALNIZ erişilebilirlik eşiğinde kalan
+// metin tonları ölçümle düzeltildi — gerekçeleri paletlerin içinde.
 const dark = {
-  // ── Zemin katmanları ──
-  // Sadeleştirme turunda derinleştirildi. Amaç dekoratif değil: zemin
-  // koyulaştıkça kapak görselleri kendiliğinden ayrışıyor ve kartların
-  // kenarlığa ihtiyacı kalmıyor. Daha az çizgi = daha az göz hareketi.
+  // ── Zemin katmanları — tasarım handoff'undan (2026-08 tasarım yönü) ──
+  // Handoff dört yüzey tanımlıyor: Zemin · Yüzey · Yüzey·2 · Yüzey·3.
+  // Bizim dört kademe birebir karşılık geliyor, isimler korundu.
   //
-  // Kontrast yeniden ölçüldü — dört yüzeyin HEPSİNDE text/text2/text3/
-  // accentText/danger ≥ 4.5:1 (en dar olan bgInput üzerinde text3: 4.51).
-  // Zemin koyulaştığı için oranlar düşmedi, yükseldi.
-  bg:         '#06070a',              // --bg-body (ana ekran arka planı)
-  bgElevated: '#0d0f14',              // --bg
-  card:       '#151920',              // --bg-card
-  bgInput:    '#1b1f26',              // --bg-input
-  bgHover:    '#1a1e24',              // --bg-hover
-  cardBorder: 'rgba(255,255,255,0.07)',   // --border
-  borderHover:'rgba(255,255,255,0.16)',   // --border-hover
-  text:       '#f2f4f7',              // --text
-  text2:      '#9aa3b0',              // --text-2
-  // text3 eskiden #69707c idi: en açık yüzeyimizde 3.31:1 veriyordu ve Apple'ın
-  // küçük metin için istediği 4.5:1'in altındaydı (HIG Accessibility tablosu).
-  // Ton korunarak açıklık yükseltildi → tüm yüzeylerde ≥4.5:1.
-  text3:      '#808690',              // --text-3 (erişilebilir)
-  accent:     '#e8242b',              // --accent (KIRMIZI) — dolgu/kenarlık/ikon
-  // Marka kırmızısı METİN olarak 3.71–4.45:1 arasında kalıyordu. Marka rengini
-  // bozmamak için ayrı bir metin tonu var: dolgular #e8242b kalır, yalnızca
-  // yazı bu tonu kullanır. (İkonlar grafik sayıldığı için 3:1 eşiğine tabi ve
-  // zaten uygun — onlar da marka tonunda kalıyor.)
-  accentText: '#ec4d52',              // yalnızca metin için
-  accentBg:   '#241012',              // --accent-bg
+  // KONTRAST YENİDEN ÖLÇÜLDÜ (dört yüzeyin hepsinde, WCAG AA 4.5 eşiği):
+  // text 15.18–17.92 · text2 6.62–7.82 · text3 4.53–5.34 ·
+  // accentText 6.02–7.11 · green 8.29–9.79 · danger 4.54–5.36.
+  bg:         '#0A0B0D',              // handoff: Zemin
+  bgElevated: '#101114',              // handoff: Yüzey (kart, panel)
+  card:       '#15161A',              // handoff: Yüzey·2 (iç blok, satır)
+  bgInput:    '#1C1E23',              // handoff: Yüzey·3 (çip, ikon yuvası)
+  bgHover:    '#212429',
+  cardBorder: 'rgba(255,255,255,0.07)',   // handoff: Kenarlık
+  borderHover:'rgba(255,255,255,0.12)',   // handoff: Kenarlık·güçlü
+  text:       '#F4F4F6',              // handoff: Metin·1
+  text2:      '#A1A3AB',              // handoff: Metin·2
+  // HANDOFF DEĞERİ #6F727C KULLANILMADI: kendi Yüzey·3'ü üstünde 3.47:1
+  // veriyor, WCAG AA'nın küçük metin için istediği 4.5'in altında. Bu depoda
+  // TAM BU HATA bir kez düzeltilmişti (eski #69707c, 3.31). Handoff'un tonu
+  // (226°) ve doygunluğu (%6) korunup yalnız açıklık +%7.5 yükseltildi.
+  text3:      '#82858F',              // handoff Metin·3'ün erişilebilir hâli
+  accent:     '#E8242B',              // handoff: Marka kırmızı — DEĞİŞMEDİ
+  accentText: '#FF6B6F',              // handoff: Kırmızı·metin
+  accentBg:   '#241012',
   accentSoft: 'rgba(232,36,43,0.14)',
-  accentBorder: 'rgba(232,36,43,0.40)',   // --accent-border tonunda
-  accentGlow: 'rgba(232,36,43,0.42)',     // --accent-glow
-  green:      '#00d26e',              // --green
+  accentBorder: 'rgba(232,36,43,0.40)',
+  accentGlow: 'rgba(232,36,43,0.42)',
+  green:      '#00d26e',
   steam:      '#1a9fff',
   xbox:       '#4ade80',
-  danger:     '#ef4949',              // en açık yüzeyde 4.39 → 4.50:1
+  danger:     '#ef4949',
   overlay:    'rgba(0,0,0,0.6)',
   // Yüzen sekme çubuğunun CAM OLMAYAN zemini (Android + iOS 26 öncesi).
-  // FloatingTabBar'da sabit kodluydu; açık temada çubuk koyu kalıyordu ve
-  // simülatörde görünmüyordu çünkü iOS 26 cam yolunu kullanıyor.
-  barSolid:   'rgba(18,21,27,0.94)',
-  // Sekme çubuğundaki kayan vurgu. accentBg opak, çubuğun üstünde ağır
-  // duruyor; bu saydam kalmalı.
+  // Handoff: "aynı geometri, #16171B düz dolgu ve aynı gölge".
+  barSolid:   '#16171B',
+  // Cam yolu (iOS 26+). Handoff: rgba(22,23,27,.58) + blur(32) saturate(180%)
+  glassFill:  'rgba(22,23,27,0.58)',
+  glassInner: 'rgba(255,255,255,0.12)',   // handoff: cam iç ışık
   accentPill: 'rgba(232,36,43,0.16)',
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// AÇIK TEMA
-//
-// Koyu paletin aynadaki karşılığı DEĞİL, rollerinin karşılığı: koyuda zemin
-// koyulaştıkça kartlar ayrışıyordu; açıkta tersi çalışıyor — sayfa hafif gri,
-// kartlar beyaz. Aynı hiyerarşi, ters yön.
-//
-// Kontrast ÖLÇÜLDÜ (WCAG, dört yüzeyin hepsinde): text 15.85–18.41,
-// text2 5.29–6.15, text3 4.83–5.61, accentText 4.93–5.73, danger 4.84–5.62,
-// green 4.72–5.48. En dar oran 4.72 — Apple'ın küçük metin için istediği
-// 4.5:1'in üstünde.
-//
-// MARKA RENGİ DOLGUDA DEĞİŞMİYOR: accent iki temada da #e8242b. Yalnızca
-// METİN tonu koyulaşıyor (accentText), çünkü açık zeminde marka kırmızısı
-// 4.5:1'i geçmiyor — koyu temadaki kuralın aynısı, ters yöne uygulanmış.
 const light = {
-  bg:         '#f4f5f7',
-  bgElevated: '#ffffff',
-  card:       '#ffffff',
-  bgInput:    '#eceef2',
-  bgHover:    '#e6e9ee',
-  cardBorder: 'rgba(0,0,0,0.10)',
-  borderHover:'rgba(0,0,0,0.22)',
-  text:       '#12141a',
-  text2:      '#5a6270',
-  text3:      '#616875',
-  accent:     '#e8242b',
-  accentText: '#c81e24',
+  // ── AÇIK TEMA ──
+  // YÖN HANDOFF'TAN, TONLAR ÖLÇÜMDEN.
+  //
+  // Handoff beyaz zemin + gri yüzey istiyor; bizim önceki yönümüz tersiydi
+  // (gri sayfa, beyaz kart). Yön handoff'a çevrildi.
+  //
+  // AMA handoff'un açık tema METİN tonları alınmadı: Metin·3 (#8A8D94)
+  // kendi yüzeyi üstünde 3.05:1, marka metni (#D81E25) bizim dördüncü
+  // yüzeyimizde 4.34:1 veriyor — ikisi de 4.5 eşiğinin altında. Daha önce
+  // ölçülüp doğrulanmış kendi tonlarımız korundu.
+  //
+  // Handoff açık temada YALNIZ İKİ yüzey tanımlıyor (Zemin, Yüzey); dört
+  // kademe bizim yapımız, aradaki ikisi aynı ritimde türetildi.
+  //
+  // KONTRAST (dört yüzeyin hepsinde): text 16.82–19.69 · text2 5.46–6.40 ·
+  // text3 4.79–5.61 · accentText 4.89–5.73 · green 4.68–5.48 ·
+  // danger 4.80–5.62.
+  bg:         '#FFFFFF',              // handoff: Zemin
+  bgElevated: '#FAFAFB',              // türetildi
+  card:       '#F5F5F7',              // handoff: Yüzey
+  bgInput:    '#ECEDF0',              // türetildi
+  bgHover:    '#E4E6EA',
+  cardBorder: 'rgba(0,0,0,0.08)',     // handoff: Kenarlık
+  borderHover:'rgba(0,0,0,0.16)',
+  text:       '#0A0B0D',              // handoff: Metin·1
+  text2:      '#5C5F66',              // handoff: Metin·2
+  text3:      '#616875',              // ÖLÇÜLMÜŞ (handoff'unki 3.05'te kalıyordu)
+  accent:     '#E8242B',              // marka dolguda iki temada da aynı
+  accentText: '#c81e24',              // ÖLÇÜLMÜŞ (handoff'unki 4.34'te kalıyordu)
   accentBg:   '#fdecec',
   accentSoft: 'rgba(232,36,43,0.10)',
   accentBorder: 'rgba(232,36,43,0.35)',
@@ -85,9 +85,9 @@ const light = {
   xbox:       '#107c10',
   danger:     '#c62828',
   overlay:    'rgba(0,0,0,0.45)',
-  barSolid:   'rgba(255,255,255,0.94)',
-  // Açık zeminde aynı opaklık soluk kalıyor; ton koyulaşıp opaklık düşüyor
-  // (accentText ile aynı karar — bkz. palet başı).
+  barSolid:   '#FFFFFF',
+  glassFill:  'rgba(255,255,255,0.62)',   // handoff
+  glassInner: 'rgba(255,255,255,0.70)',
   accentPill: 'rgba(200,30,36,0.14)',
 };
 
@@ -180,6 +180,10 @@ export const type = {
   title3:   22,
   title2:   24,
   title1:   28,
+  // Handoff'un "Ekran başlığı" kademesi (34 / 700 / −2.2%). Mevcut on bir
+  // kademe BOZULMADI — handoff altı kademe öneriyor ama 363 kullanımı
+  // yeniden eşlemek kırıcı bir iş; eksik olan basamak eklendi.
+  display1: 34,
   hero:     40,
   display:  62,
 };
@@ -246,6 +250,23 @@ export const motion = Object.freeze({
 });
 
 export const radius = { sm: 8, md: 12, lg: 16, xl: 20, pill: 999 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// YÜKSELTME GÖLGESİ — yüzen sekme çubuğu ve alt sayfalar.
+//
+// Handoff: koyu temada `0 16px 40px rgba(0,0,0,.55)`, açıkta
+// `0 12px 32px rgba(0,0,0,.12)`. RN'de gölge dört ayrı özellik olduğu için
+// jeton bir NESNE; doğrudan style dizisine konabiliyor.
+//
+// FloatingTabBar'da sabit kodluydu ve açık temada koyu temanın gölgesini
+// kullanıyordu — beyaz zeminde ağır duruyordu.
+export const shadows = {
+  floating: isDarkTheme
+    // tema-bagimsiz: golge her zaman siyah; temaya gore degisen opaklik ve yaricap
+    ? { shadowColor: '#000', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.55, shadowRadius: 40, elevation: 18 }
+    // tema-bagimsiz: ayni gerekce
+    : { shadowColor: '#000', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.12, shadowRadius: 32, elevation: 10 },
+};
 
 
 // ─────────────────────────────────────────────────────────────────────────────
