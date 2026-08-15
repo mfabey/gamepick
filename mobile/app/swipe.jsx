@@ -259,7 +259,7 @@ function SwipeCard({ game, index, isTop, onDecide, onPress, t }) {
     <GestureDetector gesture={pan}>
       <Animated.View style={[styles.card, cardStyle]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onPress} disabled={!isTop}>
-          <GameCover uri={game.image} style={StyleSheet.absoluteFill}>
+          <GameCover uri={game.image} name={game.name} style={StyleSheet.absoluteFill}>
           <View style={styles.cardBody}>
             <Text numberOfLines={2} style={styles.cardName}>{game.name}</Text>
             {game.genres?.length > 0 && (

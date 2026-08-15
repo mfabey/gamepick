@@ -17,8 +17,15 @@ export default function PosterImage({ uri, onError, ...rest }) {
     <Image
       source={source}
       onError={(e) => {
-        if (usePortrait) setFailedPoster(poster); // portre başarısız → header'a dön
-        onError?.(e);
+        // ÖNEMLİ: onError yalnız SON çare de başarısız olduğunda çağrılıyor.
+        // Öncesinde iki hata da bildiriliyordu; çağıran taraf "kapak yok"
+        // sonucunu daha ilk denemede çıkarır ve dikey kapak 404 verdiğinde
+        // orijinal görsel yüklenecekken monogram basardı.
+        if (usePortrait) {
+          setFailedPoster(poster);   // hâlâ bir şansımız var: orijinale dön
+          return;
+        }
+        onError?.(e);                // zincirin sonu — gerçekten kapak yok
       }}
       {...rest}
     />

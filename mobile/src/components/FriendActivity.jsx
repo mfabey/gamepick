@@ -1,5 +1,7 @@
 import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { Image } from 'expo-image';
+
+import GameCover from './GameCover';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -71,8 +73,11 @@ export default function FriendActivity({ games }) {
             accessibilityRole="button"
             accessibilityLabel={`${g.name} — ${names(g, t)}`}
           >
-            <View style={styles.cover}>
-              <Image source={g.image} style={StyleSheet.absoluteFill} contentFit="cover" transition={motion.image} />
+            {/* GameCover'a bağlandı. Öncesinde ham <Image> vardı ve zinciri
+                yoktu: dikey kapak dönüşümü, karartma ve — en önemlisi —
+                kapak yüklenemediğinde monogram. Anasayfadaki boş gri
+                kutular tam buradan geliyordu. */}
+            <GameCover uri={g.image} name={g.name} style={styles.cover}>
               {/* Avatar yığını görselin ÜSTÜNDE: kartın ilk okunan şeyi
                   oyun değil, oynayan kişiler olsun. */}
               <View style={styles.stack}>
@@ -86,7 +91,7 @@ export default function FriendActivity({ games }) {
                   />
                 ))}
               </View>
-            </View>
+            </GameCover>
             <Text style={styles.name} numberOfLines={1}>{g.name}</Text>
             <Text style={styles.who} numberOfLines={1}>{names(g, t)}</Text>
           </Pressable>

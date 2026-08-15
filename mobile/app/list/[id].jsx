@@ -77,7 +77,7 @@ export default function PublicListScreen() {
 
   const renderItem = useCallback(({ item }) => (
     <Pressable style={({ pressed }) => [styles.cell, pressed && PRESSED]} onPress={() => openGame(item)}>
-      <GameCover uri={item.image} style={styles.cover}>
+      <GameCover uri={item.image} name={item.name} style={styles.cover}>
         <Text numberOfLines={2} style={styles.cellName}>{item.name}</Text>
       </GameCover>
     </Pressable>

@@ -129,7 +129,7 @@ export default function OnboardingScreen() {
 function PickCard({ game, selected, onPress }) {
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.cell, pressed && PRESSED]}>
-      <GameCover uri={game.image} style={[styles.cover, selected && styles.coverOn]}>
+      <GameCover uri={game.image} name={game.name} style={[styles.cover, selected && styles.coverOn]}>
         <Text numberOfLines={2} style={styles.name}>{game.name}</Text>
 
         {selected && (

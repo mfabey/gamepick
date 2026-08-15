@@ -96,7 +96,7 @@ export default function CollectionDetailScreen() {
           içeride PosterImage kullanıyor, o da aynı dönüşümü yapıyor VE
           dikey kapak 404 verirse orijinale dönüyor. Burada o geri dönüş
           yoktu. */}
-      <GameCover uri={item.image} style={styles.cover}>
+      <GameCover uri={item.image} name={item.name} style={styles.cover}>
         <Text numberOfLines={2} style={styles.cellName}>{item.name}</Text>
       </GameCover>
     </Pressable>

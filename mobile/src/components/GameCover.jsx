@@ -23,10 +23,12 @@
 // tutmuyordu: geçiş kartın alt üçte birinde başlayıp bir anda koyuluyor,
 // aradaki parlak şeritte beyaz yazı eriyordu. Orta durak o şeridi kapatıyor.
 // ─────────────────────────────────────────────────────────────────────────────
+import { useState, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import PosterImage from './PosterImage';
+import Monogram from './Monogram';
 
 // tema-bagimsiz: oyun kapağının üstünde duruyor, zemin görselin kendisi
 const SCRIM = ['transparent', 'rgba(6,7,9,0.55)', 'rgba(6,7,9,0.96)'];
@@ -35,22 +37,37 @@ const FADE_MS = 200;
 
 /**
  * @param {string}  uri           kapak adresi
+ * @param {string} [name]         monogram için oyun adı (kapak gelmezse)
  * @param {string} [recyclingKey] FlashList geri dönüşümünde görsel karışmasın
  * @param {object} [style]        dış kap (boyut/oran/köşe burayadan gelir)
  * @param {node}   [children]     rozetler, ad — karartmanın ÜSTÜNDE çizilir
  */
-export default function GameCover({ uri, recyclingKey, style, children, ...rest }) {
+export default function GameCover({ uri, name, recyclingKey, style, children, ...rest }) {
+  const [failed, setFailed] = useState(false);
+
+  // GERİ DÖNÜŞÜM SIFIRLAMASI ŞART. FlashList kartları yeniden kullanıyor;
+  // sıfırlanmasaydı bir kez başarısız olan kart, sonra gelen SAĞLAM kapaklı
+  // oyunda da monogram göstermeye devam ederdi.
+  useEffect(() => { setFailed(false); }, [uri]);
+
+  // Monogram karartmanın ALTINDA: üstünde olsaydı gradyan onu da karartır ve
+  // harfler okunmazdı. Kapak yüklenince görsel monogramın üstünü örtüyor.
   return (
     <View style={style}>
-      <PosterImage
-        uri={uri}
-        recyclingKey={recyclingKey}
-        cachePolicy="memory-disk"
-        style={StyleSheet.absoluteFill}
-        contentFit="cover"
-        transition={FADE_MS}
-        {...rest}
-      />
+      {failed || !uri ? (
+        <Monogram name={name} style={StyleSheet.absoluteFill} />
+      ) : (
+        <PosterImage
+          uri={uri}
+          recyclingKey={recyclingKey}
+          cachePolicy="memory-disk"
+          style={StyleSheet.absoluteFill}
+          contentFit="cover"
+          transition={FADE_MS}
+          onError={() => setFailed(true)}
+          {...rest}
+        />
+      )}
       <LinearGradient colors={SCRIM} locations={SCRIM_STOPS} style={StyleSheet.absoluteFill} />
       {children}
     </View>

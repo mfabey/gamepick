@@ -400,7 +400,7 @@ const GameTile = memo(function GameTile({ game, steam, price }) {
   const isFree = price?.isFree;
   const onSale = price?.discount > 0 && !isFree;
   return (
-    <GameCover uri={game.image} recyclingKey={String(game.appid ?? game.titleId)} style={styles.tile}>
+    <GameCover uri={game.image} name={game.name} recyclingKey={String(game.appid ?? game.titleId)} style={styles.tile}>
       {!steam && game.isGamePass ? (
         <View style={styles.gpBadge}><Text style={styles.gpText}>GAME PASS</Text></View>
       ) : null}

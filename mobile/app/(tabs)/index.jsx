@@ -448,7 +448,7 @@ const HomeCard = memo(function HomeCard({ game, router, onDismiss }) {
       onLongPress={onDismiss ? () => onDismiss(game) : undefined}
       delayLongPress={350}
     >
-      <GameCover uri={game.image} style={styles.cardCover}>
+      <GameCover uri={game.image} name={game.name} style={styles.cardCover}>
         {game.metacritic ? (
           <View style={styles.mcBadge}><Text style={[styles.mcText, { color: mcColor }]}>{game.metacritic}</Text></View>
         ) : null}

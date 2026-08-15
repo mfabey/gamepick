@@ -29,6 +29,7 @@ function GameCard({ game }) {
     >
       <GameCover
         uri={game.image}
+        name={game.name}
         placeholder={BLUR_HASH}
         recyclingKey={String(game.id)}
         style={styles.coverWrap}
