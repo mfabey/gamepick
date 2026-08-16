@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 import ReviewComposer from './ReviewComposer';
-import { radius, spacing, type, PRESSED, NUMERIC, motion } from '../theme';
+import { radius, spacing, type, PRESSED, NUMERIC, motion, SECTION_TITLE } from '../theme';
 import { useStyles, useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -83,16 +83,13 @@ const makeStyles = (colors) => StyleSheet.create({
   wrap: { marginTop: 22 },
   head: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingHorizontal: spacing.lg, marginBottom: 10,
+    paddingHorizontal: spacing.s20, marginBottom: spacing.md,
   },
   // Bölüm başlıkları büyük harf ve gri; bu başlık VURGU RENGİNDE çünkü
   // diğerleri "işte içerik" derken bu "sıra sende" diyor. Aynı görünseydi
   // bir liste başlığı sanılırdı.
-  title: {
-    color: colors.accentText, fontSize: type.caption, fontWeight: '800',
-    textTransform: 'uppercase', letterSpacing: 1,
-  },
-  strip: { paddingHorizontal: spacing.lg, gap: spacing.sm },
+  title: { ...SECTION_TITLE, color: colors.accentText },
+  strip: { paddingHorizontal: spacing.s20, gap: spacing.sm },
   card:  { width: 140 },
   img:   { width: 140, height: 66, borderRadius: radius.sm, backgroundColor: colors.bgInput },
   name:  { color: colors.text, fontSize: type.caption, fontWeight: '700', marginTop: 5 },

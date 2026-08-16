@@ -327,11 +327,17 @@ const makeStyles = (colors) => StyleSheet.create({
   // Handoff tipografisi — Etiket kademesi: 11 / 600 / +%6 / BUYUK HARF.
   // Pasif renk text3, aktif tam kontrast (handoff: "yalniz aktif sekme tam
   // kontrastta").
+  // MAKETTEN ÖLÇÜLDÜ, README'den değil. README bu kademe için
+  // "11 / 600 / +%6 / BÜYÜK HARF" diyordu ve ilk uygulama onu izlemişti;
+  // handoff HTML'i tarayıcıda açılıp ölçülünce başka çıktı:
+  //
+  //   "Topluluk" → 11px / 400 / letterSpacing normal / CÜMLE DÜZENİ / text3
+  //
+  // Handoff'un kendi CLAUDE.md'si çelişkide HTML'i yetkili sayıyor.
+  // i18n dizeleri zaten cümle düzeninde ('tab.home': 'Anasayfa').
   label: {
     fontSize: type.caption2,
-    fontWeight: '600',
-    letterSpacing: 0.66,
-    textTransform: 'uppercase',
+    fontWeight: '400',
     color: colors.text3,
   },
   // HTML'den: aktif ETİKET #f4f4f6 (text1), aktif İKON #e8242b (marka).

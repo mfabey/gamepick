@@ -5,7 +5,7 @@ import GameCard from './GameCard';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-import { radius, spacing, type, motion } from '../theme';
+import { radius, spacing, type, motion, SECTION_TITLE } from '../theme';
 import { useStyles, useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -122,13 +122,10 @@ const makeStyles = (colors) => StyleSheet.create({
   wrap: { marginTop: 26 },
   head: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingHorizontal: spacing.lg, marginBottom: spacing.md,
+    paddingHorizontal: spacing.s20, marginBottom: spacing.md,
   },
-  title: {
-    color: colors.text2, fontSize: type.caption, fontWeight: '700',
-    textTransform: 'uppercase', letterSpacing: 1.1,
-  },
-  strip: { paddingHorizontal: spacing.lg, gap: spacing.md },
+  title: { ...SECTION_TITLE, color: colors.text },
+  strip: { paddingHorizontal: spacing.s20, gap: spacing.md },
   card:  { width: 150 },
   stack: { position: 'absolute', left: 6, bottom: 6, flexDirection: 'row' },
   face: {

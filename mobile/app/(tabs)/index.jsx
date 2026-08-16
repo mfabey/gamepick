@@ -6,7 +6,7 @@ import { BottomFade } from '../../src/components/EdgeFade';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchTrending, fetchGames } from '../../src/api/games';
-import { radius, spacing, TAB_SPACE, PRESSED, type } from '../../src/theme';
+import { radius, spacing, TAB_SPACE, PRESSED, type, SECTION_TITLE } from '../../src/theme';
 import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { useTabBarScroll } from '../../src/context/TabBarContext';
 import { useLanguage } from '../../src/context/LanguageContext';
@@ -492,7 +492,7 @@ const makeStyles = (colors) => StyleSheet.create({
   // ilk denemede onu değiştirdim ve marka ortada kaldı.
   topBar: {
     alignItems: 'flex-start', justifyContent: 'center',
-    paddingHorizontal: spacing.lg, paddingTop: 10, paddingBottom: 10,
+    paddingHorizontal: spacing.s20, paddingTop: spacing.s8, paddingBottom: spacing.s12,
     minHeight: 52,
   },
   // İkon akıştan çıkarıldı: marka sola yaslandı ama düğme sağ kenarda kalmalı.
@@ -502,7 +502,8 @@ const makeStyles = (colors) => StyleSheet.create({
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.s4 },
   // letterSpacing 1.5 KALKTI: o değer BÜYÜK HARF yazı içindi. Küçük harf
   // kelime markasında harf aralığı açmak kelimeyi dağıtıyor.
-  brand: { fontSize: type.headline, fontWeight: '900', color: colors.text },
+  // Maketten olculdu: 22px / 700 / -0.44px. Bizde 20 / 900 / 0 idi.
+  brand: { fontSize: type.title3, fontWeight: '700', color: colors.text, letterSpacing: -0.44 },
   // Makette markanın hemen ardındaki kırmızı işaret.
   //
   // Dikey yer TABANA bağlı, keyfi bir marginTop'a değil: ilk denemede
@@ -527,16 +528,16 @@ const makeStyles = (colors) => StyleSheet.create({
   searchBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
 
   // gap eklendi: başlık sarınca iki öğe birbirine yapışıyordu.
-  sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md, paddingHorizontal: spacing.lg, marginBottom: spacing.md },
-  sectionTitle: {
-    fontSize: type.caption, fontWeight: '700', color: colors.text2,
-    textTransform: 'uppercase', letterSpacing: 1.1,
-  },
+  sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.s8, paddingHorizontal: spacing.s20, marginBottom: spacing.md },
+  sectionTitle: { ...SECTION_TITLE, color: colors.text },
   // Bölüm başına bir tane olduğu için ekranda üç kez tekrarlıyordu. Gideceği
   // yeri "›" zaten söylüyor; vurgu rengi buraya değil, sayfadaki tek gerçek
   // eyleme (arama düğmesi) ait.
-  viewAll: { fontSize: type.footnote, color: colors.text2, fontWeight: '700' },
-  row: { paddingHorizontal: spacing.lg, gap: spacing.md },
+  // MAKET KIRMIZI DIYOR. Bizde text2 idi ve gerekcesi yaziliydi ("ekran
+  // basina en cok 3 kirmizi oge"). Maket birebir izleniyor; ikisi
+  // arasindaki gerilim handoff'un kendi icinde -- bkz. commit.
+  viewAll: { fontSize: type.footnote, color: colors.accent, fontWeight: '600' },
+  row: { paddingHorizontal: spacing.s20, gap: spacing.md },
 
   // tema-bagimsiz: oyun kapaginin ustundeki rozet; zemin gorsel
 });

@@ -26,7 +26,7 @@ import {
 import { subscribeSession, getSession } from '../src/services/session';
 import ReportSheet from '../src/components/ReportSheet';
 import EmptyState from '../src/components/EmptyState';
-import { radius, spacing, PRESSED, type } from '../src/theme';
+import { radius, spacing, PRESSED, type, SECTION_TITLE } from '../src/theme';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 import IconButton from '../src/components/IconButton';
@@ -618,8 +618,8 @@ const makeStyles = (colors) => StyleSheet.create({
 
   list: { paddingHorizontal: spacing.md, paddingBottom: 30 },
   sectionLabel: {
-    color: colors.text3, fontSize: type.caption, fontWeight: '800',
-    letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 6, marginTop: spacing.xs,
+    ...SECTION_TITLE, color: colors.text,
+    marginBottom: spacing.s8, marginTop: spacing.xs,
   },
   inlineEmpty: { color: colors.text2, fontSize: type.footnote, textAlign: 'center', marginTop: 26, lineHeight: 20 },
 

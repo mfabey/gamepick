@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 import { getPrivacy, setPrivacy, getBlocked, unblockUser } from '../src/api/social';
-import { radius, spacing, PRESSED, type } from '../src/theme';
+import { radius, spacing, PRESSED, type, SECTION_TITLE } from '../src/theme';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 import { getAvatarPreset } from '../src/utils/avatar';
@@ -198,8 +198,8 @@ const makeStyles = (colors) => StyleSheet.create({
   divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.cardBorder, marginLeft: 60 },
 
   sectionLabel: {
-    color: colors.text3, fontSize: type.caption, fontWeight: '800',
-    letterSpacing: 0.5, textTransform: 'uppercase', marginTop: 26, marginBottom: 9,
+    ...SECTION_TITLE, color: colors.text,
+    marginTop: spacing.s24, marginBottom: spacing.s8,
   },
   emptyText: { color: colors.text2, fontSize: type.footnote, paddingVertical: 6 },
 

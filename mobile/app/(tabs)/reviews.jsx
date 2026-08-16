@@ -32,7 +32,7 @@ import PostCard from '../../src/components/PostCard';
 import PostComposer from '../../src/components/PostComposer';
 import ReportSheet from '../../src/components/ReportSheet';
 import { FeedSkeleton, Reveal } from '../../src/components/Skeleton';
-import { radius, spacing, type, PRESSED, NUMERIC, TAB_SPACE, motion } from '../../src/theme';
+import { radius, spacing, type, PRESSED, NUMERIC, TAB_SPACE, motion, SECTION_TITLE } from '../../src/theme';
 import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useTimeToData } from '../../src/dev/perf';
@@ -440,8 +440,7 @@ const makeStyles = (colors) => StyleSheet.create({
   headBadgeText: { color: '#fff', fontSize: type.caption2, fontWeight: '800' },
 
   sectionLabel: {
-    color: colors.text3, fontSize: type.caption, fontWeight: '800',
-    textTransform: 'uppercase', letterSpacing: 1,
+    ...SECTION_TITLE, color: colors.text,
     paddingHorizontal: spacing.lg, marginBottom: spacing.sm,
   },
   strip: { paddingHorizontal: spacing.lg, gap: spacing.sm, paddingBottom: spacing.lg },

@@ -34,7 +34,7 @@ import { TopFade, BottomFade } from '../../src/components/EdgeFade';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { radius, spacing, type, TAB_SPACE, PRESSED, PRESSED_CARD, NUMERIC } from '../../src/theme';
+import { radius, spacing, type, TAB_SPACE, PRESSED, PRESSED_CARD, NUMERIC, SECTION_TITLE } from '../../src/theme';
 import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { useTabBarScroll } from '../../src/context/TabBarContext';
 import { useLanguage } from '../../src/context/LanguageContext';
@@ -689,9 +689,8 @@ const makeStyles = (colors) => StyleSheet.create({
   // ── Gruplar ──
   sectionHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   sectionLabel: {
-    fontSize: type.caption, fontWeight: '700', color: colors.text3,
-    textTransform: 'uppercase', letterSpacing: 1.1,
-    marginTop: 28, marginBottom: 9,
+    ...SECTION_TITLE, color: colors.text,
+    marginTop: spacing.s24, marginBottom: spacing.s8,
   },
   // ── Kısayol ızgarası ──
   // Dört sütun. Üç sütun daha ferah olurdu ama on hedef dört satıra yayılır ve

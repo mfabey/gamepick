@@ -311,3 +311,28 @@ export const TAB_SPACE = 104;
 // ayrı bir iş; yeni kod bu sabiti kullanmalı.
 // ─────────────────────────────────────────────────────────────────────────────
 export const TOUCH_MIN = 44;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BÖLÜM BAŞLIĞI — maketten ÖLÇÜLDÜ, README'den değil.
+//
+// Handoff HTML'i tarayıcıda açılıp elementler ölçüldü (handoff CLAUDE.md'nin
+// kendi talimatı: "tarayıcıda aç ve elementi ölç; tahmin etme"):
+//
+//   "Yeni Çıkanlar"  →  17px / 650 / -0.17px / text1 / CÜMLE DÜZENİ
+//
+// Bizde 12px / 700 / +1.1 / text2 / BÜYÜK HARF idi. Maket hiçbir yerde büyük
+// harf kullanmıyor; uygulamada 17 yerde vardı. Fark yalnızca boyut değil
+// TON: harf aralığı açılmış büyük harf bağırıyor, cümle düzeni konuşuyor.
+//
+// AĞIRLIK 650 DEĞİL 600: React Native fontWeight'te yalnızca yüzlük
+// basamakları kabul ediyor ('100'…'900'). 650 yazılsaydı sessizce
+// yuvarlanırdı; hangi değere yuvarlandığı platforma kalırdı.
+//
+// RENK BURADA YOK: palete bağlı ve bu nesne modül düzeyinde donuyor.
+// Çağrı yeri kendi `colors.text`ini ekliyor.
+// ─────────────────────────────────────────────────────────────────────────────
+export const SECTION_TITLE = Object.freeze({
+  fontSize: type.body,      // 17
+  fontWeight: '600',
+  letterSpacing: -0.17,
+});
