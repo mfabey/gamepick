@@ -293,3 +293,17 @@ export const TAB_BAR = {
 };
 
 export const TAB_SPACE = 104;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EN KÜÇÜK DOKUNMA HEDEFİ — Apple HIG: 44×44 pt.
+//
+// Bu sayı boşluk ölçeğinde YOK ve olmamalı da: 4pt ızgarasındaki bir boşluk
+// adımı değil, bir DENETİM YÜKSEKLİĞİ. Ölçeğe 44 eklemek boşluk basamağı
+// olarak da kullanılmasının önünü açardı.
+//
+// Handoff'un fiyat satırı ölçüsü de aynı sayı (44 yükseklik satır).
+//
+// NOT: kod tabanında hâlâ 38 yerde düz `44` yazıyor. Buraya taşınmaları
+// ayrı bir iş; yeni kod bu sabiti kullanmalı.
+// ─────────────────────────────────────────────────────────────────────────────
+export const TOUCH_MIN = 44;

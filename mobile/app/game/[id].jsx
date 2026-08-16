@@ -6,11 +6,14 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Animated from 'react-native-reanimated';
+import Animated, {
+  useSharedValue, useAnimatedScrollHandler, useAnimatedStyle,
+  interpolate, Extrapolation,
+} from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import { fetchCardPrice, fetchGameDetail, fetchGameByAppid, fetchPrices, fetchSteamReviews } from '../../src/api/games';
-import { colors, radius, spacing, PRESSED, type, scale, metacriticColor, motion } from '../../src/theme';
+import { colors, radius, spacing, PRESSED, type, scale, metacriticColor, motion, TOUCH_MIN } from '../../src/theme';
 import { stripHtml } from '../../src/utils/text';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useTimeToData } from '../../src/dev/perf';
@@ -21,6 +24,7 @@ import CollectionPicker from '../../src/components/CollectionPicker';
 import { reportActivity } from '../../src/api/social';
 import { useQuery } from '../../src/hooks/useQuery';
 import { usePop } from '../../src/hooks/usePop';
+import { useReducedMotion } from '../../src/hooks/useReducedMotion';
 import { GenreChipsSkeleton, ShotStripSkeleton, TextBlockSkeleton } from '../../src/components/Skeleton';
 import { recordSignal } from '../../src/services/tasteProfile';
 import { recordSeen } from '../../src/services/seenStore';
@@ -36,6 +40,15 @@ function tierFor(pct) {
   if (pct >= 40) return { key: 'review.mixed',           color: scale.weak };
   return           { key: 'review.negative',             color: scale.bad  };
 }
+
+// Kapak yüksekliği ve gövdenin kapağa binme payı. İkisi ayrı sabit çünkü
+// gövdenin üst dolgusu ikisinin FARKI (320 − 48); tek sayı yazılsaydı biri
+// değişince öteki sessizce kayardı.
+const COVER_H = 320;
+const COVER_OVERLAP = 48;
+
+// Handoff: "Kaydırmada başlık ilk 64 px'de 0→1 opaklığa gelir."
+const HEADER_FADE = 64;
 
 // Binlik ayraçlı sayı (TR '.', EN ',')
 function groupNum(n, sep) {
@@ -183,6 +196,40 @@ export default function GameDetail() {
 
   const wishStyle = usePop(watched);
 
+  // ───────────────────────────────────────────────────────────────────────────
+  // KAYDIRMA: kapak parallax + başlık devri
+  //
+  // Öncesinde bu ekranda HİÇ kaydırma işleyicisi yoktu. Kapak sabit bir
+  // View'di (yükseklik 320) ve gövde onun altında ayrı bir ScrollView'di, yani
+  // ekranın üst %37'si sayfa boyunca hiç değişmeyen bir görsele kilitliydi.
+  //
+  // ── PARALLAX 0.9 NE DEMEK ──
+  // İçerik -scrollY hızıyla gidiyor. Kapak 0.9 hızla gitsin isteniyor, yani
+  // -0.9 × scrollY. Aradaki 0.1'lik fark derinlik hissini veren şey; 1.0
+  // olsaydı kapak içerikle birlikte gider ve parallax olmazdı.
+  //
+  // ── BAŞLIK NEDEN GEREKLİ ──
+  // Oyun adı gövdenin ilk satırında. Kaydırınca ekrandan çıkıyor ve üst
+  // çubukta yalnızca ikonlar kalıyordu — kullanıcı hangi oyunda olduğunu
+  // gösteren hiçbir şey görmüyordu. Handoff: "başlık ilk 64 px'de 0→1".
+  //
+  // Hareketi Azalt açıkken parallax kapanıyor (dekoratif); başlık devri
+  // KAPANMIYOR çünkü o dekoratif değil, taşıdığı bilgi var.
+  // ───────────────────────────────────────────────────────────────────────────
+  const scrollY = useSharedValue(0);
+  const onScroll = useAnimatedScrollHandler((e) => {
+    scrollY.value = e.contentOffset.y;
+  });
+  const azalt = useReducedMotion();
+
+  const coverStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: azalt ? 0 : -scrollY.value * 0.9 }],
+  }), [azalt]);
+
+  const barStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(scrollY.value, [0, HEADER_FADE], [0, 1], Extrapolation.CLAMP),
+  }));
+
   const cover = detail?.image || image;
   const title = detail?.name || name;
   const isFree = price?.isFree;
@@ -202,8 +249,11 @@ export default function GameDetail() {
 
   return (
     <View style={styles.root}>
-      {/* Kapak */}
-      <View style={styles.coverWrap}>
+      {/* Kapak — MUTLAK KONUMLU ARKA PLAN.
+          Öncesinde normal akışta bir View'di ve gövde onun ALTINDA ayrı bir
+          ScrollView'di; kapak hiç kaymıyordu. Mutlağa alınınca gövde tam
+          yüksekliğe çıkıyor, kapak da altında parallax'la kayabiliyor. */}
+      <Animated.View style={[styles.coverWrap, coverStyle]}>
         {cover ? <Image source={cover} priority="high" cachePolicy="memory-disk" style={StyleSheet.absoluteFill} contentFit="cover" transition={motion.image} /> : null}
         {trailerUrl ? (
           <VideoView
@@ -214,10 +264,28 @@ export default function GameDetail() {
           />
         ) : null}
         <LinearGradient colors={['rgba(8,10,13,0.15)', 'rgba(8,10,13,0.45)', colors.bg]} locations={[0, 0.55, 1]} style={StyleSheet.absoluteFill} />
+      </Animated.View>
+
+      {/* ÜST ÇUBUK KAPAĞIN İÇİNDE DEĞİL. İçinde kalsaydı parallax'la birlikte
+          yukarı kayar ve geri düğmesi ekrandan çıkardı. Sabit katman:
+          zemini kaydırmayla 0→1 opaklaşıyor, oyun adı da onunla geliyor.
+          pointerEvents box-none — opak zemin altındaki içeriğe dokunuşu
+          engellemesin. */}
+      <View style={styles.topBarWrap} pointerEvents="box-none">
+        <Animated.View style={[StyleSheet.absoluteFill, styles.barBg, barStyle]} pointerEvents="none" />
         <SafeAreaView edges={['top']} style={styles.topBar}>
           <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
             <Ionicons name="chevron-back" size={24} color="#fff" />
           </Pressable>
+
+          {/* Çubuktaki ad. Gövdedeki ad kaydırılınca ekrandan çıkıyor ve
+              öncesinde geriye yalnızca ikonlar kalıyordu. numberOfLines=1 ŞART:
+              çubuk sabit yükseklikte, uzun oyun adı ikinci satıra taşarsa
+              ikonları aşağı iter. */}
+          <Animated.Text numberOfLines={1} style={[styles.barTitle, barStyle]}>
+            {title}
+          </Animated.Text>
+
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <IconButton icon='share-outline' size={21} color="#fff" onPress={onShare} style={styles.iconBtn} />
             <Pressable
@@ -249,7 +317,13 @@ export default function GameDetail() {
         </SafeAreaView>
       </View>
 
-      <ScrollView style={styles.body} contentContainerStyle={{ padding: spacing.lg, paddingBottom: 48 }} showsVerticalScrollIndicator={false}>
+      <Animated.ScrollView
+        style={styles.body}
+        contentContainerStyle={{ padding: spacing.lg, paddingTop: COVER_H - COVER_OVERLAP, paddingBottom: 48 }}
+        showsVerticalScrollIndicator={false}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+      >
         <FadeIn delay={40}>
         <Text style={styles.name}>{title}</Text>
 
@@ -407,8 +481,8 @@ export default function GameDetail() {
             )}
           </Section>
         ) : null}
-      </ScrollView>
-      
+      </Animated.ScrollView>
+
       {/* Screenshot Lightbox Modal */}
       <Modal
         visible={activeShotIndex !== null}
@@ -503,15 +577,32 @@ function Section({ title, delay = 0, children }) {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   // Kapak yüklenene kadarki zemin — açık temada koyu bir bant çakıyordu.
-  coverWrap: { height: 320, backgroundColor: colors.card },
-  topBar: { paddingHorizontal: spacing.md, paddingTop: 6, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  coverWrap: {
+    position: 'absolute', top: 0, left: 0, right: 0,
+    height: COVER_H, backgroundColor: colors.card,
+  },
+  // Sabit üst katman. zIndex ŞART: kapaktan sonra çiziliyor ama gövde de
+  // ondan sonra geliyor; sırasız bırakılsa gövde çubuğun üstüne binerdi.
+  topBarWrap: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 },
+  barBg: { backgroundColor: colors.bg },
+  // Dikey dolgu artık ölçekten (8/8). Öncesi paddingTop: 6 idi — çubuğun
+  // opak zemini artık altına da uzandığı için simetri gerekiyordu ve 6
+  // ölçekte yok.
+  topBar: { paddingHorizontal: spacing.md, paddingTop: spacing.s8, paddingBottom: spacing.s8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.s12 },
+  barTitle: {
+    flex: 1, textAlign: 'center',
+    color: colors.text, fontSize: type.body, fontWeight: '700',
+  },
   // tema-bagimsiz: kapak/ekran goruntusu ustundeki katman
   iconBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
   // Aktif durum dolu nötr yüzeyle: ikon zaten outline→dolu değişiyor, yani
   // renk olmadan da iki sinyal var (biçim + yüzey). Kapak görselinin üstünde
   // durduğu için açık yüzey her sahnede okunur kalıyor.
   iconBtnActive: { backgroundColor: colors.text },
-  body: { flex: 1, marginTop: -48 },
+  // marginTop: -48 KALKTI. Kapak artık mutlak konumlu olduğu için gövde tam
+  // yüksekliğe yayılıyor; kapağa binme payı contentContainerStyle'daki
+  // paddingTop (COVER_H − COVER_OVERLAP) ile veriliyor.
+  body: { flex: 1 },
   name: { fontSize: type.title1, fontWeight: '900', color: colors.text, letterSpacing: -0.5, lineHeight: 30 },
 
   metaRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
@@ -521,7 +612,17 @@ const styles = StyleSheet.create({
   metaChipLabel: { fontSize: type.caption2, color: colors.text3, fontWeight: '600', marginTop: 2, textTransform: 'uppercase', letterSpacing: 0.3 },
   dev: { fontSize: type.footnote, color: colors.text3, marginTop: spacing.md, fontWeight: '600' },
 
-  priceRow: { marginTop: spacing.lg, minHeight: 26, justifyContent: 'center', alignItems: 'flex-start' },
+  // ── HANDOFF BELİRSİZLİĞİ, KARARI YAZIYORUM ──
+  // Handoff "fiyat satırı"nı bir KART varyantı olarak tanımlıyor: "44
+  // yükseklik satır, sağda fiyat", kullanıldığı yerler "oyun detayı,
+  // indirimler". Bu ekranda iki ayrı şey var:
+  //   • başlık altındaki TEK fiyat (burası) — solunda hiçbir şey yok
+  //   • Fiyat Karşılaştırması satırları (cmpRow) — solda mağaza, sağda fiyat
+  // Varyantın tarifi ikincisine oturuyor; 44pt ve sağa yaslama oraya
+  // uygulandı. Burada fiyat SOLDA bırakıldı: sayfanın tamamı sola hizalı bir
+  // sütun ve tek bir değeri sağ kenara atmak onu boşlukta yüzen bir öksüze
+  // çevirirdi. Yükseklik yine de 26'dan 44'e çıktı — ailenin ritmi bu.
+  priceRow: { marginTop: spacing.lg, minHeight: TOUCH_MIN, justifyContent: 'center', alignItems: 'flex-start' },
   price: { fontSize: type.title3, fontWeight: '800', color: colors.text },
   priceFree: { fontSize: type.title3, fontWeight: '800', color: colors.green },
   priceLoading: { fontSize: type.headline, color: colors.text3 },
@@ -533,7 +634,10 @@ const styles = StyleSheet.create({
   storeBtn: { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: radius.md, paddingHorizontal: 14, paddingVertical: 11 },
   storeText: { color: colors.text, fontSize: type.footnote, fontWeight: '700' },
 
-  cmpRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: radius.md, paddingHorizontal: 14, paddingVertical: 11 },
+  // minHeight 44 AÇIKÇA yazılı: handoff'un fiyat satırı ölçüsü bu ve
+  // öncesinde yükseklik yalnızca içerikten türüyordu — mağaza adı tek
+  // satıra düştüğünde satır 44'ün altına iniyordu.
+  cmpRow: { flexDirection: 'row', alignItems: 'center', minHeight: TOUCH_MIN, gap: 10, backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: radius.md, paddingHorizontal: 14, paddingVertical: 11 },
   cmpBest: { borderColor: colors.accent, backgroundColor: colors.accentSoft },
   cmpName: { fontSize: type.footnote, fontWeight: '700', color: colors.text },
   cmpCheapest: { fontSize: type.caption2, fontWeight: '700', color: colors.accentText, marginTop: 1 },
