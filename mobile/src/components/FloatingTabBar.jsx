@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { View, Text, Pressable, StyleSheet, Platform, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,7 +13,7 @@ import { useReducedMotion } from '../hooks/useReducedMotion';
 import { usePop } from '../hooks/usePop';
 import { useTabBarCompact, useTabBarHidden } from '../context/TabBarContext';
 import { useUnread, refreshUnread } from '../services/unread';
-import { colors, type, NUMERIC, spacing, shadows, radius, TAB_BAR } from '../theme';
+import { colors, type, NUMERIC, spacing, shadows, TAB_BAR } from '../theme';
 
 // Sekme olmayan rotalar da burada (games, news, library): harita üst küme
 // olarak tutuluyor ki bir rota sekmeye girip çıkınca simgesi kaybolmasın.
@@ -33,7 +33,6 @@ const ICONS = {
 const BADGED = { messages: true };
 
 const PAD = 6;
-const PILL_W = 56;
 // TEK KAYNAK theme.js. Öncesinde burada ve videos.jsx'te ayrı ayrı 58 yazıyordu.
 const BAR_H = TAB_BAR.height;   // handoff: 64
 const RADIUS = BAR_H / 2;
@@ -57,7 +56,6 @@ const GLASS_OK = (() => {
 
 export default function FloatingTabBar({ state, descriptors, navigation }) {
   const insets = useSafeAreaInsets();
-  const [barW, setBarW] = useState(0);
   // Yatayda çubuk uzun kenarı baştan sona kaplıyordu (width: '100%'): 874pt'lik
   // bir bant, hem görsel olarak ezici hem de video izlerken gereksiz yer
   // kaplıyor. Genişlik sınırlanıyor, `wrap` zaten alignItems:'center' taşıdığı
@@ -72,24 +70,13 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
   const compact = useTabBarCompact();
   const hidden = useTabBarHidden();
 
-  // Kayan vurgu konumu.
+  // KAYAN KIRMIZI HAP KALDIRILDI. Referans HTML'de aktif sekmenin arkasında
+  // hiçbir dolgu yok: aktif durum yalnız ikonun marka rengine dönmesiyle ve
+  // etiketin tam kontrasta çıkmasıyla anlatılıyor. Handoff'un "ekran başına
+  // en çok 3 kırmızı öğe" bütçesi de bunu gerektiriyor.
   //
-  // Eskiden { damping: 18, stiffness: 190 } vardı. Sönümleme oranı
-  //   ζ = damping / (2·√(stiffness·mass)) = 18 / (2·√190) ≈ 0.65
-  // yani 1'in ALTINDA → yay hedefi aşıp geri salınıyordu. Vurgu sekmeye
-  // varmadan önce ileri geri oynuyordu.
-  //
-  // dampingRatio: 1 kritik sönümleme — hedefe en hızlı şekilde, HİÇ aşmadan
-  // varır. overshootClamping ayrıca sert bir güvence.
-  const pos = useSharedValue(state.index);
-  useEffect(() => {
-    if (reducedMotion) pos.value = state.index;
-    else pos.value = withSpring(state.index, {
-      duration: 300,
-      dampingRatio: 1,
-      overshootClamping: true,
-    });
-  }, [state.index, pos, reducedMotion]);
+  // Hapla birlikte onu süren `pos` paylaşılan değeri ve ζ=1 yay kararı da
+  // düştü — o karar yalnızca hapın hedefi aşmasını engellemek içindi.
 
   // ── Çubuk sekmesi ──
   // Sekme degisiminde tum cubuk kisa bir "otur" hareketi yapiyor: once
@@ -118,13 +105,6 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
   // güncelleniyor; boşta duran uygulamada istek gitmiyor.
   const unread = useUnread();
   useEffect(() => { refreshUnread(); }, [state.index]);
-
-  const N = state.routes.length;
-  const cellW = barW > 0 ? (barW - PAD * 2) / N : 0;
-
-  const pillStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: PAD + pos.value * cellW + (cellW - PILL_W) / 2 }],
-  }), [cellW]);
 
   // Aşağı kaydırınca küçül, yukarı kaydırınca büyü.
   //
@@ -169,10 +149,16 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
       // sistemin istediği kadar.
       bottom: Math.max(insets.bottom, TAB_BAR.bottom),
     }]}>
+      {/* GÖLGE AYRI KATMANDA. `bar` yuvarlak köşeyi kırpmak için
+          overflow:'hidden' taşıyor; iOS bunu clipsToBounds'a çeviriyor ve
+          AYNI katmandaki gölgeyi tamamen kırpıyor. Gölge kırpılmayan bir
+          sarmalayıcıya alındı — hem düz hem cam yolda görünüyor.
+          (Kontrol listesi: "Cam desteklenmeyen ortamda düz dolgu, AYNI
+          geometri VE GÖLGE".) */}
       <Animated.View
-        style={[styles.bar, isLandscape && styles.barLandscape, GLASS_OK ? styles.barGlass : styles.barSolid, barStyle]}
-        onLayout={e => setBarW(e.nativeEvent.layout.width)}
+        style={[styles.golge, isLandscape && styles.barLandscape, barStyle]}
       >
+      <View style={[styles.bar, GLASS_OK ? styles.barGlass : styles.barSolid]}>
         {/* Cam katmanı içeriği SARMALAMAZ, arkasında durur — sekme öğeleri
             basılınca opacity uyguluyor ve bu camı bozardı. */}
         {GLASS_OK && (
@@ -182,8 +168,6 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
             pointerEvents="none"
           />
         )}
-
-        {cellW > 0 && <Animated.View style={[styles.pill, pillStyle]} />}
 
         {state.routes.map((route, index) => {
           const { options } = descriptors[route.key];
@@ -224,6 +208,7 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
             </Pressable>
           );
         })}
+      </View>
       </Animated.View>
     </View>
   );
@@ -290,6 +275,12 @@ const styles = StyleSheet.create({
     right: TAB_BAR.side,
     alignItems: 'center',
   },
+  // Gölge katmanı — overflow YOK, yoksa gölge kırpılır.
+  golge: {
+    width: '100%',
+    borderRadius: RADIUS,
+    ...shadows.floating,
+  },
   bar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -300,36 +291,23 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS,
     overflow: 'hidden',
   },
-  // 420: beş sekmenin asgarisi 5×PILL_W + 2×PAD = 272pt, yani rahat sığıyor;
-  // 874pt'lik yatay kenarın yarısından azını kaplıyor. barW onLayout ile
+  // 420: beş sekmenin asgarisi 5×56 + 2×PAD = 292pt, yani rahat sığıyor;
+  // 874pt'lik yatay kenarın yarısından azını kaplıyor.
   // ölçüldüğü için hap konumu bu genişliğe kendiliğinden uyuyor.
   barLandscape: { maxWidth: 420 },
   // iOS 26+: arka planı cam veriyor, altına düz renk KOYULMAZ
-  barGlass: { backgroundColor: 'transparent' },
+  // Cam yolda da KENARLIK var — öncesinde yalnız saydam zemin vardı ve
+  // çubuğun sınırı belirsizdi. Gölge ortak sarmalayıcıda.
+  barGlass: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.glassBorder },
   // iOS 26 öncesi ve Android: eski görünüm
   barSolid: {
     backgroundColor: colors.barSolid,
     borderWidth: 1,
-    // Handoff cubuk icin daha guclu bir kenarlik istiyor (.10) — kart
-    // kenarligindan (.07) ayri, cunku cubuk icerigin USTUNDE yuzuyor.
-    borderColor: colors.borderHover,
-    // Gölge artık PALETTEN. Sabit kodluyken açık temada da koyu temanın
-    // gölgesini kullanıyordu (0.45 opaklık) ve beyaz zeminde ağır duruyordu.
-    // shadows.floating iki tema için ayrı ölçü taşıyor (handoff).
-    ...shadows.floating,
+    // tokens.json → glassBorder (.10). Kart kenarlığından (.07) ayrı, çünkü
+    // çubuk içeriğin ÜSTÜNDE yüzüyor; borderStrong (.12) ise fazla sertti.
+    borderColor: colors.glassBorder,
   },
   glassLayer: { borderRadius: RADIUS },
-  // Hap artik ikon+etiket yiginini sariyor: yalniz ikonu sarsaydi etiket
-  // disarida kalir ve secim yarim gorunurdu.
-  pill: {
-    position: 'absolute',
-    left: 0,
-    top: (BAR_H - 48) / 2,
-    width: PILL_W,
-    height: 48,
-    borderRadius: radius.lg,
-    backgroundColor: colors.accentPill,
-  },
   item: {
     flex: 1,
     alignItems: 'center',
@@ -349,7 +327,10 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     color: colors.text3,
   },
-  labelOn: { color: colors.accent },
+  // HTML'den: aktif ETİKET #f4f4f6 (text1), aktif İKON #e8242b (marka).
+  // Etiketi de kırmızı yapmak "ekran başına en çok 3 kırmızı öğe" bütçesini
+  // gereksiz yere harcıyordu.
+  labelOn: { color: colors.text },
 
   // Simgenin sağ üst köşesine biniyor. Çerçeve çubuk zemininin rengiyle
   // değil, koyu arka planla çiziliyor: cam açıkken çubuğun rengi arkadaki
