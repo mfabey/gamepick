@@ -21,11 +21,14 @@ import { fetchNews } from '../src/api/news';
 import { NewsListSkeleton, Reveal } from '../src/components/Skeleton';
 import NewsImage from '../src/components/NewsImage';
 import EmptyState from '../src/components/EmptyState';
-import { colors, radius, spacing, PRESSED, type } from '../src/theme';
+import { radius, spacing, PRESSED, type } from '../src/theme';
+import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 import { useQuery } from '../src/hooks/useQuery';
 
 export default function NewsScreen() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const { t, lang } = useLanguage();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -158,6 +161,7 @@ export default function NewsScreen() {
 }
 
 const NewsRow = memo(function NewsRow({ item, onPress }) {
+  const styles = useStyles(makeStyles);
   return (
     <Pressable style={({ pressed }) => [styles.row, pressed && PRESSED]} onPress={() => onPress(item.url)}>
       <View style={styles.thumb}>
@@ -174,7 +178,7 @@ const NewsRow = memo(function NewsRow({ item, onPress }) {
   );
 });
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   // Başlık artık bir satır: geri düğmesi + metin. Sol dolgu, düğmenin negatif
   // kenar boşluğuyla dengeleniyor ki metin diğer ekranlarla AYNI hizada

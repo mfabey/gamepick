@@ -8,12 +8,14 @@ import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue, useAnimatedScrollHandler, useAnimatedStyle,
-  interpolate, Extrapolation,
+  useAnimatedReaction, runOnJS, interpolate, Extrapolation,
 } from 'react-native-reanimated';
+import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import { fetchCardPrice, fetchGameDetail, fetchGameByAppid, fetchPrices, fetchSteamReviews } from '../../src/api/games';
-import { colors, radius, spacing, PRESSED, type, scale, metacriticColor, motion, TOUCH_MIN } from '../../src/theme';
+import { radius, spacing, PRESSED, type, scale, metacriticColor, motion, TOUCH_MIN } from '../../src/theme';
+import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { stripHtml } from '../../src/utils/text';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useTimeToData } from '../../src/dev/perf';
@@ -56,6 +58,8 @@ function groupNum(n, sep) {
 }
 
 export default function GameDetail() {
+  const styles = useStyles(makeStyles);
+  const { colors, isDark } = useTheme();
   const { id, name, image, slug, hasSteam, appid } = useLocalSearchParams();
   const router = useRouter();
   const { t, lang, formatPrice } = useLanguage();
@@ -230,6 +234,24 @@ export default function GameDetail() {
     opacity: interpolate(scrollY.value, [0, HEADER_FADE], [0, 1], Extrapolation.CLAMP),
   }));
 
+  // ── DURUM ÇUBUĞU BU EKRANDA TEMAYA UYAMAZ ──
+  // Kök düzen çubuğu temaya göre ayarlıyor (_layout.jsx): açık temada koyu
+  // yazı. Ama bu ekranın üstü HER ZAMAN koyu bir kapak görseli — açık temada
+  // saat ve pil koyu üstüne koyu düşüyor ve okunmuyordu. (Koyu temada
+  // görünmüyordu çünkü zaten açık yazıydı; açık tema düzelince ortaya çıktı.)
+  //
+  // Eşik zaten var: çubuk 64px'de opaklaşıyor. Opaklaşana kadar yazı AÇIK,
+  // sonra temanın kendi değeri.
+  //
+  // useAnimatedReaction + runOnJS: JS'e kare başına değil, yalnızca eşik
+  // GEÇİLDİĞİNDE haber gidiyor.
+  const [cubukOpak, setCubukOpak] = useState(false);
+  useAnimatedReaction(
+    () => scrollY.value >= HEADER_FADE,
+    (yeni, eski) => { if (yeni !== eski) runOnJS(setCubukOpak)(yeni); },
+    []
+  );
+
   const cover = detail?.image || image;
   const title = detail?.name || name;
   const isFree = price?.isFree;
@@ -249,6 +271,7 @@ export default function GameDetail() {
 
   return (
     <View style={styles.root}>
+      <StatusBar style={cubukOpak ? (isDark ? 'light' : 'dark') : 'light'} />
       {/* Kapak — MUTLAK KONUMLU ARKA PLAN.
           Öncesinde normal akışta bir View'di ve gövde onun ALTINDA ayrı bir
           ScrollView'di; kapak hiç kaymıyordu. Mutlağa alınınca gövde tam
@@ -566,6 +589,7 @@ export default function GameDetail() {
 }
 
 function Section({ title, delay = 0, children }) {
+  const styles = useStyles(makeStyles);
   return (
     <FadeIn delay={delay} style={{ marginTop: spacing.xl }}>
       <Text style={styles.sectionTitle}>{title}</Text>
@@ -574,7 +598,7 @@ function Section({ title, delay = 0, children }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   // Kapak yüklenene kadarki zemin — açık temada koyu bir bant çakıyordu.
   coverWrap: {

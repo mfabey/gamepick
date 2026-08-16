@@ -7,7 +7,8 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchCardPrice } from '../src/api/games';
 import EmptyState from '../src/components/EmptyState';
-import { colors, radius, spacing, PRESSED, type, motion } from '../src/theme';
+import { radius, spacing, PRESSED, type, motion } from '../src/theme';
+import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 import { useWishlist } from '../src/context/WishlistContext';
 import ProfileGate from '../src/components/ProfileGate';
@@ -21,6 +22,8 @@ export default function WishlistScreen() {
 }
 
 function WishlistScreenContent() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const router = useRouter();
   const { t } = useLanguage();
   const { items, remove, enabled, enableNotifications } = useWishlist();
@@ -89,6 +92,8 @@ function WishlistScreenContent() {
 }
 
 const WishRow = memo(function WishRow({ item, onOpen, onRemove }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const { t, formatPrice } = useLanguage();
   const [price, setPrice] = useState(null);
 
@@ -130,7 +135,7 @@ const WishRow = memo(function WishRow({ item, onOpen, onRemove }) {
   );
 });
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   head: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },

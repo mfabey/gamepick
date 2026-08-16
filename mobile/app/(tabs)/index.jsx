@@ -6,7 +6,8 @@ import { BottomFade } from '../../src/components/EdgeFade';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchTrending, fetchGames } from '../../src/api/games';
-import { colors, radius, spacing, TAB_SPACE, PRESSED, type } from '../../src/theme';
+import { radius, spacing, TAB_SPACE, PRESSED, type } from '../../src/theme';
+import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { useTabBarScroll } from '../../src/context/TabBarContext';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useTimeToData } from '../../src/dev/perf';
@@ -52,6 +53,8 @@ const fetchSaleGames = () => fetchGames({ section: 'sale', num: 12 });
 const FALLBACK_SLUGS = ['action', 'adventure', 'role-playing-games-rpg', 'indie', 'strategy'];
 
 export default function HomeScreen() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   // Sekmeye tekrar basınca listeyi başa sar (iOS'ta beklenen davranış)
   const listRef = useRef(null);
   useTabPressAction(useCallback(() => scrollRefToTop(listRef), []));
@@ -271,7 +274,7 @@ export default function HomeScreen() {
     ) : (
       <GamePostCard game={item.game} tag={item.tag} onDismiss={handleDismiss} />
     )
-  ), [handleDismiss, router, requireAccount]);
+  ), [handleDismiss, router, requireAccount, styles]);
 
   // Mevcut bölümlerin tamamı listenin başlığı olur → tek kaydırma, tek liste.
   const header = (
@@ -418,6 +421,8 @@ function go(router, g) {
 
 function Section({ title, games, router, onDismiss }) {
   const { t } = useLanguage();
+  // Kanca erken donusten ONCE: asagida `games` bossa null donuluyor.
+  const styles = useStyles(makeStyles);
   if (!games || games.length === 0) return null;
   return (
     <View style={{ marginTop: 26 }}>
@@ -454,7 +459,7 @@ const HomeCard = memo(function HomeCard({ game, router, onDismiss }) {
   );
 });
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   // Tek sütuna geçilince listenin yatay dolgusu kaldırıldı: gönderi kartı
   // kendi kenar boşluğunu (spacing.lg) taşıyor ve böylece bölüm başlıklarıyla

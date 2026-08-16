@@ -32,7 +32,8 @@ import PostCard from '../../src/components/PostCard';
 import PostComposer from '../../src/components/PostComposer';
 import ReportSheet from '../../src/components/ReportSheet';
 import { FeedSkeleton, Reveal } from '../../src/components/Skeleton';
-import { colors, radius, spacing, type, PRESSED, NUMERIC, TAB_SPACE, motion } from '../../src/theme';
+import { radius, spacing, type, PRESSED, NUMERIC, TAB_SPACE, motion } from '../../src/theme';
+import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useTimeToData } from '../../src/dev/perf';
 
@@ -47,6 +48,8 @@ function itemKey(x) {
 }
 
 export default function ReviewsScreen() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const router = useRouter();
   const { t, lang } = useLanguage();
 
@@ -384,6 +387,8 @@ export default function ReviewsScreen() {
 // görünüyordu. Kullanıcı Topluluk'ta gezerken kendisine gelen isteği
 // göremiyordu — bildirimi, ilgili olduğu yerde göstermek gerekiyor.
 function Header({ t, router, incoming }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   return (
     <View style={styles.head}>
       <Text style={styles.h1}>{t('rev.section')}</Text>
@@ -405,7 +410,7 @@ function Header({ t, router, incoming }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   composeBar: {
     flexDirection: 'row', alignItems: 'center', gap: 9,
     marginHorizontal: spacing.lg, marginTop: spacing.xs, marginBottom: 10,

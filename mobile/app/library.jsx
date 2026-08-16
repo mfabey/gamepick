@@ -12,7 +12,8 @@ import { GamesGridSkeleton, Reveal } from '../src/components/Skeleton';
 import EmptyState from '../src/components/EmptyState';
 import GameCover from '../src/components/GameCover';
 import { prefetchImages } from '../src/utils/prefetch';
-import { colors, radius, spacing, TAB_SPACE, type } from '../src/theme';
+import { radius, spacing, TAB_SPACE, type } from '../src/theme';
+import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 import { useAuth } from '../src/context/AuthContext';
 import { fetchSteamPrices } from '../src/api/library';
@@ -29,6 +30,8 @@ function computeValue(games, prices) {
 }
 
 export default function LibraryScreen() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const { t, lang, formatPrice } = useLanguage();
   const { steamAccounts, xbox, busy, loginSteam, loginXbox, account } = useAuth();
   const router = useRouter();
@@ -167,7 +170,7 @@ export default function LibraryScreen() {
     <View style={styles.cell}>
       <GameTile game={item} steam={isSteamView} price={steamPrices[item.appid]} />
     </View>
-  ), [isSteamView, steamPrices]);
+  ), [isSteamView, steamPrices, styles]);
 
   const doLogin = async (fn) => {
     const r = await fn();
@@ -314,6 +317,8 @@ export default function LibraryScreen() {
 
 // ── Başlık kartı (profil + istatistik + değer) ──
 function LibraryHeaderCard({ header, formatPrice, pricesLoading, t, lang }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   if (!header) return null;
 
   const StatCell = ({ value, label, color }) => (
@@ -405,6 +410,7 @@ function LibraryHeaderCard({ header, formatPrice, pricesLoading, t, lang }) {
 }
 
 const GameTile = memo(function GameTile({ game, steam, price }) {
+  const styles = useStyles(makeStyles);
   const { t, lang, formatPrice } = useLanguage();
   const hourSymbol = lang === 'tr' ? 's' : 'h';
   const isFree = price?.isFree;
@@ -440,7 +446,7 @@ const GameTile = memo(function GameTile({ game, steam, price }) {
   );
 });
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   header: { fontSize: type.title1, fontWeight: '800', color: colors.text, letterSpacing: -0.6, paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.xs },
   chipsScroll: { flexGrow: 0, flexShrink: 0, maxHeight: 56 },

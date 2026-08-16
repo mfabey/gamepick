@@ -129,7 +129,29 @@ export function useTheme() {
  * her render'da yeni bir fonksiyon olur, useMemo hiç tutmaz ve StyleSheet
  * her çizimde yeniden kurulur.
  */
+// ─────────────────────────────────────────────────────────────────────────────
+// ÖNBELLEK ÖRNEK BAŞINA DEĞİL, MODÜL DÜZEYİNDE.
+//
+// Öncesi düz `useMemo(() => makeStyles(colors), …)` idi ve memo ÖRNEK
+// başınaydı. Tek bir ekranda sorun değil; ama 50 satırlık bir listede satır
+// bileşenini dönüştürünce makeStyles 50 kez çalışır ve 50 ayrı stil nesnesi
+// ayrılır. Kalan 50 dosyayı dönüştürmenin ön koşulu bu: aynı makeStyles +
+// aynı palet = TEK nesne, kaç bileşen isterse istesin.
+//
+// WeakMap: anahtar makeStyles fonksiyonunun kendisi, yani modül boşaltılırsa
+// girdi de gidiyor. İç Map palete göre ayırıyor (koyu/açık iki girdi).
+// ─────────────────────────────────────────────────────────────────────────────
+const stilOnbellek = new WeakMap();
+
+function stilAl(makeStyles, colors) {
+  let paletMap = stilOnbellek.get(makeStyles);
+  if (!paletMap) { paletMap = new Map(); stilOnbellek.set(makeStyles, paletMap); }
+  let stiller = paletMap.get(colors);
+  if (!stiller) { stiller = makeStyles(colors); paletMap.set(colors, stiller); }
+  return stiller;
+}
+
 export function useStyles(makeStyles) {
   const { colors } = useTheme();
-  return useMemo(() => makeStyles(colors), [makeStyles, colors]);
+  return useMemo(() => stilAl(makeStyles, colors), [makeStyles, colors]);
 }

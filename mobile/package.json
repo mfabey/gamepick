@@ -47,7 +47,8 @@
     "web": "expo start --web",
     "check:theme": "node scripts/check-theme-colors.mjs",
     "check:spacing": "node scripts/check-spacing.mjs",
-    "check": "npm run check:theme && npm run check:spacing && npm run check:contrast && npm run check:i18n",
+    "check": "npm run check:theme && npm run check:spacing && npm run check:contrast && npm run check:i18n && npm run check:reactive",
+    "check:reactive": "node scripts/check-theme-reactive.mjs",
     "check:i18n": "node scripts/check-i18n.mjs",
     "check:contrast": "node scripts/check-contrast.mjs"
   },

@@ -16,7 +16,8 @@ import { GamesGridSkeleton, Reveal } from '../src/components/Skeleton';
 import { TopFade, BottomFade } from '../src/components/EdgeFade';
 import { prefetchImages } from '../src/utils/prefetch';
 import { useTimeToData } from '../src/dev/perf';
-import { colors, radius, spacing, type } from '../src/theme';
+import { radius, spacing, type } from '../src/theme';
+import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useScrollCollapse } from '../src/context/TabBarContext';
 import { useLanguage } from '../src/context/LanguageContext';
 import FilterSheet, { FilterButton, countFilters } from '../src/components/FilterSheet';
@@ -46,6 +47,8 @@ import { useReducedMotion } from '../src/hooks/useReducedMotion';
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function GamesScreen() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const router = useRouter();
   const { compact, onScroll: onTabScroll } = useScrollCollapse();
   const { t } = useLanguage();
@@ -215,7 +218,7 @@ export default function GamesScreen() {
   const keyExtractor = useCallback((item) => String(item.id), []);
   const renderGame = useCallback(({ item }) => (
     <View style={styles.cell}><GameCard game={item} /></View>
-  ), []);
+  ), [styles]);
 
   return (
     <View style={styles.safe}>
@@ -403,6 +406,7 @@ export default function GamesScreen() {
 //
 // `accent` prop'u kaldırıldı — artık seçimin rengi diye bir şey yok.
 function Chip({ active, label, onPress }) {
+  const styles = useStyles(makeStyles);
   return (
     <Pressable onPress={onPress} style={[styles.chip, active && styles.chipOn]}>
       <Text style={[styles.chipText, active && styles.chipTextOn]}>{label}</Text>
@@ -410,7 +414,7 @@ function Chip({ active, label, onPress }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   // Mutlak konum: gizlenirken listenin yüksekliğini değiştirmesin.
   // Arka plan ŞART — saydam olsaydı liste altından geçerken metinler
