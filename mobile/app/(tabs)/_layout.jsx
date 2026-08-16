@@ -33,11 +33,15 @@ export default function TabLayout() {
             İkisi de kaybolmadı: Haberler anasayfanın sağ üstünden, Oyunlar
             anasayfanın arama kutusundan (+5 boş durum bağlantısı) açılıyor.
             Arama, "oyun bul" eyleminin doğal fiili. */}
-        <Tabs.Screen name="index"    options={{ title: t('nav.home') }} />
-        <Tabs.Screen name="reviews"  options={{ title: t('rev.section') }} />
-        <Tabs.Screen name="videos"   options={{ title: t('nav.videos') }} />
-        <Tabs.Screen name="messages" options={{ title: t('nav.messages') }} />
-        <Tabs.Screen name="profile"  options={{ title: t('nav.profile') }} />
+        {/* Başlıklar tab.* anahtarlarından: sekme etiketi 70pt'lik hücreye
+            sığmak zorunda, ekran başlığı değil. İkisi ayrı tutulmasaydı
+            Almanca'da ya çubuk taşardı ya da ekran başlığı "Freunde" gibi
+            içeriği yanlış anlatan bir kısaltmaya düşerdi. */}
+        <Tabs.Screen name="index"    options={{ title: t('tab.home') }} />
+        <Tabs.Screen name="reviews"  options={{ title: t('tab.community') }} />
+        <Tabs.Screen name="videos"   options={{ title: t('tab.videos') }} />
+        <Tabs.Screen name="messages" options={{ title: t('tab.messages') }} />
+        <Tabs.Screen name="profile"  options={{ title: t('tab.profile') }} />
       </Tabs>
     </TabBarProvider>
   );

@@ -18,6 +18,16 @@ export default {
   'nav.videos': 'Videolar',
   'nav.library': 'Kütüphane',
   'nav.profile': 'Profil',
+  // ── Sekme etiketleri ──
+  // nav.* ve rev.section'dan AYRI: onlar ekran başlığı, bunlar 70pt'lik
+  // hücreye sığmak zorunda. Ölçüldü: 11pt büyük harfte ~7.2pt/harf,
+  // yani 8 harf sınır. 'Nachrichten' (79pt) ve 'Comunidade' (72pt)
+  // taşıyordu; kırpmak yerine kısa karşılık seçildi.
+  'tab.home': 'Anasayfa',
+  'tab.community': 'Topluluk',
+  'tab.videos': 'Videolar',
+  'tab.messages': 'Mesajlar',
+  'tab.profile': 'Profil',
   'nav.messages': 'Mesajlar',
   'news.title': 'Haberler',
   'news.all': 'Tümü',

@@ -1,94 +1,71 @@
+import { palette } from './design/tokens';
 import { Appearance } from 'react-native';
 
 // Gamerisen mobil tema.
 // Kaynak: 2026-08 tasarım handoff'u (design_handoff_gamerisen). Vurgu = KIRMIZI.
 // Handoff jetonları birebir alındı; YALNIZ erişilebilirlik eşiğinde kalan
 // metin tonları ölçümle düzeltildi — gerekçeleri paletlerin içinde.
+// ─────────────────────────────────────────────────────────────────────────────
+// PALETLER — src/design/tokens.js'ten TÜRETİLİYOR, elle yazılmıyor.
+//
+// Eski adlar (bg, card, text, accent…) KORUNDU: kodda 877 referans var ve
+// hepsini yeniden adlandırmak davranış değiştirmeyen dev bir kodmod olurdu.
+// Her ad artık handoff'taki karşılığına bakıyor.
+//
+// HANDOFF'TA OLMAYANLAR aşağıda ayrıca duruyor: green/steam/xbox/danger
+// (durum ve mağaza renkleri) ve accentGlow. Tasarım paketi bunları
+// tanımlamıyor ama kodda 78 kullanımları var; silmek özellik kaybı olurdu.
+// Bunlar handoff'un kapsamı dışında ve öyle işaretli.
+// ─────────────────────────────────────────────────────────────────────────────
+const T = { dark: palette.dark, light: palette.light };
+
+function paletten(t) {
+  return {
+    bg:          t.bg,
+    bgElevated:  t.surface,
+    card:        t.surface2,
+    bgInput:     t.surface3,
+    bgHover:     t.surface3,
+    cardBorder:  t.border,
+    borderHover: t.borderStrong,
+    text:        t.text1,
+    text2:       t.text2,
+    text3:       t.text3,
+    accent:      t.brand,
+    accentText:  t.brandText,
+    accentBg:    t.brandWash,
+    accentSoft:  t.brandWash,
+    accentBorder: t.brandWashBorder,
+    accentPill:  t.brandWash,
+    onAccent:    t.onBrand,
+    // Grafik yer tutucu yüzeyi: ikon yuvası, avatar dolgusu, monogram zemini.
+    surfaceTile: t.surface4,
+    // Cam sekme çubuğu
+    glassFill:     t.glassFill,
+    glassBorder:   t.glassBorder,
+    barSolid:      t.glassFallback,
+    overlay:       t.overlayScrimTop,
+    overlayStrong: t.overlayScrimBottom ?? t.overlayScrimTop,
+  };
+}
+
+// HANDOFF KAPSAMI DIŞI — tasarım paketi durum/mağaza renklerini tanımlamıyor.
 const dark = {
-  // ── Zemin katmanları — tasarım handoff'undan (2026-08 tasarım yönü) ──
-  // Handoff dört yüzey tanımlıyor: Zemin · Yüzey · Yüzey·2 · Yüzey·3.
-  // Bizim dört kademe birebir karşılık geliyor, isimler korundu.
-  //
-  // KONTRAST YENİDEN ÖLÇÜLDÜ (dört yüzeyin hepsinde, WCAG AA 4.5 eşiği):
-  // text 15.18–17.92 · text2 6.62–7.82 · text3 4.53–5.34 ·
-  // accentText 6.02–7.11 · green 8.29–9.79 · danger 4.54–5.36.
-  bg:         '#0A0B0D',              // handoff: Zemin
-  bgElevated: '#101114',              // handoff: Yüzey (kart, panel)
-  card:       '#15161A',              // handoff: Yüzey·2 (iç blok, satır)
-  bgInput:    '#1C1E23',              // handoff: Yüzey·3 (çip, ikon yuvası)
-  bgHover:    '#212429',
-  cardBorder: 'rgba(255,255,255,0.07)',   // handoff: Kenarlık
-  borderHover:'rgba(255,255,255,0.12)',   // handoff: Kenarlık·güçlü
-  text:       '#F4F4F6',              // handoff: Metin·1
-  text2:      '#A1A3AB',              // handoff: Metin·2
-  // HANDOFF DEĞERİ #6F727C KULLANILMADI: kendi Yüzey·3'ü üstünde 3.47:1
-  // veriyor, WCAG AA'nın küçük metin için istediği 4.5'in altında. Bu depoda
-  // TAM BU HATA bir kez düzeltilmişti (eski #69707c, 3.31). Handoff'un tonu
-  // (226°) ve doygunluğu (%6) korunup yalnız açıklık +%7.5 yükseltildi.
-  text3:      '#82858F',              // handoff Metin·3'ün erişilebilir hâli
-  accent:     '#E8242B',              // handoff: Marka kırmızı — DEĞİŞMEDİ
-  accentText: '#FF6B6F',              // handoff: Kırmızı·metin
-  accentBg:   '#241012',
-  accentSoft: 'rgba(232,36,43,0.14)',
-  accentBorder: 'rgba(232,36,43,0.40)',
-  accentGlow: 'rgba(232,36,43,0.42)',
+  ...paletten(T.dark),
   green:      '#00d26e',
   steam:      '#1a9fff',
   xbox:       '#4ade80',
   danger:     '#ef4949',
-  overlay:    'rgba(0,0,0,0.6)',
-  // Yüzen sekme çubuğunun CAM OLMAYAN zemini (Android + iOS 26 öncesi).
-  // Handoff: "aynı geometri, #16171B düz dolgu ve aynı gölge".
-  barSolid:   '#16171B',
-  // Cam yolu (iOS 26+). Handoff: rgba(22,23,27,.58) + blur(32) saturate(180%)
-  glassFill:  'rgba(22,23,27,0.58)',
-  glassInner: 'rgba(255,255,255,0.12)',   // handoff: cam iç ışık
-  accentPill: 'rgba(232,36,43,0.16)',
+  accentGlow: 'rgba(232,36,43,0.42)',
 };
 
 const light = {
-  // ── AÇIK TEMA ──
-  // YÖN HANDOFF'TAN, TONLAR ÖLÇÜMDEN.
-  //
-  // Handoff beyaz zemin + gri yüzey istiyor; bizim önceki yönümüz tersiydi
-  // (gri sayfa, beyaz kart). Yön handoff'a çevrildi.
-  //
-  // AMA handoff'un açık tema METİN tonları alınmadı: Metin·3 (#8A8D94)
-  // kendi yüzeyi üstünde 3.05:1, marka metni (#D81E25) bizim dördüncü
-  // yüzeyimizde 4.34:1 veriyor — ikisi de 4.5 eşiğinin altında. Daha önce
-  // ölçülüp doğrulanmış kendi tonlarımız korundu.
-  //
-  // Handoff açık temada YALNIZ İKİ yüzey tanımlıyor (Zemin, Yüzey); dört
-  // kademe bizim yapımız, aradaki ikisi aynı ritimde türetildi.
-  //
-  // KONTRAST (dört yüzeyin hepsinde): text 16.82–19.69 · text2 5.46–6.40 ·
-  // text3 4.79–5.61 · accentText 4.89–5.73 · green 4.68–5.48 ·
-  // danger 4.80–5.62.
-  bg:         '#FFFFFF',              // handoff: Zemin
-  bgElevated: '#FAFAFB',              // türetildi
-  card:       '#F5F5F7',              // handoff: Yüzey
-  bgInput:    '#ECEDF0',              // türetildi
-  bgHover:    '#E4E6EA',
-  cardBorder: 'rgba(0,0,0,0.08)',     // handoff: Kenarlık
-  borderHover:'rgba(0,0,0,0.16)',
-  text:       '#0A0B0D',              // handoff: Metin·1
-  text2:      '#5C5F66',              // handoff: Metin·2
-  text3:      '#616875',              // ÖLÇÜLMÜŞ (handoff'unki 3.05'te kalıyordu)
-  accent:     '#E8242B',              // marka dolguda iki temada da aynı
-  accentText: '#c81e24',              // ÖLÇÜLMÜŞ (handoff'unki 4.34'te kalıyordu)
-  accentBg:   '#fdecec',
-  accentSoft: 'rgba(232,36,43,0.10)',
-  accentBorder: 'rgba(232,36,43,0.35)',
-  accentGlow: 'rgba(232,36,43,0.28)',
+  ...paletten(T.light),
   green:      '#00794a',
   steam:      '#0b74c4',
   xbox:       '#107c10',
   danger:     '#c62828',
-  overlay:    'rgba(0,0,0,0.45)',
-  barSolid:   '#FFFFFF',
-  glassFill:  'rgba(255,255,255,0.62)',   // handoff
-  glassInner: 'rgba(255,255,255,0.70)',
-  accentPill: 'rgba(200,30,36,0.14)',
+  accentGlow: 'rgba(232,36,43,0.28)',
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -292,4 +269,19 @@ export const spacing = {
 };
 
 // Floating alt bar için ekran altına bırakılacak boşluk
+// ─────────────────────────────────────────────────────────────────────────────
+// YÜZEN SEKME ÇUBUĞU ÖLÇÜLERİ — tasarım handoff'undan.
+//
+// TEK KAYNAK. Öncesinde BAR_H iki dosyada ayrı ayrı tanımlıydı
+// (FloatingTabBar ve videos.jsx) ve elle eşitleniyordu; biri değişip diğeri
+// unutulsaydı reels'in alt eylem rayı yanlış yere otururdu.
+//
+// Handoff: yükseklik 64, yarıçap tam kapsül, yan kenardan 20, alttan 24.
+// TAB_SPACE (liste alt güvenli boşluğu) handoff'ta da 104 — değişmedi.
+export const TAB_BAR = {
+  height: 64,
+  side: 20,
+  bottom: 24,
+};
+
 export const TAB_SPACE = 104;

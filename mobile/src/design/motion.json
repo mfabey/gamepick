@@ -1,0 +1,42 @@
+{
+  "$aciklama": "Hareket sözlüğü. Süre ve eğri değerleri sabittir; kütüphane karşılığı stack'e göre değişebilir.",
+  "ilke": {
+    "kural": "Kullanıcının dokunduğu hiçbir şey sessiz kalmaz.",
+    "ilkGeriBildirimEnGec": 100,
+    "sureAraligi": [100, 320],
+    "kesilebilir": true,
+    "girdiyiBloklamaz": true,
+    "reduceMotion": "Yalnız opaklık geçişi; ölçek, kayma ve yay kapatılır."
+  },
+  "spring": {
+    "pop":  { "damping": 12, "stiffness": 380, "mass": 0.7, "$his": "hafif aşma, ~150ms" },
+    "firm": { "damping": 22, "stiffness": 300, "mass": 0.9, "$his": "aşma yok, ~240ms" },
+    "sheet":{ "damping": 26, "stiffness": 260, "mass": 1.0, "$his": "aşma yok, ~320ms" }
+  },
+  "timing": {
+    "enter": { "duration": 200, "easing": "cubic-bezier(0.22,1,0.36,1)" },
+    "exit":  { "duration": 160, "easing": "cubic-bezier(0.4,0,1,1)" },
+    "fade":  { "duration": 120, "easing": "linear" }
+  },
+  "etkilesimler": [
+    { "ad": "Ekran geçişi", "hedef": "scale 0.96→1 + opacity 0→1", "sure": 200, "egri": "timing.enter", "not": "Shared element yok; süreklilik ölçekle kurulur. Kapak görseli önbellekten gelir." },
+    { "ad": "Kart/buton basımı", "hedef": "scale 1→0.97, brightness +6%", "sure": 100, "egri": "spring.pop", "not": "Değme anında başlar, bırakınca yay ile geri. Haptic: light." },
+    { "ad": "Sekme değişimi", "hedef": "ikon scale 1→1.12→1", "sure": 150, "egri": "spring.pop", "not": "Etiket opaklığı 0.5→1 eşzamanlı." },
+    { "ad": "Beğeni", "hedef": "ikon pop + renk geçişi", "sure": 150, "egri": "spring.pop", "not": "Parçacık efekti yok. Haptic: light." },
+    { "ad": "Takip/kaydet", "hedef": "buton genişlik morph + etiket çapraz fade", "sure": 200, "egri": "timing.enter", "not": "Buton zıplamaz, uzar. 'Takip et' → 'Takipte'." },
+    { "ad": "Filtre çipi", "hedef": "dolgu merkezden dışa + liste fade", "sure": 180, "egri": "timing.enter", "not": "Liste fade'i 120ms, eşzamanlı başlar." },
+    { "ad": "Segment kontrol", "hedef": "seçim göstergesi kayar", "sure": 240, "egri": "spring.firm", "not": "Konum bilgisi taşıyan hiçbir şey zıplamaz." },
+    { "ad": "Alt sayfa açılış", "hedef": "translateY + arka plan scale 1→0.94 + karartma", "sure": 320, "egri": "spring.sheet", "not": "Kapanış 160ms timing.exit." },
+    { "ad": "Çekip yenile", "hedef": "lastik direnç (parmakla birebir) → iskelet → içerik", "sure": 160, "egri": "timing.enter", "not": "Eşikte haptic. İçerik 4px yukarı kayarak fade in." },
+    { "ad": "Kaydırmada başlık", "hedef": "opacity 0→1 ilk 64px'de; kapak parallax 0.9x", "sure": null, "egri": "scroll-driven", "not": "Zamana değil, kaydırma konumuna bağlı." },
+    { "ad": "Mesaj gönderme", "hedef": "balon alttan girer, 100ms sonra tik", "sure": 220, "egri": "spring.firm", "not": "Yavaş ağda balon %60 opaklıkta bekler." },
+    { "ad": "Yazıyor göstergesi", "hedef": "üç noktanın sıralı nabzı", "sure": 1200, "egri": "loop", "not": "Nokta başına 120ms gecikme." },
+    { "ad": "Silme/kaldırma", "hedef": "satır yüksekliği →0, komşular kapanır", "sure": 200, "egri": "spring.firm", "not": "Ani kaybolma yasak." },
+    { "ad": "Hata", "hedef": "translateX ±4px, 3 tur + kenar rengi kırmızıya", "sure": 240, "egri": "timing.exit", "not": "Kenar geçişi 120ms. Haptic: error." },
+    { "ad": "Sayaç/rozet", "hedef": "eski rakam yukarı çıkar, yeni alttan gelir", "sure": 180, "egri": "timing.enter", "not": "Sayı sessizce değişmez." },
+    { "ad": "İskelet→içerik", "hedef": "shimmer durur, içerik fade + 4px yukarı", "sure": 160, "egri": "timing.enter", "not": "İskelet ölçüleri gerçek yerleşimle birebir aynı olmalı." },
+    { "ad": "Kart destesi sürükleme", "hedef": "üst kart takip eder, alt kartlar 10pt kademeyle yükselir", "sure": 240, "egri": "spring.firm", "not": "Karar eşiği: yatayda 96px veya hız eşiği." },
+    { "ad": "Video sayfalama", "hedef": "tam ekran snap (dikey)", "sure": 240, "egri": "spring.firm", "not": "Eşik: sürüklemenin %18'i veya hız eşiği. Yarım konum yok." },
+    { "ad": "Yön modu geçişi", "hedef": "kontroller yeni konuma; video katmanı sabit", "sure": 200, "egri": "timing.enter", "not": "Video yeniden tamponlanmaz. Jest ortasında dönme jesti iptal etmez; sürükleme oranı yeni yüksekliğe ölçeklenir." }
+  ]
+}

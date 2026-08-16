@@ -13,7 +13,7 @@ import { useReducedMotion } from '../hooks/useReducedMotion';
 import { usePop } from '../hooks/usePop';
 import { useTabBarCompact, useTabBarHidden } from '../context/TabBarContext';
 import { useUnread, refreshUnread } from '../services/unread';
-import { colors, type, NUMERIC, spacing, shadows } from '../theme';
+import { colors, type, NUMERIC, spacing, shadows, radius, TAB_BAR } from '../theme';
 
 // Sekme olmayan rotalar da burada (games, news, library): harita üst küme
 // olarak tutuluyor ki bir rota sekmeye girip çıkınca simgesi kaybolmasın.
@@ -33,9 +33,13 @@ const ICONS = {
 const BADGED = { messages: true };
 
 const PAD = 6;
-const PILL_W = 52;
-const BAR_H = 58;      // etiketler kalkınca çubuk kısaldı
+const PILL_W = 56;
+// TEK KAYNAK theme.js. Öncesinde burada ve videos.jsx'te ayrı ayrı 58 yazıyordu.
+const BAR_H = TAB_BAR.height;   // handoff: 64
 const RADIUS = BAR_H / 2;
+// Etiketli düzende ikon küçülüyor: ikon + 11pt etiket 64pt'lik çubuğa
+// ancak böyle sığıyor (dikey: 22 ikon + 2 boşluk + ~13 etiket satırı).
+const ICON = 22;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Liquid Glass kullanılabilirliği — MODÜL DÜZEYİNDE bir kez hesaplanır.
@@ -159,7 +163,12 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
   }, [reducedMotion, compact, hidden, bounce]);
 
   return (
-    <View pointerEvents="box-none" style={[styles.wrap, { bottom: insets.bottom || 10 }]}>
+    <View pointerEvents="box-none" style={[styles.wrap, {
+      // Handoff: alt kenardan 24. Güvenli alanı AŞMAMASI için ikisinin
+      // büyüğü alınıyor — çentiksiz cihazda 24, ana ekran çubuğu olanda
+      // sistemin istediği kadar.
+      bottom: Math.max(insets.bottom, TAB_BAR.bottom),
+    }]}>
       <Animated.View
         style={[styles.bar, isLandscape && styles.barLandscape, GLASS_OK ? styles.barGlass : styles.barSolid, barStyle]}
         onLayout={e => setBarW(e.nativeEvent.layout.width)}
@@ -207,6 +216,7 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
               <TabIcon
                 base={base}
                 focused={focused}
+                label={label}
                 // Odaktaki sekmede rozet YOK: kullanıcı zaten oradaysa
                 // "bekleyen bir şey var" demenin anlamı kalmıyor.
                 badge={BADGED[route.name] && !focused ? unread : 0}
@@ -229,38 +239,55 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
  * OPACITY YOK — bu bilesen cam katmaninin kardesi ve GlassView'in
  * ebeveyninde opacity<1 cami bozuyor (bkz. dosya basi). Yalnizca transform.
  */
-function TabIcon({ base, focused, badge = 0 }) {
+function TabIcon({ base, focused, label, badge = 0 }) {
   // Mantik usePop'a tasindi: ayni hareket begeni ve istek listesinde de
   // gerekiyordu ve kopyalanmasi besinci bir yay ayari uretirdi.
   // `reducedMotion` prop'u kalkti — kanca kendisi bakiyor.
-  const style = usePop(focused);
+  //
+  // ETIKET GERI GELDI (handoff): "Etiketler her zaman gorunur — Turkce'de
+  // ikon tek basina belirsizdir." Yalniz aktif sekme tam kontrastta.
+  const style = usePop(focused, 1.12);   // handoff: 1.0 → 1.12
 
   return (
-    <Animated.View style={style}>
-      <Ionicons
-        name={focused ? base : `${base}-outline`}
-        size={25}
-        color={focused ? colors.accent : colors.text3}
-      />
-      {/* Rozet simgenin İÇİNDE, animasyonlu görünümün altında: sekme
-          seçilirken birlikte büyüyor. Dışarıda dursaydı simge büyürken
-          rozet yerinde kalır, ikisi ayrışmış görünürdü.
+    <Animated.View style={[style, styles.item]}>
+      <View>
+        <Ionicons
+          name={focused ? base : `${base}-outline`}
+          size={ICON}
+          color={focused ? colors.accent : colors.text3}
+        />
+        {/* Rozet simgenin İÇİNDE, animasyonlu görünümün altında: sekme
+            seçilirken birlikte büyüyor. Dışarıda dursaydı simge büyürken
+            rozet yerinde kalır, ikisi ayrışmış görünürdü.
 
-          OPACITY YOK — cam katmanının kardeşi (bkz. dosya başı). */}
-      {badge > 0 ? (
-        <View style={styles.badge}>
-          <Text style={[styles.badgeText, NUMERIC]}>{badge > 9 ? '9+' : badge}</Text>
-        </View>
-      ) : null}
+            OPACITY YOK — cam katmanının kardeşi (bkz. dosya başı). */}
+        {badge > 0 ? (
+          <View style={styles.badge}>
+            <Text style={[styles.badgeText, NUMERIC]}>{badge > 9 ? '9+' : badge}</Text>
+          </View>
+        ) : null}
+      </View>
+      {/* allowFontScaling KAPALI: etiket bir cümle değil, sekmenin adı.
+          Erişilebilirlik boyutlarında büyüseydi 70pt'lik hücreyi taşırır ve
+          beş sekme birbirine girerdi. Okunabilirlik ikonla birlikte
+          sağlanıyor; VoiceOver zaten accessibilityLabel'ı okuyor. */}
+      <Text
+        numberOfLines={1}
+        allowFontScaling={false}
+        style={[styles.label, focused && styles.labelOn]}
+      >
+        {label}
+      </Text>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
+  // Handoff: yan kenardan 20, alttan 24.
   wrap: {
     position: 'absolute',
-    left: 16,
-    right: 16,
+    left: TAB_BAR.side,
+    right: TAB_BAR.side,
     alignItems: 'center',
   },
   bar: {
@@ -283,28 +310,46 @@ const styles = StyleSheet.create({
   barSolid: {
     backgroundColor: colors.barSolid,
     borderWidth: 1,
-    borderColor: colors.cardBorder,
+    // Handoff cubuk icin daha guclu bir kenarlik istiyor (.10) — kart
+    // kenarligindan (.07) ayri, cunku cubuk icerigin USTUNDE yuzuyor.
+    borderColor: colors.borderHover,
     // Gölge artık PALETTEN. Sabit kodluyken açık temada da koyu temanın
     // gölgesini kullanıyordu (0.45 opaklık) ve beyaz zeminde ağır duruyordu.
     // shadows.floating iki tema için ayrı ölçü taşıyor (handoff).
     ...shadows.floating,
   },
   glassLayer: { borderRadius: RADIUS },
+  // Hap artik ikon+etiket yiginini sariyor: yalniz ikonu sarsaydi etiket
+  // disarida kalir ve secim yarim gorunurdu.
   pill: {
     position: 'absolute',
     left: 0,
-    top: (BAR_H - 42) / 2,
+    top: (BAR_H - 48) / 2,
     width: PILL_W,
-    height: 42,
-    borderRadius: 21,
+    height: 48,
+    borderRadius: radius.lg,
     backgroundColor: colors.accentPill,
   },
   item: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    // Ölçekten en küçük basamak. İkon 22 + 4 + etiket ~13 = 39pt, 64pt'lik
+    // çubuğa rahat sığıyor.
+    gap: spacing.s4,
     height: '100%',
   },
+  // Handoff tipografisi — Etiket kademesi: 11 / 600 / +%6 / BUYUK HARF.
+  // Pasif renk text3, aktif tam kontrast (handoff: "yalniz aktif sekme tam
+  // kontrastta").
+  label: {
+    fontSize: type.caption2,
+    fontWeight: '600',
+    letterSpacing: 0.66,
+    textTransform: 'uppercase',
+    color: colors.text3,
+  },
+  labelOn: { color: colors.accent },
 
   // Simgenin sağ üst köşesine biniyor. Çerçeve çubuk zemininin rengiyle
   // değil, koyu arka planla çiziliyor: cam açıkken çubuğun rengi arkadaki

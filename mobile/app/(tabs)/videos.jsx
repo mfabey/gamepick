@@ -40,7 +40,7 @@ import ShareToFriendSheet from '../../src/components/ShareToFriendSheet';
 import { recordSignal } from '../../src/services/tasteProfile';
 import { reportActivity } from '../../src/api/social';
 import { recordSeen } from '../../src/services/seenStore';
-import { colors, radius, spacing, PRESSED, TAB_SPACE, type, motion } from '../../src/theme';
+import { colors, radius, spacing, PRESSED, TAB_SPACE, TAB_BAR, type, motion } from '../../src/theme';
 import { useLanguage } from '../../src/context/LanguageContext';
 
 const POOL = 3;
@@ -48,9 +48,9 @@ const POOL = 3;
 // Yatayda ekranın köşe kavisinden kaçmak için üst çubuğa verilen paylar.
 // Dikeyde gerek yok: orada güvenli alan (~59pt) zaten bu işi görüyor.
 const LANDSCAPE_TOP_PAD = 14;
-// FloatingTabBar'daki BAR_H ile aynı. Orada modül düzeyinde sabit ve dışa
-// açılmıyor; burada tekrar edilmesinin sebebi o.
-const TAB_BAR_H = 58;
+// Yükseklik artık theme.js'te TEK kaynak (TAB_BAR.height). Burada ayrı bir
+// sabit vardı ve elle eşitleniyordu; biri değişip diğeri unutulsaydı bu
+// ekranın alt eylem rayı yanlış yere otururdu.
 const LANDSCAPE_SIDE_PAD = 22;
 
 export default function VideosScreen() {
@@ -458,7 +458,7 @@ const VideoItem = memo(function VideoItem({
   // Yatayda şerit sekme çubuğunun ÜSTÜNDE duruyor: çubuk 58pt + güvenli alan,
   // üstüne 12pt nefes payı. Aksi hâlde yatay şerit çubuğun altında kalıyordu.
   const railBottom = isLandscape
-    ? TAB_BAR_H + itemInsets.bottom + 12
+    ? TAB_BAR.height + itemInsets.bottom + 12
     : TAB_SPACE + 90;
   const infoBottom = isLandscape ? 80 : TAB_SPACE + 6;
   const { isWatched, toggle } = useWishlist();
