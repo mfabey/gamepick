@@ -5,6 +5,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import * as Notifications from 'expo-notifications';
+import { ThemeProvider } from '../src/context/ThemeContext';
 import { LanguageProvider } from '../src/context/LanguageContext';
 import { AuthProvider } from '../src/context/AuthContext';
 import { WishlistProvider } from '../src/context/WishlistContext';
@@ -113,6 +114,9 @@ export default function RootLayout() {
     // etkileşimler bu sağlayıcı olmadan sessizce çalışmaz.
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
+        {/* ThemeProvider EN DIŞTA (SafeArea'dan sonra): alt sağlayıcılar ve
+            tüm ekranlar useTheme'e erişebilsin. */}
+        <ThemeProvider>
         <LanguageProvider>
           <AuthProvider>
             <WishlistProvider>
@@ -161,6 +165,7 @@ export default function RootLayout() {
             </WishlistProvider>
           </AuthProvider>
         </LanguageProvider>
+        </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

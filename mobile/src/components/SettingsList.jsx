@@ -1,7 +1,8 @@
 import { Children, Fragment } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radius, spacing, type, PRESSED } from '../theme';
+import { radius, spacing, type, PRESSED } from '../theme';
+import { useTheme, useStyles } from '../context/ThemeContext';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Ayar listesi — gruplanmış satırlar.
@@ -38,6 +39,8 @@ const PAD = spacing.lg;
  * `<Div />` serpiştirmesi gerekmiyor ve ayırıcı sayısı yanlış olamıyor.
  */
 export function SettingsGroup({ children, style }) {
+  const { colors } = useTheme();
+  const styles = useStyles(makeStyles);
   const items = Children.toArray(children).filter(Boolean);
   return (
     <View style={[styles.group, style]}>
@@ -65,6 +68,8 @@ export function SettingsGroup({ children, style }) {
 export function SettingsRow({
   icon, label, value, desc, danger, right, onPress, disabled,
 }) {
+  const { colors } = useTheme();
+  const styles = useStyles(makeStyles);
   const tint = danger ? colors.danger : colors.text;
   const Wrap = onPress ? Pressable : View;
 
@@ -96,7 +101,8 @@ export function SettingsRow({
   );
 }
 
-const styles = StyleSheet.create({
+// Reaktif stil — tema değişince yeniden üretiliyor (bkz. ThemeContext).
+const makeStyles = (colors) => StyleSheet.create({
   group: {
     backgroundColor: colors.card,
     borderRadius: radius.lg,

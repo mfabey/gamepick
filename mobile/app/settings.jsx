@@ -12,13 +12,14 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 
-import { colors, radius, spacing, type, PRESSED } from '../src/theme';
+import { radius, spacing, type, PRESSED } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
 import { useAuth } from '../src/context/AuthContext';
 import { useWishlist } from '../src/context/WishlistContext';
 import { signOut } from '../src/services/session';
 import { LANGUAGES } from '../src/services/locale';
 import { SettingsGroup, SettingsRow } from '../src/components/SettingsList';
+import { useTheme, useStyles } from '../src/context/ThemeContext';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // YASAL VE İLETİŞİM
@@ -39,6 +40,8 @@ const SITE = 'https://www.gamerisen.com';
 const SUPPORT_EMAIL = 'support@gamerisen.com';
 
 export default function SettingsScreen() {
+  const { colors, pref, setPref } = useTheme();
+  const styles = useStyles(makeStyles);
   const router = useRouter();
   const { t, lang, setLang } = useLanguage();
   const { account } = useAuth();
@@ -129,6 +132,18 @@ export default function SettingsScreen() {
               />
             )}
           />
+          {/* TEMA — handoff'un durum tablosunda "Sistem / koyu / açık" olarak
+              tanımlı. Yeniden yükleme YOK: palet artık reaktif, seçim anında
+              yansıyor (bkz. ThemeContext başı). */}
+          <SettingsRow
+            icon="contrast-outline"
+            label={t('set.theme')}
+            value={t('set.theme.' + pref)}
+            onPress={() => {
+              const sira = ['system', 'dark', 'light'];
+              setPref(sira[(sira.indexOf(pref) + 1) % sira.length]);
+            }}
+          />
           <SettingsRow
             icon="language-outline"
             label={t('set.language')}
@@ -188,7 +203,10 @@ export default function SettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+// REAKTİF STİL: tema değişince yeniden üretiliyor. Modül düzeyinde tanımlı
+// olması şart — bileşen içinde tanımlansaydı her render'da yeni fonksiyon
+// olur, useMemo hiç tutmaz ve StyleSheet her çizimde yeniden kurulurdu.
+const makeStyles = (colors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
 
   head: {
