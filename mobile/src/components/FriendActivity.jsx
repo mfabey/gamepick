@@ -5,7 +5,8 @@ import GameCard from './GameCard';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-import { colors, radius, spacing, type, motion } from '../theme';
+import { radius, spacing, type, motion } from '../theme';
+import { useStyles, useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -49,6 +50,8 @@ export function hasFriendSignal(games) {
 }
 
 export default function FriendActivity({ games }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const { t } = useLanguage();
   const router = useRouter();
 
@@ -115,7 +118,7 @@ function names(g, t) {
   return `${f[0].name} +${g.count - 1}`;
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   wrap: { marginTop: 26 },
   head: {
     flexDirection: 'row', alignItems: 'center', gap: 6,

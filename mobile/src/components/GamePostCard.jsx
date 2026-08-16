@@ -25,7 +25,8 @@ import { useQuery } from '../hooks/useQuery';
 import { useLanguage } from '../context/LanguageContext';
 import { usePrice } from '../hooks/usePrice';
 import { summarize } from '../utils/text';
-import { colors, radius, spacing, PRESSED, type, NUMERIC, metacriticColor, motion } from '../theme';
+import { radius, spacing, PRESSED, type, NUMERIC, metacriticColor, motion } from '../theme';
+import { useStyles, useTheme } from '../context/ThemeContext';
 
 const DETAIL_TTL = 24 * 60 * 60 * 1000;   // ekran görüntüleri ve metin sık değişmez
 const CLAMP_LINES = 3;
@@ -42,6 +43,7 @@ function hash(str) {
 }
 
 function GamePostCard({ game, onDismiss, tag }) {
+  const styles = useStyles(makeStyles);
   const router = useRouter();
   const { t, lang, formatPrice } = useLanguage();
   const { width } = useWindowDimensions();
@@ -175,7 +177,7 @@ function GamePostCard({ game, onDismiss, tag }) {
 // game referansı akış yeniden sıralanmadıkça değişmiyor → gereksiz render yok
 export default memo(GamePostCard);
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   card: { marginHorizontal: spacing.lg, marginBottom: 26 },
 
   media: {

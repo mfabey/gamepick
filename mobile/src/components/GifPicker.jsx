@@ -7,7 +7,8 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 
 import { searchGifs } from '../services/klipy';
-import { colors, radius, spacing, type, PRESSED, motion } from '../theme';
+import { radius, spacing, type, PRESSED, motion } from '../theme';
+import { useStyles, useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -34,6 +35,8 @@ import { useLanguage } from '../context/LanguageContext';
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function GifPicker({ visible, onClose, onPick }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const { t, lang } = useLanguage();
   const [q, setQ] = useState('');
   const [gifs, setGifs] = useState([]);
@@ -129,7 +132,7 @@ export default function GifPicker({ visible, onClose, onPick }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: colors.overlay },
   sheet: {
     height: '68%', backgroundColor: colors.bgElevated,

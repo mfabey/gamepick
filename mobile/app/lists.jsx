@@ -19,10 +19,13 @@ import { fetchListFeed, toggleListLike } from '../src/api/social';
 import { getSession, subscribeSession } from '../src/services/session';
 import EmptyState from '../src/components/EmptyState';
 import { posterImage } from '../src/utils/images';
-import { colors, radius, spacing, type, PRESSED, motion } from '../src/theme';
+import { radius, spacing, type, PRESSED, motion } from '../src/theme';
+import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 
 export default function ListsScreen() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const router = useRouter();
   const { t } = useLanguage();
 
@@ -165,6 +168,8 @@ export default function ListsScreen() {
 }
 
 function ListCard({ item, onPress, onLike, t }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   return (
     <Pressable style={({ pressed }) => [styles.card, pressed && { opacity: 0.85 }]} onPress={onPress}>
       <View style={styles.covers}>
@@ -223,7 +228,7 @@ function ListCard({ item, onPress, onLike, t }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xl },
 

@@ -17,9 +17,11 @@ import { useRouter } from 'expo-router';
 import EmptyState from './EmptyState';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { colors } from '../theme';
+import {  } from '../theme';
+import { useStyles, useTheme } from '../context/ThemeContext';
 
 export default function ProfileGate({ children }) {
+  const styles = useStyles(makeStyles);
   const { account } = useAuth();
   const { t } = useLanguage();
   const router = useRouter();
@@ -42,6 +44,6 @@ export default function ProfileGate({ children }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
 });

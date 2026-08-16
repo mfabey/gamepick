@@ -13,10 +13,13 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 import { publishList } from '../api/social';
-import { colors, radius, spacing, PRESSED, type } from '../theme';
+import { radius, spacing, PRESSED, type } from '../theme';
+import { useStyles, useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 
 export default function PublishSheet({ visible, onClose, collection, publishedId, onPublished }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const { t } = useLanguage();
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
@@ -103,7 +106,7 @@ export default function PublishSheet({ visible, onClose, collection, publishedId
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },
   sheet: {
     backgroundColor: colors.bgElevated,

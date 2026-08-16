@@ -6,7 +6,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
-import { colors, radius, spacing, type, PRESSED, NUMERIC } from '../theme';
+import { radius, spacing, type, PRESSED, NUMERIC } from '../theme';
+import { useStyles, useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { createPost } from '../api/social';
 
@@ -24,6 +25,8 @@ import { createPost } from '../api/social';
 const MAX_LEN = 500;
 
 export default function PostComposer({ visible, onClose, onPosted, replyTo = null, game = null }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const { t } = useLanguage();
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
@@ -122,7 +125,7 @@ export default function PostComposer({ visible, onClose, onPosted, replyTo = nul
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   // tema-bagimsiz: medya onizlemesinin ustundeki karartma
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end' },
   sheet: {

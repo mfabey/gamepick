@@ -26,7 +26,8 @@ import {
 import { subscribeSession, getSession } from '../src/services/session';
 import ReportSheet from '../src/components/ReportSheet';
 import EmptyState from '../src/components/EmptyState';
-import { colors, radius, spacing, PRESSED, type } from '../src/theme';
+import { radius, spacing, PRESSED, type } from '../src/theme';
+import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 import IconButton from '../src/components/IconButton';
 import { getAvatarPreset } from '../src/utils/avatar';
@@ -34,6 +35,8 @@ import { getAvatarPreset } from '../src/utils/avatar';
 const TABS = ['feed', 'friends', 'requests'];
 
 export default function SocialScreen() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const router = useRouter();
   const { t } = useLanguage();
 
@@ -120,6 +123,8 @@ export default function SocialScreen() {
 // ─── Ortak parçalar ─────────────────────────────────────────────────────────
 
 function Header({ title, onBack }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   return (
     <View style={styles.head}>
       <IconButton icon='chevron-back' size={24} color={colors.text} onPress={onBack} style={styles.iconBtn} />
@@ -132,6 +137,8 @@ function Header({ title, onBack }) {
 }
 
 function Gate({ icon, text, ctaLabel, onPress, onBack, title }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <Header title={title} onBack={onBack} />
@@ -147,6 +154,7 @@ function Gate({ icon, text, ctaLabel, onPress, onBack, title }) {
 }
 
 function Avatar({ name, size = 42, presetId }) {
+  const styles = useStyles(makeStyles);
   const preset = getAvatarPreset(presetId);
   if (preset) {
     return (
@@ -166,6 +174,8 @@ function Avatar({ name, size = 42, presetId }) {
 // ─── Kullanıcı adı kurulumu ─────────────────────────────────────────────────
 
 function UsernameSetup({ onDone, onBack }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const { t } = useLanguage();
   const [name, setName] = useState('');
   const [state, setState] = useState({ status: 'idle' });   // idle|checking|ok|error
@@ -271,6 +281,8 @@ const ACT_LABEL = {
 };
 
 function FeedTab() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const { t } = useLanguage();
   const router = useRouter();
   const [items, setItems] = useState(null);
@@ -347,6 +359,8 @@ function timeAgo(ts, t) {
 // ─── Arkadaşlar ─────────────────────────────────────────────────────────────
 
 function FriendsTab() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const { t } = useLanguage();
   const router = useRouter();
   const [data, setData] = useState(null);
@@ -489,6 +503,8 @@ function FriendsTab() {
 // ─── İstekler ───────────────────────────────────────────────────────────────
 
 function RequestsTab() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const { t } = useLanguage();
   const [data, setData] = useState(null);
 
@@ -546,6 +562,7 @@ function RequestsTab() {
 // ─── Küçük parçalar ─────────────────────────────────────────────────────────
 
 function PersonRow({ person, right, onLongPress }) {
+  const styles = useStyles(makeStyles);
   return (
     <Pressable style={styles.personRow} onLongPress={onLongPress} delayLongPress={400}>
       <Avatar name={person.displayName || person.username} presetId={person.avatar} />
@@ -559,6 +576,7 @@ function PersonRow({ person, right, onLongPress }) {
 }
 
 function SmallBtn({ label, onPress, ghost }) {
+  const styles = useStyles(makeStyles);
   return (
     <Pressable style={[styles.smallBtn, ghost && styles.smallBtnGhost]} onPress={onPress}>
       <Text style={[styles.smallBtnText, ghost && styles.smallBtnTextGhost]}>{label}</Text>
@@ -567,10 +585,11 @@ function SmallBtn({ label, onPress, ghost }) {
 }
 
 function Tag({ text }) {
+  const styles = useStyles(makeStyles);
   return <View style={styles.tag}><Text style={styles.tagText}>{text}</Text></View>;
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xl },
 

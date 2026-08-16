@@ -11,7 +11,8 @@ import Animated, {
 import { anchorMenu } from '../services/menuAnchor';
 import { REACTIONS } from '../services/reactions';
 import { useReducedMotion } from '../hooks/useReducedMotion';
-import { colors, radius, spacing, type, PRESSED } from '../theme';
+import { radius, spacing, type, PRESSED } from '../theme';
+import { useStyles, useTheme } from '../context/ThemeContext';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Mesaj bağlam menüsü — uzun basınca çıkan eylem listesi.
@@ -46,6 +47,8 @@ const REACT_ROW_H = 52;
 const PAD_V = 6;
 
 export default function MessageMenu({ visible, onClose, actions = [], anchor, mine, onReact, myReaction }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const reducedMotion = useReducedMotion();
@@ -163,7 +166,7 @@ export default function MessageMenu({ visible, onClose, actions = [], anchor, mi
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   // tema-bagimsiz: kipli katman ve golgesi
   backdrop: { backgroundColor: 'rgba(0,0,0,0.45)' },
 

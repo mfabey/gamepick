@@ -34,7 +34,8 @@ import { recordDismiss } from '../src/services/dismissStore';
 import { recordSeen } from '../src/services/seenStore';
 import { recordLike, removeLike } from '../src/services/likeStore';
 import EmptyState from '../src/components/EmptyState';
-import { colors, radius, spacing, PRESSED, type } from '../src/theme';
+import { radius, spacing, PRESSED, type } from '../src/theme';
+import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 import IconButton from '../src/components/IconButton';
 import GameCover from '../src/components/GameCover';
@@ -46,6 +47,8 @@ const VISIBLE = 3;                         // aynı anda render edilen kart say�
 const REFILL_AT = 4;                       // deste bu sayıya inince yeni sayfa çek
 
 export default function SwipeScreen() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const router = useRouter();
   const { t } = useLanguage();
 
@@ -199,6 +202,8 @@ export default function SwipeScreen() {
 
 // ─── Tek kart ────────────────────────────────────────────────────────────────
 function SwipeCard({ game, index, isTop, onDecide, onPress, t }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const x = useSharedValue(0);
   const y = useSharedValue(0);
 
@@ -296,6 +301,8 @@ function SwipeCard({ game, index, isTop, onDecide, onPress, t }) {
 }
 
 function DeckEmpty({ t, loading, onBrowse }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   if (loading) {
     return (
       <View style={styles.empty}>
@@ -315,7 +322,7 @@ function DeckEmpty({ t, loading, onBrowse }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
 
   head: {

@@ -6,7 +6,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 
 import { writeReview, removeReview } from '../api/social';
-import { colors, radius, spacing, type, PRESSED } from '../theme';
+import { radius, spacing, type, PRESSED } from '../theme';
+import { useStyles, useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -24,6 +25,8 @@ import { useLanguage } from '../context/LanguageContext';
 const MAX_TEXT = 2000;
 
 export default function ReviewComposer({ visible, onClose, appid, gameName, existing, onSaved }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const { t } = useLanguage();
   const [text, setText] = useState('');
   const [rec, setRec] = useState(true);
@@ -135,7 +138,7 @@ export default function ReviewComposer({ visible, onClose, appid, gameName, exis
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   backdrop:  { flex: 1, backgroundColor: colors.overlay },
   sheetWrap: { justifyContent: 'flex-end' },
   sheet: {

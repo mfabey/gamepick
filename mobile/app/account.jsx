@@ -12,7 +12,8 @@ import { signIn, signInWithApple } from '../src/services/session';
 import { anonDataSummary, transferAnonData } from '../src/services/owner';
 import { resetSyncThrottle } from '../src/services/sync';
 import { registerAccount, requestPasswordReset, checkUsernameAvailable } from '../src/api/account';
-import { colors, radius, spacing, PRESSED, type } from '../src/theme';
+import { radius, spacing, PRESSED, type } from '../src/theme';
+import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 
 // Sunucudaki USERNAME_RE ile birebir aynı (app/lib/content-filter.js).
@@ -21,6 +22,8 @@ import { useLanguage } from '../src/context/LanguageContext';
 const USERNAME_RE = /^[a-zA-Z0-9_]{3,20}$/;
 
 export default function AccountScreen() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const router = useRouter();
   const { t, lang } = useLanguage();
 
@@ -356,6 +359,8 @@ export default function AccountScreen() {
 }
 
 function Field({ label, ...props }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   return (
     <View style={{ marginBottom: 14 }}>
       <Text style={styles.label}>{label}</Text>
@@ -368,7 +373,7 @@ function Field({ label, ...props }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   head: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.sm },
   back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },

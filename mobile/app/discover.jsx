@@ -9,7 +9,8 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { smartSearch } from '../src/api/games';
 import GameCard from '../src/components/GameCard';
-import { colors, radius, spacing, TAB_SPACE, PRESSED, type } from '../src/theme';
+import { radius, spacing, TAB_SPACE, PRESSED, type } from '../src/theme';
+import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 import { useOwnedGames } from '../src/hooks/useOwnedGames';
 import { useDismissed } from '../src/hooks/useDismissed';
@@ -34,6 +35,8 @@ const EXAMPLES = {
 };
 
 export default function DiscoverScreen() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const router = useRouter();
   const { t, lang } = useLanguage();
 
@@ -79,7 +82,7 @@ export default function DiscoverScreen() {
   const keyExtractor = useCallback((item) => String(item.id), []);
   const renderItem = useCallback(({ item }) => (
     <View style={styles.cell}><GameCard game={item} /></View>
-  ), []);
+  ), [styles]);
 
   const header = (
     <View style={styles.headerWrap}>
@@ -168,7 +171,7 @@ export default function DiscoverScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   head: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.sm },
   back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },

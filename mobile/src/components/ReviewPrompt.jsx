@@ -5,7 +5,8 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 import ReviewComposer from './ReviewComposer';
-import { colors, radius, spacing, type, PRESSED, NUMERIC, motion } from '../theme';
+import { radius, spacing, type, PRESSED, NUMERIC, motion } from '../theme';
+import { useStyles, useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -26,6 +27,8 @@ import { useLanguage } from '../context/LanguageContext';
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function ReviewPrompt({ games, onWritten }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const { t, lang } = useLanguage();
   const [composer, setComposer] = useState(null);
 
@@ -76,7 +79,7 @@ export default function ReviewPrompt({ games, onWritten }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   wrap: { marginTop: 22 },
   head: {
     flexDirection: 'row', alignItems: 'center', gap: 6,

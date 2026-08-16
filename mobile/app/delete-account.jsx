@@ -10,10 +10,13 @@ import * as AppleAuthentication from 'expo-apple-authentication';
 import { getValidToken, signOut } from '../src/services/session';
 import { deleteAccount } from '../src/api/account';
 import { useAuth } from '../src/context/AuthContext';
-import { colors, radius, spacing, PRESSED, type } from '../src/theme';
+import { radius, spacing, PRESSED, type } from '../src/theme';
+import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 
 export default function DeleteAccountScreen() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const router = useRouter();
   const { t } = useLanguage();
   const { account } = useAuth();
@@ -132,7 +135,7 @@ export default function DeleteAccountScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   head: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.sm },
   back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },

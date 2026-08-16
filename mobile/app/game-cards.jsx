@@ -23,10 +23,13 @@ import { getGameCards, getCardUrl } from '../src/api/social';
 import { resolveCity } from '../src/services/location';
 import { getSession, subscribeSession } from '../src/services/session';
 import EmptyState from '../src/components/EmptyState';
-import { colors, radius, spacing, type, PRESSED, NUMERIC, TAB_SPACE } from '../src/theme';
+import { radius, spacing, type, PRESSED, NUMERIC, TAB_SPACE } from '../src/theme';
+import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 
 export default function GameCardsScreen() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const router = useRouter();
   const { t, lang } = useLanguage();
 
@@ -157,6 +160,8 @@ export default function GameCardsScreen() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function Summary({ s, t, city, busy, onToggleCity }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   if (!s) return null;
   return (
     <View>
@@ -200,6 +205,7 @@ function Summary({ s, t, city, busy, onToggleCity }) {
 }
 
 function Cell({ n, label, tint }) {
+  const styles = useStyles(makeStyles);
   return (
     <View style={styles.cell}>
       <Text style={[styles.cellNum, NUMERIC, tint && { color: tint }]}>{n}</Text>
@@ -209,6 +215,8 @@ function Cell({ n, label, tint }) {
 }
 
 function CardRow({ card, place, onShare, t }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const hasRank = Number.isFinite(card.rank) && card.owners > 1;
   return (
     <View style={styles.row}>
@@ -241,7 +249,7 @@ function CardRow({ card, place, onShare, t }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   safe:   { flex: 1, backgroundColor: colors.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md },
   loadingText: { color: colors.text3, fontSize: type.footnote },

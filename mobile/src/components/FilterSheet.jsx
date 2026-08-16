@@ -22,7 +22,8 @@ import { View, Text, Pressable, StyleSheet, Modal, ScrollView } from 'react-nati
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
-import { colors, radius, spacing, PRESSED, type } from '../theme';
+import { radius, spacing, PRESSED, type } from '../theme';
+import { useStyles, useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 
 // Tür slug'ları sunucudaki eşlemelerle BİREBİR: STEAM_GENRE_MAP (7) +
@@ -61,6 +62,7 @@ export function countFilters({ genre, mode, store, mc, tags }) {
 }
 
 export default function FilterSheet({ visible, onClose, value, onApply, unavailable = [] }) {
+  const styles = useStyles(makeStyles);
   const { t } = useLanguage();
   const [draft, setDraft] = useState(value);
 
@@ -184,6 +186,7 @@ export default function FilterSheet({ visible, onClose, value, onApply, unavaila
 }
 
 function Group({ label, children, kapali }) {
+  const styles = useStyles(makeStyles);
   const { t } = useLanguage();
   return (
     <View style={styles.group}>
@@ -198,6 +201,8 @@ function Group({ label, children, kapali }) {
 // Seçim dili games.jsx ile AYNI: dolu nötr yüzey + koyu metin. Marka rengi
 // kullanılmıyor; ekranın tek gerçek CTA'sı "Uygula" ve vurguyu o taşımalı.
 function Chip({ on, label, onPress, kapali }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   return (
     <Pressable
       onPress={kapali ? undefined : onPress}
@@ -212,6 +217,8 @@ function Chip({ on, label, onPress, kapali }) {
 
 /** Başlıktaki filtre düğmesi — etkin sayıyı rozet olarak taşıyor. */
 export function FilterButton({ count, onPress }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const { t } = useLanguage();
   return (
     <Pressable
@@ -227,7 +234,7 @@ export function FilterButton({ count, onPress }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },
   sheet: {
     backgroundColor: colors.bgElevated,

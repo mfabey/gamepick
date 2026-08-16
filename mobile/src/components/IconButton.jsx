@@ -16,7 +16,8 @@
 import { Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { colors } from '../theme';
+import {  } from '../theme';
+import { useStyles, useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 
 // Sık kullanılan ikonlar için varsayılan etiket anahtarları
@@ -54,7 +55,11 @@ export default function IconButton({
   icon,
   label,                 // açık etiket — verilmezse ikondan türetilir
   size = 22,
-  color = colors.text,
+  // VARSAYILAN PARAMETRE DEĞİL. Eskiden `color = colors.text` yazıyordu ve o
+  // değer modül yüklenirken donan paletten geliyordu; tema değişince ikon
+  // rengi eski temada kalıyordu. Varsayılan parametre bir kanca sonucunu
+  // okuyamaz, o yüzden çözüm gövdeye taşındı.
+  color,
   onPress,
   onLongPress,
   disabled,
@@ -62,6 +67,9 @@ export default function IconButton({
   variant = 'plain',     // 'plain' | 'surface'
   ...rest
 }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
+  const renk = color ?? colors.text;
   const { t } = useLanguage();
 
   const key = DEFAULT_LABELS[icon];
@@ -89,12 +97,12 @@ export default function IconButton({
       ]}
       {...rest}
     >
-      <Ionicons name={icon} size={size} color={color} />
+      <Ionicons name={icon} size={size} color={renk} />
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   base: {
     minWidth: MIN_TARGET,
     minHeight: MIN_TARGET,

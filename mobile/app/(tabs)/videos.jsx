@@ -40,7 +40,8 @@ import ShareToFriendSheet from '../../src/components/ShareToFriendSheet';
 import { recordSignal } from '../../src/services/tasteProfile';
 import { reportActivity } from '../../src/api/social';
 import { recordSeen } from '../../src/services/seenStore';
-import { colors, radius, spacing, PRESSED, TAB_SPACE, TAB_BAR, type, motion } from '../../src/theme';
+import { radius, spacing, PRESSED, TAB_SPACE, TAB_BAR, type, motion } from '../../src/theme';
+import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { useLanguage } from '../../src/context/LanguageContext';
 
 const POOL = 3;
@@ -54,6 +55,8 @@ const LANDSCAPE_TOP_PAD = 14;
 const LANDSCAPE_SIDE_PAD = 22;
 
 export default function VideosScreen() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { t, lang } = useLanguage();
@@ -425,6 +428,7 @@ const VideoItem = memo(function VideoItem({
   item, height, width, isActive, player, muted, onToggleMute,
   paused, holding, uiOpacity, onTapVideo, onHoldStart, onHoldEnd, router, t,
 }) {
+  const styles = useStyles(makeStyles);
   // Basılı tutunca kenardaki her şey soluyor, yalnızca video kalıyor.
   // Karartma gradyanı da dahil — o da bir arayüz katmanı ve kalsaydı
   // görüntünün alt/üstünü kirletirdi.
@@ -693,6 +697,8 @@ const VideoItem = memo(function VideoItem({
 // küçülen şey görsel ağırlık, dokunulabilirlik değil. 34'ün altına inilirse
 // hitSlop artırılmadan 44pt korunamaz.
 function ActionBtn({ icon, label, active, onPress, compact }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   return (
     <Pressable style={({ pressed }) => [styles.actionBtn, pressed && PRESSED]} onPress={onPress} hitSlop={6}>
       <View style={[
@@ -709,7 +715,7 @@ function ActionBtn({ icon, label, active, onPress, compact }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   // Duraklatma göstergesi — ortada, yarı saydam daire
   pauseWrap: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
   pauseBadge: {

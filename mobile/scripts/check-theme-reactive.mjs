@@ -33,15 +33,33 @@ for (const alt of ['app', 'src']) {
   })(path.join(KOK, alt));
 }
 
+// Renk, STIL NESNESININ ICINDE mi? Dosyanin herhangi bir yerinde `colors.`
+// gecmesi yetmez: EdgeFade gibi bir dosya paleti kanca ile okuyup stil
+// nesnesinde hic renk tasimayabilir — o zaman donmus bir sey yoktur.
+// Kaba arama onu yanlis isaretliyordu.
+function stilBlogu(s) {
+  const i = s.search(/^const styles = StyleSheet\.create\(/m);
+  if (i < 0) return null;
+  let derinlik = 0, basladi = false;
+  for (let k = s.indexOf('(', i); k < s.length; k++) {
+    const c = s[k];
+    if (c === '(' || c === '{') { derinlik++; basladi = true; }
+    else if (c === ')' || c === '}') {
+      derinlik--;
+      if (basladi && derinlik === 0) return s.slice(i, k + 1);
+    }
+  }
+  return s.slice(i);
+}
+
 const donuk = [];
 for (const f of dosyalar) {
   const s = fs.readFileSync(f, 'utf8');
-  if (!/^const styles = StyleSheet\.create/m.test(s)) continue;
-  if (!/\bcolors\.\w+/.test(s)) continue;
-  donuk.push({
-    dosya: path.relative(KOK, f),
-    n: (s.match(/\bcolors\.\w+/g) || []).length,
-  });
+  const blok = stilBlogu(s);
+  if (!blok) continue;
+  const icerdeki = blok.match(/\bcolors\.\w+/g);
+  if (!icerdeki) continue;
+  donuk.push({ dosya: path.relative(KOK, f), n: icerdeki.length });
 }
 donuk.sort((a, b) => b.n - a.n);
 

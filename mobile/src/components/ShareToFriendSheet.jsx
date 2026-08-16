@@ -8,7 +8,8 @@ import * as Haptics from 'expo-haptics';
 import { getFriends, sendChat } from '../api/social';
 import { getSession } from '../services/session';
 import { getAvatarPreset } from '../utils/avatar';
-import { colors, radius, spacing, type, PRESSED } from '../theme';
+import { radius, spacing, type, PRESSED } from '../theme';
+import { useStyles, useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -26,6 +27,8 @@ import { useLanguage } from '../context/LanguageContext';
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function ShareToFriendSheet({ visible, onClose, appid, gameName }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const { t } = useLanguage();
   const [friends, setFriends] = useState(null);
   const [sent, setSent] = useState({});       // uid → true
@@ -112,7 +115,7 @@ export default function ShareToFriendSheet({ visible, onClose, appid, gameName }
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: colors.overlay },
   sheet: {
     maxHeight: '70%', backgroundColor: colors.bgElevated,

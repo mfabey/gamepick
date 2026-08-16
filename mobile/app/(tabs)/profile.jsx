@@ -34,7 +34,8 @@ import { TopFade, BottomFade } from '../../src/components/EdgeFade';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { colors, radius, spacing, type, TAB_SPACE, PRESSED, PRESSED_CARD, NUMERIC } from '../../src/theme';
+import { radius, spacing, type, TAB_SPACE, PRESSED, PRESSED_CARD, NUMERIC } from '../../src/theme';
+import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { useTabBarScroll } from '../../src/context/TabBarContext';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useTimeToData } from '../../src/dev/perf';
@@ -62,6 +63,8 @@ function tileWidth(windowWidth) {
 }
 
 export default function ProfileScreen() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   // Sekmeye tekrar basınca listeyi başa sar (iOS'ta beklenen davranış)
   const scrollRef = useRef(null);
   useTabPressAction(useCallback(() => scrollRefToTop(scrollRef), []));
@@ -460,6 +463,7 @@ export default function ProfileScreen() {
  * ekrana girmek için bir sebebi olmuyordu.
  */
 function Stat({ n, label, badge, onPress }) {
+  const styles = useStyles(makeStyles);
   return (
     <Pressable
       style={({ pressed }) => [styles.stat, pressed && PRESSED]}
@@ -480,13 +484,19 @@ function Stat({ n, label, badge, onPress }) {
   );
 }
 
-const Div = () => <View style={styles.div} />;
+// Gövde açıldı: kanca ifade gövdeli bir okta çağrılamıyor.
+const Div = () => {
+  const styles = useStyles(makeStyles);
+  return <View style={styles.div} />;
+};
 
 // ─── Avatar seçici ──────────────────────────────────────────────────────────
 // RN Modal kullanılıyor — native kütüphane EKLENMEZ, OTA güvenli.
 // BottomSheet tarzı görünüm: arka plan karartılır, alt yarıda ızgara.
 
 function AvatarPicker({ visible, current, onSelect, onClose, onPickPhoto, uploading }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const { t } = useLanguage();
   return (
     <Modal
@@ -574,6 +584,8 @@ function AvatarPicker({ visible, current, onSelect, onClose, onPickPhoto, upload
  * anlamına gelir ve bozukluk gibi görünür.
  */
 function Tile({ icon, label, n, badge, locked, onPress }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   // Genişlik pencereden türetiliyor: flex'e bırakılırsa eksik son satır
   // kendini şişiriyor (bkz. styles.grid yorumu).
   const { width } = useWindowDimensions();
@@ -603,7 +615,7 @@ function Tile({ icon, label, n, badge, locked, onPress }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   body: { padding: spacing.lg, paddingBottom: TAB_SPACE + 16 },
 

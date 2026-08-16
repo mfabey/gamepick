@@ -20,7 +20,8 @@ import { useDismissed } from '../src/hooks/useDismissed';
 import { weeklyReport } from '../src/services/stats';
 import { fetchSteamPrices } from '../src/api/library';
 import EmptyState from '../src/components/EmptyState';
-import { colors, radius, spacing, PRESSED, type } from '../src/theme';
+import { radius, spacing, PRESSED, type } from '../src/theme';
+import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 import IconButton from '../src/components/IconButton';
 
@@ -34,6 +35,8 @@ export default function StatsScreen() {
 }
 
 function StatsScreenContent() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const router = useRouter();
   const { t } = useLanguage();
   const { items } = useWishlist();
@@ -171,6 +174,7 @@ function StatsScreenContent() {
 }
 
 function StatCard({ icon, value, label, tint }) {
+  const styles = useStyles(makeStyles);
   return (
     <View style={styles.card}>
       <Ionicons name={icon} size={19} color={tint} />
@@ -180,7 +184,7 @@ function StatCard({ icon, value, label, tint }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
 
   head: {

@@ -13,7 +13,8 @@ import { useReducedMotion } from '../hooks/useReducedMotion';
 import { usePop } from '../hooks/usePop';
 import { useTabBarCompact, useTabBarHidden } from '../context/TabBarContext';
 import { useUnread, refreshUnread } from '../services/unread';
-import { colors, type, NUMERIC, spacing, shadows, TAB_BAR } from '../theme';
+import { type, NUMERIC, spacing, shadows, TAB_BAR } from '../theme';
+import { useStyles, useTheme } from '../context/ThemeContext';
 
 // Sekme olmayan rotalar da burada (games, news, library): harita üst küme
 // olarak tutuluyor ki bir rota sekmeye girip çıkınca simgesi kaybolmasın.
@@ -55,6 +56,7 @@ const GLASS_OK = (() => {
 })();
 
 export default function FloatingTabBar({ state, descriptors, navigation }) {
+  const styles = useStyles(makeStyles);
   const insets = useSafeAreaInsets();
   // Yatayda çubuk uzun kenarı baştan sona kaplıyordu (width: '100%'): 874pt'lik
   // bir bant, hem görsel olarak ezici hem de video izlerken gereksiz yer
@@ -225,6 +227,8 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
  * ebeveyninde opacity<1 cami bozuyor (bkz. dosya basi). Yalnizca transform.
  */
 function TabIcon({ base, focused, label, badge = 0 }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   // Mantik usePop'a tasindi: ayni hareket begeni ve istek listesinde de
   // gerekiyordu ve kopyalanmasi besinci bir yay ayari uretirdi.
   // `reducedMotion` prop'u kalkti — kanca kendisi bakiyor.
@@ -267,7 +271,7 @@ function TabIcon({ base, focused, label, badge = 0 }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   // Handoff: yan kenardan 20, alttan 24.
   wrap: {
     position: 'absolute',

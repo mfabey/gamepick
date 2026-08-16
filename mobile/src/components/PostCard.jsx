@@ -6,7 +6,8 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
-import { colors, radius, spacing, type, PRESSED, NUMERIC } from '../theme';
+import { radius, spacing, type, PRESSED, NUMERIC } from '../theme';
+import { useStyles, useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { togglePostLike } from '../api/social';
 import Avatar from './Avatar';
@@ -37,6 +38,8 @@ function timeAgo(ts, lang) {
 }
 
 function PostCard({ post, onOpen, onRequireAccount, compact = false }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const { t, lang } = useLanguage();
   const router = useRouter();
 
@@ -122,7 +125,7 @@ function PostCard({ post, onOpen, onRequireAccount, compact = false }) {
 
 const AV = 38;
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   // Kartlar değil satırlar: ayırıcı çizgi yerine boşluk + ince alt kenar
   // (tasarım turunun kuralı — "çizgi yerine boşlukla ayır").
   row: {

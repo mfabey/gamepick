@@ -5,7 +5,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-import { colors, spacing, type, PRESSED, TAB_SPACE } from '../../src/theme';
+import { spacing, type, PRESSED, TAB_SPACE } from '../../src/theme';
+import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { fetchPost } from '../../src/api/social';
 import { getSession, subscribeSession } from '../../src/services/session';
@@ -23,6 +24,8 @@ import PostComposer from '../../src/components/PostComposer';
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function PostThread() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const { t } = useLanguage();
@@ -115,7 +118,7 @@ export default function PostThread() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   head: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',

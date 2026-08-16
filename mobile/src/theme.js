@@ -100,15 +100,19 @@ export const colors = isDarkTheme ? dark : light;
  *
  * Değer paletten TÜRETİLİYOR, elle yazılmıyor: EdgeFade'de 'rgba(6,7,10,0)'
  * sabiti duruyordu ve açık temaya geçince tam bu lekeyi üretti.
+ *
+ * ARTIK FONKSİYON, sabit değil: sabit hâli açılıştaki paletten bir kez
+ * hesaplanıyordu, yani tema değişince eski zeminin saydamı kalıyordu —
+ * düzeltmek için yazıldığı hatanın reaktif sürümü.
  */
-export const bgAlpha0 = (() => {
-  const h = colors.bg.replace('#', '');
+export function alfaSifir(hex) {
+  const h = String(hex).replace('#', '');
   const n = h.length === 3 ? h.split('').map((c) => c + c).join('') : h;
   const r = parseInt(n.slice(0, 2), 16);
   const g = parseInt(n.slice(2, 4), 16);
   const b = parseInt(n.slice(4, 6), 16);
   return `rgba(${r},${g},${b},0)`;
-})();
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Değere bağlı renk ölçeği

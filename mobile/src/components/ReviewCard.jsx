@@ -3,7 +3,8 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 
 import Avatar from './Avatar';
-import { colors, radius, spacing, type, PRESSED, NUMERIC, motion } from '../theme';
+import { radius, spacing, type, PRESSED, NUMERIC, motion } from '../theme';
+import { useStyles, useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -23,6 +24,8 @@ import { useLanguage } from '../context/LanguageContext';
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function ReviewCard({ review, onPress, onLongPress, onEdit, style }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const { t, lang } = useLanguage();
   const name = review.author?.displayName || review.author?.username || '?';
 
@@ -65,7 +68,7 @@ export default function ReviewCard({ review, onPress, onLongPress, onEdit, style
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   card: {
     marginHorizontal: spacing.lg, marginBottom: spacing.sm,
     backgroundColor: colors.card, borderRadius: radius.md,

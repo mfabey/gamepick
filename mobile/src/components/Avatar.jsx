@@ -3,7 +3,8 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 
-import { colors, type, motion } from '../theme';
+import { type, motion } from '../theme';
+import { useStyles, useTheme } from '../context/ThemeContext';
 import { getAvatarPreset } from '../utils/avatar';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -34,6 +35,7 @@ function isPhoto(v) {
  * @param style  ek stil (kenarlık, konum vb.)
  */
 function Avatar({ avatar, name, size = 36, style }) {
+  const styles = useStyles(makeStyles);
   const box = {
     width: size,
     height: size,
@@ -74,7 +76,7 @@ function Avatar({ avatar, name, size = 36, style }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   base: {
     overflow: 'hidden',
     backgroundColor: colors.bgInput,

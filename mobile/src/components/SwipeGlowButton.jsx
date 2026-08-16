@@ -17,12 +17,15 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { useReducedMotion } from '../hooks/useReducedMotion';
-import { colors, radius } from '../theme';
+import { radius } from '../theme';
+import { useStyles, useTheme } from '../context/ThemeContext';
 
 const SIZE = 44;          // HIG asgari dokunma hedefi
 const ICON = 21;
 
 export default function SwipeGlowButton({ onPress, accessibilityLabel }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const reducedMotion = useReducedMotion();
   const pulse = useSharedValue(0);
 
@@ -57,7 +60,7 @@ export default function SwipeGlowButton({ onPress, accessibilityLabel }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   wrap: { width: SIZE, height: SIZE, alignItems: 'center', justifyContent: 'center' },
   halo: {
     position: 'absolute',

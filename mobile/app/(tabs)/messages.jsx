@@ -22,7 +22,8 @@ import { getSession, subscribeSession } from '../../src/services/session';
 import { refreshUnread } from '../../src/services/unread';
 import EmptyState from '../../src/components/EmptyState';
 import { getAvatarPreset } from '../../src/utils/avatar';
-import { colors, radius, spacing, type, PRESSED, TAB_SPACE } from '../../src/theme';
+import { radius, spacing, type, PRESSED, TAB_SPACE } from '../../src/theme';
+import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { useTabBarScroll } from '../../src/context/TabBarContext';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useTabPressAction, scrollRefToTop } from '../../src/hooks/useTabPressAction';
@@ -40,6 +41,8 @@ function shortTime(ts, lang) {
 }
 
 export default function MessagesScreen() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const router = useRouter();
   const { t, lang } = useLanguage();
   // Sekmeye tekrar basınca listeyi başa sar (diğer sekmelerle aynı davranış)
@@ -127,6 +130,7 @@ export default function MessagesScreen() {
 }
 
 function ConversationRow({ item, onPress, t, lang }) {
+  const styles = useStyles(makeStyles);
   const preset = getAvatarPreset(item.other.avatar);
   const name = item.other.displayName || item.other.username || '?';
 
@@ -172,7 +176,7 @@ function ConversationRow({ item, onPress, t, lang }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   safe:   { flex: 1, backgroundColor: colors.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 

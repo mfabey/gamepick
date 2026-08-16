@@ -36,7 +36,8 @@ import GifPicker from '../../src/components/GifPicker';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { getAvatarPreset } from '../../src/utils/avatar';
 import { REACTIONS, reactionList } from '../../src/services/reactions';
-import { colors, radius, spacing, type, PRESSED, motion } from '../../src/theme';
+import { radius, spacing, type, PRESSED, motion } from '../../src/theme';
+import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { useLanguage } from '../../src/context/LanguageContext';
 
 const MAX_TEXT = 1000;
@@ -92,6 +93,8 @@ function lastSeenLabel(ts, t, lang) {
 }
 
 export default function ChatScreen() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const router = useRouter();
   const { t, lang } = useLanguage();
   const insets = useSafeAreaInsets();
@@ -931,6 +934,7 @@ export default function ChatScreen() {
 }
 
 function Bubble({ msg, mine, seen, onLongPress, onOpenShare, onReact, onJumpTo, myUid, peerName, t }) {
+  const styles = useStyles(makeStyles);
   // Menu baloncuga TUTTURULUYOR, ekranin altina degil — hangi mesaja ait
   // oldugunu konumu soylemeli. Bunun icin baloncugun pencere koordinati
   // gerekiyor ve o ancak olculerek bulunuyor.
@@ -1091,6 +1095,7 @@ function Bubble({ msg, mine, seen, onLongPress, onOpenShare, onReact, onJumpTo, 
  * kendisi değil, mesajın bir parçası.
  */
 function VideoBubble({ url }) {
+  const styles = useStyles(makeStyles);
   const player = useVideoPlayer(url, (p) => { p.loop = false; });
   return (
     <VideoView
@@ -1118,6 +1123,7 @@ function VideoBubble({ url }) {
  * sohbetlerde alintiyi islevsiz birakiyor.
  */
 function Quote({ quote, mine, myUid, peerName, onPress, t }) {
+  const styles = useStyles(makeStyles);
   if (!quote) return null;
   const kim = quote.from === myUid ? t('msg.replyToSelf') : (peerName || '');
   return (
@@ -1150,6 +1156,7 @@ function Quote({ quote, mine, myUid, peerName, onPress, t }) {
  * rozetin varligi zaten onu soyluyor.
  */
 function Reactions({ chips, mine, onPress }) {
+  const styles = useStyles(makeStyles);
   if (!chips.length) return null;
   return (
     <View style={[styles.chips, mine ? styles.chipsMine : styles.chipsTheirs]}>
@@ -1168,7 +1175,7 @@ function Reactions({ chips, mine, onPress }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   safe:   { flex: 1, backgroundColor: colors.bg },
   flex:   { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },

@@ -1,6 +1,8 @@
+import { useMemo } from 'react';
 import { StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors, bgAlpha0 } from '../theme';
+import { alfaSifir } from '../theme';
+import { useTheme } from '../context/ThemeContext';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Kenar sönümlemesi — içerik ekranın üst/alt kenarında zemine karışarak
@@ -14,15 +16,26 @@ import { colors, bgAlpha0 } from '../theme';
 //
 // Statik katman: kaydırırken kare başına yeniden çizim gerektirmiyor.
 // pointerEvents kapalı — altındaki listeye dokunmayı engellemez.
+//
+// ── RENKLER ARTIK MODÜL SABİTİ DEĞİL ──
+// Öncesinde `const BG = colors.bg` ve `const BG_0 = bgAlpha0` modül düzeyinde
+// duruyordu; ikisi de açılıştaki paletten bir kez hesaplanıyordu. Tema
+// değişince sönümleme ESKİ zeminin rengiyle çiziliyor, yani tam da düzeltmek
+// için var olduğu lekeyi kendisi üretiyordu.
+//
+// Saydam uç için 'transparent' KULLANILAMIYOR: iOS gradyanı saydam SİYAHA
+// doğru interpolasyona sokuyor ve açık zeminde gri bir leke bırakıyor. Bitiş
+// rengi zeminin kendisi olmalı, yalnızca alfası 0.
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Zeminin saydam hâli. 'transparent' yerine AÇIKÇA rgba yazılıyor: iOS'ta
-// 'transparent' siyaha çözülüyor ve koyu olmayan zeminlerde geçiş griye
-// kaçıyor. Renk aynı kalıp yalnız alfa düşünce geçiş temiz oluyor.
-const BG = colors.bg;
-const BG_0 = bgAlpha0;   // aktif zeminin alfa 0 hâli (theme.js'ten türetiliyor)
+/** Aktif zemin + onun alfa 0 hâli. İkisi de canlı paletten. */
+function useUclar() {
+  const { colors } = useTheme();
+  return useMemo(() => [colors.bg, alfaSifir(colors.bg)], [colors.bg]);
+}
 
 export function TopFade({ top = 0, height = 28 }) {
+  const [BG, BG_0] = useUclar();
   return (
     <LinearGradient
       colors={[BG, BG_0]}
@@ -33,6 +46,7 @@ export function TopFade({ top = 0, height = 28 }) {
 }
 
 export function BottomFade({ height = 96 }) {
+  const [BG, BG_0] = useUclar();
   return (
     <LinearGradient
       colors={[BG_0, BG]}
@@ -42,6 +56,7 @@ export function BottomFade({ height = 96 }) {
   );
 }
 
+// Renk taşımıyor — paletten bağımsız, olduğu yerde kalabilir.
 const styles = StyleSheet.create({
   fade: { position: 'absolute', left: 0, right: 0, zIndex: 9 },
 });

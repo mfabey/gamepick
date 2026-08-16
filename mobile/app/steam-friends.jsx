@@ -27,10 +27,13 @@ import { getSteamFriends } from '../src/api/social';
 import { getSession, subscribeSession } from '../src/services/session';
 import EmptyState from '../src/components/EmptyState';
 import { getAvatarPreset } from '../src/utils/avatar';
-import { colors, radius, spacing, type, PRESSED, NUMERIC, TAB_SPACE, motion } from '../src/theme';
+import { radius, spacing, type, PRESSED, NUMERIC, TAB_SPACE, motion } from '../src/theme';
+import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 
 export default function SteamFriendsScreen() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const router = useRouter();
   const { t } = useLanguage();
 
@@ -180,6 +183,8 @@ export default function SteamFriendsScreen() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function FriendRow({ item, open, onToggle, t }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const preset = getAvatarPreset(item.gamerisen?.avatar);
   const locked = item.private;
 
@@ -251,7 +256,7 @@ function FriendRow({ item, open, onToggle, t }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   safe:   { flex: 1, backgroundColor: colors.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md },
   loadingText: { color: colors.text3, fontSize: type.footnote },

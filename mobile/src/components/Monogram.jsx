@@ -22,7 +22,8 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { View, Text, StyleSheet } from 'react-native';
 
-import { colors, radius, type } from '../theme';
+import { radius, type } from '../theme';
+import { useStyles, useTheme } from '../context/ThemeContext';
 
 // FNV-1a — GamePostCard'daki görsel seçiminde kullanılanla aynı gerekçe:
 // kriptografik değil, yalnız dağılımı düzgün ve ucuz olsun diye.
@@ -67,9 +68,14 @@ export function initials(name) {
 // Zemin tonları paletten TÜRETİLİYOR, sabit hex listesi değil: açık temada
 // koyu bir monogram zemini beyaz sayfada leke gibi durur. İki temada da
 // yüzeyden bir tık ayrışan, marka rengine yaklaşmayan nötr tonlar.
-const TONLAR = [colors.card, colors.bgInput, colors.bgHover, colors.bgElevated];
-
+//
+// MODÜL SABİTİ DEĞİL, artık bileşenin içinde: modül düzeyinde dizi açılıştaki
+// paleti donduruyordu ve tema değişince monogram zeminleri eski temada
+// kalıyordu — beyaz sayfadaki koyu leke, tam da kaçınmak için yazılan şey.
 export default function Monogram({ name, style, size }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
+  const TONLAR = [colors.card, colors.bgInput, colors.bgHover, colors.bgElevated];
   const bas = initials(name);
   const zemin = TONLAR[hash(String(name || '')) % TONLAR.length];
   return (
@@ -87,7 +93,7 @@ export default function Monogram({ name, style, size }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   wrap: { alignItems: 'center', justifyContent: 'center', borderRadius: radius.sm },
   text: {
     color: colors.text3,

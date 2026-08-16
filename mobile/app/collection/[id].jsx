@@ -19,12 +19,15 @@ import {
   renameCollection, deleteCollection, removeGameFromCollection,
 } from '../../src/services/collectionsStore';
 import { posterImage } from '../../src/utils/images';
-import { colors, radius, spacing, PRESSED, type } from '../../src/theme';
+import { radius, spacing, PRESSED, type } from '../../src/theme';
+import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { useLanguage } from '../../src/context/LanguageContext';
 import IconButton from '../../src/components/IconButton';
 import GameCover from '../../src/components/GameCover';
 
 export default function CollectionDetailScreen() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const { t } = useLanguage();
@@ -100,7 +103,7 @@ export default function CollectionDetailScreen() {
         <Text numberOfLines={2} style={styles.cellName}>{item.name}</Text>
       </GameCover>
     </Pressable>
-  ), [openGame, removeGame]);
+  ), [openGame, removeGame, styles]);
 
   if (!col) {
     // Koleksiyon silinmiş olabilir (bu ekran açıkken) — sessizce geri dön
@@ -198,7 +201,7 @@ export default function CollectionDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
 
   head: {

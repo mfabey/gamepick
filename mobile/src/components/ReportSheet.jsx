@@ -11,7 +11,8 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 import { reportContent } from '../api/social';
-import { colors, radius, spacing, PRESSED, type } from '../theme';
+import { radius, spacing, PRESSED, type } from '../theme';
+import { useStyles, useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 
 const REASONS = [
@@ -19,6 +20,8 @@ const REASONS = [
 ];
 
 export default function ReportSheet({ visible, onClose, targetType, targetId, targetLabel }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const { t } = useLanguage();
   const [reason, setReason] = useState(null);
   const [note, setNote] = useState('');
@@ -98,7 +101,7 @@ export default function ReportSheet({ visible, onClose, targetType, targetId, ta
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },
   sheet: {
     backgroundColor: colors.bgElevated,

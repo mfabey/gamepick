@@ -11,7 +11,8 @@ import { fetchGames } from '../src/api/games';
 import { useQuery } from '../src/hooks/useQuery';
 import { recordSignal } from '../src/services/tasteProfile';
 import { completeOnboarding } from '../src/services/onboarding';
-import { colors, radius, spacing, PRESSED, type } from '../src/theme';
+import { radius, spacing, PRESSED, type } from '../src/theme';
+import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 import GameCover from '../src/components/GameCover';
 
@@ -22,6 +23,8 @@ const MIN_PICKS = 3;
 const fetchPool = () => fetchGames({ section: 'popular', num: 40 });
 
 export default function OnboardingScreen() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const router = useRouter();
   const { t } = useLanguage();
 
@@ -127,6 +130,7 @@ export default function OnboardingScreen() {
 }
 
 function PickCard({ game, selected, onPress }) {
+  const styles = useStyles(makeStyles);
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.cell, pressed && PRESSED]}>
       <GameCover uri={game.image} name={game.name} style={[styles.cover, selected && styles.coverOn]}>
@@ -142,7 +146,7 @@ function PickCard({ game, selected, onPress }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 

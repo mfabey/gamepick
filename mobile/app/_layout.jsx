@@ -22,7 +22,67 @@ import { startThemeWatch } from '../src/services/themeWatch';
 import { startDmPushSync } from '../src/services/dmPush';
 import { useLastNotificationResponse } from 'expo-notifications';
 import FpsMeter from '../src/dev/FpsMeter';
-import { colors, isDarkTheme } from '../src/theme';
+import { useTheme } from '../src/context/ThemeContext';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TEMALI YIĞIN — RootLayout'tan AYRI bir bileşen olmak ZORUNDA.
+//
+// RootLayout, ThemeProvider'ı KENDİSİ render ediyor; kendi gövdesinde
+// useTheme() çağıramaz (sağlayıcı henüz üstünde değil). Öncesinde bu yüzden
+// modül düzeyindeki donmuş `colors` ve `isDarkTheme` kullanılıyordu, yani
+// yığının zemini ve durum çubuğu tema değişince ESKİ temada kalıyordu:
+// açık temaya geçildiğinde ekranlar arası geçişte koyu bir bant çakıyordu.
+//
+// Sağlayıcının ALTINA inince ikisi de canlı palete bağlandı.
+// ─────────────────────────────────────────────────────────────────────────────
+function TemaliYigin() {
+  const { colors, isDark } = useTheme();
+  return (
+    <>
+      {/* Açık temada koyu ikon: "light" sabit kalsaydı beyaz zeminde beyaz saat çıkardı. */}
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: colors.bg },
+          animation: 'slide_from_right',
+        }}
+      >
+                <Stack.Screen name="(tabs)" />
+                <Stack.Screen name="game/[id]" options={{ animation: 'slide_from_bottom' }} />
+                <Stack.Screen name="wishlist" />
+                <Stack.Screen name="discover" />
+                <Stack.Screen name="swipe" />
+                <Stack.Screen name="library" />
+                <Stack.Screen name="collections" />
+                <Stack.Screen name="collection/[id]" />
+                <Stack.Screen name="stats" />
+                <Stack.Screen name="social" />
+                {/* Oyunlar BURAYA GELDİ: alt navigasyondaki yerini Topluluk
+                    (reviews) aldı. Rota yolu DEĞİŞMEDİ — (tabs) yol taşımayan
+                    bir grup olduğu için /games hâlâ /games, mevcut yedi
+                    bağlantının hiçbiri elden geçmedi. */}
+                <Stack.Screen name="games" />
+                <Stack.Screen name="steam-friends" />
+                <Stack.Screen name="game-cards" />
+                {/* "messages" BURADAN KALKTI: alt navigasyona taşındı, artık
+                    (tabs) altında. Burada bırakılsaydı expo-router var
+                    olmayan bir çocuk rota için uyarı verirdi.
+                    Yerini haberler aldı — o da ters yönde taşındı. */}
+                <Stack.Screen name="news" />
+                <Stack.Screen name="post/[id]" />
+                <Stack.Screen name="chat/[uid]" />
+                <Stack.Screen name="settings" />
+                <Stack.Screen name="social-settings" />
+                <Stack.Screen name="lists" />
+                <Stack.Screen name="list/[id]" />
+                <Stack.Screen name="onboarding" options={{ animation: 'fade', gestureEnabled: false }} />
+                <Stack.Screen name="account" />
+                <Stack.Screen name="delete-account" />
+      </Stack>
+    </>
+  );
+}
 
 export default function RootLayout() {
   // Zevk profilini açılışta belleğe yükle (keşif algoritması için) ve önbelleği geri yükle
@@ -120,47 +180,7 @@ export default function RootLayout() {
         <LanguageProvider>
           <AuthProvider>
             <WishlistProvider>
-              {/* Açık temada koyu ikon: "light" sabit kalsaydı beyaz zeminde beyaz saat çıkardı. */}
-              <StatusBar style={isDarkTheme ? 'light' : 'dark'} />
-              <Stack
-                screenOptions={{
-                  headerShown: false,
-                  contentStyle: { backgroundColor: colors.bg },
-                  animation: 'slide_from_right',
-                }}
-              >
-                <Stack.Screen name="(tabs)" />
-                <Stack.Screen name="game/[id]" options={{ animation: 'slide_from_bottom' }} />
-                <Stack.Screen name="wishlist" />
-                <Stack.Screen name="discover" />
-                <Stack.Screen name="swipe" />
-                <Stack.Screen name="library" />
-                <Stack.Screen name="collections" />
-                <Stack.Screen name="collection/[id]" />
-                <Stack.Screen name="stats" />
-                <Stack.Screen name="social" />
-                {/* Oyunlar BURAYA GELDİ: alt navigasyondaki yerini Topluluk
-                    (reviews) aldı. Rota yolu DEĞİŞMEDİ — (tabs) yol taşımayan
-                    bir grup olduğu için /games hâlâ /games, mevcut yedi
-                    bağlantının hiçbiri elden geçmedi. */}
-                <Stack.Screen name="games" />
-                <Stack.Screen name="steam-friends" />
-                <Stack.Screen name="game-cards" />
-                {/* "messages" BURADAN KALKTI: alt navigasyona taşındı, artık
-                    (tabs) altında. Burada bırakılsaydı expo-router var
-                    olmayan bir çocuk rota için uyarı verirdi.
-                    Yerini haberler aldı — o da ters yönde taşındı. */}
-                <Stack.Screen name="news" />
-                <Stack.Screen name="post/[id]" />
-                <Stack.Screen name="chat/[uid]" />
-                <Stack.Screen name="settings" />
-                <Stack.Screen name="social-settings" />
-                <Stack.Screen name="lists" />
-                <Stack.Screen name="list/[id]" />
-                <Stack.Screen name="onboarding" options={{ animation: 'fade', gestureEnabled: false }} />
-                <Stack.Screen name="account" />
-                <Stack.Screen name="delete-account" />
-              </Stack>
+              <TemaliYigin />
               {__DEV__ && <FpsMeter />}
             </WishlistProvider>
           </AuthProvider>

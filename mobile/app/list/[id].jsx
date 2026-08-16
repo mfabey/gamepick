@@ -14,12 +14,15 @@ import * as Haptics from 'expo-haptics';
 import { fetchList, toggleListLike, deletePublicList } from '../../src/api/social';
 import ReportSheet from '../../src/components/ReportSheet';
 import EmptyState from '../../src/components/EmptyState';
-import { colors, radius, spacing, PRESSED, type } from '../../src/theme';
+import { radius, spacing, PRESSED, type } from '../../src/theme';
+import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { useLanguage } from '../../src/context/LanguageContext';
 import IconButton from '../../src/components/IconButton';
 import GameCover from '../../src/components/GameCover';
 
 export default function PublicListScreen() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const { t } = useLanguage();
@@ -81,7 +84,7 @@ export default function PublicListScreen() {
         <Text numberOfLines={2} style={styles.cellName}>{item.name}</Text>
       </GameCover>
     </Pressable>
-  ), [openGame]);
+  ), [openGame, styles]);
 
   if (list === undefined) {
     return (
@@ -175,7 +178,7 @@ export default function PublicListScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 50 },
 

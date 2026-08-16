@@ -17,7 +17,8 @@ import { useCollections } from '../src/hooks/useCollections';
 import { createCollection, deleteCollection } from '../src/services/collectionsStore';
 import EmptyState from '../src/components/EmptyState';
 import { posterImage } from '../src/utils/images';
-import { colors, radius, spacing, PRESSED, type, motion } from '../src/theme';
+import { radius, spacing, PRESSED, type, motion } from '../src/theme';
+import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 import ProfileGate from '../src/components/ProfileGate';
 
@@ -32,6 +33,8 @@ export default function CollectionsScreen() {
 }
 
 function CollectionsScreenContent() {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const router = useRouter();
   const { t } = useLanguage();
   const collections = useCollections();
@@ -176,6 +179,8 @@ function CollectionsScreenContent() {
 }
 
 function CollectionRow({ col, onPress, onLongPress, t }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const covers = (col.games || []).slice(0, 4);
   return (
     <Pressable
@@ -210,7 +215,7 @@ function CollectionRow({ col, onPress, onLongPress, t }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
 
   head: {

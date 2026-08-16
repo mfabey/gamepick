@@ -10,13 +10,16 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
-import { colors, radius, spacing, PRESSED, type } from '../theme';
+import { radius, spacing, PRESSED, type } from '../theme';
+import { useStyles, useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import IconButton from './IconButton';
 
 export default function CollectionPicker({
   visible, onClose, collections, selectedIds, game, onToggle, onCreate,
 }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
   const { t } = useLanguage();
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState('');
@@ -103,7 +106,7 @@ export default function CollectionPicker({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },
   sheet: {
     backgroundColor: colors.bgElevated,
