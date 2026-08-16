@@ -203,7 +203,7 @@ const makeStyles = (colors) => StyleSheet.create({
   exampleText: { color: colors.text2, fontSize: type.footnote },
 
   understood: { marginTop: 18 },
-  understoodLabel: { fontSize: type.caption, color: colors.text3, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: spacing.sm },
+  understoodLabel: { fontSize: type.footnote, color: colors.text2, fontWeight: '600', marginBottom: spacing.sm },
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
   tag: {
     backgroundColor: colors.accentSoft, borderColor: colors.accentBorder, borderWidth: 1,

@@ -195,8 +195,7 @@ const makeStyles = (colors) => StyleSheet.create({
     paddingHorizontal: 9, paddingVertical: spacing.xs, borderRadius: radius.sm,
   },
   tagText: {
-    color: '#fff', fontSize: type.caption2, fontWeight: '700',
-    letterSpacing: 0.6, textTransform: 'uppercase',
+    color: '#fff', fontSize: type.caption, fontWeight: '400',
   },
   overlay: { position: 'absolute', left: 14, right: 14, bottom: 12 },
   name: { color: '#fff', fontSize: type.headline, fontWeight: '800', letterSpacing: -0.3 },

@@ -633,7 +633,8 @@ const makeStyles = (colors) => StyleSheet.create({
   metaChip: { backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: radius.md, paddingHorizontal: 14, paddingVertical: spacing.sm, alignItems: 'center', minWidth: 68 },
   metaChipText: { fontSize: type.body, fontWeight: '800' },
   metaChipText2: { fontSize: type.footnote, fontWeight: '700', color: colors.text },
-  metaChipLabel: { fontSize: type.caption2, color: colors.text3, fontWeight: '600', marginTop: 2, textTransform: 'uppercase', letterSpacing: 0.3 },
+  // Maket: "Metacritic" = 12 / 600 / cumle duzeni.
+  metaChipLabel: { fontSize: type.caption, color: colors.text3, fontWeight: '600', marginTop: 2 },
   dev: { fontSize: type.footnote, color: colors.text3, marginTop: spacing.md, fontWeight: '600' },
 
   // ── HANDOFF BELİRSİZLİĞİ, KARARI YAZIYORUM ──

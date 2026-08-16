@@ -201,7 +201,7 @@ const makeStyles = (colors) => StyleSheet.create({
   // üstelik listedeki tüm satırlar aynı kategoriyi taşıdığında hiçbir şey
   // ayırt etmiyor. Rolü zaten büyük harf + harf aralığı + 800 ağırlık
   // anlatıyor; renge ihtiyaç yok.
-  catPillText: { color: colors.text2, fontSize: type.caption2, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.4 },
+  catPillText: { color: colors.text2, fontSize: type.caption, fontWeight: '600' },
   metaText: { color: 'rgba(255,255,255,0.7)', fontSize: type.caption, fontWeight: '500' },
 
   chipsRow: { paddingHorizontal: spacing.lg, gap: spacing.sm, paddingVertical: 14 },
@@ -214,7 +214,7 @@ const makeStyles = (colors) => StyleSheet.create({
   row: { flexDirection: 'row', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   thumb: { width: 108, height: 76, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.card },
   catPillSm: { alignSelf: 'flex-start', backgroundColor: colors.bgInput, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2, marginBottom: 5 },
-  catPillTextSm: { color: colors.text2, fontSize: type.caption2, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.3 },
+  catPillTextSm: { color: colors.text2, fontSize: type.caption2, fontWeight: '600' },
   rowTitle: { color: colors.text, fontSize: type.subhead, fontWeight: '700', lineHeight: 18 },
   rowMeta: { color: colors.text3, fontSize: type.caption, marginTop: 5, fontWeight: '500' },
 

@@ -253,8 +253,8 @@ const makeStyles = (colors) => StyleSheet.create({
   body: { flexGrow: 0, marginTop: 6 },
   group: { marginTop: spacing.lg },
   groupLabel: {
-    color: colors.text3, fontSize: type.caption, fontWeight: '800',
-    letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 9,
+    // Maket: filtre grup etiketi "Tur" = 13 / 600 / text2.
+    color: colors.text2, fontSize: type.footnote, fontWeight: '600', marginBottom: spacing.s8,
   },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
 

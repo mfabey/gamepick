@@ -667,8 +667,8 @@ const makeStyles = (colors) => StyleSheet.create({
   setupTitle: { color: colors.text, fontSize: type.title3, fontWeight: '900', marginTop: 14, textAlign: 'center', letterSpacing: -0.4 },
   setupText: { color: colors.text2, fontSize: type.subhead, textAlign: 'center', marginTop: spacing.sm, lineHeight: 20 },
   label: {
-    alignSelf: 'flex-start', color: colors.text3, fontSize: type.caption, fontWeight: '800',
-    letterSpacing: 0.5, textTransform: 'uppercase', marginTop: 26, marginBottom: 7,
+    alignSelf: 'flex-start', color: colors.text2, fontSize: type.footnote, fontWeight: '600',
+    marginTop: spacing.s24, marginBottom: spacing.s8,
   },
   inputWrap: {
     alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', gap: 6,

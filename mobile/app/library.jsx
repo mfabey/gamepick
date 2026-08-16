@@ -476,7 +476,8 @@ const makeStyles = (colors) => StyleSheet.create({
   statsRow: { flexDirection: 'row', paddingHorizontal: spacing.lg, paddingVertical: 14, gap: spacing.xs },
   statCell: { flex: 1, alignItems: 'center' },
   statValue: { fontSize: type.headline, fontWeight: '800', color: colors.text, letterSpacing: -0.5 },
-  statLabel: { fontSize: type.caption2, fontWeight: '700', color: colors.text3, textTransform: 'uppercase', letterSpacing: 0.4, marginTop: 3 },
+  // Maket sayac karosu: etiket 13 / 400 / text2 ("Koleksiyon").
+  statLabel: { fontSize: type.footnote, fontWeight: '400', color: colors.text2, marginTop: spacing.s4 },
 
   searchBox: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: radius.md, paddingHorizontal: 14, height: 42, marginBottom: 10 },
   searchInput: { flex: 1, color: colors.text, fontSize: type.subhead },

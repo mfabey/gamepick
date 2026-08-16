@@ -638,8 +638,8 @@ const makeStyles = (colors) => StyleSheet.create({
   },
   weekMain: { flex: 1, minWidth: 0 },
   weekTitle: {
-    fontSize: type.caption2, fontWeight: '800', color: colors.text3,
-    textTransform: 'uppercase', letterSpacing: 1,
+    // Maket: kart basligi "Haftalik rapor" = 15 / 600 / text1.
+    fontSize: type.subhead, fontWeight: '600', color: colors.text,
   },
   weekLine: { fontSize: type.footnote, color: colors.text2, marginTop: 3, lineHeight: 18 },
   weekNum: { color: colors.text, fontWeight: '800' },
