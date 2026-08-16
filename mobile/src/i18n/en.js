@@ -58,6 +58,13 @@ export default {
   'filter.store': 'Store',
   'filter.score': 'Metacritic score',
   'filter.tags': 'Tags',
+  // ── Sınırlı mod (veri kaynağı düştü) ──
+  'limited.title': 'Showing a limited list',
+  'limited.body': "The game database is unreachable right now, so we're showing the offline list.",
+  'limited.disabled': 'Filters not working',
+  'limited.retry': 'Try again',
+  'limited.browse': 'Browse anyway',
+  'limited.off': 'unavailable',
   'store.steam': 'Steam',
   'store.epic': 'Epic Games',
   'genre.action': 'Action',

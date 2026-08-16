@@ -60,7 +60,7 @@ export function countFilters({ genre, mode, store, mc, tags }) {
        + (mc ? 1 : 0) + (tags?.length || 0);
 }
 
-export default function FilterSheet({ visible, onClose, value, onApply }) {
+export default function FilterSheet({ visible, onClose, value, onApply, unavailable = [] }) {
   const { t } = useLanguage();
   const [draft, setDraft] = useState(value);
 
@@ -105,6 +105,8 @@ export default function FilterSheet({ visible, onClose, value, onApply }) {
     onClose();
   }, [draft, onApply, onClose]);
 
+  const kapali = (ad) => unavailable.includes(ad);
+
   const n = countFilters(draft);
 
   return (
@@ -139,25 +141,32 @@ export default function FilterSheet({ visible, onClose, value, onApply }) {
               ))}
             </Group>
 
-            <Group label={t('filter.store')}>
+            {/* DEVRE DIŞI GÖRÜNÜYOR, GİZLENMİYOR (kontrol listesi). Gizlemek
+                "böyle bir özellik yok" der; soluk göstermek "var ama şu an
+                çalışmıyor" der. Veri kaynağı düşünce sunucu hangi filtrelerin
+                uygulanmadığını bildiriyor. */}
+            <Group label={t('filter.store')} kapali={kapali('store')}>
               {STORES.map((s) => (
                 <Chip key={s} on={draft.store === s} label={t('store.' + s)}
+                  kapali={kapali('store')}
                   onPress={() => toggle('store', s)} />
               ))}
             </Group>
 
-            <Group label={t('filter.score')}>
+            <Group label={t('filter.score')} kapali={kapali('metacritic')}>
               {SCORES.map((s) => (
                 <Chip key={s} on={draft.mc === s} label={`${s}+`}
+                  kapali={kapali('metacritic')}
                   onPress={() => toggle('mc', s)} />
               ))}
             </Group>
 
             {/* Sınır BAŞLIKTA yazıyor, hata mesajında değil: kullanıcı altıncı
                 etikete basıp reddedilmeden önce sınırı görüyor. */}
-            <Group label={`${t('filter.tags')}  ${draft.tags.length}/${MAX_TAGS}`}>
+            <Group label={`${t('filter.tags')}  ${draft.tags.length}/${MAX_TAGS}`} kapali={kapali('tags')}>
               {TAGS.map((tag) => (
                 <Chip key={tag} on={draft.tags.includes(tag)} label={t('tag.' + tag)}
+                  kapali={kapali('tags')}
                   onPress={() => toggleTag(tag)} />
               ))}
             </Group>
@@ -174,10 +183,13 @@ export default function FilterSheet({ visible, onClose, value, onApply }) {
   );
 }
 
-function Group({ label, children }) {
+function Group({ label, children, kapali }) {
+  const { t } = useLanguage();
   return (
     <View style={styles.group}>
-      <Text style={styles.groupLabel}>{label}</Text>
+      <Text style={[styles.groupLabel, kapali && styles.groupLabelKapali]}>
+        {label}{kapali ? `  ·  ${t('limited.off')}` : ''}
+      </Text>
       <View style={styles.wrap}>{children}</View>
     </View>
   );
@@ -185,9 +197,14 @@ function Group({ label, children }) {
 
 // Seçim dili games.jsx ile AYNI: dolu nötr yüzey + koyu metin. Marka rengi
 // kullanılmıyor; ekranın tek gerçek CTA'sı "Uygula" ve vurguyu o taşımalı.
-function Chip({ on, label, onPress }) {
+function Chip({ on, label, onPress, kapali }) {
   return (
-    <Pressable onPress={onPress} style={[styles.chip, on && styles.chipOn]}>
+    <Pressable
+      onPress={kapali ? undefined : onPress}
+      disabled={kapali}
+      accessibilityState={kapali ? { disabled: true } : undefined}
+      style={[styles.chip, on && styles.chipOn, kapali && styles.chipKapali]}
+    >
       <Text style={[styles.chipText, on && styles.chipTextOn]}>{label}</Text>
     </Pressable>
   );
@@ -241,6 +258,9 @@ const styles = StyleSheet.create({
   chipText: { fontSize: type.footnote, color: colors.text2, fontWeight: '500' },
   chipOn: { backgroundColor: colors.text, borderColor: colors.text },
   chipTextOn: { color: colors.bg, fontWeight: '700' },
+  // Soluk ama GÖRÜNÜR — kullanıcı özelliğin var olduğunu bilsin.
+  chipKapali: { opacity: 0.4 },
+  groupLabelKapali: { color: colors.accentText },
 
   cta: {
     height: 52, borderRadius: radius.lg, backgroundColor: colors.accent,

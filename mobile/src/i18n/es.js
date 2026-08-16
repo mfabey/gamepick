@@ -66,6 +66,13 @@ export default {
   'filter.store': 'Tienda',
   'filter.score': 'Puntuación Metacritic',
   'filter.tags': 'Etiquetas',
+  // ── Sınırlı mod (veri kaynağı düştü) ──
+  'limited.title': 'Mostrando una lista limitada',
+  'limited.body': 'No se puede acceder a la base de datos ahora; mostramos la lista sin conexión.',
+  'limited.disabled': 'Filtros que no funcionan',
+  'limited.retry': 'Reintentar',
+  'limited.browse': 'Explorar igualmente',
+  'limited.off': 'no disponible',
   'store.steam': 'Steam',
   'store.epic': 'Epic Games',
   'genre.action': 'Acción',

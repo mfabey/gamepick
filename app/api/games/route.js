@@ -583,6 +583,9 @@ export async function GET(request) {
   const tags    = searchParams.get('tags')    || '';   // RAWG etiketleri: story-rich,open-world…
   const price   = searchParams.get('price')   || '';
 
+  // Cevrimdisi/yedek liste devrede mi? Yanitla birlikte istemciye gidiyor.
+  let limited = false;
+
   // ── Oyun modu filtresi: Steam mağaza kategorileri (otoriter veri) ──
   // RAWG etiketleri oyun modu için güvenilmez olduğundan, mod seçiliyse Steam araması
   // önceliklidir ve RAWG anahtarı gerektirmez.
@@ -799,6 +802,12 @@ export async function GET(request) {
     // Fallback logic for sections when RAWG is limited or returns no results
     if (results.length === 0) {
       console.log(`Applying paginated fallback for section: ${section || 'all'}, page: ${page}, query: ${q}`);
+      // SESSIZ BASARISIZLIK YASAK (tasarim handoff'u). Buraya dusuldugunde
+      // istemci bunu BILMELI: yedek yol yalnizca tur/ucretsiz/arama suzuyor,
+      // magaza-puan-etiket filtreleri UYGULANMIYOR. Yanit govdesinde bunu
+      // soyleyen bir alan yoktu; iki yol da source:'rawg-steam-merge'
+      // donduruyordu ve istemci farki anlayamiyordu.
+      limited = true;
 
       const GENRE_MAP = {
         'action': 'Aksiyon',
@@ -953,7 +962,14 @@ export async function GET(request) {
       results = results.slice(0, num);
     }
 
-    return NextResponse.json({ results, total, source: 'rawg-steam-merge' });
+    // `limited` ve `unavailable` istemcinin "sinirli mod" uyarisini
+    // cizmesi icin. unavailable = yedek yolun UYGULAMADIGI filtreler;
+    // istemci onlari devre disi GOSTERIYOR, gizlemiyor.
+    return NextResponse.json({
+      results, total, source: 'rawg-steam-merge',
+      limited,
+      unavailable: limited ? ['store', 'metacritic', 'tags'] : [],
+    });
 
   } catch (err) {
     console.error('RAWG/Steam API hatasi:', err.message);

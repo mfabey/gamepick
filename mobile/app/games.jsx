@@ -20,6 +20,7 @@ import { colors, radius, spacing, type } from '../src/theme';
 import { useScrollCollapse } from '../src/context/TabBarContext';
 import { useLanguage } from '../src/context/LanguageContext';
 import FilterSheet, { FilterButton, countFilters } from '../src/components/FilterSheet';
+import LimitedMode from '../src/components/LimitedMode';
 
 const COLS = 2;
 const NUM = 24;
@@ -71,6 +72,10 @@ export default function GamesScreen() {
   // çip satırına düştü — filtre KAZANIRKEN başlık kısaldı.
   const [filters, setFilters] = useState({ genre: null, mode: null, store: null, mc: null, tags: [] });
   const [sheetOpen, setSheetOpen] = useState(false);
+  // Sunucu yedek listeye düştüğünü bildiriyor (limited) ve HANGİ filtrelerin
+  // uygulanmadığını sayıyor (unavailable). Sessiz başarısızlık yasak.
+  const [limited, setLimited] = useState(null);   // { unavailable: [...] } | null
+  const [limitedGizli, setLimitedGizli] = useState(false);
   const filterCount = countFilters(filters);
 
   const ref = useRef({ page: 1, canMore: true, fetching: false, seen: new Set(), section: '', query: '', filters: null });
@@ -124,6 +129,7 @@ export default function GamesScreen() {
         r.seen.add(g.id); return true;
       });
       setGames(results);
+      setLimited(data.limited ? { unavailable: data.unavailable || [] } : null);
       prefetchImages(results.map(g => g.image));
       r.canMore = (data.total || 0) > NUM;
     } catch {
@@ -326,6 +332,17 @@ export default function GamesScreen() {
           </View>
         ) : (
           <FlashList
+            ListHeaderComponent={
+              limited && !limitedGizli ? (
+                <View style={{ paddingHorizontal: spacing.s20, paddingBottom: spacing.s16 }}>
+                  <LimitedMode
+                    unavailable={limited.unavailable}
+                    onRetry={load}
+                    onDismiss={() => setLimitedGizli(true)}
+                  />
+                </View>
+              ) : null
+            }
             onScroll={onTabScroll}
             scrollEventThrottle={16}
             data={games}
@@ -351,6 +368,7 @@ export default function GamesScreen() {
       </View>
 
       <FilterSheet
+        unavailable={limited?.unavailable || []}
         visible={sheetOpen}
         onClose={() => setSheetOpen(false)}
         value={filters}

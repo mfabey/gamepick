@@ -65,6 +65,13 @@ export default {
   'filter.store': 'Loja',
   'filter.score': 'Nota Metacritic',
   'filter.tags': 'Etiquetas',
+  // ── Sınırlı mod (veri kaynağı düştü) ──
+  'limited.title': 'Mostrando uma lista limitada',
+  'limited.body': 'Não conseguimos acessar a base de jogos agora; exibimos a lista offline.',
+  'limited.disabled': 'Filtros indisponíveis',
+  'limited.retry': 'Tentar de novo',
+  'limited.browse': 'Explorar mesmo assim',
+  'limited.off': 'indisponível',
   'store.steam': 'Steam',
   'store.epic': 'Epic Games',
   'genre.action': 'Ação',

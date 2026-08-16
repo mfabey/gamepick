@@ -58,6 +58,13 @@ export default {
   'filter.store': 'Mağaza',
   'filter.score': 'Metacritic puanı',
   'filter.tags': 'Etiketler',
+  // ── Sınırlı mod (veri kaynağı düştü) ──
+  'limited.title': 'Sınırlı liste gösteriliyor',
+  'limited.body': 'Oyun veritabanına şu an ulaşılamıyor, çevrimdışı listeyi gösteriyoruz.',
+  'limited.disabled': 'Çalışmayan filtreler',
+  'limited.retry': 'Tekrar dene',
+  'limited.browse': 'Yine de gez',
+  'limited.off': 'çalışmıyor',
   'store.steam': 'Steam',
   'store.epic': 'Epic Games',
   'genre.action': 'Aksiyon',

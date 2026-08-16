@@ -67,6 +67,13 @@ export default {
   'filter.store': 'Shop',
   'filter.score': 'Metacritic-Wertung',
   'filter.tags': 'Tags',
+  // ── Sınırlı mod (veri kaynağı düştü) ──
+  'limited.title': 'Eingeschränkte Liste',
+  'limited.body': 'Die Spieledatenbank ist gerade nicht erreichbar, wir zeigen die Offline-Liste.',
+  'limited.disabled': 'Nicht verfügbare Filter',
+  'limited.retry': 'Erneut versuchen',
+  'limited.browse': 'Trotzdem stöbern',
+  'limited.off': 'nicht verfügbar',
   'store.steam': 'Steam',
   'store.epic': 'Epic Games',
   'genre.action': 'Action',
