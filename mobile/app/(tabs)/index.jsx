@@ -298,7 +298,17 @@ export default function HomeScreen() {
               biniyordu. Ölçeklenmeyi tamamen KAPATMAK yanlış olurdu (büyük
               yazıya ihtiyacı olan kullanıcı markayı da okuyamaz); üst sınır
               konuyor — 1.4 kata kadar büyüyor, sonra duruyor. */}
-          <Text style={styles.brand} maxFontSizeMultiplier={1.4} numberOfLines={1}>GAMERISEN</Text>
+          {/* KELIME MARKASI MAKETTEN. Handoff'un HTML'i "gamerisen" yazıyor:
+              küçük harf, arkasında kırmızı nokta, SOLA yaslı. Bizde
+              "GAMERISEN" büyük harf ve ortalıydı — handoff'un HTML'i
+              README'yi yener (handoff CLAUDE.md: "piksel doğruluğunun
+              kaynağı"). Nokta ayrı bir View: yazının içine "." koymak onu
+              yazı tipinin nokta boşluğuna bağlardı, makette ise yuvarlak ve
+              yazıdan bağımsız bir işaret. */}
+          <View style={styles.brandRow}>
+            <Text style={styles.brand} maxFontSizeMultiplier={1.4} numberOfLines={1}>gamerisen</Text>
+            <View style={styles.brandDot} />
+          </View>
           <View style={styles.topRight}>
             <Pressable
               style={({ pressed }) => [styles.topBtn, pressed && PRESSED]}
@@ -476,16 +486,34 @@ const makeStyles = (colors) => StyleSheet.create({
   feedReview: { marginBottom: 26 },
   // Dikey dolgu 6/4 idi ve 40px ikon bandı taşırıyordu; marka ile ikon
   // birbirine değiyordu. Bant ikonun boyuna göre açıldı.
+  // Marka artık ORTALI DEĞİL, sola yaslı (makette öyle).
+  // YATAY hizayı alignItems yönetiyor: bu View sütun yönlü, yani ana eksen
+  // DİKEY. justifyContent'i değiştirmek yatayda hiçbir şey yapmıyor —
+  // ilk denemede onu değiştirdim ve marka ortada kaldı.
   topBar: {
-    alignItems: 'center', justifyContent: 'center',
+    alignItems: 'flex-start', justifyContent: 'center',
     paddingHorizontal: spacing.lg, paddingTop: 10, paddingBottom: 10,
     minHeight: 52,
   },
-  // İkon akıştan çıkarıldı: normal akışta olsaydı marka ortadan kayardı.
+  // İkon akıştan çıkarıldı: marka sola yaslandı ama düğme sağ kenarda kalmalı.
   topRight: { position: 'absolute', right: spacing.lg - 6, top: 6 },
   // 40×40 + hitSlop 6 → etkin dokunma alanı 52×52, HIG alt sınırının üstünde
   topBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  brand: { fontSize: type.headline, fontWeight: '900', color: colors.text, letterSpacing: 1.5 },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.s4 },
+  // letterSpacing 1.5 KALKTI: o değer BÜYÜK HARF yazı içindi. Küçük harf
+  // kelime markasında harf aralığı açmak kelimeyi dağıtıyor.
+  brand: { fontSize: type.headline, fontWeight: '900', color: colors.text },
+  // Makette markanın hemen ardındaki kırmızı işaret.
+  //
+  // Dikey yer TABANA bağlı, keyfi bir marginTop'a değil: ilk denemede
+  // `marginTop: 6` yazdım, boşluk cırcırı yakaladı ve haklıydı — 6 ölçekte
+  // yok. flex-end + 4pt, noktayı yazının taban çizgisine oturtuyor ve yazı
+  // boyu değişse de orada kalıyor.
+  brandDot: {
+    width: 6, height: 6, borderRadius: 3,
+    backgroundColor: colors.accent,
+    alignSelf: 'flex-end', marginBottom: spacing.s4,
+  },
 
   // Arama artık hero'nun içinde değil, doğrudan başlıkta duruyor — yatay
   // boşluğu hero'dan devraldı ki bölüm başlıklarıyla aynı hizada kalsın.

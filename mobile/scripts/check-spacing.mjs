@@ -40,7 +40,13 @@ function dosyalar(dir, out = []) {
 const sayim = {};
 for (const kok of ['app', 'src']) {
   for (const f of dosyalar(join(ROOT, kok))) {
-    const s = readFileSync(f, 'utf8');
+    // YORUMLAR AYIKLANIYOR. Oncesinde ayiklanmiyordu ve denetim, bir
+    // yorumun ICINDE gecen `marginTop: 6` metnini gercek bir deger sandi --
+    // ustelik o yorum tam da "bu degeri kullanma" diyen nottu. Kendi
+    // kuralini anlatan aciklama, kuralin ihlali olarak sayiliyordu.
+    const s = readFileSync(f, 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '')   // blok yorum
+      .replace(/^\s*\/\/.*$/gm, '');      // satir yorumu
     let m, n = 0;
     PROP.lastIndex = 0;
     while ((m = PROP.exec(s))) if (!OLCEK.has(Number(m[3]))) n++;

@@ -1,5 +1,5 @@
 {
-  "app/(tabs)/index.jsx": 9,
+  "app/(tabs)/index.jsx": 8,
   "app/(tabs)/messages.jsx": 2,
   "app/(tabs)/profile.jsx": 23,
   "app/(tabs)/reviews.jsx": 5,
@@ -10,7 +10,7 @@
   "app/collections.jsx": 16,
   "app/delete-account.jsx": 4,
   "app/discover.jsx": 9,
-  "app/game/[id].jsx": 21,
+  "app/game/[id].jsx": 19,
   "app/game-cards.jsx": 8,
   "app/games.jsx": 8,
   "app/library.jsx": 20,
