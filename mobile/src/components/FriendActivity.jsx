@@ -1,11 +1,11 @@
-import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Image } from 'expo-image';
 
-import GameCover from './GameCover';
+import GameCard from './GameCard';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-import { colors, radius, spacing, type, PRESSED, motion } from '../theme';
+import { colors, radius, spacing, type, motion } from '../theme';
 import { useLanguage } from '../context/LanguageContext';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -63,23 +63,24 @@ export default function FriendActivity({ games }) {
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.strip}>
         {games.map((g) => (
-          <Pressable
+          // Bu kart da TEK KART AİLESİNDEN. HTML: "sosyal · 16:9 + arkadaş
+          // cam etiketi". Avatar yığını `overlay`, oynayan arkadaşlar ise
+          // varyantın "tek satır bağlam"ı olarak geçiyor — handoff'un
+          // saydığı dört bağlamdan biri: "tarih, fiyat, mağaza ya da
+          // ARKADAŞ".
+          <GameCard
             key={g.appid}
-            style={({ pressed }) => [styles.card, pressed && PRESSED]}
+            game={{ ...g, id: g.appid }}
+            variant="social"
+            style={styles.card}
+            context={names(g, t)}
             onPress={() => router.push({
               pathname: '/game/[id]',
               params: { id: `rawg_${g.appid}`, appid: g.appid, name: g.name || '', image: g.image },
             })}
-            accessibilityRole="button"
-            accessibilityLabel={`${g.name} — ${names(g, t)}`}
-          >
-            {/* GameCover'a bağlandı. Öncesinde ham <Image> vardı ve zinciri
-                yoktu: dikey kapak dönüşümü, karartma ve — en önemlisi —
-                kapak yüklenemediğinde monogram. Anasayfadaki boş gri
-                kutular tam buradan geliyordu. */}
-            <GameCover uri={g.image} name={g.name} style={styles.cover}>
-              {/* Avatar yığını görselin ÜSTÜNDE: kartın ilk okunan şeyi
-                  oyun değil, oynayan kişiler olsun. */}
+            overlay={(
+              /* Avatar yığını görselin ÜSTÜNDE: kartın ilk okunan şeyi
+                 oyun değil, oynayan kişiler olsun. */
               <View style={styles.stack}>
                 {g.friends.map((f, i) => (
                   <Image
@@ -91,10 +92,8 @@ export default function FriendActivity({ games }) {
                   />
                 ))}
               </View>
-            </GameCover>
-            <Text style={styles.name} numberOfLines={1}>{g.name}</Text>
-            <Text style={styles.who} numberOfLines={1}>{names(g, t)}</Text>
-          </Pressable>
+            )}
+          />
         ))}
       </ScrollView>
     </View>
@@ -128,10 +127,6 @@ const styles = StyleSheet.create({
   },
   strip: { paddingHorizontal: spacing.lg, gap: spacing.md },
   card:  { width: 150 },
-  cover: {
-    width: 150, height: 70, borderRadius: radius.md,
-    overflow: 'hidden', backgroundColor: colors.card,
-  },
   stack: { position: 'absolute', left: 6, bottom: 6, flexDirection: 'row' },
   face: {
     width: 22, height: 22, borderRadius: 11,
@@ -141,6 +136,4 @@ const styles = StyleSheet.create({
     borderWidth: 1.5, borderColor: colors.bg,
   },
   faceOverlap: { marginLeft: -8 },
-  name: { color: colors.text, fontSize: type.caption, fontWeight: '700', marginTop: 6 },
-  who:  { color: colors.text3, fontSize: type.caption2, marginTop: 1 },
 });

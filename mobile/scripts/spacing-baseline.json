@@ -1,5 +1,5 @@
 {
-  "app/(tabs)/index.jsx": 13,
+  "app/(tabs)/index.jsx": 9,
   "app/(tabs)/messages.jsx": 2,
   "app/(tabs)/profile.jsx": 23,
   "app/(tabs)/reviews.jsx": 5,
@@ -29,7 +29,7 @@
   "src/components/CollectionPicker.jsx": 14,
   "src/components/EmptyState.jsx": 4,
   "src/components/FilterSheet.jsx": 8,
-  "src/components/FriendActivity.jsx": 5,
+  "src/components/FriendActivity.jsx": 3,
   "src/components/GamePostCard.jsx": 9,
   "src/components/PostCard.jsx": 9,
   "src/components/PostComposer.jsx": 7,

@@ -6,12 +6,12 @@ import { BottomFade } from '../../src/components/EdgeFade';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchTrending, fetchGames } from '../../src/api/games';
-import { colors, radius, spacing, TAB_SPACE, PRESSED, type, metacriticColor } from '../../src/theme';
+import { colors, radius, spacing, TAB_SPACE, PRESSED, type } from '../../src/theme';
 import { useTabBarScroll } from '../../src/context/TabBarContext';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useTimeToData } from '../../src/dev/perf';
 import FadeIn from '../../src/components/FadeIn';
-import GameCover from '../../src/components/GameCover';
+import GameCard from '../../src/components/GameCard';
 import { useQuery } from '../../src/hooks/useQuery';
 import { useTasteProfile } from '../../src/hooks/useTasteProfile';
 import { useOwnedGames } from '../../src/hooks/useOwnedGames';
@@ -439,25 +439,18 @@ function Section({ title, games, router, onDismiss }) {
   );
 }
 
+// Şerit kartı artık TEK KART AİLESİNDEN geliyor. Öncesinde burada ayrı bir
+// kart vardı: kendi rozetleri, kendi ad bindirmesi, kendi 132pt genişliği.
+// HTML ölçüsü 148 ("eski 132 değil") ve ad kapağın altında — ikisi de
+// GameCard'ın rail varyantında.
 const HomeCard = memo(function HomeCard({ game, router, onDismiss }) {
-  const mcColor = metacriticColor(game.metacritic);
   return (
-    <Pressable
-      style={({ pressed }) => [styles.card, pressed && { opacity: 0.85, transform: [{ scale: 0.96 }] }]}
+    <GameCard
+      game={game}
+      variant="rail"
       onPress={() => go(router, game)}
       onLongPress={onDismiss ? () => onDismiss(game) : undefined}
-      delayLongPress={350}
-    >
-      <GameCover uri={game.image} name={game.name} style={styles.cardCover}>
-        {game.metacritic ? (
-          <View style={styles.mcBadge}><Text style={[styles.mcText, { color: mcColor }]}>{game.metacritic}</Text></View>
-        ) : null}
-        {game.isFree ? (
-          <View style={styles.freeBadge}><Text style={styles.freeText}>Ücretsiz</Text></View>
-        ) : null}
-        <Text numberOfLines={2} style={styles.cardName}>{game.name}</Text>
-      </GameCover>
-    </Pressable>
+    />
   );
 });
 
@@ -511,13 +504,6 @@ const styles = StyleSheet.create({
   // eyleme (arama düğmesi) ait.
   viewAll: { fontSize: type.footnote, color: colors.text2, fontWeight: '700' },
   row: { paddingHorizontal: spacing.lg, gap: spacing.md },
-  card: { width: 132 },
 
-  cardCover: { width: '100%', aspectRatio: 3 / 4, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.card },
-  cardName: { position: 'absolute', left: 10, right: 10, bottom: 9, color: '#fff', fontSize: type.footnote, fontWeight: '700', lineHeight: 16 },
   // tema-bagimsiz: oyun kapaginin ustundeki rozet; zemin gorsel
-  mcBadge: { position: 'absolute', top: 7, right: 7, backgroundColor: 'rgba(8,10,14,0.75)', borderRadius: 7, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' },
-  mcText: { fontSize: type.caption2, fontWeight: '800' },
-  freeBadge: { position: 'absolute', top: 7, left: 7, backgroundColor: colors.green, borderRadius: 7, paddingHorizontal: 6, paddingVertical: 2 },
-  freeText: { fontSize: type.caption2, fontWeight: '800', color: '#04130d' },
 });
