@@ -336,3 +336,37 @@ export const SECTION_TITLE = Object.freeze({
   fontWeight: '600',
   letterSpacing: -0.17,
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ÇİP — maketten ölçüldü (handoff HTML'i tarayıcıda açılıp sayıldı).
+//
+// Makette çip TEK geometri: yarıçap hap, dolgu 8/12, metin 13.
+// Pasif yüzey surface3 ve KENARLIK YOK. Bizde dağınıktı: kimi `card`
+// (surface2) + 1px kenarlık, kimi yatay dolgu 14 (ölçek dışı), metin 500.
+//
+// ── İKİ AKTİF DİLİ VAR, İKİSİ DE MAKETTE ──
+//   segment   ("Tümü", "Popüler")  → text1 dolgu + koyu metin
+//   filtre    ("Aksiyon", "Strateji") → MARKA dolgusu + beyaz metin
+//
+// İkisi aynı şey değil: segment bir GÖRÜNÜM seçiyor (hangi listedeyim),
+// filtre bir KISITLAMA ekliyor (neyi eledim). Maket ikincisini marka
+// rengiyle işaretliyor çünkü kısıtlama geri alınması gereken bir durum.
+//
+// Renk burada yok — palete bağlı, çağrı yeri ekliyor.
+// ─────────────────────────────────────────────────────────────────────────────
+export const CHIP = Object.freeze({
+  borderRadius: radius.pill,
+  paddingHorizontal: spacing.s12,
+  paddingVertical: spacing.s8,
+});
+
+export const CHIP_TEXT = Object.freeze({
+  fontSize: type.footnote,   // 13
+  fontWeight: '400',
+});
+
+/** Seçili çip metni — iki dilde de 600. */
+export const CHIP_TEXT_ON = Object.freeze({
+  fontSize: type.footnote,
+  fontWeight: '600',
+});

@@ -16,7 +16,7 @@ import { GamesGridSkeleton, Reveal } from '../src/components/Skeleton';
 import { TopFade, BottomFade } from '../src/components/EdgeFade';
 import { prefetchImages } from '../src/utils/prefetch';
 import { useTimeToData } from '../src/dev/perf';
-import { radius, spacing, type } from '../src/theme';
+import { radius, spacing, type, CHIP, CHIP_TEXT, CHIP_TEXT_ON } from '../src/theme';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useScrollCollapse } from '../src/context/TabBarContext';
 import { useLanguage } from '../src/context/LanguageContext';
@@ -445,13 +445,12 @@ const makeStyles = (colors) => StyleSheet.create({
   searchInput: { flex: 1, color: colors.text, fontSize: type.subhead },
   chipsScroll: { flexGrow: 0, flexShrink: 0, maxHeight: 54 },
   chipsRow: { paddingHorizontal: spacing.lg, gap: spacing.sm, paddingVertical: spacing.sm, alignItems: 'center' },
-  chip: {
-    paddingHorizontal: 15, paddingVertical: spacing.sm, borderRadius: radius.pill,
-    backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder,
-  },
-  chipText: { fontSize: type.footnote, color: colors.text2, fontWeight: '500' },
-  chipOn: { backgroundColor: colors.text, borderColor: colors.text },
-  chipTextOn: { color: colors.bg, fontWeight: '700' },
+  // Maketten: hap, dolgu 8/12, surface3, KENARLIK YOK, metin 13/400.
+  chip: { ...CHIP, backgroundColor: colors.bgInput },
+  chipText: { ...CHIP_TEXT, color: colors.text2 },
+  // SEGMENT dili — bir gorunum seciyor. Maket: text1 dolgu + koyu metin.
+  chipOn: { backgroundColor: colors.text },
+  chipTextOn: { ...CHIP_TEXT_ON, color: colors.bg },
   cell: { flex: 1, paddingHorizontal: 6, paddingBottom: spacing.md },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md },
   footer: { paddingVertical: spacing.xl },

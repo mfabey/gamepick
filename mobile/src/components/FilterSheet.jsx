@@ -22,7 +22,7 @@ import { View, Text, Pressable, StyleSheet, Modal, ScrollView } from 'react-nati
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
-import { radius, spacing, PRESSED, type } from '../theme';
+import { radius, spacing, PRESSED, type, CHIP, CHIP_TEXT, CHIP_TEXT_ON } from '../theme';
 import { useStyles, useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -258,13 +258,18 @@ const makeStyles = (colors) => StyleSheet.create({
   },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
 
-  chip: {
-    paddingHorizontal: 14, paddingVertical: spacing.sm, borderRadius: radius.pill,
-    backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder,
-  },
-  chipText: { fontSize: type.footnote, color: colors.text2, fontWeight: '500' },
-  chipOn: { backgroundColor: colors.text, borderColor: colors.text },
-  chipTextOn: { color: colors.bg, fontWeight: '700' },
+  // Maketten: hap, dolgu 8/12, surface3, KENARLIK YOK, metin 13/400.
+  chip: { ...CHIP, backgroundColor: colors.bgInput },
+  chipText: { ...CHIP_TEXT, color: colors.text2 },
+  // FILTRE dili — bir KISITLAMA ekliyor. Maket bunu MARKA rengiyle
+  // isaretliyor (segmentten farkli): kisitlama geri alinmasi gereken bir
+  // durum, secilmis bir gorunum degil.
+  //
+  // Onceki not "marka rengi kullanilmiyor, tek CTA Uygula" diyordu; maket
+  // tersini gosterdigi ve karar "birebir maket" oldugu icin degisti.
+  chipOn: { backgroundColor: colors.accent },
+  // tema-bagimsiz: marka dolgusu ustundeki metin (tokens: onBrand)
+  chipTextOn: { ...CHIP_TEXT_ON, color: '#FFFFFF' },
   // Soluk ama GÖRÜNÜR — kullanıcı özelliğin var olduğunu bilsin.
   chipKapali: { opacity: 0.4 },
   groupLabelKapali: { color: colors.accentText },

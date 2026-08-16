@@ -12,7 +12,7 @@ import { GamesGridSkeleton, Reveal } from '../src/components/Skeleton';
 import EmptyState from '../src/components/EmptyState';
 import GameCover from '../src/components/GameCover';
 import { prefetchImages } from '../src/utils/prefetch';
-import { radius, spacing, TAB_SPACE, type } from '../src/theme';
+import { radius, spacing, TAB_SPACE, type, CHIP, CHIP_TEXT } from '../src/theme';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 import { useAuth } from '../src/context/AuthContext';
@@ -451,9 +451,10 @@ const makeStyles = (colors) => StyleSheet.create({
   header: { fontSize: type.title1, fontWeight: '800', color: colors.text, letterSpacing: -0.6, paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.xs },
   chipsScroll: { flexGrow: 0, flexShrink: 0, maxHeight: 56 },
   chipsRow: { paddingHorizontal: spacing.lg, gap: spacing.sm, paddingVertical: 10, alignItems: 'center' },
-  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, maxWidth: 200, paddingHorizontal: 14, paddingVertical: spacing.sm, borderRadius: radius.pill, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder },
-  chipText: { fontSize: type.footnote, color: colors.text2, fontWeight: '500' },
-  chipOn: { backgroundColor: colors.text, borderColor: colors.text },
+  // Maketten: hap, dolgu 8/12, surface3, KENARLIK YOK, metin 13/400.
+  chip: { ...CHIP, flexDirection: 'row', alignItems: 'center', gap: spacing.s8, maxWidth: 200, backgroundColor: colors.bgInput },
+  chipText: { ...CHIP_TEXT, color: colors.text2 },
+  chipOn: { backgroundColor: colors.text },
   chipTextOn: { color: colors.bg, fontWeight: '700' },
 
   // Zemin BELİRTEÇTEN: sabit 'rgba(20,23,30,0.6)' koyu bir uygulama yüzeyiydi

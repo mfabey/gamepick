@@ -21,7 +21,7 @@ import { fetchNews } from '../src/api/news';
 import { NewsListSkeleton, Reveal } from '../src/components/Skeleton';
 import NewsImage from '../src/components/NewsImage';
 import EmptyState from '../src/components/EmptyState';
-import { radius, spacing, PRESSED, type } from '../src/theme';
+import { radius, spacing, PRESSED, type, CHIP, CHIP_TEXT } from '../src/theme';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 import { useQuery } from '../src/hooks/useQuery';
@@ -205,7 +205,8 @@ const makeStyles = (colors) => StyleSheet.create({
   metaText: { color: 'rgba(255,255,255,0.7)', fontSize: type.caption, fontWeight: '500' },
 
   chipsRow: { paddingHorizontal: spacing.lg, gap: spacing.sm, paddingVertical: 14 },
-  chip: { paddingHorizontal: 14, paddingVertical: spacing.sm, borderRadius: radius.pill, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder },
+  // Maketten: hap, dolgu 8/12, surface3, KENARLIK YOK, metin 13/400.
+  chip: { ...CHIP, backgroundColor: colors.bgInput },
   // games.jsx ile ayni secim dili: dolu notr yuzey, koyu metin, agirlik.
   chipActive: { backgroundColor: colors.text, borderColor: colors.text },
   chipTextActive: { color: colors.bg, fontWeight: '700' },
