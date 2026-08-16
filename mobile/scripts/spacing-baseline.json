@@ -30,7 +30,6 @@
   "src/components/EmptyState.jsx": 4,
   "src/components/FilterSheet.jsx": 8,
   "src/components/FriendActivity.jsx": 5,
-  "src/components/GameCard.jsx": 4,
   "src/components/GamePostCard.jsx": 9,
   "src/components/PostCard.jsx": 9,
   "src/components/PostComposer.jsx": 7,
