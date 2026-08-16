@@ -60,8 +60,11 @@ function WishlistScreenContent() {
           title={t('wishlist.empty')}
           text={t('wishlist.emptyDesc')}
           actionLabel={t('wishlist.explore')}
-          actionIcon="search"
-          onAction={() => router.push('/games')}
+          actionIcon="pricetag-outline"
+          // İNDİRİMLERE, tüm oyunlara değil. Bu listenin varlık sebebi indirim
+          // haberi; boş listede kullanıcıyı doğrudan indirime götürmek listenin
+          // ne işe yaradığını anlatmanın en kısa yolu.
+          onAction={() => router.push({ pathname: '/games', params: { section: 'sale' } })}
         />
       ) : (
         <FlashList

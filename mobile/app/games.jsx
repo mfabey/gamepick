@@ -7,7 +7,7 @@ import { FlashList } from '@shopify/flash-list';
 import Animated, { useAnimatedStyle, interpolate, Extrapolation } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { fetchGames } from '../src/api/games';
 import IconButton from '../src/components/IconButton';
 import { fetchQuery, getEntry, isFresh } from '../src/services/queryCache';
@@ -62,7 +62,16 @@ export default function GamesScreen() {
 
   const [query, setQuery]       = useState('');   // arama kutusundaki canlı değer
   const [searchTerm, setSearchTerm] = useState(''); // isteğe giden değer (yalnızca bu debounce'lu)
-  const [section, setSection]   = useState('');
+  // Bölüm rota parametresinden TOHUMLANABİLİYOR. Öncesinde bu ekran hiç
+  // parametre okumuyordu (useLocalSearchParams yoktu), yani "indirimdekilere
+  // git" gibi bir bağlantı kurulamıyordu — her giriş "Tümü"nden başlıyordu.
+  // Yalnızca BAŞLANGIÇ değeri: kullanıcı çipe basınca durum kendi yoluna
+  // gidiyor, parametre onu geri çekmiyor.
+  const { section: sectionParam } = useLocalSearchParams();
+  // Tembel başlatıcı: doğrulama yalnızca ilk render'da çalışsın.
+  const [section, setSection] = useState(() =>
+    SECTIONS.some((s) => s.v === sectionParam) ? String(sectionParam) : ''
+  );
   const [games, setGames]       = useState([]);
   const [loading, setLoading]   = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
