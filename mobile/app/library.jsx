@@ -8,7 +8,7 @@ import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { GamesGridSkeleton } from '../src/components/Skeleton';
+import { GamesGridSkeleton, Reveal } from '../src/components/Skeleton';
 import GameCover from '../src/components/GameCover';
 import { prefetchImages } from '../src/utils/prefetch';
 import { colors, radius, spacing, TAB_SPACE, type } from '../src/theme';
@@ -252,6 +252,7 @@ export default function LibraryScreen() {
           <Text style={styles.errText}>{errorMsg}</Text>
         </View>
       ) : (
+        <Reveal style={{ flex: 1 }}>
         <FlashList
           data={filtered}
           keyExtractor={keyExtractor}
@@ -296,6 +297,7 @@ export default function LibraryScreen() {
           ) : null}
           ListFooterComponent={<View style={{ height: TAB_SPACE }} />}
         />
+        </Reveal>
       )}
       </View>
     </SafeAreaView>

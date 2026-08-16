@@ -216,6 +216,14 @@ export const motion = Object.freeze({
   // hızda beliriyordu.
   image:   200,
 
+  // ── Yükleme ──
+  // Handoff, iskelet için iki sayı veriyor: süpürme 1400 ms linear, içerik
+  // gelince 160 ms fade. İkincisi `exit` ile aynı sayı ama AYNI ŞEY DEĞİL —
+  // biri çıkış, bu bir giriş. Ayrı adla duruyor ki biri değişince öteki
+  // sessizce sürüklenmesin.
+  skeleton: 1400,  // parıltı süpürmesi — tek tur
+  reveal:    160,  // iskeletten içeriğe geçiş (fade + 4px yukarı)
+
   // ── Yaylar ──
   // İkisi çelişmiyor, farklı işler. İkisi de zaten ölçülmüştü; burada
   // yalnızca adlandırıldılar.

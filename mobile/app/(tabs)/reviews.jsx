@@ -30,7 +30,7 @@ import ReviewCard from '../../src/components/ReviewCard';
 import PostCard from '../../src/components/PostCard';
 import PostComposer from '../../src/components/PostComposer';
 import ReportSheet from '../../src/components/ReportSheet';
-import { FeedSkeleton } from '../../src/components/Skeleton';
+import { FeedSkeleton, Reveal } from '../../src/components/Skeleton';
 import { colors, radius, spacing, type, PRESSED, NUMERIC, TAB_SPACE, motion } from '../../src/theme';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useTimeToData } from '../../src/dev/perf';
@@ -279,6 +279,7 @@ export default function ReviewsScreen() {
         // vermeden. İskelet aynı süreyi düzenin kendisini göstererek geçiriyor.
         <FeedSkeleton />
       ) : (
+        <Reveal style={{ flex: 1 }}>
         <FlashList
           ref={listRef}
           data={items || []}
@@ -310,6 +311,7 @@ export default function ReviewsScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.text2} />
           }
         />
+        </Reveal>
       )}
 
       <PostComposer

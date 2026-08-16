@@ -18,7 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { fetchNews } from '../src/api/news';
-import { NewsListSkeleton } from '../src/components/Skeleton';
+import { NewsListSkeleton, Reveal } from '../src/components/Skeleton';
 import NewsImage from '../src/components/NewsImage';
 import { colors, radius, spacing, PRESSED, type } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
@@ -98,6 +98,7 @@ export default function NewsScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       {head((e) => setHeaderH(e.nativeEvent.layout.height))}
       {headerH > 0 ? <TopFade top={insets.top + headerH} /> : null}
+      <Reveal style={{ flex: 1 }}>
       <FlashList
         data={filtered}
         keyExtractor={keyExtractor}
@@ -143,6 +144,7 @@ export default function NewsScreen() {
           </View>
         }
       />
+      </Reveal>
     </SafeAreaView>
   );
 }

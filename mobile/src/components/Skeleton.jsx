@@ -1,11 +1,28 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { Animated, Easing, View, StyleSheet } from 'react-native';
-import { colors, radius, spacing } from '../theme';
+import { LinearGradient } from 'expo-linear-gradient';
+
+import { radius, spacing, motion } from '../theme';
+import { useStyles, useTheme } from '../context/ThemeContext';
+import { useReducedMotion } from '../hooks/useReducedMotion';
+import FadeIn from './FadeIn';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Paylaşılan nabız animasyonu — tüm iskelet blokları TEK loop'u paylaşır
+// Paylaşılan SÜPÜRME animasyonu — tüm iskelet blokları TEK loop'u paylaşır
 // (native driver, ref-sayımlı). Ekranda iskelet yokken loop durur.
+//
+// ── NABIZ DEĞİL SÜPÜRME, ÇÜNKÜ İKİSİ FARKLI ŞEY SÖYLÜYOR ──
+// Öncesinde opaklık nabzıydı (0.35↔0.8, 750 ms gidiş + 750 ms dönüş).
+// Nabız "bekliyor" der, süpürme "yükleniyor" der; handoff bilerek ikincisini
+// seçmiş: `shimmer 1.4s linear infinite`, `background-size: 320px 100%`.
+//
+// Loop artık TESTERE dişi: 0→1, 1400 ms, linear, sonra sıfırdan. Gidiş-dönüş
+// olsaydı parıltı ekranda ileri geri süzülürdü — süpürme tek yönlüdür.
 // ─────────────────────────────────────────────────────────────────────────────
+// Handoff: sweepWidth 320, duration 1400, easing linear.
+const SWEEP_W = 320;
+const SWEEP_MS = motion.skeleton;
+
 let sharedValue = null;
 let loopAnim = null;
 let refCount = 0;
@@ -14,10 +31,12 @@ function ensureCreated() {
   if (!sharedValue) {
     sharedValue = new Animated.Value(0);
     loopAnim = Animated.loop(
-      Animated.sequence([
-        Animated.timing(sharedValue, { toValue: 1, duration: 750, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-        Animated.timing(sharedValue, { toValue: 0, duration: 750, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-      ])
+      Animated.timing(sharedValue, {
+        toValue: 1,
+        duration: SWEEP_MS,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
     );
   }
   return sharedValue;
@@ -32,24 +51,106 @@ function release() {
   if (refCount === 0 && loopAnim) loopAnim.stop();
 }
 
-function usePulse() {
+function useSweep(enabled) {
   const value = ensureCreated();          // render'da idempotent (yan etki yok)
-  useEffect(() => { acquire(); return release; }, []);
+  useEffect(() => {
+    if (!enabled) return undefined;
+    acquire();
+    return release;
+  }, [enabled]);
   return value;
 }
 
-// ── Temel iskelet bloğu ──
+// ─────────────────────────────────────────────────────────────────────────────
+// Temel iskelet bloğu.
+//
+// ── GENİŞLİK ÖLÇÜLÜYOR, PARILTI TEK KATMAN ──
+// CSS'te süpürme, 320px'lik bir gradyan karosunun tekrarıyla yapılıyor. RN'de
+// karo tekrarı yok; ama gradyanın İKİ UCU DA taban rengiyle aynı olduğundan
+// (#1F2126 → #2A2C33 → #1F2126) tek bir 320pt'lik katman soldan sağa geçerken
+// kenarları tabana görünmez şekilde karışıyor. Bu yüzden döngü başa sardığında
+// dikiş görünmüyor ve blok başına TEK gradyan yetiyor — karo başına bir tane
+// değil. En kalabalık iskelet ekranı (haber/akış) aynı anda ~29 blok çiziyor;
+// karolamak bunu 100'ün üstüne çıkarırdı.
+//
+// Yol: translateX, -320'den bloğun kendi genişliğine. Her blok kendi
+// genişliğini onLayout ile bildiriyor ve PAYLAŞILAN değeri kendi aralığına
+// yorumluyor — tek Animated.Value, N interpolasyon, hepsi native driver'da.
+// ─────────────────────────────────────────────────────────────────────────────
 export function Skeleton({ style }) {
-  const pulse = usePulse();
-  const opacity = useMemo(
-    () => pulse.interpolate({ inputRange: [0, 1], outputRange: [0.35, 0.8] }),
-    [pulse]
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
+  const reduced = useReducedMotion();
+  const [w, setW] = useState(0);
+
+  // Hareketi Azalt açıkken süpürme dekoratif hareket sayılıyor ve kapanıyor;
+  // blok düz taban renginde duruyor (yükleniyor bilgisi kaybolmuyor, çünkü
+  // iskeletin kendisi zaten o bilgiyi taşıyor).
+  const animasyonlu = !reduced;
+  const sweep = useSweep(animasyonlu);
+
+  const onLayout = useCallback((e) => {
+    const yeni = Math.round(e.nativeEvent.layout.width);
+    setW((eski) => (eski === yeni ? eski : yeni));
+  }, []);
+
+  const translateX = useMemo(
+    () => sweep.interpolate({ inputRange: [0, 1], outputRange: [-SWEEP_W, w] }),
+    [sweep, w]
   );
-  return <Animated.View style={[styles.box, style, { opacity }]} />;
+
+  // Taban surface3, parıltı surface4. Handoff'un yazdığı #2A2C33 zaten
+  // surface4'ün TA KENDİSİ; #1F2126 ise jeton listesinde yok, en yakını
+  // surface3 (#1C1E23) ve fark 255'te 3 — gözle ayırt edilmiyor.
+  // Düz hex yazsaydık açık temada bütün yükleme ekranları beyaz zeminde koyu
+  // gri kutulara dönerdi; jetona bağlayınca iki tema da doğru geliyor.
+  const gradyan = useMemo(
+    () => [colors.bgInput, colors.surfaceTile, colors.bgInput],
+    [colors.bgInput, colors.surfaceTile]
+  );
+
+  return (
+    <View style={[styles.box, style]} onLayout={onLayout}>
+      {animasyonlu && w > 0 ? (
+        <Animated.View style={[styles.sweep, { transform: [{ translateX }] }]}>
+          <LinearGradient
+            colors={gradyan}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={StyleSheet.absoluteFill}
+          />
+        </Animated.View>
+      ) : null}
+    </View>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// İÇERİK GELDİĞİNDE — handoff: "160 ms fade + 4px yukarı".
+//
+// Öncesinde iskeletten gerçeğe geçiş sert bir takastı: blok kayboluyor, içerik
+// aynı karede zıplayarak yerine oturuyordu. 4px'lik yukarı kayma hareketi
+// "geldi" gibi gösteriyor, "değişti" gibi değil.
+//
+// Yön YUKARI: içerik alttan yerine oturuyor, bu da listenin okuma yönüyle
+// (yukarıdan aşağı) aynı. Aşağıdan gelseydi kaydırma hissiyle çakışırdı.
+// ─────────────────────────────────────────────────────────────────────────────
+// ── YENİ ANİMASYON YAZILMADI ──
+// FadeIn zaten tam olarak bunu yapıyor (solma + yukarı kayma, native driver,
+// Hareketi Azalt'a saygılı). İkinci bir kopyasını yazmak, kart ailesinde
+// ayıkladığımız çatallanmanın aynısı olurdu. Reveal yalnızca handoff'un iki
+// sayısını ADLANDIRIYOR ki çağrı yerleri 160/4'ü tek tek tekrarlamasın.
+export function Reveal({ children, style }) {
+  return (
+    <FadeIn duration={motion.reveal} offset={4} style={style}>
+      {children}
+    </FadeIn>
+  );
 }
 
 // ── Oyun grid iskeleti (Oyunlar / Kütüphane) ──
 export function GamesGridSkeleton({ count = 8 }) {
+  const styles = useStyles(makeStyles);
   return (
     <View style={styles.grid}>
       {Array.from({ length: count }).map((_, i) => (
@@ -63,6 +164,7 @@ export function GamesGridSkeleton({ count = 8 }) {
 
 // ── Haber listesi iskeleti ──
 export function NewsListSkeleton({ rows = 6 }) {
+  const styles = useStyles(makeStyles);
   return (
     <View>
       <Skeleton style={styles.newsFeatured} />
@@ -88,6 +190,7 @@ export function NewsListSkeleton({ rows = 6 }) {
 // GERÇEK bir engelleyici yükleme durumu var (loading ? spinner : liste).
 // Çubuk şeridi + yazma çubuğu + kartlar, gerçek düzenin ritmini taşıyor.
 export function FeedSkeleton({ rows = 5 }) {
+  const styles = useStyles(makeStyles);
   return (
     <View>
       <View style={styles.feedTabs}>
@@ -117,6 +220,7 @@ export function FeedSkeleton({ rows = 5 }) {
 // iskelet, zaten ekranda duran içeriğin üstünü örterdi. 868ms boyunca boş
 // kalan yalnızca ağdan gelen bölümler: tür, ekran görüntüleri, açıklama.
 export function GenreChipsSkeleton() {
+  const styles = useStyles(makeStyles);
   return (
     <View style={styles.genreWrap}>
       {[74, 58, 88, 64].map((w, i) => <Skeleton key={i} style={[styles.genreChip, { width: w }]} />)}
@@ -125,6 +229,7 @@ export function GenreChipsSkeleton() {
 }
 
 export function ShotStripSkeleton() {
+  const styles = useStyles(makeStyles);
   return (
     <View style={styles.shotRow}>
       {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} style={styles.shot} />)}
@@ -133,6 +238,7 @@ export function ShotStripSkeleton() {
 }
 
 export function TextBlockSkeleton({ lines = 4 }) {
+  const styles = useStyles(makeStyles);
   return (
     <View style={{ gap: spacing.sm }}>
       {Array.from({ length: lines }).map((_, i) => (
@@ -144,13 +250,11 @@ export function TextBlockSkeleton({ lines = 4 }) {
   );
 }
 
-// Sabit '#1b1f26' idi — koyu paletin bgInput değerinin TA KENDİSİ. Yani
-// belirteç zaten vardı, iskelet onu atlıyordu ve açık temada bütün yükleme
-// ekranları beyaz zeminde koyu gri kutulara dönüyordu.
-const SK = colors.bgInput;
-
-const styles = StyleSheet.create({
-  box: { backgroundColor: SK, borderRadius: radius.sm },
+const makeStyles = (colors) => StyleSheet.create({
+  // overflow: parıltı bloğun dışına taşmasın — 320pt'lik katman küçük
+  // bloklarda (44pt küçük resim, 60pt satır) blok sınırını kat kat aşıyor.
+  box: { backgroundColor: colors.bgInput, borderRadius: radius.sm, overflow: 'hidden' },
+  sweep: { position: 'absolute', top: 0, bottom: 0, left: 0, width: SWEEP_W },
 
   // grid
   grid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 10, paddingTop: 6 },

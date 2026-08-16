@@ -12,7 +12,7 @@ import { fetchGames } from '../src/api/games';
 import IconButton from '../src/components/IconButton';
 import { fetchQuery, getEntry, isFresh } from '../src/services/queryCache';
 import GameCard from '../src/components/GameCard';
-import { GamesGridSkeleton } from '../src/components/Skeleton';
+import { GamesGridSkeleton, Reveal } from '../src/components/Skeleton';
 import { TopFade, BottomFade } from '../src/components/EdgeFade';
 import { prefetchImages } from '../src/utils/prefetch';
 import { useTimeToData } from '../src/dev/perf';
@@ -331,6 +331,9 @@ export default function GamesScreen() {
             ) : null}
           </View>
         ) : (
+          // İskeletten içeriğe geçiş: 160 ms fade + 4px yukarı. Öncesinde
+          // ızgara aynı karede zıplayarak yerine oturuyordu.
+          <Reveal style={{ flex: 1 }}>
           <FlashList
             ListHeaderComponent={
               limited && !limitedGizli ? (
@@ -364,6 +367,7 @@ export default function GamesScreen() {
               </View>
             }
           />
+          </Reveal>
         )}
       </View>
 
