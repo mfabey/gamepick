@@ -37,9 +37,11 @@ const PAD = 6;
 // TEK KAYNAK theme.js. Öncesinde burada ve videos.jsx'te ayrı ayrı 58 yazıyordu.
 const BAR_H = TAB_BAR.height;   // handoff: 64
 const RADIUS = BAR_H / 2;
-// Etiketli düzende ikon küçülüyor: ikon + 11pt etiket 64pt'lik çubuğa
-// ancak böyle sığıyor (dikey: 22 ikon + 2 boşluk + ~13 etiket satırı).
-const ICON = 22;
+// 22, ETİKETLİ düzenin ölçüsüydü: ikon + 11pt etiket 64pt'lik çubuğa ancak
+// böyle sığıyordu. Etiket kalkınca kısıt da kalktı ve 64pt'lik bir çubukta
+// 22pt tek başına küçük duruyor; ikon-yalnız çubuklarda alışılmış aralık
+// 26–28. Ölçeğe göre değil, GÖZLE bakılıp seçildi (bkz. commit).
+const ICON = 26;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Liquid Glass kullanılabilirliği — MODÜL DÜZEYİNDE bir kez hesaplanır.
@@ -202,7 +204,6 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
               <TabIcon
                 base={base}
                 focused={focused}
-                label={label}
                 // Odaktaki sekmede rozet YOK: kullanıcı zaten oradaysa
                 // "bekleyen bir şey var" demenin anlamı kalmıyor.
                 badge={BADGED[route.name] && !focused ? unread : 0}
@@ -226,15 +227,21 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
  * OPACITY YOK — bu bilesen cam katmaninin kardesi ve GlassView'in
  * ebeveyninde opacity<1 cami bozuyor (bkz. dosya basi). Yalnizca transform.
  */
-function TabIcon({ base, focused, label, badge = 0 }) {
+function TabIcon({ base, focused, badge = 0 }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   // Mantik usePop'a tasindi: ayni hareket begeni ve istek listesinde de
   // gerekiyordu ve kopyalanmasi besinci bir yay ayari uretirdi.
   // `reducedMotion` prop'u kalkti — kanca kendisi bakiyor.
   //
-  // ETIKET GERI GELDI (handoff): "Etiketler her zaman gorunur — Turkce'de
-  // ikon tek basina belirsizdir." Yalniz aktif sekme tam kontrastta.
+  // ── ETİKETLER KALDIRILDI (kullanıcı isteği) ──
+  // Handoff'un yazılı kuralına AYKIRI: "Etiketler her zaman görünür —
+  // Türkçe'de ikon tek başına belirsizdir." Karar bilinçli alındı; not
+  // burada duruyor ki ileride "unutulmuş" sanılmasın.
+  //
+  // GÖRME ENGELLİ KULLANIM ETKİLENMİYOR: sekme adı Pressable üzerindeki
+  // accessibilityLabel'da duruyor ve VoiceOver onu okuyor. Kaybolan şey
+  // yalnızca görsel etiket.
   const style = usePop(focused, 1.12);   // handoff: 1.0 → 1.12
 
   return (
@@ -256,17 +263,6 @@ function TabIcon({ base, focused, label, badge = 0 }) {
           </View>
         ) : null}
       </View>
-      {/* allowFontScaling KAPALI: etiket bir cümle değil, sekmenin adı.
-          Erişilebilirlik boyutlarında büyüseydi 70pt'lik hücreyi taşırır ve
-          beş sekme birbirine girerdi. Okunabilirlik ikonla birlikte
-          sağlanıyor; VoiceOver zaten accessibilityLabel'ı okuyor. */}
-      <Text
-        numberOfLines={1}
-        allowFontScaling={false}
-        style={[styles.label, focused && styles.labelOn]}
-      >
-        {label}
-      </Text>
     </Animated.View>
   );
 }
@@ -312,30 +308,14 @@ const makeStyles = (colors) => StyleSheet.create({
     borderColor: colors.glassBorder,
   },
   glassLayer: { borderRadius: RADIUS },
+  // Etiket kalktı: `gap` da kalktı (tek çocuk var, ayıracak bir şey yok).
+  // justifyContent zaten ortalıyor.
   item: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    // Ölçekten en küçük basamak. İkon 22 + 4 + etiket ~13 = 39pt, 64pt'lik
-    // çubuğa rahat sığıyor.
-    gap: spacing.s4,
     height: '100%',
   },
-  // Handoff tipografisi — Etiket kademesi: 11 / 600 / +%6 / BUYUK HARF.
-  // Pasif renk text3, aktif tam kontrast (handoff: "yalniz aktif sekme tam
-  // kontrastta").
-  label: {
-    fontSize: type.caption2,
-    fontWeight: '600',
-    letterSpacing: 0.66,
-    textTransform: 'uppercase',
-    color: colors.text3,
-  },
-  // HTML'den: aktif ETİKET #f4f4f6 (text1), aktif İKON #e8242b (marka).
-  // Etiketi de kırmızı yapmak "ekran başına en çok 3 kırmızı öğe" bütçesini
-  // gereksiz yere harcıyordu.
-  labelOn: { color: colors.text },
-
   // Simgenin sağ üst köşesine biniyor. Çerçeve çubuk zemininin rengiyle
   // değil, koyu arka planla çiziliyor: cam açıkken çubuğun rengi arkadaki
   // içeriğe göre değişiyor ve sabit bir eşleşme tutturulamaz — koyu bir
