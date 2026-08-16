@@ -12,7 +12,7 @@
 // o liste ilk günden dolu. Sayfa "kimse bir şey yazmamış" yerine "şunlar
 // hakkında yazabilirsin" diye açılıyor.
 // ─────────────────────────────────────────────────────────────────────────────
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View, Text, Pressable, StyleSheet, ScrollView, ActivityIndicator, RefreshControl,
 } from 'react-native';
@@ -27,6 +27,7 @@ import { getReviewFeed, getEligibleGames, fetchPosts, getFriends } from '../../s
 import { getSession, subscribeSession } from '../../src/services/session';
 import ReviewComposer from '../../src/components/ReviewComposer';
 import ReviewCard from '../../src/components/ReviewCard';
+import EmptyState from '../../src/components/EmptyState';
 import PostCard from '../../src/components/PostCard';
 import PostComposer from '../../src/components/PostComposer';
 import ReportSheet from '../../src/components/ReportSheet';
@@ -172,6 +173,45 @@ export default function ReviewsScreen() {
     return true;
   }, [session, router]);
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // BOŞ DURUM — üç sekmenin üçü de ölü uçtu: tek satır gri yazı, çıkış yok.
+  //
+  // Çıkış sekmeye göre DEĞİŞİYOR çünkü engelleyen şey her sekmede farklı:
+  //   tartışma → yazacak bir şey yok, engel yok       → doğrudan yaz
+  //   oturumsuz → engel hesap                          → hesaba git
+  //   oturumlu  → engel bağlı mağaza / oynanmış oyun   → profile git
+  //
+  // Uygun oyun VARSA düğme konmuyor: yazılabilecek oyunların şeridi zaten
+  // hemen üstte duruyor, "inceleme yaz" düğmesi kullanıcıyı oraya geri
+  // döndürmekten başka bir şey yapmazdı.
+  // ─────────────────────────────────────────────────────────────────────────
+  const bosDurum = useMemo(() => {
+    if (tab === 'talk') return {
+      icon: 'chatbubbles-outline',
+      title: t('post.feedEmpty'),
+      text: t('post.feedEmptyDesc'),
+      actionLabel: t('post.newTitle'),
+      onAction: () => { if (!requireAccount()) setComposing(true); },
+    };
+    if (!session) return {
+      icon: 'person-circle-outline',
+      title: t('rev.communityEmpty'),
+      text: t('rev.communityEmptyGuest'),
+      actionLabel: t('acc.goSignIn'),
+      onAction: () => router.push('/account'),
+    };
+    const yazabilir = (eligible?.games?.length || 0) > 0;
+    return {
+      icon: yazabilir ? 'create-outline' : 'logo-steam',
+      title: tab === 'mine' ? t('rev.mineEmpty') : t('rev.communityEmpty'),
+      text: yazabilir
+        ? (tab === 'mine' ? t('rev.mineEmptyDesc') : t('rev.communityEmptyDesc'))
+        : t('rev.noEligible'),
+      actionLabel: yazabilir ? undefined : t('sf.goProfile'),
+      onAction: yazabilir ? undefined : () => router.push('/(tabs)/profile'),
+    };
+  }, [tab, session, eligible, t, requireAccount, router]);
+
   const keyExtractor = useCallback((item) => itemKey(item), []);
 
   const renderItem = useCallback(({ item }) => (
@@ -290,15 +330,7 @@ export default function ReviewsScreen() {
           // bunu veriye bağlı bırakmak sessiz bir varsayım olurdu.
           extraData={tab}
           ListHeaderComponent={header}
-          ListEmptyComponent={
-            <Text style={styles.hint}>
-              {tab === 'talk'
-                ? t('post.feedEmpty')
-                : tab === 'mine'
-                  ? t('rev.mineEmpty')
-                  : (session ? t('rev.communityEmpty') : t('rev.communityEmptyGuest'))}
-            </Text>
-          }
+          ListEmptyComponent={<EmptyState compact {...bosDurum} />}
           ListFooterComponent={
             <View style={{ height: TAB_SPACE, alignItems: 'center', paddingTop: spacing.md }}>
               {loadingMore ? <ActivityIndicator color={colors.accent} /> : null}

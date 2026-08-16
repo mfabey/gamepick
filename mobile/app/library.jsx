@@ -9,6 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { GamesGridSkeleton, Reveal } from '../src/components/Skeleton';
+import EmptyState from '../src/components/EmptyState';
 import GameCover from '../src/components/GameCover';
 import { prefetchImages } from '../src/utils/prefetch';
 import { colors, radius, spacing, TAB_SPACE, type } from '../src/theme';
@@ -195,12 +196,12 @@ export default function LibraryScreen() {
                 da uygulamak şart — aksi hâlde bu ekran kapıyı atlatıyordu. */}
             {account ? (
               <>
-                // tema-bagimsiz: magaza marka rengi (Steam / Xbox)
+                {/* tema-bagimsiz: magaza marka rengi (Steam / Xbox) */}
                 <Pressable disabled={busy} onPress={() => doLogin(loginSteam)} style={[styles.connectBtn, { backgroundColor: '#1b2838' }]}>
                   <Ionicons name="logo-steam" size={19} color="#fff" />
                   <Text style={styles.connectText}>{t('auth.connectSteam')}</Text>
                 </Pressable>
-                // tema-bagimsiz: magaza marka rengi (Steam / Xbox)
+                {/* tema-bagimsiz: magaza marka rengi (Steam / Xbox) */}
                 <Pressable disabled={busy} onPress={() => doLogin(loginXbox)} style={[styles.connectBtn, { backgroundColor: '#107C10' }]}>
                   <Ionicons name="logo-xbox" size={19} color="#fff" />
                   <Text style={styles.connectText}>{t('auth.connectXbox')}</Text>
@@ -289,11 +290,18 @@ export default function LibraryScreen() {
               </View>
             </View>
           }
+          // compact: ListEmptyComponent listenin İÇİNDE, flex:1 burada
+          // yayılmıyor — tam ekran sürüm başlığın altına sıkışırdı.
+          // Çıkış eklendi: daraltan şey arama kutusu, temizleyen düğme orada.
           ListEmptyComponent={!loading ? (
-            <View style={styles.emptyBox}>
-              <Ionicons name="search" size={38} color={colors.text3} />
-              <Text style={styles.errText}>{t('lib.empty')}</Text>
-            </View>
+            <EmptyState
+              compact
+              icon="search"
+              title={t('lib.empty')}
+              text={t('lib.emptyDesc')}
+              actionLabel={search ? t('common.clearSearch') : undefined}
+              onAction={search ? () => setSearch('') : undefined}
+            />
           ) : null}
           ListFooterComponent={<View style={{ height: TAB_SPACE }} />}
         />
@@ -491,7 +499,6 @@ const styles = StyleSheet.create({
   saleText: { color: '#0b0d10', fontSize: type.caption2, fontWeight: '800' },
 
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, paddingHorizontal: 32 },
-  emptyBox: { alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 60 },
   h1: { fontSize: type.title3, fontWeight: '800', color: colors.text },
   prompt: { fontSize: type.subhead, color: colors.text3, textAlign: 'center', lineHeight: 20, marginBottom: spacing.sm },
   connectBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, borderRadius: radius.md, paddingVertical: 14 },

@@ -62,6 +62,48 @@ for (const kok of TARAN) {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// ISARET JSX COCUK KONUMUNDA MI?
+//
+// Bu isaretleri yerlestiren kodmod iki yerde `//` yorumunu JSX COCUK konumuna
+// koydu (library.jsx, magaza baglama dugmeleri). Orada `//` yorum degil METIN
+// demek: React Native "Text strings must be rendered within a <Text>
+// component" diye patlar. Guest olmayan, magazasi bagli olmayan kullanicida
+// Kutuphane ekrani tamamen cokuyordu ve kimse fark etmemisti.
+//
+// Sezgi: onceki dolu satir `>` ile bitiyor (kapali etiket ya da `<>`) VE
+// sonraki dolu satir `<` ile basliyor. Ucluk ifadelerindeki yorumlar
+// (`? <A/>` / `// …` / `: <B/>`) bu kaliba UYMUYOR, yani yanlis alarm vermiyor.
+// Cozum `{/* … */}` — ISARET duzenli ifadesi yorum bicimine degil metne
+// baktigi icin isaret gecerli kalmaya devam ediyor.
+// ─────────────────────────────────────────────────────────────────────────────
+const jsxYorum = [];
+for (const kok of TARAN) {
+  for (const f of dosyalar(join(ROOT, kok))) {
+    const satirlar = readFileSync(f, 'utf8').split('\n');
+    satirlar.forEach((satir, i) => {
+      if (!/^\s*\/\//.test(satir) || !ISARET.test(satir)) return;
+      let onceki = '', sonraki = '';
+      for (let j = i - 1; j >= 0; j--) if (satirlar[j].trim()) { onceki = satirlar[j].trim(); break; }
+      for (let j = i + 1; j < satirlar.length; j++) if (satirlar[j].trim()) { sonraki = satirlar[j].trim(); break; }
+      if (onceki.endsWith('>') && sonraki.startsWith('<')) {
+        jsxYorum.push({ f: relative(ROOT, f), n: i + 1 });
+      }
+    });
+  }
+}
+
+if (jsxYorum.length) {
+  console.error(`✗ ${jsxYorum.length} isaret JSX COCUK konumunda — yorum degil, ekrana basilacak metin:\n`);
+  for (const b of jsxYorum) console.error(`  ${b.f}:${b.n}`);
+  console.error(`
+Bu satirlar calisma aninda "Text strings must be rendered within a <Text>
+component" hatasi verir. Yorumu JSX bicimine cevir:
+    {/* tema-bagimsiz: <sebep> */}
+`);
+  process.exit(1);
+}
+
 if (bulgular.length === 0) {
   console.log('✓ tema sizintisi yok — her sabit zemin/kenar rengi gerekcelendirilmis');
   process.exit(0);

@@ -20,6 +20,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { fetchNews } from '../src/api/news';
 import { NewsListSkeleton, Reveal } from '../src/components/Skeleton';
 import NewsImage from '../src/components/NewsImage';
+import EmptyState from '../src/components/EmptyState';
 import { colors, radius, spacing, PRESSED, type } from '../src/theme';
 import { useLanguage } from '../src/context/LanguageContext';
 import { useQuery } from '../src/hooks/useQuery';
@@ -138,10 +139,17 @@ export default function NewsScreen() {
           </View>
         }
         ListEmptyComponent={
-          <View style={styles.emptyBox}>
-            <Ionicons name="newspaper-outline" size={38} color={colors.text3} />
-            <Text style={styles.emptyText}>{t('news.empty')}</Text>
-          </View>
+          // Çıkış: boş kalan şey SEÇİLİ kategori, o yüzden düğme "Tümü"ne
+          // döndürüyor. Tümü zaten seçiliyken çıkış yok — gösterilecek haber
+          // gerçekten yoktur ve sahte bir düğme koymak yanıltıcı olurdu.
+          <EmptyState
+            compact
+            icon="newspaper-outline"
+            title={t('news.empty')}
+            text={t('news.emptyDesc')}
+            actionLabel={cat !== 'all' ? t('news.showAll') : undefined}
+            onAction={cat !== 'all' ? () => setCat('all') : undefined}
+          />
         }
       />
       </Reveal>
@@ -206,8 +214,6 @@ const styles = StyleSheet.create({
   rowTitle: { color: colors.text, fontSize: type.subhead, fontWeight: '700', lineHeight: 18 },
   rowMeta: { color: colors.text3, fontSize: type.caption, marginTop: 5, fontWeight: '500' },
 
-  emptyBox: { alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 60 },
-  emptyText: { color: colors.text3, fontSize: type.subhead, fontWeight: '600' },
   retryBtn: { backgroundColor: colors.accent, borderRadius: radius.md, paddingHorizontal: 22, paddingVertical: 11 },
   retryText: { color: '#fff', fontWeight: '700', fontSize: type.subhead },
 });

@@ -21,6 +21,7 @@ import { useScrollCollapse } from '../src/context/TabBarContext';
 import { useLanguage } from '../src/context/LanguageContext';
 import FilterSheet, { FilterButton, countFilters } from '../src/components/FilterSheet';
 import LimitedMode from '../src/components/LimitedMode';
+import EmptyState from '../src/components/EmptyState';
 
 const COLS = 2;
 const NUM = 24;
@@ -318,17 +319,20 @@ export default function GamesScreen() {
             <GamesGridSkeleton />
           </View>
         ) : games.length === 0 ? (
-          <View style={[styles.center, { paddingTop: headerH }]}>
-            <Ionicons name="search" size={44} color={colors.text3} />
-            <Text style={styles.emptyText}>{t('games.noResults')}</Text>
-            {/* ÇIKIŞ YOLU. Beş filtre birleşince boş sonuç normal; kullanıcının
-                elinde yalnızca "sonuç yok" kalırsa hangi filtrenin daralttığını
-                bulmak için sayfayı açıp tek tek denemesi gerekir. */}
-            {filterCount > 0 ? (
-              <Pressable onPress={clearFilters} hitSlop={8}>
-                <Text style={styles.emptyAction}>{t('filter.clear')}</Text>
-              </Pressable>
-            ) : null}
+          // ÇIKIŞ YOLU. Beş filtre birleşince boş sonuç normal; kullanıcının
+          // elinde yalnızca "sonuç yok" kalırsa hangi filtrenin daralttığını
+          // bulmak için sayfayı açıp tek tek denemesi gerekir.
+          //
+          // Çıkış TEK ama koşullu: filtre varsa onları, yoksa aramayı temizler.
+          // Öncesinde arama sonucu boş dönünce hiçbir çıkış YOKTU.
+          <View style={{ flex: 1, paddingTop: headerH }}>
+            <EmptyState
+              icon="search"
+              title={t('games.noResults')}
+              text={t('games.noResultsDesc')}
+              actionLabel={filterCount > 0 ? t('filter.clear') : (query ? t('common.clearSearch') : undefined)}
+              onAction={filterCount > 0 ? clearFilters : (query ? () => setQuery('') : undefined)}
+            />
           </View>
         ) : (
           // İskeletten içeriğe geçiş: 160 ms fade + 4px yukarı. Öncesinde
@@ -437,7 +441,5 @@ const styles = StyleSheet.create({
   chipTextOn: { color: colors.bg, fontWeight: '700' },
   cell: { flex: 1, paddingHorizontal: 6, paddingBottom: spacing.md },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md },
-  emptyText: { color: colors.text3, fontSize: type.subhead, fontWeight: '600' },
-  emptyAction: { color: colors.accentText, fontSize: type.subhead, fontWeight: '700' },
   footer: { paddingVertical: spacing.xl },
 });
