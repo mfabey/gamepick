@@ -24,11 +24,10 @@ import { recordDismiss } from '../../src/services/dismissStore';
 import GamePostCard from '../../src/components/GamePostCard';
 import ReviewCard from '../../src/components/ReviewCard';
 import PostCard from '../../src/components/PostCard';
-import ReviewPrompt from '../../src/components/ReviewPrompt';
 import FriendActivity, { hasFriendSignal } from '../../src/components/FriendActivity';
 import ReportSheet from '../../src/components/ReportSheet';
 import { fetchForYouCandidates } from '../../src/api/recommend';
-import { getReviewFeed, getEligibleGames, getFriendActivity, fetchPosts } from '../../src/api/social';
+import { getReviewFeed, getFriendActivity, fetchPosts } from '../../src/api/social';
 import { getSession, subscribeSession } from '../../src/services/session';
 import { genreSlugsFor, rankCandidates } from '../../src/services/recommend';
 import { interleaveReviews, mergeSocial, orderHighlights, mergeHighlights, highlightIds } from '../../src/services/homeFeed';
@@ -164,7 +163,6 @@ export default function HomeScreen() {
   useEffect(() => subscribeSession(() => setSession(getSession())), []);
   const [reviews, setReviews] = useState([]);
   const [posts, setPosts] = useState([]);
-  const [eligible, setEligible] = useState([]);
   const [friendGames, setFriendGames] = useState([]);
   const [reportTarget, setReportTarget] = useState(null);
   // Dev-only ölçüm: iskelet gerekli mi kararını sayıya bağlamak için.
@@ -182,8 +180,10 @@ export default function HomeScreen() {
     fetchPosts().then((r) => setPosts(r?.posts || [])).catch(() => {});
 
     // Bu ikisi doğal olarak hesaba bağlı: ne yazabileceğin ve kimin arkadaşın.
-    if (!session) { setEligible([]); setFriendGames([]); return; }
-    getEligibleGames().then((r) => setEligible((r?.games || []).slice(0, 10))).catch(() => {});
+    // getEligibleGames ARTIK CAGRILMIYOR: tek tuketicisi "Bunlari oynadin"
+    // bolumuydu ve o kalkti. Her anasayfa acilisinda atilan jetonlu bir
+    // istek daha az.
+    if (!session) { setFriendGames([]); return; }
     // Steam bağlı değilse boş liste dönüyor (hata değil) → şerit çizilmiyor.
     getFriendActivity().then((r) => setFriendGames(r?.games || [])).catch(() => {});
   }, [session]);
@@ -309,7 +309,22 @@ export default function HomeScreen() {
             <Text style={styles.brand} maxFontSizeMultiplier={1.4} numberOfLines={1}>gamerisen</Text>
             <View style={styles.brandDot} />
           </View>
+          {/* MAKET: sag ustte IKI adet 36x36 yuvarlak, surface3 dolgulu,
+              aralari 12. Bizde tek saydam 40x40 vardi.
+
+              ARAMA ARTIK BURADA. Oncesinde asagida tam genislikte bir kutuydu
+              ama o kutu METIN ALMIYORDU -- yalnizca /games'e goturen bir
+              dugmeydi. Ikona inince islev aynen korunuyor, hedef ayni. */}
           <View style={styles.topRight}>
+            <Pressable
+              style={({ pressed }) => [styles.topBtn, pressed && PRESSED]}
+              onPress={() => router.push('/games')}
+              accessibilityRole="button"
+              accessibilityLabel={t('hero.search')}
+              hitSlop={6}
+            >
+              <Ionicons name="search" size={19} color={colors.text2} />
+            </Pressable>
             <Pressable
               style={({ pressed }) => [styles.topBtn, pressed && PRESSED]}
               onPress={() => router.push('/news')}
@@ -317,7 +332,7 @@ export default function HomeScreen() {
               accessibilityLabel={t('news.title')}
               hitSlop={6}
             >
-              <Ionicons name="newspaper-outline" size={22} color={colors.text} />
+              <Ionicons name="newspaper-outline" size={19} color={colors.text2} />
             </Pressable>
           </View>
         </View>
@@ -332,30 +347,10 @@ export default function HomeScreen() {
             Daha önce bu bloktan çıkanlar: kaydırarak keşif (sağ üstteki
             parlayan ikon), doğal dil ile keşif (onboarding + Profil) ve
             video akışı (alt navigasyonda kendi sekmesi). */}
-        <FadeIn delay={40}>
-          <Pressable style={({ pressed }) => [styles.search, pressed && PRESSED]} onPress={() => router.push('/games')}>
-            <Ionicons name="search" size={19} color={colors.text3} />
-            <Text style={styles.searchText}>{t('hero.search')}</Text>
-            <View style={styles.searchBtn}><Ionicons name="arrow-forward" size={16} color="#fff" /></View>
-          </Pressable>
-        </FadeIn>
-
         {/* Not: Kayan kapak şeridi kaldırıldı. Trend/Yeni oyunları zaten
             aşağıdaki kendi bölümlerinde gösteriyoruz; şerit aynı oyunları
             ikinci kez, üstelik başlıksız gösterdiği için haberlerin önünü
             gereksiz kapatıyordu. */}
-
-        {/* ── Sıra sende ──
-            HABER ŞERİDİ BURADAYDI, en üstte, 8 kart ≈ 250 punto. Kaldırıldı:
-            dokunulunca dış tarayıcı açan tek bölümdü ve ilk perdede
-            duruyordu. Girişi sağ üstteki gazete simgesine taşındı.
-
-            Yerini kullanıcının KENDİ oynadığı oyunlar aldı. Aramadan hemen
-            sonra gelmesi bilinçli: ilk perdede görünen ilk içerik bölümü
-            artık dışarı çıkaran değil, üretmeye çağıran bölüm. */}
-        <FadeIn delay={100}>
-          <ReviewPrompt games={eligible} onWritten={loadSocial} />
-        </FadeIn>
 
         {/* Arkadaş etkinliği KATALOG ŞERİTLERİNDEN ÖNCE. Sıra bilinçli:
             "Trend" ve "Yeni" herkese aynı şeyi gösteriyor, bu şerit ise
@@ -496,9 +491,18 @@ const makeStyles = (colors) => StyleSheet.create({
     minHeight: 52,
   },
   // İkon akıştan çıkarıldı: marka sola yaslandı ama düğme sağ kenarda kalmalı.
-  topRight: { position: 'absolute', right: spacing.lg - 6, top: 6 },
-  // 40×40 + hitSlop 6 → etkin dokunma alanı 52×52, HIG alt sınırının üstünde
-  topBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  // Maket: iki dugme, aralari 12, sag kenardan 20.
+  topRight: {
+    position: 'absolute', right: spacing.s20, top: spacing.s8,
+    flexDirection: 'row', gap: spacing.s12,
+  },
+  // Maket: 36x36, r99, surface3 dolgulu. Bizde 40x40 ve dolgusuzdu.
+  // hitSlop 6 ile etkin dokunma alani 48x48 -- HIG'in 44 sinirinin ustunde.
+  topBtn: {
+    width: 36, height: 36, borderRadius: radius.pill,
+    backgroundColor: colors.bgInput,
+    alignItems: 'center', justifyContent: 'center',
+  },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.s4 },
   // letterSpacing 1.5 KALKTI: o değer BÜYÜK HARF yazı içindi. Küçük harf
   // kelime markasında harf aralığı açmak kelimeyi dağıtıyor.
@@ -516,16 +520,6 @@ const makeStyles = (colors) => StyleSheet.create({
     alignSelf: 'flex-end', marginBottom: spacing.s4,
   },
 
-  // Arama artık hero'nun içinde değil, doğrudan başlıkta duruyor — yatay
-  // boşluğu hero'dan devraldı ki bölüm başlıklarıyla aynı hizada kalsın.
-  search: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    marginTop: 14, marginHorizontal: spacing.lg,
-    backgroundColor: colors.card, borderColor: colors.borderHover, borderWidth: 1.5,
-    borderRadius: radius.lg, height: 56, paddingLeft: 18, paddingRight: spacing.sm,
-  },
-  searchText: { flex: 1, color: colors.text3, fontSize: type.subhead },
-  searchBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
 
   // gap eklendi: başlık sarınca iki öğe birbirine yapışıyordu.
   sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.s8, paddingHorizontal: spacing.s20, marginBottom: spacing.md },
