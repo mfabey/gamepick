@@ -269,18 +269,24 @@ export default function ProfileScreen() {
             </Pressable>
             <View style={styles.idText}>
               <Text style={styles.idName} numberOfLines={1}>{account.name}</Text>
+              {/* MAKET: "@adayl · 214 oyun" TEK SATIR. İki bilgi ayrı
+                  satırdaydı ve oyun sayısı ayrıca sayaç karosunda
+                  tekrarlıyordu — aynı sayı ekranda iki kez. */}
               <Pressable onPress={() => router.push('/social')} hitSlop={6}>
                 <Text style={styles.idHandle} numberOfLines={1}>
                   {username ? `@${username}` : t('prof.noUsername')}
+                  {gameCount > 0 ? ` · ${gameCount} ${t('prof.gamesShort')}` : ''}
                 </Text>
               </Pressable>
-              {/* Bağlı mağaza kimliğin bir parçası — en altta değil, adının
-                  yanında. "Bu hesap bana ait" hissini en çok bu veriyor. */}
+              {/* DURUM ÇİPİ — maket: 95×25, r99, surface2, dolgu 4/8,
+                  1px kenarlık, içinde 6pt YEŞİL nokta + 12/400 metin.
+                  Öncesinde Steam simgesi + hesap adı düz bir satırdı;
+                  "bağlı" bilgisi biçimden okunmuyordu. */}
               {steamAccounts[0]?.name ? (
                 <View style={styles.idStore}>
-                  <Ionicons name="logo-steam" size={12} color={colors.text3} />
+                  <View style={styles.idStoreDot} />
                   <Text style={styles.idStoreName} numberOfLines={1}>
-                    {steamAccounts[0].name}
+                    {t('prof.steamConnected')}
                   </Text>
                 </View>
               ) : null}
@@ -290,15 +296,20 @@ export default function ProfileScreen() {
 
             {/* Sayaçlar dokunulabilir: profilin en üstünde duran bu üç sayı
                 zaten kısayol gibi okunuyordu, tepki vermemeleri yanıltıcıydı. */}
+            {/* MAKET: sayaçlar ayırıcı çizgili bir satır değil, KART
+                IZGARASI — 169×80, r12, surface2, dolgu 16, 1px kenarlık;
+                sayı 22/700, etiket 13/400.
+
+                "oyun" sayacı KALKTI: o sayı artık kimlik satırında
+                ("@kullanıcı · N oyun") ve bu dosyanın kendi kuralı aynı
+                sayının ekranda iki kez durmamasını söylüyor (bkz. baş
+                yorumdaki koleksiyon sayacı gerekçesi). Kütüphaneye kısayol
+                ızgarasından hâlâ gidiliyor. */}
             <View style={styles.stats}>
               <Stat n={friends.count} label={t('prof.statFriends')}
                     badge={friends.incoming} onPress={() => router.push('/social')} />
-              <View style={styles.statDiv} />
               <Stat n={items.length} label={t('prof.statWishlist')}
                     onPress={() => router.push('/wishlist')} />
-              <View style={styles.statDiv} />
-              <Stat n={gameCount} label={t('prof.statGames')}
-                    onPress={() => router.push('/library')} />
             </View>
 
             {/* ── Bu hafta ──
@@ -664,8 +675,17 @@ const makeStyles = (colors) => StyleSheet.create({
   identity: { paddingTop: spacing.sm, paddingBottom: spacing.lg },
   idRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   idText: { flex: 1, minWidth: 0 },
-  idStore: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 5 },
-  idStoreName: { fontSize: type.caption, color: colors.text3, flexShrink: 1 },
+  // Maket: r99, surface2, dolgu 4/8, 1px kenarlık, ara 4.
+  idStore: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.s4,
+    alignSelf: 'flex-start', marginTop: spacing.s8,
+    paddingVertical: spacing.s4, paddingHorizontal: spacing.s8,
+    borderRadius: radius.pill, backgroundColor: colors.card,
+    borderWidth: 1, borderColor: colors.cardBorder,
+  },
+  // Maket: 6pt yeşil nokta — "bağlı" durumunu renk taşıyor.
+  idStoreDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.green },
+  idStoreName: { fontSize: type.caption, fontWeight: '400', color: colors.text2, flexShrink: 1 },
 
   // Bu hafta satırı — kart değil satır: kimliğin devamı, ayrı bir bölüm değil.
   // Maket: 350x140, r16, surface2, dolgu 16, 1px kenarlık, ara 12.
@@ -700,14 +720,23 @@ const makeStyles = (colors) => StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   avatarInitialLg: { fontSize: type.title2, fontWeight: '800', color: colors.text2 },
-  idName: { fontSize: type.headline, fontWeight: '700', color: colors.text },
-  idHandle: { fontSize: type.footnote, color: colors.text3, marginTop: 1 },
+  // Maket: ad 22 / 700; tanıtıcı satırı 13 / 400 / text3.
+  idName: { fontSize: type.title3, fontWeight: '700', color: colors.text },
+  idHandle: { fontSize: type.footnote, fontWeight: '400', color: colors.text3, marginTop: spacing.s4 },
 
-  stats: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.lg },
-  stat: { alignItems: 'center', paddingHorizontal: 22 },
+  stats: { flexDirection: 'row', gap: spacing.s12, marginTop: spacing.s20 },
+  // Maket: 169×80, r12, surface2, dolgu 16, 1px kenarlık, ara 4.
+  // Genişlik SABIT DEĞİL: 169 türetilmiş bir sayı (390 − 2×20 − 12 aralık
+  // = 338 / 2). flex ile hesaplanıyor ki dar/geniş cihazlarda bozulmasın.
+  stat: {
+    flex: 1, padding: spacing.s16, gap: spacing.s4,
+    borderRadius: radius.md, backgroundColor: colors.card,
+    borderWidth: 1, borderColor: colors.cardBorder,
+  },
   // Tablo rakamları: sayı değiştikçe sütun genişliği oynamasın
-  statN: { fontSize: type.headline, fontWeight: '700', color: colors.text, ...NUMERIC },
-  statLabel: { fontSize: type.caption, color: colors.text3, marginTop: 2 },
+  // Maket: sayı 22 / 700, etiket 13 / 400 / text2.
+  statN: { fontSize: type.title3, fontWeight: '700', color: colors.text, ...NUMERIC },
+  statLabel: { fontSize: type.footnote, fontWeight: '400', color: colors.text2 },
   // Bekleyen istek rozeti — rakamın sağ üst köşesi. Sayıya bitişik olmalı,
   // etikete değil: bilgi "kaç arkadaş" değil, "kaç bekleyen istek".
   statBadge: {
@@ -717,7 +746,6 @@ const makeStyles = (colors) => StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   statBadgeText: { color: '#fff', fontSize: type.caption2, fontWeight: '800' },
-  statDiv: { width: 1, height: 26, backgroundColor: colors.cardBorder },
 
   signInCard: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.md,

@@ -609,4 +609,6 @@ export default {
   'rev.communityEmptyDesc': 'İlk yazan sen ol — yukarıdaki oyunlardan birini seç.',
   'rev.mineEmptyDesc': 'Yukarıdaki oyunlardan birini seçerek ilk incelemeni yazabilirsin.',
   'prof.weekSee': 'Gör',
+  'prof.gamesShort': 'oyun',
+  'prof.steamConnected': 'Steam bağlı',
 };

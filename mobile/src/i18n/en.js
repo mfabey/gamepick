@@ -607,4 +607,6 @@ export default {
   'rev.communityEmptyDesc': 'Be the first — pick one of the games above.',
   'rev.mineEmptyDesc': 'Pick one of the games above to write your first review.',
   'prof.weekSee': 'See',
+  'prof.gamesShort': 'games',
+  'prof.steamConnected': 'Steam connected',
 };

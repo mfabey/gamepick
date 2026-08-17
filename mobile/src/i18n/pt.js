@@ -614,4 +614,6 @@ export default {
   'rev.communityEmptyDesc': 'Seja o primeiro — escolha um dos jogos acima.',
   'rev.mineEmptyDesc': 'Escolha um dos jogos acima para escrever sua primeira análise.',
   'prof.weekSee': 'Ver',
+  'prof.gamesShort': 'jogos',
+  'prof.steamConnected': 'Steam conectado',
 };
