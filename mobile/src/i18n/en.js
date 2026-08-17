@@ -464,7 +464,7 @@ export default {
   'prof.social': 'Social',
   'prof.myGames': 'My games',
   'prof.statCollections': 'collections',
-  'prof.weekTitle': 'THIS WEEK',
+  'prof.weekTitle': 'Weekly report',
   'prof.weekDiscovered': 'games discovered',
   'prof.weekGenre': 'mostly',
   'prof.statFriends': 'friends',
@@ -606,4 +606,5 @@ export default {
   'post.feedEmptyDesc': 'Start the conversation — ask about a game or share a moment.',
   'rev.communityEmptyDesc': 'Be the first — pick one of the games above.',
   'rev.mineEmptyDesc': 'Pick one of the games above to write your first review.',
+  'prof.weekSee': 'See',
 };

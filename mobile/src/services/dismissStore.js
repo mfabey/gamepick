@@ -88,6 +88,13 @@ export function getDismissedSet() {
   return set;
 }
 
+/** Belirtilen andan sonraki eleme ZAMANLARI (günlük kırılım için). */
+export function dismissedTimesSince(sinceTs) {
+  const out = [];
+  for (const k in dismissed) if (dismissed[k] >= sinceTs) out.push(dismissed[k]);
+  return out;
+}
+
 /** Belirtilen andan sonra elenen oyun sayısı (haftalık istatistik için). */
 export function dismissedCountSince(sinceTs) {
   let n = 0;

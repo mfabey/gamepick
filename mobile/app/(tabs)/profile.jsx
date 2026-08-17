@@ -56,6 +56,9 @@ import { SettingsGroup, SettingsRow } from '../../src/components/SettingsList';
 const GRID_COLS = 4;
 const GRID_GAP = spacing.sm;
 
+// Haftalik rapor grafiginin tam boyu (maket olcusu: en yuksek cubuk 42).
+const CHART_H = 42;
+
 /** Pencere genişliğinden tek karo genişliği. body yatay dolgusu spacing.lg×2. */
 function tileWidth(windowWidth) {
   const inner = windowWidth - spacing.lg * 2;
@@ -308,18 +311,53 @@ export default function ProfileScreen() {
                 onPress={() => router.push('/stats')}
                 style={({ pressed }) => [styles.week, pressed && PRESSED_CARD]}
               >
-                <View style={styles.weekMain}>
+                {/* Başlık satırı — maket: 15/600 başlık solda, 12/600
+                    marka renginde "Gör ›" sağda. */}
+                <View style={styles.weekHead}>
                   <Text style={styles.weekTitle} numberOfLines={1}>
                     {t('prof.weekTitle')}
                   </Text>
-                  <Text style={styles.weekLine} numberOfLines={2}>
-                    <Text style={[styles.weekNum, NUMERIC]}>{week.discovered}</Text>
-                    {' ' + t('prof.weekDiscovered')}
-                    {week.topGenre ? ` · ${t('prof.weekGenre')} ` : ''}
-                    {week.topGenre ? <Text style={styles.weekStrong}>{week.topGenre}</Text> : null}
-                  </Text>
+                  <Text style={styles.weekMore}>{t('prof.weekSee')} ›</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={16} color={colors.text3} />
+
+                {/* ÇUBUK GRAFİĞİ — maket: 7 çubuk, r4, surface4; en yoğun
+                    gün marka renginde.
+                    Yükseklikler ORANLI, mutlak değil: en yüksek gün tam boy,
+                    ötekiler ona göre. Mutlak olsaydı sakin bir haftada grafik
+                    tamamen yassı görünürdü.
+
+                    ── TABAN 6pt, 0 DEĞİL ──
+                    İlk sürümde boş gün 2pt çiziliyordu ve simülatörde
+                    görüldü: etkinlik tek güne yığıldığında altı çubuk saç
+                    teli kalınlığına iniyor, grafik bozuk görünüyordu.
+                    Makette en düşük çubuk bile en yükseğin ~%31'i.
+                    Boş gün artık görünür bir TABAN — "o gün hiçbir şey yok"
+                    bilgisini veriyor ama yedi günlük ritmi bozmuyor. */}
+                <View style={styles.weekChart}>
+                  {week.byDay.map((n, i) => {
+                    const enCok = Math.max(...week.byDay, 1);
+                    const y = n > 0
+                      ? Math.max(12, Math.round((n / enCok) * CHART_H))
+                      : 6;
+                    return (
+                      <View
+                        key={i}
+                        style={[
+                          styles.weekBar,
+                          { height: y },
+                          n > 0 && i === week.topDay && styles.weekBarTop,
+                        ]}
+                      />
+                    );
+                  })}
+                </View>
+
+                <Text style={styles.weekLine} numberOfLines={2}>
+                  <Text style={[styles.weekNum, NUMERIC]}>{week.discovered}</Text>
+                  {' ' + t('prof.weekDiscovered')}
+                  {week.topGenre ? ` · ${t('prof.weekGenre')} ` : ''}
+                  {week.topGenre ? <Text style={styles.weekStrong}>{week.topGenre}</Text> : null}
+                </Text>
               </Pressable>
             ) : null}
           </View>
@@ -630,13 +668,21 @@ const makeStyles = (colors) => StyleSheet.create({
   idStoreName: { fontSize: type.caption, color: colors.text3, flexShrink: 1 },
 
   // Bu hafta satırı — kart değil satır: kimliğin devamı, ayrı bir bölüm değil.
+  // Maket: 350x140, r16, surface2, dolgu 16, 1px kenarlık, ara 12.
+  // Öncesinde yatay bir satırdı (başlık + tek satır + chevron); maket bunu
+  // grafikli bir KART olarak çiziyor.
   week: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    marginTop: spacing.lg, paddingHorizontal: 14, paddingVertical: spacing.md,
-    backgroundColor: colors.card, borderRadius: radius.md,
+    marginTop: spacing.s20, padding: spacing.s16, gap: spacing.s12,
+    backgroundColor: colors.card, borderRadius: radius.lg,
     borderWidth: 1, borderColor: colors.cardBorder,
   },
-  weekMain: { flex: 1, minWidth: 0 },
+  weekHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.s8 },
+  // Maket: "Gör ›" 12 / 600 / marka.
+  weekMore: { fontSize: type.caption, fontWeight: '600', color: colors.accent },
+  // Maket: çubuklar 42 yüksekliğe kadar, r4, aralarında eşit boşluk.
+  weekChart: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', height: CHART_H, gap: spacing.s4 },
+  weekBar: { flex: 1, borderRadius: radius.xs, backgroundColor: colors.surfaceTile },
+  weekBarTop: { backgroundColor: colors.accent },
   weekTitle: {
     // Maket: kart basligi "Haftalik rapor" = 15 / 600 / text1.
     fontSize: type.subhead, fontWeight: '600', color: colors.text,

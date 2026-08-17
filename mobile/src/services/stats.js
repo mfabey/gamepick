@@ -6,8 +6,8 @@
 //
 // Saf fonksiyonlar — React'e bağlı değil, doğrudan test edilebilir.
 // ─────────────────────────────────────────────────────────────────────────────
-import { seenCountSince } from './seenStore';
-import { dismissedCountSince } from './dismissStore';
+import { seenCountSince, seenTimesSince } from './seenStore';
+import { dismissedCountSince, dismissedTimesSince } from './dismissStore';
 import { likedSince, getLikedList } from './likeStore';
 import { getCollections } from './collectionsStore';
 import { topGenres } from './tasteProfile';
@@ -17,6 +17,42 @@ export const WEEK_MS = 7 * 86400000;
 /** Haftanın başlangıcı (7 gün öncesi). */
 export function weekStart(now = Date.now()) {
   return now - WEEK_MS;
+}
+
+/**
+ * GÜNLÜK KIRILIM — haftalık rapor kartındaki çubuk grafiği için.
+ *
+ * Maket bu grafiği OYNAMA SÜRESİ olarak çiziyor ("Bu hafta 12 sa 40 dk").
+ * Bizde günlük süre verisi YOK: Steam toplam saat veriyor, güne bölmüyor.
+ * Uydurmak yerine sahip olduğumuz şey kullanılıyor — günlük ETKİNLİK
+ * (görülen + beğenilen + elenen). Alt satırın metni de buna göre yazılıyor,
+ * yani grafik neyi gösteriyorsa yazı onu söylüyor.
+ *
+ * Diziler HER ZAMAN 7 uzunlukta ve kronolojik: [0] en eski gün, [6] bugün.
+ * Kısa dizi döndürseydik grafik gün sayısına göre daralır, haftalar arası
+ * karşılaştırma bozulurdu.
+ *
+ * @returns { byDay: number[7], topDay: number|null }
+ */
+function dailyBreakdown(since, likes, now) {
+  const GUN = 24 * 60 * 60 * 1000;
+  const byDay = [0, 0, 0, 0, 0, 0, 0];
+
+  const kova = (ts) => {
+    const i = Math.floor((ts - since) / GUN);
+    return i >= 0 && i < 7 ? i : -1;
+  };
+  const ekle = (ts) => { const i = kova(ts); if (i >= 0) byDay[i] += 1; };
+
+  seenTimesSince(since).forEach(ekle);
+  dismissedTimesSince(since).forEach(ekle);
+  for (const l of likes) if (l?.ts) ekle(l.ts);
+
+  const enYuksek = Math.max(...byDay);
+  // Hiç etkinlik yoksa vurgulanacak gün de yok — sıfırların ilki
+  // "en yoğun gün" diye işaretlenmemeli.
+  const topDay = enYuksek > 0 ? byDay.indexOf(enYuksek) : null;
+  return { byDay, topDay };
 }
 
 /**
@@ -78,9 +114,12 @@ export function weeklyReport({ prices = null, wishlistCount = 0, now = Date.now(
   const topGenre = byGenre[0]?.name || topGenres(1)[0]?.name || null;
 
   const discount = prices ? discountStats(prices) : null;
+  const { byDay, topDay } = dailyBreakdown(since, likes, now);
 
   return {
     since,
+    byDay,
+    topDay,
     discovered,
     liked: likes.length,
     passed,

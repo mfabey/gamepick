@@ -471,7 +471,7 @@ export default {
   'prof.social': 'Social',
   'prof.myGames': 'Meus jogos',
   'prof.statCollections': 'coleções',
-  'prof.weekTitle': 'ESTA SEMANA',
+  'prof.weekTitle': 'Relatório semanal',
   'prof.weekDiscovered': 'jogos descobertos',
   'prof.weekGenre': 'principalmente',
   'prof.statFriends': 'amigos',
@@ -613,4 +613,5 @@ export default {
   'post.feedEmptyDesc': 'Comece a conversa — pergunte sobre um jogo ou compartilhe um momento.',
   'rev.communityEmptyDesc': 'Seja o primeiro — escolha um dos jogos acima.',
   'rev.mineEmptyDesc': 'Escolha um dos jogos acima para escrever sua primeira análise.',
+  'prof.weekSee': 'Ver',
 };

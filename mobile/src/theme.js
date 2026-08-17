@@ -238,7 +238,9 @@ export const motion = Object.freeze({
   firm: { duration: 300, dampingRatio: 1, overshootClamping: true },
 });
 
-export const radius = { sm: 8, md: 12, lg: 16, xl: 20, pill: 999 };
+// xs: 4 — maketten. Haftalik rapor cubuklari ve kucuk isaretler bu
+// basamagi kullaniyor; oncesinde olcekte yoktu ve duz 4 yaziliyordu.
+export const radius = { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, pill: 999 };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // YÜKSELTME GÖLGESİ — yüzen sekme çubuğu ve alt sayfalar.

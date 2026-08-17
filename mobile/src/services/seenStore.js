@@ -88,6 +88,13 @@ export function getSeenSet() {
   return set;
 }
 
+/** Belirtilen andan sonraki görülme ZAMANLARI (günlük kırılım için). */
+export function seenTimesSince(sinceTs) {
+  const out = [];
+  for (const k in seen) if (seen[k] >= sinceTs) out.push(seen[k]);
+  return out;
+}
+
 /** Belirtilen andan sonra görülen oyun sayısı (haftalık istatistik için). */
 export function seenCountSince(sinceTs) {
   let n = 0;

@@ -466,7 +466,7 @@ export default {
   'prof.social': 'Sosyal',
   'prof.myGames': 'Oyunlarım',
   'prof.statCollections': 'koleksiyon',
-  'prof.weekTitle': 'BU HAFTA',
+  'prof.weekTitle': 'Haftalık rapor',
   'prof.weekDiscovered': 'oyun keşfettin',
   'prof.weekGenre': 'en çok',
   'prof.statFriends': 'arkadaş',
@@ -608,4 +608,5 @@ export default {
   'post.feedEmptyDesc': 'Sohbeti sen başlat — aklındaki oyunu sor ya da bir anını paylaş.',
   'rev.communityEmptyDesc': 'İlk yazan sen ol — yukarıdaki oyunlardan birini seç.',
   'rev.mineEmptyDesc': 'Yukarıdaki oyunlardan birini seçerek ilk incelemeni yazabilirsin.',
+  'prof.weekSee': 'Gör',
 };
