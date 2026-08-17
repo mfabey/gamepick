@@ -46,6 +46,11 @@ import { useLanguage } from '../../src/context/LanguageContext';
 
 const POOL = 3;
 
+// expo-video: `allowsFullscreen` kullanimdan kalkti, karsiligi
+// `fullscreenOptions.enable`. Modul duzeyinde: JSX icinde nesne yazmak
+// her render'da yenisini uretirdi.
+const TAM_EKRAN_KAPALI = { enable: false };
+
 // Yatayda ekranın köşe kavisinden kaçmak için üst çubuğa verilen paylar.
 // Dikeyde gerek yok: orada güvenli alan (~59pt) zaten bu işi görüyor.
 const LANDSCAPE_TOP_PAD = 14;
@@ -554,7 +559,7 @@ const VideoItem = memo(function VideoItem({
           style={StyleSheet.absoluteFill}
           contentFit="cover"
           nativeControls={false}
-          allowsFullscreen={false}
+          fullscreenOptions={TAM_EKRAN_KAPALI}
         />
       ) : null}
 
@@ -743,8 +748,12 @@ const makeStyles = (colors) => StyleSheet.create({
     minHeight: 44,
   },
   titleWrap: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  topTitle: { color: '#fff', fontSize: type.body, fontWeight: '900', letterSpacing: -0.2 },
-  actions: { position: 'absolute', right: 12, alignItems: 'center', gap: 17 },
+  // Maket ust cubugu: 15 / 700. Bizde 17 / 900 idi — video ustunde
+  // gereginden agir duruyordu; maket burayi sessiz tutuyor.
+  topTitle: { color: '#fff', fontSize: type.subhead, fontWeight: '700', letterSpacing: -0.2 },
+  // Maket olcusu: ray 35 genislikte, eylemler arasi 20, sag kenardan 20.
+  // Bizde sag 12 / ara 17 idi — ikisi de olcek disi ve makete gore sikisik.
+  actions: { position: 'absolute', right: spacing.s20, alignItems: 'center', gap: spacing.s20 },
   // Yatayda satır: sağa yaslı, alt kenarda. `left` de veriliyor ki uzun
   // etiketlerde satır ekranın dışına taşmasın, sıkışsın.
   actionsLandscape: {
@@ -769,7 +778,9 @@ const makeStyles = (colors) => StyleSheet.create({
   actionLabel: { color: '#fff', fontSize: type.caption2, fontWeight: '700' },
 
   info: { position: 'absolute', left: spacing.lg, right: 84 },
-  name: { color: '#fff', fontSize: type.title3, fontWeight: '900', letterSpacing: -0.4, lineHeight: 26 },
+  // Maket: alt bilgi blogunda ad 15 / 600. Bizde 22 / 900 idi.
+  // Maket videoyu one cikariyor, ustundeki metni degil.
+  name: { color: '#fff', fontSize: type.subhead, fontWeight: '600', letterSpacing: -0.2, lineHeight: 20 },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 9 },
   tag: {
     paddingHorizontal: 9, paddingVertical: spacing.xs, borderRadius: radius.pill,

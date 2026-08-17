@@ -40,6 +40,11 @@ import { radius, spacing, type, PRESSED, motion } from '../../src/theme';
 import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { useLanguage } from '../../src/context/LanguageContext';
 
+// expo-video: `allowsFullscreen` kullanimdan kalkti, karsiligi
+// `fullscreenOptions.enable`. Modul duzeyinde: JSX icinde nesne yazmak
+// her render'da yenisini uretirdi.
+const TAM_EKRAN_ACIK = { enable: true };
+
 const MAX_TEXT = 1000;
 
 /**
@@ -1103,7 +1108,7 @@ function VideoBubble({ url }) {
       style={styles.media}
       nativeControls
       contentFit="cover"
-      allowsFullscreen
+      fullscreenOptions={TAM_EKRAN_ACIK}
     />
   );
 }
