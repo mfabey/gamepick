@@ -611,4 +611,6 @@ export default {
   'prof.weekSee': 'Gör',
   'prof.gamesShort': 'oyun',
   'prof.steamConnected': 'Steam bağlı',
+  'home.friendsCount': 'kişi',
+  'home.hoursShort': 'sa',
 };

@@ -103,6 +103,8 @@ function GameCard({ game, variant = 'grid', context, overlay, onPress, onLongPre
       accessibilityLabel={game?.name}
       style={({ pressed }) => [
         styles.kart,
+        // Yalnizca sosyal varyantta dolu yuzey (maket olcusu).
+        v.yuzey && styles.kartYuzey,
         v.genislik ? { width: v.genislik } : null,
         style,
         // motion.json → "Kart/buton basımı": scale 1→0.97. Dokunulan hiçbir
@@ -138,6 +140,14 @@ export default memo(GameCard);
 
 const makeStyles = (colors) => StyleSheet.create({
   kart: { gap: KART.metinGap },
+  // Maket: r16, surface2, 1px kenarlik. Kapak kartin ICINDE oldugu icin
+  // overflow gizleniyor — yoksa kapagin kendi r12'si kartin r16'sinin
+  // disina tasip kose ustune biniyor.
+  kartYuzey: {
+    backgroundColor: colors.card, borderRadius: radius.lg,
+    borderWidth: 1, borderColor: colors.cardBorder,
+    padding: spacing.s8, overflow: 'hidden',
+  },
   // Kapak zemini kartın kendisiyle aynı: görsel yüklenene kadar boşluk
   // fark edilmiyor. Monogram zaten GameCover içinde devreye giriyor.
   kapak: { width: '100%', borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.card },

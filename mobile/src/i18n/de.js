@@ -618,4 +618,6 @@ export default {
   'prof.weekSee': 'Ansehen',
   'prof.gamesShort': 'Spiele',
   'prof.steamConnected': 'Steam verbunden',
+  'home.friendsCount': 'Freunde',
+  'home.hoursShort': 'Std',
 };

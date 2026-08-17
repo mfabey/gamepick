@@ -57,11 +57,30 @@ export default function FriendActivity({ games }) {
 
   if (!hasFriendSignal(games)) return null;
 
+  // Serit ozeti: kac AYRI arkadas ve toplam kac saat.
+  // Kisi sayisi TEKILLESTIRILIYOR: ayni arkadas birden fazla oyunda
+  // gorunuyorsa iki kez sayilmamali.
+  const kisiler = new Set();
+  let saat = 0;
+  for (const g of games) {
+    for (const f of g.friends || []) if (f?.name) kisiler.add(f.name);
+    saat += Number(g.hours) || 0;
+  }
+  const ozet = kisiler.size > 0
+    ? `${kisiler.size} ${t('home.friendsCount')} · ${Math.round(saat)} ${t('home.hoursShort')}`
+    : null;
+
   return (
     <View style={styles.wrap}>
       <View style={styles.head}>
         <Ionicons name="people" size={15} color={colors.text2} />
         <Text style={styles.title}>{t('home.friendsPlaying')}</Text>
+        {/* MAKET: bolum basliginin saginda bir OZET satiri ("3 kisi · 26 sa",
+            12 / 400 / text3). Bizde yoktu; serit kac kisiyi ve ne kadar sureyi
+            temsil ettigini soylemiyordu.
+            Sayilar zaten elimizde: `count` oyun basina arkadas sayisi,
+            `hours` iki haftalik toplam. Uydurma yok. */}
+        {ozet ? <Text style={styles.ozet}>{ozet}</Text> : null}
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.strip}>
@@ -75,7 +94,6 @@ export default function FriendActivity({ games }) {
             key={g.appid}
             game={{ ...g, id: g.appid }}
             variant="social"
-            style={styles.card}
             context={names(g, t)}
             onPress={() => router.push({
               pathname: '/game/[id]',
@@ -124,9 +142,10 @@ const makeStyles = (colors) => StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingHorizontal: spacing.s20, marginBottom: spacing.md,
   },
-  title: { ...SECTION_TITLE, color: colors.text },
+  title: { ...SECTION_TITLE, color: colors.text, flex: 1 },
+  // Maket: 12 / 400 / text3.
+  ozet: { fontSize: type.caption, fontWeight: '400', color: colors.text3 },
   strip: { paddingHorizontal: spacing.s20, gap: spacing.md },
-  card:  { width: 150 },
   stack: { position: 'absolute', left: 6, bottom: 6, flexDirection: 'row' },
   face: {
     width: 22, height: 22, borderRadius: 11,

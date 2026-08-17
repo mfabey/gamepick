@@ -51,9 +51,17 @@ export const VARYANT = {
     kapakYukseklik: 160,
   },
   // Arkadaş şeridi / topluluk. HTML: "16:9 + arkadaş cam etiketi".
+  // Arkadas seridi / topluluk. HTML: "16:9 + arkadas cam etiketi".
+  //
+  // TEK DOLU YUZEYLI VARYANT. Maket olculdu: 202x167, yaricap 16, surface2
+  // dolgu, 1px kenarlik; icinde 200x104 kapak ve altinda metin blogu.
+  // Otekiler (grid, rail) yuzeysiz — kapak zaten kendi yuzeyi. Sosyal kart
+  // bir ARKADAS ETKINLIGI tasiyor, katalog ogesi degil; dolu yuzey onu
+  // cevresindeki katalog seritlerinden ayiriyor.
   social: {
-    genislik: null,
+    genislik: 202,
     kapakOran: 16 / 9,
     kapakYukseklik: null,
+    yuzey: true,
   },
 };
