@@ -96,7 +96,9 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
     if (firstRun.current) { firstRun.current = false; return; }
     if (reducedMotion) return;
     bounce.value = withSequence(
-      withTiming(1, { duration: 90 }),
+      // 90 idi — maketin alt siniri 100 ("Aralik 100-320 ms").
+      // Pop'un donus yarisi; 110 usePop ile ayni adim.
+      withTiming(1, { duration: 110 }),
       withSpring(0, { stiffness: 220, damping: 12 }),
     );
   }, [state.index, bounce, reducedMotion]);

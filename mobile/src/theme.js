@@ -192,9 +192,20 @@ export const PRESSED = Object.freeze({ opacity: 0.65 });
 // tetiklemiyor. HIG'in 0.95–1.05 aralığının üst ucunda kalındı: 0.97 fark
 // edilir ama sıçrama hissi vermez.
 export const PRESSED_CARD = Object.freeze({
-  opacity: 0.9,
   transform: [{ scale: 0.97 }],
 });
+
+// ── BASMA AYDINLANMASI ──
+// Maket: "Parmak değdiği an 0.97 ölçek + %6 AYDINLANMA."
+// Bizde `opacity: 0.9` vardı ve bu koyu temada TERS yönde çalışıyor: opaklığı
+// düşürmek öğeyi arka plana (siyaha) yaklaştırır, yani karartır. Maket
+// aydınlatmak istiyor.
+//
+// RN'de `filter: brightness` yok; %6 aydınlanmanın karşılığı üstüne
+// rgba(255,255,255,0.06) bir katman koymak. Bu bir STİL değil KATMAN olduğu
+// için PRESSED_CARD'ın içine giremiyor — zemini olan çağrı yerleri bunu
+// ayrı bir View olarak koyuyor.
+export const PRESS_LIFT = 'rgba(255,255,255,0.06)';
 
 // Rakamların hizası — fiyat, saat, sayaç.
 // Orantılı yazıda "1" ile "8" farklı genişlikte olduğu için liste kaydırırken
@@ -228,6 +239,18 @@ export const motion = Object.freeze({
   skeleton: 1400,  // parıltı süpürmesi — tek tur
   reveal:    160,  // iskeletten içeriğe geçiş (fade + 4px yukarı)
 
+  // ── MAKETİN ADLANDIRDIĞI ADIMLAR ──
+  // Handoff'un hareket tablosu (screens/05-bolum.png) her etkileşime bir
+  // süre veriyor. Bunlar eksikti; kod ham sayı yazıyordu.
+  //
+  // ÜST SINIR 320: "Aralık 100–320 ms." Bunun dışındaki iki değer
+  // (RotateGlowButton 2600, SwipeGlowButton 1500) DEKORATİF döngü, etkileşim
+  // geri bildirimi değil — o yüzden bu ölçeğin dışında kalıyorlar.
+  screen: 200,   // ekran geçişi: 0.96→1 ölçek + fade
+  chip:   180,   // filtre çipi dolgusunun merkezden dışa açılması
+  list:   120,   // filtre sonrası sonuç listesinin çözülmesi
+  sheet:  320,   // alt sayfa yükselirken (firm yay)
+
   // ── Yaylar ──
   // İkisi çelişmiyor, farklı işler. İkisi de zaten ölçülmüştü; burada
   // yalnızca adlandırıldılar.
@@ -235,7 +258,11 @@ export const motion = Object.freeze({
   //   firm → aşma İSTENMEYEN yer: hedefe en hızlı, hiç aşmadan. (Sekme
   //          vurgusu: aşıp geri gelmesi bozukluk gibi görünüyordu.)
   pop:  { stiffness: 260, damping: 14 },
-  firm: { duration: 300, dampingRatio: 1, overshootClamping: true },
+  // firm SÜRE TAŞIMIYOR. Maket aynı yayı İKİ farklı sürede kullanıyor:
+  // segment/sheet geçişi 240, alt sayfa yükselişi 320. Süre baked olsaydı
+  // ikisinden biri yanlış olurdu; çağrı yeri `{ ...motion.firm, duration }`
+  // diye kendi adımını veriyor.
+  firm: { dampingRatio: 1, overshootClamping: true },
 });
 
 // xs: 4 — maketten. Haftalik rapor cubuklari ve kucuk isaretler bu

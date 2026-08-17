@@ -280,8 +280,8 @@ export default function VideosScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setPaused(true);
     setHolding(true);
-    uiOpacity.value = withTiming(0, { duration: 160 });
-    if (tabHidden) tabHidden.value = withTiming(1, { duration: 160 });
+    uiOpacity.value = withTiming(0, { duration: motion.exit });
+    if (tabHidden) tabHidden.value = withTiming(1, { duration: motion.exit });
   }, [uiOpacity, tabHidden]);
 
   const onHoldEnd = useCallback(() => {
@@ -289,8 +289,8 @@ export default function VideosScreen() {
     holdRef.current = false;
     setPaused(false);
     setHolding(false);
-    uiOpacity.value = withTiming(1, { duration: 160 });
-    if (tabHidden) tabHidden.value = withTiming(0, { duration: 160 });
+    uiOpacity.value = withTiming(1, { duration: motion.exit });
+    if (tabHidden) tabHidden.value = withTiming(0, { duration: motion.exit });
   }, [uiOpacity, tabHidden]);
 
   // ── Yatay mod ───────────────────────────────────────────────────────────
