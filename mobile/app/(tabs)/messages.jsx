@@ -180,16 +180,20 @@ const makeStyles = (colors) => StyleSheet.create({
   safe:   { flex: 1, backgroundColor: colors.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
+  // Ust dolgu YOKTU: baslik durum cubuguna yapisiyordu. Kardes sekmeler
+  // 8 tasiyor. Kenar da maketin 20'sine cekildi.
   header: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
-    paddingHorizontal: spacing.lg, paddingBottom: spacing.md,
+    flexDirection: 'row', alignItems: 'center', gap: spacing.s8,
+    paddingHorizontal: spacing.s20, paddingTop: spacing.s8, paddingBottom: spacing.s16,
   },
-  title:   { flex: 1, color: colors.text, fontSize: type.title3, fontWeight: '800', letterSpacing: -0.4 },
+  // Maket: ekran basligi 28 / 700 / -0.28. Burada 22 / 800 idi -- kardes
+  // sekmelerden (Topluluk, Profil) hem kucuk hem daha agirdi.
+  title:   { flex: 1, color: colors.text, fontSize: type.title1, fontWeight: '700', letterSpacing: -0.28 },
 
 
   row: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.md,
-    paddingVertical: spacing.md, paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md, paddingHorizontal: spacing.s20,
   },
   avatar: {
     width: 46, height: 46, borderRadius: 23, backgroundColor: colors.bgInput,

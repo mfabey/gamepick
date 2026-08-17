@@ -59,9 +59,17 @@ const GRID_GAP = spacing.sm;
 // Haftalik rapor grafiginin tam boyu (maket olcusu: en yuksek cubuk 42).
 const CHART_H = 42;
 
-/** Pencere genişliğinden tek karo genişliği. body yatay dolgusu spacing.lg×2. */
+/**
+ * Pencere genişliğinden tek karo genişliği.
+ *
+ * KENAR PAYI BURADAN OKUNUYOR, elle yazılmıyor: body'nin dolgusu 16'dan
+ * maketin 20'sine çekildiğinde bu hesap spacing.lg'de kalmıştı ve ızgara
+ * 8pt taşıyordu. Aynı sabite bağlanınca ikisi ayrışamıyor.
+ */
+const BODY_PAD = spacing.s20;
+
 function tileWidth(windowWidth) {
-  const inner = windowWidth - spacing.lg * 2;
+  const inner = windowWidth - BODY_PAD * 2;
   return (inner - GRID_GAP * (GRID_COLS - 1)) / GRID_COLS;
 }
 
@@ -669,10 +677,12 @@ const makeStyles = (colors) => StyleSheet.create({
   // yon temaya gore (koyuda acilir, acikta koyulasir).
   basili: { backgroundColor: basiliYuzey(colors) },
   safe: { flex: 1, backgroundColor: colors.bg },
-  body: { padding: spacing.lg, paddingBottom: TAB_SPACE + 16 },
+  // Maket ekran kenari 20.
+  body: { padding: BODY_PAD, paddingBottom: TAB_SPACE + spacing.s16 },
 
   headRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm },
-  h1: { flex: 1, fontSize: type.title1, fontWeight: '800', color: colors.text, letterSpacing: -0.6 },
+  // Maket: ekran basligi 28 / 700 / -0.28. Uc sekmede uc farkli deger vardi.
+  h1: { flex: 1, fontSize: type.title1, fontWeight: '700', color: colors.text, letterSpacing: -0.28 },
 
   // ── Kimlik ──
   identity: { paddingTop: spacing.sm, paddingBottom: spacing.lg },

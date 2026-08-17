@@ -421,7 +421,7 @@ function Header({ t, router, incoming }) {
 const makeStyles = (colors) => StyleSheet.create({
   composeBar: {
     flexDirection: 'row', alignItems: 'center', gap: 9,
-    marginHorizontal: spacing.lg, marginTop: spacing.xs, marginBottom: 10,
+    marginHorizontal: spacing.s20, marginTop: spacing.xs, marginBottom: spacing.s12,
     paddingHorizontal: 14, paddingVertical: spacing.md,
     backgroundColor: colors.card, borderRadius: 999,
   },
@@ -466,9 +466,9 @@ const makeStyles = (colors) => StyleSheet.create({
 
   sectionLabel: {
     ...SECTION_TITLE, color: colors.text,
-    paddingHorizontal: spacing.lg, marginBottom: spacing.sm,
+    paddingHorizontal: spacing.s20, marginBottom: spacing.sm,
   },
-  strip: { paddingHorizontal: spacing.lg, gap: spacing.sm, paddingBottom: spacing.lg },
+  strip: { paddingHorizontal: spacing.s20, gap: spacing.sm, paddingBottom: spacing.lg },
   gameCard: { width: 132 },
   gameImg:  { width: 132, height: 62, borderRadius: radius.sm, backgroundColor: colors.bgInput },
   gameName: { color: colors.text, fontSize: type.caption, fontWeight: '700', marginTop: 5 },
