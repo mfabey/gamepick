@@ -126,12 +126,21 @@ function PostCard({ post, onOpen, onRequireAccount, compact = false }) {
 const AV = 38;
 
 const makeStyles = (colors) => StyleSheet.create({
-  // Kartlar değil satırlar: ayırıcı çizgi yerine boşluk + ince alt kenar
-  // (tasarım turunun kuralı — "çizgi yerine boşlukla ayır").
+  // ── KART, SATIR DEĞİL — MAKETTEN ──
+  // Öncesinde satırdı: alt kenarında saç teli kalınlığında bir ayırıcı ve
+  // kenarlıksız. Gerekçe "çizgi yerine boşlukla ayır" idi — ama maket de
+  // tam olarak bunu yapıyor, sadece KART olarak: gönderiler arası ayırıcı
+  // çizgi yok, 12pt boşluk var; kartın kendisi surface2 dolgu + 1px kenarlık
+  // ile yüzeyden ayrılıyor.
+  //
+  // Ölçüldü (maket): 350 genişlik, r16, surface2, dolgu 16,
+  // 1px rgba(255,255,255,0.06), kartlar arası boşluk 12.
   row: {
-    flexDirection: 'row', gap: 10,
-    paddingHorizontal: spacing.lg, paddingVertical: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.cardBorder,
+    flexDirection: 'row', gap: spacing.s12,
+    marginHorizontal: spacing.s20, marginBottom: spacing.s12,
+    padding: spacing.s16,
+    backgroundColor: colors.card, borderRadius: radius.lg,
+    borderWidth: 1, borderColor: colors.cardBorder,
   },
   main: { flex: 1, minWidth: 0 },
   head: { flexDirection: 'row', alignItems: 'center', gap: 5 },
@@ -140,13 +149,15 @@ const makeStyles = (colors) => StyleSheet.create({
   dot: { color: colors.text3, fontSize: type.caption },
   time: { color: colors.text3, fontSize: type.caption },
 
-  text: { color: colors.text, fontSize: type.subhead, lineHeight: 21, marginTop: 3 },
+  // Maket: gönderi gövdesi 15 / 400.
+  text: { color: colors.text, fontSize: type.subhead, fontWeight: '400', lineHeight: 21, marginTop: spacing.s4 },
 
   gameChip: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: 9,
-    backgroundColor: colors.card, borderRadius: radius.md,
+    // Maket: kart İÇİNDEKİ oyun kartı surface3 (bir tık üstü), r12, dolgu 8.
+    backgroundColor: colors.bgInput, borderRadius: radius.md,
     borderWidth: 1, borderColor: colors.cardBorder,
-    paddingRight: 10, overflow: 'hidden', alignSelf: 'flex-start', maxWidth: '100%',
+    paddingRight: spacing.s12, overflow: 'hidden', alignSelf: 'flex-start', maxWidth: '100%',
   },
   gameImg: { width: 46, height: 30 },
   gameName: { color: colors.text2, fontSize: type.caption, fontWeight: '600', flexShrink: 1 },

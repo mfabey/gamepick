@@ -31,7 +31,7 @@
   "src/components/FilterSheet.jsx": 6,
   "src/components/FriendActivity.jsx": 3,
   "src/components/GamePostCard.jsx": 9,
-  "src/components/PostCard.jsx": 9,
+  "src/components/PostCard.jsx": 5,
   "src/components/PostComposer.jsx": 7,
   "src/components/PublishSheet.jsx": 8,
   "src/components/ReportSheet.jsx": 7,

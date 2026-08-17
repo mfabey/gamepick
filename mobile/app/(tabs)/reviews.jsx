@@ -32,7 +32,7 @@ import PostCard from '../../src/components/PostCard';
 import PostComposer from '../../src/components/PostComposer';
 import ReportSheet from '../../src/components/ReportSheet';
 import { FeedSkeleton, Reveal } from '../../src/components/Skeleton';
-import { radius, spacing, type, PRESSED, NUMERIC, TAB_SPACE, motion, SECTION_TITLE } from '../../src/theme';
+import { radius, spacing, type, PRESSED, NUMERIC, TAB_SPACE, motion, SECTION_TITLE, CHIP_TEXT_ON } from '../../src/theme';
 import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useTimeToData } from '../../src/dev/perf';
@@ -399,7 +399,15 @@ function Header({ t, router, incoming }) {
         accessibilityLabel={t('soc.title')}
         style={({ pressed }) => [styles.friendsBtn, pressed && PRESSED]}
       >
-        <Ionicons name="people-outline" size={22} color={colors.text2} />
+        {/* MAKETTEN: cip degil, ETIKETLI hap. Olculdu — 121x36, r99,
+            surface3 dolgu, dolgu 4/12/4/4, ara 8; icinde 28pt yuvarlak
+            bir yuva, ardindan 13/600 etiket, sagda rozet.
+            Oncesinde ciplak bir kisi simgesiydi; "Arkadaslar"a gittigi
+            bicimden okunmuyordu. */}
+        <View style={styles.friendsIcon}>
+          <Ionicons name="people" size={16} color={colors.text2} />
+        </View>
+        <Text style={styles.friendsLabel}>{t('soc.title')}</Text>
         {incoming > 0 ? (
           <View style={styles.headBadge}>
             <Text style={[styles.headBadgeText, NUMERIC]}>{incoming > 9 ? '9+' : incoming}</Text>
@@ -425,17 +433,34 @@ const makeStyles = (colors) => StyleSheet.create({
   head: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     gap: spacing.md,
-    paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.md,
+    paddingHorizontal: spacing.s20, paddingTop: spacing.s8, paddingBottom: spacing.s16,
   },
   // flex:1 + shrink:0 — büyük yazı tipinde başlık sarınca kısayolu ezmesin
   // (anasayfa bölüm başlığında ölçülen kırılmanın aynısı).
-  h1: { flex: 1, color: colors.text, fontSize: type.title1, fontWeight: '800', letterSpacing: -0.6 },
-  friendsBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  headBadge: {
-    position: 'absolute', top: 6, right: 4,
-    minWidth: 17, height: 17, borderRadius: 9, paddingHorizontal: spacing.s4,
+  // Maket: ekran basligi 28 / 700 / -0.28.
+  h1: { flex: 1, color: colors.text, fontSize: type.title1, fontWeight: '700', letterSpacing: -0.28 },
+  // Maket: 121x36, r99, surface3, dolgu 4/12/4/4, ara 8.
+  friendsBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.s8,
+    height: 36, borderRadius: radius.pill, backgroundColor: colors.bgInput,
+    paddingLeft: spacing.s4, paddingRight: spacing.s12,
+    flexShrink: 0,
+  },
+  // Maketteki 28pt yuvarlak yuva (orada avatar; bizde simge).
+  friendsIcon: {
+    width: 28, height: 28, borderRadius: 14,
+    backgroundColor: colors.bgHover,
     alignItems: 'center', justifyContent: 'center',
-    backgroundColor: colors.accent, borderWidth: 2, borderColor: colors.bg,
+  },
+  friendsLabel: { ...CHIP_TEXT_ON, color: colors.text2 },
+  // Maket: 22x22, r99, marka dolgusu, 2px ZEMIN renginde halka (rozet
+  // hapin kenarina binerken kesintisiz gorunsun), metin 11/700 beyaz.
+  headBadge: {
+    position: 'absolute', top: -4, right: -6,
+    minWidth: 22, height: 22, borderRadius: 11,
+    borderWidth: 2, borderColor: colors.bg,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.accent,
   },
   headBadgeText: { color: '#fff', fontSize: type.caption2, fontWeight: '800' },
 
@@ -454,15 +479,24 @@ const makeStyles = (colors) => StyleSheet.create({
     paddingHorizontal: spacing.xl, paddingVertical: spacing.lg,
   },
 
-  tabs: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.lg, marginBottom: spacing.md },
-  tab: {
-    flex: 1, minHeight: 40, borderRadius: radius.md,
-    alignItems: 'center', justifyContent: 'center',
-    backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder,
+  // ── SEGMENT: MAKETTEN ──
+  // Maket segmenti bir KAP olarak ciziyor (350x40, r12, surface2, dolgu 4,
+  // ara 4) ve secili sekme kabin ICINDE r8'lik dolu bir kutu. Bizde uc ayri
+  // kutu yan yanaydi ve her birinin kendi kenarligi vardi; kap olmayinca
+  // "bunlar birbirinin alternatifi" bilgisi bicimden okunmuyordu.
+  tabs: {
+    flexDirection: 'row', gap: spacing.s4,
+    marginHorizontal: spacing.s20, marginBottom: spacing.md,
+    backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.s4,
   },
-  tabOn:      { backgroundColor: colors.bgInput, borderColor: colors.borderHover },
-  tabText:    { color: colors.text3, fontSize: type.footnote, fontWeight: '700' },
-  tabTextOn:  { color: colors.text },
+  tab: {
+    flex: 1, minHeight: 32, borderRadius: radius.sm,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  // Aktif dolgu surface4 (maket: rgb(42,44,51)) — kabin bir tik ustu.
+  tabOn:      { backgroundColor: colors.surfaceTile },
+  tabText:    { color: colors.text3, fontSize: type.footnote, fontWeight: '500' },
+  tabTextOn:  { color: colors.text, fontWeight: '600' },
 
 
 });
