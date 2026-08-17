@@ -34,7 +34,7 @@ import { TopFade, BottomFade } from '../../src/components/EdgeFade';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { radius, spacing, type, TAB_SPACE, PRESSED, PRESSED_CARD, NUMERIC, SECTION_TITLE } from '../../src/theme';
+import { radius, spacing, type, TAB_SPACE, PRESSED, PRESSED_CARD, NUMERIC, SECTION_TITLE, basiliYuzey } from '../../src/theme';
 import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { useTabBarScroll } from '../../src/context/TabBarContext';
 import { useLanguage } from '../../src/context/LanguageContext';
@@ -320,7 +320,7 @@ export default function ProfileScreen() {
             {week.hasActivity ? (
               <Pressable
                 onPress={() => router.push('/stats')}
-                style={({ pressed }) => [styles.week, pressed && PRESSED_CARD]}
+                style={({ pressed }) => [styles.week, pressed && PRESSED_CARD, pressed && styles.basili]}
               >
                 {/* Başlık satırı — maket: 15/600 başlık solda, 12/600
                     marka renginde "Gör ›" sağda. */}
@@ -640,7 +640,7 @@ function Tile({ icon, label, n, badge, locked, onPress }) {
   const { width } = useWindowDimensions();
   return (
     <Pressable
-      style={({ pressed }) => [styles.tile, { width: tileWidth(width) }, pressed && PRESSED_CARD]}
+      style={({ pressed }) => [styles.tile, { width: tileWidth(width) }, pressed && PRESSED_CARD, pressed && styles.basili]}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label}
@@ -665,6 +665,9 @@ function Tile({ icon, label, n, badge, locked, onPress }) {
 }
 
 const makeStyles = (colors) => StyleSheet.create({
+  // Maket: basmada %6 aydinlanma. Duz zeminde katman yerine karistirma;
+  // yon temaya gore (koyuda acilir, acikta koyulasir).
+  basili: { backgroundColor: basiliYuzey(colors) },
   safe: { flex: 1, backgroundColor: colors.bg },
   body: { padding: spacing.lg, paddingBottom: TAB_SPACE + 16 },
 

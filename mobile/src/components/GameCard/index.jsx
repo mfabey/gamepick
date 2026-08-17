@@ -110,19 +110,25 @@ function GameCard({ game, variant = 'grid', context, overlay, onPress, onLongPre
         pressed && PRESSED_CARD,
       ]}
     >
-      <GameCover uri={game?.image} name={game?.name} recyclingKey={String(game?.id ?? game?.appid ?? '')} style={kapakStil}>
-        {rozetler}
-      </GameCover>
+      {({ pressed }) => (
+        <>
+          {/* Aydınlanma KAPAĞA, karta değil: kartın metin bloğunun zemini
+              saydam, oraya %6 beyaz koymak sayfanın kendisini lekelerdi. */}
+          <GameCover uri={game?.image} name={game?.name} recyclingKey={String(game?.id ?? game?.appid ?? '')} style={kapakStil} lift={pressed}>
+            {rozetler}
+          </GameCover>
 
-      {/* SABİT YÜKSEKLİKLİ metin bloğu — kart uzar, yazı kırpılmaz. */}
-      <View style={styles.metin}>
-        <Text numberOfLines={2} style={styles.ad}>{game?.name}</Text>
-        {altSatir ? (
-          typeof altSatir === 'string'
-            ? <Text numberOfLines={1} style={[styles.baglam, onSale && !isFree && styles.baglamIndirim]}>{altSatir}</Text>
-            : altSatir
-        ) : null}
-      </View>
+          {/* SABİT YÜKSEKLİKLİ metin bloğu — kart uzar, yazı kırpılmaz. */}
+          <View style={styles.metin}>
+            <Text numberOfLines={2} style={styles.ad}>{game?.name}</Text>
+            {altSatir ? (
+              typeof altSatir === 'string'
+                ? <Text numberOfLines={1} style={[styles.baglam, onSale && !isFree && styles.baglamIndirim]}>{altSatir}</Text>
+                : altSatir
+            ) : null}
+          </View>
+        </>
+      )}
     </Pressable>
   );
 }

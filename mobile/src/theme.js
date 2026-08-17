@@ -207,6 +207,39 @@ export const PRESSED_CARD = Object.freeze({
 // ayrı bir View olarak koyuyor.
 export const PRESS_LIFT = 'rgba(255,255,255,0.06)';
 
+/**
+ * Basılan yüzeyin rengi — "%6 aydınlanma"nın düz zeminlerde karşılığı.
+ *
+ * Katman koymak yerine karıştırma: düz zeminli bir kartta sonuç birebir
+ * aynı (üstüne %6 beyaz koymakla rengi %6 beyaza kaydırmak aynı hesap) ama
+ * fazladan bir View gerektirmiyor. GÖRSEL üstündeki basmalarda
+ * karıştırılacak zemin yok; orası PRESS_LIFT katmanını kullanıyor.
+ *
+ * ── YÖN TEMAYA GÖRE DEĞİŞİYOR ──
+ * Maket koyu tema üzerine yazılmış ve "aydınlanma" diyor. Açık temada bu
+ * kural çalışmıyor: yüzey zaten beyaza yakın (#EFEFF2), %6 daha
+ * aydınlatınca fark ÖLÇÜLDÜ ve görünmüyor — rgb(240,240,243).
+ *
+ * Kuralın özü "parlaklaştır" değil, SAYFA ZEMİNİNDEN UZAKLAŞ: koyu temada
+ * bu aydınlanmak, açıkta koyulaşmak demek. İki temada da basılan yüzey
+ * çevresinden ayrışıyor.
+ */
+export function basiliYuzey(colors, oran = 0.06) {
+  const h = String(colors.card).replace('#', '');
+  const n = h.length === 3 ? h.split('').map((c) => c + c).join('') : h;
+  // Sayfa zemini koyu mu? Kanalların ortalaması eşik.
+  const zemin = String(colors.bg).replace('#', '');
+  const zn = zemin.length === 3 ? zemin.split('').map((c) => c + c).join('') : zemin;
+  const koyuZemin = (parseInt(zn.slice(0, 2), 16) + parseInt(zn.slice(2, 4), 16)
+                   + parseInt(zn.slice(4, 6), 16)) / 3 < 128;
+  const hedef = koyuZemin ? 255 : 0;
+  const k = (i) => {
+    const v = parseInt(n.slice(i, i + 2), 16);
+    return Math.round(v + (hedef - v) * oran);
+  };
+  return `rgb(${k(0)},${k(2)},${k(4)})`;
+}
+
 // Rakamların hizası — fiyat, saat, sayaç.
 // Orantılı yazıda "1" ile "8" farklı genişlikte olduğu için liste kaydırırken
 // fiyat sütunu titriyor. Tablo rakamları bunu durduruyor.

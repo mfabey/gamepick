@@ -29,6 +29,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 import PosterImage from './PosterImage';
 import Monogram from './Monogram';
+import { PRESS_LIFT } from '../theme';
 
 // tema-bagimsiz: oyun kapağının üstünde duruyor, zemin görselin kendisi
 const SCRIM = ['transparent', 'rgba(6,7,9,0.55)', 'rgba(6,7,9,0.96)'];
@@ -42,7 +43,7 @@ const FADE_MS = 200;
  * @param {object} [style]        dış kap (boyut/oran/köşe burayadan gelir)
  * @param {node}   [children]     rozetler, ad — karartmanın ÜSTÜNDE çizilir
  */
-export default function GameCover({ uri, name, recyclingKey, style, children, ...rest }) {
+export default function GameCover({ uri, name, recyclingKey, style, children, lift, ...rest }) {
   const [failed, setFailed] = useState(false);
 
   // GERİ DÖNÜŞÜM SIFIRLAMASI ŞART. FlashList kartları yeniden kullanıyor;
@@ -69,6 +70,13 @@ export default function GameCover({ uri, name, recyclingKey, style, children, ..
         />
       )}
       <LinearGradient colors={SCRIM} locations={SCRIM_STOPS} style={StyleSheet.absoluteFill} />
+      {/* BASMA AYDINLANMASI — maket: "%6 aydınlanma". Kapak bir GÖRSEL,
+          karıştırılacak düz zemini yok; o yüzden katman.
+          Rozetlerin ALTINDA: aydınlanma kapağa ait, etikete değil.
+          Bu dosyada stil sayfası yok (hepsi satır içi) — LIFT de öyle. */}
+      {lift ? (
+        <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: PRESS_LIFT }]} />
+      ) : null}
       {children}
     </View>
   );
