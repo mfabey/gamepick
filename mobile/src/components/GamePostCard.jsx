@@ -178,7 +178,8 @@ function GamePostCard({ game, onDismiss, tag }) {
 export default memo(GamePostCard);
 
 const makeStyles = (colors) => StyleSheet.create({
-  card: { marginHorizontal: spacing.lg, marginBottom: 26 },
+  // FAZ 1: ritim 24; kenar payi da maketin 20'si.
+  card: { marginHorizontal: spacing.s20, marginBottom: spacing.s24 },
 
   media: {
     width: '100%', borderRadius: radius.lg, overflow: 'hidden',

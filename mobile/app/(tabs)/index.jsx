@@ -430,7 +430,7 @@ function Section({ title, games, router, onDismiss }) {
   const styles = useStyles(makeStyles);
   if (!games || games.length === 0) return null;
   return (
-    <View style={{ marginTop: 26 }}>
+    <View style={{ marginTop: spacing.s24 }}>
       <View style={styles.sectionHead}>
         {/* BÜYÜK YAZI TİPİNDE ÜST ÜSTE BİNİYORDU. Ölçüldü (simülatör,
             accessibility-extra-large): başlık iki satıra sarıyor ama satırda

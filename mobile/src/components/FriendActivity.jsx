@@ -137,7 +137,8 @@ function names(g, t) {
 }
 
 const makeStyles = (colors) => StyleSheet.create({
-  wrap: { marginTop: 26 },
+  // FAZ 1: bolumler arasi ritim 26 -> 24 (olcege girdi).
+  wrap: { marginTop: spacing.s24 },
   head: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingHorizontal: spacing.s20, marginBottom: spacing.md,

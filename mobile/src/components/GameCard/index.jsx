@@ -75,7 +75,7 @@ function GameCard({ game, variant = 'grid', context, overlay, onPress, onLongPre
           <Text style={styles.tagFree}>{t('card.free')}</Text>
         </View>
       ) : onSale ? (
-        <View style={[styles.tagBadge, { backgroundColor: colors.accent }]}>
+        <View style={[styles.tagBadge, styles.tagSaleBg]}>
           <Text style={styles.tagSale}>-%{price.discount}</Text>
         </View>
       ) : null}
@@ -175,5 +175,10 @@ const makeStyles = (colors) => StyleSheet.create({
   // tema-bagimsiz: dolu yesil/kirmizi rozet uzerindeki metin
   tagFree: { fontSize: type.caption2, fontWeight: '800', color: '#04130d' },
   // tema-bagimsiz: dolu kirmizi rozet uzerindeki metin
-  tagSale: { fontSize: type.caption2, fontWeight: '800', color: '#fff' },
+  // FAZ 1: kirmizi dolgu KALKTI. Indirim bir BILGI, eylem degil —
+  // kirmizi yalnizca dokunulacak seyde. Metacritic rozetiyle ayni dil:
+  // koyu cam zemin + deger rengi.
+  // tema-bagimsiz: kapak gorselinin ustunde duruyor
+  tagSaleBg: { backgroundColor: 'rgba(8,10,14,0.75)' },
+  tagSale: { fontSize: type.caption2, fontWeight: '800', color: colors.green },
 });

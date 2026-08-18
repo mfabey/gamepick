@@ -356,8 +356,10 @@ const makeStyles = (colors) => StyleSheet.create({
     minWidth: 17, height: 17, borderRadius: 9,
     paddingHorizontal: spacing.xs,
     alignItems: 'center', justifyContent: 'center',
-    backgroundColor: colors.accent,
+    // FAZ 1: kirmizi DEGIL notr. "Okunmamis mesaj bir sayi, bir alarm
+    // degil" — eyleme donusmeyen kirmizi rozet karanlik desen sayiliyor.
+    backgroundColor: colors.bgInput,
     borderWidth: 2, borderColor: colors.bg,
   },
-  badgeText: { color: '#fff', fontSize: type.caption2, fontWeight: '800' },
+  badgeText: { color: colors.text, fontSize: type.caption2, fontWeight: '800' },
 });
