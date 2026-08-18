@@ -6,12 +6,13 @@ import { BottomFade } from '../../src/components/EdgeFade';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchTrending, fetchGames } from '../../src/api/games';
-import { radius, spacing, TAB_SPACE, PRESSED, type, SECTION_TITLE } from '../../src/theme';
+import { radius, spacing, TAB_SPACE, PRESSED, type, SECTION_TITLE, TOUCH_MIN } from '../../src/theme';
 import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { useTabBarScroll } from '../../src/context/TabBarContext';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useTimeToData } from '../../src/dev/perf';
 import FadeIn from '../../src/components/FadeIn';
+import Greeting from '../../src/components/Greeting';
 import GameCard from '../../src/components/GameCard';
 import { useQuery } from '../../src/hooks/useQuery';
 import { useTasteProfile } from '../../src/hooks/useTasteProfile';
@@ -29,6 +30,7 @@ import ReportSheet from '../../src/components/ReportSheet';
 import { fetchForYouCandidates } from '../../src/api/recommend';
 import { getReviewFeed, getFriendActivity, fetchPosts } from '../../src/api/social';
 import { getSession, subscribeSession } from '../../src/services/session';
+import { getCollections, subscribeCollections } from '../../src/services/collectionsStore';
 import { genreSlugsFor, rankCandidates } from '../../src/services/recommend';
 import { interleaveReviews, mergeSocial, orderHighlights, mergeHighlights, highlightIds } from '../../src/services/homeFeed';
 import { useTabPressAction, scrollRefToTop } from '../../src/hooks/useTabPressAction';
@@ -194,6 +196,60 @@ export default function HomeScreen() {
   //
   // HARMANLAMA ELEMEDEN SONRA: önce harmanlanıp sonra elenseydi bir oyun
   // kartı düştüğünde inceleme aralıkları kayardı.
+  // ── Selamlama verisi (Faz 1) ──
+  // Basamak sırası Faz 1'de yazılı: en somut olan kazanır. UYDURMA YOK —
+  // her basamak zaten çektiğimiz bir kaynaktan besleniyor, beslenemeyen
+  // basamak (bugün çıkanlar, inceleme yanıtları) hiç yazılmadı.
+
+  // 1) Kaydettiğin bir oyun indirimde.
+  //    Ayrı bir "istek listesi" yok; koleksiyonlar İSTEK LİSTESİNİN kendisi —
+  //    kullanıcının elle ayırdığı oyunlar. İndirim listesiyle kesişimini
+  //    alıyoruz ve en yüksek indirimli olanı seçiyoruz.
+  const [kayitli, setKayitli] = useState(() => getCollections());
+  useEffect(() => subscribeCollections(() => setKayitli(getCollections())), []);
+  const indirimliIstek = useMemo(() => {
+    if (!sale?.length || !kayitli?.length) return null;
+    const idler = new Set();
+    for (const k of kayitli) for (const g of k.games || []) idler.add(String(g.id));
+    if (idler.size === 0) return null;
+    const eslesen = sale.filter((g) => idler.has(String(g.id)) && (g.discount || 0) > 0);
+    if (eslesen.length === 0) return null;
+    return [...eslesen].sort((a, b) => (b.discount || 0) - (a.discount || 0))[0];
+  }, [sale, kayitli]);
+
+  // 2) Arkadaşların oynuyor. FriendActivity'nin EŞİĞİNİ paylaşıyoruz
+  //    (hasFriendSignal): şerit çizilmeyecek kadar zayıf bir sinyal
+  //    selamlamada da cümle kurmamalı.
+  const arkadasOzet = useMemo(() => {
+    if (!hasFriendSignal(friendGames)) return null;
+    const enCok = [...friendGames].sort((a, b) => (b.count || 0) - (a.count || 0))[0];
+    const kisi = Number(enCok?.count) || 0;
+    const ilk = enCok?.friends?.[0]?.name || enCok?.friend?.name || null;
+    if (!ilk || kisi < 1) return null;
+    return { kisi, ilk, oyun: enCok };
+  }, [friendGames]);
+
+  // Cümledeki her bağlamın kendi hedefi var — selamlama okunacak bir başlık
+  // değil, tek dokunuşluk bir kısayol. Oyuna giderken parametreler GameCard
+  // ile aynı: detay ekranı ad/kapak beklemeden çiziliyor.
+  const baglamaGit = useCallback((hedef, oyun) => {
+    if (hedef === 'game' && oyun?.id) {
+      router.push({
+        pathname: '/game/[id]',
+        params: {
+          id: String(oyun.id), name: oyun.name, image: oyun.image || '',
+          slug: oyun.rawgSlug || '', hasSteam: oyun.hasSteam ? '1' : '',
+        },
+      });
+      return;
+    }
+    if (hedef === 'friends') { router.push('/social'); return; }
+    // "Senin için" motorunun kendi ekranı deste — aynı useForYouFeed'i
+    // kullanıyor, dolayısıyla cümledeki sayı orada birebir karşılanıyor.
+    if (hedef === 'foryou')  { router.push('/swipe'); return; }
+    router.push('/reviews');
+  }, [router]);
+
   // ── Lider bölüm ──
   // Header'da eskiden dört şerit vardı (arkadaşlar, Senin İçin, trend, yeni,
   // indirim) ve hepsi aynı biçimdeydi; göz aralarında sıra kuramıyordu. Daha
@@ -298,33 +354,18 @@ export default function HomeScreen() {
               biniyordu. Ölçeklenmeyi tamamen KAPATMAK yanlış olurdu (büyük
               yazıya ihtiyacı olan kullanıcı markayı da okuyamaz); üst sınır
               konuyor — 1.4 kata kadar büyüyor, sonra duruyor. */}
-          {/* KELIME MARKASI MAKETTEN. Handoff'un HTML'i "gamerisen" yazıyor:
-              küçük harf, arkasında kırmızı nokta, SOLA yaslı. Bizde
-              "GAMERISEN" büyük harf ve ortalıydı — handoff'un HTML'i
-              README'yi yener (handoff CLAUDE.md: "piksel doğruluğunun
-              kaynağı"). Nokta ayrı bir View: yazının içine "." koymak onu
-              yazı tipinin nokta boşluğuna bağlardı, makette ise yuvarlak ve
-              yazıdan bağımsız bir işaret. */}
-          <View style={styles.brandRow}>
-            <Text style={styles.brand} maxFontSizeMultiplier={1.4} numberOfLines={1}>gamerisen</Text>
-            <View style={styles.brandDot} />
-          </View>
-          {/* MAKET: sag ustte IKI adet 36x36 yuvarlak, surface3 dolgulu,
-              aralari 12. Bizde tek saydam 40x40 vardi.
+          {/* KELİME MARKASI — YENİ TASARIM PROJESİNE GÖRE.
+              Eski handoff'un maketi küçük harf "gamerisen" + kırmızı nokta
+              gösteriyordu ve öyle uygulanmıştı. Yeni projenin Faz 1 kareleri
+              (üçü de: iOS koyu, iOS açık, Android) "GAMERISEN" yazıyor.
+              Kullanıcı çelişkide yeni projeyi seçti.
 
-              ARAMA ARTIK BURADA. Oncesinde asagida tam genislikte bir kutuydu
-              ama o kutu METIN ALMIYORDU -- yalnizca /games'e goturen bir
-              dugmeydi. Ikona inince islev aynen korunuyor, hedef ayni. */}
+              maxFontSizeMultiplier 1.4 KALIYOR: erişilebilirlik boyutlarında
+              marka ekran genişliğini aşıp haber ikonunun üstüne biniyordu. */}
+          <Text style={styles.brand} maxFontSizeMultiplier={1.4} numberOfLines={1}>GAMERISEN</Text>
+          {/* Faz 1 karelerinde sağ üstte TEK simge var (haberler); arama
+              aşağıda kendi kutusunda. Arama ikonu buradan kalktı. */}
           <View style={styles.topRight}>
-            <Pressable
-              style={({ pressed }) => [styles.topBtn, pressed && PRESSED]}
-              onPress={() => router.push('/games')}
-              accessibilityRole="button"
-              accessibilityLabel={t('hero.search')}
-              hitSlop={6}
-            >
-              <Ionicons name="search" size={19} color={colors.text2} />
-            </Pressable>
             <Pressable
               style={({ pressed }) => [styles.topBtn, pressed && PRESSED]}
               onPress={() => router.push('/news')}
@@ -332,21 +373,43 @@ export default function HomeScreen() {
               accessibilityLabel={t('news.title')}
               hitSlop={6}
             >
-              <Ionicons name="newspaper-outline" size={19} color={colors.text2} />
+              <Ionicons name="newspaper-outline" size={22} color={colors.text} />
             </Pressable>
           </View>
         </View>
 
-        {/* ── Arama ──
-            Eskiden burada bir hero vardı: CANLI rozeti, "Sıradaki oyununu
-            keşfet" başlığı ve alt metni. Üçü birlikte ekranın ilk perdesini
-            doldurup içeriği (haberler, bölümler) kıvrımın altına itiyordu.
-            Kaldırıldı — marka zaten üstte, aramanın ne işe yaradığı da
-            kendi metninden belli.
+        {/* ── Selamlama (Faz 1) ──
+            Marka satırının ALTINDA, aramanın ÜSTÜNDE; kaydırmada gider
+            (yapışkan değil). Faz 1: "Yapışkan olsa kalıcı bir kabuk olurdu —
+            o zaman içerikle yarışırdı." */}
+        <FadeIn delay={40}>
+          <Greeting
+            name={session?.user?.name || null}
+            saleWish={indirimliIstek}
+            friends={arkadasOzet}
+            forYouCount={forYou.length}
+            isCold={isCold}
+            onContext={baglamaGit}
+          />
+        </FadeIn>
 
-            Daha önce bu bloktan çıkanlar: kaydırarak keşif (sağ üstteki
-            parlayan ikon), doğal dil ile keşif (onboarding + Profil) ve
-            video akışı (alt navigasyonda kendi sekmesi). */}
+        {/* ── Arama ──
+            YENİ TASARIM PROJESİNE GÖRE GERİ GELDİ. Eski handoff'un maketi
+            aramayı başlıktaki bir ikona indiriyordu ve öyle uygulanmıştı;
+            Faz 1'in üç karesi de aramayı kendi kutusunda gösteriyor ve karar
+            tablosunda gerekçesi yazılı: "Ekranın tek kırmızısı: 44×44 dolgulu
+            düğme — Von Restorff + Fitts. Kırmızı tek anlam taşıyor: buraya
+            dokun."
+
+            Kutu METİN ALMIYOR, /games'e götürüyor — arama alanı orada. */}
+        <FadeIn delay={100}>
+          <Pressable style={({ pressed }) => [styles.search, pressed && PRESSED]} onPress={() => router.push('/games')}>
+            <Ionicons name="search" size={19} color={colors.text3} />
+            <Text style={styles.searchText}>{t('hero.search')}</Text>
+            <View style={styles.searchBtn}><Ionicons name="arrow-forward" size={16} color="#fff" /></View>
+          </Pressable>
+        </FadeIn>
+
         {/* Not: Kayan kapak şeridi kaldırıldı. Trend/Yeni oyunları zaten
             aşağıdaki kendi bölümlerinde gösteriyoruz; şerit aynı oyunları
             ikinci kez, üstelik başlıksız gösterdiği için haberlerin önünü
@@ -459,7 +522,10 @@ const HomeCard = memo(function HomeCard({ game, router, onDismiss }) {
       game={game}
       variant="rail"
       onPress={() => go(router, game)}
-      onLongPress={onDismiss ? () => onDismiss(game) : undefined}
+      // FAZ 1: eleme artık GÖRÜNÜR bir "×". `onDismiss` yalnızca "Senin için"
+      // şeridinden geliyor — Yeni ve İndirim şeritleri onu göndermiyor,
+      // dolayısıyla orada daire de çıkmıyor.
+      onDismiss={onDismiss}
     />
   );
 });
@@ -473,12 +539,12 @@ const makeStyles = (colors) => StyleSheet.create({
   // Başlık tam genişlikte kalsın diye listenin yatay dolgusu geri alınıyor.
   // paddingBottom ŞART: başlığın son bölümü (İndirimdekiler) ile altındaki
   // iki sütunlu ızgara bitişik duruyordu, ızgara o bölümün devamı gibi
-  // görünüyordu. 26 = bölümler arası boşlukla aynı ritim.
-  headerWrap: { paddingBottom: 26 },
+  // görünüyordu. 24 = bölümler arası boşlukla aynı ritim (Faz 1: 26 → 24).
+  headerWrap: { paddingBottom: spacing.s24 },
   // Akıştaki inceleme kartı, oyun gönderileriyle AYNI dikey ritmi tutuyor
-  // (GamePostCard marginBottom: 26). Bileşenin kendi 8'lik boşluğu kalsaydı
+  // (GamePostCard marginBottom: s24). Bileşenin kendi 8'lik boşluğu kalsaydı
   // incelemeler bir sonraki oyuna yapışık görünürdü.
-  feedReview: { marginBottom: 26 },
+  feedReview: { marginBottom: spacing.s24 },
   // Dikey dolgu 6/4 idi ve 40px ikon bandı taşırıyordu; marka ile ikon
   // birbirine değiyordu. Bant ikonun boyuna göre açıldı.
   // Marka artık ORTALI DEĞİL, sola yaslı (makette öyle).
@@ -486,7 +552,7 @@ const makeStyles = (colors) => StyleSheet.create({
   // DİKEY. justifyContent'i değiştirmek yatayda hiçbir şey yapmıyor —
   // ilk denemede onu değiştirdim ve marka ortada kaldı.
   topBar: {
-    alignItems: 'flex-start', justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center',
     paddingHorizontal: spacing.s20, paddingTop: spacing.s8, paddingBottom: spacing.s12,
     minHeight: 52,
   },
@@ -503,34 +569,46 @@ const makeStyles = (colors) => StyleSheet.create({
     backgroundColor: colors.bgInput,
     alignItems: 'center', justifyContent: 'center',
   },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.s4 },
+  // Faz 1: arama ekranın tek kırmızısı. Kutu nötr, düğme accent.
+  search: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.s12,
+    marginTop: spacing.s12, marginHorizontal: spacing.s20,
+    backgroundColor: colors.card, borderColor: colors.borderHover, borderWidth: 1.5,
+    borderRadius: radius.lg, height: 56, paddingLeft: spacing.s16, paddingRight: spacing.s8,
+  },
+  searchText: { flex: 1, color: colors.text3, fontSize: type.subhead },
+  // 44×44 — Faz 1 ölçüsü ve HIG dokunma hedefi.
+  searchBtn: {
+    width: TOUCH_MIN, height: TOUCH_MIN, borderRadius: radius.md,
+    backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center',
+  },
   // letterSpacing 1.5 KALKTI: o değer BÜYÜK HARF yazı içindi. Küçük harf
   // kelime markasında harf aralığı açmak kelimeyi dağıtıyor.
   // Maketten olculdu: 22px / 700 / -0.44px. Bizde 20 / 900 / 0 idi.
-  brand: { fontSize: type.title3, fontWeight: '700', color: colors.text, letterSpacing: -0.44 },
+  // Faz 1 kareleri: GAMERISEN, ortalı. Büyük harf marka olduğu için
+  // harf aralığı geri geldi.
+  brand: { fontSize: type.headline, fontWeight: '900', color: colors.text, letterSpacing: 1.5 },
   // Makette markanın hemen ardındaki kırmızı işaret.
   //
   // Dikey yer TABANA bağlı, keyfi bir marginTop'a değil: ilk denemede
   // `marginTop: 6` yazdım, boşluk cırcırı yakaladı ve haklıydı — 6 ölçekte
   // yok. flex-end + 4pt, noktayı yazının taban çizgisine oturtuyor ve yazı
-  // boyu değişse de orada kalıyor.
-  brandDot: {
-    width: 6, height: 6, borderRadius: 3,
-    backgroundColor: colors.accent,
-    alignSelf: 'flex-end', marginBottom: spacing.s4,
-  },
 
 
   // gap eklendi: başlık sarınca iki öğe birbirine yapışıyordu.
   sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.s8, paddingHorizontal: spacing.s20, marginBottom: spacing.md },
-  sectionTitle: { ...SECTION_TITLE, color: colors.text },
+  sectionTitle: { ...SECTION_TITLE, color: colors.text2 },
   // Bölüm başına bir tane olduğu için ekranda üç kez tekrarlıyordu. Gideceği
   // yeri "›" zaten söylüyor; vurgu rengi buraya değil, sayfadaki tek gerçek
   // eyleme (arama düğmesi) ait.
   // MAKET KIRMIZI DIYOR. Bizde text2 idi ve gerekcesi yaziliydi ("ekran
   // basina en cok 3 kirmizi oge"). Maket birebir izleniyor; ikisi
   // arasindaki gerilim handoff'un kendi icinde -- bkz. commit.
-  viewAll: { fontSize: type.footnote, color: colors.accent, fontWeight: '600' },
+  // FAZ 1 ÖZ-DENETİMİ: "Kırmızı: içerik katmanında BİR TANE (arama
+  // düğmesi)." "Tümü ›" kırmızıydı ve her bölümde tekrar ediyordu —
+  // beş bölümde beş kırmızı, arama düğmesinin ayırt ediciliği bitiyordu.
+  // Maket ölçüsü: 13 · 700 · #9aa3b0 (koyu) / #5a6270 (açık) = text2.
+  viewAll: { fontSize: type.footnote, color: colors.text2, fontWeight: '700' },
   row: { paddingHorizontal: spacing.s20, gap: spacing.md },
 
   // tema-bagimsiz: oyun kapaginin ustundeki rozet; zemin gorsel

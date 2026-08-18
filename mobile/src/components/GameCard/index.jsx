@@ -22,7 +22,7 @@
 // kırpılıyordu.
 // ─────────────────────────────────────────────────────────────────────────────
 import { memo } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import GameCover from '../GameCover';
@@ -39,9 +39,10 @@ import { KART, VARYANT } from './variants';
  * @param {node}    overlay   kapağın ÜSTÜNE binen rozetler (puan, indirim)
  * @param {func}    onPress
  * @param {func}   [onLongPress]
+ * @param {func}   [onDismiss] verilirse kapakta 26pt "×" çıkar (yalnız öneri)
  * @param {object} [style]    dış kap (ızgara hücresi genişliği buradan)
  */
-function GameCard({ game, variant = 'grid', context, overlay, onPress, onLongPress, style }) {
+function GameCard({ game, variant = 'grid', context, overlay, onPress, onLongPress, onDismiss, style }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const { t, formatPrice } = useLanguage();
@@ -71,16 +72,43 @@ function GameCard({ game, variant = 'grid', context, overlay, onPress, onLongPre
         </View>
       ) : null}
       {isFree ? (
-        <View style={[styles.tagBadge, { backgroundColor: colors.green }]}>
+        <View style={[styles.tagBadge, { backgroundColor: colors.green }, onDismiss && styles.tagBadgeKaydir]}>
           <Text style={styles.tagFree}>{t('card.free')}</Text>
         </View>
       ) : onSale ? (
-        <View style={[styles.tagBadge, styles.tagSaleBg]}>
+        <View style={[styles.tagBadge, styles.tagSaleBg, onDismiss && styles.tagBadgeKaydir]}>
           <Text style={styles.tagSale}>-%{price.discount}</Text>
         </View>
       ) : null}
     </>
   );
+
+  // ── "×" — ÖZERKLİK (Faz 1) ────────────────────────────────────────────────
+  // "Yalnızca 'Senin için' şeridinde, 26pt sessiz daire; uzun basınca
+  //  'Neden bunu görüyorum?'. Katalog şeritlerinde (Yeni, İndirim) YOK —
+  //  orada eleyecek bir öneri yok, sadece liste var."
+  //
+  // Bu yüzden bir varyant özelliği değil, ÇAĞRI YERİNİN propu: kartın kendisi
+  // önerilip önerilmediğini bilemez, onu diziyi kuran ekran bilir.
+  //
+  // Eskiden eleme KARTIN TAMAMINA uzun basmaktı: keşfedilemezdi ve yanlışlıkla
+  // tetikleniyordu. Artık görünür bir hedefi var; uzun basma da boşa gitmiyor,
+  // gerekçeyi açıklıyor.
+  const carpi = onDismiss ? (
+    <Pressable
+      onPress={() => onDismiss(game)}
+      onLongPress={() => Alert.alert(t('home.whyThis'), t('home.whyThisBody'))}
+      delayLongPress={350}
+      accessibilityRole="button"
+      accessibilityLabel={t('home.notInterested')}
+      // 26pt daire HIG'in 44'ünün altında; fark hitSlop'la kapanıyor —
+      // dokunma hedefi 44, çizilen daire 26.
+      hitSlop={9}
+      style={({ pressed }) => [styles.carpi, pressed && PRESSED]}
+    >
+      <Text style={styles.carpiText} allowFontScaling={false}>×</Text>
+    </Pressable>
+  ) : null;
 
   // TEK SATIR bağlam (handoff: "tarih, fiyat, mağaza ya da arkadaş").
   // Eskiden tür + fiyat İKİ bilgi aynı satırdaydı; tasarım tek bilgi istiyor.
@@ -116,8 +144,17 @@ function GameCard({ game, variant = 'grid', context, overlay, onPress, onLongPre
         <>
           {/* Aydınlanma KAPAĞA, karta değil: kartın metin bloğunun zemini
               saydam, oraya %6 beyaz koymak sayfanın kendisini lekelerdi. */}
-          <GameCover uri={game?.image} name={game?.name} recyclingKey={String(game?.id ?? game?.appid ?? '')} style={kapakStil} lift={pressed}>
+          <GameCover
+            uri={game?.image} name={game?.name}
+            recyclingKey={String(game?.id ?? game?.appid ?? '')}
+            style={kapakStil} lift={pressed}
+            // Sosyal kartın sol alt köşesi ARKADAŞ AVATARINA ait
+            // (FriendActivity `overlay` ile koyuyor) — "kapak yok" notu
+            // oraya yazılsa avatarın ardında yarım kalırdı.
+            kapakNotu={variant !== 'social'}
+          >
             {rozetler}
+            {carpi}
           </GameCover>
 
           {/* SABİT YÜKSEKLİKLİ metin bloğu — kart uzar, yazı kırpılmaz. */}
@@ -138,6 +175,9 @@ function GameCard({ game, variant = 'grid', context, overlay, onPress, onLongPre
 // `game` referansı liste yeniden sıralanmadıkça değişmiyor → gereksiz render yok.
 export default memo(GameCard);
 
+// Maket ölçüsü: 26pt sessiz daire.
+const CARPI = 26;
+
 const makeStyles = (colors) => StyleSheet.create({
   kart: { gap: KART.metinGap },
   // Maket: r16, surface2, 1px kenarlik. Kapak kartin ICINDE oldugu icin
@@ -151,10 +191,14 @@ const makeStyles = (colors) => StyleSheet.create({
   // Kapak zemini kartın kendisiyle aynı: görsel yüklenene kadar boşluk
   // fark edilmiyor. Monogram zaten GameCover içinde devreye giriyor.
   kapak: { width: '100%', borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.card },
-  metin: { gap: KART.satirGap, minHeight: KART.adMinHeight },
+  metin: { gap: KART.satirGap },
   // HTML'den ölçüldü: 13 / 600 / 1.3. tokens.json'daki `cardTitle: 17` ile
   // çelişiyor; handoff'un kendi kuralı HTML'i piksel kaynağı sayıyor.
-  ad: { color: colors.text, fontSize: type.footnote, fontWeight: '600', lineHeight: 17 },
+  // 13 / lineHeight 16 / 2 satır = 32pt sabit blok (bkz. KART.adYukseklik).
+  ad: {
+    color: colors.text, fontSize: type.footnote, fontWeight: '600',
+    lineHeight: 16, minHeight: KART.adYukseklik,
+  },
   baglam: { color: colors.text3, fontSize: type.caption },
   baglamIndirim: { color: colors.accentText, fontWeight: '700' },
 
@@ -172,6 +216,18 @@ const makeStyles = (colors) => StyleSheet.create({
     position: 'absolute', top: spacing.sm, left: spacing.sm,
     borderRadius: radius.md, paddingHorizontal: spacing.s8, paddingVertical: spacing.s4,
   },
+  // "×" de sol üstte duruyor. İkisi birden varsa (indirimdeki bir öneri)
+  // etiket dairenin ALTINA iniyor — üst üste binmesinler.
+  tagBadgeKaydir: { top: spacing.sm + CARPI + spacing.s4 },
+  carpi: {
+    position: 'absolute', top: spacing.sm, left: spacing.sm,
+    width: CARPI, height: CARPI, borderRadius: radius.pill,
+    alignItems: 'center', justifyContent: 'center',
+    // tema-bagimsiz: oyun kapaginin ustunde duruyor, zemin gorsel
+    backgroundColor: 'rgba(8,10,14,0.6)',
+  },
+  // tema-bagimsiz: koyu cam dairenin uzerinde
+  carpiText: { color: '#fff', fontSize: 15, lineHeight: 18 },
   // tema-bagimsiz: dolu yesil/kirmizi rozet uzerindeki metin
   tagFree: { fontSize: type.caption2, fontWeight: '800', color: '#04130d' },
   // tema-bagimsiz: dolu kirmizi rozet uzerindeki metin

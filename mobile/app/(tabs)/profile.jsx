@@ -776,7 +776,7 @@ const makeStyles = (colors) => StyleSheet.create({
   // ── Gruplar ──
   sectionHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   sectionLabel: {
-    ...SECTION_TITLE, color: colors.text,
+    ...SECTION_TITLE, color: colors.text2,
     marginTop: spacing.s24, marginBottom: spacing.s8,
   },
   // ── Kısayol ızgarası ──

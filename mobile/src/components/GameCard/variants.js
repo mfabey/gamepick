@@ -32,7 +32,15 @@ export const KART = {
   gap: 12,          // kapak grubu ↔ (varsa) alt eylem
   metinGap: 8,      // kapak ↔ metin bloğu
   satirGap: 4,      // ad ↔ bağlam
-  adMinHeight: 44,  // "sabit yükseklikli blok" — erişilebilirlikte kart uzar
+  // FAZ 1 — AD BLOĞU 2 SATIR / 32pt SABİT (13 · lineHeight 16 · height 32).
+  // Şerit kartları arasında bağlam satırları AYNI HİZAYA gelsin diye sabit:
+  // ad bir satırsa da iki satırsa da blok 32pt. Ölçüldü (maket, "Senin için"
+  // şeridi): `line-height:16px; height:32px`.
+  //
+  // minHeight, height DEĞİL: erişilebilirlik punto ölçeğinde 32'ye sığmayan
+  // ad kırpılırdı. Varsayılan ölçekte ikisi aynı sonucu veriyor — hizalama
+  // orada zaten sağlanıyor.
+  adYukseklik: 32,
 };
 
 export const VARYANT = {
@@ -45,10 +53,15 @@ export const VARYANT = {
   // Anasayfa ve videolar şeritleri. Genişlik SABİT, yükseklik içerikle esner
   // ("Şerit yüksekliği içeriğe göre esner, kart genişliği sabit kalır —
   // satır ritmi bozulmaz").
+  //
+  // KAPAK 3:4 — 160 DEĞİL. Eski handoff "148×160" diyordu; yeni tasarımın
+  // üç telefon karesi de 148×197 ölçtü (= 3/4) ve karar tablosu bunu
+  // "kapak 3/4" diye yazıyor. Izgara karesiyle aynı oran: iki yüzeydeki
+  // aynı oyun aynı biçimde duruyor, 0.925 ↔ 0.75 farkı kalkıyor.
   rail: {
     genislik: 148,
-    kapakOran: null,
-    kapakYukseklik: 160,
+    kapakOran: 3 / 4,
+    kapakYukseklik: null,
   },
   // Arkadaş şeridi / topluluk. HTML: "16:9 + arkadaş cam etiketi".
   // Arkadas seridi / topluluk. HTML: "16:9 + arkadas cam etiketi".

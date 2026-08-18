@@ -618,10 +618,10 @@ const makeStyles = (colors) => StyleSheet.create({
 
   list: { paddingHorizontal: spacing.md, paddingBottom: 30 },
   sectionLabel: {
-    ...SECTION_TITLE, color: colors.text,
+    ...SECTION_TITLE, color: colors.text2,
     marginBottom: spacing.s8, marginTop: spacing.xs,
   },
-  inlineEmpty: { color: colors.text2, fontSize: type.footnote, textAlign: 'center', marginTop: 26, lineHeight: 20 },
+  inlineEmpty: { color: colors.text2, fontSize: type.footnote, textAlign: 'center', marginTop: spacing.s24, lineHeight: 20 },
 
   personRow: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 9 },
   personBody: { flex: 1 },

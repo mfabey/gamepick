@@ -532,6 +532,9 @@ export default {
   'discover.empty': 'Bu tarife uygun oyun bulunamadı. Biraz daha farklı anlatmayı dene.',
   'discover.error': 'Arama şu an yapılamadı. Lütfen tekrar dene.',
   'discover.entry': 'Nasıl bir oyun istediğini anlat',
+  'cover.none': 'kapak yok',
+  'home.whyThis': 'Neden bunu görüyorum?',
+  'home.whyThisBody': 'Kütüphanendeki ve beğendiğin oyunların türlerine bakılarak seçildi. Hiçbir zaman kimseye gösterilmiyor.',
   'home.notInterested': 'İlgilenmiyorum',
   'home.dismissPrompt': 'Bu oyun önerilerden kaldırılsın mı?',
   'common.cancel': 'İptal',
@@ -613,4 +616,15 @@ export default {
   'prof.steamConnected': 'Steam bağlı',
   'home.friendsCount': 'kişi',
   'home.hoursShort': 'sa',
+
+  // ── Selamlama bloğu (Faz 1) ──
+  'greet.morning': 'Günaydın',
+  'greet.day': 'Merhaba',
+  'greet.evening': 'İyi akşamlar',
+  'greet.night': 'İyi geceler',
+  'greet.ctxSale': 'İstek listendeki {ad} %{n} indirimde.',
+  'greet.ctxFriends': '{ad} ve {n} kişi bu hafta yeni bir şey oynadı.',
+  'greet.ctxFriend': '{ad} bu hafta yeni bir şey oynadı.',
+  'greet.ctxForYou': 'Zevkine göre {n} yeni oyun bulduk.',
+  'greet.ctxFallback': 'Bu hafta en çok konuşulanlar.',
 };

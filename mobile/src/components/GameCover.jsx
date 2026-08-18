@@ -42,8 +42,9 @@ const FADE_MS = 200;
  * @param {string} [recyclingKey] FlashList geri dönüşümünde görsel karışmasın
  * @param {object} [style]        dış kap (boyut/oran/köşe burayadan gelir)
  * @param {node}   [children]     rozetler, ad — karartmanın ÜSTÜNDE çizilir
+ * @param {bool}  [kapakNotu]     kapak yoksa köşedeki 11pt not (sol alt dolu ise false)
  */
-export default function GameCover({ uri, name, recyclingKey, style, children, lift, ...rest }) {
+export default function GameCover({ uri, name, recyclingKey, style, children, lift, kapakNotu = true, ...rest }) {
   const [failed, setFailed] = useState(false);
 
   // GERİ DÖNÜŞÜM SIFIRLAMASI ŞART. FlashList kartları yeniden kullanıyor;
@@ -56,7 +57,7 @@ export default function GameCover({ uri, name, recyclingKey, style, children, li
   return (
     <View style={style}>
       {failed || !uri ? (
-        <Monogram name={name} style={StyleSheet.absoluteFill} />
+        <Monogram name={name} style={StyleSheet.absoluteFill} not={kapakNotu} />
       ) : (
         <PosterImage
           uri={uri}

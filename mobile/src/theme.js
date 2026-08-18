@@ -376,28 +376,28 @@ export const TAB_SPACE = 104;
 export const TOUCH_MIN = 44;
 
 // ─────────────────────────────────────────────────────────────────────────────
-// BÖLÜM BAŞLIĞI — maketten ÖLÇÜLDÜ, README'den değil.
+// BÖLÜM BAŞLIĞI — ÜSTYAZI (overline), başlık değil.
 //
-// Handoff HTML'i tarayıcıda açılıp elementler ölçüldü (handoff CLAUDE.md'nin
-// kendi talimatı: "tarayıcıda aç ve elementi ölç; tahmin etme"):
+// ── BU DEĞER BİR KEZ YANLIŞ DEĞİŞTİRİLDİ, GERİ ALINDI ──
+// Eski handoff'un maketi ölçüldüğünde 17/650/cümle düzeni çıkmıştı ve öyle
+// uygulandı. Yeni tasarım projesi (Faz 1, "00 · Faz 0'da düzelttiğim üç
+// şey") bunu AÇIKÇA düzeltiyor:
 //
-//   "Yeni Çıkanlar"  →  17px / 650 / -0.17px / text1 / CÜMLE DÜZENİ
+//   "Bölüm başlığı title3 22 değil. Kod caption 12 · Bold · uppercase ·
+//    ls 1.1 · text2 kullanıyor ve BU DAHA DOĞRU: başlık bir üstyazı
+//    (overline), içerikle yarışmıyor."
 //
-// Bizde 12px / 700 / +1.1 / text2 / BÜYÜK HARF idi. Maket hiçbir yerde büyük
-// harf kullanmıyor; uygulamada 17 yerde vardı. Fark yalnızca boyut değil
-// TON: harf aralığı açılmış büyük harf bağırıyor, cümle düzeni konuşuyor.
+// Yani kodun ÖNCEKİ hâli doğruymuş. Fark ton: 17pt bir başlık kapakların
+// dikkatini bölüyor, 12pt üstyazı yalnızca gruplandırma yapıyor.
 //
-// AĞIRLIK 650 DEĞİL 600: React Native fontWeight'te yalnızca yüzlük
-// basamakları kabul ediyor ('100'…'900'). 650 yazılsaydı sessizce
-// yuvarlanırdı; hangi değere yuvarlandığı platforma kalırdı.
-//
-// RENK BURADA YOK: palete bağlı ve bu nesne modül düzeyinde donuyor.
-// Çağrı yeri kendi `colors.text`ini ekliyor.
+// Renk BURADA YOK: palete bağlı. Çağrı yeri `colors.text2` ekliyor —
+// üstyazı ikincil, birincil değil.
 // ─────────────────────────────────────────────────────────────────────────────
 export const SECTION_TITLE = Object.freeze({
-  fontSize: type.body,      // 17
-  fontWeight: '600',
-  letterSpacing: -0.17,
+  fontSize: type.caption,      // 12
+  fontWeight: '700',
+  textTransform: 'uppercase',
+  letterSpacing: 1.1,
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -530,6 +530,9 @@ export default {
   'discover.empty': 'No games matched that description. Try describing it a bit differently.',
   'discover.error': 'Search failed right now. Please try again.',
   'discover.entry': 'Describe the game you want',
+  'cover.none': 'no cover',
+  'home.whyThis': 'Why am I seeing this?',
+  'home.whyThisBody': 'Picked from the genres of games in your library and the ones you liked. This is never shown to anyone else.',
   'home.notInterested': 'Not interested',
   'home.dismissPrompt': 'Remove this game from recommendations?',
   'common.cancel': 'Cancel',
@@ -611,4 +614,15 @@ export default {
   'prof.steamConnected': 'Steam connected',
   'home.friendsCount': 'friends',
   'home.hoursShort': 'h',
+
+  // ── Selamlama bloğu (Faz 1) ──
+  'greet.morning': 'Good morning',
+  'greet.day': 'Hello',
+  'greet.evening': 'Good evening',
+  'greet.night': 'Good night',
+  'greet.ctxSale': '{ad} on your wishlist is {n}% off.',
+  'greet.ctxFriends': '{ad} and {n} others played something new this week.',
+  'greet.ctxFriend': '{ad} played something new this week.',
+  'greet.ctxForYou': 'We found {n} new games for your taste.',
+  'greet.ctxFallback': 'Most talked about this week.',
 };

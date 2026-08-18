@@ -143,7 +143,7 @@ const makeStyles = (colors) => StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingHorizontal: spacing.s20, marginBottom: spacing.md,
   },
-  title: { ...SECTION_TITLE, color: colors.text, flex: 1 },
+  title: { ...SECTION_TITLE, color: colors.text2, flex: 1 },
   // Maket: 12 / 400 / text3.
   ozet: { fontSize: type.caption, fontWeight: '400', color: colors.text3 },
   strip: { paddingHorizontal: spacing.s20, gap: spacing.md },

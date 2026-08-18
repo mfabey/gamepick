@@ -198,7 +198,7 @@ const makeStyles = (colors) => StyleSheet.create({
   divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.cardBorder, marginLeft: 60 },
 
   sectionLabel: {
-    ...SECTION_TITLE, color: colors.text,
+    ...SECTION_TITLE, color: colors.text2,
     marginTop: spacing.s24, marginBottom: spacing.s8,
   },
   emptyText: { color: colors.text2, fontSize: type.footnote, paddingVertical: 6 },

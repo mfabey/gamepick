@@ -137,5 +137,5 @@ const makeStyles = (colors) => StyleSheet.create({
   },
   replyText: { color: colors.text3, fontSize: type.footnote },
 
-  empty: { color: colors.text3, fontSize: type.footnote, textAlign: 'center', paddingVertical: 26 },
+  empty: { color: colors.text3, fontSize: type.footnote, textAlign: 'center', paddingVertical: spacing.s24 },
 });

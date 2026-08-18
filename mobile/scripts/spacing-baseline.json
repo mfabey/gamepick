@@ -1,5 +1,4 @@
 {
-  "app/(tabs)/index.jsx": 2,
   "app/(tabs)/messages.jsx": 2,
   "app/(tabs)/profile.jsx": 14,
   "app/(tabs)/reviews.jsx": 4,
@@ -18,10 +17,10 @@
   "app/lists.jsx": 14,
   "app/news.jsx": 12,
   "app/onboarding.jsx": 7,
-  "app/post/[id].jsx": 4,
+  "app/post/[id].jsx": 3,
   "app/settings.jsx": 2,
   "app/social-settings.jsx": 9,
-  "app/social.jsx": 28,
+  "app/social.jsx": 27,
   "app/stats.jsx": 16,
   "app/steam-friends.jsx": 8,
   "app/swipe.jsx": 13,

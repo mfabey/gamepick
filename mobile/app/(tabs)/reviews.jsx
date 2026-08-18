@@ -465,7 +465,7 @@ const makeStyles = (colors) => StyleSheet.create({
   headBadgeText: { color: '#fff', fontSize: type.caption2, fontWeight: '800' },
 
   sectionLabel: {
-    ...SECTION_TITLE, color: colors.text,
+    ...SECTION_TITLE, color: colors.text2,
     paddingHorizontal: spacing.s20, marginBottom: spacing.sm,
   },
   strip: { paddingHorizontal: spacing.s20, gap: spacing.sm, paddingBottom: spacing.lg },

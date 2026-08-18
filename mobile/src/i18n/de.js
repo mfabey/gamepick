@@ -539,6 +539,9 @@ export default {
   'discover.empty': 'Keine Spiele passen zu dieser Beschreibung. Versuch es etwas anders zu formulieren.',
   'discover.error': 'Die Suche ist gerade fehlgeschlagen. Versuch es noch mal.',
   'discover.entry': 'Beschreib das Spiel, das du suchst',
+  'cover.none': 'kein Cover',
+  'home.whyThis': 'Warum sehe ich das?',
+  'home.whyThisBody': 'Ausgewählt anhand der Genres deiner Bibliothek und deiner Favoriten. Das wird niemandem angezeigt.',
   'home.notInterested': 'Kein Interesse',
   'home.dismissPrompt': 'Dieses Spiel aus den Empfehlungen entfernen?',
   'common.cancel': 'Abbrechen',
@@ -620,4 +623,15 @@ export default {
   'prof.steamConnected': 'Steam verbunden',
   'home.friendsCount': 'Freunde',
   'home.hoursShort': 'Std',
+
+  // ── Selamlama bloğu (Faz 1) ──
+  'greet.morning': 'Guten Morgen',
+  'greet.day': 'Hallo',
+  'greet.evening': 'Guten Abend',
+  'greet.night': 'Gute Nacht',
+  'greet.ctxSale': '{ad} auf deiner Merkliste ist {n}% reduziert.',
+  'greet.ctxFriends': '{ad} und {n} weitere haben diese Woche etwas Neues gespielt.',
+  'greet.ctxFriend': '{ad} hat diese Woche etwas Neues gespielt.',
+  'greet.ctxForYou': 'Wir haben {n} neue Spiele für deinen Geschmack gefunden.',
+  'greet.ctxFallback': 'Diese Woche am meisten besprochen.',
 };
