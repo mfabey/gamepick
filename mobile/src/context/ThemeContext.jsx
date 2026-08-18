@@ -31,7 +31,6 @@ import { Appearance } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { palette } from '../design/tokens';
-import { activeScheme } from '../theme';
 
 const PREF_KEY = 'theme_pref';          // 'system' | 'dark' | 'light'
 const ThemeContext = createContext(null);
@@ -105,9 +104,6 @@ export function ThemeProvider({ children }) {
     setPref,
     colors: PALETLER[scheme],
     isDark: scheme === 'dark',
-    // Açılışta yakalanan palet — dönüştürülmemiş dosyalar hâlâ onu
-    // kullanıyor. Farklıysa o dosyalar bu oturumda eski temada kalır.
-    bootScheme: activeScheme,
   }), [scheme, pref, setPref]);
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

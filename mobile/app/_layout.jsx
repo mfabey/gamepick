@@ -18,7 +18,6 @@ import { loadCollections } from '../src/services/collectionsStore';
 import { loadOnboarding } from '../src/services/onboarding';
 import { initQueryCache } from '../src/services/queryCache';
 import { startSharedLinkWatcher } from '../src/services/sharedLink';
-import { startThemeWatch } from '../src/services/themeWatch';
 import { startDmPushSync } from '../src/services/dmPush';
 import { useLastNotificationResponse } from 'expo-notifications';
 import FpsMeter from '../src/dev/FpsMeter';
@@ -114,7 +113,6 @@ export default function RootLayout() {
   useEffect(() => { startSharedLinkWatcher(); }, []);
 
   // Sistem teması değişince (uygulama ön plana döndüğünde) paleti tazele
-  useEffect(() => startThemeWatch(), []);
 
   // Mesaj bildirimleri icin push token esitlemesi (istek listesinden ayri)
   useEffect(() => { startDmPushSync(); }, []);

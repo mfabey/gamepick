@@ -69,25 +69,26 @@ const light = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TEMA SEÇİMİ — AÇILIŞTA, BİR KEZ.
+// AÇILIŞ PALETİ — ARTIK YALNIZCA YEDEK.
 //
-// `StyleSheet.create` modül yüklenirken değerlendiriliyor; yani palet o anda
-// neyse stiller onu yakalıyor. 51 dosyadaki 877 referansı çalışma zamanında
-// değiştirebilmek için hepsini `useThemedStyles` desenine çevirmek gerekirdi —
-// büyük bir yeniden yazım ve regresyon riski.
+// Bu blok bir zamanlar temayı SEÇEN yerdi: palet açılışta bir kez okunuyor,
+// `StyleSheet.create` o değerleri yakalıyordu. Bedeli, uygulama açıkken tema
+// değişince ekranın eski palette kalmasıydı; `services/themeWatch.js` bunu
+// paketi yeniden yükleyerek karşılıyordu.
 //
-// `Appearance.getColorScheme()` EŞZAMANLI ve bu modül değerlendirilirken
-// okunabiliyor. Açılışta seçmek, 877 referansın hiçbirine dokunmadan iki temayı
-// da doğru çalıştırıyor.
+// GEÇİŞ BİTTİ. Her ekran artık `useStyles(makeStyles)` + `useTheme()`
+// kullanıyor (check-theme-reactive: 0 donuk dosya) ve tema yeniden yükleme
+// OLMADAN dönüyor. themeWatch silindi — iki mekanizmayı bir arada bırakmak,
+// reaktif tema zaten doğru rengi çizdikten SONRA gereksiz bir reloadAsync
+// tetikliyordu: kullanıcının kaydırma konumu ve yazdığı metin gidiyordu.
+// (`activeScheme` açılışta donduğu için karşılaştırma her seferinde
+// eşitsizlik veriyordu.)
 //
-// BEDELİ: uygulama AÇIKKEN sistem teması değişirse ekran anında dönmez.
-// `src/services/themeWatch.js` bunu karşılıyor — uygulama ön plana geldiğinde
-// tema değiştiyse paketi yeniden yüklüyor.
-//
-// null (cihaz belirtmiyor) → KOYU. Uygulamanın bugüne kadarki hâli bu.
+// `colors` yalnızca tema BAĞLAMI DIŞINDA kalan yerler için duruyor —
+// bileşen ağacının dışındaki modül seviyesi hesaplar. Ekranlarda
+// kullanılmamalı; `import { colors }` araması sıfır sonuç vermeli.
 const scheme = Appearance.getColorScheme();
-export const isDarkTheme = scheme !== 'light';
-export const activeScheme = isDarkTheme ? 'dark' : 'light';
+const isDarkTheme = scheme !== 'light';
 export const colors = isDarkTheme ? dark : light;
 
 /**
