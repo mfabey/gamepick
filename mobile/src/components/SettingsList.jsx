@@ -34,6 +34,13 @@ import { useTheme, useStyles } from '../context/ThemeContext';
 const ICON_COL = 30;
 const PAD = spacing.lg;
 
+// AYIRICININ SOL BOŞLUĞU DIŞARI AÇIK. Aynı çizgi için depoda üç farklı sayı
+// vardı: burada türetilmiş 58, social-settings'te elle 60, profildeki ölü
+// stilde 56. İkisi tek yerden türetilmezse hizalama kayıyor — bu dosyanın
+// kendi notu bunu zaten söylüyordu, ama sayı dışarı verilmediği için
+// kopyalanmıştı.
+export const AYIRICI_SOL = PAD + ICON_COL + spacing.md;
+
 /**
  * Satır grubu. Çocukların arasına ayırıcıları KENDİ koyuyor — çağıranın
  * `<Div />` serpiştirmesi gerekmiyor ve ayırıcı sayısı yanlış olamıyor.
@@ -128,6 +135,6 @@ const makeStyles = (colors) => StyleSheet.create({
   divider: {
     height: StyleSheet.hairlineWidth,
     backgroundColor: colors.cardBorder,
-    marginLeft: PAD + ICON_COL + spacing.md,
+    marginLeft: AYIRICI_SOL,
   },
 });

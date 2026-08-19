@@ -14,11 +14,11 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 import { getPrivacy, setPrivacy, getBlocked, unblockUser } from '../src/api/social';
-import { radius, spacing, PRESSED, type, SECTION_TITLE } from '../src/theme';
+import { radius, spacing, PRESSED, type, SECTION_TITLE, TOUCH_MIN } from '../src/theme';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
-import { getAvatarPreset } from '../src/utils/avatar';
-import { SettingsGroup, SettingsRow } from '../src/components/SettingsList';
+import Avatar from '../src/components/Avatar';
+import { SettingsGroup, SettingsRow, AYIRICI_SOL } from '../src/components/SettingsList';
 
 export default function SocialSettingsScreen() {
   const styles = useStyles(makeStyles);
@@ -27,16 +27,33 @@ export default function SocialSettingsScreen() {
   const { t } = useLanguage();
 
   const [privacy, setPriv] = useState(null);
+  // Ayarlar OKUNAMADI mı — 'kapalı'dan AYRI durum (Faz 8).
+  const [bozuk, setBozuk] = useState(false);
   const [blocked, setBlocked] = useState(null);
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
     try {
       const [p, b] = await Promise.all([getPrivacy(), getBlocked()]);
-      setPriv(p?.privacy || { shareActivity: true, discoverable: true });
+      setPriv(p?.privacy || { shareActivity: false, discoverable: false, showPresence: false });
+      setBozuk(false);
       setBlocked(b?.blocked || []);
     } catch {
-      setPriv({ shareActivity: true, discoverable: true });
+      // FAZ 8, KIRILMA — GİZLİLİKTE AÇIĞA DEĞİL BİLİNMEZLİĞE DÜŞ.
+      // Öncesi: `setPriv({ shareActivity: true, discoverable: true })`.
+      // İstek başarısız olduğunda arayüz paylaşımın AÇIK olduğunu
+      // söylüyordu. Yanlış tarafa düşmek burada asimetrik: açığı kapalı
+      // göstermek endişe yaratır, KAPALIYI AÇIK GÖSTERMEK GERÇEK ZARAR
+      // yaratır — kullanıcı kapattığını sanıp açık bırakır.
+      //
+      // Ayrıca `showPresence` bu yedekte HİÇ YOKTU: üçüncü anahtar tanımsız
+      // gelip kapalı çiziliyordu, yani sessizce üçüncü bir yalan.
+      //
+      // Artık üçü de kapalı ÇİZİLİYOR ama anahtarlar DEVRE DIŞI ve bant
+      // "sunucudaki ayarların değişmedi" diyor: gösterilen şey bir durum
+      // değil, bir bilinmezlik.
+      setPriv({ shareActivity: false, discoverable: false, showPresence: false });
+      setBozuk(true);
       setBlocked([]);
     }
   }, []);
@@ -90,15 +107,29 @@ export default function SocialSettingsScreen() {
         <View style={styles.center}><ActivityIndicator color={colors.accent} /></View>
       ) : (
         <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
+          {/* Anahtarlar kapalı ama bu bir DURUM değil bir BİLİNMEZLİK —
+              bant tam olarak bunu söylüyor. Kırmızı yok. */}
+          {bozuk ? (
+            <View style={styles.bozukBant}>
+              <Text style={styles.bozukBaslik}>{t('soc.privUnknown')}</Text>
+              <Text style={styles.bozukMetin}>{t('soc.privUnknownDesc')}</Text>
+              <Pressable onPress={load} hitSlop={8} style={({ pressed }) => [styles.bozukEylem, pressed && PRESSED]}>
+                <Text style={styles.bozukEylemText}>{t('common.retry')}</Text>
+              </Pressable>
+            </View>
+          ) : null}
+
           <SettingsGroup>
             <SettingsRow
               icon="pulse-outline"
               label={t('soc.shareActivity')}
+              desc={t('soc.shareActivityDesc')}
               right={(
                 <Switch
-                  value={!!privacy.shareActivity}
+                  value={!bozuk && !!privacy.shareActivity}
                   onValueChange={(v) => toggle('shareActivity', v)}
-                  trackColor={{ false: colors.cardBorder, true: colors.accent }}
+                  disabled={bozuk}
+                  trackColor={{ false: colors.cardBorder, true: colors.green }}
                   thumbColor="#fff"
                 />
               )}
@@ -106,11 +137,13 @@ export default function SocialSettingsScreen() {
             <SettingsRow
               icon="search-outline"
               label={t('soc.discoverable')}
+              desc={t('soc.discoverableDesc')}
               right={(
                 <Switch
-                  value={!!privacy.discoverable}
+                  value={!bozuk && !!privacy.discoverable}
                   onValueChange={(v) => toggle('discoverable', v)}
-                  trackColor={{ false: colors.cardBorder, true: colors.accent }}
+                  disabled={bozuk}
+                  trackColor={{ false: colors.cardBorder, true: colors.green }}
                   thumbColor="#fff"
                 />
               )}
@@ -123,9 +156,10 @@ export default function SocialSettingsScreen() {
               desc={t('soc.showPresenceDesc')}
               right={(
                 <Switch
-                  value={!!privacy.showPresence}
+                  value={!bozuk && !!privacy.showPresence}
                   onValueChange={(v) => toggle('showPresence', v)}
-                  trackColor={{ false: colors.cardBorder, true: colors.accent }}
+                  disabled={bozuk}
+                  trackColor={{ false: colors.cardBorder, true: colors.green }}
                   thumbColor="#fff"
                 />
               )}
@@ -140,23 +174,11 @@ export default function SocialSettingsScreen() {
                 <View key={p.uid}>
                   {i > 0 && <View style={styles.divider} />}
                   <View style={styles.blockRow}>
-                    {(() => {
-                      const preset = getAvatarPreset(p.avatar);
-                      if (preset) {
-                        return (
-                          <View style={[styles.avatar, { backgroundColor: preset.bg }]}>
-                            <Ionicons name={preset.icon} size={18} color={preset.iconColor} />
-                          </View>
-                        );
-                      }
-                      return (
-                        <View style={styles.avatar}>
-                          <Text style={styles.avatarText}>
-                            {(p.displayName || p.username || '?').charAt(0).toUpperCase()}
-                          </Text>
-                        </View>
-                      );
-                    })()}
+                    {/* FAZ 8 — ÜÇÜNCÜ AVATAR KOPYASI SİLİNDİ. Burada satır
+                        içi bir IIFE vardı: ön ayar veya baş harf, FOTOĞRAF
+                        YOK. Faz 7'de social.jsx'te bulduğumun aynısı —
+                        fotoğrafı olan kişi harf olarak görünüyordu. */}
+                    <Avatar avatar={p.avatar} name={p.displayName || p.username} size={38} />
                     <View style={{ flex: 1 }}>
                       <Text numberOfLines={1} style={styles.blockName}>
                         {p.displayName || p.username || p.uid}
@@ -195,7 +217,21 @@ const makeStyles = (colors) => StyleSheet.create({
   },
   // Iceriden: avatar sutununu gectikten sonra basliyor — ayar listesiyle
   // ayni dil (bkz. components/SettingsList.jsx).
-  divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.cardBorder, marginLeft: 60 },
+  // FAZ 8: elle 60 yazılıydı. SettingsList aynı çizgiyi TÜRETİYOR
+  // (PAD + ICON_COL + gap = 58) ve neden türettiğini yazıyor; profildeki
+  // ölü stil ise 56 diyordu. Tek çizgi için üç sayı — türetmenin gerekçesi
+  // kanıtlanmış oluyor. Tek kaynağa bağlandı.
+  // Bozuk bant — Faz 4/5'teki ikizleriyle aynı dil. Kırmızı yok.
+  bozukBant: {
+    marginBottom: spacing.s16, padding: spacing.s16, borderRadius: radius.md,
+    backgroundColor: colors.bgInput, gap: spacing.s4,
+  },
+  bozukBaslik: { color: colors.text, fontSize: type.subhead, fontWeight: '700' },
+  bozukMetin: { color: colors.text2, fontSize: type.footnote, lineHeight: 19 },
+  bozukEylem: { minHeight: TOUCH_MIN, justifyContent: 'center', alignSelf: 'flex-start' },
+  bozukEylemText: { color: colors.accentText, fontSize: type.subhead, fontWeight: '700' },
+
+  divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.cardBorder, marginLeft: AYIRICI_SOL },
 
   sectionLabel: {
     ...SECTION_TITLE, color: colors.text2,
@@ -204,11 +240,6 @@ const makeStyles = (colors) => StyleSheet.create({
   emptyText: { color: colors.text2, fontSize: type.footnote, paddingVertical: 6 },
 
   blockRow: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 11 },
-  avatar: {
-    width: 38, height: 38, borderRadius: 19, backgroundColor: colors.accentBg,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  avatarText: { color: colors.accentText, fontWeight: '900', fontSize: type.body },
   blockName: { color: colors.text, fontSize: type.subhead, fontWeight: '700' },
   blockHandle: { color: colors.text3, fontSize: type.caption, marginTop: 1 },
   unblockBtn: {

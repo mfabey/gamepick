@@ -240,7 +240,9 @@ export default function ProfileScreen() {
         scrollEventThrottle={16}
       >
         {/* ── Kimlik ──
-            Avatar, ad, kullanıcı adı ve üç sayaç. Sayaçlar dekoratif değil:
+            Avatar, ad, kullanıcı adı ve iki sayaç. (Yorum bir sürüm geri
+            kalmıştı: "üç sayaç" diyordu, kod ikisini çiziyor.)
+            Sayaçlar dekoratif değil:
             profilin kime ait olduğunu tek bakışta söyleyen tek şey onlar. */}
         <View style={styles.headRow}>
           <Text style={styles.h1}>{t('nav.profile')}</Text>
@@ -541,12 +543,6 @@ function Stat({ n, label, badge, onPress }) {
   );
 }
 
-// Gövde açıldı: kanca ifade gövdeli bir okta çağrılamıyor.
-const Div = () => {
-  const styles = useStyles(makeStyles);
-  return <View style={styles.div} />;
-};
-
 // ─── Avatar seçici ──────────────────────────────────────────────────────────
 // RN Modal kullanılıyor — native kütüphane EKLENMEZ, OTA güvenli.
 // BottomSheet tarzı görünüm: arka plan karartılır, alt yarıda ızgara.
@@ -569,6 +565,14 @@ function AvatarPicker({ visible, current, onSelect, onClose, onPickPhoto, upload
           <View style={styles.pickerHandle} />
           <Text style={styles.pickerTitle}>{t('prof.chooseAvatar')}</Text>
 
+          {/* FAZ 8 — MEVCUT AVATAR GÖRÜNÜR. Seçiciyi açan kullanıcı NEYİ
+              değiştirdiğini görmüyordu: ekranda yalnız seçenekler vardı,
+              başlangıç noktası yoktu. */}
+          <View style={styles.pickerCurrent}>
+            <Avatar avatar={current} name={t('nav.profile')} size={56} />
+            <Text style={styles.pickerCurrentLabel}>{t('prof.currentAvatar')}</Text>
+          </View>
+
           {/* FOTOĞRAF EN ÜSTTE. Ön ayarlar bir yedek; kişinin kendi fotoğrafı
               "bu hesap benim" hissini veren asıl şey, o yüzden birincil eylem. */}
           <Pressable
@@ -577,12 +581,15 @@ function AvatarPicker({ visible, current, onSelect, onClose, onPickPhoto, upload
             style={({ pressed }) => [styles.pickerPhoto, pressed && PRESSED, uploading && { opacity: 0.6 }]}
           >
             {uploading
-              ? <ActivityIndicator size="small" color={colors.text} />
-              : <Ionicons name="image-outline" size={19} color={colors.text} />}
+              ? <ActivityIndicator size="small" color="#fff" />
+              : <Ionicons name="image-outline" size={19} color="#fff" />}
             <Text style={styles.pickerPhotoText}>
               {uploading ? t('prof.photoUploading') : t('prof.photoPick')}
             </Text>
           </Pressable>
+
+          {/* Veri kullanımı kullanıcının bilmesi gereken şey. */}
+          <Text style={styles.pickerNote}>{t('prof.photoNote')}</Text>
 
           {/* Izgara — 4 sütun */}
           <View style={styles.pickerGrid}>
@@ -711,7 +718,11 @@ const makeStyles = (colors) => StyleSheet.create({
   },
   weekHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.s8 },
   // Maket: "Gör ›" 12 / 600 / marka.
-  weekMore: { fontSize: type.caption, fontWeight: '600', color: colors.accent },
+  // FAZ 8 — accent → accentText. #e8242b METİN OLARAK 4.27:1 veriyor, taban
+  // 4.72. Bu deponun ALTINCI aynı ölçümü; accentText tam bu durum için var.
+  // (Grafikteki en yoğun günün accent olması DOĞRU ve kalıyor: o renk
+  //  değere bağlı, etikete değil.)
+  weekMore: { fontSize: type.caption, fontWeight: '600', color: colors.accentText },
   // Maket: çubuklar 42 yüksekliğe kadar, r4, aralarında eşit boşluk.
   weekChart: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', height: CHART_H, gap: spacing.s4 },
   weekBar: { flex: 1, borderRadius: radius.xs, backgroundColor: colors.surfaceTile },
@@ -732,7 +743,6 @@ const makeStyles = (colors) => StyleSheet.create({
     borderWidth: 2, borderColor: colors.bg,
     alignItems: 'center', justifyContent: 'center',
   },
-  avatarInitialLg: { fontSize: type.title2, fontWeight: '800', color: colors.text2 },
   // Maket: ad 22 / 700; tanıtıcı satırı 13 / 400 / text3.
   idName: { fontSize: type.title3, fontWeight: '700', color: colors.text },
   idHandle: { fontSize: type.footnote, fontWeight: '400', color: colors.text3, marginTop: spacing.s4 },
@@ -814,7 +824,6 @@ const makeStyles = (colors) => StyleSheet.create({
   tileN: { marginTop: 1, color: colors.text3, fontSize: type.caption2 },
   tileNSpacer: { height: 14 },
 
-  div: { height: 1, backgroundColor: colors.cardBorder, marginLeft: 56 },
 
 
 
@@ -824,8 +833,10 @@ const makeStyles = (colors) => StyleSheet.create({
     flex: 1, backgroundColor: colors.overlay,
     justifyContent: 'flex-end',
   },
+  // KARAR 2'nin ikinci yarısı: yazma/seçim yüzeyleri bgElevated. `card`
+  // diğer alt sayfalarla farklı katmandaydı.
   pickerSheet: {
-    backgroundColor: colors.card,
+    backgroundColor: colors.bgElevated,
     borderTopLeftRadius: 22, borderTopRightRadius: 22,
     paddingHorizontal: 20, paddingBottom: 40, paddingTop: 10,
     borderWidth: 1, borderColor: colors.cardBorder, borderBottomWidth: 0,
@@ -839,13 +850,24 @@ const makeStyles = (colors) => StyleSheet.create({
     fontSize: type.headline, fontWeight: '800', color: colors.text,
     textAlign: 'center', marginBottom: 20,
   },
+  pickerCurrent: { alignItems: 'center', gap: spacing.s8, marginBottom: spacing.s16 },
+  pickerCurrentLabel: { color: colors.text3, fontSize: type.caption },
+
+  // FAZ 8 — FOTOĞRAF ARTIK GÖRSEL OLARAK DA BİRİNCİL. Kod "fotoğraf
+  // birincil eylem" diyordu ama onu NÖTR bir düğme, seçili ön ayarı ise
+  // accent kenarlıkla çiziyordu: söylenen birincil, görünen en zayıftı.
+  // Faz 6'nın gönder dili: 44pt · radius.md · accentFillStrong.
   pickerPhoto: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9,
-    marginTop: spacing.lg, paddingVertical: 13,
-    backgroundColor: colors.bgInput, borderRadius: radius.md,
-    borderWidth: 1, borderColor: colors.cardBorder,
+    marginTop: spacing.lg, height: 44,
+    backgroundColor: colors.accentFillStrong, borderRadius: radius.md,
   },
-  pickerPhotoText: { color: colors.text, fontSize: type.subhead, fontWeight: '700' },
+  // tema-bagimsiz: dolu marka dugmesinin uzerinde
+  pickerPhotoText: { color: '#fff', fontSize: type.subhead, fontWeight: '600' },
+  pickerNote: {
+    color: colors.text3, fontSize: type.caption, textAlign: 'center',
+    marginTop: spacing.s8, marginBottom: spacing.s16,
+  },
 
   pickerGrid: {
     flexDirection: 'row', flexWrap: 'wrap',
@@ -855,8 +877,10 @@ const makeStyles = (colors) => StyleSheet.create({
     padding: spacing.xs, borderRadius: 32,
     borderWidth: 2.5, borderColor: 'transparent',
   },
+  // Seçim kenarlığı NÖTR: kırmızı bu sistemde eylem demek, seçim bir
+  // durum (Faz 4/5/6'nın seçim dili).
   pickerItemActive: {
-    borderColor: colors.accent,
+    borderColor: colors.text,
   },
   pickerCircle: {
     width: 56, height: 56, borderRadius: 28,
