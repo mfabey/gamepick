@@ -1,3 +1,5 @@
+import { radius } from '../../theme';
+
 // ─────────────────────────────────────────────────────────────────────────────
 // KART VARYANTLARI — ölçüler referans HTML'den ÖLÇÜLDÜ, README'den değil.
 //
@@ -26,22 +28,70 @@
 // Uygulamadaki 132 tasarımın düzelttiği eski değer.
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ─────────────────────────────────────────────────────────────────────────────
+// FAZ 2 — SİNYAL SÖZLEŞMESİ
+//
+// Fazın eklediği şey bir ölçü değil, bir YASAK: "bir varyant başka bir
+// varyantın sinyal setini ödünç alamaz. Şerit kartına fiyat eklemek
+// istiyorsan ızgaraya geçersin."
+//
+// Neden yasak gerekiyor: `context` propu serbestti ve her çağrı yeri kendi
+// kombinasyonunu uydurabiliyordu. Depodaki karar (tek bileşen + on prop
+// YERİNE dar bileşenler + paylaşılan katman) ancak sınır zorlanırsa duruyor;
+// yoksa on proplu anahtar arka kapıdan geri geliyor.
+//
+// Sinyaller:
+//   puan    — metacritic rozeti (kapak sağ üst)
+//   indirim — indirim/ücretsiz rozeti (kapak sol üst)
+//   tur     — ad altındaki tür satırı
+//   fiyat   — ad altındaki fiyat
+//   baglam  — çağrı yerinin verdiği serbest satır (arkadaş adı, tarih…)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Ad bloğu kademeleri. Yükseklik satır sayısı × satır yüksekliği. */
+// FAZ 2, "AÇIK" maddesi: "ızgara kart adı 38pt (2×19) satır yüksekliğinden
+// TÜREYEN ölçü — boşluk ölçeğine tabi değil ama ölçek dışı sayı olarak
+// görünüyor. Kodda satır yüksekliği sabiti olarak tutulmalı, boşluk gibi
+// yazılmamalı." Bu yüzden burada, spacing'de değil.
+// Stil parçası MODÜL DÜZEYİNDE bir kez donuyor: her render'da yeni bir nesne
+// üretilseydi `ad` stili hiç eşitlenmez ve Text her seferinde yeniden
+// stillenirdi. Renk taşımıyor, o yüzden temadan bağımsız.
+const kademe = (boyut, satirY, satir) => Object.freeze({
+  boyut, satirY, satir,
+  stil: Object.freeze({ fontSize: boyut, lineHeight: satirY, minHeight: satirY * satir }),
+});
+
+export const AD = {
+  // B (şerit) — Faz 1'de ölçüldü: 13 · lineHeight 16 · 2 satır = 32.
+  kucuk: kademe(13, 16, 2),
+  // A (ızgara) — Faz 2 maketi: 15 · 600 · lineHeight 19 · height 38.
+  orta:  kademe(15, 19, 2),
+};
+
+/** Varyantın taşıyabileceği sinyaller — dışındakiler ÇİZİLMİYOR. */
+function sinyal(...adlar) {
+  const kume = new Set(adlar);
+  return Object.freeze({
+    has: (ad) => kume.has(ad),
+    liste: Object.freeze([...adlar]),
+  });
+}
+
 /** Kapak köşesi, kart içi boşluklar — her varyantta aynı. */
 // Değerler HTML'den ölçüldü ve 4pt ızgarasında: 12 · 8 · 4.
 export const KART = {
   gap: 12,          // kapak grubu ↔ (varsa) alt eylem
   metinGap: 8,      // kapak ↔ metin bloğu
   satirGap: 4,      // ad ↔ bağlam
-  // FAZ 1 — AD BLOĞU 2 SATIR / 32pt SABİT (13 · lineHeight 16 · height 32).
-  // Şerit kartları arasında bağlam satırları AYNI HİZAYA gelsin diye sabit:
-  // ad bir satırsa da iki satırsa da blok 32pt. Ölçüldü (maket, "Senin için"
-  // şeridi): `line-height:16px; height:32px`.
-  //
-  // minHeight, height DEĞİL: erişilebilirlik punto ölçeğinde 32'ye sığmayan
-  // ad kırpılırdı. Varsayılan ölçekte ikisi aynı sonucu veriyor — hizalama
-  // orada zaten sağlanıyor.
-  adYukseklik: 32,
 };
+
+// AD BLOĞU SABİT YÜKSEKLİKLİ (Faz 1'de şerit, Faz 2'de ızgara).
+// Kartlar arasında ad altındaki satırlar AYNI HİZAYA gelsin diye: ad bir
+// satırsa da iki satırsa da blok aynı yükseklikte.
+//
+// minHeight, height DEĞİL: erişilebilirlik punto ölçeğinde sığmayan ad
+// kırpılırdı. Varsayılan ölçekte ikisi aynı sonucu veriyor — hizalama
+// zaten orada sağlanıyor.
 
 export const VARYANT = {
   // Oyunlar ekranı, profil kütüphanesi. Genişlik sütun aritmetiğinden gelir.
@@ -49,6 +99,10 @@ export const VARYANT = {
     genislik: null,          // ebeveyn belirler (2 sütun)
     kapakOran: 169 / 225,    // 3:4
     kapakYukseklik: null,
+    yaricap: radius.lg,      // Faz 2: A → 16
+    ad: AD.orta,
+    // "Niyetli tarama. TAM sinyal seti: puan, indirim, tür, fiyat."
+    sinyal: sinyal('puan', 'indirim', 'tur', 'fiyat'),
   },
   // Anasayfa ve videolar şeritleri. Genişlik SABİT, yükseklik içerikle esner
   // ("Şerit yüksekliği içeriğe göre esner, kart genişliği sabit kalır —
@@ -62,6 +116,11 @@ export const VARYANT = {
     genislik: 148,
     kapakOran: 3 / 4,
     kapakYukseklik: null,
+    yaricap: radius.md,      // Faz 2: B → 12
+    ad: AD.kucuk,
+    // "Göz gezdirme. Sinyal AZALTILMIŞ: yalnızca puan. Fiyat ve tür
+    //  bilinçli yok — şerit karar verdirmez, detaya gönderir."
+    sinyal: sinyal('puan'),
   },
   // Arkadaş şeridi / topluluk. HTML: "16:9 + arkadaş cam etiketi".
   // Arkadas seridi / topluluk. HTML: "16:9 + arkadas cam etiketi".
@@ -71,10 +130,17 @@ export const VARYANT = {
   // Otekiler (grid, rail) yuzeysiz — kapak zaten kendi yuzeyi. Sosyal kart
   // bir ARKADAS ETKINLIGI tasiyor, katalog ogesi degil; dolu yuzey onu
   // cevresindeki katalog seritlerinden ayiriyor.
+  //
+  // FAZ 2'NİN BEŞLİSİNDE YOK — bilerek. Fazın beşi katalog kartları
+  // (ızgara, şerit, akış, deste, satır); bu ise ARKADAŞ ETKİNLİĞİ taşıyor.
+  // Sinyali de ondan: puan değil, kimin oynadığı.
   social: {
     genislik: 202,
     kapakOran: 16 / 9,
     kapakYukseklik: null,
     yuzey: true,
+    yaricap: radius.md,
+    ad: AD.kucuk,
+    sinyal: sinyal('baglam'),
   },
 };

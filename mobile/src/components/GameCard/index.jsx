@@ -31,6 +31,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { usePrice } from '../../hooks/usePrice';
 import { type, radius, spacing, PRESSED_CARD, metacriticColor } from '../../theme';
 import { KART, VARYANT } from './variants';
+import { turAdi } from '../../services/genreName';
 
 /**
  * @param {object}  game      { image, name, … }
@@ -66,12 +67,12 @@ function GameCard({ game, variant = 'grid', context, overlay, onPress, onLongPre
 
   const rozetler = overlay !== undefined ? overlay : (
     <>
-      {game?.metacritic ? (
+      {v.sinyal.has('puan') && game?.metacritic ? (
         <View style={styles.mcBadge}>
           <Text style={[styles.mcText, { color: metacriticColor(game.metacritic) }]}>{game.metacritic}</Text>
         </View>
       ) : null}
-      {isFree ? (
+      {!v.sinyal.has('indirim') ? null : isFree ? (
         <View style={[styles.tagBadge, { backgroundColor: colors.green }, onDismiss && styles.tagBadgeKaydir]}>
           <Text style={styles.tagFree}>{t('card.free')}</Text>
         </View>
@@ -112,13 +113,38 @@ function GameCard({ game, variant = 'grid', context, overlay, onPress, onLongPre
 
   // TEK SATIR bağlam (handoff: "tarih, fiyat, mağaza ya da arkadaş").
   // Eskiden tür + fiyat İKİ bilgi aynı satırdaydı; tasarım tek bilgi istiyor.
-  const altSatir = context !== undefined ? context
+  // ── AD ALTI (sözleşmeye bağlı) ──
+  // Eskiden burası tek bir "bağlam" satırıydı ve varyant ne olursa olsun
+  // fiyata düşüyordu — şerit kartında da fiyat çıkıyordu. Faz 2 bunu açıkça
+  // yasaklıyor: "şerit karar verdirmez, detaya gönderir."
+  //
+  // `context` propu SÖZLEŞMEYİ DELMİYOR: yalnız 'baglam' taşıyan varyantlar
+  // (sosyal) kabul ediyor; ötekilerde geliştirmede uyarı çıkıyor.
+  if (__DEV__ && context !== undefined && !v.sinyal.has('baglam')) {
+    console.warn(
+      `[GameCard] "${variant}" varyantı bağlam satırı taşımıyor ` +
+      `(izinli: ${v.sinyal.liste.join(', ')}). Sözleşme için bkz. variants.js.`
+    );
+  }
+
+  const baglamSatiri = v.sinyal.has('baglam') ? context : undefined;
+  const fiyatMetni = !v.sinyal.has('fiyat') ? null
     : isFree ? t('card.free')
     : price?.price != null ? formatPrice(price.price)
     : null;
+  // Tür satırı ızgarada fiyatla AYNI SATIRI paylaşıyor (maket: space-between,
+  // baseline hizası). İki ayrı satır olsaydı kart 19pt uzardı ve 302'lik
+  // sabit yükseklik tutmazdı.
+  // Tür adları kaynaktan KARIŞIK dilde geliyor (RAWG İngilizce, curated
+  // Türkçe) — `turAdi` ikisini de arayüz diline çeviriyor. Ayrıntı orada.
+  const turMetni = v.sinyal.has('tur')
+    ? (game?.genres || []).slice(0, 2).map((g) => turAdi(g, t)).filter(Boolean).join(' · ')
+    : null;
 
+  // Yarıçap VARYANTTAN (Faz 2 eşmerkezli kuralı): A 16 · B 12 · sosyal 12.
   const kapakStil = [
     styles.kapak,
+    { borderRadius: v.yaricap },
     v.kapakYukseklik ? { height: v.kapakYukseklik } : { aspectRatio: v.kapakOran },
   ];
 
@@ -159,11 +185,28 @@ function GameCard({ game, variant = 'grid', context, overlay, onPress, onLongPre
 
           {/* SABİT YÜKSEKLİKLİ metin bloğu — kart uzar, yazı kırpılmaz. */}
           <View style={styles.metin}>
-            <Text numberOfLines={2} style={styles.ad}>{game?.name}</Text>
-            {altSatir ? (
-              typeof altSatir === 'string'
-                ? <Text numberOfLines={1} style={[styles.baglam, onSale && !isFree && styles.baglamIndirim]}>{altSatir}</Text>
-                : altSatir
+            <Text numberOfLines={v.ad.satir} style={[styles.ad, v.ad.stil]}>{game?.name}</Text>
+
+            {/* Izgara: tür solda, fiyat sağda, tek satırda (maket ölçüsü).
+                Tür ESNEK ve kırpılıyor, fiyat KIRPILMIYOR — fiyat yarım
+                okunursa yanlış okunuyor, tür yarım okunursa yalnız eksik. */}
+            {turMetni || fiyatMetni ? (
+              <View style={styles.bilgi}>
+                {turMetni ? (
+                  <Text numberOfLines={1} style={styles.tur}>{turMetni}</Text>
+                ) : <View style={{ flex: 1 }} />}
+                {fiyatMetni ? (
+                  <Text numberOfLines={1} style={[styles.fiyat, onSale && !isFree && styles.fiyatIndirim]}>
+                    {fiyatMetni}
+                  </Text>
+                ) : null}
+              </View>
+            ) : null}
+
+            {baglamSatiri ? (
+              typeof baglamSatiri === 'string'
+                ? <Text numberOfLines={1} style={styles.baglam}>{baglamSatiri}</Text>
+                : baglamSatiri
             ) : null}
           </View>
         </>
@@ -192,15 +235,16 @@ const makeStyles = (colors) => StyleSheet.create({
   // fark edilmiyor. Monogram zaten GameCover içinde devreye giriyor.
   kapak: { width: '100%', borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.card },
   metin: { gap: KART.satirGap },
-  // HTML'den ölçüldü: 13 / 600 / 1.3. tokens.json'daki `cardTitle: 17` ile
-  // çelişiyor; handoff'un kendi kuralı HTML'i piksel kaynağı sayıyor.
-  // 13 / lineHeight 16 / 2 satır = 32pt sabit blok (bkz. KART.adYukseklik).
-  ad: {
-    color: colors.text, fontSize: type.footnote, fontWeight: '600',
-    lineHeight: 16, minHeight: KART.adYukseklik,
-  },
+  // Punto/satır yüksekliği VARYANTTAN geliyor (AD kademeleri, variants.js):
+  // şerit 13/16/32, ızgara 15/19/38. Burada yalnız renk ve ağırlık.
+  ad: { color: colors.text, fontWeight: '600' },
+  // Tür ↔ fiyat aynı satırda. baseline hizası: 12pt tür ile 15pt fiyatın
+  // ALT kenarları hizalanıyor, ortaları değil — maketteki hâli bu.
+  bilgi: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.s8 },
+  tur: { flex: 1, color: colors.text3, fontSize: type.caption },
+  fiyat: { flexShrink: 0, color: colors.text, fontSize: type.subhead, fontWeight: '700' },
+  fiyatIndirim: { color: colors.accentText },
   baglam: { color: colors.text3, fontSize: type.caption },
-  baglamIndirim: { color: colors.accentText, fontWeight: '700' },
 
   // Kapak üstü rozetler — konumlar eski karttan AYNEN korundu.
   mcBadge: {

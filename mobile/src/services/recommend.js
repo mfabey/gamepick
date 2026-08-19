@@ -30,7 +30,7 @@ export const GENRE_SLUG = {
 // Aday kaynakları tür adlarını KARIŞIK dilde veriyor (RAWG İngilizce; curated/trending
 // pinned + static-free Türkçe). Zevk profili İngilizce. Kanonik (İngilizce) forma indirge
 // → skorlama ve çeşitlilik birleşik sözlük kullanır. Eşleşmeyen değişmeden geçer.
-const GENRE_CANON = {
+export const GENRE_CANON = {
   'Aksiyon': 'Action',
   'Macera': 'Adventure',
   'Bağımsız': 'Indie',
