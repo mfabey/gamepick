@@ -9,7 +9,7 @@
   "app/collections.jsx": 16,
   "app/delete-account.jsx": 4,
   "app/discover.jsx": 9,
-  "app/game/[id].jsx": 16,
+  "app/game/[id].jsx": 15,
   "app/game-cards.jsx": 8,
   "app/games.jsx": 7,
   "app/library.jsx": 17,

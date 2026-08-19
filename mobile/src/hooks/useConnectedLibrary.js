@@ -19,8 +19,12 @@ async function fetchConnectedLibraryRaw(steamAccounts, xbox) {
   const steam = {};
   steamEntries.forEach(([id, d]) => { steam[id] = d; });
 
+  // `expired` KORUNUYOR. Öncesinde yalnız `e.message` alınıyordu ve
+  // api/library.js'in `err.expired` bayrağı burada düşüyordu — çağıran taraf
+  // "oturum süresi doldu" ile "istek başarısız"ı ayırt edemiyordu.
+  // Oyun detayındaki sahiplik bandı bu ayrımı gösteriyor.
   const xboxData = xbox
-    ? await fetchXboxLibrary(xbox).catch((e) => ({ error: e.message, games: [] }))
+    ? await fetchXboxLibrary(xbox).catch((e) => ({ error: e.message, expired: !!e.expired, games: [] }))
     : null;
 
   return { steam, xbox: xboxData };

@@ -14,7 +14,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import { fetchCardPrice, fetchGameDetail, fetchGameByAppid, fetchPrices, fetchSteamReviews } from '../../src/api/games';
-import { radius, spacing, PRESSED, type, scale, metacriticColor, motion, TOUCH_MIN } from '../../src/theme';
+import { radius, spacing, PRESSED, type, scale, metacriticColor, motion, TOUCH_MIN, SECTION_TITLE } from '../../src/theme';
 import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { stripHtml } from '../../src/utils/text';
 import { useLanguage } from '../../src/context/LanguageContext';
@@ -23,6 +23,7 @@ import { useWishlist } from '../../src/context/WishlistContext';
 import { useCollections, useCollectionsContaining } from '../../src/hooks/useCollections';
 import { toggleGameInCollection, createCollection } from '../../src/services/collectionsStore';
 import { turAdi } from '../../src/services/genreName';
+import OwnershipBand from '../../src/components/OwnershipBand';
 import CollectionPicker from '../../src/components/CollectionPicker';
 import { reportActivity } from '../../src/api/social';
 import { useQuery } from '../../src/hooks/useQuery';
@@ -100,10 +101,26 @@ export default function GameDetail() {
     () => fetchPrices({ appid: detail?.steamAppId, title: detail?.name || name }),
     { ttl: 30 * 60 * 1000, enabled: !!detail }
   );
+  // ITAD listesi + (boşsa) Steam kart fiyatı YEDEK olarak.
+  //
+  // Yedek neden duruyor: ITAD bazı oyunlarda hiç mağaza döndürmüyor
+  // (bölgesel kısıt, eşleşmeyen başlık). O hâlde ekranda tek fiyat bile
+  // olmuyordu. Artık liste boşsa cardPrice tek satır olarak giriyor —
+  // İKİ SİSTEM DEĞİL, biri ötekinin yokluğunda.
   const priceStores = useMemo(() => {
     const list = pricesData?.stores || [];
-    return [...list].sort((a, b) => (a.isFree ? -1 : b.isFree ? 1 : a.price - b.price));
-  }, [pricesData]);
+    if (list.length > 0) {
+      return [...list].sort((a, b) => (a.isFree ? -1 : b.isFree ? 1 : a.price - b.price));
+    }
+    if (price?.price != null || price?.isFree) {
+      return [{
+        storeId: 'steam', name: 'Steam', url: price.url || null,
+        price: price.price, original: price.original, discount: price.discount || 0,
+        isFree: !!price.isFree, yedek: true,
+      }];
+    }
+    return [];
+  }, [pricesData, price]);
 
   // Steam topluluk inceleme analizi — detay yüklenince (steamAppId için)
   const { data: reviews } = useQuery(
@@ -113,12 +130,22 @@ export default function GameDetail() {
   );
   const reviewTier = reviews?.total ? tierFor(reviews.positivePct) : null;
 
-  // Fragman: sessiz, döngülü, kontrolsüz arka plan videosu (expo-video)
+  // ── FRAGMAN (Faz 3, KIRILMA #2) ──
+  // Otomatik oynatma KALKTI. `p.play()` mount'ta çağrılıyordu: sessiz,
+  // döngülü ve kullanıcı kontrolsüz. Odak/lightbox duraklatması vardı (iyi)
+  // ama başlatma kararı kullanıcının değildi.
+  //
+  // "Ritmi kullanıcının parmağı kurar." Ölçülebilir kazanç da var: mount'ta
+  // video decode yok → ilk çizim hızlanıyor, pil ve mobil veri kullanıcının
+  // kararı oluyor.
+  //
+  // Bir kez oynatıldıysa oturum boyunca hatırlanıyor: aynı oyuna geri
+  // dönüldüğünde düğmeye tekrar basmak gerekmiyor.
   const trailerUrl = detail?.trailer || null;
+  const [fragmanAcik, setFragmanAcik] = useState(false);
   const trailerPlayer = useVideoPlayer(trailerUrl, (p) => {
     p.loop = true;
     p.muted = true;
-    p.play();
   });
 
   // Ekran odakta mı? (mağaza linki/tarayıcı üste açılınca ekran mount'ta kalır)
@@ -130,12 +157,13 @@ export default function GameDetail() {
     }, [])
   );
 
-  // Video yalnızca ekran odaktayken VE lightbox kapalıyken oynasın (pil/CPU)
+  // Kullanıcı başlattıysa: yalnızca ekran odaktayken VE lightbox kapalıyken
+  // oynasın (pil/CPU). Bu koşul korundu, üstüne `fragmanAcik` eklendi.
   useEffect(() => {
     if (!trailerUrl) return;
-    if (focused && activeShotIndex === null) trailerPlayer.play();
+    if (fragmanAcik && focused && activeShotIndex === null) trailerPlayer.play();
     else trailerPlayer.pause();
-  }, [focused, activeShotIndex, trailerUrl, trailerPlayer]);
+  }, [fragmanAcik, focused, activeShotIndex, trailerUrl, trailerPlayer]);
 
   const watched = isWatched(id);
   // appid ŞART: istek listesi widget'ı fiyatları Steam appid'iyle çekiyor.
@@ -279,7 +307,9 @@ export default function GameDetail() {
           yüksekliğe çıkıyor, kapak da altında parallax'la kayabiliyor. */}
       <Animated.View style={[styles.coverWrap, coverStyle]}>
         {cover ? <Image source={cover} priority="high" cachePolicy="memory-disk" style={StyleSheet.absoluteFill} contentFit="cover" transition={motion.image} /> : null}
-        {trailerUrl ? (
+        {/* Video ancak kullanıcı istediğinde MOUNT ediliyor — sadece
+            duraklatmak yetmezdi, VideoView kendisi de kaynak tutuyor. */}
+        {trailerUrl && fragmanAcik ? (
           <VideoView
             player={trailerPlayer}
             style={StyleSheet.absoluteFill}
@@ -288,6 +318,7 @@ export default function GameDetail() {
           />
         ) : null}
         <LinearGradient colors={['rgba(8,10,13,0.15)', 'rgba(8,10,13,0.45)', colors.bg]} locations={[0, 0.55, 1]} style={StyleSheet.absoluteFill} />
+
       </Animated.View>
 
       {/* ÜST ÇUBUK KAPAĞIN İÇİNDE DEĞİL. İçinde kalsaydı parallax'la birlikte
@@ -349,7 +380,37 @@ export default function GameDetail() {
         scrollEventThrottle={16}
       >
         <FadeIn delay={40}>
+        {/* FRAGMAN DÜĞMESİ KAPAĞIN ÜSTÜNDE GÖRÜNÜR AMA ScrollView'İN İÇİNDE.
+            Önce mutlak konumla kapağa konmuştu ve simülatörde DOKUNULAMIYORDU:
+            ScrollView kapağın üstünü örtüyor (contentContainerStyle'ın 272pt
+            saydam üst dolgusu dokunuşları yutuyor). Negatif üst kenar boşluğu
+            onu görsel olarak kapağa taşıyor, dokunma hedefi ise akışta
+            kalıyor. Maket ölçüsü korundu: 36pt, rgba(0,0,0,.5), footnote 13,
+            hitSlop 8 → gerçek hedef 52pt. */}
+        {trailerUrl && !fragmanAcik ? (
+          <Pressable
+            onPress={() => setFragmanAcik(true)}
+            hitSlop={8}
+            accessibilityRole="button"
+            style={({ pressed }) => [styles.fragmanBtn, pressed && PRESSED]}
+          >
+            <Ionicons name="play" size={13} color="#fff" />
+            <Text style={styles.fragmanText}>{t('detail.playTrailer')}</Text>
+          </Pressable>
+        ) : null}
+
         <Text style={styles.name}>{title}</Text>
+
+        {/* FAZ 3 — SAHİPLİK BANDI. Adın HEMEN ALTINDA, meta çiplerinin
+            ÜSTÜNDE: "zaten bende mi?" sorusu fiyattan önce gelir.
+            Yeni istek açmıyor — anasayfayla aynı önbelleği okuyor. */}
+        <View style={styles.bantKut}>
+          <OwnershipBand
+            name={title}
+            istekte={watched}
+            onGit={() => router.push('/account')}
+          />
+        </View>
 
         {/* Meta satırı */}
         <View style={styles.metaRow}>
@@ -382,22 +443,15 @@ export default function GameDetail() {
           <Text style={styles.dev}>{t('detail.developer')}: <Text style={{ color: colors.text2 }}>{detail.developer}</Text></Text>
         ) : null}
 
-        {/* Fiyat */}
-        <View style={styles.priceRow}>
-          {loadingPrice ? (
-            <ActivityIndicator color={colors.accent} />
-          ) : isFree ? (
-            <Text style={styles.priceFree}>{t('card.free')}</Text>
-          ) : price?.price != null ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              {onSale && <View style={styles.discountBadge}><Text style={styles.discountText}>-%{price.discount}</Text></View>}
-              {onSale && price.original != null && <Text style={styles.original}>{formatPrice(price.original)}</Text>}
-              <Text style={[styles.price, onSale && { color: colors.accentText }]}>{formatPrice(price.price)}</Text>
-            </View>
-          ) : (
-            <Text style={styles.priceLoading}>—</Text>
-          )}
-        </View>
+        {/* FAZ 3, KIRILMA #1 — ÜSTTEKİ TEK FİYAT KALKTI.
+            Aynı ekranda İKİ fiyat sistemi vardı: burada fetchCardPrice
+            (Steam, 15 dk önbellek), aşağıdaki listede fetchPrices (ITAD,
+            30 dk). İkisi farklı zamanda tazelenip ÇELİŞEBİLİYORDU —
+            üstte ₺449, listede Steam ₺519.
+
+            "Bir sayı yanlış olmaktan kötüsü iki sayının farklı olması."
+            Tepe anı tek yerde: aşağıdaki karşılaştırma listesi. cardPrice
+            yalnızca o liste boş kaldığında yedek satır oluyor. */}
 
         {/* Mağaza butonları */}
         {stores.length > 0 && (
@@ -616,6 +670,10 @@ function Section({ title, delay = 0, children }) {
   const styles = useStyles(makeStyles);
   return (
     <FadeIn delay={delay} style={{ marginTop: spacing.xl }}>
+      {/* FAZ 3: body 17/800 → overline (caption 12 · 700 · uppercase · text2),
+          anasayfayla AYNI jeton. "İki ekran aynı yapıya iki farklı ses
+          veriyordu." Hiyerarşi kazancı: başlıklar susunca oyun adı
+          (title1 28) ekranın tek büyük sesi kalıyor. */}
       <Text style={styles.sectionTitle}>{title}</Text>
       {children}
     </FadeIn>
@@ -673,11 +731,28 @@ const makeStyles = (colors) => StyleSheet.create({
   // çevirirdi. Yükseklik yine de 26'dan 44'e çıktı — ailenin ritmi bu.
   priceRow: { marginTop: spacing.lg, minHeight: TOUCH_MIN, justifyContent: 'center', alignItems: 'flex-start' },
   price: { fontSize: type.title3, fontWeight: '800', color: colors.text },
+  // tema-bagimsiz: kapak gorselinin ustunde duruyor
+  fragmanBtn: {
+    alignSelf: 'flex-start',
+    // Adın 48pt üstüne çekiyor: 36 (düğme) + 12 (nefes). O bölge kapağın
+    // gövdeyle örtüştüğü alan (COVER_OVERLAP = 48).
+    marginTop: -(36 + spacing.s12),
+    marginBottom: spacing.s12,
+    flexDirection: 'row', alignItems: 'center', gap: spacing.s8,
+    height: 36, paddingHorizontal: spacing.s12, borderRadius: radius.md,
+    // tema-bagimsiz: kapak gorselinin ustunde duruyor, zemin gorselin kendisi
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  // tema-bagimsiz: koyu cam dugmenin uzerinde
+  fragmanText: { color: '#fff', fontSize: type.footnote, fontWeight: '600' },
+  bantKut: { marginTop: spacing.s12 },
   priceFree: { fontSize: type.title3, fontWeight: '800', color: colors.green },
   priceLoading: { fontSize: type.headline, color: colors.text3 },
   original: { fontSize: type.caption, color: colors.text3, textDecorationLine: 'line-through' },
-  discountBadge: { backgroundColor: colors.accent, borderRadius: 8, paddingHorizontal: spacing.sm, paddingVertical: 3 },
-  discountText: { color: '#fff', fontWeight: '800', fontSize: type.footnote },
+  // FAZ 2/3: kırmızı dolgu KALKTI — indirim bir DEĞER, eylem değil.
+  // tema-bagimsiz: kapak gorselinin ustundeki koyu cam rozet
+  discountBadge: { backgroundColor: 'rgba(8,10,14,0.75)', borderRadius: 8, paddingHorizontal: spacing.sm, paddingVertical: 3 },
+  discountText: { color: colors.green, fontWeight: '800', fontSize: type.caption2 },
 
   storeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 18 },
   storeBtn: { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: radius.md, paddingHorizontal: 14, paddingVertical: 11 },
@@ -712,7 +787,7 @@ const makeStyles = (colors) => StyleSheet.create({
   revBarFill: { height: '100%', borderRadius: 4 },
   revCount: { fontSize: type.footnote, color: colors.text3, fontWeight: '600', marginTop: 10 },
 
-  sectionTitle: { fontSize: type.body, fontWeight: '800', color: colors.text, marginBottom: spacing.md },
+  sectionTitle: { ...SECTION_TITLE, color: colors.text2, marginBottom: spacing.s12 },
   genreWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   genreChip: { backgroundColor: colors.bgInput, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: spacing.md, paddingVertical: 6 },
   genreText: { color: colors.text2, fontSize: type.footnote, fontWeight: '700' },
