@@ -55,6 +55,72 @@ const TAGS = [
 // ama işlemeyen bir filtre demek.
 export const MAX_TAGS = 5;
 
+// ─────────────────────────────────────────────────────────────────────────────
+// ETKİN FİLTRE ÇİPLERİ (Faz 4)
+//
+// Filtre durumu tek bir SAYI rozetiyle temsil ediliyordu ve koddaki yorum
+// bunu kendisi kabul ediyordu: "2" ne olduğunu söylemiyor. Kullanıcı hangi
+// boyutun daralttığını bulmak için sayfayı açıp tek tek denemek zorundaydı —
+// beş boyut × çoklu etiket.
+//
+// Geri alma maliyeti sayfa açmaktan TEK DOKUNUŞA iniyor.
+//
+// NÖTR DİL, BÖLÜM ÇİPİNDEN AYRI: bölüm çipi bir SEÇİM (dolu: text zemin,
+// bg metin), bu bir DURUM ÖZETİ (bgInput + text2 + ×). Aynı görünselerdi
+// kullanıcı basınca seçim beklerdi, oysa kaldırma oluyor.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Filtre nesnesini kaldırılabilir çip listesine çeviriyor. */
+export function etkinFiltreler(filters, t) {
+  const { genre, mode, store, mc, tags = [] } = filters || {};
+  const liste = [];
+  if (genre) liste.push({ anahtar: `genre:${genre}`, etiket: t('genre.' + genre), sifirla: { genre: null } });
+  if (mode)  liste.push({ anahtar: `mode:${mode}`,   etiket: t('mode.' + mode),   sifirla: { mode: null } });
+  if (store) liste.push({ anahtar: `store:${store}`, etiket: t('store.' + store), sifirla: { store: null } });
+  if (mc)    liste.push({ anahtar: `mc:${mc}`,       etiket: `${mc}+`,            sifirla: { mc: null } });
+  for (const tag of tags) {
+    liste.push({
+      anahtar: `tag:${tag}`,
+      etiket: t('tag.' + tag),
+      sifirla: { tags: tags.filter((x) => x !== tag) },
+    });
+  }
+  return liste;
+}
+
+/**
+ * @param {object} filters · @param {func} onKaldir(sifirlaParcasi)
+ * @param {bool} [sar] "sonuç yok" hâlinde satır sarıyor (yatay kaydırma yok)
+ */
+export function EtkinFiltreler({ filters, onKaldir, sar = false }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
+  const { t } = useLanguage();
+  const liste = etkinFiltreler(filters, t);
+  if (liste.length === 0) return null;
+
+  const cipler = liste.map((f) => (
+    <Pressable
+      key={f.anahtar}
+      onPress={() => onKaldir(f.sifirla)}
+      hitSlop={8}
+      accessibilityRole="button"
+      accessibilityLabel={`${f.etiket} — ${t('filter.remove')}`}
+      style={({ pressed }) => [styles.etkinCip, pressed && PRESSED]}
+    >
+      <Text style={styles.etkinCipText}>{f.etiket}</Text>
+      <Ionicons name="close" size={13} color={colors.text3} />
+    </Pressable>
+  ));
+
+  if (sar) return <View style={styles.etkinSar}>{cipler}</View>;
+  return (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.etkinSatir}>
+      {cipler}
+    </ScrollView>
+  );
+}
+
 /** Etkin filtre sayısı — düğmedeki rozet ve "Temizle"nin görünürlüğü için. */
 export function countFilters({ genre, mode, store, mc, tags }) {
   return (genre ? 1 : 0) + (mode ? 1 : 0) + (store ? 1 : 0)
@@ -267,15 +333,35 @@ const makeStyles = (colors) => StyleSheet.create({
   //
   // Onceki not "marka rengi kullanilmiyor, tek CTA Uygula" diyordu; maket
   // tersini gosterdigi ve karar "birebir maket" oldugu icin degisti.
-  chipOn: { backgroundColor: colors.accent },
+  // FAZ 4'TE YAKALANDI: bu dosyanın KENDİ yorumu (bkz. Chip'in üstü)
+  // "Marka rengi kullanılmıyor; ekranın tek gerçek CTA'sı 'Uygula' ve
+  // vurguyu o taşımalı" diyordu ama stil `colors.accent` yazıyordu.
+  // Yorum doğru, kod yanlıştı: seçili çip + CTA = ekranda İKİ kırmızı ve
+  // ikisi farklı anlam taşıyor (biri seçim, öteki eylem).
+  // games.jsx'in bölüm çipiyle aynı dile geçti.
+  chipOn: { backgroundColor: colors.text },
   // tema-bagimsiz: marka dolgusu ustundeki metin (tokens: onBrand)
-  chipTextOn: { ...CHIP_TEXT_ON, color: '#FFFFFF' },
+  chipTextOn: { ...CHIP_TEXT_ON, color: colors.bg },
   // Soluk ama GÖRÜNÜR — kullanıcı özelliğin var olduğunu bilsin.
   chipKapali: { opacity: 0.4 },
   groupLabelKapali: { color: colors.accentText },
 
+  // FAZ 4 — DOLGU accent → accentFillStrong. Beyaz 15pt/800 üstünde
+  // accent tam 4.45:1 veriyordu; ölçüldü ve AA eşiğinin (4.5) altında.
+  // Yeni ton 5.45:1. Yükseklik, yarıçap ve metin DEĞİŞMEDİ — tek değişiklik
+  // dolgu tonu; marka rengi ikonlarda ve kenarlıklarda aynı kalıyor.
+  // Maket: 32pt, pill, bgInput, footnote 13, hitSlop 8.
+  etkinSatir: { flexDirection: 'row', gap: spacing.s8, paddingHorizontal: spacing.s20 },
+  etkinSar: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.s8, justifyContent: 'center' },
+  etkinCip: {
+    height: 32, flexDirection: 'row', alignItems: 'center', gap: spacing.s4,
+    paddingHorizontal: spacing.s12, borderRadius: radius.pill,
+    backgroundColor: colors.bgInput,
+  },
+  etkinCipText: { color: colors.text2, fontSize: type.footnote, fontWeight: '600' },
+
   cta: {
-    height: 52, borderRadius: radius.lg, backgroundColor: colors.accent,
+    height: 52, borderRadius: radius.lg, backgroundColor: colors.accentFillStrong,
     alignItems: 'center', justifyContent: 'center', marginTop: 18,
   },
   ctaText: { color: '#fff', fontSize: type.subhead, fontWeight: '800' },

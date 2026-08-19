@@ -16,11 +16,11 @@ import { GamesGridSkeleton, Reveal } from '../src/components/Skeleton';
 import { TopFade, BottomFade } from '../src/components/EdgeFade';
 import { prefetchImages } from '../src/utils/prefetch';
 import { useTimeToData } from '../src/dev/perf';
-import { radius, spacing, type, CHIP, CHIP_TEXT, CHIP_TEXT_ON } from '../src/theme';
+import { radius, spacing, type, CHIP, CHIP_TEXT, CHIP_TEXT_ON, PRESSED, TOUCH_MIN } from '../src/theme';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useScrollCollapse } from '../src/context/TabBarContext';
 import { useLanguage } from '../src/context/LanguageContext';
-import FilterSheet, { FilterButton, countFilters } from '../src/components/FilterSheet';
+import FilterSheet, { FilterButton, countFilters, EtkinFiltreler } from '../src/components/FilterSheet';
 import LimitedMode from '../src/components/LimitedMode';
 import EmptyState from '../src/components/EmptyState';
 
@@ -90,6 +90,10 @@ export default function GamesScreen() {
   const [limited, setLimited] = useState(null);   // { unavailable: [...] } | null
   const [limitedGizli, setLimitedGizli] = useState(false);
   const filterCount = countFilters(filters);
+  // Tek çipin kaldırılması — `sifirla` parçası doğrudan durumun üstüne biniyor.
+  const filtreKaldir = useCallback((sifirla) => setFilters((f) => ({ ...f, ...sifirla })), []);
+  // Ağ bozuk mu — 'sonuç yok'tan AYRI bir durum (Faz 4).
+  const [bozuk, setBozuk] = useState(false);
 
   const ref = useRef({ page: 1, canMore: true, fetching: false, seen: new Set(), section: '', query: '', filters: null });
 
@@ -142,11 +146,19 @@ export default function GamesScreen() {
         r.seen.add(g.id); return true;
       });
       setGames(results);
+      setBozuk(false);
       setLimited(data.limited ? { unavailable: data.unavailable || [] } : null);
       prefetchImages(results.map(g => g.image));
       r.canMore = (data.total || 0) > NUM;
     } catch {
-      setGames([]);
+      // FAZ 4, KIRILMA #1 — HATA ARTIK BOŞLUK DEĞİL.
+      // Öncesinde `setGames([])` vardı: RAWG düşmesi, zaman aşımı ve uçak
+      // modu üçü de kullanıcıya "aradığın oyun yok" diye okunuyordu. Kullanıcı
+      // düzeltebileceği bir şey olmadığını sanıyordu.
+      //
+      // Liste SİLİNMİYOR: önbellekteki son hâli %55 opaklıkta duruyor.
+      // Eski veri hiç veriden iyidir — bayat olduğu SÖYLENMİŞSE.
+      setBozuk(true);
       r.canMore = false;
     } finally {
       r.fetching = false;
@@ -184,6 +196,10 @@ export default function GamesScreen() {
       }
       if (next * NUM >= (data.total || 0) || (data.results || []).length === 0) r.canMore = false;
     } catch {
+      // Sonsuz kaydırmada da sessizce "liste bitti" demek yanlış: kullanıcı
+      // sona geldiğini sanıyordu. Bant görünür, `canMore` kapanıyor —
+      // "Yeniden dene" ilk sayfayı tazeliyor.
+      setBozuk(true);
       r.canMore = false;
     } finally {
       r.fetching = false;
@@ -315,6 +331,16 @@ export default function GamesScreen() {
           <Chip key={s.v} active={section === s.v} label={s.label} onPress={() => setSection(s.v)} />
         ))}
       </ScrollView>
+
+      {/* FAZ 4 — ETKİN FİLTRE ÇİPLERİ. Rozetteki sayı artık ne olduğunu
+          söylüyor ve tek dokunuşla kalkıyor. Başlık yüksekliği ÖLÇÜLDÜĞÜ
+          için (onLayout) bu satırın girmesi katlanmayı bozmuyor — yeni
+          satır bedava. */}
+      {filterCount > 0 ? (
+        <View style={{ paddingBottom: spacing.s8 }}>
+          <EtkinFiltreler filters={filters} onKaldir={filtreKaldir} />
+        </View>
+      ) : null}
       </SafeAreaView>
       </Animated.View>
 
@@ -330,6 +356,35 @@ export default function GamesScreen() {
           <View style={{ paddingTop: headerH }}>
             <GamesGridSkeleton />
           </View>
+        ) : bozuk ? (
+          // BOZUK DURUM — "sonuç yok"tan AYRI. Üç şey söylüyor: ne oldu,
+          // ne çalışmıyor, ne yapabilirsin. Kırmızı YOK: durum bir eylem
+          // değil; tek eylem "Yeniden dene" ve o da metin.
+          <View style={{ flex: 1, paddingTop: headerH }}>
+            <View style={styles.bozukBant}>
+              <Text style={styles.bozukBaslik}>{t('games.degraded')}</Text>
+              <Text style={styles.bozukMetin}>{t('games.degradedDesc')}</Text>
+              <Pressable onPress={load} hitSlop={8} style={({ pressed }) => [styles.bozukEylem, pressed && PRESSED]}>
+                <Text style={styles.bozukEylemText}>{t('common.retry')}</Text>
+              </Pressable>
+            </View>
+
+            {/* Önbellekteki liste SİLİNMİYOR — %55 opaklıkta duruyor.
+                Eski veri hiç veriden iyidir, bayat olduğu söylenmişse. */}
+            {games.length > 0 ? (
+              <View style={{ flex: 1, opacity: 0.55 }} pointerEvents="none">
+                <FlashList
+                  data={games}
+                  numColumns={2}
+                  keyExtractor={keyExtractor}
+                  renderItem={renderGame}
+                  contentContainerStyle={styles.listContent}
+                  showsVerticalScrollIndicator={false}
+                  scrollEnabled={false}
+                />
+              </View>
+            ) : null}
+          </View>
         ) : games.length === 0 ? (
           // ÇIKIŞ YOLU. Beş filtre birleşince boş sonuç normal; kullanıcının
           // elinde yalnızca "sonuç yok" kalırsa hangi filtrenin daralttığını
@@ -340,11 +395,21 @@ export default function GamesScreen() {
           <View style={{ flex: 1, paddingTop: headerH }}>
             <EmptyState
               icon="search"
-              title={t('games.noResults')}
-              text={t('games.noResultsDesc')}
-              actionLabel={filterCount > 0 ? t('filter.clear') : (query ? t('common.clearSearch') : undefined)}
+              // FAZ 4: sorgu TIRNAK İÇİNDE tekrarlanıyor — yazım hatası mı
+              // diye bakabilmek için. Öncesinde yalnız "Sonuç yok" yazıyordu.
+              title={query ? t('games.noResultsFor').replace('{q}', query) : t('games.noResults')}
+              text={filterCount > 0 ? t('games.tryRemoving') : t('games.noResultsDesc')}
+              actionLabel={filterCount > 0 ? t('filter.clearAll') : (query ? t('common.clearSearch') : undefined)}
               onAction={filterCount > 0 ? clearFilters : (query ? () => setQuery('') : undefined)}
-            />
+            >
+              {/* ÇIKIŞ YOLU. Aynı çip bileşeni burada tek tek kaldırma
+                  aracına dönüşüyor: dört filtre görünür, her biri ayrı
+                  atılabilir. "Tümünü temizle" duruyor ama artık TEK
+                  seçenek değil. */}
+              {filterCount > 0 ? (
+                <EtkinFiltreler filters={filters} onKaldir={filtreKaldir} sar />
+              ) : null}
+            </EmptyState>
           </View>
         ) : (
           // İskeletten içeriğe geçiş: 160 ms fade + 4px yukarı. Öncesinde
@@ -415,6 +480,18 @@ function Chip({ active, label, onPress }) {
 }
 
 const makeStyles = (colors) => StyleSheet.create({
+  // FAZ 4 — BOZUK DURUM BANDI. Kırmızı YOK: bir durum bildiriyor, eylem
+  // istemiyor. Tek eylem "Yeniden dene" ve o da metin (44pt hedef).
+  bozukBant: {
+    marginHorizontal: spacing.s20, marginBottom: spacing.s16,
+    padding: spacing.s16, borderRadius: radius.md,
+    backgroundColor: colors.bgInput, gap: spacing.s4,
+  },
+  bozukBaslik: { color: colors.text, fontSize: type.subhead, fontWeight: '700' },
+  bozukMetin: { color: colors.text2, fontSize: type.footnote, lineHeight: 19 },
+  bozukEylem: { minHeight: TOUCH_MIN, justifyContent: 'center', alignSelf: 'flex-start' },
+  bozukEylemText: { color: colors.accentText, fontSize: type.subhead, fontWeight: '700' },
+
   safe: { flex: 1, backgroundColor: colors.bg },
   // Mutlak konum: gizlenirken listenin yüksekliğini değiştirmesin.
   // Arka plan ŞART — saydam olsaydı liste altından geçerken metinler

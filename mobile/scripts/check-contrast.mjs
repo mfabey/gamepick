@@ -65,6 +65,23 @@ for (const tema of ['dark', 'light']) {
   }
 }
 
+// ── DOLU CTA: beyaz metin marka dolgusu ÜSTÜNDE ──
+// Bu ölçüm palette türetilmiyor (theme.js'te elle yazılı bir jeton) ama
+// ratchete girmesi ŞART: Faz 4'ün düzelttiği kırılma tam buydu — filtre
+// düğmesi accent dolguyla 4.45:1 veriyordu ve kimse fark etmemişti.
+// Buradan kaymasın diye kontrol ediliyor.
+const DOLU_CTA = 'accentFillStrong';
+const doluTon = (readFileSync(KOK + 'src/theme.js', 'utf8')
+  .match(new RegExp(DOLU_CTA + ":\\s*'(#[0-9A-Fa-f]{6})'")) || [])[1];
+if (!doluTon) {
+  bulgular.push(`${DOLU_CTA} theme.js'te bulunamadi`);
+} else {
+  const beyazOran = oran(doluTon, '#FFFFFF');
+  const satir = `${DOLU_CTA}`.padEnd(18) + `${doluTon}  ${beyazOran.toFixed(2)} (beyaz metin ustunde)`;
+  if (beyazOran < ESIK) bulgular.push(satir);
+  else console.log('  ✓ ' + satir);
+}
+
 if (bulgular.length) {
   console.error(`\n✗ ${bulgular.length} jeton WCAG AA (${ESIK}:1) altinda:\n`);
   for (const b of bulgular) console.error('  ' + b);

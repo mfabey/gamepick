@@ -67,6 +67,13 @@ export const PALET_EK = {
     // DOLGU DEĞİL TINT: kırmızı bütçesi "içerik katmanında bir tane" diyor,
     // bu kabuk katmanının kalıcı durum işareti. %16'da ikon hâlâ okunuyor.
     tabVurgu:   'rgba(232,36,43,0.16)',
+    // FAZ 4 — DOLU CTA'LARIN MARKA TONU. `accent` (#E8242B) üstünde beyaz
+    // 4.45:1 veriyor; bu ton 5.45:1.
+    //
+    // MARKA RENGİ DEĞİŞMEDİ, bilerek: kimliği taşıyan `accent` ikonlarda,
+    // kenarlıklarda ve tint'lerde aynı. Değişen yalnız DOLU DÜĞMENİN zemini
+    // — üstünde metin taşıyan tek yer orası.
+    accentFillStrong: '#D01A21',
   },
   light: {
     green:      '#00794a',
@@ -76,6 +83,8 @@ export const PALET_EK = {
     accentGlow: 'rgba(232,36,43,0.28)',
     // Açık temada aynı tint beyaz cam üstünde soluk kalıyordu → %22.
     tabVurgu:   'rgba(232,36,43,0.22)',
+    // Açık temada da aynı ton: dolgu üstündeki beyaz iki temada da aynı.
+    accentFillStrong: '#D01A21',
   },
 };
 

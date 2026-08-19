@@ -29,7 +29,7 @@ import GameCover from '../GameCover';
 import { useStyles, useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { usePrice } from '../../hooks/usePrice';
-import { type, radius, spacing, PRESSED_CARD, metacriticColor } from '../../theme';
+import { type, radius, spacing, PRESSED, PRESSED_CARD, metacriticColor } from '../../theme';
 import { KART, VARYANT } from './variants';
 import { turAdi } from '../../services/genreName';
 
