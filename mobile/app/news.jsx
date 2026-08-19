@@ -14,6 +14,7 @@ import { FlashList } from '@shopify/flash-list';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TopFade } from '../src/components/EdgeFade';
+import ShareToFriendSheet from '../src/components/ShareToFriendSheet';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
@@ -60,8 +61,16 @@ export default function NewsScreen() {
   }, [items, cat]);
 
   const open = useCallback((url) => { if (url) WebBrowser.openBrowserAsync(url); }, []);
+
+  // HABER PAYLAŞIMI — uzun basma. Oyun kartındaki menüden farklı olarak
+  // burada TEK eylem var (elenecek bir öneri yok), o yüzden menü değil
+  // doğrudan gönderme sayfası açılıyor.
+  const [paylas, setPaylas] = useState(null);   // { url, title }
   const keyExtractor = useCallback((item) => item.id, []);
-  const renderNews = useCallback(({ item }) => <NewsRow item={item} onPress={open} />, [open]);
+  const renderNews = useCallback(
+    ({ item }) => <NewsRow item={item} onPress={open} onShare={(n) => setPaylas({ url: n.url, title: n.title })} />,
+    [open]
+  );
 
   // Geri düğmesi ÜÇ DALDA DA gerekiyor (yükleniyor / hata / liste). Ayrı bir
   // bileşen olmasının sebebi bu: üç kez elle yazılsaydı biri unutulur ve o
@@ -113,7 +122,12 @@ export default function NewsScreen() {
           <View>
             {/* Öne çıkan */}
             {cat === 'all' && featured && (
-              <Pressable style={({ pressed }) => [styles.featured, pressed && PRESSED]} onPress={() => open(featured.url)}>
+              <Pressable
+                style={({ pressed }) => [styles.featured, pressed && PRESSED]}
+                onPress={() => open(featured.url)}
+                onLongPress={() => setPaylas({ url: featured.url, title: featured.title })}
+                delayLongPress={400}
+              >
                 <NewsImage item={featured} style={StyleSheet.absoluteFill} />
                 <LinearGradient colors={['transparent', 'rgba(6,7,9,0.55)', 'rgba(6,7,9,0.97)']} locations={[0.2, 0.6, 1]} style={StyleSheet.absoluteFill} />
                 <View style={styles.featuredBadge}><Text style={styles.featuredBadgeText}>★ {t('news.featured')}</Text></View>
@@ -156,14 +170,26 @@ export default function NewsScreen() {
         }
       />
       </Reveal>
+    
+      <ShareToFriendSheet
+        visible={!!paylas}
+        onClose={() => setPaylas(null)}
+        newsUrl={paylas?.url}
+        gameName={paylas?.title}
+      />
     </SafeAreaView>
   );
 }
 
-const NewsRow = memo(function NewsRow({ item, onPress }) {
+const NewsRow = memo(function NewsRow({ item, onPress, onShare }) {
   const styles = useStyles(makeStyles);
   return (
-    <Pressable style={({ pressed }) => [styles.row, pressed && PRESSED]} onPress={() => onPress(item.url)}>
+    <Pressable
+      style={({ pressed }) => [styles.row, pressed && PRESSED]}
+      onPress={() => onPress(item.url)}
+      onLongPress={() => onShare?.(item)}
+      delayLongPress={400}
+    >
       <View style={styles.thumb}>
         <NewsImage item={item} style={StyleSheet.absoluteFill} />
       </View>

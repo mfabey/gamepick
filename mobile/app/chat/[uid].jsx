@@ -19,6 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import * as Haptics from 'expo-haptics';
+import * as WebBrowser from 'expo-web-browser';
 import * as ImagePicker from 'expo-image-picker';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 
@@ -55,10 +56,15 @@ const MAX_TEXT = 1000;
  * etiketi kullanıyor.
  */
 function kindLabel(x, t) {
-  const k = x?.kind || (x?.gif ? 'gif' : x?.share ? 'reel'
+  // Paylaşımın türü artık ÜÇ olabilir; `share.kind` sunucudan geliyor.
+  // Eskiden `share` taşıyan her mesaj "fragman" sayılıyordu ve oyun ya da
+  // haber gönderilince yanlış şey vaat ediyordu.
+  const k = x?.kind || (x?.gif ? 'gif' : x?.share ? (x.share.kind || 'reel')
     : x?.media ? (x.media.type?.startsWith('video/') ? 'video' : 'photo') : null);
   return k === 'gif'   ? `🖼️ ${t('msg.gif')}`
     : k === 'reel'     ? `🎬 ${t('msg.sharedReel')}`
+    : k === 'game'     ? `🎮 ${t('share.game')}`
+    : k === 'news'     ? `📰 ${t('share.news')}`
     : k === 'video'    ? `🎬 ${t('msg.video')}`
     : k === 'photo'    ? `📷 ${t('msg.photo')}`
     : '';
@@ -804,10 +810,24 @@ export default function ChatScreen() {
                 onJumpTo={jumpTo}
                 peerName={peer?.displayName || peer?.username || ''}
                 myUid={myUid}
-                onOpenShare={() => item.share?.appid && router.push({
-                  pathname: '/game/[id]',
-                  params: { id: `rawg_${item.share.appid}`, appid: item.share.appid, name: item.share.name, image: item.share.image },
-                })}
+                // HEDEF TÜRE GÖRE: fragman ve oyun oyun detayına, haber
+                // tarayıcıya. Haber zaten dış bir yazı — uygulama içinde
+                // gösterecek bir ekranı yok, o yüzden "↗" davranışı.
+                onOpenShare={() => {
+                  const sh = item.share;
+                  if (!sh) return;
+                  if (sh.kind === 'news') { if (sh.url) WebBrowser.openBrowserAsync(sh.url); return; }
+                  // `appid` OLMAYABİLİR: RAWG kataloğundan paylaşılan oyunda
+                  // Steam karşılığı yok (bkz. lib/chat-share.js — kimlik
+                  // uzayı çift anlamlı). Detay ekranı `rawg_<id>` ile
+                  // açılıyor, appid'e ihtiyaç duymuyor.
+                  const id = sh.gameId || (sh.appid ? `rawg_${sh.appid}` : null);
+                  if (!id) return;
+                  router.push({
+                    pathname: '/game/[id]',
+                    params: { id, appid: sh.appid || '', name: sh.name, image: sh.image || '' },
+                  });
+                }}
                 t={t}
               />
             )}
@@ -982,7 +1002,7 @@ function Bubble({ msg, mine, seen, onLongPress, onOpenShare, onReact, onJumpTo, 
   // ── Paylasilan Reels ──
   // Kendi baloncugu var: medya degil, bir OYUNA REFERANS. Dokununca oyun
   // sayfasi aciliyor — paylasimin amaci zaten karsi tarafin oyunu gormesi.
-  if (msg.share?.appid) {
+  if (msg.share) {
     return (
       <Pressable
         style={[styles.bubbleRow, mine ? styles.rowMine : styles.rowTheirs]}
@@ -992,10 +1012,24 @@ function Bubble({ msg, mine, seen, onLongPress, onOpenShare, onReact, onJumpTo, 
         onPress={onOpenShare}
       >
         <View style={styles.shareCard}>
-          <Image source={msg.share.image} style={styles.shareImg} contentFit="cover" transition={motion.image} />
+          {/* Haberde görsel EKSİK OLABİLİR (RSS her zaman vermiyor);
+              o hâlde kaynak baş harfi yer tutuyor, kutu boş kalmıyor. */}
+          {msg.share.image ? (
+            <Image source={msg.share.image} style={styles.shareImg} contentFit="cover" transition={motion.image} />
+          ) : (
+            <View style={[styles.shareImg, styles.shareImgBos]}>
+              <Text style={styles.shareImgHarf}>
+                {String(msg.share.source || msg.share.name || '?').charAt(0).toUpperCase()}
+              </Text>
+            </View>
+          )}
           <View style={styles.shareBody}>
             <Text style={styles.shareName} numberOfLines={2}>{msg.share.name}</Text>
-            <Text style={styles.shareHint}>{t('msg.sharedReel')}</Text>
+            <Text style={styles.shareHint}>
+              {msg.share.kind === 'news' ? (msg.share.source || t('share.news'))
+                : msg.share.kind === 'game' ? t('share.game')
+                : t('msg.sharedReel')}
+            </Text>
           </View>
         </View>
       </Pressable>
@@ -1295,6 +1329,8 @@ const makeStyles = (colors) => StyleSheet.create({
   bubbleTheirs: { backgroundColor: colors.card, borderBottomLeftRadius: 4 },
   bubbleMediaOnly: { padding: 0, overflow: 'hidden' },
   // Paylasim karti baloncuk degil kart: icerik bizim degil, bir oyuna isaret.
+  shareImgBos: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bgInput },
+  shareImgHarf: { color: colors.text2, fontSize: type.title3, fontWeight: '800' },
   shareCard: {
     width: 240, backgroundColor: colors.card, borderRadius: radius.md,
     borderWidth: 1, borderColor: colors.cardBorder, overflow: 'hidden',

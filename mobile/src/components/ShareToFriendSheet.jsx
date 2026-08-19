@@ -6,27 +6,36 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 import { getFriends, sendChat } from '../api/social';
+import Avatar from './Avatar';
 import { getSession } from '../services/session';
-import { getAvatarPreset } from '../utils/avatar';
 import { radius, spacing, type, PRESSED } from '../theme';
 import { useStyles, useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// "Arkadaşa gönder" sayfası — Reels'ten paylaşım.
+// "Arkadaşa gönder" sayfası — ÜÇ TÜR: fragman · oyun · haber.
 //
 // ARKADAŞ LİSTESİ AÇILDIĞINDA ÇEKİLİYOR, önceden değil: bu sayfa nadiren
 // açılıyor ve video ekranı zaten ağır. Her video için arkadaş listesi tutmak
 // hiç kullanılmayacak bir isteği herkese ödetirdi.
 //
-// GÖNDERİLEN VERİ YALNIZCA appid. Ad ve görseli sunucu çözüyor; istemciden
-// gelen metin saklanmıyor (bkz. lib/chat-share.js).
+// GÖNDERİLEN VERİ YALNIZCA KİMLİK — üç türde de. Ad ve görseli sunucu
+// çözüyor; istemciden gelen metin saklanmıyor (bkz. lib/chat-share.js).
+//   fragman → { appid }
+//   oyun    → { gameId }   (kart listesinde appid YOK, ölçüldü)
+//   haber   → { newsUrl }  (sunucu kendi listesinde arıyor)
 //
 // ÇOKLU SEÇİM YOK. Tek dokunuş = tek gönderim; onay yok, geri bildirim var.
 // Instagram'da da böyle: paylaşım hafif bir eylem olmalı, formа dönüşmemeli.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export default function ShareToFriendSheet({ visible, onClose, appid, gameName }) {
+/**
+ * @param {string} [appid]    fragman paylaşımı (Reels)
+ * @param {string} [gameId]   oyun paylaşımı (`rawg_<id>`)
+ * @param {string} [newsUrl]  haber paylaşımı
+ * @param {string} [gameName] başlıkta gösterilecek ad (yalnız görsel)
+ */
+export default function ShareToFriendSheet({ visible, onClose, appid, gameId, newsUrl, gameName }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const { t } = useLanguage();
@@ -53,11 +62,18 @@ export default function ShareToFriendSheet({ visible, onClose, appid, gameName }
     setBusy(uid);
     Haptics.selectionAsync().catch(() => {});
     try {
-      await sendChat(uid, '', undefined, { appid });
+      // TEK ALAN yollanıyor: sunucu hangisi geldiyse ona göre çözüyor.
+      // İkisini birden yollamak sunucuda öncelik sırası gerektirirdi.
+      const payload = appid != null ? { appid }
+        : gameId != null ? { gameId }
+        : newsUrl != null ? { newsUrl }
+        : null;
+      if (!payload) return;
+      await sendChat(uid, '', undefined, payload);
       setSent((s) => ({ ...s, [uid]: true }));
     } catch { /* satır "gönderildi" olmuyor, kullanıcı tekrar deneyebilir */ }
     finally { setBusy(null); }
-  }, [busy, sent, appid]);
+  }, [busy, sent, appid, gameId, newsUrl]);
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -80,7 +96,6 @@ export default function ShareToFriendSheet({ visible, onClose, appid, gameName }
             keyExtractor={(f) => f.uid}
             contentContainerStyle={{ paddingBottom: spacing.xl }}
             renderItem={({ item }) => {
-              const preset = getAvatarPreset(item.avatar);
               const name = item.displayName || item.username || '?';
               const done = !!sent[item.uid];
               return (
@@ -89,15 +104,11 @@ export default function ShareToFriendSheet({ visible, onClose, appid, gameName }
                   onPress={() => send(item.uid)}
                   disabled={done}
                 >
-                  {preset ? (
-                    <View style={[styles.avatar, { backgroundColor: preset.bg }]}>
-                      <Ionicons name={preset.icon} size={19} color={preset.iconColor} />
-                    </View>
-                  ) : (
-                    <View style={styles.avatar}>
-                      <Text style={styles.avatarLetter}>{name.charAt(0).toUpperCase()}</Text>
-                    </View>
-                  )}
+                  {/* DÖRDÜNCÜ AVATAR KOPYASI SİLİNDİ. Faz 7 (social.jsx) ve
+                      Faz 8 (social-settings.jsx) ile aynı kırılma: satır içi
+                      kopya fotoğraf dalını çizmiyor, fotoğrafı olan arkadaş
+                      HARF olarak görünüyordu. */}
+                  <Avatar avatar={item.avatar} name={name} size={38} />
                   <Text style={styles.name} numberOfLines={1}>{name}</Text>
 
                   {busy === item.uid
@@ -137,11 +148,6 @@ const makeStyles = (colors) => StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: spacing.md,
     paddingVertical: spacing.md,
   },
-  avatar: {
-    width: 40, height: 40, borderRadius: 20, backgroundColor: colors.bgInput,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  avatarLetter: { color: colors.text2, fontSize: type.footnote, fontWeight: '800' },
   name: { flex: 1, color: colors.text, fontSize: type.subhead, fontWeight: '600' },
   send: { color: colors.accentText, fontSize: type.footnote, fontWeight: '800' },
   done: { color: colors.green, fontSize: type.footnote, fontWeight: '700' },

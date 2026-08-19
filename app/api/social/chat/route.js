@@ -8,7 +8,10 @@ import {
 } from '../../../lib/chat-store';
 import { triggerMessage, triggerDelete, triggerRead } from '../../../lib/pusher-server';
 import { touchPresence, getPresence } from '../../../lib/presence';
-import { resolveShare } from '../../../lib/chat-share';
+import { resolveShare, resolveGameShare, resolveNewsShare } from '../../../lib/chat-share';
+
+// Bildirim önizlemesinde paylaşım türünün simgesi.
+const SHARE_ICON = { reel: '🎬', game: '🎮', news: '📰' };
 import { sendPush } from '../../../lib/push';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -162,10 +165,22 @@ export async function POST(request) {
   // İstemciden YALNIZCA appid alınıyor; ad ve görsel sunucuda çözülüyor.
   // İstemcinin gönderdiği metni saklasaydık sohbet baloncuğu istenen her şeyin
   // yazdırılabildiği bir yüzeye dönüşürdü.
+  //
+  // ÜÇ TÜR, ÜÇ ÇÖZÜCÜ, TEK KURAL: istemci yalnız KİMLİK yolluyor.
+  //   appid   → fragman (Reels)
+  //   gameId  → oyun kartı        (`rawg_<id>`; listede appid yok, ölçüldü)
+  //   newsUrl → haber satırı      (sunucu kendi listesinde arıyor)
   let share = null;
+  const dil = body.lang === 'en' ? 'en' : 'tr';
   if (body.share?.appid != null) {
-    share = await resolveShare(body.share.appid, body.lang === 'en' ? 'en' : 'tr');
-    if (!share) return NextResponse.json({ error: 'INVALID_SHARE' }, { status: 400 });
+    share = await resolveShare(body.share.appid, dil);
+  } else if (body.share?.gameId != null) {
+    share = await resolveGameShare(body.share.gameId, dil);
+  } else if (body.share?.newsUrl != null) {
+    share = await resolveNewsShare(body.share.newsUrl, dil);
+  }
+  if (body.share && !share) {
+    return NextResponse.json({ error: 'INVALID_SHARE' }, { status: 400 });
   }
 
   // GIF — sağlayıcının CDN adresi. Bizim depomuza inmiyor, o yüzden
@@ -220,7 +235,9 @@ export async function POST(request) {
         title: senderName,
         // Metinsiz mesajlarda önizleme boş kalmasın. Paylaşımda oyun adı
         // yazılıyor — bildirimde "📷" görmek hiçbir şey anlatmazdı.
-        body: msg.text || (share ? `🎬 ${share.name}` : gif ? 'GIF' : '📷'),
+        // Simge TÜRE göre: 🎬 fragman · 🎮 oyun · 📰 haber. Üçü de "🎬"
+        // olsaydı bildirim yanlış şey vaat ederdi.
+        body: msg.text || (share ? `${SHARE_ICON[share.kind] || '🎬'} ${share.name}` : gif ? 'GIF' : '📷'),
         // İstemci bu veriyle doğrudan sohbete açılıyor.
         data: { type: 'dm', from: user.uid },
       }),

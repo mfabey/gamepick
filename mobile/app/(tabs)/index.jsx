@@ -27,6 +27,8 @@ import ReviewCard from '../../src/components/ReviewCard';
 import PostCard from '../../src/components/PostCard';
 import FriendActivity, { hasFriendSignal } from '../../src/components/FriendActivity';
 import ReportSheet from '../../src/components/ReportSheet';
+import CardMenu from '../../src/components/CardMenu';
+import ShareToFriendSheet from '../../src/components/ShareToFriendSheet';
 import { fetchForYouCandidates } from '../../src/api/recommend';
 import { getReviewFeed, getFriendActivity, fetchPosts } from '../../src/api/social';
 import { getSession, subscribeSession } from '../../src/services/session';
@@ -284,13 +286,26 @@ export default function HomeScreen() {
     return mergeHighlights(interleaveReviews(games, social), highlights);
   }, [feedItems, dismissedIds, reviews, posts, highlights]);
 
-  // "İlgilenmiyorum" — uzun-bas → onay → feed'den kaldır
+  // ── Kart menüsü (uzun basma) ──
+  // Uzun basma tek bir eyleme bağlıydı; paylaşım eklenince iki eylem oldu.
+  // Menü ikisini de görünür kılıyor — Faz 7'de kişi satırında kurduğum
+  // kalıbın aynısı.
+  const [kartMenu, setKartMenu] = useState(null);   // { game, elenebilir }
+  const [paylas, setPaylas] = useState(null);       // { gameId, name }
+
+  // "İlgilenmiyorum" — menüden → onay → feed'den kaldır
   const handleDismiss = useCallback((game) => {
     Alert.alert(game.name, t('home.dismissPrompt'), [
       { text: t('common.cancel'), style: 'cancel' },
       { text: t('home.notInterested'), style: 'destructive', onPress: () => recordDismiss(game.id) },
     ]);
   }, [t]);
+
+  // "Senin için" şeridinde eleme zaten görünür bir "×" — menüde tekrar
+  // etmiyor. Diğer şeritlerde × yok, eleme yalnızca burada.
+  const kartMenuAc = useCallback((game) => {
+    setKartMenu({ game, elenebilir: !isCold && forYou.some((g) => String(g.id) === String(game.id)) });
+  }, [isCold, forYou]);
 
   const keyExtractor = useCallback((item) => item.key, []);
   // FlashList'e TÜR bildiriliyor: iki farklı yükseklikte kart var ve tür
@@ -426,17 +441,17 @@ export default function HomeScreen() {
         )}
 
         {lead === 'forYou' && (
-          <FadeIn delay={140}><Section title={t('home.forYou')} games={forYou} router={router} onDismiss={handleDismiss} /></FadeIn>
+          <FadeIn delay={140}><Section title={t('home.forYou')} games={forYou} router={router} onDismiss={handleDismiss} onMenu={kartMenuAc} /></FadeIn>
         )}
         {lead === 'trend' && (
-          <FadeIn delay={140}><Section title={t('home.trend')} games={trend} router={router} /></FadeIn>
+          <FadeIn delay={140}><Section title={t('home.trend')} games={trend} router={router} onMenu={kartMenuAc} /></FadeIn>
         )}
 
         {/* Yeni Çıkanlar ve İndirimdekiler LİDERİN ALTINDA, tam ağırlıkta.
             Akışa karıştırılmışlardı; geri alındı çünkü ikisi de NİYETLE
             aranıyor — "indirime ne girmiş" sorusunun akışta karşılığı yok. */}
-        <FadeIn delay={200}><Section title={t('home.new')} games={fresh} router={router} /></FadeIn>
-        <FadeIn delay={260}><Section title={t('home.sale')} games={sale} router={router} /></FadeIn>
+        <FadeIn delay={200}><Section title={t('home.new')} games={fresh} router={router} onMenu={kartMenuAc} /></FadeIn>
+        <FadeIn delay={260}><Section title={t('home.sale')} games={sale} router={router} onMenu={kartMenuAc} /></FadeIn>
     </View>
   );
 
@@ -470,6 +485,21 @@ export default function HomeScreen() {
       />
 
       {/* Raporlama, akıştaki inceleme kartlarına uzun basınca açılıyor. */}
+      <CardMenu
+        visible={!!kartMenu}
+        game={kartMenu?.game}
+        onClose={() => setKartMenu(null)}
+        onGonder={() => setPaylas({ gameId: String(kartMenu.game.id), name: kartMenu.game.name })}
+        onEle={kartMenu?.elenebilir ? () => handleDismiss(kartMenu.game) : undefined}
+      />
+
+      <ShareToFriendSheet
+        visible={!!paylas}
+        onClose={() => setPaylas(null)}
+        gameId={paylas?.gameId}
+        gameName={paylas?.name}
+      />
+
       <ReportSheet
         visible={!!reportTarget}
         onClose={() => setReportTarget(null)}
@@ -487,7 +517,7 @@ function go(router, g) {
   });
 }
 
-function Section({ title, games, router, onDismiss }) {
+function Section({ title, games, router, onDismiss, onMenu }) {
   const { t } = useLanguage();
   // Kanca erken donusten ONCE: asagida `games` bossa null donuluyor.
   const styles = useStyles(makeStyles);
@@ -506,7 +536,7 @@ function Section({ title, games, router, onDismiss }) {
         </Pressable>
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-        {games.map(g => <HomeCard key={g.id} game={g} router={router} onDismiss={onDismiss} />)}
+        {games.map(g => <HomeCard key={g.id} game={g} router={router} onDismiss={onDismiss} onMenu={onMenu} />)}
       </ScrollView>
     </View>
   );
@@ -516,7 +546,7 @@ function Section({ title, games, router, onDismiss }) {
 // kart vardı: kendi rozetleri, kendi ad bindirmesi, kendi 132pt genişliği.
 // HTML ölçüsü 148 ("eski 132 değil") ve ad kapağın altında — ikisi de
 // GameCard'ın rail varyantında.
-const HomeCard = memo(function HomeCard({ game, router, onDismiss }) {
+const HomeCard = memo(function HomeCard({ game, router, onDismiss, onMenu }) {
   return (
     <GameCard
       game={game}
@@ -526,6 +556,8 @@ const HomeCard = memo(function HomeCard({ game, router, onDismiss }) {
       // şeridinden geliyor — Yeni ve İndirim şeritleri onu göndermiyor,
       // dolayısıyla orada daire de çıkmıyor.
       onDismiss={onDismiss}
+      // Uzun basma MENÜ açıyor: paylaş + (varsa) eleme.
+      onLongPress={onMenu ? () => onMenu(game) : undefined}
     />
   );
 });
