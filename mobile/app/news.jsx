@@ -13,7 +13,6 @@ import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { TopFade } from '../src/components/EdgeFade';
 import ShareToFriendSheet from '../src/components/ShareToFriendSheet';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -37,7 +36,6 @@ export default function NewsScreen() {
   // gerçek üst kenarına oturmalı. Üstüne binerse başlığı karartır.
   // Yükseklik ölçülüyor, sabit yazılmıyor — yazı tipi boyutu ve dil değiştikçe
   // değişiyor (games.jsx'te aynı gerekçe).
-  const [headerH, setHeaderH] = useState(0);
   const [cat, setCat] = useState('all');
 
   // Cache-first: yeniden açılışta anında; arka planda tazelenir
@@ -109,8 +107,7 @@ export default function NewsScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      {head((e) => setHeaderH(e.nativeEvent.layout.height))}
-      {headerH > 0 ? <TopFade top={insets.top + headerH} /> : null}
+      {head()}
       <Reveal style={{ flex: 1 }}>
       <FlashList
         data={filtered}
