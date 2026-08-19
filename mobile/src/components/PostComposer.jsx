@@ -91,8 +91,8 @@ export default function PostComposer({ visible, onClose, onPosted, replyTo = nul
               ]}
             >
               {busy
-                ? <ActivityIndicator size="small" color={colors.bg} />
-                : <Text style={styles.sendText}>{t('post.send')}</Text>}
+                ? <ActivityIndicator size="small" color="#fff" />
+                : <Text style={[styles.sendText, (!text.trim() || busy) && styles.sendTextOff]}>{t('post.send')}</Text>}
             </Pressable>
           </View>
 
@@ -126,22 +126,33 @@ export default function PostComposer({ visible, onClose, onPosted, replyTo = nul
 }
 
 const makeStyles = (colors) => StyleSheet.create({
-  // tema-bagimsiz: medya onizlemesinin ustundeki karartma
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end' },
+  // KARAR 2 — YAZMA YÜZEYİ bgElevated, KARARTMA colors.overlay.
+  // Dört yazma yüzeyinden ÜÇÜ zaten bgElevated'dı; bu tek aykırıydı
+  // (colors.bg) ve AÇIK TEMADA sayfa arkasındaki ekranla AYNI renge
+  // düşüyordu — yükseklik yönü kayboluyordu. Karartma da sabit bir
+  // rgba yerine palete bağlandı.
+  backdrop: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },
   sheet: {
-    backgroundColor: colors.bg,
+    backgroundColor: colors.bgElevated,
     borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl,
     paddingHorizontal: spacing.lg, paddingTop: 14, paddingBottom: 28,
   },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   cancel: { color: colors.text2, fontSize: type.subhead },
   title: { color: colors.text, fontSize: type.subhead, fontWeight: '700' },
+  // FAZ 6 — TEK GÖNDER DİLİ. Hap + nötr dolgu bir SEÇİM dili; bu ise
+  // birincil eylem. Üç bestecide aynı: 44pt · radius.md · subhead 15/600 ·
+  // accentFillStrong.
   send: {
-    backgroundColor: colors.text, borderRadius: radius.pill,
-    paddingHorizontal: spacing.lg, paddingVertical: 7, minWidth: 74, alignItems: 'center',
+    backgroundColor: colors.accentFillStrong, borderRadius: radius.md,
+    paddingHorizontal: spacing.s20, height: 44,
+    alignItems: 'center', justifyContent: 'center',
   },
-  sendOff: { opacity: 0.4 },
-  sendText: { color: colors.bg, fontSize: type.footnote, fontWeight: '800' },
+  // Opaklık DEĞİL yüzey: opacity 0.4 beyaz etiketi 1.9:1'e düşürüyordu.
+  sendOff: { backgroundColor: colors.bgInput },
+  // tema-bagimsiz: dolu marka dugmesinin uzerinde
+  sendText: { color: '#fff', fontSize: type.subhead, fontWeight: '600' },
+  sendTextOff: { color: colors.text3 },
 
   input: {
     color: colors.text, fontSize: type.body, lineHeight: 22,

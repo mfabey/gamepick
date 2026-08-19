@@ -50,9 +50,18 @@ export default function ReportSheet({ visible, onClose, targetType, targetId, ta
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={close}>
-      <Pressable style={({ pressed }) => [styles.backdrop, pressed && PRESSED]} onPress={close}>
+      {/* FAZ 6, KUSUR — YÜZEYDEKİ `PRESSED` KALKTI.
+          Hem zemine hem sayfaya `pressed && PRESSED` verilmişti: sayfanın
+          HERHANGİ BİR YERİNE dokunmak tüm yüzeyi %65 opaklığa düşürüyordu.
+          Bir sebep seçmek, hatta metin alanına dokunmak sayfayı yanıp
+          söndürüyordu.
+
+          İlke: basma geri bildirimi DOKUNULABİLİR ÖĞEYE aittir, onu taşıyan
+          yüzeye değil. İkisi de hâlâ Pressable — biri kapatıyor, öteki
+          dokunuşu yutuyor — ama görsel tepki vermiyorlar. */}
+      <Pressable style={styles.backdrop} onPress={close}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <Pressable style={({ pressed }) => [styles.sheet, pressed && PRESSED]} onPress={(e) => e.stopPropagation()}>
+          <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
             <View style={styles.grabber} />
             <Text style={styles.title}>{t('soc.reportTitle')}</Text>
             {targetLabel ? <Text numberOfLines={1} style={styles.target}>{targetLabel}</Text> : null}
@@ -68,7 +77,7 @@ export default function ReportSheet({ visible, onClose, targetType, targetId, ta
                   >
                     <Text style={styles.rowText}>{t(`soc.reason.${r}`)}</Text>
                     <View style={[styles.radio, on && styles.radioOn]}>
-                      {on ? <Ionicons name="checkmark" size={14} color="#fff" /> : null}
+                      {on ? <Ionicons name="checkmark" size={14} color={colors.bg} /> : null}
                     </View>
                   </Pressable>
                 );
@@ -92,7 +101,7 @@ export default function ReportSheet({ visible, onClose, targetType, targetId, ta
             >
               {sending
                 ? <ActivityIndicator color="#fff" />
-                : <Text style={styles.ctaText}>{t('soc.reportSubmit')}</Text>}
+                : <Text style={[styles.ctaText, (!reason || sending) && styles.ctaTextOff]}>{t('soc.reportSubmit')}</Text>}
             </Pressable>
           </Pressable>
         </KeyboardAvoidingView>
@@ -124,7 +133,10 @@ const makeStyles = (colors) => StyleSheet.create({
     borderWidth: 2, borderColor: colors.cardBorder,
     alignItems: 'center', justifyContent: 'center',
   },
-  radioOn: { backgroundColor: colors.accent, borderColor: colors.accent },
+  // FAZ 6 — SEÇİM NÖTR. Ekranda İKİ farklı kırmızı vardı: seçili radyo
+  // `accent`, CTA `danger` — biri bilgi biri eylem. Kırmızı bir sebebi
+  // işaretlemiyor; seçim Faz 4/5'in nötr dolgu diline geçti.
+  radioOn: { backgroundColor: colors.text, borderColor: colors.text },
 
   input: {
     backgroundColor: colors.bgInput, borderRadius: radius.md,
@@ -134,10 +146,16 @@ const makeStyles = (colors) => StyleSheet.create({
     marginTop: spacing.sm, textAlignVertical: 'top',
   },
 
+  // FAZ 6 — TEK GÖNDER DİLİ: 44pt · radius.md · subhead 15/600.
+  // Dolgu `danger` KALIYOR: bu ekranın eylemi gerçekten yıkıcı. Anlam
+  // farkı RENKTE, biçimde değil — kullanıcı yıkıcı eylemi renkten ayırt
+  // ediyor, boyuttan değil.
   cta: {
-    height: 52, borderRadius: radius.lg, backgroundColor: colors.danger,
+    height: 44, borderRadius: radius.md, backgroundColor: colors.danger,
     alignItems: 'center', justifyContent: 'center', marginTop: 14,
   },
-  ctaOff: { opacity: 0.45 },
-  ctaText: { color: '#fff', fontSize: type.subhead, fontWeight: '800' },
+  ctaOff: { backgroundColor: colors.bgInput },
+  // tema-bagimsiz: dolu danger dugmesinin uzerinde
+  ctaText: { color: '#fff', fontSize: type.subhead, fontWeight: '600' },
+  ctaTextOff: { color: colors.text3 },
 });

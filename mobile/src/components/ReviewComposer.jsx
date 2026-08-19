@@ -6,7 +6,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 
 import { writeReview, removeReview } from '../api/social';
-import { radius, spacing, type, PRESSED } from '../theme';
+import { radius, spacing, type, PRESSED, NUMERIC } from '../theme';
 import { useStyles, useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -23,6 +23,9 @@ import { useLanguage } from '../context/LanguageContext';
 // ─────────────────────────────────────────────────────────────────────────────
 
 const MAX_TEXT = 2000;
+// Sayaç eşiği gönderi bestecisiyle AYNI (40): iki yerde farklı olsaydı
+// kullanıcı hangi noktada uyarılacağını öğrenemezdi.
+const ESIK = 40;
 
 export default function ReviewComposer({ visible, onClose, appid, gameName, existing, onSaved }) {
   const styles = useStyles(makeStyles);
@@ -38,15 +41,28 @@ export default function ReviewComposer({ visible, onClose, appid, gameName, exis
     setRec(existing ? !!existing.recommended : true);
   }, [visible, existing]);
 
+  // FAZ 6 — GÖRÜNMEYEN SINIR BİR TUZAK. MAX_TEXT 2000 ve bir TEXT_TOO_LONG
+  // hata yolu vardı ama kullanıcı sınırı hiç görmüyordu: yazı bir yerde
+  // SESSİZCE duruyor ve kullanıcı klavyeyi ya da uygulamayı suçluyor.
+  // Gönderi bestecisinin deseni aynen taşındı (kalan sayı, eşik 40).
+  const [hata, setHata] = useState(null);
+  const kalan = MAX_TEXT - text.length;
+
   const save = useCallback(async () => {
     if (!text.trim() || busy) return;
+    setHata(null);
     setBusy(true);
     try {
       await writeReview(appid, text.trim(), rec);
       onSaved?.();
     } catch (e) {
+      // FAZ 6 — HATA SATIR İÇİNE İNDİ. Aynı sınıf hatayı gönderi bestecisi
+      // zaten sayfanın İÇİNDE gösteriyor: metin ekranda kalıyor ve
+      // düzeltilebiliyor. Burada `Alert` vardı — düzeltilebilir bir sorun
+      // için akışı kesen modal, kullanıcıyı metninden koparıyor.
+      // `Alert` yalnızca SİLME onayında kalıyor: geri alınamaz tek eylem.
       const c = e?.code;
-      Alert.alert(
+      setHata(
         c === 'NOT_IN_LIBRARY'       ? t('rev.notInLibrary')
           : c === 'NOT_ENOUGH_HOURS'   ? t('rev.notEnoughHours')
           : c === 'TEXT_INAPPROPRIATE' ? t('msg.inappropriate')
@@ -113,6 +129,14 @@ export default function ReviewComposer({ visible, onClose, appid, gameName, exis
             />
           </ScrollView>
 
+          {/* Hata SOLDA, sayaç SAĞDA — gönderi bestecisiyle aynı düzen. */}
+          <View style={styles.altSatir}>
+            {hata ? <Text style={styles.hata}>{hata}</Text> : <View style={{ flex: 1 }} />}
+            <Text style={[styles.sayac, kalan <= ESIK && styles.sayacYakin, NUMERIC]}>
+              {kalan <= ESIK ? kalan : text.length}
+            </Text>
+          </View>
+
           <View style={styles.actions}>
             {existing
               ? (
@@ -129,7 +153,7 @@ export default function ReviewComposer({ visible, onClose, appid, gameName, exis
             >
               {busy
                 ? <ActivityIndicator size="small" color="#fff" />
-                : <Text style={styles.saveText}>{t('rev.save')}</Text>}
+                : <Text style={[styles.saveText, (!text.trim() || busy) && styles.saveTextOff]}>{t('rev.save')}</Text>}
             </Pressable>
           </View>
         </View>
@@ -158,8 +182,14 @@ const makeStyles = (colors) => StyleSheet.create({
     gap: 6, minHeight: 44, borderRadius: radius.md,
     backgroundColor: colors.bgInput, borderWidth: 1, borderColor: 'transparent',
   },
-  recOn:   { borderColor: colors.green },
-  recOff:  { borderColor: colors.danger },
+  // Seçim yalnızca 1px kenarlıkla anlatılıyordu. Renk burada DEĞERE bağlı
+  // (öneri/önermeme), o yüzden kalıyor — sadece güçleniyor: %12 yumuşak
+  // dolgu ekleniyor, kenarlık tek sinyal olmaktan çıkıyor.
+  // tema-bagimsiz: deger renginin yumusak dolgusu, iki temada da ayni okunur
+  // tema-bagimsiz: deger renginin yumusak dolgusu, iki temada da ayni okunur
+  recOn:   { borderColor: colors.green,  backgroundColor: 'rgba(0,210,110,0.12)' },
+  // tema-bagimsiz: deger renginin yumusak dolgusu, iki temada da ayni okunur
+  recOff:  { borderColor: colors.danger, backgroundColor: 'rgba(239,73,73,0.12)' },
   recText: { color: colors.text3, fontSize: type.footnote, fontWeight: '700' },
 
   input: {
@@ -170,10 +200,25 @@ const makeStyles = (colors) => StyleSheet.create({
   actions: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: spacing.md },
   delBtn:  { flex: 1, minHeight: 44, justifyContent: 'center' },
   delText: { color: colors.danger, fontSize: type.footnote, fontWeight: '700' },
+  // FAZ 6 — TEK GÖNDER DİLİ: 44pt · radius.md · subhead 15/600 ·
+  // accentFillStrong. Üç bestecide aynı. `accent` dolgu + beyaz 13/800
+  // tam 4.45:1 veriyordu (bu deponun ÜÇÜNCÜ kez gördüğü aynı ölçüm);
+  // yeni ton 5.45:1.
   saveBtn: {
-    paddingHorizontal: spacing.xl, minHeight: 44, borderRadius: radius.md,
-    backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center',
+    paddingHorizontal: spacing.s24, height: 44, borderRadius: radius.md,
+    backgroundColor: colors.accentFillStrong, alignItems: 'center', justifyContent: 'center',
   },
-  saveOff:  { backgroundColor: colors.bgHover },
-  saveText: { color: '#fff', fontSize: type.footnote, fontWeight: '800' },
+  // DEVRE DIŞI = YÜZEY DEĞİŞİMİ, OPAKLIK DEĞİL. Ölçüldü: opacity 0.4'te
+  // beyaz etiket koyu zeminde 1.9:1'e iniyor — okunmuyor. Ayrıca PRESSED
+  // de opaklıkla çalışıyor, yani devre dışı ile basılı hâl aynı dili
+  // konuşuyordu. Nötr yüzey ikisini de çözüyor.
+  saveOff:  { backgroundColor: colors.bgInput },
+  // tema-bagimsiz: dolu marka dugmesinin uzerinde
+  saveText: { color: '#fff', fontSize: type.subhead, fontWeight: '600' },
+  saveTextOff: { color: colors.text3 },
+
+  altSatir: { flexDirection: 'row', alignItems: 'center', gap: spacing.s12, marginTop: spacing.s8 },
+  hata: { flex: 1, color: colors.accentText, fontSize: type.caption },
+  sayac: { color: colors.text3, fontSize: type.caption, fontWeight: '600' },
+  sayacYakin: { color: colors.accentText },
 });
