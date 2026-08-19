@@ -1,13 +1,13 @@
 import { memo, useEffect, useState, useCallback } from 'react';
 import { View, Text, Pressable, StyleSheet, Alert } from 'react-native';
-import { Image } from 'expo-image';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchCardPrice } from '../src/api/games';
 import EmptyState from '../src/components/EmptyState';
-import { radius, spacing, PRESSED, type, motion } from '../src/theme';
+import { radius, spacing, PRESSED, type } from '../src/theme';
+import GameRow, { SATIR_Y } from '../src/components/GameRow';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 import { useWishlist } from '../src/context/WishlistContext';
@@ -74,7 +74,11 @@ function WishlistScreenContent() {
           data={items}
           keyExtractor={keyExtractor}
           renderItem={renderWish}
-          contentContainerStyle={{ paddingBottom: 32 }}
+          // Yatay dolgu SATIRDA değil listede: ayırıcı çizgi kenardan
+          // kenara gitmiyor, metin bloğuyla hizalanıyor.
+          contentContainerStyle={{ paddingBottom: 32, paddingHorizontal: spacing.s20 }}
+          // Sabit yükseklikli satır → tahmin değil ÖLÇÜ (Faz 2 sözleşmesi).
+          estimatedItemSize={SATIR_Y}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             !enabled ? (
@@ -108,30 +112,31 @@ const WishRow = memo(function WishRow({ item, onOpen, onRemove }) {
   const isFree = price?.isFree;
   const onSale = price?.discount > 0 && !isFree;
 
+  // FAZ 2 — E bedeni. Fiyat SAĞ YUVADA, indirim ad altındaki durum
+  // satırında: ikisi eskiden aynı satırda yan yanaydı ve uzun adlarda
+  // fiyat sıkışıyordu.
+  const durum = isFree ? t('card.free')
+    : onSale ? `-%${price.discount}`
+    : null;
+
   return (
-    <Pressable style={({ pressed }) => [styles.row, pressed && PRESSED]} onPress={() => onOpen(item)}>
-      <View style={styles.thumb}>
-        {item.image ? <Image source={item.image} recyclingKey={String(item.id)} cachePolicy="memory-disk" style={StyleSheet.absoluteFill} contentFit="cover" transition={motion.image} /> : null}
-      </View>
-      <View style={{ flex: 1, minWidth: 0 }}>
-        <Text numberOfLines={2} style={styles.rowName}>{item.name}</Text>
-        <View style={styles.rowPriceRow}>
-          {isFree ? (
-            <Text style={styles.free}>{t('card.free')}</Text>
-          ) : price?.price != null ? (
-            <>
-              {onSale && <View style={styles.saleBadge}><Text style={styles.saleText}>-%{price.discount}</Text></View>}
-              <Text style={[styles.price, onSale && { color: colors.accentText }]}>{formatPrice(price.price)}</Text>
-            </>
-          ) : (
+    <GameRow
+      game={item}
+      durum={durum}
+      onPress={() => onOpen(item)}
+      sag={
+        <View style={styles.sag}>
+          {price?.price != null && !isFree ? (
+            <Text style={[styles.price, onSale && { color: colors.accentText }]}>{formatPrice(price.price)}</Text>
+          ) : !isFree ? (
             <Text style={styles.priceDim}>…</Text>
-          )}
+          ) : null}
+          <Pressable onPress={() => onRemove(item.id)} hitSlop={10} style={styles.remove} accessibilityRole="button" accessibilityLabel={t('a11y.delete')}>
+            <Ionicons name="trash-outline" size={19} color={colors.text3} />
+          </Pressable>
         </View>
-      </View>
-      <Pressable onPress={() => onRemove(item.id)} hitSlop={10} style={styles.remove} accessibilityRole="button" accessibilityLabel={t('a11y.delete')}>
-        <Ionicons name="trash-outline" size={19} color={colors.text3} />
-      </Pressable>
-    </Pressable>
+      }
+    />
   );
 });
 
@@ -151,14 +156,8 @@ const makeStyles = (colors) => StyleSheet.create({
   notifText: { flex: 1, fontSize: type.caption, color: colors.text2, lineHeight: 16 },
   notifCta: { fontSize: type.footnote, fontWeight: '800', color: colors.accentText },
 
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: 11 },
-  thumb: { width: 96, height: 54, borderRadius: radius.sm, overflow: 'hidden', backgroundColor: colors.card },
-  rowName: { fontSize: type.subhead, fontWeight: '700', color: colors.text, lineHeight: 18 },
-  rowPriceRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: 5 },
-  price: { fontSize: type.subhead, fontWeight: '800', color: colors.text },
+  sag: { flexDirection: 'row', alignItems: 'center', gap: spacing.s8 },
+  price: { fontSize: type.subhead, fontWeight: '700', color: colors.text },
   priceDim: { fontSize: type.subhead, color: colors.text3 },
-  free: { fontSize: type.subhead, fontWeight: '800', color: colors.green },
-  saleBadge: { backgroundColor: colors.accent, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
-  saleText: { color: '#fff', fontWeight: '800', fontSize: type.caption2 },
   remove: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
 });

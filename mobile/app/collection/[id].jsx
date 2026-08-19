@@ -23,7 +23,7 @@ import { radius, spacing, PRESSED, type } from '../../src/theme';
 import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { useLanguage } from '../../src/context/LanguageContext';
 import IconButton from '../../src/components/IconButton';
-import GameCover from '../../src/components/GameCover';
+import GameRow, { SATIR_Y } from '../../src/components/GameRow';
 
 export default function CollectionDetailScreen() {
   const styles = useStyles(makeStyles);
@@ -89,21 +89,12 @@ export default function CollectionDetailScreen() {
     ]);
   }, [id, t]);
 
+  // FAZ 2 — E bedeni. Bkz. list/[id]: ad kapak üstünden çıktı.
+  // GameRow içeride GameCover kullanıyor, o da PosterImage'a düşüyor —
+  // dikey kapak 404 verirse orijinale dönme davranışı korunuyor.
   const renderItem = useCallback(({ item }) => (
-    <Pressable
-      style={({ pressed }) => [styles.cell, pressed && PRESSED]}
-      onPress={() => openGame(item)}
-      onLongPress={() => removeGame(item)}
-    >
-      {/* posterImage() ELDEN GİTTİ diye görünüyor ama gitmedi: GameCover
-          içeride PosterImage kullanıyor, o da aynı dönüşümü yapıyor VE
-          dikey kapak 404 verirse orijinale dönüyor. Burada o geri dönüş
-          yoktu. */}
-      <GameCover uri={item.image} name={item.name} style={styles.cover}>
-        <Text numberOfLines={2} style={styles.cellName}>{item.name}</Text>
-      </GameCover>
-    </Pressable>
-  ), [openGame, removeGame, styles]);
+    <GameRow game={item} onPress={() => openGame(item)} onLongPress={() => removeGame(item)} />
+  ), [openGame, removeGame]);
 
   if (!col) {
     // Koleksiyon silinmiş olabilir (bu ekran açıkken) — sessizce geri dön
@@ -151,10 +142,10 @@ export default function CollectionDetailScreen() {
       ) : (
         <FlashList
           data={games}
-          numColumns={3}
           keyExtractor={(item) => String(item.id)}
           renderItem={renderItem}
           contentContainerStyle={styles.list}
+          estimatedItemSize={SATIR_Y}
           showsVerticalScrollIndicator={false}
         />
       )}
@@ -216,13 +207,7 @@ const makeStyles = (colors) => StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
 
-  list: { paddingHorizontal: spacing.sm, paddingBottom: 30 },
-  cell: { flex: 1, paddingHorizontal: 5, paddingBottom: 10 },
-  cover: {
-    width: '100%', aspectRatio: 3 / 4, borderRadius: radius.md, overflow: 'hidden',
-    backgroundColor: colors.card,
-  },
-  cellName: { position: 'absolute', left: 8, right: 8, bottom: 7, color: '#fff', fontSize: type.caption, fontWeight: '700', lineHeight: 14 },
+  list: { paddingHorizontal: spacing.s20, paddingBottom: 30 },
 
 
 

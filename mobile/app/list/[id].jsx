@@ -18,7 +18,7 @@ import { radius, spacing, PRESSED, type } from '../../src/theme';
 import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { useLanguage } from '../../src/context/LanguageContext';
 import IconButton from '../../src/components/IconButton';
-import GameCover from '../../src/components/GameCover';
+import GameRow, { SATIR_Y } from '../../src/components/GameRow';
 
 export default function PublicListScreen() {
   const styles = useStyles(makeStyles);
@@ -78,13 +78,13 @@ export default function PublicListScreen() {
     });
   }, [router]);
 
+  // FAZ 2 — E bedeni (kompakt satır). Öncesinde 3 sütunlu ızgaraydı ve ad
+  // KAPAK ÜSTÜNE yazılıyordu; fazın öz-denetimindeki "açık temada kapak üstü
+  // metin" maddesini deliyordu — açık renkli bir kapakta beyaz ad kayboluyor.
+  // Liste detayı fazın E için saydığı ekranlardan biri.
   const renderItem = useCallback(({ item }) => (
-    <Pressable style={({ pressed }) => [styles.cell, pressed && PRESSED]} onPress={() => openGame(item)}>
-      <GameCover uri={item.image} name={item.name} style={styles.cover}>
-        <Text numberOfLines={2} style={styles.cellName}>{item.name}</Text>
-      </GameCover>
-    </Pressable>
-  ), [openGame, styles]);
+    <GameRow game={item} onPress={() => openGame(item)} />
+  ), [openGame]);
 
   if (list === undefined) {
     return (
@@ -128,10 +128,10 @@ export default function PublicListScreen() {
 
       <FlashList
         data={list.games || []}
-        numColumns={3}
         keyExtractor={(item, i) => `${item.id}_${i}`}
         renderItem={renderItem}
         contentContainerStyle={styles.list}
+        estimatedItemSize={SATIR_Y}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <View style={styles.header}>
@@ -207,16 +207,7 @@ const makeStyles = (colors) => StyleSheet.create({
   likeBtn: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   likeCount: { color: colors.text3, fontSize: type.footnote, fontWeight: '700' },
 
-  list: { paddingHorizontal: spacing.sm, paddingBottom: 30 },
-  cell: { flex: 1, paddingHorizontal: 5, paddingBottom: 10 },
-  cover: {
-    width: '100%', aspectRatio: 3 / 4, borderRadius: radius.md, overflow: 'hidden',
-    backgroundColor: colors.card,
-  },
-  cellName: {
-    position: 'absolute', left: 8, right: 8, bottom: 7,
-    color: '#fff', fontSize: type.caption, fontWeight: '700', lineHeight: 14,
-  },
+  list: { paddingHorizontal: spacing.s20, paddingBottom: 30 },
 
   emptyTitle: { color: colors.text, fontSize: type.body, fontWeight: '800', marginTop: spacing.md },
 
