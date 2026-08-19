@@ -134,6 +134,7 @@ const makeStyles = (colors) => StyleSheet.create({
     borderWidth: 2, borderColor: colors.cardBorder,
     alignItems: 'center', justifyContent: 'center',
   },
+  // accent-serbest: onay isareti simgesi, metin yok
   checkOn: { backgroundColor: colors.accent, borderColor: colors.accent },
 
   addRow: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingVertical: 13 },
@@ -146,6 +147,7 @@ const makeStyles = (colors) => StyleSheet.create({
     borderWidth: 1, borderColor: colors.cardBorder,
   },
   miniCta: {
+    // accent-serbest: 46pt daire, yalniz simge
     width: 46, height: 46, borderRadius: radius.md, backgroundColor: colors.accent,
     alignItems: 'center', justifyContent: 'center',
   },

@@ -580,6 +580,7 @@ const makeStyles = (colors) => StyleSheet.create({
   // 44×44 — Faz 1 ölçüsü ve HIG dokunma hedefi.
   searchBtn: {
     width: TOUCH_MIN, height: TOUCH_MIN, borderRadius: radius.md,
+    // accent-serbest: yalniz ok simgesi tasiyor, metin yok — WCAG grafik esigi 3:1 ve accent 4.45 onu asiyor
     backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center',
   },
   // letterSpacing 1.5 KALKTI: o değer BÜYÜK HARF yazı içindi. Küçük harf

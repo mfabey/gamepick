@@ -376,6 +376,7 @@ const makeStyles = (colors) => StyleSheet.create({
     width: 62, height: 62, borderRadius: 31,
     alignItems: 'center', justifyContent: 'center',
   },
+  // accent-serbest: 62pt daire, yalniz simge
   passBtn: { backgroundColor: colors.accent },
   likeBtn: { backgroundColor: colors.green },
   infoBtn: {

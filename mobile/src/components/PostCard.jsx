@@ -121,6 +121,8 @@ function PostCard({ post, onOpen, onRequireAccount, compact = false, kok = false
                 color={liked ? colors.accent : colors.text3}
               />
             </Animated.View>
+            {/* Kendi beğenin bir DURUM işareti; renk değere bağlı (Faz 5 kararı). */}
+            {/* accent-serbest: kendi beğenin — değere bağlı durum rengi */}
             <Text style={[styles.actionText, NUMERIC, liked && { color: colors.accent }]}>{count}</Text>
           </Pressable>
         </View>

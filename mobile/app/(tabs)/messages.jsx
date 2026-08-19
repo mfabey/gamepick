@@ -214,5 +214,6 @@ const makeStyles = (colors) => StyleSheet.create({
 
   rowEnd: { alignItems: 'flex-end', gap: 6 },
   time:   { color: colors.text3, fontSize: type.caption2 },
+  // accent-serbest: 9x9 okunmamis noktasi, uzerinde metin yok
   dot:    { width: 9, height: 9, borderRadius: 5, backgroundColor: colors.accent },
 });

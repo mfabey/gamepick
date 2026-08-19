@@ -1227,6 +1227,7 @@ const makeStyles = (colors) => StyleSheet.create({
   // yeterince ayrışmıyordu.
   // tema-bagimsiz: kendi baloncugumun zemini colors.accent; katman ona gore
   quoteMine:       { backgroundColor: 'rgba(0,0,0,0.18)' },
+  // accent-serbest: 3px alinti seridi, uzerinde metin yok
   quoteStripe:     { width: 3, borderRadius: 2, backgroundColor: colors.accent },
   // tema-bagimsiz: kendi baloncugumun zemini colors.accent; katman ona gore
   quoteStripeMine: { backgroundColor: 'rgba(255,255,255,0.55)' },
@@ -1257,6 +1258,7 @@ const makeStyles = (colors) => StyleSheet.create({
     borderRadius: radius.md,
     borderWidth: 1, borderColor: colors.cardBorder,
   },
+  // accent-serbest: 3px yanit seridi, uzerinde metin yok
   replyStripe: { width: 3, alignSelf: 'stretch', borderRadius: 2, backgroundColor: colors.accent },
   replyWho:    { color: colors.accentText, fontSize: type.caption2, fontWeight: '800' },
   replyText:   { color: colors.text2, fontSize: type.caption },
@@ -1289,7 +1291,7 @@ const makeStyles = (colors) => StyleSheet.create({
   rowTheirs:  { alignItems: 'flex-start' },
 
   bubble: { maxWidth: '78%', paddingHorizontal: 13, paddingVertical: 9, borderRadius: radius.lg },
-  bubbleMine:   { backgroundColor: colors.accent, borderBottomRightRadius: 4 },
+  bubbleMine:   { backgroundColor: colors.accentFillStrong, borderBottomRightRadius: 4 },
   bubbleTheirs: { backgroundColor: colors.card, borderBottomLeftRadius: 4 },
   bubbleMediaOnly: { padding: 0, overflow: 'hidden' },
   // Paylasim karti baloncuk degil kart: icerik bizim degil, bir oyuna isaret.
@@ -1334,6 +1336,7 @@ const makeStyles = (colors) => StyleSheet.create({
   attachBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   // 40×40 + hitSlop 6 → etkin dokunma alanı 52×52, HIG alt sınırının üstünde
   sendBtn: {
+    // accent-serbest: 40pt daire, yalniz simge
     width: 40, height: 40, borderRadius: 20, backgroundColor: colors.accent,
     alignItems: 'center', justifyContent: 'center',
   },

@@ -9,9 +9,11 @@
 // ikisi de AA eşiğinin (4.5) altında. Doğrusu: dolguda `accentFillStrong`
 // (5.45), metinde `accentText` (5.52).
 //
-// TABAN RATCHET'İ, sıfır-tolerans değil: tarama 20 mevcut kullanım buldu ve
-// hepsini tek fazda düzeltmek bu fazın işi değil. check-spacing ile aynı
-// kalıp — borç AZALABİLİR, artamaz.
+// BORÇ SIFIRLANDI. Başlangıçta 33 kullanım vardı; hepsi sınıflandırıldı:
+// metin taşıyan dolgular accentFillStrong'a geçti, metin taşımayanlar
+// (nokta, şerit, simge dairesi) ve DEĞERE BAĞLI olanlar (grafikte en yoğun
+// gün, kendi beğenin) gerekçesiyle işaretlendi. Taban artık sıfır — yani
+// bu ratchet sıfır-tolerans çalışıyor.
 //
 // KAPSAM DAR: yalnız `backgroundColor: colors.accent` ve `color:
 // colors.accent`. `accentSoft`, `accentBg`, `accentGlow`, `tabVurgu` gibi

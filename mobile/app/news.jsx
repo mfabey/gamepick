@@ -189,7 +189,7 @@ const makeStyles = (colors) => StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.lg },
 
   featured: { marginHorizontal: spacing.lg, height: 210, borderRadius: radius.lg, overflow: 'hidden', backgroundColor: colors.card, marginBottom: spacing.xs },
-  featuredBadge: { position: 'absolute', top: 12, left: 12, backgroundColor: colors.accent, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: spacing.xs },
+  featuredBadge: { position: 'absolute', top: 12, left: 12, backgroundColor: colors.accentFillStrong, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: spacing.xs },
   featuredBadgeText: { color: '#fff', fontSize: type.caption2, fontWeight: '800', letterSpacing: 0.5 },
   featuredInfo: { position: 'absolute', left: 16, right: 16, bottom: 14 },
   featuredTitle: { color: '#fff', fontSize: type.body, fontWeight: '800', lineHeight: 22, marginTop: spacing.sm },
@@ -219,6 +219,6 @@ const makeStyles = (colors) => StyleSheet.create({
   rowTitle: { color: colors.text, fontSize: type.subhead, fontWeight: '700', lineHeight: 18 },
   rowMeta: { color: colors.text3, fontSize: type.caption, marginTop: 5, fontWeight: '500' },
 
-  retryBtn: { backgroundColor: colors.accent, borderRadius: radius.md, paddingHorizontal: 22, paddingVertical: 11 },
+  retryBtn: { backgroundColor: colors.accentFillStrong, borderRadius: radius.md, paddingHorizontal: 22, paddingVertical: 11 },
   retryText: { color: '#fff', fontWeight: '700', fontSize: type.subhead },
 });

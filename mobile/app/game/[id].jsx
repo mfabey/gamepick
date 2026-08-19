@@ -834,7 +834,7 @@ const makeStyles = (colors) => StyleSheet.create({
   // Ekranın tek kırmızısı ve bir EYLEM. 44pt — HIG hedefi.
   cmpGit: {
     height: TOUCH_MIN, paddingHorizontal: 14, borderRadius: radius.md,
-    backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+    backgroundColor: colors.accentFillStrong, alignItems: 'center', justifyContent: 'center', flexShrink: 0,
   },
   // tema-bagimsiz: dolu kirmizi dugmenin uzerinde
   cmpGitText: { color: '#fff', fontSize: type.subhead, fontWeight: '600' },

@@ -92,7 +92,7 @@ const makeStyles = (colors) => StyleSheet.create({
   metin: { color: colors.text2, fontSize: type.footnote, lineHeight: 20 },
   eylemler: { flexDirection: 'row', gap: spacing.s8 },
   birincil: {
-    backgroundColor: colors.accent,
+    backgroundColor: colors.accentFillStrong,
     borderRadius: radius.md,
     paddingHorizontal: spacing.s16, paddingVertical: spacing.s12,
     minHeight: 44, justifyContent: 'center',

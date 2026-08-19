@@ -234,6 +234,7 @@ const makeStyles = (colors) => StyleSheet.create({
   barRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 9 },
   barLabel: { width: 88, color: colors.text2, fontSize: type.footnote, fontWeight: '600' },
   barTrack: { flex: 1, height: 8, borderRadius: 4, backgroundColor: colors.bgInput, overflow: 'hidden' },
+  // accent-serbest: cubuk dolgusu — renk DEGERE bagli, etikete degil
   barFill: { height: '100%', borderRadius: 4, backgroundColor: colors.accent },
   barCount: { width: 22, textAlign: 'right', color: colors.text3, fontSize: type.caption, fontWeight: '700' },
 
@@ -250,7 +251,7 @@ const makeStyles = (colors) => StyleSheet.create({
   cta: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
     height: 50, paddingHorizontal: 22, borderRadius: radius.lg,
-    backgroundColor: colors.accent, marginTop: 22,
+    backgroundColor: colors.accentFillStrong, marginTop: 22,
   },
   ctaText: { color: '#fff', fontSize: type.subhead, fontWeight: '800' },
 });

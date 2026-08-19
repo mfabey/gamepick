@@ -696,7 +696,7 @@ const makeStyles = (colors) => StyleSheet.create({
   tabRozet: {
     position: 'absolute', top: 4, right: 8,
     minWidth: 17, height: 17, borderRadius: 9, paddingHorizontal: spacing.xs,
-    backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.accentFillStrong, alignItems: 'center', justifyContent: 'center',
   },
   // tema-bagimsiz: dolu kirmizi rozetin uzerinde
   tabRozetText: { color: '#fff', fontSize: type.caption2, fontWeight: '800' },

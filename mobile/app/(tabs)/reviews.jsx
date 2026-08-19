@@ -508,7 +508,7 @@ const makeStyles = (colors) => StyleSheet.create({
     minWidth: 22, height: 22, borderRadius: 11,
     borderWidth: 2, borderColor: colors.bg,
     alignItems: 'center', justifyContent: 'center',
-    backgroundColor: colors.accent,
+    backgroundColor: colors.accentFillStrong,
   },
   headBadgeText: { color: '#fff', fontSize: type.caption2, fontWeight: '800' },
 

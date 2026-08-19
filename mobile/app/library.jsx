@@ -211,7 +211,7 @@ export default function LibraryScreen() {
                 </Pressable>
               </>
             ) : (
-              <Pressable onPress={() => router.push('/account')} style={[styles.connectBtn, { backgroundColor: colors.accent }]}>
+              <Pressable onPress={() => router.push('/account')} style={[styles.connectBtn, { backgroundColor: colors.accentFillStrong }]}>
                 <Ionicons name="person-add-outline" size={19} color="#fff" />
                 <Text style={styles.connectText}>{t('prof.lockCta')}</Text>
               </Pressable>
@@ -503,7 +503,7 @@ const makeStyles = (colors) => StyleSheet.create({
   // tema-bagimsiz: magaza marka rengi (Steam / Xbox)
   gpBadge: { position: 'absolute', top: 8, right: 8, backgroundColor: '#107c10', borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 },
   gpText: { color: '#fff', fontSize: type.caption2, fontWeight: '800' },
-  saleBadge: { position: 'absolute', top: 8, left: 8, backgroundColor: colors.accent, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 },
+  saleBadge: { position: 'absolute', top: 8, left: 8, backgroundColor: colors.accentFillStrong, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 },
   saleText: { color: '#0b0d10', fontSize: type.caption2, fontWeight: '800' },
 
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, paddingHorizontal: 32 },

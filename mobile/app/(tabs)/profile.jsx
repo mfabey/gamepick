@@ -726,6 +726,7 @@ const makeStyles = (colors) => StyleSheet.create({
   // Maket: çubuklar 42 yüksekliğe kadar, r4, aralarında eşit boşluk.
   weekChart: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', height: CHART_H, gap: spacing.s4 },
   weekBar: { flex: 1, borderRadius: radius.xs, backgroundColor: colors.surfaceTile },
+  // accent-serbest: grafikte EN YOGUN GUN — renk degere bagli (Faz 0 kurali), etikete degil
   weekBarTop: { backgroundColor: colors.accent },
   weekTitle: {
     // Maket: kart basligi "Haftalik rapor" = 15 / 600 / text1.
@@ -739,6 +740,7 @@ const makeStyles = (colors) => StyleSheet.create({
   avatarEditBadge: {
     position: 'absolute', bottom: -2, right: -2,
     width: 22, height: 22, borderRadius: 11,
+    // accent-serbest: avatar duzenleme rozeti, yalniz kalem simgesi
     backgroundColor: colors.accent,
     borderWidth: 2, borderColor: colors.bg,
     alignItems: 'center', justifyContent: 'center',
@@ -765,7 +767,7 @@ const makeStyles = (colors) => StyleSheet.create({
   statBadge: {
     position: 'absolute', top: -3, right: -14,
     minWidth: 17, height: 17, borderRadius: 9, paddingHorizontal: spacing.xs,
-    backgroundColor: colors.accent,
+    backgroundColor: colors.accentFillStrong,
     alignItems: 'center', justifyContent: 'center',
   },
   statBadgeText: { color: '#fff', fontSize: type.caption2, fontWeight: '800' },
@@ -815,6 +817,7 @@ const makeStyles = (colors) => StyleSheet.create({
   tileIconWrap: { position: 'relative' },
   tileDot: {
     position: 'absolute', top: -2, right: -4,
+    // accent-serbest: 8x8 durum noktasi, uzerinde metin yok
     width: 8, height: 8, borderRadius: 4, backgroundColor: colors.accent,
   },
   tileLabel: {

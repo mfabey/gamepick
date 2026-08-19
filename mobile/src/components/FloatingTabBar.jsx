@@ -364,7 +364,7 @@ const makeStyles = (colors) => StyleSheet.create({
     minWidth: 17, height: 17, borderRadius: 9,
     paddingHorizontal: spacing.xs,
     alignItems: 'center', justifyContent: 'center',
-    backgroundColor: colors.accent,
+    backgroundColor: colors.accentFillStrong,
     // tema-bagimsiz: cam cubugun uzerinde, zemin arkadaki icerik
     borderWidth: 2, borderColor: 'rgba(6,7,10,0.9)',
   },

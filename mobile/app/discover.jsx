@@ -189,7 +189,7 @@ const makeStyles = (colors) => StyleSheet.create({
   input: { color: colors.text, fontSize: type.subhead, lineHeight: 22, textAlignVertical: 'top', minHeight: 72 },
 
   cta: {
-    marginTop: spacing.md, height: 52, borderRadius: radius.lg, backgroundColor: colors.accent,
+    marginTop: spacing.md, height: 52, borderRadius: radius.lg, backgroundColor: colors.accentFillStrong,
     alignItems: 'center', justifyContent: 'center',
   },
   ctaOff: { opacity: 0.45 },

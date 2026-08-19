@@ -134,7 +134,7 @@ const makeStyles = (colors) => StyleSheet.create({
   multiline: { height: 88, paddingTop: 13, textAlignVertical: 'top' },
 
   cta: {
-    height: 52, borderRadius: radius.lg, backgroundColor: colors.accent,
+    height: 52, borderRadius: radius.lg, backgroundColor: colors.accentFillStrong,
     alignItems: 'center', justifyContent: 'center', marginTop: 6,
   },
   ctaOff: { opacity: 0.4 },

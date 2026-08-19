@@ -280,7 +280,7 @@ const makeStyles = (colors) => StyleSheet.create({
   ghostBtn: { paddingHorizontal: spacing.lg, height: 46, alignItems: 'center', justifyContent: 'center' },
   ghostText: { color: colors.text2, fontSize: type.subhead, fontWeight: '700' },
   cta: {
-    minWidth: 110, height: 46, borderRadius: radius.lg, backgroundColor: colors.accent,
+    minWidth: 110, height: 46, borderRadius: radius.lg, backgroundColor: colors.accentFillStrong,
     alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18,
   },
   ctaOff: { opacity: 0.4 },

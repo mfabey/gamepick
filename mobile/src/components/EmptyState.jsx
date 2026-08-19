@@ -120,7 +120,7 @@ const makeStyles = (colors) => StyleSheet.create({
     gap: spacing.s8,
     minHeight: 44,
     paddingHorizontal: spacing.s16, paddingVertical: spacing.s12,
-    borderRadius: radius.md, backgroundColor: colors.accent,
+    borderRadius: radius.md, backgroundColor: colors.accentFillStrong,
     marginTop: spacing.s24,
   },
   // tema-bagimsiz: marka dolgusu ustundeki metin (tokens: onBrand)

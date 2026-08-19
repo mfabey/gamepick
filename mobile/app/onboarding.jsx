@@ -172,7 +172,7 @@ const makeStyles = (colors) => StyleSheet.create({
   name: { position: 'absolute', left: 8, right: 8, bottom: 7, color: '#fff', fontSize: type.caption, fontWeight: '700', lineHeight: 14 },
   check: {
     position: 'absolute', top: 6, right: 6, width: 24, height: 24, borderRadius: 12,
-    backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.accentFillStrong, alignItems: 'center', justifyContent: 'center',
   },
 
   bar: {
@@ -182,7 +182,7 @@ const makeStyles = (colors) => StyleSheet.create({
   },
   skip: { color: colors.text3, fontSize: type.subhead, fontWeight: '600' },
   cta: {
-    minWidth: 170, height: 50, borderRadius: radius.lg, backgroundColor: colors.accent,
+    minWidth: 170, height: 50, borderRadius: radius.lg, backgroundColor: colors.accentFillStrong,
     alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20,
   },
   ctaOff: { opacity: 0.4 },
