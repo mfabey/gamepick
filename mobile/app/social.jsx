@@ -26,11 +26,12 @@ import {
 import { subscribeSession, getSession } from '../src/services/session';
 import ReportSheet from '../src/components/ReportSheet';
 import EmptyState from '../src/components/EmptyState';
-import { radius, spacing, PRESSED, type, SECTION_TITLE } from '../src/theme';
+import { radius, spacing, PRESSED, type, SECTION_TITLE, NUMERIC } from '../src/theme';
+import Avatar from '../src/components/Avatar';
+import PersonMenu from '../src/components/PersonMenu';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 import IconButton from '../src/components/IconButton';
-import { getAvatarPreset } from '../src/utils/avatar';
 
 const TABS = ['feed', 'friends', 'requests'];
 
@@ -47,6 +48,20 @@ export default function SocialScreen() {
   // değil. Ayrıca akış yeni bir hesapta boş olur ve ilk izlenim boş ekran
   // olmamalı; arkadaş listesi en azından arama kutusunu sunuyor.
   const [tab, setTab] = useState('friends');
+
+  // FAZ 7 — İSTEK ROZETİ. Rozet Topluluk başlığında vardı (Faz 5) ama
+  // kullanıcı bu ekrana GİRDİĞİNDE kayboluyordu: hangi sekmede bekleyen
+  // istek olduğunu söyleyen tek işaret oydu. Eyleme dönüşüyor (kabul et),
+  // o yüzden kırmızı meşru — Faz 2'nin mesaj rozeti kararının aynısı.
+  const [bekleyen, setBekleyen] = useState(0);
+  useEffect(() => {
+    if (!session) { setBekleyen(0); return; }
+    let acik = true;
+    getFriends()
+      .then((r) => { if (acik) setBekleyen(Array.isArray(r?.incoming) ? r.incoming.length : 0); })
+      .catch(() => {});
+    return () => { acik = false; };
+  }, [session, tab]);
 
   useEffect(() => subscribeSession(() => setSession(getSession())), []);
 
@@ -109,6 +124,11 @@ export default function SocialScreen() {
             <Text style={[styles.tabText, tab === k && styles.tabTextOn]}>
               {t(`soc.tab${k[0].toUpperCase()}${k.slice(1)}`)}
             </Text>
+            {k === 'requests' && bekleyen > 0 ? (
+              <View style={styles.tabRozet}>
+                <Text style={[styles.tabRozetText, NUMERIC]}>{bekleyen > 9 ? '9+' : bekleyen}</Text>
+              </View>
+            ) : null}
           </Pressable>
         ))}
       </View>
@@ -153,23 +173,15 @@ function Gate({ icon, text, ctaLabel, onPress, onBack, title }) {
   );
 }
 
-function Avatar({ name, size = 42, presetId }) {
-  const styles = useStyles(makeStyles);
-  const preset = getAvatarPreset(presetId);
-  if (preset) {
-    return (
-      <View style={[styles.avatar, { width: size, height: size, borderRadius: size / 2, backgroundColor: preset.bg }]}>
-        <Ionicons name={preset.icon} size={size * 0.48} color={preset.iconColor} />
-      </View>
-    );
-  }
-  const letter = (name || '?').trim().charAt(0).toUpperCase();
-  return (
-    <View style={[styles.avatar, { width: size, height: size, borderRadius: size / 2 }]}>
-      <Text style={[styles.avatarText, { fontSize: size * 0.42 }]}>{letter}</Text>
-    </View>
-  );
-}
+// YEREL AVATAR KOPYASI SİLİNDİ (Faz 7). Bu dosya kendi Avatar'ını
+// tanımlıyordu: yalnız ön ayar + baş harf. `components/Avatar.jsx`'in ÜÇÜNCÜ
+// hâli — YÜKLENMİŞ FOTOĞRAF — burada hiç çizilmiyordu, yani profil fotoğrafı
+// olan kullanıcı arkadaş listesinde HARF olarak görünüyordu. Ortak bileşenin
+// var olma sebebi tam olarak buydu.
+//
+// Zemin de değişti: accentBg + accentText her insanı marka rengine
+// boyuyordu. Kırmızı eylem rengi, kimlik rengi değil. Ortak bileşen
+// bgInput + text2 kullanıyor.
 
 // ─── Kullanıcı adı kurulumu ─────────────────────────────────────────────────
 
@@ -263,7 +275,9 @@ function UsernameSetup({ onDone, onBack }) {
             onPress={submit}
             disabled={state.status !== 'ok' || saving}
           >
-            {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.ctaText}>{t('soc.create')}</Text>}
+            {saving ? <ActivityIndicator color="#fff" /> : (
+              <Text style={[styles.ctaText, (state.status !== 'ok' || saving) && styles.ctaTextOff]}>{t('soc.create')}</Text>
+            )}
           </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -329,7 +343,7 @@ function FeedTab() {
             params: { id: it.gameId, name: it.gameName || '', image: it.gameImage || '' },
           })}
         >
-          <Avatar name={it.displayName || it.username} size={38} presetId={it.avatar} />
+          <Avatar avatar={it.avatar} name={it.displayName || it.username} size={38} />
           <View style={styles.actBody}>
             <Text style={styles.actText}>
               <Text style={styles.actName}>{it.displayName || it.username}</Text>
@@ -401,6 +415,11 @@ function FriendsTab() {
     }
   }, [load, results, t]);
 
+  // FAZ 7 — "⋯" ARTIK GERÇEK BİR MENÜ. `arkadas` bayrağı hangi seçeneklerin
+  // görüneceğini belirliyor: arkadaş olmayan birini "arkadaşlıktan
+  // çıkaramazsın" ve ona mesaj kutusu açmıyoruz.
+  const [menu, setMenu] = useState(null);   // { person, arkadas }
+
   const confirmRemove = useCallback((f) => {
     Alert.alert(f.displayName || f.username, t('soc.removeConfirm'), [
       { text: t('soc.cancel'), style: 'cancel' },
@@ -420,6 +439,21 @@ function FriendsTab() {
       },
     ]);
   }, [load, t]);
+
+  // confirmRemove/confirmBlock'un ALTINDA ve ikisini de bağımlılık alıyor:
+  // yukarıda tanımlansaydı ilk render'ın kopyalarını yakalardı.
+  //
+  // "PROFİLİNE GİT" YOK — uygulamada başka bir kullanıcının profil ekranı
+  // bulunmuyor (tek kişiye özel hedef /chat/[uid]). Maket onu ilk seçenek
+  // olarak çiziyor ama gidecek yeri olmayan bir söz vermiyoruz.
+  const menuSec = useCallback((anahtar) => {
+    const kisi = menu?.person;
+    if (!kisi) return;
+    if (anahtar === 'message') { router.push(`/chat/${kisi.uid}`); return; }
+    if (anahtar === 'remove')  { confirmRemove(kisi); return; }
+    if (anahtar === 'block')   { confirmBlock(kisi); return; }
+    if (anahtar === 'report')  { setReportTarget(kisi); return; }
+  }, [menu, router, confirmRemove, confirmBlock]);
 
   if (data === null) return <View style={styles.center}><ActivityIndicator color={colors.accent} /></View>;
 
@@ -460,7 +494,7 @@ function FriendsTab() {
                       ? <SmallBtn label={t('soc.accept')} onPress={() => act(r.uid, 'accept')} />
                       : <SmallBtn label={t('soc.add')} onPress={() => act(r.uid, 'request')} />
                   }
-                  onLongPress={() => setReportTarget(r)}
+                  onLongPress={() => setMenu({ person: r, arkadas: r.relation === 'friends' })}
                 />
               ))
         ) : data.friends.length === 0 ? (
@@ -478,16 +512,27 @@ function FriendsTab() {
                   <Pressable onPress={() => router.push(`/chat/${f.uid}`)} hitSlop={8} style={styles.moreBtn}>
                     <Ionicons name="chatbubble-outline" size={19} color={colors.text2} />
                   </Pressable>
-                  <Pressable onPress={() => confirmRemove(f)} hitSlop={8} style={styles.moreBtn} accessibilityRole="button" accessibilityLabel={t('a11y.more')}>
+                  <Pressable onPress={() => setMenu({ person: f, arkadas: true })} hitSlop={8} style={styles.moreBtn} accessibilityRole="button" accessibilityLabel={t('a11y.more')}>
                     <Ionicons name="ellipsis-horizontal" size={19} color={colors.text3} />
                   </Pressable>
                 </View>
               }
-              onLongPress={() => confirmBlock(f)}
+              // Uzun basma KISAYOL olarak kalıyor ama artık iki listede de
+              // AYNI menüyü açıyor — öncesinde arkadaşta "engelle", aramada
+              // "şikayet et" veriyordu: aynı jest, iki sonuç, öğrenilemez.
+              onLongPress={() => setMenu({ person: f, arkadas: true })}
             />
           ))
         )}
       </ScrollView>
+
+      <PersonMenu
+        visible={!!menu}
+        person={menu?.person}
+        arkadas={!!menu?.arkadas}
+        onClose={() => setMenu(null)}
+        onSec={menuSec}
+      />
 
       <ReportSheet
         visible={!!reportTarget}
@@ -535,7 +580,10 @@ function RequestsTab() {
               right={
                 <View style={styles.rowBtns}>
                   <SmallBtn label={t('soc.accept')} onPress={() => act(p.uid, 'accept')} />
-                  <SmallBtn label={t('soc.reject')} ghost onPress={() => act(p.uid, 'reject')} />
+                  {/* FAZ 7 — KOPYA: "Reddet" KİŞİYİ hedef alıyor ve gönderene
+                      bildirim gidiyormuş gibi okunuyor. "Yoksay" EYLEMİ
+                      tarif ediyor, kişiyi yargılamıyor. Sunucu çağrısı aynı. */}
+                  <SmallBtn label={t('soc.ignore')} ghost onPress={() => act(p.uid, 'reject')} />
                 </View>
               }
             />
@@ -565,7 +613,7 @@ function PersonRow({ person, right, onLongPress }) {
   const styles = useStyles(makeStyles);
   return (
     <Pressable style={styles.personRow} onLongPress={onLongPress} delayLongPress={400}>
-      <Avatar name={person.displayName || person.username} presetId={person.avatar} />
+      <Avatar avatar={person.avatar} name={person.displayName || person.username} size={42} />
       <View style={styles.personBody}>
         <Text numberOfLines={1} style={styles.personName}>{person.displayName || person.username}</Text>
         <Text numberOfLines={1} style={styles.personHandle}>@{person.username}</Text>
@@ -630,16 +678,28 @@ const makeStyles = (colors) => StyleSheet.create({
   rowBtns: { flexDirection: 'row', gap: 6 },
   moreBtn: { padding: 6 },
 
-  avatar: { backgroundColor: colors.accentBg, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { color: colors.accentText, fontWeight: '900' },
 
+  // FAZ 7 — Faz 6'nın gönder diline giriyor: accentFillStrong · subhead
+  // 15/600. accent + beyaz küçük metin bu deponun DÖRDÜNCÜ 4.45:1 örneğiydi.
+  // Hayalet ikincil buton zaten doğru: kabul ve yoksay EŞİT büyüklükte,
+  // reddetmek zorlaştırılmıyor.
   smallBtn: {
     paddingHorizontal: 14, height: 44, borderRadius: radius.md,
-    backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.accentFillStrong, alignItems: 'center', justifyContent: 'center',
   },
   smallBtnGhost: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder },
-  smallBtnText: { color: '#fff', fontSize: type.footnote, fontWeight: '800' },
+  // tema-bagimsiz: dolu marka dugmesinin uzerinde
+  smallBtnText: { color: '#fff', fontSize: type.subhead, fontWeight: '600' },
   smallBtnTextGhost: { color: colors.text2 },
+
+  // Sekme rozeti — Faz 2'nin mesaj rozetiyle aynı ölçü.
+  tabRozet: {
+    position: 'absolute', top: 4, right: 8,
+    minWidth: 17, height: 17, borderRadius: 9, paddingHorizontal: spacing.xs,
+    backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center',
+  },
+  // tema-bagimsiz: dolu kirmizi rozetin uzerinde
+  tabRozetText: { color: '#fff', fontSize: type.caption2, fontWeight: '800' },
 
   tag: {
     paddingHorizontal: 10, paddingVertical: 6, borderRadius: radius.pill,
@@ -688,10 +748,15 @@ const makeStyles = (colors) => StyleSheet.create({
   privacyNoteText: { flex: 1, color: colors.text2, fontSize: type.footnote, lineHeight: 18 },
 
   gateText: { color: colors.text2, fontSize: type.subhead, textAlign: 'center', marginTop: 14, lineHeight: 21 },
+  // 52 → 44, radius.lg → md, accent → accentFillStrong (BEŞİNCİ 4.45 örneği).
   cta: {
-    alignSelf: 'stretch', height: 52, borderRadius: radius.lg, backgroundColor: colors.accent,
+    alignSelf: 'stretch', height: 44, borderRadius: radius.md, backgroundColor: colors.accentFillStrong,
     alignItems: 'center', justifyContent: 'center', marginTop: 22, paddingHorizontal: spacing.xl,
   },
-  ctaOff: { opacity: 0.4 },
-  ctaText: { color: '#fff', fontSize: type.subhead, fontWeight: '800' },
+  // Devre dışı OPAKLIK DEĞİL nötr yüzey (Faz 6 ölçümü: opacity 0.4'te beyaz
+  // etiket 1.9:1'e iniyor).
+  ctaOff: { backgroundColor: colors.bgInput },
+  // tema-bagimsiz: dolu marka dugmesinin uzerinde
+  ctaText: { color: '#fff', fontSize: type.subhead, fontWeight: '600' },
+  ctaTextOff: { color: colors.text3 },
 });
