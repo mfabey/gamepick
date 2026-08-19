@@ -219,6 +219,21 @@ export function FeedSkeleton({ rows = 5 }) {
 // parametrelerinden ANINDA çiziyor (detail?.image || image). Tam ekran bir
 // iskelet, zaten ekranda duran içeriğin üstünü örterdi. 868ms boyunca boş
 // kalan yalnızca ağdan gelen bölümler: tür, ekran görüntüleri, açıklama.
+// FİYAT LİSTESİ İSKELETİ (Faz 3). Dört satır, GERÇEK satırla aynı
+// yükseklikte (56) — içerik gelince sayfa sıçramıyor. 200 ms gecikme
+// çağrı yerinde: hızlı yanıtta iskelet hiç görünmüyor, yalnız yanıp
+// sönerdi.
+export function PriceListSkeleton({ rows = 4 }) {
+  const styles = useStyles(makeStyles);
+  return (
+    <View style={{ gap: 12 }}>
+      {Array.from({ length: rows }).map((_, i) => (
+        <Skeleton key={i} style={styles.priceRow} />
+      ))}
+    </View>
+  );
+}
+
 export function GenreChipsSkeleton() {
   const styles = useStyles(makeStyles);
   return (
@@ -265,6 +280,8 @@ const makeStyles = (colors) => StyleSheet.create({
   newsFeatured: { marginHorizontal: spacing.lg, height: 210, borderRadius: radius.lg },
   chipsRow: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: 14 },
   chip: { width: 72, height: 34, borderRadius: radius.pill },
+  // Gerçek fiyat satırıyla aynı: 56pt, radius.md.
+  priceRow: { height: 56, borderRadius: radius.md },
   newsRow: { flexDirection: 'row', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   newsThumb: { width: 108, height: 76, borderRadius: radius.md },
   lineSm: { width: 60, height: 10, borderRadius: 4 },

@@ -9,6 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue, useAnimatedScrollHandler, useAnimatedStyle,
   useAnimatedReaction, runOnJS, interpolate, Extrapolation,
+  withDelay, withSpring,
 } from 'react-native-reanimated';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -29,7 +30,7 @@ import { reportActivity } from '../../src/api/social';
 import { useQuery } from '../../src/hooks/useQuery';
 import { usePop } from '../../src/hooks/usePop';
 import { useReducedMotion } from '../../src/hooks/useReducedMotion';
-import { GenreChipsSkeleton, ShotStripSkeleton, TextBlockSkeleton } from '../../src/components/Skeleton';
+import { GenreChipsSkeleton, ShotStripSkeleton, TextBlockSkeleton, PriceListSkeleton } from '../../src/components/Skeleton';
 import { recordSignal } from '../../src/services/tasteProfile';
 import { recordSeen } from '../../src/services/seenStore';
 import FadeIn from '../../src/components/FadeIn';
@@ -469,6 +470,15 @@ export default function GameDetail() {
         </FadeIn>
 
         {/* Fiyat karşılaştırması */}
+        {/* İskelet: gerçek satırla aynı yükseklikte (56) → içerik gelince
+            sayfa sıçramıyor. 200 ms gecikmeyle: hızlı yanıtta hiç
+            görünmüyor, yalnız yanıp sönerdi. */}
+        {priceStores.length === 0 && !pricesData ? (
+          <Section title={t('detail.priceCompare')} delay={130}>
+            <FadeIn delay={200}><PriceListSkeleton /></FadeIn>
+          </Section>
+        ) : null}
+
         {priceStores.length > 0 && (
           <Section title={t('detail.priceCompare')} delay={130}>
             {/* FAZ 2 — "Ekranın TEPE ANI: yalnızca KAZANAN satır kapsanır
@@ -481,38 +491,16 @@ export default function GameDetail() {
                 orada, üstelik bir eylemin (Git) üstünde: kırmızı yalnızca
                 dokunulacak şeyde. */}
             <View style={{ gap: spacing.s12 }}>
-              {priceStores.map((s, i) => {
-                const kazanan = i === 0;
-                return (
-                  <Pressable key={s.storeId || s.name} onPress={() => open(s.url)} disabled={!s.url}
-                    style={({ pressed }) => [styles.cmpRow, kazanan && styles.cmpBest, pressed && PRESSED]}>
-                    <StoreLogo store={s.name} size={26} />
-
-                    <View style={{ flex: 1, minWidth: 0 }}>
-                      <Text numberOfLines={1} style={styles.cmpName}>{s.name}</Text>
-                      {kazanan ? <Text style={styles.cmpCheapest}>{t('detail.cheapest')}</Text> : null}
-                    </View>
-
-                    {/* Kazananda fiyat sütunu (üstte güncel, altta üstü çizili
-                        eski); ötekilerde tek satır ve SÖNÜK — karşılaştırma
-                        kazananı okumakla bitiyor. */}
-                    <View style={styles.cmpFiyatKut}>
-                      <Text style={[styles.cmpPrice, !kazanan && styles.cmpPriceSonuk]}>
-                        {s.isFree ? t('card.free') : formatPrice(s.price)}
-                      </Text>
-                      {kazanan && s.discount > 0 ? (
-                        <Text style={styles.original}>{formatPrice(s.original)}</Text>
-                      ) : null}
-                    </View>
-
-                    {kazanan ? (
-                      <View style={styles.cmpGit}><Text style={styles.cmpGitText}>{t('detail.go')}</Text></View>
-                    ) : (
-                      <Ionicons name="chevron-forward" size={15} color={colors.text3} />
-                    )}
-                  </Pressable>
-                );
-              })}
+              {priceStores.map((s, i) => (
+                <FiyatSatiri
+                  key={s.storeId || s.name}
+                  magaza={s}
+                  kazanan={i === 0}
+                  sira={i}
+                  toplam={priceStores.length}
+                  onPress={() => open(s.url)}
+                />
+              ))}
             </View>
           </Section>
         )}
@@ -663,6 +651,79 @@ export default function GameDetail() {
         onCreate={(nm) => createCollection(nm)}
       />
     </View>
+  );
+}
+
+// ── FİYAT SATIRI · TEPE ANI (Faz 3) ──
+// "Kazanan EN SON ve tek başına oturur." Sıra bilgi taşıyor: satırlar
+// PAHALIDAN UCUZA açılıyor, göz aşağı iniyor ve son inen yer kazanan.
+//
+// Liste ucuzdan pahalıya SIRALI çiziliyor (kazanan üstte); değişen yalnız
+// açılma GECİKMESİ. En pahalı 40 ms'te, her biri 40 ms arayla; kazanan
+// 320 ms'te ve `pop` ile (aşmalı) + hafif dokunsal.
+//
+// Cevap harekete EK OLARAK yüzeyle (bgInput), etiketle ("En düşük") ve
+// eylemle ("Git") işaretli — Reduce Motion'da hiçbir bilgi kaybolmuyor,
+// yalnız zamanlama düşüyor.
+function FiyatSatiri({ magaza: s, kazanan, sira, toplam, onPress }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
+  const { t, formatPrice } = useLanguage();
+  const reducedMotion = useReducedMotion();
+
+  // Pahalıdan ucuza: en son sıradaki (en pahalı) ilk açılır.
+  const gecikme = kazanan ? 40 * toplam + 160 : 40 * (toplam - sira);
+
+  const ilerleme = useSharedValue(reducedMotion ? 1 : 0);
+  useEffect(() => {
+    if (reducedMotion) { ilerleme.value = 1; return; }
+    ilerleme.value = withDelay(
+      gecikme,
+      withSpring(1, kazanan ? motion.pop : motion.firm)
+    );
+    if (!kazanan) return;
+    const zaman = setTimeout(() => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    }, gecikme);
+    return () => clearTimeout(zaman);
+  }, [gecikme, kazanan, reducedMotion, ilerleme]);
+
+  const stil = useAnimatedStyle(() => ({
+    opacity: ilerleme.value,
+    transform: [{ scale: kazanan ? 0.94 + ilerleme.value * 0.06 : 1 },
+                { translateY: (1 - ilerleme.value) * 8 }],
+  }), [kazanan]);
+
+  return (
+    <Animated.View style={stil}>
+      <Pressable onPress={onPress} disabled={!s.url}
+        style={({ pressed }) => [styles.cmpRow, kazanan && styles.cmpBest, pressed && PRESSED]}>
+        <StoreLogo store={s.name} size={26} />
+
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text numberOfLines={1} style={styles.cmpName}>{s.name}</Text>
+          {kazanan ? <Text style={styles.cmpCheapest}>{t('detail.cheapest')}</Text> : null}
+        </View>
+
+        {/* Kazananda fiyat sütunu (üstte güncel, altta üstü çizili eski);
+            ötekilerde tek satır ve SÖNÜK — karşılaştırma kazananı okumakla
+            bitiyor. */}
+        <View style={styles.cmpFiyatKut}>
+          <Text style={[styles.cmpPrice, !kazanan && styles.cmpPriceSonuk]}>
+            {s.isFree ? t('card.free') : formatPrice(s.price)}
+          </Text>
+          {kazanan && s.discount > 0 ? (
+            <Text style={styles.original}>{formatPrice(s.original)}</Text>
+          ) : null}
+        </View>
+
+        {kazanan ? (
+          <View style={styles.cmpGit}><Text style={styles.cmpGitText}>{t('detail.go')}</Text></View>
+        ) : (
+          <Ionicons name="chevron-forward" size={15} color={colors.text3} />
+        )}
+      </Pressable>
+    </Animated.View>
   );
 }
 
