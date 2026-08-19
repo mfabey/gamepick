@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-import { spacing, type, PRESSED, TAB_SPACE } from '../../src/theme';
+import { spacing, type, PRESSED, TAB_SPACE, TOUCH_MIN, SECTION_TITLE } from '../../src/theme';
 import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { fetchPost } from '../../src/api/social';
@@ -37,14 +37,26 @@ export default function PostThread() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [composing, setComposing] = useState(false);
+  // 404 mu (gerçekten yok) yoksa ağ hatası mı (bilmiyoruz) — Faz 5.
+  const [yok, setYok] = useState(false);
 
+  // FAZ 5, KIRILMA #3 — HATA "SİLİNMİŞ" DEMİYOR.
+  // `catch { setData(null) }` ardından ekran `post.gone` basıyordu: uçak
+  // modunda bir bağlantıyı açan kullanıcıya gönderinin SİLİNDİĞİ söylenmiş
+  // oluyordu. Bu boşluk değil, YANLIŞ BİLGİ.
+  //
+  // İki gerçek ayrıldı: 404 gönderi gerçekten yok demek (yapılacak bir şey
+  // yok), başka her hata "yükleyemedik" demek (yeniden denenebilir).
+  // Sunucu zaten `status` taşıyor (api/social.js), yalnız okunmuyordu.
   const load = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
     try {
       const r = await fetchPost(String(id));
       setData(r);
-    } catch {
+      setYok(false);
+    } catch (e) {
       setData(null);
+      setYok(e?.status === 404);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -77,7 +89,19 @@ export default function PostThread() {
       {loading ? (
         <View style={styles.center}><ActivityIndicator color={colors.accent} /></View>
       ) : !data?.post ? (
-        <View style={styles.center}><Text style={styles.gone}>{t('post.gone')}</Text></View>
+        <View style={styles.center}>
+          <Text style={styles.gone}>{yok ? t('post.gone') : t('post.loadFailed')}</Text>
+          {/* 404'te yeniden denemenin anlamı yok; ağ hatasında var. */}
+          {!yok ? (
+            <>
+              <Text style={styles.goneDesc}>{t('post.loadFailedDesc')}</Text>
+              <Pressable onPress={() => { setLoading(true); load(); }} hitSlop={8}
+                style={({ pressed }) => [styles.goneEylem, pressed && PRESSED]}>
+                <Text style={styles.goneEylemText}>{t('common.retry')}</Text>
+              </Pressable>
+            </>
+          ) : null}
+        </View>
       ) : (
         <FlashList
           data={data.replies || []}
@@ -87,7 +111,7 @@ export default function PostThread() {
           )}
           ListHeaderComponent={
             <View>
-              <PostCard post={data.post} onRequireAccount={requireAccount} onOpen={() => {}} />
+              <PostCard post={data.post} onRequireAccount={requireAccount} onOpen={() => {}} kok />
               <Pressable
                 onPress={onReply}
                 style={({ pressed }) => [styles.replyBar, pressed && PRESSED]}
@@ -95,6 +119,16 @@ export default function PostThread() {
                 <Ionicons name="chatbubble-outline" size={15} color={colors.text3} />
                 <Text style={styles.replyText}>{t('post.replyHint')}</Text>
               </Pressable>
+
+              {/* FAZ 5 — SIRALAMA YAZILIYOR. Akış yeniden eskiye, konuşma
+                  tersi. İki farklı sıralama aynı uygulamada varsa hangisinin
+                  geçerli olduğu SÖYLENMELİ; yoksa kullanıcı en yeni yanıtı
+                  en üstte arar ve bulamaz. */}
+              {(data.replies?.length || 0) > 0 ? (
+                <Text style={styles.siralama}>
+                  {data.replies.length} {t('post.repliesCount')} · {t('post.replyOrder')}
+                </Text>
+              ) : null}
             </View>
           }
           ListEmptyComponent={
@@ -127,7 +161,11 @@ const makeStyles = (colors) => StyleSheet.create({
   back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   title: { color: colors.text, fontSize: type.headline, fontWeight: '800' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  gone: { color: colors.text2, fontSize: type.subhead },
+  siralama: { ...SECTION_TITLE, color: colors.text3, paddingHorizontal: spacing.s20, marginTop: spacing.s16, marginBottom: spacing.s8 },
+  gone: { color: colors.text, fontSize: type.subhead, fontWeight: '700', textAlign: 'center' },
+  goneDesc: { color: colors.text2, fontSize: type.footnote, lineHeight: 19, textAlign: 'center', marginTop: spacing.s4, maxWidth: 280 },
+  goneEylem: { minHeight: TOUCH_MIN, justifyContent: 'center', marginTop: spacing.s8 },
+  goneEylemText: { color: colors.accentText, fontSize: type.subhead, fontWeight: '700' },
 
   replyBar: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.sm,

@@ -37,7 +37,7 @@ function timeAgo(ts, lang) {
   return `${d}${tr ? ' g' : 'd'}`;
 }
 
-function PostCard({ post, onOpen, onRequireAccount, compact = false }) {
+function PostCard({ post, onOpen, onRequireAccount, compact = false, kok = false }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const { t, lang } = useLanguage();
@@ -84,7 +84,13 @@ function PostCard({ post, onOpen, onRequireAccount, compact = false }) {
           <Text style={styles.time}>{timeAgo(post.at, lang)}</Text>
         </View>
 
-        <Text style={styles.text} numberOfLines={compact ? 4 : undefined}>{post.text}</Text>
+        {/* FAZ 5 — KÖK GÖNDERİ İLE YANIT GÖRSEL OLARAK AYRIŞIYOR.
+            `compact` propu zaten vardı ama YALNIZCA satır kırpmasını
+            değiştiriyordu (akışta 4 satır, konuşmada sınırsız); tipografi
+            ikisinde de aynıydı. Konuşmada kök gönderi body 17/23, yanıtlar
+            subhead 15/21 kalıyor. Girinti YOK — hiyerarşi punto ile
+            kuruluyor, boşlukla değil. */}
+        <Text style={[styles.text, kok && styles.textKok]} numberOfLines={compact ? 4 : undefined}>{post.text}</Text>
 
         {post.game?.appid ? (
           <Pressable
@@ -154,6 +160,7 @@ const makeStyles = (colors) => StyleSheet.create({
 
   // Maket: gönderi gövdesi 15 / 400.
   text: { color: colors.text, fontSize: type.subhead, fontWeight: '400', lineHeight: 20, marginTop: spacing.s4 },
+  textKok: { fontSize: type.body, lineHeight: 23 },
 
   gameChip: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: 9,

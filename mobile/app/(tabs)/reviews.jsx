@@ -32,7 +32,7 @@ import PostCard from '../../src/components/PostCard';
 import PostComposer from '../../src/components/PostComposer';
 import ReportSheet from '../../src/components/ReportSheet';
 import { FeedSkeleton, Reveal } from '../../src/components/Skeleton';
-import { radius, spacing, type, PRESSED, NUMERIC, TAB_SPACE, motion, SECTION_TITLE, CHIP_TEXT_ON } from '../../src/theme';
+import { radius, spacing, type, PRESSED, NUMERIC, TAB_SPACE, TOUCH_MIN, motion, SECTION_TITLE, CHIP_TEXT_ON } from '../../src/theme';
 import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useTimeToData } from '../../src/dev/perf';
@@ -57,6 +57,8 @@ export default function ReviewsScreen() {
   useEffect(() => subscribeSession(() => setSession(getSession())), []);
 
   const [eligible, setEligible] = useState(null);
+  // Ağ bozuk mu — 'kimse yazmamış'tan AYRI durum (Faz 5).
+  const [bozuk, setBozuk] = useState(false);
   // Sayfanın ASIL işi artık tartışma; incelemeler ikinci sekmede duruyor.
   const [tab, setTab] = useState('talk');   // talk | community | mine
   // TEK LİSTE, sekme başına ayrı değil: aynı anda yalnızca biri görünüyor ve
@@ -90,13 +92,20 @@ export default function ReviewsScreen() {
 
   // Sekmeye göre doğru ucu çağıran TEK yer — load ve loadMore aynı
   // dönüşümü kullanmak zorunda, yoksa ikinci sayfa başka bir sorgu olurdu.
+  // FAZ 5, KIRILMA #2 — BOŞ İLE BOZUK AYRILDI.
+  // `.catch(() => null)` sonra `r?.posts || []` boş diziye dönüyordu ve
+  // ekran "kimse yazmamış" gösteriyordu. Terk edilmişlik riskine karşı
+  // kurulmuş bir sayfada bağlantı hatası tam olarak "burası ölü" mesajı
+  // veriyor — kaçınılmak istenen şeyin ta kendisi.
+  //
+  // Artık HATA `null`, GERÇEK BOŞLUK `[]`. İkisi ayrı cümle kuruyor.
   const fetchPage = useCallback(async (t, offset) => {
     if (t === 'talk') {
       const r = await fetchPosts(offset).catch(() => null);
-      return r?.posts || [];
+      return r?.posts || (r ? [] : null);
     }
     const r = await getReviewFeed(!!session && t === 'mine', offset).catch(() => null);
-    return r?.reviews || [];
+    return r?.reviews || (r ? [] : null);
   }, [session]);
 
   // Topluluk akışı HESAPSIZ okunur — inceleme okumak kayıt gerektirmiyor.
@@ -105,20 +114,34 @@ export default function ReviewsScreen() {
   const load = useCallback(async (isRefresh = false) => {
     const p = page.current;
     const seq = ++p.seq;
+    // SEKME DEĞİŞTİYSE ESKİ LİSTE ANINDA DÜŞÜYOR.
+    // Simülatörde yakalandı: ağ hatasında listeyi korumak doğru, ama
+    // korunan liste ÖNCEKİ SEKMEDEN kalıyordu ve renderItem onu yeni
+    // sekmenin kart tipiyle çiziyordu — gönderiler inceleme kartı olarak,
+    // "NaN saat" yazarak. Aynı sekmenin bayat verisi bilgi; başka sekmenin
+    // verisi çöp.
+    if (p.tab !== tab) setItems(null);
     p.offset = 0; p.canMore = true; p.fetching = true; p.tab = tab;
     if (isRefresh) setRefreshing(true); else setLoading(true);
     try {
       const [rows, e] = await Promise.all([
         fetchPage(tab, 0),
-        tab !== 'talk' && session ? getEligibleGames().catch(() => null) : Promise.resolve(null),
+        // FAZ 5, KIRILMA #1: koşul `tab !== 'talk'` idi ve VARSAYILAN SEKME
+        // 'talk'. Dosyanın kendi başlığı sayfanın "şunlar hakkında
+        // yazabilirsin" diye açıldığını söylüyordu; kullanıcı ise daveti
+        // GÖRMEDİĞİ yerden giriyordu. Artık üç sekmede de çekiliyor.
+        session ? getEligibleGames().catch(() => null) : Promise.resolve(null),
       ]);
       if (seq !== p.seq) return;   // sekme değişti — bu yanıt artık geçersiz
-      setItems(rows);
-      if (tab !== 'talk') setEligible(e);
-      p.offset = rows.length;
+      // `null` = ağ hatası. Liste SİLİNMİYOR: önceki içerik duruyor ve
+      // bandın altında görünmeye devam ediyor.
+      setBozuk(rows === null);
+      if (rows !== null) setItems(rows);
+      setEligible(e);
+      p.offset = rows?.length || 0;
       // TAM SAYFA GELDİYSE devamı olabilir. Eksik geldiyse liste bitmiştir;
       // yoksa her son sayfadan sonra bir boş istek daha atılırdı.
-      p.canMore = rows.length >= PAGE;
+      p.canMore = (rows?.length || 0) >= PAGE;
     } finally {
       if (seq === p.seq) {
         p.fetching = false;
@@ -143,6 +166,8 @@ export default function ReviewsScreen() {
     try {
       const rows = await fetchPage(p.tab, p.offset);
       if (seq !== p.seq) return;
+      // Sonsuz kaydırmada da sessizce "liste bitti" demiyoruz.
+      if (rows === null) { setBozuk(true); p.canMore = false; return; }
       if (rows.length) {
         setItems((prev) => {
           // TEKİLLEŞTİRME ŞART: iki sayfa arasında yeni bir gönderi
@@ -244,9 +269,9 @@ export default function ReviewsScreen() {
       {/* ── Yazabileceğin oyunlar ──
           Sayfanın boş görünmemesini sağlayan kısım. Steam bağlıysa ilk
           günden dolu; topluluk akışı boş olsa bile sayfa ölü durmuyor. */}
-      {tab !== 'talk' && eligible?.games?.length > 0 && (
+      {eligible?.games?.length > 0 && (
         <>
-          <Text style={styles.sectionLabel}>{t('rev.canWrite')}</Text>
+          <Text style={styles.sectionLabel}>{t('rev.canWriteAbout')}</Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -272,7 +297,7 @@ export default function ReviewsScreen() {
         </>
       )}
 
-      {tab !== 'talk' && eligible?.games?.length === 0 && (
+      {eligible?.games?.length === 0 && (
         <Text style={styles.hint}>{t('rev.noEligible')}</Text>
       )}
 
@@ -309,6 +334,19 @@ export default function ReviewsScreen() {
           <Text style={styles.composeText}>{t('post.hint')}</Text>
         </Pressable>
       )}
+
+      {/* BOZUK AKIŞ — davet şeridinin ve yazma çubuğunun ALTINDA.
+          Sıra bilinçli: hata okumayı engelliyor, YAZMAYI değil. Sayfa
+          hâlâ bir şey teklif ediyor, ölü durmuyor. */}
+      {bozuk ? (
+        <View style={styles.bozukBant}>
+          <Text style={styles.bozukBaslik}>{t('rev.degraded')}</Text>
+          <Text style={styles.bozukMetin}>{t('rev.degradedDesc')}</Text>
+          <Pressable onPress={() => load()} hitSlop={8} style={({ pressed }) => [styles.bozukEylem, pressed && PRESSED]}>
+            <Text style={styles.bozukEylemText}>{t('common.retry')}</Text>
+          </Pressable>
+        </View>
+      ) : null}
     </View>
   );
 
@@ -333,7 +371,17 @@ export default function ReviewsScreen() {
           // bunu veriye bağlı bırakmak sessiz bir varsayım olurdu.
           extraData={tab}
           ListHeaderComponent={header}
-          ListEmptyComponent={<EmptyState compact {...bosDurum} />}
+          // BOZUKSA "kimse yazmamış" DEMİYORUZ. Bant üç şey söylüyor: ne
+          // oldu, ne çalışmıyor, ne yapabilirsin. Davet şeridi ve yazma
+          // çubuğu YUKARIDA ayakta kalıyor — ikisi de yerel veriden geliyor,
+          // yani sayfa hâlâ bir şey teklif ediyor, ölü durmuyor.
+          //
+          // Bant `header` İÇİNDE (aşağıda), boş bileşende değil: aynı sekmenin
+          // bayat listesi korunduğunda liste boş olmuyor ve bant hiç
+          // çizilmiyordu. İKİNCİ bir ListHeaderComponent propu da olmaz —
+          // simülatörde görüldü: JSX'te son prop kazanıyor ve gerçek başlığı
+          // (davet şeridi + sekmeler) tamamen siliyordu.
+          ListEmptyComponent={bozuk ? null : <EmptyState compact {...bosDurum} />}
           ListFooterComponent={
             <View style={{ height: TAB_SPACE, alignItems: 'center', paddingTop: spacing.md }}>
               {loadingMore ? <ActivityIndicator color={colors.accent} /> : null}
@@ -469,8 +517,10 @@ const makeStyles = (colors) => StyleSheet.create({
     paddingHorizontal: spacing.s20, marginBottom: spacing.sm,
   },
   strip: { paddingHorizontal: spacing.s20, gap: spacing.sm, paddingBottom: spacing.lg },
-  gameCard: { width: 132 },
-  gameImg:  { width: 132, height: 62, borderRadius: radius.sm, backgroundColor: colors.bgInput },
+  // FAZ 5: 132 → 148 (Faz 0 adımı). Medya 148×70 KAPSÜL kalıyor —
+  // bu bir oyun kapağı değil Steam kapsülü, 3/4 oranı burada geçerli değil.
+  gameCard: { width: 148 },
+  gameImg:  { width: 148, height: 70, borderRadius: radius.sm, backgroundColor: colors.bgInput },
   gameName: { color: colors.text, fontSize: type.caption, fontWeight: '700', marginTop: 5 },
   gameHours:{ color: colors.text3, fontSize: type.caption2, marginTop: 1 },
 
@@ -494,9 +544,25 @@ const makeStyles = (colors) => StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   // Aktif dolgu surface4 (maket: rgb(42,44,51)) — kabin bir tik ustu.
-  tabOn:      { backgroundColor: colors.surfaceTile },
+  // FAZ 5 — SEÇİMİN ÜÇÜNCÜ LEHÇESİ KALKTI. Burada seçili sekme
+  // `surfaceTile` idi ve seçili/seçilmemiş farkı 1.24:1 — neredeyse
+  // görünmüyordu. Oyunlar ve Filtreler'de aynı jest `colors.text` dolgu +
+  // koyu metin. Şekil (flex dikdörtgen, radius.md) korunuyor; değişen
+  // yalnız dil.
+  // FAZ 5 — BOZUK AKIŞ BANDI. Kırmızı yok: durum bir eylem değil.
+  bozukBant: {
+    marginHorizontal: spacing.s20, marginTop: spacing.s16,
+    padding: spacing.s16, borderRadius: radius.md,
+    backgroundColor: colors.bgInput, gap: spacing.s4,
+  },
+  bozukBaslik: { color: colors.text, fontSize: type.subhead, fontWeight: '700' },
+  bozukMetin: { color: colors.text2, fontSize: type.footnote, lineHeight: 19 },
+  bozukEylem: { minHeight: TOUCH_MIN, justifyContent: 'center', alignSelf: 'flex-start' },
+  bozukEylemText: { color: colors.accentText, fontSize: type.subhead, fontWeight: '700' },
+
+  tabOn:      { backgroundColor: colors.text },
   tabText:    { color: colors.text3, fontSize: type.footnote, fontWeight: '500' },
-  tabTextOn:  { color: colors.text, fontWeight: '600' },
+  tabTextOn:  { color: colors.bg, fontWeight: '700' },
 
 
 });
