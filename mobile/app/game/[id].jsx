@@ -22,6 +22,7 @@ import { useTimeToData } from '../../src/dev/perf';
 import { useWishlist } from '../../src/context/WishlistContext';
 import { useCollections, useCollectionsContaining } from '../../src/hooks/useCollections';
 import { toggleGameInCollection, createCollection } from '../../src/services/collectionsStore';
+import { turAdi } from '../../src/services/genreName';
 import CollectionPicker from '../../src/components/CollectionPicker';
 import { reportActivity } from '../../src/api/social';
 import { useQuery } from '../../src/hooks/useQuery';
@@ -416,25 +417,48 @@ export default function GameDetail() {
         {/* Fiyat karşılaştırması */}
         {priceStores.length > 0 && (
           <Section title={t('detail.priceCompare')} delay={130}>
-            <View style={{ gap: spacing.sm }}>
-              {priceStores.map((s, i) => (
-                <Pressable key={s.storeId || s.name} onPress={() => open(s.url)} disabled={!s.url}
-                  style={[styles.cmpRow, i === 0 && styles.cmpBest]}>
-                  <StoreLogo store={s.name} size={26} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.cmpName}>{s.name}</Text>
-                    {i === 0 ? <Text style={styles.cmpCheapest}>{t('detail.cheapest')}</Text> : null}
-                  </View>
-                  {s.discount > 0 ? <View style={styles.discountBadge}><Text style={styles.discountText}>-%{s.discount}</Text></View> : null}
-                  <View style={{ alignItems: 'flex-end', minWidth: 64 }}>
-                    {s.discount > 0 ? <Text style={styles.original}>{formatPrice(s.original)}</Text> : null}
-                    <Text style={[styles.cmpPrice, i === 0 && { color: colors.accentText }]}>
-                      {s.isFree ? t('card.free') : formatPrice(s.price)}
-                    </Text>
-                  </View>
-                  <Ionicons name="open-outline" size={13} color={colors.text3} />
-                </Pressable>
-              ))}
+            {/* FAZ 2 — "Ekranın TEPE ANI: yalnızca KAZANAN satır kapsanır
+                (bgInput yüzey + tek kırmızı eylem). Diğerleri DÜZ SATIR."
+
+                Öncesinde her satır kendi kartıydı (card yüzey + 1px kenarlık)
+                ve kazanan kırmızı kenarlık + kırmızı tint taşıyordu. Dört
+                kart yan yana durunca hiçbiri öne çıkmıyordu — kapsama
+                herkesteydi. Şimdi kapsama TEK bir satırda ve kırmızı da
+                orada, üstelik bir eylemin (Git) üstünde: kırmızı yalnızca
+                dokunulacak şeyde. */}
+            <View style={{ gap: spacing.s12 }}>
+              {priceStores.map((s, i) => {
+                const kazanan = i === 0;
+                return (
+                  <Pressable key={s.storeId || s.name} onPress={() => open(s.url)} disabled={!s.url}
+                    style={({ pressed }) => [styles.cmpRow, kazanan && styles.cmpBest, pressed && PRESSED]}>
+                    <StoreLogo store={s.name} size={26} />
+
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text numberOfLines={1} style={styles.cmpName}>{s.name}</Text>
+                      {kazanan ? <Text style={styles.cmpCheapest}>{t('detail.cheapest')}</Text> : null}
+                    </View>
+
+                    {/* Kazananda fiyat sütunu (üstte güncel, altta üstü çizili
+                        eski); ötekilerde tek satır ve SÖNÜK — karşılaştırma
+                        kazananı okumakla bitiyor. */}
+                    <View style={styles.cmpFiyatKut}>
+                      <Text style={[styles.cmpPrice, !kazanan && styles.cmpPriceSonuk]}>
+                        {s.isFree ? t('card.free') : formatPrice(s.price)}
+                      </Text>
+                      {kazanan && s.discount > 0 ? (
+                        <Text style={styles.original}>{formatPrice(s.original)}</Text>
+                      ) : null}
+                    </View>
+
+                    {kazanan ? (
+                      <View style={styles.cmpGit}><Text style={styles.cmpGitText}>{t('detail.go')}</Text></View>
+                    ) : (
+                      <Ionicons name="chevron-forward" size={15} color={colors.text3} />
+                    )}
+                  </Pressable>
+                );
+              })}
             </View>
           </Section>
         )}
@@ -466,7 +490,7 @@ export default function GameDetail() {
           <Section title={t('detail.genres')} delay={100}>
             <View style={styles.genreWrap}>
               {genres.slice(0, 8).map((g, i) => (
-                <View key={`${g}_${i}`} style={styles.genreChip}><Text style={styles.genreText}>{g}</Text></View>
+                <View key={`${g}_${i}`} style={styles.genreChip}><Text style={styles.genreText}>{turAdi(g, t)}</Text></View>
               ))}
             </View>
           </Section>
@@ -651,7 +675,7 @@ const makeStyles = (colors) => StyleSheet.create({
   price: { fontSize: type.title3, fontWeight: '800', color: colors.text },
   priceFree: { fontSize: type.title3, fontWeight: '800', color: colors.green },
   priceLoading: { fontSize: type.headline, color: colors.text3 },
-  original: { fontSize: type.subhead, color: colors.text3, textDecorationLine: 'line-through' },
+  original: { fontSize: type.caption, color: colors.text3, textDecorationLine: 'line-through' },
   discountBadge: { backgroundColor: colors.accent, borderRadius: 8, paddingHorizontal: spacing.sm, paddingVertical: 3 },
   discountText: { color: '#fff', fontWeight: '800', fontSize: type.footnote },
 
@@ -662,11 +686,22 @@ const makeStyles = (colors) => StyleSheet.create({
   // minHeight 44 AÇIKÇA yazılı: handoff'un fiyat satırı ölçüsü bu ve
   // öncesinde yükseklik yalnızca içerikten türüyordu — mağaza adı tek
   // satıra düştüğünde satır 44'ün altına iniyordu.
-  cmpRow: { flexDirection: 'row', alignItems: 'center', minHeight: TOUCH_MIN, gap: 10, backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: radius.md, paddingHorizontal: 14, paddingVertical: 11 },
-  cmpBest: { borderColor: colors.accent, backgroundColor: colors.accentSoft },
-  cmpName: { fontSize: type.footnote, fontWeight: '700', color: colors.text },
-  cmpCheapest: { fontSize: type.caption2, fontWeight: '700', color: colors.accentText, marginTop: 1 },
-  cmpPrice: { fontSize: type.subhead, fontWeight: '800', color: colors.text },
+  // Maket: satır min 56, boşluk 12, yatay dolgu 12. Yüzey YALNIZ kazananda.
+  cmpRow: { flexDirection: 'row', alignItems: 'center', minHeight: 56, gap: spacing.s12, paddingHorizontal: spacing.s12, borderRadius: radius.md },
+  cmpBest: { backgroundColor: colors.bgInput },
+  cmpName: { fontSize: type.subhead, fontWeight: '600', color: colors.text },
+  // "En düşük" GREEN, kırmızı değil: bir DEĞER bildiriyor, eylem değil.
+  cmpCheapest: { fontSize: type.caption, fontWeight: '600', color: colors.green },
+  cmpFiyatKut: { alignItems: 'flex-end', flexShrink: 0 },
+  cmpPrice: { fontSize: type.headline, fontWeight: '700', color: colors.text },
+  cmpPriceSonuk: { color: colors.text2 },
+  // Ekranın tek kırmızısı ve bir EYLEM. 44pt — HIG hedefi.
+  cmpGit: {
+    height: TOUCH_MIN, paddingHorizontal: 14, borderRadius: radius.md,
+    backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+  },
+  // tema-bagimsiz: dolu kirmizi dugmenin uzerinde
+  cmpGitText: { color: '#fff', fontSize: type.subhead, fontWeight: '600' },
 
   revCard: { backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: radius.md, padding: spacing.lg },
   revHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: spacing.md },

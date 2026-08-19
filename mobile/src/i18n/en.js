@@ -599,6 +599,7 @@ export default {
   'detail.official': 'Official Site',
   'detail.priceCompare': 'Price Comparison',
   'detail.cheapest': 'Cheapest',
+  'detail.go': 'Go',
   'detail.reviews': 'Reviews',
   'detail.positive': 'positive',
   'detail.reviewsCount': 'reviews',

@@ -601,6 +601,7 @@ export default {
   'detail.official': 'Resmi Site',
   'detail.priceCompare': 'Fiyat Karşılaştırması',
   'detail.cheapest': 'En ucuz',
+  'detail.go': 'Git',
   'detail.reviews': 'Değerlendirmeler',
   'detail.positive': 'olumlu',
   'detail.reviewsCount': 'inceleme',

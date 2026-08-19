@@ -6,7 +6,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
-import { radius, spacing, type, PRESSED, NUMERIC } from '../theme';
+import { radius, spacing, type, PRESSED, NUMERIC, TOUCH_MIN } from '../theme';
 import { useStyles, useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { togglePostLike } from '../api/social';
@@ -123,34 +123,37 @@ function PostCard({ post, onOpen, onRequireAccount, compact = false }) {
   );
 }
 
-const AV = 38;
+// Maket: avatar 40. Gönderi bir İNSANIN sözü; kimliğin taşıyıcısı avatar.
+const AV = 40;
 
 const makeStyles = (colors) => StyleSheet.create({
-  // ── KART, SATIR DEĞİL — MAKETTEN ──
-  // Öncesinde satırdı: alt kenarında saç teli kalınlığında bir ayırıcı ve
-  // kenarlıksız. Gerekçe "çizgi yerine boşlukla ayır" idi — ama maket de
-  // tam olarak bunu yapıyor, sadece KART olarak: gönderiler arası ayırıcı
-  // çizgi yok, 12pt boşluk var; kartın kendisi surface2 dolgu + 1px kenarlık
-  // ile yüzeyden ayrılıyor.
+  // ── SATIR, KART DEĞİL (Faz 2) ──
+  // Bir ara satırdı, sonra eski makete bakılarak KART yapıldı (surface2 dolgu
+  // + 1px kenarlık + 12pt kart arası boşluk). Faz 2 geri alıyor ve gerekçesi
+  // yoğunlukla ilgili:
   //
-  // Ölçüldü (maket): 350 genişlik, r16, surface2, dolgu 16,
-  // 1px rgba(255,255,255,0.06), kartlar arası boşluk 12.
+  //   "Tek kolon, sabit satır ritmi, düşük maliyetli eylemler satırın
+  //    İÇİNDE. Kart yüzeyi yok: gönderi ZEMİN ÜSTÜNDE durur, yalnızca
+  //    ayırıcı taşır (yoğunluk bir erdem)."
+  //
+  // Maketin gönderi kutusunun zemini sayfa zemininin kendisi (#06070a) —
+  // yani yüzey yok. Kart yüzeyi her gönderiye 2px kenarlık + 12pt boşluk
+  // ekliyordu; ekranda üçte bir daha az gönderi görünüyordu.
   row: {
     flexDirection: 'row', gap: spacing.s12,
-    marginHorizontal: spacing.s20, marginBottom: spacing.s12,
-    padding: spacing.s16,
-    backgroundColor: colors.card, borderRadius: radius.lg,
-    borderWidth: 1, borderColor: colors.cardBorder,
+    paddingHorizontal: spacing.s20, paddingVertical: spacing.s16,
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.cardBorder,
   },
   main: { flex: 1, minWidth: 0 },
-  head: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  name: { color: colors.text, fontSize: type.footnote, fontWeight: '700', flexShrink: 1 },
-  handle: { color: colors.text3, fontSize: type.caption, flexShrink: 1 },
-  dot: { color: colors.text3, fontSize: type.caption },
-  time: { color: colors.text3, fontSize: type.caption },
+  head: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.s4, flexWrap: 'wrap' },
+  // Maket: ad 15/600, kullanıcı adı ve zaman 13/text3.
+  name: { color: colors.text, fontSize: type.subhead, fontWeight: '600', flexShrink: 1 },
+  handle: { color: colors.text3, fontSize: type.footnote, flexShrink: 1 },
+  dot: { color: colors.text3, fontSize: type.footnote },
+  time: { color: colors.text3, fontSize: type.footnote },
 
   // Maket: gönderi gövdesi 15 / 400.
-  text: { color: colors.text, fontSize: type.subhead, fontWeight: '400', lineHeight: 21, marginTop: spacing.s4 },
+  text: { color: colors.text, fontSize: type.subhead, fontWeight: '400', lineHeight: 20, marginTop: spacing.s4 },
 
   gameChip: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: 9,
@@ -162,9 +165,10 @@ const makeStyles = (colors) => StyleSheet.create({
   gameImg: { width: 46, height: 30 },
   gameName: { color: colors.text2, fontSize: type.caption, fontWeight: '600', flexShrink: 1 },
 
-  actions: { flexDirection: 'row', gap: 22, marginTop: 10 },
-  action: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  actionText: { color: colors.text3, fontSize: type.caption, fontWeight: '600' },
+  // Maket: eylemler arası 20, her biri minHeight 44 (HIG hedefi).
+  actions: { flexDirection: 'row', gap: spacing.s20 },
+  action: { flexDirection: 'row', alignItems: 'center', gap: spacing.s4, minHeight: TOUCH_MIN },
+  actionText: { color: colors.text2, fontSize: type.footnote, fontWeight: '600' },
 });
 
 export default memo(PostCard);

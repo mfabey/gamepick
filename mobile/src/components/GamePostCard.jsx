@@ -26,6 +26,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { usePrice } from '../hooks/usePrice';
 import { summarize } from '../utils/text';
 import { radius, spacing, PRESSED, type, NUMERIC, metacriticColor, motion } from '../theme';
+import { turAdi } from '../services/genreName';
 import { useStyles, useTheme } from '../context/ThemeContext';
 
 const DETAIL_TTL = 24 * 60 * 60 * 1000;   // ekran görüntüleri ve metin sık değişmez
@@ -121,7 +122,7 @@ function GamePostCard({ game, onDismiss, tag }) {
             <Text numberOfLines={2} style={styles.name}>{game.name}</Text>
             {game.genres?.length ? (
               <Text numberOfLines={1} style={styles.genres}>
-                {game.genres.slice(0, 3).join(' · ')}
+                {game.genres.slice(0, 3).map((g) => turAdi(g, t)).filter(Boolean).join(' · ')}
               </Text>
             ) : null}
           </View>

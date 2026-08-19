@@ -608,6 +608,7 @@ export default {
   'detail.official': 'Offizielle Seite',
   'detail.priceCompare': 'Preisvergleich',
   'detail.cheapest': 'Günstigster Preis',
+  'detail.go': 'Öffnen',
   'detail.reviews': 'Reviews',
   'detail.positive': 'positiv',
   'detail.reviewsCount': 'Reviews',
