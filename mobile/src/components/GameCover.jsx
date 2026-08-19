@@ -29,7 +29,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 import PosterImage from './PosterImage';
 import Monogram from './Monogram';
-import { PRESS_LIFT } from '../theme';
 
 // tema-bagimsiz: oyun kapağının üstünde duruyor, zemin görselin kendisi
 const SCRIM = ['transparent', 'rgba(6,7,9,0.55)', 'rgba(6,7,9,0.96)'];
@@ -44,7 +43,7 @@ const FADE_MS = 200;
  * @param {node}   [children]     rozetler, ad — karartmanın ÜSTÜNDE çizilir
  * @param {bool}  [kapakNotu]     kapak yoksa köşedeki 11pt not (sol alt dolu ise false)
  */
-export default function GameCover({ uri, name, recyclingKey, style, children, lift, kapakNotu = true, ...rest }) {
+export default function GameCover({ uri, name, recyclingKey, style, children, kapakNotu = true, ...rest }) {
   const [failed, setFailed] = useState(false);
 
   // GERİ DÖNÜŞÜM SIFIRLAMASI ŞART. FlashList kartları yeniden kullanıyor;
@@ -71,13 +70,10 @@ export default function GameCover({ uri, name, recyclingKey, style, children, li
         />
       )}
       <LinearGradient colors={SCRIM} locations={SCRIM_STOPS} style={StyleSheet.absoluteFill} />
-      {/* BASMA AYDINLANMASI — maket: "%6 aydınlanma". Kapak bir GÖRSEL,
-          karıştırılacak düz zemini yok; o yüzden katman.
-          Rozetlerin ALTINDA: aydınlanma kapağa ait, etikete değil.
-          Bu dosyada stil sayfası yok (hepsi satır içi) — LIFT de öyle. */}
-      {lift ? (
-        <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: PRESS_LIFT }]} />
-      ) : null}
+      {/* BASMA AYDINLANMASI KALKTI (Faz 2). Ortak basma reçetesi tek:
+          PRESSED_CARD = .9 opaklık + scale .97 (theme.js). Aydınlanma
+          katmanı kartı soldururken kapağı aydınlatıyordu — iki efekt
+          birbirini götürüyor, net etki neredeyse sıfırdı. */}
       {children}
     </View>
   );

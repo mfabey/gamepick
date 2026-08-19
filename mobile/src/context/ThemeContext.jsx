@@ -31,6 +31,7 @@ import { Appearance } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { palette } from '../design/tokens';
+import { PALET_EK } from '../theme';
 
 const PREF_KEY = 'theme_pref';          // 'system' | 'dark' | 'light'
 const ThemeContext = createContext(null);
@@ -57,15 +58,12 @@ function paletten(t) {
   };
 }
 
-// Handoff kapsamı dışı — durum ve mağaza renkleri. theme.js'teki değerlerle aynı.
-const EK = {
-  dark:  { green: '#00d26e', steam: '#1a9fff', xbox: '#4ade80', danger: '#ef4949', accentGlow: 'rgba(232,36,43,0.42)' },
-  light: { green: '#00794a', steam: '#0b74c4', xbox: '#107c10', danger: '#c62828', accentGlow: 'rgba(232,36,43,0.28)' },
-};
-
+// Durum ve mağaza renkleri TEK KAYNAKTAN (theme.js). Burada bir kopyası
+// duruyordu; ikisi Faz 2'de sessizce ayrıştı ve eksik jeton `undefined`
+// olarak geçip görünmez bir öğe üretti.
 const PALETLER = {
-  dark:  { ...paletten(palette.dark),  ...EK.dark },
-  light: { ...paletten(palette.light), ...EK.light },
+  dark:  { ...paletten(palette.dark),  ...PALET_EK.dark },
+  light: { ...paletten(palette.light), ...PALET_EK.light },
 };
 
 export function ThemeProvider({ children }) {

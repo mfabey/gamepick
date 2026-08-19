@@ -50,23 +50,37 @@ function paletten(t) {
 }
 
 // HANDOFF KAPSAMI DIŞI — tasarım paketi durum/mağaza renklerini tanımlamıyor.
-const dark = {
-  ...paletten(T.dark),
-  green:      '#00d26e',
-  steam:      '#1a9fff',
-  xbox:       '#4ade80',
-  danger:     '#ef4949',
-  accentGlow: 'rgba(232,36,43,0.42)',
+//
+// DIŞARI AÇIK ve ThemeContext BUNU KULLANIYOR. Öncesinde aynı liste iki
+// dosyada ayrı ayrı yazılıydı ("theme.js'teki değerlerle aynı" diye bir not
+// da vardı). Faz 2'de sekme vurgusu jetonu buraya eklendi, ThemeContext'e
+// eklenmedi ve vurgu HİÇ ÇİZİLMEDİ — renk `undefined` olunca RN sessizce
+// saydam geçiyor, ne hata ne uyarı. Kopya kaldırıldı.
+export const PALET_EK = {
+  dark: {
+    green:      '#00d26e',
+    steam:      '#1a9fff',
+    xbox:       '#4ade80',
+    danger:     '#ef4949',
+    accentGlow: 'rgba(232,36,43,0.42)',
+    // FAZ 2 — kayan sekme vurgusu. Maket ölçüsü: rgba(232,36,43,0.16).
+    // DOLGU DEĞİL TINT: kırmızı bütçesi "içerik katmanında bir tane" diyor,
+    // bu kabuk katmanının kalıcı durum işareti. %16'da ikon hâlâ okunuyor.
+    tabVurgu:   'rgba(232,36,43,0.16)',
+  },
+  light: {
+    green:      '#00794a',
+    steam:      '#0b74c4',
+    xbox:       '#107c10',
+    danger:     '#c62828',
+    accentGlow: 'rgba(232,36,43,0.28)',
+    // Açık temada aynı tint beyaz cam üstünde soluk kalıyordu → %22.
+    tabVurgu:   'rgba(232,36,43,0.22)',
+  },
 };
 
-const light = {
-  ...paletten(T.light),
-  green:      '#00794a',
-  steam:      '#0b74c4',
-  xbox:       '#107c10',
-  danger:     '#c62828',
-  accentGlow: 'rgba(232,36,43,0.28)',
-};
+const dark  = { ...paletten(T.dark),  ...PALET_EK.dark };
+const light = { ...paletten(T.light), ...PALET_EK.light };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AÇILIŞ PALETİ — ARTIK YALNIZCA YEDEK.
@@ -193,28 +207,33 @@ export const PRESSED = Object.freeze({ opacity: 0.65 });
 // tetiklemiyor. HIG'in 0.95–1.05 aralığının üst ucunda kalındı: 0.97 fark
 // edilir ama sıçrama hissi vermez.
 export const PRESSED_CARD = Object.freeze({
+  // FAZ 2, "beşinde ortak": basma = .9 opaklık + scale .97.
+  // Opaklık bir ara kaldırılmıştı (kapak görselini soldurup kartı devre dışı
+  // gibi gösteriyordu) ve yerine GameCover'da %6 aydınlanma vardı; Faz 2 tek
+  // ortak reçete istiyor ve iki katman birlikte (biri soldurup biri
+  // aydınlatarak) birbirini götürüyordu.
+  opacity: 0.9,
   transform: [{ scale: 0.97 }],
 });
 
 // ── BASMA AYDINLANMASI ──
-// Maket: "Parmak değdiği an 0.97 ölçek + %6 AYDINLANMA."
-// Bizde `opacity: 0.9` vardı ve bu koyu temada TERS yönde çalışıyor: opaklığı
-// düşürmek öğeyi arka plana (siyaha) yaklaştırır, yani karartır. Maket
-// aydınlatmak istiyor.
+// PRESS_LIFT SİLİNDİ (Faz 2). Eski gerekçe şuydu ve ÖLÇÜM OLARAK HÂLÂ
+// DOĞRU: koyu temada opaklığı düşürmek öğeyi siyaha yaklaştırır, yani
+// karartır — eski maket ise "%6 aydınlanma" istiyordu, o yüzden kapak
+// üstüne rgba(255,255,255,0.06) bir katman konmuştu.
 //
-// RN'de `filter: brightness` yok; %6 aydınlanmanın karşılığı üstüne
-// rgba(255,255,255,0.06) bir katman koymak. Bu bir STİL değil KATMAN olduğu
-// için PRESSED_CARD'ın içine giremiyor — zemini olan çağrı yerleri bunu
-// ayrı bir View olarak koyuyor.
-export const PRESS_LIFT = 'rgba(255,255,255,0.06)';
+// Faz 2 ortak basma reçetesini tek bir satıra indiriyor (.9 + scale .97) ve
+// kullanıcı bu yönü seçti. İki katman birlikte çalışırken biri soldurup
+// diğeri aydınlatıyordu; net etki neredeyse yoktu. Düz zeminli çağrı
+// yerleri hâlâ `basiliYuzey`i kullanıyor — orada karıştırma serbest.
 
 /**
  * Basılan yüzeyin rengi — "%6 aydınlanma"nın düz zeminlerde karşılığı.
  *
  * Katman koymak yerine karıştırma: düz zeminli bir kartta sonuç birebir
  * aynı (üstüne %6 beyaz koymakla rengi %6 beyaza kaydırmak aynı hesap) ama
- * fazladan bir View gerektirmiyor. GÖRSEL üstündeki basmalarda
- * karıştırılacak zemin yok; orası PRESS_LIFT katmanını kullanıyor.
+ * fazladan bir View gerektirmiyor. GÖRSEL üstündeki kartlarda karıştırılacak
+ * zemin yok; orada PRESSED_CARD'ın opaklığı devrede.
  *
  * ── YÖN TEMAYA GÖRE DEĞİŞİYOR ──
  * Maket koyu tema üzerine yazılmış ve "aydınlanma" diyor. Açık temada bu
@@ -354,7 +373,9 @@ export const spacing = {
 // Handoff: yükseklik 64, yarıçap tam kapsül, yan kenardan 20, alttan 24.
 // TAB_SPACE (liste alt güvenli boşluğu) handoff'ta da 104 — değişmedi.
 export const TAB_BAR = {
-  height: 64,
+  // FAZ 2: 64 → 58. 64, ikon + 11pt etiket satırını sığdırmak içindi;
+  // etiketler kalkınca o gerekçe düştü. Maketin gerçek çubuğu 58.
+  height: 58,
   side: 20,
   bottom: 24,
 };

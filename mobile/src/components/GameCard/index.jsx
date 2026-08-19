@@ -147,7 +147,7 @@ function GameCard({ game, variant = 'grid', context, overlay, onPress, onLongPre
           <GameCover
             uri={game?.image} name={game?.name}
             recyclingKey={String(game?.id ?? game?.appid ?? '')}
-            style={kapakStil} lift={pressed}
+            style={kapakStil}
             // Sosyal kartın sol alt köşesi ARKADAŞ AVATARINA ait
             // (FriendActivity `overlay` ile koyuyor) — "kapak yok" notu
             // oraya yazılsa avatarın ardında yarım kalırdı.

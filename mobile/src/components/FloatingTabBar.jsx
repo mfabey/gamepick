@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, Platform, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,7 +13,7 @@ import { useReducedMotion } from '../hooks/useReducedMotion';
 import { usePop } from '../hooks/usePop';
 import { useTabBarCompact, useTabBarHidden } from '../context/TabBarContext';
 import { useUnread, refreshUnread } from '../services/unread';
-import { type, NUMERIC, spacing, shadows, TAB_BAR } from '../theme';
+import { type, NUMERIC, spacing, shadows, TAB_BAR, motion } from '../theme';
 import { useStyles, useTheme } from '../context/ThemeContext';
 
 // Sekme olmayan rotalar da burada (games, news, library): harita üst küme
@@ -35,11 +35,19 @@ const BADGED = { messages: true };
 
 const PAD = 6;
 // TEK KAYNAK theme.js. Öncesinde burada ve videos.jsx'te ayrı ayrı 58 yazıyordu.
-const BAR_H = TAB_BAR.height;   // handoff: 64
-const RADIUS = BAR_H / 2;
-// Etiketli düzende ikon küçülüyor: ikon + 11pt etiket 64pt'lik çubuğa
-// ancak böyle sığıyor (dikey: 22 ikon + 2 boşluk + ~13 etiket satırı).
-const ICON = 22;
+const BAR_H = TAB_BAR.height;   // Faz 2: 58
+const RADIUS = BAR_H / 2;       // tam hap — maket: r 29
+// FAZ 2: 22 → 25. Etiket kalkınca ikon tek taşıyıcı; 58pt çubukta 25pt ikon
+// dikeyde 16.5pt nefes bırakıyor.
+const ICON = 25;
+
+// ── KAYAN VURGU (Faz 2) ──
+// Maket ölçüsü: 52×42, r 21, rgba(232,36,43,0.16).
+// Etiketsiz çubukta seçili sekmeyi anlatan tek şey ikonun rengi kalıyordu ve
+// renk TEK kanal — renk körlüğünde ayırt edilemez. Vurgu ikinci kanal:
+// konum. Ayrıca "nereye gittim" bilgisini kayarak taşıyor.
+const HAP_W = 52;
+const HAP_H = 42;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Liquid Glass kullanılabilirliği — MODÜL DÜZEYİNDE bir kez hesaplanır.
@@ -72,13 +80,24 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
   const compact = useTabBarCompact();
   const hidden = useTabBarHidden();
 
-  // KAYAN KIRMIZI HAP KALDIRILDI. Referans HTML'de aktif sekmenin arkasında
-  // hiçbir dolgu yok: aktif durum yalnız ikonun marka rengine dönmesiyle ve
-  // etiketin tam kontrasta çıkmasıyla anlatılıyor. Handoff'un "ekran başına
-  // en çok 3 kırmızı öğe" bütçesi de bunu gerektiriyor.
+  // ── Kayan vurgunun konumu ──
+  // Çubuk genişliği ÖLÇÜLÜYOR, hesaplanmıyor: `wrap` yatayda kenar
+  // boşluklarına, yatay yönde de maxWidth 420'ye tabi — genişliği pencereden
+  // türetmek iki kuralı da burada ikinci kez yazmak olurdu.
   //
-  // Hapla birlikte onu süren `pos` paylaşılan değeri ve ζ=1 yay kararı da
-  // düştü — o karar yalnızca hapın hedefi aşmasını engellemek içindi.
+  // Öğeler `flex: 1` olduğu için beşi eşit; hücre genişliği tek bölme.
+  const [barW, setBarW] = useState(0);
+  const hucre = barW > 0 ? (barW - PAD * 2) / state.routes.length : 0;
+  const pos = useSharedValue(0);
+  useEffect(() => {
+    if (hucre <= 0) return;
+    const hedef = PAD + state.index * hucre + (hucre - HAP_W) / 2;
+    // firm (ζ=1, aşmasız): "nereye gittim" bilgisi aşarsa bozukluk gibi
+    // okunuyor — ikonun pop'u aşmalı, vurgunun kayması değil.
+    pos.value = reducedMotion ? hedef : withSpring(hedef, motion.firm);
+  }, [state.index, hucre, pos, reducedMotion, state.routes.length]);
+
+  const hapStyle = useAnimatedStyle(() => ({ transform: [{ translateX: pos.value }] }), []);
 
   // ── Çubuk sekmesi ──
   // Sekme degisiminde tum cubuk kisa bir "otur" hareketi yapiyor: once
@@ -162,7 +181,10 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
       <Animated.View
         style={[styles.golge, isLandscape && styles.barLandscape, barStyle]}
       >
-      <View style={[styles.bar, GLASS_OK ? styles.barGlass : styles.barSolid]}>
+      <View
+        style={[styles.bar, GLASS_OK ? styles.barGlass : styles.barSolid]}
+        onLayout={(e) => setBarW(e.nativeEvent.layout.width)}
+      >
         {/* Cam katmanı içeriği SARMALAMAZ, arkasında durur — sekme öğeleri
             basılınca opacity uyguluyor ve bu camı bozardı. */}
         {GLASS_OK && (
@@ -172,6 +194,13 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
             pointerEvents="none"
           />
         )}
+
+        {/* Vurgu cam katmanının ÜSTÜNDE, sekme öğelerinin ALTINDA: camın
+            altına girerse blur onu yutuyor, öğelerin üstüne çıkarsa ikonu
+            örtüyor. */}
+        {hucre > 0 ? (
+          <Animated.View pointerEvents="none" style={[styles.hap, hapStyle]} />
+        ) : null}
 
         {state.routes.map((route, index) => {
           const { options } = descriptors[route.key];
@@ -204,7 +233,6 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
               <TabIcon
                 base={base}
                 focused={focused}
-                label={label}
                 // Odaktaki sekmede rozet YOK: kullanıcı zaten oradaysa
                 // "bekleyen bir şey var" demenin anlamı kalmıyor.
                 badge={BADGED[route.name] && !focused ? unread : 0}
@@ -228,7 +256,7 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
  * OPACITY YOK — bu bilesen cam katmaninin kardesi ve GlassView'in
  * ebeveyninde opacity<1 cami bozuyor (bkz. dosya basi). Yalnizca transform.
  */
-function TabIcon({ base, focused, label, badge = 0 }) {
+function TabIcon({ base, focused, badge = 0 }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   // Mantik usePop'a tasindi: ayni hareket begeni ve istek listesinde de
@@ -261,17 +289,6 @@ function TabIcon({ base, focused, label, badge = 0 }) {
           </View>
         ) : null}
       </View>
-      {/* allowFontScaling KAPALI: etiket bir cümle değil, sekmenin adı.
-          Erişilebilirlik boyutlarında büyüseydi 70pt'lik hücreyi taşırır ve
-          beş sekme birbirine girerdi. Okunabilirlik ikonla birlikte
-          sağlanıyor; VoiceOver zaten accessibilityLabel'ı okuyor. */}
-      <Text
-        numberOfLines={1}
-        allowFontScaling={false}
-        style={[styles.label, focused && styles.labelOn]}
-      >
-        {label}
-      </Text>
     </Animated.View>
   );
 }
@@ -317,49 +334,40 @@ const makeStyles = (colors) => StyleSheet.create({
     borderColor: colors.glassBorder,
   },
   glassLayer: { borderRadius: RADIUS },
+  // Maket: 52×42, r 21, accent %16 tint.
+  hap: {
+    position: 'absolute',
+    left: 0,
+    top: (BAR_H - HAP_H) / 2,
+    width: HAP_W,
+    height: HAP_H,
+    borderRadius: HAP_H / 2,
+    backgroundColor: colors.tabVurgu,
+  },
   item: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    // Ölçekten en küçük basamak. İkon 22 + 4 + etiket ~13 = 39pt, 64pt'lik
-    // çubuğa rahat sığıyor.
-    gap: spacing.s4,
     height: '100%',
   },
-  // Handoff tipografisi — Etiket kademesi: 11 / 600 / +%6 / BUYUK HARF.
-  // Pasif renk text3, aktif tam kontrast (handoff: "yalniz aktif sekme tam
-  // kontrastta").
-  // MAKETTEN ÖLÇÜLDÜ, README'den değil. README bu kademe için
-  // "11 / 600 / +%6 / BÜYÜK HARF" diyordu ve ilk uygulama onu izlemişti;
-  // handoff HTML'i tarayıcıda açılıp ölçülünce başka çıktı:
-  //
-  //   "Topluluk" → 11px / 400 / letterSpacing normal / CÜMLE DÜZENİ / text3
-  //
-  // Handoff'un kendi CLAUDE.md'si çelişkide HTML'i yetkili sayıyor.
-  // i18n dizeleri zaten cümle düzeninde ('tab.home': 'Anasayfa').
-  label: {
-    fontSize: type.caption2,
-    fontWeight: '400',
-    color: colors.text3,
-  },
-  // HTML'den: aktif ETİKET #f4f4f6 (text1), aktif İKON #e8242b (marka).
-  // Etiketi de kırmızı yapmak "ekran başına en çok 3 kırmızı öğe" bütçesini
-  // gereksiz yere harcıyordu.
-  labelOn: { color: colors.text },
-
   // Simgenin sağ üst köşesine biniyor. Çerçeve çubuk zemininin rengiyle
   // değil, koyu arka planla çiziliyor: cam açıkken çubuğun rengi arkadaki
   // içeriğe göre değişiyor ve sabit bir eşleşme tutturulamaz — koyu bir
   // halka her iki durumda da rozeti simgeden ayırıyor.
+  //
+  // KIRMIZI (Faz 2, Faz 1'in düzeltmesi). Faz 1'de nötrleştirilmişti;
+  // Faz 2 geri alıyor ve gerekçesi ayrım koyuyor: yasak olan EYLEME
+  // DÖNÜŞMEYEN kırmızı rozet. Okunmamış mesaj eyleme dönüşür — açıp
+  // okursun ve rozet gider. Ayrıca odaktaki sekmede hiç çıkmıyor.
   badge: {
     position: 'absolute', top: -4, right: -9,
     minWidth: 17, height: 17, borderRadius: 9,
     paddingHorizontal: spacing.xs,
     alignItems: 'center', justifyContent: 'center',
-    // FAZ 1: kirmizi DEGIL notr. "Okunmamis mesaj bir sayi, bir alarm
-    // degil" — eyleme donusmeyen kirmizi rozet karanlik desen sayiliyor.
-    backgroundColor: colors.bgInput,
-    borderWidth: 2, borderColor: colors.bg,
+    backgroundColor: colors.accent,
+    // tema-bagimsiz: cam cubugun uzerinde, zemin arkadaki icerik
+    borderWidth: 2, borderColor: 'rgba(6,7,10,0.9)',
   },
-  badgeText: { color: colors.text, fontSize: type.caption2, fontWeight: '800' },
+  // tema-bagimsiz: dolu kirmizi rozetin uzerinde
+  badgeText: { color: '#fff', fontSize: type.caption2, fontWeight: '800' },
 });
