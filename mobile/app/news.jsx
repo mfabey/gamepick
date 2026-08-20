@@ -122,12 +122,23 @@ export default function NewsScreen() {
               <Pressable
                 style={({ pressed }) => [styles.featured, pressed && PRESSED]}
                 onPress={() => open(featured.url)}
-                onLongPress={() => setPaylas({ url: featured.url, title: featured.title })}
-                delayLongPress={400}
               >
                 <NewsImage item={featured} style={StyleSheet.absoluteFill} />
                 <LinearGradient colors={['transparent', 'rgba(6,7,9,0.55)', 'rgba(6,7,9,0.97)']} locations={[0.2, 0.6, 1]} style={StyleSheet.absoluteFill} />
                 <View style={styles.featuredBadge}><Text style={styles.featuredBadgeText}>★ {t('news.featured')}</Text></View>
+
+                {/* "ÖNE ÇIKAN" rozeti SOL üstte; gönderme SAĞ üstte —
+                    çakışmıyorlar. Kart ailesindeki 26pt sessiz daireyle
+                    aynı dil (bkz. GameCard). */}
+                <Pressable
+                  onPress={() => setPaylas({ url: featured.url, title: featured.title })}
+                  hitSlop={9}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('share.toFriend')}
+                  style={({ pressed }) => [styles.featuredGonder, pressed && PRESSED]}
+                >
+                  <Ionicons name="paper-plane" size={14} color="#fff" />
+                </Pressable>
                 <View style={styles.featuredInfo}>
                   <View style={styles.catRow}>
                     <View style={styles.catPill}><Text style={styles.catPillText}>{featured.cat}</Text></View>
@@ -180,12 +191,12 @@ export default function NewsScreen() {
 
 const NewsRow = memo(function NewsRow({ item, onPress, onShare }) {
   const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
+  const { t } = useLanguage();
   return (
     <Pressable
       style={({ pressed }) => [styles.row, pressed && PRESSED]}
       onPress={() => onPress(item.url)}
-      onLongPress={() => onShare?.(item)}
-      delayLongPress={400}
     >
       <View style={styles.thumb}>
         <NewsImage item={item} style={StyleSheet.absoluteFill} />
@@ -197,6 +208,19 @@ const NewsRow = memo(function NewsRow({ item, onPress, onShare }) {
         <Text numberOfLines={3} style={styles.rowTitle}>{item.title}</Text>
         <Text style={styles.rowMeta} numberOfLines={1}>{item.source} · {item.date}{item.read ? ` · ${item.read}` : ''}</Text>
       </View>
+
+      {/* GÖRÜNÜR GÖNDERME DÜĞMESİ. Uzun basmaya bağlıydı — keşfedilemiyordu
+          ve haberin tek eylemi (aç) ile aynı jeste yükleniyordu.
+          hitSlop 10 → 44pt gerçek hedef; çizilen ikon 20pt. */}
+      <Pressable
+        onPress={() => onShare?.(item)}
+        hitSlop={10}
+        accessibilityRole="button"
+        accessibilityLabel={t('share.toFriend')}
+        style={({ pressed }) => [styles.gonder, pressed && PRESSED]}
+      >
+        <Ionicons name="paper-plane-outline" size={19} color={colors.text3} />
+      </Pressable>
     </Pressable>
   );
 });
@@ -235,7 +259,15 @@ const makeStyles = (colors) => StyleSheet.create({
   chipTextActive: { color: colors.bg, fontWeight: '700' },
   chipText: { fontSize: type.footnote, color: colors.text2, fontWeight: '500' },
 
-  row: { flexDirection: 'row', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
+  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
+  gonder: { width: 24, alignItems: 'center', justifyContent: 'center', alignSelf: 'center' },
+  featuredGonder: {
+    position: 'absolute', top: 12, right: 12,
+    width: 28, height: 28, borderRadius: 14,
+    alignItems: 'center', justifyContent: 'center',
+    // tema-bagimsiz: haber kapaginin ustunde duruyor, zemin gorsel
+    backgroundColor: 'rgba(8,10,14,0.6)',
+  },
   thumb: { width: 108, height: 76, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.card },
   catPillSm: { alignSelf: 'flex-start', backgroundColor: colors.bgInput, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2, marginBottom: 5 },
   catPillTextSm: { color: colors.text2, fontSize: type.caption2, fontWeight: '600' },
