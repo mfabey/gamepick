@@ -103,6 +103,12 @@ export function scoreGame(game, genreWeights = {}, { ownedNames, seenIds } = {})
   if (ownedNames?.has?.(normalizeName(game.name))) score -= 0.6;
   if (seenIds?.has?.(String(game.id))) score -= 0.25;
 
+  // Görsel yoksa veya boşsa puanı ciddi şekilde düşürerek listenin en arkasına itilmesini sağla
+  const hasImage = !!(game && game.image && typeof game.image === 'string' && game.image.trim() !== '');
+  if (!hasImage) {
+    score -= 10.0;
+  }
+
   return score;
 }
 

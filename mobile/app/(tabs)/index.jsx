@@ -68,9 +68,41 @@ export default function HomeScreen() {
   const { data: newData }   = useQuery('home:new', fetchNewGames, { ttl: 5 * 60 * 1000 });
   const { data: saleData }  = useQuery('home:sale', fetchSaleGames, { ttl: 5 * 60 * 1000 });
 
-  const trend = useMemo(() => (trendData?.results || trendData?.games || []).slice(0, 14), [trendData]);
-  const fresh = useMemo(() => (newData?.results || []).slice(0, 12), [newData]);
-  const sale  = useMemo(() => (saleData?.results || []).slice(0, 12), [saleData]);
+  const trend = useMemo(() => {
+    const list = trendData?.results || trendData?.games || [];
+    const sorted = [...list].sort((a, b) => {
+      const aImg = !!(a?.image && typeof a.image === 'string' && a.image.trim() !== '');
+      const bImg = !!(b?.image && typeof b.image === 'string' && b.image.trim() !== '');
+      if (aImg && !bImg) return -1;
+      if (!aImg && bImg) return 1;
+      return 0;
+    });
+    return sorted.slice(0, 14);
+  }, [trendData]);
+
+  const fresh = useMemo(() => {
+    const list = newData?.results || [];
+    const sorted = [...list].sort((a, b) => {
+      const aImg = !!(a?.image && typeof a.image === 'string' && a.image.trim() !== '');
+      const bImg = !!(b?.image && typeof b.image === 'string' && b.image.trim() !== '');
+      if (aImg && !bImg) return -1;
+      if (!aImg && bImg) return 1;
+      return 0;
+    });
+    return sorted.slice(0, 12);
+  }, [newData]);
+
+  const sale  = useMemo(() => {
+    const list = saleData?.results || [];
+    const sorted = [...list].sort((a, b) => {
+      const aImg = !!(a?.image && typeof a.image === 'string' && a.image.trim() !== '');
+      const bImg = !!(b?.image && typeof b.image === 'string' && b.image.trim() !== '');
+      if (aImg && !bImg) return -1;
+      if (!aImg && bImg) return 1;
+      return 0;
+    });
+    return sorted.slice(0, 12);
+  }, [saleData]);
 
   // Haber verisi ARTIK BURADA ÇEKİLMİYOR. Anasayfada haber şeridi yokken
   // her açılışta haber isteği atmak boşa ağ trafiğiydi; /news kendi
@@ -279,10 +311,18 @@ export default function HomeScreen() {
     const games = feedItems.filter(
       (g) => !dismissedIds.has(String(g.id)) && !hlIds.has(String(g.id))
     );
+    // Görseli olanları başa al, görseli olmayanları en sona at
+    const sortedGames = [...games].sort((a, b) => {
+      const aImg = !!(a?.image && typeof a.image === 'string' && a.image.trim() !== '');
+      const bImg = !!(b?.image && typeof b.image === 'string' && b.image.trim() !== '');
+      if (aImg && !bImg) return -1;
+      if (!aImg && bImg) return 1;
+      return 0;
+    });
     // İnceleme ve gönderiler TEK sosyal akışta birleşiyor (en yeni önce),
     // sonra oyunların arasına serpiştiriliyor.
     const social = mergeSocial(reviews, posts);
-    return mergeHighlights(interleaveReviews(games, social), highlights);
+    return mergeHighlights(interleaveReviews(sortedGames, social), highlights);
   }, [feedItems, dismissedIds, reviews, posts, highlights]);
 
   // ── Paylaşım ──
