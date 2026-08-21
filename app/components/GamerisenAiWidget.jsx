@@ -8,9 +8,24 @@ import { useAuth } from '../context/AuthContext';
 function formatMarkdown(text) {
   if (!text) return '';
   let html = text.replace(/\*\*(.*?)\*\*/g, '<strong style="color: #ffffff; font-weight: 750;">$1</strong>');
-  html = html.replace(/\*(.*?)\*/g, '<em style="color: #b0b0b8; font-style: italic;">$1</em>');
+  html = html.replace(/\*(.*?)\*/g, '<em style="color: #ff9999; font-style: italic;">$1</em>');
   html = html.replace(/\n/g, '<br />');
   return html;
+}
+
+function formatStreamingMarkdown(rawText) {
+  if (!rawText) return '';
+  let text = rawText;
+  const boldMatches = text.match(/\*\*/g);
+  if (boldMatches && boldMatches.length % 2 === 1) {
+    text += '**';
+  }
+  const cleanedBold = text.replace(/\*\*/g, '');
+  const italicMatches = cleanedBold.match(/\*/g);
+  if (italicMatches && italicMatches.length % 2 === 1) {
+    text += '*';
+  }
+  return formatMarkdown(text);
 }
 
 export default function GamerisenAiWidget() {
@@ -101,14 +116,81 @@ export default function GamerisenAiWidget() {
 
       if (data.session_id) setSessionId(data.session_id);
 
+      const responseFullText = data.response || 'Sonuçlar hazır! Aşağıdan inceleyebilirsin:';
+      const returnedGames = data.games || [];
+
+      // 1. Add AI message in streaming state (empty text, isTyping: true)
+      const aiMsgIndex = newMessages.length;
       setMessages((prev) => [
         ...prev,
         {
           role: 'ai',
-          text: data.response || 'Sonuçlar hazır!',
-          games: data.games || []
+          text: '',
+          isTyping: true,
+          fullText: responseFullText,
+          games: []
         }
       ]);
+      setIsLoading(false);
+
+      // 2. Stream character by character with natural cadence (tane tane yazma)
+      const totalLen = responseFullText.length;
+      let baseSpeed = 14;
+      if (totalLen > 700) baseSpeed = 7;
+      else if (totalLen > 350) baseSpeed = 10;
+      else baseSpeed = 14;
+
+      let currentIdx = 0;
+
+      await new Promise((resolve) => {
+        function tick() {
+          if (currentIdx < totalLen) {
+            const step = totalLen > 600 ? 2 : 1;
+            currentIdx = Math.min(totalLen, currentIdx + step);
+            const currentSlice = responseFullText.substring(0, currentIdx);
+
+            setMessages((prev) => {
+              const updated = [...prev];
+              if (updated[aiMsgIndex]) {
+                updated[aiMsgIndex] = {
+                  ...updated[aiMsgIndex],
+                  text: currentSlice,
+                  isTyping: currentIdx < totalLen
+                };
+              }
+              return updated;
+            });
+
+            const lastChar = responseFullText[currentIdx - 1];
+            let delay = baseSpeed;
+            if (lastChar === '.' || lastChar === '!' || lastChar === '?') {
+              delay = baseSpeed + 70;
+            } else if (lastChar === ',' || lastChar === ':' || lastChar === ';') {
+              delay = baseSpeed + 35;
+            } else if (lastChar === '\n') {
+              delay = baseSpeed + 45;
+            }
+
+            setTimeout(tick, delay);
+          } else {
+            setMessages((prev) => {
+              const updated = [...prev];
+              if (updated[aiMsgIndex]) {
+                updated[aiMsgIndex] = {
+                  ...updated[aiMsgIndex],
+                  text: responseFullText,
+                  isTyping: false,
+                  games: returnedGames
+                };
+              }
+              return updated;
+            });
+            resolve();
+          }
+        }
+
+        tick();
+      });
     } catch (err) {
       setMessages((prev) => [
         ...prev,
@@ -520,8 +602,30 @@ export default function GamerisenAiWidget() {
                         lineHeight: '1.55',
                         wordBreak: 'break-word'
                       }}
-                      dangerouslySetInnerHTML={{ __html: formatMarkdown(m.text) }}
-                    />
+                      onClick={() => {
+                        if (m.isTyping && m.fullText) {
+                          setMessages((prev) => {
+                            const updated = [...prev];
+                            if (updated[idx]) {
+                              updated[idx] = {
+                                ...updated[idx],
+                                text: m.fullText,
+                                isTyping: false,
+                                games: m.games
+                              };
+                            }
+                            return updated;
+                          });
+                        }
+                      }}
+                    >
+                      <span
+                        dangerouslySetInnerHTML={{
+                          __html: m.isTyping ? formatStreamingMarkdown(m.text) : formatMarkdown(m.text)
+                        }}
+                      />
+                      {m.isTyping && <span className="ai-typing-cursor" />}
+                    </div>
 
                     {/* Render Rich Game Cards */}
                     {m.games && m.games.length > 0 && (
@@ -588,7 +692,9 @@ export default function GamerisenAiWidget() {
 
                 {isLoading && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'rgba(255,255,255,0.05)', borderRadius: '14px', width: 'fit-content' }}>
-                    <span style={{ fontSize: '14px' }}>⚡</span>
+                    <div className="ai-loading-dots">
+                      <span></span><span></span><span></span>
+                    </div>
                     <span style={{ fontSize: '12.5px', color: '#aaa' }}>Gamerisen AI düşünüyor...</span>
                   </div>
                 )}

@@ -1449,3 +1449,58 @@ html[data-theme="light"] .bottom-nav-pill {
 .ai-widget-prompts:hover::-webkit-scrollbar-thumb {
   background: #e50914 !important;
 }
+
+/* ===== Gamerisen AI Typewriter Cursor & Thinking Animation ===== */
+.ai-typing-cursor {
+  display: inline-block;
+  width: 3px;
+  height: 1.1em;
+  background: #ff3333;
+  margin-left: 3px;
+  vertical-align: -2px;
+  border-radius: 2px;
+  box-shadow: 0 0 8px rgba(255, 51, 51, 0.9);
+  animation: grAiCursorBlink 0.65s infinite ease-in-out;
+}
+
+@keyframes grAiCursorBlink {
+  0%, 100% { opacity: 1; transform: scaleY(1); }
+  50% { opacity: 0; transform: scaleY(0.85); }
+}
+
+.ai-loading-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ai-loading-dots span {
+  width: 5px;
+  height: 5px;
+  background-color: #ff4d4d;
+  border-radius: 50%;
+  display: inline-block;
+  animation: aiLoadingBounce 1.4s infinite ease-in-out both;
+  box-shadow: 0 0 5px rgba(255, 77, 77, 0.6);
+}
+
+.ai-loading-dots span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+.ai-loading-dots span:nth-child(2) {
+  animation-delay: -0.16s;
+}
+.ai-loading-dots span:nth-child(3) {
+  animation-delay: 0s;
+}
+
+@keyframes aiLoadingBounce {
+  0%, 80%, 100% {
+    transform: scale(0.6);
+    opacity: 0.4;
+  }
+  40% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+}
