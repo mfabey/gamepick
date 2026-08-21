@@ -1108,7 +1108,9 @@ html[data-theme="light"] .bottom-nav-pill {
   width: 38px !important;
   height: 38px !important;
   border-radius: 12px !important;
-  background: linear-gradient(135deg, #e50914 0%, #7b0005 100%) !important;
+  background: #ffffff !important;
+  padding: 4px !important;
+  overflow: hidden !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -1286,7 +1288,9 @@ html[data-theme="light"] .bottom-nav-pill {
   width: 36px !important;
   height: 36px !important;
   border-radius: 12px !important;
-  background: linear-gradient(135deg, #e50914 0%, #7b0005 100%) !important;
+  background: #ffffff !important;
+  padding: 4px !important;
+  overflow: hidden !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
