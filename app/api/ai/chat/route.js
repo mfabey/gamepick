@@ -40,6 +40,32 @@ function normalizeText(text) {
   return clean.split('').map(c => trMap[c] || c).join('');
 }
 
+// --- Gibberish / Keymash Detector ---
+function isGibberish(text) {
+  if (!text) return false;
+  const norm = normalizeText(text).trim();
+  const words = norm.split(/\s+/).filter(Boolean);
+  if (words.length === 0) return false;
+
+  const whitelist = new Set([
+    'fps', 'rpg', 'mmo', 'cs', 'cs2', 'gta', 'rdr', 'rdr2', 'rtx', 'gtx', 'cpu', 'gpu',
+    'ram', 'pvp', 'pve', 'coop', 'dlc', 'vr', 'f2p', 'gg', 'wp', 'ez', 'lol', 'pubg',
+    'cod', 'bf', 'gow', 'ac', 're4', 'tba', 'goty', 'pc', 'ps5', 'xbox', 'steam', 'epic'
+  ]);
+  if (words.every(w => whitelist.has(w))) return false;
+
+  if (/^(asdf|qwer|zxcv|hjkl|ghjk|sdfg|dfgh|fghj|werr|qweq|asda|dsds|nakj|jksd)/i.test(norm)) return true;
+  if (/(.)\1{3,}/.test(norm)) return true;
+  if (/^[bcdfghjklmnpqrstvwxyz]{4,}$/i.test(norm)) return true;
+  if (/^(?:as|sd|df|fg|gh|hj|jk|kl|qw|we|er|rt|ty|yu|ui|io|op|zx|xc|cv|vb|bn|nm){3,}$/i.test(norm)) return true;
+
+  if (words.length === 1 && norm.length >= 5) {
+    const vowels = (norm.match(/[aeiou]/g) || []).length;
+    if (vowels === 0 || (vowels / norm.length) < 0.18) return true;
+  }
+  return false;
+}
+
 // --- Hardware Compatibility Estimator ---
 function estimateHardware(game, userGpu) {
   if (!userGpu) return null;
@@ -117,11 +143,11 @@ export async function POST(req) {
     const isIdentity = /^(kimsin|sen kimsin|kimsin sen|nesin|sen nesin|nesin sen|adin ne|adın ne|ismin ne|sen ne ayaksin|ne ayaksin|gamerisen nedir|gamerisen ai nedir|bu bot ne|bu site ne|ne ise yararsin|ne is yaparsin|neler yapabilirsin|gorevin ne)$/i.test(normQ) ||
       /\b(sen kimsin|kimsin sen|ne ise yararsin|neler yapabilirsin|gamerisen nedir|gamerisen ai nedir|adin ne|ismin ne)\b/i.test(normQ);
 
-    const isGreeting = /^(sa|s a|selam|selamlar|merhaba|merhabalar|mrb|hey|hello|hi|gunaydin|iyi gunler|iyi aksamlar|iyi geceler|tunaydin|selamun aleykum)$/i.test(normQ) ||
-      /\b(selam|selamlar|merhaba|merhabalar|gunaydin|iyi gunler|iyi aksamlar|selamun aleykum)\b/i.test(normQ);
+    const isGreeting = /^(sa|s a|sea|s\.a|s\.a\.|selam|selamlar|merhaba|merhabalar|mrb|hey|hello|hi|gunaydin|iyi gunler|iyi aksamlar|iyi geceler|tunaydin|selamun aleykum|slam|slm|selamm|selammm|merhabalarr|merhba|meraba|merabalar|mrhba)$/i.test(normQ) ||
+      /\b(selam|selamlar|merhaba|merhabalar|gunaydin|iyi gunler|iyi aksamlar|selamun aleykum|slam|slm|mrb)\b/i.test(normQ);
 
-    const isHowAreYou = /^(nasilsin|naber|napiyon|nasil gidiyor|ne haber|keyifler nasil|durumlar nasil|iyi misin|iyi misiniz)$/i.test(normQ) ||
-      /\b(nasilsin|naber|napiyon|nasil gidiyor|ne haber|keyifler nasil|hal hatir|durumlar nasil)\b/i.test(normQ);
+    const isHowAreYou = /^(nasilsin|naber|nbr|nassın|nassin|napiyon|nasil gidiyor|ne haber|keyifler nasil|durumlar nasil|iyi misin|iyi misiniz|noruyon|nörüyon)$/i.test(normQ) ||
+      /\b(nasilsin|naber|nbr|nassın|nassin|napiyon|nasil gidiyor|ne haber|keyifler nasil|hal hatir|durumlar nasil)\b/i.test(normQ);
 
     const isWhatDoing = /^(napıyorsun|napiyorsun|ne yapıyorsun|ne yapiyorsun|neyle meşgulsün|neyle mesgulsun|ne iş yapıyorsun)$/i.test(normQ) ||
       /\b(napıyorsun|napiyorsun|ne yapıyorsun|ne yapiyorsun|neyle mesgulsun)\b/i.test(normQ);
@@ -184,6 +210,15 @@ export async function POST(req) {
       });
     }
 
+    // 1.1 Gibberish & Keyboard Smash Detection
+    if (isGibberish(userQuery)) {
+      return NextResponse.json({
+        response: "Gamer dostum, tam olarak ne demek istediğini anlayamadım! 🎮\n\nAklındaki bir **oyun ismini**, aradığın **türü** veya **bütçeni** (örn: *'100 TL altı efsaneler'*, *'Witcher 3 nerede ucuz?'*, *'Canım sıkıldı ne oynasam?'*) söylersen sana en uygun fiyatları ve FPS analizlerini hemen çıkarabilirim! 🕹️",
+        session_id: sessionId,
+        games: []
+      });
+    }
+
     // 2. Story / Lore / Description queries (e.g. 'Witcher 3 hikayesi nasıl?', 'Cyberpunk konusu ne?')
     const isStory = /hikaye|hikayesi|konu|konusu|ne anlatiyor|nasil bir oyun|ozet|ozeti|lore/.test(normQ);
     if (isStory) {
@@ -219,7 +254,6 @@ export async function POST(req) {
     const isGeneralRecommendation = /canim sikildi|ne oynasam|ne oynayayim|oyun oner|oyun oneri|tavsiye|bana oyun bul|en iyi oyunlar|populer oyunlar|efsane oyunlar|bomba oyunlar|kafa dagitmalik|ne oynamaliyim/.test(normQ) && !/\d+\s*(?:tl|lira|dolar|\$)/.test(normQ);
 
     if (isGeneralRecommendation) {
-      // Pick top-rated popular games from database (rating >= 88)
       const topPicks = [...gamesDb]
         .filter(g => (g.deals || []).length > 0)
         .sort((a, b) => (b.rating || 80) - (a.rating || 80))
@@ -228,8 +262,8 @@ export async function POST(req) {
       let aiResponse = "🎮 **Gamerisen AI Seçti: İşte Bu Aralar Kesinlikle Oynaman Gereken Efsane Oyunlar!**\n\nKütüphanene mutlaka eklemen gereken, yüksek puanlı ve indirimdeki başyapıtlar:\n\n";
       
       topPicks.forEach((g, i) => {
-        const bestDeal = (g.deals || [])[0];
-        const dealInfo = bestDeal ? ` — **${bestDeal.current_price} TL** (%${bestDeal.discount} İndirimle!) [${bestDeal.platform}]` : '';
+        const d = (g.deals || [])[0];
+        const dealInfo = d ? ` — **${d.current_price} TL** (%${d.discount} İndirimle!) [${d.platform}]` : '';
         aiResponse += `${i + 1}. **${g.title}** (⭐ ${g.rating || 88}/100)${dealInfo}\n   *${(g.description || '').slice(0, 110)}...*\n\n`;
       });
 
@@ -304,10 +338,17 @@ export async function POST(req) {
       const gameGenresNorm = (game.genres || []).map(g => normalizeText(g)).join(' ');
 
       // Direct Title & Text matching
-      if (normQ.includes(gameTitleNorm) || gameTitleNorm.includes(normQ)) score += 5.0;
+      let hasDirectMatch = false;
+      if (normQ.includes(gameTitleNorm) || (gameTitleNorm.length > 3 && normQ.includes(gameTitleNorm.slice(0, 4)))) {
+        score += 5.0;
+        hasDirectMatch = true;
+      }
       const queryWords = normQ.split(/\s+/).filter(w => w.length > 2);
       queryWords.forEach(w => {
-        if (gameTitleNorm.includes(w)) score += 2.0;
+        if (gameTitleNorm.includes(w)) {
+          score += 2.5;
+          hasDirectMatch = true;
+        }
         if (gameDescNorm.includes(w)) score += 0.5;
         if (gameGenresNorm.includes(w)) score += 2.0;
       });
@@ -324,7 +365,7 @@ export async function POST(req) {
         score += 2.0 + ((game.rating || 80) / 30.0);
       }
 
-      if (score > 0.4 || isConstraint) {
+      if (isConstraint || (hasDirectMatch && score >= 1.5)) {
         scoredGames.push({
           game,
           best_deal: bestDeal,
@@ -337,19 +378,13 @@ export async function POST(req) {
     scoredGames.sort((a, b) => b.score - a.score);
     let topResults = scoredGames.slice(0, 4);
 
-    // Fallback to top-rated popular games if nothing matched
+    // If no direct matches found and not a valid constraint search -> DO NOT DUMP GAMES! Explain politely.
     if (topResults.length === 0) {
-      const fallbackPicks = [...gamesDb]
-        .filter(g => (g.deals || []).length > 0)
-        .sort((a, b) => (b.rating || 80) - (a.rating || 80))
-        .slice(0, 3);
-
-      topResults = fallbackPicks.map(g => ({
-        game: g,
-        best_deal: (g.deals || [])[0],
-        score: 1.0,
-        hw_compat: estimateHardware(g, userGpu)
-      }));
+      return NextResponse.json({
+        response: `Gamer dostum, **'${userQuery}'** için ne demek istediğini tam olarak anlayamadım veya bu isimde bir oyun bulamadım! 🎮\n\nBana şunları sorabilirsin:\n• 🔍 **Oyun & Fiyat:** *'Witcher 3 nerede ucuz?'*, *'Cyberpunk kaç TL?'*\n• 💰 **Bütçe & İndirim:** *'100 TL altı efsaneler'*, *'En ucuz oyunlar'*, *'Bedava oyunlar'*\n• 🖥️ **Donanım & FPS:** *'GTX 1650 bu oyunu kaldırır mı?'*\n• 🎲 **Tavsiye:** *'Canım sıkıldı ne oynasam?'*, *'Hikayeli RPG önerisi'*`,
+        session_id: sessionId,
+        games: []
+      });
     }
 
     // 6. Generate Natural AI Response Text for Valid Results
