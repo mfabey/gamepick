@@ -136,7 +136,7 @@ export default function NavBar() {
 
           {/* Ortalı logo */}
           <Link href="/" className="nav-logo">
-            <img src={LOGO_SRC} alt="" className="nav-logo-img" width={36} height={36} style={{ display: 'block', filter: 'drop-shadow(0 4px 12px var(--accent-glow))' }} />
+            <img src={mounted && theme === 'light' ? '/beyaz.png' : '/logo.png'} alt="Gamerisen" className="nav-logo-img" width={36} height={36} style={{ display: 'block', filter: 'drop-shadow(0 4px 12px var(--accent-glow))' }} />
             <span className="nav-logo-text">Gamerisen</span>
           </Link>
 
