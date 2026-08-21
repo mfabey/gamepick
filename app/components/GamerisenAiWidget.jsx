@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
@@ -24,27 +24,27 @@ export default function GamerisenAiWidget() {
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId, setSessionId] = useState(null);
-  const [hasAcknowledgedBeta, setHasAcknowledgedBeta] = useState(true);
+  const [hasAcknowledgedBeta, setHasAcknowledgedBeta] = useState(false);
   const messagesEndRef = useRef(null);
   const promptsRef = useRef(null);
 
   const API_BASE = process.env.NEXT_PUBLIC_AI_API_URL || '';
 
-  // Check beta acknowledgment from LocalStorage
-  useEffect(() => {
-    try {
-      const ack = localStorage.getItem('gamerisen_ai_beta_ack');
-      if (!ack) {
-        setHasAcknowledgedBeta(false);
-      }
-    } catch (e) {}
-  }, []);
-
   const acknowledgeBeta = () => {
     setHasAcknowledgedBeta(true);
-    try {
-      localStorage.setItem('gamerisen_ai_beta_ack', 'true');
-    } catch (e) {}
+  };
+
+  const handleResetChat = () => {
+    setSessionId(null);
+    setMessages([
+      {
+        role: 'ai',
+        text: `Selam **${userName}**! 🎮 Ben **Gamerisen AI**. Aklındaki oyunu, bütçeni veya sistem donanımını söyle; en ucuz mağaza fiyatlarını ve FPS uyumluluğunu anında çıkarayım!`,
+        games: []
+      }
+    ]);
+    setInputValue('');
+    setHasAcknowledgedBeta(false);
   };
 
   // Initial welcome message with user's name
@@ -133,9 +133,9 @@ export default function GamerisenAiWidget() {
   const quickPrompts = [
     '🎲 Canım sıkıldı, ne oynasam?',
     '🔥 100 TL altı efsaneler',
+    '💬 Naber, nasılsın?',
     '🎁 Bedava oyunlar',
-    '🖥️ 500 TL civarı oyunlar',
-    '⚡ En ucuz oyunlar',
+    '⚡ 50 TL altı oyunlar',
     '📖 Witcher 3 hikayesi'
   ];
 
@@ -144,11 +144,13 @@ export default function GamerisenAiWidget() {
       {/* Floating Trigger Button */}
       {!isOpen && (
         <button
-          onClick={() => setIsOpen(true)}
+          onClick={() => { setIsOpen(true); setHasAcknowledgedBeta(false); }}
           className="ai-widget-trigger"
           aria-label="Gamerisen AI Asistanı"
         >
-          <span className="ai-widget-icon">{isAuthenticated ? '🤖' : '🔒'}</span>
+          <span className="ai-widget-icon" style={{ background: '#ffffff', borderRadius: '8px', padding: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '24px', height: '24px' }}>
+            <img src="/logo.png" alt="GR" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+          </span>
           <span className="ai-widget-text">Gamerisen AI</span>
           <span
             className="ai-widget-dot"
@@ -162,7 +164,7 @@ export default function GamerisenAiWidget() {
 
       {/* Chat Window Modal */}
       {isOpen && (
-        <div className="ai-widget-modal">
+        <div className="ai-widget-modal" style={{ position: 'relative', overflow: 'hidden' }}>
           {/* Mobile Pull Handle Indicator */}
           <div
             style={{
@@ -177,9 +179,9 @@ export default function GamerisenAiWidget() {
 
           {/* Header */}
           <div className="ai-widget-header">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div className="ai-widget-avatar">
-                {isAuthenticated ? '🎮' : '🔒'}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div className="ai-widget-avatar" style={{ background: '#ffffff', padding: '3px', borderRadius: '10px', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 12px rgba(229, 9, 20, 0.45)' }}>
+                <img src="/logo.png" alt="Gamerisen AI" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
               </div>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -194,9 +196,10 @@ export default function GamerisenAiWidget() {
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px',
-                    fontSize: '12px',
-                    color: isAuthenticated ? '#00ff88' : '#ff7777'
+                    gap: '5px',
+                    fontSize: '11.5px',
+                    color: isAuthenticated ? '#00ff88' : '#ff7777',
+                    fontWeight: 600
                   }}
                 >
                   <span
@@ -213,14 +216,184 @@ export default function GamerisenAiWidget() {
               </div>
             </div>
 
-            <button
-              onClick={() => setIsOpen(false)}
-              className="ai-widget-close"
-              aria-label="Kapat"
-            >
-              ✕
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {isAuthenticated && (
+                <button
+                  onClick={handleResetChat}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.06)',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    color: '#d0d0dc',
+                    padding: '4px 10px',
+                    borderRadius: '14px',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    transition: 'all 0.2s'
+                  }}
+                  title="Sohbeti Sıfırla ve Yeniden Başlat"
+                >
+                  <span>🔄 Yeni Sohbet</span>
+                </button>
+              )}
+              <button
+                onClick={() => setIsOpen(false)}
+                className="ai-widget-close"
+                aria-label="Kapat"
+              >
+                ✕
+              </button>
+            </div>
           </div>
+
+          {/* Full-panel Disclaimer Overlay (Covers Entire Opened Widget) */}
+          {isAuthenticated && !hasAcknowledgedBeta && (
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                zIndex: 100,
+                borderRadius: '24px',
+                background: 'rgba(11, 11, 16, 0.98)',
+                backdropFilter: 'blur(16px)',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                padding: '22px 18px',
+                overflowY: 'auto'
+              }}
+            >
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      background: 'rgba(229, 9, 20, 0.18)',
+                      border: '1px solid rgba(229, 9, 20, 0.45)',
+                      color: '#ff6666',
+                      padding: '4px 10px',
+                      borderRadius: '20px',
+                      fontSize: '10.5px',
+                      fontWeight: 800,
+                      letterSpacing: '0.4px'
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: '6px',
+                        height: '6px',
+                        backgroundColor: '#e50914',
+                        borderRadius: '50%',
+                        boxShadow: '0 0 8px #e50914'
+                      }}
+                    />
+                    <span>AKTİF GELİŞTİRME AŞAMASINDA</span>
+                  </div>
+                  <span style={{ fontSize: '11px', color: '#888899', fontWeight: 600 }}>v2.5 BETA</span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div
+                    style={{
+                      width: '38px',
+                      height: '38px',
+                      borderRadius: '10px',
+                      background: '#ffffff',
+                      padding: '3px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 0 15px rgba(229, 9, 20, 0.45)',
+                      flexShrink: 0
+                    }}
+                  >
+                    <img src="/logo.png" alt="Gamerisen Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                  </div>
+                  <div>
+                    <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff', margin: 0, letterSpacing: '-0.3px' }}>
+                      Gamerisen <span style={{ color: '#e50914' }}>AI</span> Bilgilendirmesi
+                    </h3>
+                    <p style={{ fontSize: '11.5px', color: '#a0a0b2', margin: '2px 0 0 0' }}>Akıllı Oyun & Fiyat Danışmanı</p>
+                  </div>
+                </div>
+
+                <p style={{ fontSize: '12px', color: '#b0b0c2', lineHeight: '1.5', margin: 0 }}>
+                  Gamerisen AI; en ucuz oyun fiyatlarını karşılaştıran, donanımınıza göre FPS analizi sunan ve zevkinize özel oyunlar öneren yapay zeka asistanıdır.
+                </p>
+
+                <div
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.04)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    borderRadius: '12px',
+                    padding: '12px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px'
+                  }}
+                >
+                  <div style={{ display: 'flex', gap: '8px', fontSize: '11.5px', color: '#d0d0dc', lineHeight: '1.45' }}>
+                    <span style={{ fontSize: '13px', flexShrink: 0 }}>⚠️</span>
+                    <div>
+                      <strong style={{ color: '#fff' }}>Canlı Test & Geliştirme:</strong> Asistanımız şu anda sitemizde <strong>aktif test ve geliştirme aşamasındadır</strong>.
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', fontSize: '11.5px', color: '#d0d0dc', lineHeight: '1.45' }}>
+                    <span style={{ fontSize: '13px', flexShrink: 0 }}>🎯</span>
+                    <div>
+                      <strong style={{ color: '#fff' }}>Oyun & Fiyat Analizi:</strong> Fiyat karşılaştırma ve FPS tahmin modellerimiz sürekli eğitilmektedir.
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', fontSize: '11.5px', color: '#d0d0dc', lineHeight: '1.45' }}>
+                    <span style={{ fontSize: '13px', flexShrink: 0 }}>🏷️</span>
+                    <div>
+                      <strong style={{ color: '#fff' }}>Fiyat Doğrulaması:</strong> Fiyatlar mağazalara göre değişebilir; alışveriş öncesi mağaza sayfasını teyit ediniz.
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', fontSize: '11.5px', color: '#d0d0dc', lineHeight: '1.45' }}>
+                    <span style={{ fontSize: '13px', flexShrink: 0 }}>💬</span>
+                    <div>
+                      <strong style={{ color: '#fff' }}>Geri Bildirim:</strong> Yanıtlardaki butonlarla yapay zekanın gelişimine doğrudan destek olabilirsiniz.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <button
+                  onClick={acknowledgeBeta}
+                  style={{
+                    width: '100%',
+                    background: 'linear-gradient(135deg, #e50914 0%, #b81d24 100%)',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '12px',
+                    padding: '12px 18px',
+                    fontSize: '13px',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    boxShadow: '0 4px 20px rgba(229, 9, 20, 0.45)',
+                    transition: 'all 0.2s',
+                    letterSpacing: '0.2px'
+                  }}
+                >
+                  <span>✅ Okudum, Anladım • Sohbete Başla</span>
+                </button>
+                <div style={{ fontSize: '10.5px', color: '#77778a', textAlign: 'center' }}>
+                  Sistemin geliştirme aşamasında olduğunu kabul ederek devam edersiniz.
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* If NOT Authenticated: Show High-Converting Member Lock Screen */}
           {!isAuthenticated ? (
@@ -306,64 +479,6 @@ export default function GamerisenAiWidget() {
           ) : (
             /* If Authenticated: Full Chat Experience */
             <>
-              {/* Beta Test Warning Banner */}
-              {!hasAcknowledgedBeta && (
-                <div
-                  style={{
-                    margin: '10px 14px 4px 14px',
-                    padding: '10px 14px',
-                    borderRadius: '14px',
-                    background: 'linear-gradient(135deg, rgba(229, 9, 20, 0.16) 0%, rgba(255, 140, 0, 0.1) 100%)',
-                    border: '1px solid rgba(229, 9, 20, 0.35)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '6px',
-                    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.35)',
-                    flexShrink: 0
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '15px' }}>🧪</span>
-                    <span style={{ fontWeight: 800, fontSize: '13px', color: '#ffb300', letterSpacing: '-0.2px' }}>
-                      Test & Geliştirme Aşaması
-                    </span>
-                    <span style={{ background: '#ff444430', color: '#ff7777', padding: '1px 6px', borderRadius: '6px', fontSize: '10px', fontWeight: 800, marginLeft: 'auto' }}>
-                      BETA
-                    </span>
-                  </div>
-
-                  <div style={{ fontSize: '12px', color: '#d0d0d8', lineHeight: '1.45' }}>
-                    Gamerisen AI şu anda test aşamasındadır. Fiyat karşılaştırma ve FPS analiz modellerimiz sürekli geliştirilmektedir. Yanıtlarda geçici tutarsızlıklar yaşanabilir.
-                  </div>
-
-                  <button
-                    onClick={acknowledgeBeta}
-                    style={{
-                      marginTop: '4px',
-                      background: 'linear-gradient(135deg, #e50914 0%, #b81d24 100%)',
-                      color: '#ffffff',
-                      border: 'none',
-                      borderRadius: '8px',
-                      padding: '7px 14px',
-                      fontSize: '12px',
-                      fontWeight: 750,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '6px',
-                      boxShadow: '0 2px 10px rgba(229, 9, 20, 0.35)',
-                      transition: 'all 0.2s'
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.02)')}
-                    onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-                  >
-                    <span>Okudum, Anladım</span>
-                    <span>✓</span>
-                  </button>
-                </div>
-              )}
-
               {/* Quick Prompts Bar */}
               <div
                 ref={promptsRef}
