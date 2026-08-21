@@ -1,13 +1,11 @@
 'use client';
 
 import { useLanguage } from '../context/LanguageContext';
-import { useTheme } from '../context/ThemeContext';
 import { LOGO_SRC } from '../lib/logo';
 import Link from 'next/link';
 
 export default function Footer() {
   const { lang, t } = useLanguage();
-  const { theme, mounted } = useTheme();
   const tr = lang === 'tr';
   const year = new Date().getFullYear();
 
@@ -76,7 +74,7 @@ export default function Footer() {
         {/* Marka */}
         <div>
           <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none', marginBottom: 14, width: 'fit-content' }}>
-            <img src={mounted && theme === 'light' ? '/beyaz.png' : '/logo.png'} alt="Gamerisen" width={32} height={32} style={{ display: 'block', filter: 'drop-shadow(0 4px 12px var(--accent-glow))' }} />
+            <img src={LOGO_SRC} alt="" width={32} height={32} style={{ display: 'block', filter: 'drop-shadow(0 4px 12px var(--accent-glow))' }} />
             <span style={{ fontFamily: 'var(--font-heading, var(--font-body))', fontWeight: 700, fontSize: 19, letterSpacing: '-0.5px', color: 'var(--text)' }}>Gamerisen</span>
           </Link>
           <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--text-2)', maxWidth: 300, margin: '0 0 16px' }}>
