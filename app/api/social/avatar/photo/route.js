@@ -91,7 +91,7 @@ export async function POST(request) {
 
   const verdict = await moderateMedia(bytes, type);
   if (!verdict.ok) {
-    return NextResponse.json({ error: verdict.error || 'REJECTED' }, { status: 422 });
+    return NextResponse.json({ error: verdict.reason || 'REJECTED' }, { status: 422 });
   }
 
   try {

@@ -88,17 +88,27 @@ async function checkWithVision(bytes) {
       }),
     });
 
-    if (!res.ok) return { ok: false, reason: 'MODERATION_ERROR' };
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '');
+      console.error('[Vision API Error]: HTTP', res.status, errText);
+      return { ok: false, reason: 'MODERATION_ERROR' };
+    }
 
     const json = await res.json();
     const ann = json?.responses?.[0]?.safeSearchAnnotation;
 
     // Yanıt beklenen şekilde değilse GEÇİRME. Boş yanıtı "temiz" saymak,
     // API sözleşmesi değiştiğinde moderasyonu sessizce kapatırdı.
-    if (!ann) return { ok: false, reason: 'MODERATION_ERROR' };
+    if (!ann) {
+      console.error('[Vision API Error]: Unexpected JSON structure', JSON.stringify(json).slice(0, 200));
+      return { ok: false, reason: 'MODERATION_ERROR' };
+    }
 
     const hit = CATEGORIES.find((c) => RED.has(ann[c]));
     return hit ? { ok: false, reason: `BLOCKED_${hit.toUpperCase()}` } : { ok: true };
+  } catch (e) {
+    console.error('[Vision API Network/Timeout Error]:', e.message);
+    return { ok: false, reason: 'MODERATION_ERROR' };
   } finally {
     clearTimeout(timer);
   }
