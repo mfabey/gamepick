@@ -101,7 +101,7 @@ export default function GamerisenAiWidget() {
 
   return (
     <>
-      {/* Floating Trigger Button (Positioned strictly at bottom-right) */}
+      {/* Floating Trigger Button */}
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
@@ -114,9 +114,21 @@ export default function GamerisenAiWidget() {
         </button>
       )}
 
-      {/* Chat Window Modal */}
+      {/* Chat Window Modal (Responsive Bottom Sheet on Mobile) */}
       {isOpen && (
         <div className="ai-widget-modal">
+          {/* Mobile Pull Handle Indicator */}
+          <div
+            style={{
+              width: '38px',
+              height: '4px',
+              borderRadius: '99px',
+              backgroundColor: 'rgba(255, 255, 255, 0.25)',
+              margin: '8px auto 2px auto',
+              flexShrink: 0
+            }}
+          />
+
           {/* Header */}
           <div className="ai-widget-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -269,7 +281,6 @@ export default function GamerisenAiWidget() {
                 borderRadius: '12px',
                 padding: '12px 14px',
                 color: '#fff',
-                fontSize: '13.5px',
                 outline: 'none',
                 transition: 'border-color 0.2s'
               }}
