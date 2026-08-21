@@ -54,6 +54,7 @@ function GameRow({ game, durum, sag, ayirici = true, onPress, onLongPress }) {
           zaten tek başına yeterli: adın kendisi hemen yanında duruyor. */}
       <GameCover
         uri={game?.image}
+        fallbackUri={game?.logo}
         name={game?.name}
         recyclingKey={String(game?.id ?? '')}
         style={styles.kapak}

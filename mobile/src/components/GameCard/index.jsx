@@ -193,7 +193,9 @@ function GameCard({ game, variant = 'grid', context, overlay, onPress, onLongPre
           {/* Aydınlanma KAPAĞA, karta değil: kartın metin bloğunun zemini
               saydam, oraya %6 beyaz koymak sayfanın kendisini lekelerdi. */}
           <GameCover
-            uri={game?.image} name={game?.name}
+            uri={game?.image}
+            fallbackUri={game?.logo}
+            name={game?.name}
             recyclingKey={String(game?.id ?? game?.appid ?? '')}
             style={kapakStil}
             // Sosyal kartın sol alt köşesi ARKADAŞ AVATARINA ait
