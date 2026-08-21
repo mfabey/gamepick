@@ -403,7 +403,7 @@ export async function POST(req) {
     let minPrice = null;
     let aroundPrice = null;
     const isFree = /ucretsiz|bedava|free to play|f2p|parasiz|sifir tl/.test(normQ) || /\b0\s*(?:tl|lira)\b/.test(normQ);
-    const isCheapest = /en ucuz|en ucuzu|en ucuzlar|en ucuz oyun|en ucuz oyunlar|en kelepir|en hesapli/.test(normQ);
+    const isCheapest = /en ucuz|en ucuzu|en ucuzlar|en ucuz oyun|en ucuz oyunlar|en kelepir|en hesapli/.test(normQ) && !isFree;
     const isCreatorCallback = /yaratici|yaraticiya|patron|patrona|yapimci/.test(normQ) && /en ucuz|oyun|fiyat|bul|getir/.test(normQ);
 
     const aroundMatch = normQ.match(/(\d+)\s*(?:tl|lira|liralik|dolar|\$)?\s*(?:ye|ya|e|a)?\s*(?:yakin|yakini|civari|civarinda|civarindaki|bandi|bandinda|bandindaki|dolaylarinda|yaklasik)/);
@@ -439,6 +439,7 @@ export async function POST(req) {
 
       // Price Filter
       if (isFree && price > 0.0) continue;
+      if (isCheapest && price <= 0.0) continue; // "En ucuz oyunlar" MUST be paid games (price > 0), NOT 0 TL free-to-play!
       if (maxPrice !== null && price > maxPrice) continue;
       if (minPrice !== null && price < minPrice) continue;
 
@@ -485,7 +486,13 @@ export async function POST(req) {
 
       // Price closeness / budget match / rating boost
       if (isCheapest) {
-        score += 3.0 + (150.0 / (price + 10.0)) + (bestDeal.discount / 25.0);
+        const rating = game.rating || 80;
+        const isNative = (game.id || 0) < 1000;
+        const qualityMult = Math.pow(rating / 80.0, 1.5);
+        const cheapBoost = 180.0 / (price + 10.0);
+        const discBoost = ((bestDeal.discount || 0) / 100.0) * 12.0;
+        const curatedBoost = isNative ? 6.0 : 0.0;
+        score += (cheapBoost + discBoost + curatedBoost) * qualityMult + 10.0;
       } else if (aroundPrice !== null) {
         const closeness = Math.abs(price - aroundPrice);
         score += 2.0 + (3.0 / (1.0 + (closeness / 100.0))) + ((game.rating || 80) / 40.0);
@@ -524,7 +531,7 @@ export async function POST(req) {
     if (isCreatorCallback) {
       aiResponse = "Baş üstüne yaratıcım! 👑 Kodlarımdaki 'Torpil Yok' kuralını biraz esneterek, senin için piyasadaki neredeyse bedava denebilecek en kelepir başyapıtları ve dev indirimleri listeledim:\n\n";
     } else if (isCheapest) {
-      aiResponse = "🔥 **İşte Mağazalardaki En Ucuz Oyunlar ve Kaçırılmayacak Fırsatlar:**\n\nCüzdanı hiç yormayacak, fiyat/performans canavarı en ucuz efsaneler:\n\n";
+      aiResponse = "🔥 **İşte Mağazalardaki En Ucuz & Yüksek İndirimli Başyapıtlar:**\n\nCüzdanı yormayacak, fiyat/performans canavarı ve bütçe dostu ücretli oyunlar:\n\n";
     } else if (aroundPrice !== null) {
       aiResponse = `🎯 **İşte ${aroundPrice} ${bCur} Civarında & Bu Fiyat Bandındaki En İyi Oyunlar:**\n\nSenin için bütçene en yakın ve popüler başyapıtları derledim:\n\n`;
     } else if (rangeMatch) {
