@@ -28,6 +28,7 @@ import { summarize } from '../utils/text';
 import { radius, spacing, PRESSED, type, NUMERIC, metacriticColor, motion } from '../theme';
 import { turAdi } from '../services/genreName';
 import { useStyles, useTheme } from '../context/ThemeContext';
+import Monogram from './Monogram';
 
 const DETAIL_TTL = 24 * 60 * 60 * 1000;   // ekran görüntüleri ve metin sık değişmez
 const CLAMP_LINES = 3;
@@ -50,6 +51,7 @@ function GamePostCard({ game, onDismiss, tag }) {
   const { width } = useWindowDimensions();
   const [expanded, setExpanded] = useState(false);
   const [truncated, setTruncated] = useState(false);
+  const [imgFailed, setImgFailed] = useState(false);
 
   const slug = game?.rawgSlug || '';
   const { data: detail } = useQuery(
@@ -103,10 +105,13 @@ function GamePostCard({ game, onDismiss, tag }) {
     <View style={styles.card}>
       <Pressable onPress={open} onLongPress={() => onDismiss?.(game)} style={({ pressed }) => pressed && PRESSED}>
         <View style={[styles.media, { height: mediaH }]}>
-          {source ? (
+          {source && !imgFailed ? (
             <Image source={source} style={StyleSheet.absoluteFill} contentFit="cover"
-              cachePolicy="memory-disk" transition={motion.image} />
-          ) : null}
+              cachePolicy="memory-disk" transition={motion.image}
+              onError={() => setImgFailed(true)} />
+          ) : (
+            <Monogram name={game?.name} style={StyleSheet.absoluteFill} not={false} />
+          )}
           <LinearGradient colors={['transparent', 'rgba(6,7,9,0.92)']} style={styles.scrim} />
 
           {/* NEDEN BURADA. Trend/yeni/indirim oyunları artık ayrı şeritlerde

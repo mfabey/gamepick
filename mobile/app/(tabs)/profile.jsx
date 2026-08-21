@@ -154,11 +154,13 @@ export default function ProfileScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     } catch (e) {
       setAvatarState(prev);
+      console.warn('[avatar-photo] upload failed:', e?.code || e?.status || e?.message || e);
       const code = e?.code || '';
       Alert.alert(
-        code === 'MEDIA_DISABLED' ? t('prof.photoDisabled')
-        : code === 'REJECTED' ? t('prof.photoRejected')
+        code === 'MEDIA_DISABLED' || code === 'STORAGE_DISABLED' ? t('prof.photoDisabled')
+        : code === 'REJECTED' || code.startsWith?.('BLOCKED_') ? t('prof.photoRejected')
         : code === 'TOO_LARGE' ? t('prof.photoTooLarge')
+        : code === 'NO_USERNAME' ? t('prof.noUsername')
         : t('soc.err.generic')
       );
     } finally {

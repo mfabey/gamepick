@@ -957,6 +957,19 @@ export async function GET(request) {
       results = [...results.slice(offset), ...results.slice(0, offset)];
     }
 
+    // ── GÖRSELSİZ OYUNLARI ARKAYA AT ──────────────────────────────────────
+    // background_image boş olan RAWG oyunları monogram (baş harf) ile
+    // gösteriliyordu ve akıştaki parlak kartların arasında kötü duruyordu.
+    // Tamamen silmiyoruz çünkü kullanıcı özellikle o oyunu arıyor olabilir;
+    // ama listeye giren son öğeler olmalılar.
+    results.sort((a, b) => {
+      const aImg = !!(a?.image && typeof a.image === 'string' && a.image.trim() !== '');
+      const bImg = !!(b?.image && typeof b.image === 'string' && b.image.trim() !== '');
+      if (aImg && !bImg) return -1;
+      if (!aImg && bImg) return 1;
+      return 0;
+    });
+
     // İstenen limit kadar keselim (slice)
     if (section && section !== '') {
       results = results.slice(0, num);

@@ -47,9 +47,14 @@ export function useForYouFeed({
       const data = await fetchGames({ genres: slug, page: rawgPage, num: PAGE_SIZE });
       const raw = data.results || [];
 
-      // Tekrarları ve şeritte zaten gösterilenleri ele
+      // Tekrarları, şeritte zaten gösterilenleri ve görseli olmayanları ele
       const fresh = raw.filter((g) => {
         if (!g || g.id == null) return false;
+        // Görseli olmayan (monogram'a düşen) oyunları anasayfa akışına hiç alma.
+        // Arama kısmında çıkabilirler ama keşif akışını bozmamalılar.
+        const hasImage = !!(g.image && typeof g.image === 'string' && g.image.trim() !== '');
+        if (!hasImage) return false;
+        
         const id = String(g.id);
         if (r.ids.has(id) || excludeIds?.has?.(id)) return false;
         r.ids.add(id);
