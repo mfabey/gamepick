@@ -27,6 +27,92 @@ function loadCustomKnowledge() {
   return [];
 }
 
+// --- Gaming Acronyms & Synonyms Dictionary ---
+const GAMING_ACRONYMS = {
+  'gta 5': ['grand theft auto v', 'grand theft auto 5', 'gta v', 'gta 5'],
+  'gta v': ['grand theft auto v', 'grand theft auto 5', 'gta v', 'gta 5'],
+  'gta 4': ['grand theft auto iv', 'grand theft auto 4', 'gta iv'],
+  'gta iv': ['grand theft auto iv', 'grand theft auto 4', 'gta iv'],
+  'gta sa': ['grand theft auto san andreas', 'gta san andreas'],
+  'gta': ['grand theft auto', 'grand theft auto v', 'gta v', 'gta 5'],
+  'rdr2': ['red dead redemption 2', 'red dead 2', 'rdr 2'],
+  'rdr 2': ['red dead redemption 2', 'red dead 2', 'rdr2'],
+  'rdr': ['red dead redemption', 'red dead redemption 2'],
+  'cs2': ['counter-strike 2', 'counter strike 2', 'cs 2'],
+  'cs 2': ['counter-strike 2', 'counter strike 2', 'cs2'],
+  'csgo': ['counter-strike: global offensive', 'counter strike global offensive'],
+  'cs:go': ['counter-strike: global offensive', 'counter strike global offensive'],
+  'cs': ['counter-strike', 'counter strike 2', 'counter-strike 2'],
+  'cp2077': ['cyberpunk 2077', 'cyberpunk'],
+  'cp 2077': ['cyberpunk 2077', 'cyberpunk'],
+  'cyberpunk': ['cyberpunk 2077', 'cp2077'],
+  'witcher 3': ['the witcher 3: wild hunt', 'the witcher 3', 'witcher 3', 'tw3'],
+  'witcher': ['the witcher 3: wild hunt', 'the witcher 3', 'witcher 3'],
+  'tw3': ['the witcher 3: wild hunt', 'the witcher 3', 'witcher 3'],
+  'bg3': ["baldur's gate 3", 'baldurs gate 3', 'bg 3'],
+  'bg 3': ["baldur's gate 3", 'baldurs gate 3', 'bg3'],
+  'gow': ['god of war', 'god of war ragnarok'],
+  'gow ragnarok': ['god of war ragnarok'],
+  're4': ['resident evil 4', 're 4', 'resident evil 4 remake'],
+  're 4': ['resident evil 4', 're4', 'resident evil 4 remake'],
+  're2': ['resident evil 2', 're 2'],
+  're3': ['resident evil 3', 're 3'],
+  're7': ['resident evil 7: biohazard', 'resident evil 7', 're 7'],
+  're8': ['resident evil village', 'resident evil 8', 're 8'],
+  'tlou': ['the last of us part i', 'the last of us', 'the last of us part ii'],
+  'tlou 1': ['the last of us part i', 'the last of us'],
+  'tlou 2': ['the last of us part ii'],
+  'ac valhalla': ["assassin's creed valhalla", 'assassins creed valhalla'],
+  'ac mirage': ["assassin's creed mirage", 'assassins creed mirage'],
+  'ac odyssey': ["assassin's creed odyssey", 'assassins creed odyssey'],
+  'ac': ["assassin's creed", 'assassins creed'],
+  'cod': ['call of duty', 'call of duty: modern warfare', 'call of duty: warzone'],
+  'warzone': ['call of duty: warzone', 'call of duty warzone'],
+  'bf 2042': ['battlefield 2042'],
+  'bf 5': ['battlefield v', 'battlefield 5'],
+  'bf 1': ['battlefield 1'],
+  'bf': ['battlefield', 'battlefield 2042', 'battlefield v', 'battlefield 1'],
+  'fc 24': ['ea sports fc 24', 'ea fc 24', 'fifa 24'],
+  'ea fc 24': ['ea sports fc 24', 'fc 24', 'fifa 24'],
+  'ea fc': ['ea sports fc 24', 'fc 24', 'fifa 24'],
+  'fc 25': ['ea sports fc 25', 'ea fc 25'],
+  'fifa 24': ['ea sports fc 24', 'fc 24', 'fifa 24'],
+  'fifa': ['ea sports fc 24', 'fifa 23', 'fc 24'],
+  'elden ring': ['elden ring', 'shadow of the erdtree', 'er'],
+  'er': ['elden ring'],
+  'pubg': ['pubg: battlegrounds', 'pubg'],
+  'lol': ['league of legends'],
+  'valo': ['valorant'],
+  'valorant': ['valorant', 'valo'],
+  'rl': ['rocket league'],
+  'r6': ["tom clancy's rainbow six siege", 'rainbow six siege', 'r6 siege'],
+  'r6 siege': ["tom clancy's rainbow six siege", 'rainbow six siege'],
+  'civ 6': ["sid meier's civilization vi", 'civilization vi', 'civilization 6'],
+  'civ vi': ["sid meier's civilization vi", 'civilization vi', 'civilization 6'],
+  'civ': ["sid meier's civilization vi", 'civilization vi', 'civilization 6'],
+  'fh5': ['forza horizon 5', 'forza 5'],
+  'fh4': ['forza horizon 4', 'forza 4'],
+  'forza': ['forza horizon 5', 'forza horizon 4'],
+  'tarkov': ['escape from tarkov', 'eft'],
+  'eft': ['escape from tarkov', 'tarkov'],
+  'destiny 2': ['destiny 2', 'd2'],
+  'd2': ['destiny 2'],
+  'poe': ['path of exile'],
+  'dota 2': ['dota 2'],
+  'dota': ['dota 2'],
+  'tf2': ['team fortress 2'],
+  'payday 2': ['payday 2', 'pd2'],
+  'payday': ['payday 2', 'payday 3'],
+  'hollow knight': ['hollow knight', 'silksong', 'hk'],
+  'hk': ['hollow knight'],
+  'dark souls': ['dark souls: remastered', 'dark souls iii', 'dark souls ii'],
+  'sekiro': ['sekiro: shadows die twice', 'sekiro'],
+  'nfs': ['need for speed', 'need for speed unbound', 'need for speed heat'],
+  'skyrim': ['the elder scrolls v: skyrim', 'the elder scrolls v: skyrim special edition', 'skyrim'],
+  'fallout 4': ['fallout 4', 'fo4'],
+  'fallout': ['fallout 4', 'fallout 76', 'fallout: new vegas']
+};
+
 // --- Text Normalization & Dialogue Engine ---
 function normalizeText(text) {
   if (!text) return '';
@@ -48,9 +134,9 @@ function isGibberish(text) {
   if (words.length === 0) return false;
 
   const whitelist = new Set([
-    'fps', 'rpg', 'mmo', 'cs', 'cs2', 'gta', 'rdr', 'rdr2', 'rtx', 'gtx', 'cpu', 'gpu',
+    'fps', 'rpg', 'mmo', 'cs', 'cs2', 'gta', 'gta5', 'rdr', 'rdr2', 'rtx', 'gtx', 'cpu', 'gpu',
     'ram', 'pvp', 'pve', 'coop', 'dlc', 'vr', 'f2p', 'gg', 'wp', 'ez', 'lol', 'pubg',
-    'cod', 'bf', 'gow', 'ac', 're4', 'tba', 'goty', 'pc', 'ps5', 'xbox', 'steam', 'epic'
+    'cod', 'bf', 'gow', 'ac', 're4', 'tba', 'goty', 'pc', 'ps5', 'xbox', 'steam', 'epic', 'tw3', 'tlou', 'bg3'
   ]);
   if (words.every(w => whitelist.has(w))) return false;
 
@@ -174,7 +260,7 @@ export async function POST(req) {
         games: []
       });
     }
-    if (isGreeting) {
+    if (isGreeting && !/\b(oyun|fiyat|nerede|kac|kadar|tl|indir|gta|rdr|witcher|cs2)\b/i.test(normQ)) {
       return NextResponse.json({
         response: 'Selam gamer dostum! 🚀 Gamerisen AI hazır. Aklındaki oyunu, oynamak istediğin türü veya bütçeni söyle, en avantajlı mağaza fırsatlarını bulalım!',
         session_id: sessionId,
@@ -219,11 +305,33 @@ export async function POST(req) {
       });
     }
 
+    // 1.2 Expand Query with Gaming Acronyms & Synonyms
+    const expandedQueryVariants = [normQ];
+    const acronymMatches = [];
+
+    // Sort acronym keys by descending length for greedy matching
+    const sortedAcronymKeys = Object.keys(GAMING_ACRONYMS).sort((a, b) => b.length - a.length);
+    for (const key of sortedAcronymKeys) {
+      const keyRegex = new RegExp(`\\b${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+      if (keyRegex.test(normQ)) {
+        const synList = GAMING_ACRONYMS[key];
+        acronymMatches.push(...synList);
+        synList.forEach(syn => {
+          expandedQueryVariants.push(normQ.replace(keyRegex, syn));
+          expandedQueryVariants.push(syn);
+        });
+      }
+    }
+
     // 2. Story / Lore / Description queries (e.g. 'Witcher 3 hikayesi nasıl?', 'Cyberpunk konusu ne?')
     const isStory = /hikaye|hikayesi|konu|konusu|ne anlatiyor|nasil bir oyun|ozet|ozeti|lore/.test(normQ);
     if (isStory) {
       const cleanTitle = normQ.replace(/\b(hikayesi|hikaye|konusu|konu|nasil|nasıl|ne|nedir|anlat|anlatiyor|ne anlatiyor|hakkinda|bilgi|ver|ozeti|ozet)\b/gi, '').trim();
-      const matchedGame = gamesDb.find(g => normalizeText(g.title).includes(cleanTitle) || (cleanTitle.length > 2 && cleanTitle.includes(normalizeText(g.title))));
+      const matchedGame = gamesDb.find(g => {
+        const tNorm = normalizeText(g.title);
+        if (tNorm.includes(cleanTitle) || (cleanTitle.length > 2 && cleanTitle.includes(tNorm))) return true;
+        return acronymMatches.some(syn => tNorm.includes(normalizeText(syn)));
+      });
       
       if (matchedGame) {
         const bestDeal = (matchedGame.deals || [])[0];
@@ -317,8 +425,10 @@ export async function POST(req) {
 
     const isConstraint = (maxPrice !== null) || (minPrice !== null) || (aroundPrice !== null) || isFree || isCheapest;
 
-    // 5. Search & Grade Games Database
+    // 5. Search & Grade Games Database with Strict Word Matching and Acronym Boost
     let scoredGames = [];
+    const stopWords = new Set(['nerede', 'nereden', 'ucuz', 'fiyat', 'fiyati', 'fiyatlar', 'kac', 'kadar', 'ne', 'oyun', 'oyunu', 'oyunlar', 'steam', 'epic', 'gog', 'indirim', 'indirimde', 'al', 'satinal', 'bul']);
+    const queryTokens = normQ.split(/\s+/).filter(w => w.length >= 2 && !stopWords.has(w));
 
     for (const game of gamesDb) {
       const deals = game.deals || [];
@@ -334,24 +444,44 @@ export async function POST(req) {
 
       let score = 0.0;
       const gameTitleNorm = normalizeText(game.title);
+      const gameTitleTokens = new Set(gameTitleNorm.split(/\s+/));
       const gameDescNorm = normalizeText(game.description || '');
       const gameGenresNorm = (game.genres || []).map(g => normalizeText(g)).join(' ');
 
-      // Direct Title & Text matching
-      let hasDirectMatch = false;
-      if (normQ.includes(gameTitleNorm) || (gameTitleNorm.length > 3 && normQ.includes(gameTitleNorm.slice(0, 4)))) {
-        score += 5.0;
-        hasDirectMatch = true;
-      }
-      const queryWords = normQ.split(/\s+/).filter(w => w.length > 2);
-      queryWords.forEach(w => {
-        if (gameTitleNorm.includes(w)) {
-          score += 2.5;
-          hasDirectMatch = true;
+      let hasMatch = false;
+
+      // Check Acronym Expansion Exact Matching (e.g. 'gta 5' -> 'grand theft auto v')
+      for (const syn of acronymMatches) {
+        const synNorm = normalizeText(syn);
+        const synTokens = synNorm.split(/\s+/);
+        const synRegex = new RegExp(`\\b${synNorm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+        
+        if (synRegex.test(gameTitleNorm) || gameTitleNorm === synNorm) {
+          score += 25.0;
+          hasMatch = true;
+        } else if (synTokens.every(st => gameTitleTokens.has(st))) {
+          score += 20.0;
+          hasMatch = true;
+        } else if (synTokens.filter(st => gameTitleTokens.has(st)).length >= 2) {
+          score += 10.0;
+          hasMatch = true;
         }
-        if (gameDescNorm.includes(w)) score += 0.5;
-        if (gameGenresNorm.includes(w)) score += 2.0;
-      });
+      }
+
+      // Check Query Token Word-Boundary Matching
+      for (const qt of queryTokens) {
+        const tokenRegex = new RegExp(`\\b${qt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+        if (tokenRegex.test(gameTitleNorm)) {
+          score += 6.0;
+          hasMatch = true;
+        } else if (gameTitleTokens.has(qt)) {
+          score += 6.0;
+          hasMatch = true;
+        } else if (gameGenresNorm.includes(qt)) {
+          score += 3.0;
+          hasMatch = true;
+        }
+      }
 
       // Price closeness / budget match / rating boost
       if (isCheapest) {
@@ -365,7 +495,7 @@ export async function POST(req) {
         score += 2.0 + ((game.rating || 80) / 30.0);
       }
 
-      if (isConstraint || (hasDirectMatch && score >= 1.5)) {
+      if (isConstraint || (hasMatch && score >= 4.0)) {
         scoredGames.push({
           game,
           best_deal: bestDeal,
@@ -381,7 +511,7 @@ export async function POST(req) {
     // If no direct matches found and not a valid constraint search -> DO NOT DUMP GAMES! Explain politely.
     if (topResults.length === 0) {
       return NextResponse.json({
-        response: `Gamer dostum, **'${userQuery}'** için ne demek istediğini tam olarak anlayamadım veya bu isimde bir oyun bulamadım! 🎮\n\nBana şunları sorabilirsin:\n• 🔍 **Oyun & Fiyat:** *'Witcher 3 nerede ucuz?'*, *'Cyberpunk kaç TL?'*\n• 💰 **Bütçe & İndirim:** *'100 TL altı efsaneler'*, *'En ucuz oyunlar'*, *'Bedava oyunlar'*\n• 🖥️ **Donanım & FPS:** *'GTX 1650 bu oyunu kaldırır mı?'*\n• 🎲 **Tavsiye:** *'Canım sıkıldı ne oynasam?'*, *'Hikayeli RPG önerisi'*`,
+        response: `Gamer dostum, **'${userQuery}'** için ne demek istediğini tam olarak anlayamadım veya bu isimde bir oyun bulamadım! 🎮\n\nBana şunları sorabilirsin:\n• 🔍 **Oyun & Fiyat:** *'Witcher 3 nerede ucuz?'*, *'GTA 5 kaç TL?'*, *'Cyberpunk indirimde mi?'*\n• 💰 **Bütçe & İndirim:** *'100 TL altı efsaneler'*, *'En ucuz oyunlar'*, *'Bedava oyunlar'*\n• 🖥️ **Donanım & FPS:** *'GTX 1650 bu oyunu kaldırır mı?'*\n• 🎲 **Tavsiye:** *'Canım sıkıldı ne oynasam?'*, *'Hikayeli RPG önerisi'*`,
         session_id: sessionId,
         games: []
       });
