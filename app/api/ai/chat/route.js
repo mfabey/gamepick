@@ -1,4 +1,4 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 
@@ -97,6 +97,7 @@ export async function POST(req) {
     const normQ = normalizeText(userQuery);
     const gamesDb = loadDatabase();
     const customKnowledge = loadCustomKnowledge();
+    const userGpu = userProfile?.hardware?.gpu;
 
     // 0. Check Learned Custom Knowledge
     for (const item of customKnowledge) {
@@ -133,10 +134,6 @@ export async function POST(req) {
     const isFarewell = /^(gorusuruz|hoscakal|bay bay|bye bye|bye|kendine iyi bak|iyi geceler|ben kacar|kactim ben)$/i.test(normQ) ||
       /\b(gorusuruz|hoscakal|bay bay|bye|kendine iyi bak|iyi geceler)\b/i.test(normQ);
 
-    const isCreatorCallback = /yaratici|yaraticiya|patron|patrona|yapimci/.test(normQ) && /en ucuz|oyun|fiyat|bul|getir/.test(normQ);
-    const isCheapest = /en ucuz|en ucuzu|en ucuzlar|en ucuz oyun|en ucuz oyunlar|en kelepir|en hesapli/.test(normQ);
-
-    // Conversational smalltalk returns directly without forcing irrelevant game cards
     if (isThanks) {
       return NextResponse.json({
         response: 'Rica ederim gamer dostum! 🙏 Ne zaman aklına takılan bir oyun, güncel indirim veya donanım sorusu olursa buradayım. Keyifli oyunlar! 🎮🔥',
@@ -146,7 +143,7 @@ export async function POST(req) {
     }
     if (isIdentity) {
       return NextResponse.json({
-        response: 'Ben Gamerisen AI! 🤖 Oyunculara bütçelerine en uygun oyunları bulan, canlı mağaza fiyatlarını (Steam, Epic Games, GOG, Humble Store) karşılaştıran ve sistem donanımına göre FPS analizi yapan kişisel oyun asistanıyım. 🎮\n\nAklındaki oyunu, bütçeni veya ekran kartını söyle, hemen bakalım!',
+        response: 'Ben Gamerisen AI! 🤖 Oyunculara bütçelerine en uygun oyunları bulan, canlı mağaza fiyatlarını (Steam, Epic Games, GOG) karşılaştıran ve sistem donanımına göre FPS analizi yapan kişisel oyun asistanıyım. 🎮\n\nAklındaki oyunu, bütçeni veya ekran kartını söyle, hemen bakalım!',
         session_id: sessionId,
         games: []
       });
@@ -212,17 +209,60 @@ export async function POST(req) {
             best_deal: bestDeal,
             deals: matchedGame.deals || [],
             currency: 'TL',
-            hardware_compatibility: estimateHardware(matchedGame, userProfile?.hardware?.gpu)
+            hardware_compatibility: estimateHardware(matchedGame, userGpu)
           }]
         });
       }
     }
 
-    // 3. Parse Price Constraints
+    // 3. General Recommendation & "Canım sıkıldı, ne oynasam?" Handling
+    const isGeneralRecommendation = /canim sikildi|ne oynasam|ne oynayayim|oyun oner|oyun oneri|tavsiye|bana oyun bul|en iyi oyunlar|populer oyunlar|efsane oyunlar|bomba oyunlar|kafa dagitmalik|ne oynamaliyim/.test(normQ) && !/\d+\s*(?:tl|lira|dolar|\$)/.test(normQ);
+
+    if (isGeneralRecommendation) {
+      // Pick top-rated popular games from database (rating >= 88)
+      const topPicks = [...gamesDb]
+        .filter(g => (g.deals || []).length > 0)
+        .sort((a, b) => (b.rating || 80) - (a.rating || 80))
+        .slice(0, 4);
+
+      let aiResponse = "🎮 **Gamerisen AI Seçti: İşte Bu Aralar Kesinlikle Oynaman Gereken Efsane Oyunlar!**\n\nKütüphanene mutlaka eklemen gereken, yüksek puanlı ve indirimdeki başyapıtlar:\n\n";
+      
+      topPicks.forEach((g, i) => {
+        const bestDeal = (g.deals || [])[0];
+        const dealInfo = bestDeal ? ` — **${bestDeal.current_price} TL** (%${bestDeal.discount} İndirimle!) [${bestDeal.platform}]` : '';
+        aiResponse += `${i + 1}. **${g.title}** (⭐ ${g.rating || 88}/100)${dealInfo}\n   *${(g.description || '').slice(0, 110)}...*\n\n`;
+      });
+
+      aiResponse += "Aşağıdaki kartlardan tüm mağaza fiyatlarını ve sistem uyumluluğunu detaylıca inceleyebilirsin! 🚀";
+
+      const structuredGames = topPicks.map(g => ({
+        id: g.id,
+        title: g.title,
+        genres: g.genres || ['Aksiyon'],
+        description: g.description || '',
+        rating: g.rating || 88,
+        image_url: g.image_url || '',
+        store_url: g.store_url || `https://store.steampowered.com/search/?term=${encodeURIComponent(g.title)}`,
+        best_deal: (g.deals || [])[0],
+        deals: g.deals || [],
+        currency: 'TL',
+        hardware_compatibility: estimateHardware(g, userGpu)
+      }));
+
+      return NextResponse.json({
+        response: aiResponse,
+        session_id: sessionId,
+        games: structuredGames
+      });
+    }
+
+    // 4. Parse Price Constraints
     let maxPrice = null;
     let minPrice = null;
     let aroundPrice = null;
-    let isFree = /ucretsiz|bedava|free to play|f2p|parasiz|sifir tl/.test(normQ);
+    const isFree = /ucretsiz|bedava|free to play|f2p|parasiz|sifir tl/.test(normQ) || /\b0\s*(?:tl|lira)\b/.test(normQ);
+    const isCheapest = /en ucuz|en ucuzu|en ucuzlar|en ucuz oyun|en ucuz oyunlar|en kelepir|en hesapli/.test(normQ);
+    const isCreatorCallback = /yaratici|yaraticiya|patron|patrona|yapimci/.test(normQ) && /en ucuz|oyun|fiyat|bul|getir/.test(normQ);
 
     const aroundMatch = normQ.match(/(\d+)\s*(?:tl|lira|liralik|dolar|\$)?\s*(?:ye|ya|e|a)?\s*(?:yakin|yakini|civari|civarinda|civarindaki|bandi|bandinda|bandindaki|dolaylarinda|yaklasik)/);
     const rangeMatch = normQ.match(/(\d+)\s*(?:-|ile|ve|ila)\s*(\d+)\s*(?:tl|lira|liralik|dolar|\$)?\s*(?:arasi|arasinda|arasindaki)?/);
@@ -243,9 +283,8 @@ export async function POST(req) {
 
     const isConstraint = (maxPrice !== null) || (minPrice !== null) || (aroundPrice !== null) || isFree || isCheapest;
 
-    // 4. Search & Grade Games Database
+    // 5. Search & Grade Games Database
     let scoredGames = [];
-    const userGpu = userProfile?.hardware?.gpu;
 
     for (const game of gamesDb) {
       const deals = game.deals || [];
@@ -262,6 +301,7 @@ export async function POST(req) {
       let score = 0.0;
       const gameTitleNorm = normalizeText(game.title);
       const gameDescNorm = normalizeText(game.description || '');
+      const gameGenresNorm = (game.genres || []).map(g => normalizeText(g)).join(' ');
 
       // Direct Title & Text matching
       if (normQ.includes(gameTitleNorm) || gameTitleNorm.includes(normQ)) score += 5.0;
@@ -269,19 +309,21 @@ export async function POST(req) {
       queryWords.forEach(w => {
         if (gameTitleNorm.includes(w)) score += 2.0;
         if (gameDescNorm.includes(w)) score += 0.5;
+        if (gameGenresNorm.includes(w)) score += 2.0;
       });
 
-      // Price closeness / budget match boost
+      // Price closeness / budget match / rating boost
       if (isCheapest) {
         score += 3.0 + (150.0 / (price + 10.0)) + (bestDeal.discount / 25.0);
       } else if (aroundPrice !== null) {
         const closeness = Math.abs(price - aroundPrice);
-        score += 2.0 + (3.0 / (1.0 + (closeness / 100.0)));
+        score += 2.0 + (3.0 / (1.0 + (closeness / 100.0))) + ((game.rating || 80) / 40.0);
       } else if (maxPrice !== null || minPrice !== null) {
-        score += 1.5 + (bestDeal.discount / 100.0);
+        score += 2.0 + ((game.rating || 80) / 30.0) + (bestDeal.discount / 50.0);
+      } else if (isFree) {
+        score += 2.0 + ((game.rating || 80) / 30.0);
       }
 
-      // Strict inclusion: only include if user specified constraints OR query text actually matched the game!
       if (score > 0.4 || isConstraint) {
         scoredGames.push({
           game,
@@ -293,20 +335,21 @@ export async function POST(req) {
     }
 
     scoredGames.sort((a, b) => b.score - a.score);
-    const topResults = scoredGames.slice(0, 4);
+    let topResults = scoredGames.slice(0, 4);
 
-    // 5. Adaptive Fallback When No Matches Found
+    // Fallback to top-rated popular games if nothing matched
     if (topResults.length === 0) {
-      const adaptiveFallbacks = [
-        "Bunu tam olarak kavrayamadım ama sana yardımcı olmak için sabırsızlanıyorum! 🕹️\n\nSana daha iyi yardımcı olabilmem için şunları deneyebilirsin:\n• **Oyun Fiyatı:** *'Witcher 3 nerede ucuz?'*, *'Cyberpunk 2077 indirimde mi?'*\n• **Bütçe Araması:** *'50 TL altı oyunlar'*, *'500 TL civarı oyunlar'*\n• **Tavsiye & Sohbet:** *'Bana kafa dağıtmalık oyun öner'*, *'Sistemim açar mı?'*\n\nAklındaki oyunu veya bütçeni söyle, hemen bakalım! 🎮🚀",
-        "Bu konuda doğrudan eşleşen bir oyun bulamadım ama oyun kütüphaneni genişletmek için buradayım! 🚀\n\nDilersen bana oynamak istediğin türü (Aksiyon, Macera, RPG, Korku) veya bütçeni söyleyebilirsin, sana en popüler indirimleri çıkarayım!"
-      ];
-      const fallbackResponse = adaptiveFallbacks[Math.floor(Math.random() * adaptiveFallbacks.length)];
-      return NextResponse.json({
-        response: fallbackResponse,
-        session_id: sessionId,
-        games: []
-      });
+      const fallbackPicks = [...gamesDb]
+        .filter(g => (g.deals || []).length > 0)
+        .sort((a, b) => (b.rating || 80) - (a.rating || 80))
+        .slice(0, 3);
+
+      topResults = fallbackPicks.map(g => ({
+        game: g,
+        best_deal: (g.deals || [])[0],
+        score: 1.0,
+        hw_compat: estimateHardware(g, userGpu)
+      }));
     }
 
     // 6. Generate Natural AI Response Text for Valid Results

@@ -131,12 +131,12 @@ export default function GamerisenAiWidget() {
   };
 
   const quickPrompts = [
-    '🎲 Canım sıkıldı, ne oynasam?',
-    '🔥 100 TL altı efsaneler',
-    '💬 Naber, nasılsın?',
-    '🎁 Bedava oyunlar',
-    '⚡ 50 TL altı oyunlar',
-    '📖 Witcher 3 hikayesi'
+    { label: '🎲 Canım sıkıldı, ne oynasam?', query: 'Canım sıkıldı, ne oynasam?' },
+    { label: '🔥 100 TL altı efsaneler', query: '100 TL altı efsaneler' },
+    { label: '🎁 Bedava oyunlar', query: 'Bedava oyunlar' },
+    { label: '🖥️ 500 TL civarı oyunlar', query: '500 TL civarı oyunlar' },
+    { label: '⚡ En ucuz oyunlar', query: 'En ucuz oyunlar' },
+    { label: '📖 Witcher 3 hikayesi', query: 'Witcher 3 hikayesi' }
   ];
 
   return (
@@ -488,10 +488,10 @@ export default function GamerisenAiWidget() {
                 {quickPrompts.map((p, idx) => (
                   <button
                     key={idx}
-                    onClick={() => sendMessage(p.replace(/^[^\w\s]+/, '').trim())}
+                    onClick={() => sendMessage(p.query)}
                     className="ai-prompt-chip"
                   >
-                    {p}
+                    {p.label}
                   </button>
                 ))}
               </div>
