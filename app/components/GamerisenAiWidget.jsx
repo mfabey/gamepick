@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
+import Link from 'next/link';
+import { useAuth } from '../context/AuthContext';
 
 function formatMarkdown(text) {
   if (!text) return '';
@@ -13,14 +15,12 @@ function formatMarkdown(text) {
 
 export default function GamerisenAiWidget() {
   const pathname = usePathname();
+  const { user, steamUser, xboxUser, ready } = useAuth();
+  const isAuthenticated = Boolean(user || steamUser || xboxUser);
+  const userName = user?.username || user?.name || steamUser?.personaname || xboxUser?.gamertag || 'gamer dostum';
+
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([
-    {
-      role: 'ai',
-      text: 'Selam gamer dostum! 🎮 Ben **Gamerisen AI**. Aklındaki oyunu, bütçeni veya sistem donanımını söyle; en ucuz mağaza fiyatlarını ve FPS uyumluluğunu anında çıkarayım!',
-      games: []
-    }
-  ]);
+  const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId, setSessionId] = useState(null);
@@ -29,11 +29,21 @@ export default function GamerisenAiWidget() {
 
   const API_BASE = process.env.NEXT_PUBLIC_AI_API_URL || '';
 
+  // Initial welcome message with user's name
+  useEffect(() => {
+    setMessages([
+      {
+        role: 'ai',
+        text: `Selam **${userName}**! 🎮 Ben **Gamerisen AI**. Aklındaki oyunu, bütçeni veya sistem donanımını söyle; en ucuz mağaza fiyatlarını ve FPS uyumluluğunu anında çıkarayım!`,
+        games: []
+      }
+    ]);
+  }, [userName]);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isOpen]);
 
-  // Mouse Wheel Horizontal Scroll Helper for Desktop
   const handlePromptsWheel = (e) => {
     if (promptsRef.current && e.deltaY !== 0) {
       e.preventDefault();
@@ -42,6 +52,7 @@ export default function GamerisenAiWidget() {
   };
 
   const sendMessage = async (textToSend) => {
+    if (!isAuthenticated) return;
     const text = (textToSend || inputValue).trim();
     if (!text || isLoading) return;
 
@@ -119,13 +130,19 @@ export default function GamerisenAiWidget() {
           className="ai-widget-trigger"
           aria-label="Gamerisen AI Asistanı"
         >
-          <span className="ai-widget-icon">🤖</span>
+          <span className="ai-widget-icon">{isAuthenticated ? '🤖' : '🔒'}</span>
           <span className="ai-widget-text">Gamerisen AI</span>
-          <span className="ai-widget-dot" />
+          <span
+            className="ai-widget-dot"
+            style={{
+              backgroundColor: isAuthenticated ? '#00ff88' : '#e50914',
+              boxShadow: isAuthenticated ? '0 0 8px #00ff88' : '0 0 8px #e50914'
+            }}
+          />
         </button>
       )}
 
-      {/* Chat Window Modal (Responsive Bottom Sheet on Mobile) */}
+      {/* Chat Window Modal */}
       {isOpen && (
         <div className="ai-widget-modal">
           {/* Mobile Pull Handle Indicator */}
@@ -143,14 +160,32 @@ export default function GamerisenAiWidget() {
           {/* Header */}
           <div className="ai-widget-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div className="ai-widget-avatar">🎮</div>
+              <div className="ai-widget-avatar">
+                {isAuthenticated ? '🎮' : '🔒'}
+              </div>
               <div>
                 <div style={{ fontWeight: 800, fontSize: '15px', color: '#fff', letterSpacing: '-0.3px' }}>
                   Gamerisen AI
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#00ff88' }}>
-                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#00ff88', boxShadow: '0 0 6px #00ff88' }} />
-                  <span>Çevrimiçi Asistan</span>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '12px',
+                    color: isAuthenticated ? '#00ff88' : '#ff7777'
+                  }}
+                >
+                  <span
+                    style={{
+                      width: '6px',
+                      height: '6px',
+                      borderRadius: '50%',
+                      backgroundColor: isAuthenticated ? '#00ff88' : '#ff4444',
+                      boxShadow: isAuthenticated ? '0 0 6px #00ff88' : '0 0 6px #ff4444'
+                    }}
+                  />
+                  <span>{isAuthenticated ? 'Çevrimiçi Asistan' : 'Üyelere Özel'}</span>
                 </div>
               </div>
             </div>
@@ -164,161 +199,247 @@ export default function GamerisenAiWidget() {
             </button>
           </div>
 
-          {/* Quick Prompts Bar (Scrollable on Desktop Wheel & Drag) */}
-          <div
-            ref={promptsRef}
-            onWheel={handlePromptsWheel}
-            className="ai-widget-prompts"
-          >
-            {quickPrompts.map((p, idx) => (
-              <button
-                key={idx}
-                onClick={() => sendMessage(p.replace(/^[^\w\s]+/, '').trim())}
-                className="ai-prompt-chip"
-              >
-                {p}
-              </button>
-            ))}
-          </div>
-
-          {/* Message List */}
-          <div className="ai-widget-messages">
-            {messages.map((m, idx) => (
-              <div
-                key={idx}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: m.role === 'user' ? 'flex-end' : 'flex-start',
-                  gap: '6px'
-                }}
-              >
-                <div
-                  style={{
-                    maxWidth: '88%',
-                    padding: '12px 16px',
-                    borderRadius: m.role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                    backgroundColor: m.role === 'user' ? '#e50914' : 'rgba(255, 255, 255, 0.07)',
-                    border: m.role === 'user' ? 'none' : '1px solid rgba(255, 255, 255, 0.1)',
-                    color: '#ffffff',
-                    fontSize: '13.5px',
-                    lineHeight: '1.55',
-                    wordBreak: 'break-word'
-                  }}
-                  dangerouslySetInnerHTML={{ __html: formatMarkdown(m.text) }}
-                />
-
-                {/* Render Rich Game Cards */}
-                {m.games && m.games.length > 0 && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', marginTop: '6px' }}>
-                    {m.games.map((g, gIdx) => (
-                      <div
-                        key={gIdx}
-                        style={{
-                          background: 'rgba(25, 25, 32, 0.88)',
-                          border: '1px solid rgba(255, 255, 255, 0.1)',
-                          borderRadius: '14px',
-                          padding: '12px',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '8px'
-                        }}
-                      >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div style={{ fontWeight: 700, fontSize: '14px', color: '#fff' }}>{g.title}</div>
-                          <div style={{ background: '#00ff8820', color: '#00ff88', border: '1px solid #00ff8840', padding: '2px 8px', borderRadius: '8px', fontSize: '11px', fontWeight: 800 }}>
-                            ⭐ {g.rating}/100
-                          </div>
-                        </div>
-
-                        {g.best_deal && (
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.04)', padding: '8px 10px', borderRadius: '8px' }}>
-                            <div style={{ fontSize: '12px', color: '#aaa' }}>{g.best_deal.platform}</div>
-                            <div style={{ fontWeight: 800, color: '#00ff88', fontSize: '13px' }}>
-                              {g.best_deal.current_price} {g.currency || 'TL'}
-                              {g.best_deal.discount > 0 && (
-                                <span style={{ marginLeft: '6px', color: '#ff4444', fontSize: '11px' }}>
-                                  (-%{g.best_deal.discount})
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        )}
-
-                        <a
-                          href={g.store_url || `https://store.steampowered.com/search/?term=${encodeURIComponent(g.title)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{
-                            display: 'block',
-                            textAlign: 'center',
-                            background: 'linear-gradient(135deg, #e50914 0%, #b81d24 100%)',
-                            color: '#fff',
-                            textDecoration: 'none',
-                            padding: '8px',
-                            borderRadius: '8px',
-                            fontWeight: 700,
-                            fontSize: '12px',
-                            marginTop: '2px'
-                          }}
-                        >
-                          Mağazaya Git 🚀
-                        </a>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-
-            {isLoading && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'rgba(255,255,255,0.05)', borderRadius: '14px', width: 'fit-content' }}>
-                <span style={{ fontSize: '14px' }}>⚡</span>
-                <span style={{ fontSize: '12.5px', color: '#aaa' }}>Gamerisen AI düşünüyor...</span>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Input Area */}
-          <div className="ai-widget-input-box">
-            <input
-              type="text"
-              placeholder="Oyun, bütçe veya donanımını sor..."
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-              disabled={isLoading}
+          {/* If NOT Authenticated: Show High-Converting Member Lock Screen */}
+          {!isAuthenticated ? (
+            <div
               style={{
                 flex: 1,
-                background: 'rgba(255, 255, 255, 0.06)',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
-                borderRadius: '12px',
-                padding: '12px 14px',
-                color: '#fff',
-                outline: 'none',
-                transition: 'border-color 0.2s'
-              }}
-            />
-            <button
-              onClick={() => sendMessage()}
-              disabled={isLoading || !inputValue.trim()}
-              style={{
-                background: '#e50914',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '12px',
-                padding: '0 16px',
-                cursor: 'pointer',
-                fontWeight: 700,
-                fontSize: '14px',
-                opacity: isLoading || !inputValue.trim() ? 0.5 : 1,
-                transition: 'all 0.2s'
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '32px 24px',
+                textAlign: 'center',
+                gap: '16px'
               }}
             >
-              ➤
-            </button>
-          </div>
+              <div
+                style={{
+                  width: '68px',
+                  height: '68px',
+                  borderRadius: '22px',
+                  background: 'linear-gradient(135deg, rgba(229,9,20,0.25) 0%, rgba(229,9,20,0.05) 100%)',
+                  border: '1px solid rgba(229,9,20,0.45)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '34px',
+                  boxShadow: '0 8px 30px rgba(229,9,20,0.35)'
+                }}
+              >
+                🔒
+              </div>
+
+              <div>
+                <div style={{ fontSize: '18px', fontWeight: 850, color: '#fff', letterSpacing: '-0.3px', marginBottom: '8px' }}>
+                  Gamerisen AI Üyelere Özeldir
+                </div>
+                <div style={{ fontSize: '13px', color: '#a0a0ab', lineHeight: '1.6', maxWidth: '320px' }}>
+                  Sistemine özel FPS analizi, kişiselleştirilmiş oyun tavsiyeleri ve canlı mağaza indirimleri için lütfen giriş yapın veya ücretsiz hesap oluşturun.
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', maxWidth: '280px', marginTop: '12px' }}>
+                <Link
+                  href="/login"
+                  onClick={() => setIsOpen(false)}
+                  style={{
+                    display: 'block',
+                    background: 'linear-gradient(135deg, #e50914 0%, #b81d24 100%)',
+                    color: '#fff',
+                    fontWeight: 750,
+                    fontSize: '14px',
+                    padding: '12px',
+                    borderRadius: '12px',
+                    textDecoration: 'none',
+                    boxShadow: '0 4px 20px rgba(229,9,20,0.4)',
+                    transition: 'all 0.2s',
+                    textAlign: 'center'
+                  }}
+                >
+                  Giriş Yap 🚀
+                </Link>
+                <Link
+                  href="/signup"
+                  onClick={() => setIsOpen(false)}
+                  style={{
+                    display: 'block',
+                    background: 'rgba(255, 255, 255, 0.08)',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    color: '#fff',
+                    fontWeight: 600,
+                    fontSize: '14px',
+                    padding: '12px',
+                    borderRadius: '12px',
+                    textDecoration: 'none',
+                    transition: 'all 0.2s',
+                    textAlign: 'center'
+                  }}
+                >
+                  Ücretsiz Hesap Oluştur ✨
+                </Link>
+              </div>
+            </div>
+          ) : (
+            /* If Authenticated: Full Chat Experience */
+            <>
+              {/* Quick Prompts Bar */}
+              <div
+                ref={promptsRef}
+                onWheel={handlePromptsWheel}
+                className="ai-widget-prompts"
+              >
+                {quickPrompts.map((p, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => sendMessage(p.replace(/^[^\w\s]+/, '').trim())}
+                    className="ai-prompt-chip"
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+
+              {/* Message List */}
+              <div className="ai-widget-messages">
+                {messages.map((m, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: m.role === 'user' ? 'flex-end' : 'flex-start',
+                      gap: '6px'
+                    }}
+                  >
+                    <div
+                      style={{
+                        maxWidth: '88%',
+                        padding: '12px 16px',
+                        borderRadius: m.role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+                        backgroundColor: m.role === 'user' ? '#e50914' : 'rgba(255, 255, 255, 0.07)',
+                        border: m.role === 'user' ? 'none' : '1px solid rgba(255, 255, 255, 0.1)',
+                        color: '#ffffff',
+                        fontSize: '13.5px',
+                        lineHeight: '1.55',
+                        wordBreak: 'break-word'
+                      }}
+                      dangerouslySetInnerHTML={{ __html: formatMarkdown(m.text) }}
+                    />
+
+                    {/* Render Rich Game Cards */}
+                    {m.games && m.games.length > 0 && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', marginTop: '6px' }}>
+                        {m.games.map((g, gIdx) => (
+                          <div
+                            key={gIdx}
+                            style={{
+                              background: 'rgba(25, 25, 32, 0.88)',
+                              border: '1px solid rgba(255, 255, 255, 0.1)',
+                              borderRadius: '14px',
+                              padding: '12px',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '8px'
+                            }}
+                          >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <div style={{ fontWeight: 700, fontSize: '14px', color: '#fff' }}>{g.title}</div>
+                              <div style={{ background: '#00ff8820', color: '#00ff88', border: '1px solid #00ff8840', padding: '2px 8px', borderRadius: '8px', fontSize: '11px', fontWeight: 800 }}>
+                                ⭐ {g.rating}/100
+                              </div>
+                            </div>
+
+                            {g.best_deal && (
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.04)', padding: '8px 10px', borderRadius: '8px' }}>
+                                <div style={{ fontSize: '12px', color: '#aaa' }}>{g.best_deal.platform}</div>
+                                <div style={{ fontWeight: 800, color: '#00ff88', fontSize: '13px' }}>
+                                  {g.best_deal.current_price} {g.currency || 'TL'}
+                                  {g.best_deal.discount > 0 && (
+                                    <span style={{ marginLeft: '6px', color: '#ff4444', fontSize: '11px' }}>
+                                      (-%{g.best_deal.discount})
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            <a
+                              href={g.store_url || `https://store.steampowered.com/search/?term=${encodeURIComponent(g.title)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                display: 'block',
+                                textAlign: 'center',
+                                background: 'linear-gradient(135deg, #e50914 0%, #b81d24 100%)',
+                                color: '#fff',
+                                textDecoration: 'none',
+                                padding: '8px',
+                                borderRadius: '8px',
+                                fontWeight: 700,
+                                fontSize: '12px',
+                                marginTop: '2px'
+                              }}
+                            >
+                              Mağazaya Git 🚀
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+
+                {isLoading && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'rgba(255,255,255,0.05)', borderRadius: '14px', width: 'fit-content' }}>
+                    <span style={{ fontSize: '14px' }}>⚡</span>
+                    <span style={{ fontSize: '12.5px', color: '#aaa' }}>Gamerisen AI düşünüyor...</span>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Input Area */}
+              <div className="ai-widget-input-box">
+                <input
+                  type="text"
+                  placeholder="Oyun, bütçe veya donanımını sor..."
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  disabled={isLoading}
+                  style={{
+                    flex: 1,
+                    background: 'rgba(255, 255, 255, 0.06)',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    borderRadius: '12px',
+                    padding: '12px 14px',
+                    color: '#fff',
+                    outline: 'none',
+                    transition: 'border-color 0.2s'
+                  }}
+                />
+                <button
+                  onClick={() => sendMessage()}
+                  disabled={isLoading || !inputValue.trim()}
+                  style={{
+                    background: '#e50914',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '12px',
+                    padding: '0 16px',
+                    cursor: 'pointer',
+                    fontWeight: 700,
+                    fontSize: '14px',
+                    opacity: isLoading || !inputValue.trim() ? 0.5 : 1,
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  ➤
+                </button>
+              </div>
+            </>
+          )}
         </div>
       )}
     </>
