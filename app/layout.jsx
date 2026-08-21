@@ -1,4 +1,4 @@
-import './globals.css';
+﻿import './globals.css';
 import { Bricolage_Grotesque, Schibsted_Grotesk } from 'next/font/google';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
@@ -6,6 +6,7 @@ import { LanguageProvider } from './context/LanguageContext';
 import NavBar from './components/NavBar';
 import Footer from './components/Footer';
 import IntroSplash from './components/IntroSplash';
+import GamerisenAiWidget from './components/GamerisenAiWidget';
 
 const bricolage = Bricolage_Grotesque({
   subsets: ['latin'],
@@ -90,6 +91,7 @@ export default function RootLayout({ children }) {
                 {children}
               </main>
               <Footer />
+              <GamerisenAiWidget />
             </AuthProvider>
           </LanguageProvider>
         </ThemeProvider>

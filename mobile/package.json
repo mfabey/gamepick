@@ -54,5 +54,9 @@
     "check:imports": "node scripts/check-imports.mjs",
     "check:accent": "node scripts/check-accent.mjs"
   },
-  "private": true
+  "private": true,
+  "devDependencies": {
+    "@types/react": "~19.1.10",
+    "typescript": "~5.9.2"
+  }
 }

@@ -1,0 +1,2750 @@
+[
+  {
+    "id": 1,
+    "title": "The Witcher 3: Wild Hunt",
+    "genres": [
+      "RPG",
+      "Open World",
+      "Story Rich"
+    ],
+    "description": "You are Geralt of Rivia, mercenary monster slayer. Before you stands a war-torn, monster-infested continent you can explore at will.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 400.0,
+        "current_price": 100.0,
+        "discount": 75
+      },
+      {
+        "platform": "Epic Games",
+        "original_price": 400.0,
+        "current_price": 120.0,
+        "discount": 70
+      },
+      {
+        "platform": "GOG",
+        "original_price": 400.0,
+        "current_price": 95.0,
+        "discount": 76
+      }
+    ],
+    "rating": 93,
+    "image_url": "https://cdn.akamai.steamstatic.com/steam/apps/292030/header.jpg",
+    "store_url": "https://store.steampowered.com/app/292030"
+  },
+  {
+    "id": 2,
+    "title": "Cyberpunk 2077",
+    "genres": [
+      "RPG",
+      "Open World",
+      "Sci-Fi"
+    ],
+    "description": "Cyberpunk 2077 is an open-world, action-adventure RPG set in the megalopolis of Night City, where you play as a cyberpunk mercenary.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 800.0,
+        "current_price": 400.0,
+        "discount": 50
+      },
+      {
+        "platform": "Epic Games",
+        "original_price": 800.0,
+        "current_price": 399.0,
+        "discount": 50
+      },
+      {
+        "platform": "GOG",
+        "original_price": 800.0,
+        "current_price": 400.0,
+        "discount": 50
+      }
+    ],
+    "rating": 86,
+    "image_url": "https://cdn.akamai.steamstatic.com/steam/apps/1091500/header.jpg",
+    "store_url": "https://store.steampowered.com/app/1091500"
+  },
+  {
+    "id": 3,
+    "title": "Hades",
+    "genres": [
+      "Rogue-like",
+      "Action",
+      "Indie"
+    ],
+    "description": "Defy the god of the dead as you hack and slash out of the Underworld in this rogue-like dungeon crawler from the creators of Bastion.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 250.0,
+        "current_price": 125.0,
+        "discount": 50
+      },
+      {
+        "platform": "Epic Games",
+        "original_price": 250.0,
+        "current_price": 125.0,
+        "discount": 50
+      },
+      {
+        "platform": "GOG",
+        "original_price": 250.0,
+        "current_price": 250.0,
+        "discount": 0
+      }
+    ],
+    "rating": 93,
+    "image_url": "https://cdn.akamai.steamstatic.com/steam/apps/1145360/header.jpg",
+    "store_url": "https://store.steampowered.com/app/1145360"
+  },
+  {
+    "id": 4,
+    "title": "Red Dead Redemption 2",
+    "genres": [
+      "Action",
+      "Open World",
+      "Story Rich"
+    ],
+    "description": "Winner of over 175 Game of the Year Awards and recipient of over 250 perfect scores, Red Dead Redemption 2 is an epic tale of honor and loyalty.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 1150.0,
+        "current_price": 379.5,
+        "discount": 67
+      },
+      {
+        "platform": "Epic Games",
+        "original_price": 1150.0,
+        "current_price": 460.0,
+        "discount": 60
+      }
+    ],
+    "rating": 97,
+    "image_url": "https://cdn.akamai.steamstatic.com/steam/apps/1174180/header.jpg",
+    "store_url": "https://store.steampowered.com/app/1174180"
+  },
+  {
+    "id": 5,
+    "title": "Stardew Valley",
+    "genres": [
+      "Farming Sim",
+      "Casual",
+      "RPG"
+    ],
+    "description": "You've inherited your grandfather's old farm plot in Stardew Valley. Armed with hand-me-down tools and a few coins, you set out to begin your new life.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 190.0,
+        "current_price": 152.0,
+        "discount": 20
+      },
+      {
+        "platform": "GOG",
+        "original_price": 190.0,
+        "current_price": 152.0,
+        "discount": 20
+      }
+    ],
+    "rating": 89,
+    "image_url": "https://cdn.akamai.steamstatic.com/steam/apps/413150/header.jpg",
+    "store_url": "https://store.steampowered.com/app/413150"
+  },
+  {
+    "id": 6,
+    "title": "Portal 2",
+    "genres": [
+      "Puzzle",
+      "Co-op",
+      "Sci-Fi"
+    ],
+    "description": "The Portal 2 Peer Review DLC features a new co-op course for Atlas and P-body, and a challenge mode for single and co-op play.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 105.0,
+        "current_price": 10.5,
+        "discount": 90
+      }
+    ],
+    "rating": 95,
+    "image_url": "https://cdn.akamai.steamstatic.com/steam/apps/620/header.jpg",
+    "store_url": "https://store.steampowered.com/app/620"
+  },
+  {
+    "id": 7,
+    "title": "Elden Ring",
+    "genres": [
+      "RPG",
+      "Difficult",
+      "Open World"
+    ],
+    "description": "THE NEW FANTASY ACTION RPG. Rise, Tarnished, and be guided by grace to brandish the power of the Elden Ring and become an Elden Lord.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 999.0,
+        "current_price": 999.0,
+        "discount": 0
+      },
+      {
+        "platform": "Epic Games",
+        "original_price": 999.0,
+        "current_price": 999.0,
+        "discount": 0
+      }
+    ],
+    "rating": 96,
+    "image_url": "https://cdn.akamai.steamstatic.com/steam/apps/1245620/header.jpg",
+    "store_url": "https://store.steampowered.com/app/1245620"
+  },
+  {
+    "id": 8,
+    "title": "Hollow Knight",
+    "genres": [
+      "Metroidvania",
+      "Difficult",
+      "Indie"
+    ],
+    "description": "Forge your own path in Hollow Knight! An epic action adventure through a vast ruined kingdom of insects and heroes.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 280.0,
+        "current_price": 140.0,
+        "discount": 50
+      },
+      {
+        "platform": "GOG",
+        "original_price": 280.0,
+        "current_price": 140.0,
+        "discount": 50
+      }
+    ],
+    "rating": 90,
+    "image_url": "https://cdn.akamai.steamstatic.com/steam/apps/367520/header.jpg",
+    "store_url": "https://store.steampowered.com/app/367520"
+  },
+  {
+    "id": 9,
+    "title": "Celeste",
+    "genres": [
+      "Platformer",
+      "Indie",
+      "Difficult"
+    ],
+    "description": "Help Madeline survive her inner demons on her journey to the top of Celeste Mountain, in this super-tight, hand-crafted platformer.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 340.0,
+        "current_price": 85.0,
+        "discount": 75
+      },
+      {
+        "platform": "Epic Games",
+        "original_price": 340.0,
+        "current_price": 340.0,
+        "discount": 0
+      }
+    ],
+    "rating": 92,
+    "image_url": "https://cdn.akamai.steamstatic.com/steam/apps/504230/header.jpg",
+    "store_url": "https://store.steampowered.com/app/504230"
+  },
+  {
+    "id": 10,
+    "title": "Civilization VI",
+    "genres": [
+      "Strategy",
+      "Turn-Based",
+      "Historical"
+    ],
+    "description": "Civilization VI offers new ways to engage with your world: cities now physically expand across the map, active research in technology and culture unlocks new potential.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 600.0,
+        "current_price": 60.0,
+        "discount": 90
+      },
+      {
+        "platform": "Epic Games",
+        "original_price": 600.0,
+        "current_price": 90.0,
+        "discount": 85
+      }
+    ],
+    "rating": 88,
+    "image_url": "https://cdn.akamai.steamstatic.com/steam/apps/289070/header.jpg",
+    "store_url": "https://store.steampowered.com/app/289070"
+  },
+  {
+    "id": 11,
+    "title": "Terraria",
+    "genres": [
+      "Sandbox",
+      "Survival",
+      "Adventure"
+    ],
+    "description": "Dig, fight, explore, build! Nothing is impossible in this action-packed adventure game.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 50.0,
+        "current_price": 25.0,
+        "discount": 50
+      },
+      {
+        "platform": "GOG",
+        "original_price": 50.0,
+        "current_price": 25.0,
+        "discount": 50
+      }
+    ],
+    "rating": 88,
+    "image_url": "https://cdn.akamai.steamstatic.com/steam/apps/105600/header.jpg",
+    "store_url": "https://store.steampowered.com/app/105600"
+  },
+  {
+    "id": 12,
+    "title": "Vampire Survivors",
+    "genres": [
+      "Action",
+      "Rogue-lite",
+      "Casual"
+    ],
+    "description": "Mow down thousands of night creatures and survive until dawn! Vampire Survivors is a gothic horror casual game.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 49.0,
+        "current_price": 39.2,
+        "discount": 20
+      }
+    ],
+    "rating": 87,
+    "image_url": "https://cdn.akamai.steamstatic.com/steam/apps/1794680/header.jpg",
+    "store_url": "https://store.steampowered.com/app/1794680"
+  },
+  {
+    "id": 13,
+    "title": "LIMBO",
+    "genres": [
+      "Indie",
+      "Puzzle",
+      "Atmospheric"
+    ],
+    "description": "Uncertain of his sister's fate, a boy enters LIMBO. An atmospheric puzzle-platforming masterpiece.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 90.0,
+        "current_price": 18.0,
+        "discount": 80
+      },
+      {
+        "platform": "Epic Games",
+        "original_price": 90.0,
+        "current_price": 22.5,
+        "discount": 75
+      }
+    ],
+    "rating": 88,
+    "image_url": "https://cdn.akamai.steamstatic.com/steam/apps/48000/header.jpg",
+    "store_url": "https://store.steampowered.com/app/48000"
+  },
+  {
+    "id": 14,
+    "title": "Don't Starve",
+    "genres": [
+      "Survival",
+      "Open World",
+      "Crafting"
+    ],
+    "description": "Don't Starve is an uncompromising wilderness survival game full of science and magic.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 96.0,
+        "current_price": 24.0,
+        "discount": 75
+      },
+      {
+        "platform": "GOG",
+        "original_price": 96.0,
+        "current_price": 24.0,
+        "discount": 75
+      }
+    ],
+    "rating": 79,
+    "image_url": "https://cdn.akamai.steamstatic.com/steam/apps/219740/header.jpg",
+    "store_url": "https://store.steampowered.com/app/219740"
+  },
+  {
+    "id": 200413,
+    "title": "RagTag",
+    "genres": [
+      "Canlı Fiyat"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 9.99,
+        "current_price": 9.99,
+        "discount": 0
+      }
+    ],
+    "rating": 85,
+    "image_url": "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&auto=format&fit=crop&q=80",
+    "store_url": "https://store.steampowered.com/search/?term=RagTag"
+  },
+  {
+    "id": 272317,
+    "title": "Flying Tank",
+    "genres": [
+      "Canlı Fiyat"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 14.99,
+        "current_price": 14.99,
+        "discount": 0
+      }
+    ],
+    "rating": 85,
+    "image_url": "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&auto=format&fit=crop&q=80",
+    "store_url": "https://store.steampowered.com/search/?term=Flying Tank"
+  },
+  {
+    "id": 307541,
+    "title": "Fishing Tale",
+    "genres": [
+      "Canlı Fiyat"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 3.99,
+        "current_price": 3.99,
+        "discount": 0
+      }
+    ],
+    "rating": 85,
+    "image_url": "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&auto=format&fit=crop&q=80",
+    "store_url": "https://store.steampowered.com/search/?term=Fishing Tale"
+  },
+  {
+    "id": 248635,
+    "title": "Rustler (Grand Theft Horse)",
+    "genres": [
+      "Canlı Fiyat"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "GOG",
+        "original_price": 24.99,
+        "current_price": 4.99,
+        "discount": 80
+      },
+      {
+        "platform": "Steam",
+        "original_price": 24.99,
+        "current_price": 24.99,
+        "discount": 0
+      },
+      {
+        "platform": "Epic Games",
+        "original_price": 24.99,
+        "current_price": 24.99,
+        "discount": 0
+      }
+    ],
+    "rating": 85,
+    "image_url": "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&auto=format&fit=crop&q=80",
+    "store_url": "https://store.steampowered.com/search/?term=Rustler (Grand Theft Horse)"
+  },
+  {
+    "id": 299615,
+    "title": "Grand Theft Auto V Enhanced",
+    "genres": [
+      "Canlı Fiyat"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Humble Store",
+        "original_price": 29.99,
+        "current_price": 14.99,
+        "discount": 50
+      },
+      {
+        "platform": "Steam",
+        "original_price": 29.99,
+        "current_price": 29.99,
+        "discount": 0
+      },
+      {
+        "platform": "Epic Games",
+        "original_price": 29.99,
+        "current_price": 29.99,
+        "discount": 0
+      }
+    ],
+    "rating": 85,
+    "image_url": "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&auto=format&fit=crop&q=80",
+    "store_url": "https://store.steampowered.com/search/?term=Grand Theft Auto V Enhanced"
+  },
+  {
+    "id": 294573,
+    "title": "GTH 3033 - Grand Theft Hunter 3033",
+    "genres": [
+      "Canlı Fiyat"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 199.99,
+        "current_price": 199.99,
+        "discount": 0
+      }
+    ],
+    "rating": 85,
+    "image_url": "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&auto=format&fit=crop&q=80",
+    "store_url": "https://store.steampowered.com/search/?term=GTH 3033 - Grand Theft Hunter 3033"
+  },
+  {
+    "id": 175327,
+    "title": "Mafia",
+    "genres": [
+      "Canlı Fiyat"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 14.99,
+        "current_price": 4.94,
+        "discount": 67
+      }
+    ],
+    "rating": 85,
+    "image_url": "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&auto=format&fit=crop&q=80",
+    "store_url": "https://store.steampowered.com/search/?term=Mafia"
+  },
+  {
+    "id": 328812,
+    "title": "OZMAFIA!!",
+    "genres": [
+      "Canlı Fiyat"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 34.99,
+        "current_price": 34.99,
+        "discount": 0
+      }
+    ],
+    "rating": 85,
+    "image_url": "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&auto=format&fit=crop&q=80",
+    "store_url": "https://store.steampowered.com/search/?term=OZMAFIA!!"
+  },
+  {
+    "id": 169316,
+    "title": "Doodle Mafia",
+    "genres": [
+      "Canlı Fiyat"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Epic Games",
+        "original_price": 4.99,
+        "current_price": 4.99,
+        "discount": 0
+      },
+      {
+        "platform": "Steam",
+        "original_price": 7.99,
+        "current_price": 7.99,
+        "discount": 0
+      },
+      {
+        "platform": "Humble Store",
+        "original_price": 8.99,
+        "current_price": 8.99,
+        "discount": 0
+      }
+    ],
+    "rating": 85,
+    "image_url": "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&auto=format&fit=crop&q=80",
+    "store_url": "https://store.steampowered.com/search/?term=Doodle Mafia"
+  },
+  {
+    "id": 297451,
+    "title": "Hell Let Loose  Lethal Tide",
+    "genres": [
+      "Canlı Fiyat"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Epic Games",
+        "original_price": 4.99,
+        "current_price": 4.99,
+        "discount": 0
+      }
+    ],
+    "rating": 85,
+    "image_url": "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&auto=format&fit=crop&q=80",
+    "store_url": "https://store.steampowered.com/search/?term=Hell Let Loose  Lethal Tide"
+  },
+  {
+    "id": 230082,
+    "title": "Steel Division 2: Burning Baltics",
+    "genres": [
+      "Canlı Fiyat"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "GOG",
+        "original_price": 14.99,
+        "current_price": 14.99,
+        "discount": 0
+      }
+    ],
+    "rating": 85,
+    "image_url": "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&auto=format&fit=crop&q=80",
+    "store_url": "https://store.steampowered.com/search/?term=Steel Division 2: Burning Baltics"
+  },
+  {
+    "id": 255740,
+    "title": "Daedalic Real Time Tactics Bundle",
+    "genres": [
+      "Canlı Fiyat"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Epic Games",
+        "original_price": 59.99,
+        "current_price": 59.99,
+        "discount": 0
+      }
+    ],
+    "rating": 85,
+    "image_url": "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&auto=format&fit=crop&q=80",
+    "store_url": "https://store.steampowered.com/search/?term=Daedalic Real Time Tactics Bundle"
+  },
+  {
+    "id": 295719,
+    "title": "VED",
+    "genres": [
+      "Canlı Fiyat"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "GOG",
+        "original_price": 19.99,
+        "current_price": 4.99,
+        "discount": 75
+      },
+      {
+        "platform": "Humble Store",
+        "original_price": 24.99,
+        "current_price": 6.24,
+        "discount": 75
+      },
+      {
+        "platform": "Steam",
+        "original_price": 19.99,
+        "current_price": 19.99,
+        "discount": 0
+      },
+      {
+        "platform": "Epic Games",
+        "original_price": 24.99,
+        "current_price": 24.99,
+        "discount": 0
+      }
+    ],
+    "rating": 85,
+    "image_url": "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&auto=format&fit=crop&q=80",
+    "store_url": "https://store.steampowered.com/search/?term=VED"
+  },
+  {
+    "id": 179905,
+    "title": "Dive",
+    "genres": [
+      "Canlı Fiyat"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 1.99,
+        "current_price": 1.99,
+        "discount": 0
+      }
+    ],
+    "rating": 85,
+    "image_url": "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&auto=format&fit=crop&q=80",
+    "store_url": "https://store.steampowered.com/search/?term=Dive"
+  },
+  {
+    "id": 103831,
+    "title": "Hive",
+    "genres": [
+      "Canlı Fiyat"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 9.99,
+        "current_price": 9.99,
+        "discount": 0
+      },
+      {
+        "platform": "Humble Store",
+        "original_price": 9.99,
+        "current_price": 9.99,
+        "discount": 0
+      }
+    ],
+    "rating": 85,
+    "image_url": "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&auto=format&fit=crop&q=80",
+    "store_url": "https://store.steampowered.com/search/?term=Hive"
+  },
+  {
+    "id": 142515,
+    "title": "MyRPG",
+    "genres": [
+      "Canlı Fiyat"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 39.99,
+        "current_price": 39.99,
+        "discount": 0
+      }
+    ],
+    "rating": 85,
+    "image_url": "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&auto=format&fit=crop&q=80",
+    "store_url": "https://store.steampowered.com/search/?term=MyRPG"
+  },
+  {
+    "id": 148903,
+    "title": "3DRPG",
+    "genres": [
+      "Canlı Fiyat"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 1.99,
+        "current_price": 1.99,
+        "discount": 0
+      }
+    ],
+    "rating": 85,
+    "image_url": "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&auto=format&fit=crop&q=80",
+    "store_url": "https://store.steampowered.com/search/?term=3DRPG"
+  },
+  {
+    "id": 148464,
+    "title": "OH! RPG!",
+    "genres": [
+      "Canlı Fiyat"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 9.99,
+        "current_price": 9.99,
+        "discount": 0
+      }
+    ],
+    "rating": 85,
+    "image_url": "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&auto=format&fit=crop&q=80",
+    "store_url": "https://store.steampowered.com/search/?term=OH! RPG!"
+  },
+  {
+    "id": 237675,
+    "title": "Nucleares",
+    "genres": [
+      "Canlı Fiyat"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 14.99,
+        "current_price": 14.99,
+        "discount": 0
+      }
+    ],
+    "rating": 85,
+    "image_url": "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&auto=format&fit=crop&q=80",
+    "store_url": "https://store.steampowered.com/search/?term=Nucleares"
+  },
+  {
+    "id": 313143,
+    "title": "Cleared Hot",
+    "genres": [
+      "Canlı Fiyat"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 14.99,
+        "current_price": 11.99,
+        "discount": 20
+      }
+    ],
+    "rating": 85,
+    "image_url": "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&auto=format&fit=crop&q=80",
+    "store_url": "https://store.steampowered.com/search/?term=Cleared Hot"
+  },
+  {
+    "id": 171473,
+    "title": "High clear VR",
+    "genres": [
+      "Canlı Fiyat"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 19.99,
+        "current_price": 19.99,
+        "discount": 0
+      }
+    ],
+    "rating": 85,
+    "image_url": "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&auto=format&fit=crop&q=80",
+    "store_url": "https://store.steampowered.com/search/?term=High clear VR"
+  },
+  {
+    "id": 281020,
+    "title": "PARANOID",
+    "genres": [
+      "Canlı Fiyat"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 16.48,
+        "current_price": 2.44,
+        "discount": 85
+      },
+      {
+        "platform": "GOG",
+        "original_price": 17.99,
+        "current_price": 4.29,
+        "discount": 76
+      },
+      {
+        "platform": "Humble Store",
+        "original_price": 39.99,
+        "current_price": 39.99,
+        "discount": 0
+      }
+    ],
+    "rating": 85,
+    "image_url": "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&auto=format&fit=crop&q=80",
+    "store_url": "https://store.steampowered.com/search/?term=PARANOID"
+  },
+  {
+    "id": 101370,
+    "title": "Paranormal",
+    "genres": [
+      "Canlı Fiyat"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 9.99,
+        "current_price": 9.99,
+        "discount": 0
+      }
+    ],
+    "rating": 85,
+    "image_url": "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&auto=format&fit=crop&q=80",
+    "store_url": "https://store.steampowered.com/search/?term=Paranormal"
+  },
+  {
+    "id": 210909,
+    "title": "PARANOIHELL",
+    "genres": [
+      "Canlı Fiyat"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 4.99,
+        "current_price": 4.99,
+        "discount": 0
+      }
+    ],
+    "rating": 85,
+    "image_url": "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&auto=format&fit=crop&q=80",
+    "store_url": "https://store.steampowered.com/search/?term=PARANOIHELL"
+  },
+  {
+    "id": 327518,
+    "title": "VERz",
+    "genres": [
+      "Canlı Fiyat"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Humble Store",
+        "original_price": 12.99,
+        "current_price": 12.99,
+        "discount": 0
+      }
+    ],
+    "rating": 85,
+    "image_url": "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&auto=format&fit=crop&q=80",
+    "store_url": "https://store.steampowered.com/search/?term=VERz"
+  },
+  {
+    "id": 173704,
+    "title": "Hover",
+    "genres": [
+      "Canlı Fiyat"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 19.99,
+        "current_price": 19.99,
+        "discount": 0
+      }
+    ],
+    "rating": 85,
+    "image_url": "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&auto=format&fit=crop&q=80",
+    "store_url": "https://store.steampowered.com/search/?term=Hover"
+  },
+  {
+    "id": 189406,
+    "title": "R.O.V.E.R.",
+    "genres": [
+      "Canlı Fiyat"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 5.99,
+        "current_price": 5.99,
+        "discount": 0
+      }
+    ],
+    "rating": 85,
+    "image_url": "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&auto=format&fit=crop&q=80",
+    "store_url": "https://store.steampowered.com/search/?term=R.O.V.E.R."
+  },
+  {
+    "id": 228324,
+    "title": "V.O.D.K.A. Open World Survival Shooter",
+    "genres": [
+      "Canlı Fiyat"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 0.99,
+        "current_price": 0.99,
+        "discount": 0
+      }
+    ]
+  },
+  {
+    "id": 329835,
+    "title": "Researchity  Open World Survival Game",
+    "genres": [
+      "Canlı Fiyat"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 34.99,
+        "current_price": 34.99,
+        "discount": 0
+      }
+    ]
+  },
+  {
+    "id": 324889,
+    "title": "WorldDrive: Real Open-World Driving Simulator",
+    "genres": [
+      "Canlı Fiyat"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 19.99,
+        "current_price": 19.99,
+        "discount": 0
+      }
+    ]
+  },
+  {
+    "id": 205248,
+    "title": "Trollskog",
+    "genres": [
+      "Canlı Fiyat",
+      "Popüler Oyun"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 11.99,
+        "current_price": 11.99,
+        "discount": 0
+      }
+    ]
+  },
+  {
+    "id": 285134,
+    "title": "Mountain Troll",
+    "genres": [
+      "Canlı Fiyat",
+      "Popüler Oyun"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 1.99,
+        "current_price": 1.99,
+        "discount": 0
+      }
+    ]
+  },
+  {
+    "id": 188650,
+    "title": "Lines Infinite",
+    "genres": [
+      "Puzzle"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 1.99,
+        "current_price": 1.99,
+        "discount": 0
+      }
+    ],
+    "rating": 85
+  },
+  {
+    "id": 278708,
+    "title": "Iron Marines Invasion",
+    "genres": [
+      "Puzzle"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Humble Store",
+        "original_price": 14.99,
+        "current_price": 7.49,
+        "discount": 50
+      },
+      {
+        "platform": "Steam",
+        "original_price": 14.99,
+        "current_price": 14.99,
+        "discount": 0
+      }
+    ],
+    "rating": 85
+  },
+  {
+    "id": 7568,
+    "title": "OneRoom ―Yui Hanasaka Memorial―",
+    "genres": [
+      "Indie",
+      "Action"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 119.4,
+        "current_price": 119.4,
+        "discount": 0
+      }
+    ],
+    "rating": 85
+  },
+  {
+    "id": 2755,
+    "title": "Beat Saber - OneRepublic - Counting Stars",
+    "genres": [
+      "Indie",
+      "Action"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 95.43,
+        "current_price": 95.43,
+        "discount": 0
+      }
+    ],
+    "rating": 85
+  },
+  {
+    "id": 5653,
+    "title": "旅燕归航 Swallow Homing",
+    "genres": [
+      "Racing"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 0.0,
+        "current_price": 0.0,
+        "discount": 0
+      }
+    ],
+    "rating": 77
+  },
+  {
+    "id": 2540,
+    "title": "Hang Up",
+    "genres": [
+      "Racing"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 0.0,
+        "current_price": 0.0,
+        "discount": 0
+      }
+    ],
+    "rating": 77
+  },
+  {
+    "id": 8157,
+    "title": "The Séance of Blake Manor",
+    "genres": [
+      "Indie"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 503.02,
+        "current_price": 503.02,
+        "discount": 0
+      },
+      {
+        "platform": "Humble Store",
+        "original_price": 958.21,
+        "current_price": 668.27,
+        "discount": 30
+      }
+    ],
+    "rating": 85
+  },
+  {
+    "id": 5056,
+    "title": "Jigoku Kisetsukan: Sense of the Seasons",
+    "genres": [
+      "Indie"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 0.0,
+        "current_price": 0.0,
+        "discount": 0
+      }
+    ],
+    "rating": 85
+  },
+  {
+    "id": 10837,
+    "title": "Strategic War in Europe",
+    "genres": [
+      "Strategy",
+      "Simulation"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 172.15,
+        "current_price": 172.15,
+        "discount": 0
+      }
+    ],
+    "rating": 85
+  },
+  {
+    "id": 10452,
+    "title": "Yupitergrad 🚀: Sneaki Peaki (Virtual Reality Adventure)",
+    "genres": [
+      "Casual",
+      "Adventure"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 0.0,
+        "current_price": 0.0,
+        "discount": 0
+      }
+    ],
+    "rating": 85
+  },
+  {
+    "id": 7343,
+    "title": "佩尔霍宁",
+    "genres": [
+      "Casual",
+      "Adventure"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 0.0,
+        "current_price": 0.0,
+        "discount": 0
+      }
+    ],
+    "rating": 85
+  },
+  {
+    "id": 1809,
+    "title": "Void Bastards",
+    "genres": [
+      "Casual",
+      "Adventure"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Epic Games",
+        "original_price": 49.0,
+        "current_price": 49.0,
+        "discount": 0
+      },
+      {
+        "platform": "Steam",
+        "original_price": 718.81,
+        "current_price": 718.81,
+        "discount": 0
+      }
+    ],
+    "rating": 85
+  },
+  {
+    "id": 2284,
+    "title": "Stealth Bastard Deluxe",
+    "genres": [
+      "Casual",
+      "Adventure"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Humble Store",
+        "original_price": 478.86,
+        "current_price": 71.56,
+        "discount": 85
+      },
+      {
+        "platform": "Steam",
+        "original_price": 277.64,
+        "current_price": 277.64,
+        "discount": 0
+      }
+    ],
+    "rating": 85
+  },
+  {
+    "id": 9762,
+    "title": "ASKA",
+    "genres": [
+      "Casual",
+      "Adventure"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 479.04,
+        "current_price": 479.04,
+        "discount": 0
+      },
+      {
+        "platform": "Humble Store",
+        "original_price": 1197.88,
+        "current_price": 954.77,
+        "discount": 20
+      }
+    ],
+    "rating": 85
+  },
+  {
+    "id": 4043,
+    "title": "Senren＊Banka",
+    "genres": [
+      "Casual",
+      "Adventure"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "GOG",
+        "original_price": 1607.09,
+        "current_price": 1607.09,
+        "discount": 0
+      },
+      {
+        "platform": "Steam",
+        "original_price": 1677.85,
+        "current_price": 1677.85,
+        "discount": 0
+      }
+    ],
+    "rating": 85
+  },
+  {
+    "id": 7733,
+    "title": "DOOM Eternal",
+    "genres": [
+      "Puzzle"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "GOG",
+        "original_price": 964.05,
+        "current_price": 964.05,
+        "discount": 0
+      },
+      {
+        "platform": "Steam",
+        "original_price": 1006.52,
+        "current_price": 1006.52,
+        "discount": 0
+      },
+      {
+        "platform": "Epic Games",
+        "original_price": 1049.0,
+        "current_price": 1049.0,
+        "discount": 0
+      },
+      {
+        "platform": "Humble Store",
+        "original_price": 1437.55,
+        "current_price": 1437.55,
+        "discount": 0
+      }
+    ],
+    "rating": 85
+  },
+  {
+    "id": 4108,
+    "title": "Pillars of Eternity Definitive Edition",
+    "genres": [
+      "Puzzle"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "GOG",
+        "original_price": 964.05,
+        "current_price": 385.59,
+        "discount": 60
+      },
+      {
+        "platform": "Epic Games",
+        "original_price": 419.0,
+        "current_price": 419.0,
+        "discount": 0
+      },
+      {
+        "platform": "Steam",
+        "original_price": 1006.52,
+        "current_price": 1006.52,
+        "discount": 0
+      }
+    ],
+    "rating": 85
+  },
+  {
+    "id": 3555,
+    "title": "Engel Mücadelesi: Platform - Aksiyon",
+    "genres": [
+      "Indie",
+      "Adventure"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 71.45,
+        "current_price": 71.45,
+        "discount": 0
+      }
+    ],
+    "rating": 85
+  },
+  {
+    "id": 4069,
+    "title": "Exit the Gungeon",
+    "genres": [
+      "Adventure",
+      "Action",
+      "Casual",
+      "Simulation",
+      "Indie"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "GOG",
+        "original_price": 265.95,
+        "current_price": 66.49,
+        "discount": 75
+      },
+      {
+        "platform": "Humble Store",
+        "original_price": 478.86,
+        "current_price": 119.27,
+        "discount": 75
+      },
+      {
+        "platform": "Steam",
+        "original_price": 277.64,
+        "current_price": 277.64,
+        "discount": 0
+      }
+    ],
+    "rating": 45
+  },
+  {
+    "id": 10783,
+    "title": "The Exit 8",
+    "genres": [
+      "Adventure",
+      "Action",
+      "Casual",
+      "Simulation",
+      "Indie"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 119.4,
+        "current_price": 119.4,
+        "discount": 0
+      }
+    ],
+    "rating": 45
+  },
+  {
+    "id": 1669,
+    "title": "Sevgilim Olur musun ?",
+    "genres": [
+      "Racing",
+      "Arcade"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 0.0,
+        "current_price": 0.0,
+        "discount": 0
+      }
+    ],
+    "rating": 81
+  },
+  {
+    "id": 10973,
+    "title": "Warhammer: Vermintide 2",
+    "genres": [
+      "Indie",
+      "Adventure",
+      "Action"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Humble Store",
+        "original_price": 1437.55,
+        "current_price": 200.51,
+        "discount": 86
+      },
+      {
+        "platform": "Steam",
+        "original_price": 718.81,
+        "current_price": 718.81,
+        "discount": 0
+      }
+    ],
+    "rating": 85
+  },
+  {
+    "id": 9026,
+    "title": "Warhammer: End Times - Vermintide",
+    "genres": [
+      "Indie",
+      "Adventure",
+      "Action"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Humble Store",
+        "original_price": 1437.55,
+        "current_price": 200.51,
+        "discount": 86
+      },
+      {
+        "platform": "Steam",
+        "original_price": 718.81,
+        "current_price": 718.81,
+        "discount": 0
+      }
+    ],
+    "rating": 85
+  },
+  {
+    "id": 501,
+    "title": "Counter-Strike 2",
+    "genres": [
+      "FPS",
+      "Action",
+      "Multiplayer",
+      "Competitive"
+    ],
+    "description": "Counter-Strike 2, tarihin en popüler taktiksel FPS oyununun Source 2 motoruyla yeniden doğmuş ücretsiz halidir.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 0.0,
+        "current_price": 0.0,
+        "discount": 0
+      }
+    ],
+    "rating": 88,
+    "image_url": "https://cdn.akamai.steamstatic.com/steam/apps/730/header.jpg",
+    "store_url": "https://store.steampowered.com/app/730/CounterStrike_2/"
+  },
+  {
+    "id": 502,
+    "title": "Apex Legends",
+    "genres": [
+      "Battle Royale",
+      "FPS",
+      "Action",
+      "Multiplayer"
+    ],
+    "description": "Güçlü yeteneklere sahip efsanevi karakterlerin Şöhret ve Servet için savaştığı ücretsiz bir Battle Royale oyunu.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 0.0,
+        "current_price": 0.0,
+        "discount": 0
+      },
+      {
+        "platform": "Epic Games",
+        "original_price": 0.0,
+        "current_price": 0.0,
+        "discount": 0
+      }
+    ],
+    "rating": 89,
+    "image_url": "https://cdn.akamai.steamstatic.com/steam/apps/1172470/header.jpg",
+    "store_url": "https://store.steampowered.com/app/1172470/Apex_Legends/"
+  },
+  {
+    "id": 503,
+    "title": "Dota 2",
+    "genres": [
+      "MOBA",
+      "Strategy",
+      "Multiplayer",
+      "Esports"
+    ],
+    "description": "Milyonlarca oyuncunun her gün yüzün üzerinde Dota kahramanından biri olarak savaşa katıldığı efsanevi MOBA başyapıtı.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 0.0,
+        "current_price": 0.0,
+        "discount": 0
+      }
+    ],
+    "rating": 90,
+    "image_url": "https://cdn.akamai.steamstatic.com/steam/apps/570/header.jpg",
+    "store_url": "https://store.steampowered.com/app/570/Dota_2/"
+  },
+  {
+    "id": 504,
+    "title": "Team Fortress 2",
+    "genres": [
+      "FPS",
+      "Action",
+      "Multiplayer",
+      "Hero Shooter"
+    ],
+    "description": "Dokuz farklı sınıf çeşidiyle her oyuncu için taktiksel yetenekler ve eğlenceli savaşlar sunan tüm zamanların en iyi takım oyunlarından biri.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 0.0,
+        "current_price": 0.0,
+        "discount": 0
+      }
+    ],
+    "rating": 92,
+    "image_url": "https://cdn.akamai.steamstatic.com/steam/apps/440/header.jpg",
+    "store_url": "https://store.steampowered.com/app/440/Team_Fortress_2/"
+  },
+  {
+    "id": 505,
+    "title": "PUBG: BATTLEGROUNDS",
+    "genres": [
+      "Battle Royale",
+      "Action",
+      "Survival",
+      "Shooter"
+    ],
+    "description": "100 oyuncunun haritaya paraşütle inip hayatta kalan son kişi veya takım olmak için savaştığı ikonik Battle Royale oyunu.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 0.0,
+        "current_price": 0.0,
+        "discount": 0
+      },
+      {
+        "platform": "Epic Games",
+        "original_price": 0.0,
+        "current_price": 0.0,
+        "discount": 0
+      }
+    ],
+    "rating": 86,
+    "image_url": "https://cdn.akamai.steamstatic.com/steam/apps/578080/header.jpg",
+    "store_url": "https://store.steampowered.com/app/578080/PUBG_BATTLEGROUNDS/"
+  },
+  {
+    "id": 20,
+    "title": "Baldur's Gate 3",
+    "genres": [
+      "RPG",
+      "Story Rich",
+      "Strategy",
+      "Turn-Based"
+    ],
+    "description": "Unutulmaz karakterler ve sınırsız seçim özgürlüğü sunan, D&D evreninde geçen yılın oyunu ödüllü efsanevi RPG başyapıtı.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 799.0,
+        "current_price": 639.2,
+        "discount": 20
+      },
+      {
+        "platform": "GOG",
+        "original_price": 799.0,
+        "current_price": 639.2,
+        "discount": 20
+      }
+    ],
+    "rating": 96,
+    "image_url": "https://cdn.akamai.steamstatic.com/steam/apps/1086940/header.jpg",
+    "store_url": "https://store.steampowered.com/app/1086940/Baldurs_Gate_3/"
+  },
+  {
+    "id": 21,
+    "title": "Elden Ring",
+    "genres": [
+      "RPG",
+      "Action",
+      "Open World",
+      "Souls-like"
+    ],
+    "description": "FromSoftware ve George R.R. Martin imzalı, büyüleyici ve tehlikeli Lands Between dünyasında geçen epik açık dünya aksiyon RPG.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 999.0,
+        "current_price": 699.3,
+        "discount": 30
+      },
+      {
+        "platform": "Epic Games",
+        "original_price": 999.0,
+        "current_price": 999.0,
+        "discount": 0
+      }
+    ],
+    "rating": 96,
+    "image_url": "https://cdn.akamai.steamstatic.com/steam/apps/1245620/header.jpg",
+    "store_url": "https://store.steampowered.com/app/1245620/ELDEN_RING/"
+  },
+  {
+    "id": 22,
+    "title": "Hollow Knight",
+    "genres": [
+      "Metroidvania",
+      "Souls-like",
+      "Indie",
+      "Action"
+    ],
+    "description": "Harap olmuş bir böcek krallığının derinliklerinde geçen, nefes kesici çizimlere ve zorlu boss savaşlarına sahip başyapıt.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 190.0,
+        "current_price": 95.0,
+        "discount": 50
+      },
+      {
+        "platform": "GOG",
+        "original_price": 190.0,
+        "current_price": 95.0,
+        "discount": 50
+      }
+    ],
+    "rating": 90,
+    "image_url": "https://cdn.akamai.steamstatic.com/steam/apps/367520/header.jpg",
+    "store_url": "https://store.steampowered.com/app/367520/Hollow_Knight/"
+  },
+  {
+    "id": 23,
+    "title": "Dead Cells",
+    "genres": [
+      "Rogue-like",
+      "Action",
+      "Indie",
+      "Metroidvania"
+    ],
+    "description": "Sürekli değişen bir kalede geçen, son derece akıcı ve tempolu rogue-lite aksiyon platform oyunu.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 200.0,
+        "current_price": 100.0,
+        "discount": 50
+      },
+      {
+        "platform": "Epic Games",
+        "original_price": 200.0,
+        "current_price": 100.0,
+        "discount": 50
+      }
+    ],
+    "rating": 89,
+    "image_url": "https://cdn.akamai.steamstatic.com/steam/apps/588650/header.jpg",
+    "store_url": "https://store.steampowered.com/app/588650/Dead_Cells/"
+  },
+  {
+    "id": 24,
+    "title": "Disco Elysium - The Final Cut",
+    "genres": [
+      "RPG",
+      "Story Rich",
+      "Detective",
+      "Indie"
+    ],
+    "description": "Benzersiz bir beceri sistemi ve derin felsefi diyaloglarla bezenmiş, çığır açan dedektiflik rol yapma oyunu.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 300.0,
+        "current_price": 75.0,
+        "discount": 75
+      },
+      {
+        "platform": "GOG",
+        "original_price": 300.0,
+        "current_price": 75.0,
+        "discount": 75
+      }
+    ],
+    "rating": 97,
+    "image_url": "https://cdn.akamai.steamstatic.com/steam/apps/632470/header.jpg",
+    "store_url": "https://store.steampowered.com/app/632470/Disco_Elysium__The_Final_Cut/"
+  },
+  {
+    "id": 25,
+    "title": "Grand Theft Auto V",
+    "genres": [
+      "Action",
+      "Open World",
+      "Crime",
+      "Multiplayer"
+    ],
+    "description": "Los Santos ve Blaine County'nin güneşli sokaklarında üç farklı suçlunun macerasını konu alan tüm zamanların en popüler oyunu.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 600.0,
+        "current_price": 300.0,
+        "discount": 50
+      },
+      {
+        "platform": "Epic Games",
+        "original_price": 600.0,
+        "current_price": 299.0,
+        "discount": 50
+      }
+    ],
+    "rating": 96,
+    "image_url": "https://cdn.akamai.steamstatic.com/steam/apps/271590/header.jpg",
+    "store_url": "https://store.steampowered.com/app/271590/Grand_Theft_Auto_V/"
+  },
+  {
+    "id": 506,
+    "title": "Warframe",
+    "genres": [
+      "Action",
+      "RPG",
+      "Sci-Fi",
+      "Multiplayer",
+      "Co-op"
+    ],
+    "description": "Güneş sistemini tehdit eden güçlere karşı savaşan bir Tenno savaşçısı olduğunuz, hızlı ve dinamik ücretsiz uzay ninjası oyunu.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 0.0,
+        "current_price": 0.0,
+        "discount": 0
+      },
+      {
+        "platform": "Epic Games",
+        "original_price": 0.0,
+        "current_price": 0.0,
+        "discount": 0
+      }
+    ],
+    "rating": 86,
+    "image_url": "https://cdn.akamai.steamstatic.com/steam/apps/230410/header.jpg",
+    "store_url": "https://store.steampowered.com/app/230410/Warframe/"
+  },
+  {
+    "id": 507,
+    "title": "Path of Exile",
+    "genres": [
+      "ARPG",
+      "Hack and Slash",
+      "Dark Fantasy",
+      "Multiplayer"
+    ],
+    "description": "Karanlık Wraeclast kıtasında geçen, son derece derin yetenek ağacı ve zengin içeriğiyle en iyi ücretsiz ARPG deneyimi.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 0.0,
+        "current_price": 0.0,
+        "discount": 0
+      }
+    ],
+    "rating": 88,
+    "image_url": "https://cdn.akamai.steamstatic.com/steam/apps/238960/header.jpg",
+    "store_url": "https://store.steampowered.com/app/238960/Path_of_Exile/"
+  },
+  {
+    "id": 508,
+    "title": "Destiny 2",
+    "genres": [
+      "FPS",
+      "Sci-Fi",
+      "MMO",
+      "Looter Shooter",
+      "Co-op"
+    ],
+    "description": "Güneş sisteminin gizemlerini keşfettiğiniz ve sinematik FPS savaşlarına katıldığınız devasa ücretsiz bilim kurgu dünyası.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 0.0,
+        "current_price": 0.0,
+        "discount": 0
+      },
+      {
+        "platform": "Epic Games",
+        "original_price": 0.0,
+        "current_price": 0.0,
+        "discount": 0
+      }
+    ],
+    "rating": 84,
+    "image_url": "https://cdn.akamai.steamstatic.com/steam/apps/1085660/header.jpg",
+    "store_url": "https://store.steampowered.com/app/1085660/Destiny_2/"
+  },
+  {
+    "id": 509,
+    "title": "Rocket League",
+    "genres": [
+      "Sports",
+      "Racing",
+      "Competitive",
+      "Multiplayer"
+    ],
+    "description": "Roket yakıtlı arabalarla futbol heyecanını birleştiren, yüksek tempolu ve ödüllü ücretsiz spor aksiyon oyunu.",
+    "deals": [
+      {
+        "platform": "Epic Games",
+        "original_price": 0.0,
+        "current_price": 0.0,
+        "discount": 0
+      }
+    ],
+    "rating": 87,
+    "image_url": "https://cdn.akamai.steamstatic.com/steam/apps/252950/header.jpg",
+    "store_url": "https://store.epicgames.com/tr/p/rocket-league"
+  },
+  {
+    "id": 510,
+    "title": "Overwatch 2",
+    "genres": [
+      "Hero Shooter",
+      "FPS",
+      "Action",
+      "Multiplayer",
+      "Competitive"
+    ],
+    "description": "Geleceğin dünyasında benzersiz yeteneklere sahip 40'tan fazla kahramanla takım savaşları sunduğu ücretsiz 5v5 FPS oyunu.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 0.0,
+        "current_price": 0.0,
+        "discount": 0
+      }
+    ],
+    "rating": 82,
+    "image_url": "https://cdn.akamai.steamstatic.com/steam/apps/2357570/header.jpg",
+    "store_url": "https://store.steampowered.com/app/2357570/Overwatch_2/"
+  },
+  {
+    "id": 511,
+    "title": "The Sims 4",
+    "genres": [
+      "Simulation",
+      "Casual",
+      "Life Sim",
+      "Sandbox"
+    ],
+    "description": "Kendi benzersiz karakterlerinizi yaratıp evler tasarladığınız ve hayatlarını yönettiğiniz dünyanın en ünlü yaşam simülasyonu.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 0.0,
+        "current_price": 0.0,
+        "discount": 0
+      },
+      {
+        "platform": "Epic Games",
+        "original_price": 0.0,
+        "current_price": 0.0,
+        "discount": 0
+      }
+    ],
+    "rating": 80,
+    "image_url": "https://cdn.akamai.steamstatic.com/steam/apps/1222670/header.jpg",
+    "store_url": "https://store.steampowered.com/app/1222670/The_Sims_4/"
+  },
+  {
+    "id": 3670,
+    "title": "Darkest Dungeon©: The Butcher's Circus",
+    "genres": [
+      "Indie",
+      "Simulation",
+      "Puzzle"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 0.0,
+        "current_price": 0.0,
+        "discount": 0
+      }
+    ],
+    "rating": 72
+  },
+  {
+    "id": 6251,
+    "title": "SIK Space Invader Kreature",
+    "genres": [
+      "Educational"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 335.19,
+        "current_price": 335.19,
+        "discount": 0
+      }
+    ],
+    "rating": 85
+  },
+  {
+    "id": 9309,
+    "title": "士機(SIKI)",
+    "genres": [
+      "Educational"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 172.15,
+        "current_price": 172.15,
+        "discount": 0
+      }
+    ],
+    "rating": 85
+  },
+  {
+    "id": 6293,
+    "title": "Eternal Senia",
+    "genres": [
+      "Casual",
+      "Indie",
+      "Adventure"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 0.0,
+        "current_price": 0.0,
+        "discount": 0
+      }
+    ],
+    "rating": 85
+  },
+  {
+    "id": 3510,
+    "title": "Senile Zombies",
+    "genres": [
+      "Casual",
+      "Indie",
+      "Adventure"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 0.0,
+        "current_price": 0.0,
+        "discount": 0
+      }
+    ],
+    "rating": 85
+  },
+  {
+    "id": 7705,
+    "title": "Interim Crossroads",
+    "genres": [
+      "Indie",
+      "Adventure",
+      "Action"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 172.15,
+        "current_price": 172.15,
+        "discount": 0
+      }
+    ],
+    "rating": 85
+  },
+  {
+    "id": 6719,
+    "title": "InterImperium",
+    "genres": [
+      "Indie",
+      "Adventure",
+      "Action"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 191.33,
+        "current_price": 191.33,
+        "discount": 0
+      }
+    ],
+    "rating": 85
+  },
+  {
+    "id": 8551,
+    "title": "Kimmy",
+    "genres": [
+      "Indie",
+      "Adventure",
+      "RPG",
+      "Simulation"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 277.64,
+        "current_price": 277.64,
+        "discount": 0
+      },
+      {
+        "platform": "Humble Store",
+        "original_price": 478.86,
+        "current_price": 478.86,
+        "discount": 0
+      }
+    ],
+    "rating": 60
+  },
+  {
+    "id": 5988,
+    "title": "Creatio Ex Nihilo: Aition",
+    "genres": [
+      "Casual",
+      "Puzzle"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 47.47,
+        "current_price": 47.47,
+        "discount": 0
+      }
+    ],
+    "rating": 78
+  },
+  {
+    "id": 3290,
+    "title": "A.I.T.W",
+    "genres": [
+      "Casual",
+      "Puzzle"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 119.4,
+        "current_price": 119.4,
+        "discount": 0
+      }
+    ],
+    "rating": 78
+  },
+  {
+    "id": 5295,
+    "title": "Millia -The ending",
+    "genres": [
+      "Indie",
+      "Action"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 0.0,
+        "current_price": 0.0,
+        "discount": 0
+      }
+    ],
+    "rating": 85
+  },
+  {
+    "id": 8643,
+    "title": "Never Ending Night",
+    "genres": [
+      "Indie",
+      "Action"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 47.47,
+        "current_price": 47.47,
+        "discount": 0
+      }
+    ],
+    "rating": 85
+  },
+  {
+    "id": 2763,
+    "title": "The Franz Kafka Videogame",
+    "genres": [
+      "Adventure"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 191.33,
+        "current_price": 191.33,
+        "discount": 0
+      }
+    ],
+    "rating": 88
+  },
+  {
+    "id": 7718,
+    "title": "Kara no Shojo",
+    "genres": [
+      "Adventure"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 503.02,
+        "current_price": 503.02,
+        "discount": 0
+      }
+    ],
+    "rating": 88
+  },
+  {
+    "id": 6199,
+    "title": "Papers, Please - The Short Film",
+    "genres": [
+      "Casual",
+      "Adventure"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 0.0,
+        "current_price": 0.0,
+        "discount": 0
+      }
+    ],
+    "rating": 85
+  },
+  {
+    "id": 3255,
+    "title": "Paradox: A Rusty Lake Film",
+    "genres": [
+      "Casual",
+      "Adventure"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 0.0,
+        "current_price": 0.0,
+        "discount": 0
+      }
+    ],
+    "rating": 85
+  },
+  {
+    "id": 4984,
+    "title": "Avakin Life",
+    "genres": [
+      "Aksiyon",
+      "Macera"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 0.0,
+        "current_price": 0.0,
+        "discount": 0
+      }
+    ],
+    "rating": 85
+  },
+  {
+    "id": 3218,
+    "title": "马拉松之雅典信使The Messenger from Athens at Marathon",
+    "genres": [
+      "Indie",
+      "Platformer",
+      "Adventure",
+      "Action"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 43.16,
+        "current_price": 43.16,
+        "discount": 0
+      }
+    ],
+    "rating": 80
+  },
+  {
+    "id": 8361,
+    "title": "Senile Wizards",
+    "genres": [
+      "Strategy",
+      "Indie",
+      "Action"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Epic Games",
+        "original_price": 0.0,
+        "current_price": 0.0,
+        "discount": 0
+      }
+    ],
+    "rating": 85
+  },
+  {
+    "id": 235043,
+    "title": "KeyWe",
+    "genres": [
+      "Canlı Fiyat",
+      "Popüler Oyun"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 24.99,
+        "current_price": 24.99,
+        "discount": 0
+      },
+      {
+        "platform": "Humble Store",
+        "original_price": 24.99,
+        "current_price": 24.99,
+        "discount": 0
+      },
+      {
+        "platform": "Epic Games",
+        "original_price": 24.99,
+        "current_price": 24.99,
+        "discount": 0
+      }
+    ]
+  },
+  {
+    "id": 299688,
+    "title": "Wakey Wakey",
+    "genres": [
+      "Canlı Fiyat",
+      "Popüler Oyun"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 2.99,
+        "current_price": 2.99,
+        "discount": 0
+      }
+    ]
+  },
+  {
+    "id": 289818,
+    "title": "Train Valley World",
+    "genres": [
+      "Canlı Fiyat",
+      "Popüler Oyun"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Humble Store",
+        "original_price": 19.99,
+        "current_price": 4.99,
+        "discount": 75
+      },
+      {
+        "platform": "Steam",
+        "original_price": 19.99,
+        "current_price": 19.99,
+        "discount": 0
+      }
+    ]
+  },
+  {
+    "id": 5979,
+    "title": "Midnight Nasi Goreng",
+    "genres": [
+      "Casual",
+      "Racing",
+      "Indie"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 105.17,
+        "current_price": 105.17,
+        "discount": 0
+      }
+    ],
+    "rating": 85
+  },
+  {
+    "id": 1916,
+    "title": "Resident Evil: Revelations 2 - Episode One: Penal Colony",
+    "genres": [
+      "Adventure",
+      "Simulation"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 215.63,
+        "current_price": 215.63,
+        "discount": 0
+      }
+    ],
+    "rating": 85
+  },
+  {
+    "id": 1259,
+    "title": "One Finger Death Punch",
+    "genres": [
+      "Adventure",
+      "Simulation"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 158.0,
+        "current_price": 158.0,
+        "discount": 0
+      }
+    ],
+    "rating": 85
+  },
+  {
+    "id": 3878,
+    "title": "Murdered: Soul Suspect",
+    "genres": [
+      "Adventure",
+      "Puzzle"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Humble Store",
+        "original_price": 958.59,
+        "current_price": 95.46,
+        "discount": 90
+      }
+    ],
+    "rating": 85
+  },
+  {
+    "id": 2273,
+    "title": "Sushi Ben",
+    "genres": [
+      "Adventure",
+      "Puzzle"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 316.75,
+        "current_price": 316.75,
+        "discount": 0
+      }
+    ],
+    "rating": 85
+  },
+  {
+    "id": 1649,
+    "title": "Yoku's Island Express",
+    "genres": [
+      "Aksiyon",
+      "Macera"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Epic Games",
+        "original_price": 32.0,
+        "current_price": 32.0,
+        "discount": 0
+      },
+      {
+        "platform": "GOG",
+        "original_price": 481.79,
+        "current_price": 48.19,
+        "discount": 90
+      },
+      {
+        "platform": "Steam",
+        "original_price": 504.21,
+        "current_price": 49.99,
+        "discount": 90
+      },
+      {
+        "platform": "Humble Store",
+        "original_price": 958.59,
+        "current_price": 190.93,
+        "discount": 80
+      }
+    ],
+    "rating": 85
+  },
+  {
+    "id": 5070,
+    "title": "Yokai's Secret",
+    "genres": [
+      "Aksiyon",
+      "Macera"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 95.65,
+        "current_price": 95.65,
+        "discount": 0
+      }
+    ],
+    "rating": 85
+  },
+  {
+    "id": 285308,
+    "title": "Under The Yoke",
+    "genres": [
+      "Aksiyon",
+      "Macera"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 9.99,
+        "current_price": 9.99,
+        "discount": 0
+      }
+    ],
+    "rating": 85
+  },
+  {
+    "id": 168796,
+    "title": "Project LUX",
+    "genres": [
+      "Adventure",
+      "Action",
+      "Simulation"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 24.99,
+        "current_price": 24.99,
+        "discount": 0
+      }
+    ],
+    "rating": 85
+  },
+  {
+    "id": 312874,
+    "title": "Perfect Liar",
+    "genres": [
+      "Adventure",
+      "Action",
+      "Simulation"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 3.99,
+        "current_price": 3.99,
+        "discount": 0
+      }
+    ],
+    "rating": 85
+  },
+  {
+    "id": 162601,
+    "title": "Project Lounge",
+    "genres": [
+      "Adventure",
+      "Action",
+      "Simulation"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 4.99,
+        "current_price": 4.99,
+        "discount": 0
+      }
+    ],
+    "rating": 85
+  },
+  {
+    "id": 2913,
+    "title": "Marvel's Spider-Man: Miles Morales",
+    "currency": "TL",
+    "genres": [
+      "Indie",
+      "RPG"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Epic Games",
+        "original_price": 899.0,
+        "current_price": 899.0,
+        "discount": 0
+      },
+      {
+        "platform": "Humble Store",
+        "original_price": 2397.19,
+        "current_price": 2397.19,
+        "discount": 0
+      },
+      {
+        "platform": "Steam",
+        "original_price": 2402.79,
+        "current_price": 2402.79,
+        "discount": 0
+      }
+    ],
+    "rating": 60
+  },
+  {
+    "id": 10175,
+    "title": "Siralim Ultimate",
+    "currency": "TL",
+    "genres": [
+      "Indie",
+      "RPG"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 528.24,
+        "current_price": 528.24,
+        "discount": 0
+      }
+    ],
+    "rating": 60
+  },
+  {
+    "id": 7983,
+    "title": "Arabian Gulf",
+    "currency": "TL",
+    "genres": [
+      "Platformer",
+      "Adventure"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 43.26,
+        "current_price": 43.26,
+        "discount": 0
+      }
+    ],
+    "rating": 85
+  },
+  {
+    "id": 8784,
+    "title": "月圆之夜（Night of Full Moon）",
+    "currency": "TL",
+    "genres": [
+      "Aksiyon",
+      "Macera"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 0.0,
+        "current_price": 0.0,
+        "discount": 0
+      }
+    ],
+    "rating": 85
+  },
+  {
+    "id": 5091,
+    "title": "[Chilla's Art] The Convenience Store | 夜勤事件",
+    "currency": "TL",
+    "genres": [
+      "Aksiyon",
+      "Macera"
+    ],
+    "description": "Gamerisen platformu tarafından canlı olarak takip edilen güncel mağaza fiyatları ve indirim fırsatları.",
+    "deals": [
+      {
+        "platform": "Steam",
+        "original_price": 143.72,
+        "current_price": 143.72,
+        "discount": 0
+      }
+    ],
+    "rating": 85
+  }
+]
