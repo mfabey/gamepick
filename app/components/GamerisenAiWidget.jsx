@@ -24,10 +24,28 @@ export default function GamerisenAiWidget() {
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId, setSessionId] = useState(null);
+  const [hasAcknowledgedBeta, setHasAcknowledgedBeta] = useState(true);
   const messagesEndRef = useRef(null);
   const promptsRef = useRef(null);
 
   const API_BASE = process.env.NEXT_PUBLIC_AI_API_URL || '';
+
+  // Check beta acknowledgment from LocalStorage
+  useEffect(() => {
+    try {
+      const ack = localStorage.getItem('gamerisen_ai_beta_ack');
+      if (!ack) {
+        setHasAcknowledgedBeta(false);
+      }
+    } catch (e) {}
+  }, []);
+
+  const acknowledgeBeta = () => {
+    setHasAcknowledgedBeta(true);
+    try {
+      localStorage.setItem('gamerisen_ai_beta_ack', 'true');
+    } catch (e) {}
+  };
 
   // Initial welcome message with user's name
   useEffect(() => {
@@ -164,8 +182,13 @@ export default function GamerisenAiWidget() {
                 {isAuthenticated ? '🎮' : '🔒'}
               </div>
               <div>
-                <div style={{ fontWeight: 800, fontSize: '15px', color: '#fff', letterSpacing: '-0.3px' }}>
-                  Gamerisen AI
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontWeight: 800, fontSize: '15px', color: '#fff', letterSpacing: '-0.3px' }}>
+                    Gamerisen AI
+                  </span>
+                  <span style={{ background: '#e5091430', border: '1px solid #e5091460', color: '#ff6666', fontSize: '9px', fontWeight: 800, padding: '1px 5px', borderRadius: '4px' }}>
+                    BETA
+                  </span>
                 </div>
                 <div
                   style={{
@@ -283,6 +306,64 @@ export default function GamerisenAiWidget() {
           ) : (
             /* If Authenticated: Full Chat Experience */
             <>
+              {/* Beta Test Warning Banner */}
+              {!hasAcknowledgedBeta && (
+                <div
+                  style={{
+                    margin: '10px 14px 4px 14px',
+                    padding: '10px 14px',
+                    borderRadius: '14px',
+                    background: 'linear-gradient(135deg, rgba(229, 9, 20, 0.16) 0%, rgba(255, 140, 0, 0.1) 100%)',
+                    border: '1px solid rgba(229, 9, 20, 0.35)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '6px',
+                    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.35)',
+                    flexShrink: 0
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '15px' }}>🧪</span>
+                    <span style={{ fontWeight: 800, fontSize: '13px', color: '#ffb300', letterSpacing: '-0.2px' }}>
+                      Test & Geliştirme Aşaması
+                    </span>
+                    <span style={{ background: '#ff444430', color: '#ff7777', padding: '1px 6px', borderRadius: '6px', fontSize: '10px', fontWeight: 800, marginLeft: 'auto' }}>
+                      BETA
+                    </span>
+                  </div>
+
+                  <div style={{ fontSize: '12px', color: '#d0d0d8', lineHeight: '1.45' }}>
+                    Gamerisen AI şu anda test aşamasındadır. Fiyat karşılaştırma ve FPS analiz modellerimiz sürekli geliştirilmektedir. Yanıtlarda geçici tutarsızlıklar yaşanabilir.
+                  </div>
+
+                  <button
+                    onClick={acknowledgeBeta}
+                    style={{
+                      marginTop: '4px',
+                      background: 'linear-gradient(135deg, #e50914 0%, #b81d24 100%)',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      padding: '7px 14px',
+                      fontSize: '12px',
+                      fontWeight: 750,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      boxShadow: '0 2px 10px rgba(229, 9, 20, 0.35)',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.02)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+                  >
+                    <span>Okudum, Anladım</span>
+                    <span>✓</span>
+                  </button>
+                </div>
+              )}
+
               {/* Quick Prompts Bar */}
               <div
                 ref={promptsRef}
