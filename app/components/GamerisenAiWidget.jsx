@@ -25,12 +25,21 @@ export default function GamerisenAiWidget() {
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId, setSessionId] = useState(null);
   const messagesEndRef = useRef(null);
+  const promptsRef = useRef(null);
 
   const API_BASE = process.env.NEXT_PUBLIC_AI_API_URL || '';
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isOpen]);
+
+  // Mouse Wheel Horizontal Scroll Helper for Desktop
+  const handlePromptsWheel = (e) => {
+    if (promptsRef.current && e.deltaY !== 0) {
+      e.preventDefault();
+      promptsRef.current.scrollLeft += e.deltaY * 1.8;
+    }
+  };
 
   const sendMessage = async (textToSend) => {
     const text = (textToSend || inputValue).trim();
@@ -96,7 +105,9 @@ export default function GamerisenAiWidget() {
     '🎲 Canım sıkıldı, ne oynasam?',
     '🔥 100 TL altı efsaneler',
     '🎁 Bedava oyunlar',
-    '🖥️ 500 TL civarı oyunlar'
+    '🖥️ 500 TL civarı oyunlar',
+    '⚡ En ucuz oyunlar',
+    '📖 Witcher 3 hikayesi'
   ];
 
   return (
@@ -153,8 +164,12 @@ export default function GamerisenAiWidget() {
             </button>
           </div>
 
-          {/* Quick Prompts Bar */}
-          <div className="ai-widget-prompts">
+          {/* Quick Prompts Bar (Scrollable on Desktop Wheel & Drag) */}
+          <div
+            ref={promptsRef}
+            onWheel={handlePromptsWheel}
+            className="ai-widget-prompts"
+          >
             {quickPrompts.map((p, idx) => (
               <button
                 key={idx}
