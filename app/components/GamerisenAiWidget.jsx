@@ -9,6 +9,7 @@ function formatMarkdown(text) {
   if (!text) return '';
   let html = text.replace(/\*\*(.*?)\*\*/g, '<strong style="color: #ffffff; font-weight: 750;">$1</strong>');
   html = html.replace(/\*(.*?)\*/g, '<em style="color: #ff9999; font-style: italic;">$1</em>');
+  html = html.replace(/^\s*-\s*(.+)/gm, '• $1');
   html = html.replace(/\n/g, '<br />');
   return html;
 }
@@ -41,6 +42,7 @@ export default function GamerisenAiWidget() {
   const [sessionId, setSessionId] = useState(null);
   const [hasAcknowledgedBeta, setHasAcknowledgedBeta] = useState(false);
   const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
   const promptsRef = useRef(null);
 
   const API_BASE = process.env.NEXT_PUBLIC_AI_API_URL || '';
@@ -73,8 +75,14 @@ export default function GamerisenAiWidget() {
     ]);
   }, [userName]);
 
+  const scrollToBottom = () => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
+  };
+
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    scrollToBottom();
   }, [messages, isOpen]);
 
   const handlePromptsWheel = (e) => {
@@ -171,6 +179,9 @@ export default function GamerisenAiWidget() {
               delay = baseSpeed + 45;
             }
 
+            if (messagesContainerRef.current) {
+              messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+            }
             setTimeout(tick, delay);
           } else {
             setMessages((prev) => {
@@ -185,6 +196,11 @@ export default function GamerisenAiWidget() {
               }
               return updated;
             });
+            setTimeout(() => {
+              if (messagesContainerRef.current) {
+                messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+              }
+            }, 50);
             resolve();
           }
         }
@@ -579,7 +595,7 @@ export default function GamerisenAiWidget() {
               </div>
 
               {/* Message List */}
-              <div className="ai-widget-messages">
+              <div ref={messagesContainerRef} className="ai-widget-messages">
                 {messages.map((m, idx) => (
                   <div
                     key={idx}

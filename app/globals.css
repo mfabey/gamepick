@@ -1347,10 +1347,29 @@ html[data-theme="light"] .bottom-nav-pill {
 .ai-widget-messages {
   flex: 1 !important;
   overflow-y: auto !important;
-  padding: 14px !important;
+  padding: 14px 14px 28px 14px !important;
   display: flex !important;
   flex-direction: column !important;
   gap: 12px !important;
+  scroll-behavior: smooth !important;
+  min-height: 0 !important;
+}
+
+.ai-widget-messages::-webkit-scrollbar {
+  width: 4px !important;
+}
+
+.ai-widget-messages::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.ai-widget-messages::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-radius: 4px !important;
+}
+
+.ai-widget-messages::-webkit-scrollbar-thumb:hover {
+  background: #e50914 !important;
 }
 
 .ai-widget-input-box {
@@ -1421,33 +1440,21 @@ html[data-theme="light"] .bottom-nav-pill {
 }
 
 .ai-widget-prompts {
-  padding: 10px 14px 12px 14px !important;
+  padding: 10px 14px !important;
   display: flex !important;
   gap: 8px !important;
   overflow-x: auto !important;
   overflow-y: hidden !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
-  scrollbar-width: thin !important;
-  scrollbar-color: rgba(229, 9, 20, 0.4) transparent !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
   -webkit-overflow-scrolling: touch !important;
 }
 
 .ai-widget-prompts::-webkit-scrollbar {
-  height: 4px !important;
-}
-
-.ai-widget-prompts::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.04) !important;
-  border-radius: 4px !important;
-}
-
-.ai-widget-prompts::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2) !important;
-  border-radius: 4px !important;
-}
-
-.ai-widget-prompts:hover::-webkit-scrollbar-thumb {
-  background: #e50914 !important;
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 /* ===== Gamerisen AI Typewriter Cursor & Thinking Animation ===== */
