@@ -63,6 +63,7 @@ export default function HomeScreen() {
   const onTabScroll = useTabBarScroll();
   const { t, lang, formatPrice } = useLanguage();
   const router = useRouter();
+  const { isCold, topGenres } = useTasteProfile();
 
   const { data: trendData } = useQuery('home:trending', fetchTrending, { ttl: 3 * 60 * 1000 });
   const { data: newData }   = useQuery('home:new', fetchNewGames, { ttl: 5 * 60 * 1000 });
@@ -70,38 +71,17 @@ export default function HomeScreen() {
 
   const trend = useMemo(() => {
     const list = trendData?.results || trendData?.games || [];
-    const sorted = [...list].sort((a, b) => {
-      const aImg = !!(a?.image && typeof a.image === 'string' && a.image.trim() !== '');
-      const bImg = !!(b?.image && typeof b.image === 'string' && b.image.trim() !== '');
-      if (aImg && !bImg) return -1;
-      if (!aImg && bImg) return 1;
-      return 0;
-    });
-    return sorted.slice(0, 14);
+    return list.filter(g => !!(g?.image && typeof g.image === 'string' && g.image.trim() !== '')).slice(0, 14);
   }, [trendData]);
 
   const fresh = useMemo(() => {
     const list = newData?.results || [];
-    const sorted = [...list].sort((a, b) => {
-      const aImg = !!(a?.image && typeof a.image === 'string' && a.image.trim() !== '');
-      const bImg = !!(b?.image && typeof b.image === 'string' && b.image.trim() !== '');
-      if (aImg && !bImg) return -1;
-      if (!aImg && bImg) return 1;
-      return 0;
-    });
-    return sorted.slice(0, 12);
+    return list.filter(g => !!(g?.image && typeof g.image === 'string' && g.image.trim() !== '')).slice(0, 12);
   }, [newData]);
 
-  const sale  = useMemo(() => {
+  const sale = useMemo(() => {
     const list = saleData?.results || [];
-    const sorted = [...list].sort((a, b) => {
-      const aImg = !!(a?.image && typeof a.image === 'string' && a.image.trim() !== '');
-      const bImg = !!(b?.image && typeof b.image === 'string' && b.image.trim() !== '');
-      if (aImg && !bImg) return -1;
-      if (!aImg && bImg) return 1;
-      return 0;
-    });
-    return sorted.slice(0, 12);
+    return list.filter(g => !!(g?.image && typeof g.image === 'string' && g.image.trim() !== '')).slice(0, 12);
   }, [saleData]);
 
   // Haber verisi ARTIK BURADA ÇEKİLMİYOR. Anasayfada haber şeridi yokken
