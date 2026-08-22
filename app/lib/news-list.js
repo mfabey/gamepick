@@ -127,11 +127,14 @@ function formatDate(pubDate, lang = 'tr') {
   return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
 }
 
-function readingTime(text, lang = 'tr') {
-  const words = text.split(/\s+/).length;
-  const mins = Math.max(1, Math.round(words / 200));
-  return lang === 'tr' ? `${mins} dk` : `${mins} min`;
-}
+// OKUMA SÜRESİ KALDIRILDI. RSS ÖZETİNDEN hesaplanıyordu ve özetler 19–28
+// kelime: Math.round(28/200) = 0 → taban 1'e yapışıyordu. Canlı uçtan
+// ölçüldü: 34 haberin 34'ü "1 dk" diyordu. Makale gövdesi elimizde yok,
+// yani metrik desteklenmeyen bir veriden üretiliyordu.
+//
+// Yerine TAZELİK geldi: ham `ts` istemciye veriliyor, etiketi istemci
+// üretiyor. Sunucu üretemez — bu uç 30 dk ISR önbellekli ve "5 dk önce"
+// 35 dakika bayat olabilirdi.
 
 async function fetchFeed(feed, lang = 'tr') {
   try {
@@ -248,7 +251,8 @@ export async function getNewsList(lang = 'tr') {
     id:      'news_' + i,
     cat:     n.cat,
     date:    formatDate(n.pubDate, lang),
-    read:    readingTime(n.excerpt || n.title, lang),
+    // Bağıl tazeliği İSTEMCİ hesaplıyor (bkz. yukarıdaki not).
+    ts:      n.ts || 0,
     title:   n.title,
     excerpt: n.excerpt,
     image:   n.image,
