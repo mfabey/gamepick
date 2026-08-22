@@ -232,6 +232,37 @@ async function callGenerativeLLM(query, ragContext, userProfile) {
 
   const prompt = `${profileStr ? `[OYUNCU PROFİLİ: ${profileStr}]\n` : ''}${ragContext ? `[GAMERISEN VERİTABANI & MAĞAZA VERİLERİ:\n${ragContext}]\n` : '[VERİTABANI: Bu sorgu için spesifik oyun verisi gerekmiyor. Genel sohbet, felsefe, teknik bilgi veya dertleşme olarak ele al.]\n'}\nKULLANICI SORUSU: ${query}\n\nLütfen yukarıdaki kurallara ve Gamerisen kimliğine uygun, esprili, samimi ve tamamen özgün Markdown yanıtını yaz:`;
 
+  // 0. Try Local Self-Hosted Ollama Engine (100% Free, Zero External API, Local GPU/CPU)
+  const localModels = ['gamerisen-ai', 'llama3.2', 'llama3.1', 'qwen2.5:7b', 'qwen2.5:3b', 'mistral'];
+  for (const modelName of localModels) {
+    try {
+      const ollamaRes = await fetch('http://127.0.0.1:11434/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: modelName,
+          messages: [
+            { role: 'system', content: GAMERISEN_SYSTEM_PROMPT },
+            { role: 'user', content: prompt }
+          ],
+          stream: false,
+          options: {
+            temperature: 0.85,
+            top_p: 0.95
+          }
+        })
+      });
+      if (ollamaRes.ok) {
+        const data = await ollamaRes.json();
+        const text = data?.message?.content;
+        if (text && text.trim()) return text.trim();
+      }
+    } catch (e) {
+      // Ollama not reachable or model not downloaded yet, fallback to next
+      break;
+    }
+  }
+
   // 1. Try Gemini API
   if (isValidKey(geminiKey)) {
     const models = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
