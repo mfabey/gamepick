@@ -216,11 +216,29 @@ function isValidKey(key) {
   return Boolean(key && key.trim() !== '' && !key.startsWith('buraya_') && key !== 'placeholder');
 }
 
+function getApiKey(name) {
+  if (isValidKey(process.env[name])) return process.env[name];
+  try {
+    const envPath = path.join(process.cwd(), '.env.local');
+    if (fs.existsSync(envPath)) {
+      const content = fs.readFileSync(envPath, 'utf8');
+      for (const line of content.split('\n')) {
+        const trimmed = line.trim();
+        if (trimmed.startsWith(`${name}=`)) {
+          const val = trimmed.slice(`${name}=`.length).trim();
+          if (isValidKey(val)) return val;
+        }
+      }
+    }
+  } catch (e) {}
+  return process.env[name] || '';
+}
+
 async function callGenerativeLLM(query, ragContext, userProfile) {
-  const geminiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-  const groqKey = process.env.GROQ_API_KEY;
-  const openaiKey = process.env.OPENAI_API_KEY;
-  const anthropicKey = process.env.ANTHROPIC_API_KEY;
+  const geminiKey = getApiKey('GEMINI_API_KEY') || getApiKey('NEXT_PUBLIC_GEMINI_API_KEY');
+  const groqKey = getApiKey('GROQ_API_KEY');
+  const openaiKey = getApiKey('OPENAI_API_KEY');
+  const anthropicKey = getApiKey('ANTHROPIC_API_KEY');
 
   let profileStr = '';
   if (userProfile?.hardware?.gpu) {
@@ -233,12 +251,15 @@ async function callGenerativeLLM(query, ragContext, userProfile) {
   const prompt = `${profileStr ? `[OYUNCU PROFİLİ: ${profileStr}]\n` : ''}${ragContext ? `[GAMERISEN VERİTABANI & MAĞAZA VERİLERİ:\n${ragContext}]\n` : '[VERİTABANI: Bu sorgu için spesifik oyun verisi gerekmiyor. Genel sohbet, felsefe, teknik bilgi veya dertleşme olarak ele al.]\n'}\nKULLANICI SORUSU: ${query}\n\nLütfen yukarıdaki kurallara ve Gamerisen kimliğine uygun, esprili, samimi ve tamamen özgün Markdown yanıtını yaz:`;
 
   // 0. Try Local Self-Hosted Ollama Engine (100% Free, Zero External API, Local GPU/CPU)
-  const localModels = ['gamerisen-ai', 'llama3.2', 'llama3.1', 'qwen2.5:7b', 'qwen2.5:3b', 'mistral'];
+  const localModels = ['gamerisen-ai', 'qwen2.5:7b', 'llama3.2', 'llama3.1'];
   for (const modelName of localModels) {
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 12000);
       const ollamaRes = await fetch('http://127.0.0.1:11434/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           model: modelName,
           messages: [
@@ -252,14 +273,14 @@ async function callGenerativeLLM(query, ragContext, userProfile) {
           }
         })
       });
+      clearTimeout(timeoutId);
       if (ollamaRes.ok) {
         const data = await ollamaRes.json();
         const text = data?.message?.content;
         if (text && text.trim()) return text.trim();
       }
     } catch (e) {
-      // Ollama not reachable or model not downloaded yet, fallback to next
-      break;
+      continue;
     }
   }
 
@@ -410,11 +431,21 @@ function generateDynamicFallback(query, ragContext) {
     return pick(jokes);
   }
 
+  // Bored / What to play / Recommendations: "canım sıkıldı", "ne oynasam", "oyun öner"
+  if (/(canim sikildi|canim cok sikildi|ne oynasam|ne oynayayim|oyun oner|oyun tavsiyesi|hangi oyunu oynasam|sıkıldım|sikildim)/i.test(norm)) {
+    const boredReplies = [
+      "Canın mı sıkıldı? Tam yerine geldin gamer dostum! 🎮\n\nSeni bu monotonluktan çekip çıkaracak birkaç farklı önerim var:\n• ⚔️ **Derin Hikaye & Aksiyon:** *The Witcher 3* veya *Cyberpunk 2077*\n• 🧠 **Sonsuz Taktik & Heyecan:** *Baldur's Gate 3* veya *Hollow Knight*\n• 🚗 **Kafayı Boşaltıp Takılmalık:** *Forza Horizon 5* veya *GTA 5*\n\nAşağıdaki kartlardan en uygun fiyatlı olanları inceleyebilirsin. Hangi tarz seni daha çok açar?",
+      "O can sıkıntısını efsane bir macerayla dağıtalım! 🔥\n\nŞu an kütüphanene ekleyebileceğin en sürükleyici oyunları taradım. İster açık dünyada kaybol, ister hızlı bir FPS ile stres at. Nasıl bir oyun havasındasın? 🚀"
+    ];
+    return pick(boredReplies);
+  }
+
   // Thanks / Praise
-  if (/\b(tesekkur|sagol|eyvallah|adamsin|kralsin|helal|harikasin)\b/i.test(norm)) {
+  if (/(tesekkur|tesekkurler|sagol|sagolasin|eyvallah|adamsin|kralsin|helal|harikasin|supersin|eline saglik)/i.test(norm)) {
     const thanks = [
       "Rica ederim gamer dostum! 👑 Ne zaman aklına takılan bir fiyat, indirim veya donanım sorusu olursa buradayım. Bol GG'li oyunlar! 🎮🔥",
-      "Eyvallah kralsın! 🫡 Yardımcı olabildiysem ne mutlu bana. Kütüphaneni doldurmak için dilediğin zaman yazabilirsin! 🚀"
+      "Eyvallah kralsın! 🫡 Yardımcı olabildiysem ne mutlu bana. Kütüphaneni doldurmak için dilediğin zaman yazabilirsin! 🚀",
+      "Her zaman yanındayım dostum! Kafana takılan bir oyun veya bütçe sorusu olursa direkt sor. İyi oyunlar! 🕹️"
     ];
     return pick(thanks);
   }
@@ -427,7 +458,8 @@ function generateDynamicFallback(query, ragContext) {
   // Natural open response (WITHOUT repeating '${query}' verbatim)
   const openResponses = [
     "Oyun dünyasındaki tüm indirimler, mağaza karşılaştırmaları ve donanım analizleri için buradayım! 🎮\n\nSana nasıl yardımcı olayım?\n• 🔍 **Fiyat:** *'Witcher 3 nerede ucuz?'*, *'Cyberpunk kaç TL?'*\n• 💰 **Bütçe:** *'100 TL altı oyunlar'*, *'Bedava oyunlar'*\n• 🖥️ **FPS:** *'GTX 1650 bu oyunu açar mı?'*\n• 🎯 **Tavsiye:** *'Canım sıkıldı ne oynasam?'*",
-    "Tam olarak ne aradığını keşfetmek için sabırsızlanıyorum! 🕹️ Aklındaki oyunu, oynamak istediğin türü (RPG, FPS, Hayatta Kalma) veya bütçeni söylersen sana nokta atışı fırsatları çıkarabilirim! 🚀"
+    "Tam olarak ne aradığını keşfetmek için sabırsızlanıyorum! 🕹️ Aklındaki oyunu, oynamak istediğin türü (RPG, FPS, Hayatta Kalma) veya bütçeni söylersen sana nokta atışı fırsatları çıkarabilirim! 🚀",
+    "Gamerisen sistemleri emrine amade! ⚡ İster mağazalardaki en dip fiyatları bulalım, ister sisteminin gücünü test edelim. Ne yapmak istersin? 🎯"
   ];
   return pick(openResponses);
 }
