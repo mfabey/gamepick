@@ -203,7 +203,7 @@ const GAMERISEN_SYSTEM_PROMPT = `Sen **Gamerisen AI** (gamerisen.com)'ın resmi,
 
 ### 🌟 KURALLAR VE CEVAPLAMA FELSEFESİ:
 1. **ASLA EZBERLENMİŞ / HAZIR BASMAKALIP CEVAP VERME**:
-   - Her soruya (Naber, nasılsın, kimsin vb.) o an sıfırdan, farklı ve canlı cümlelerle cevap ver. Asla robotik kalıpları tekrarlama.
+   - Her soruya (Naber, nasılsın, nesin sen, kimsin vb.) o an sıfırdan, farklı ve canlı cümlelerle cevap ver. Asla robotik kalıpları tekrarlama.
 2. **KONU DIŞI VE FELSEFİ SORULARDA (OFF-TOPIC FREEDOM)**:
    - Kullanıcı felsefe ("Hayatın anlamı ne?", "Matrix gerçek mi?"), bilim, uzay, aşk, dertleşme, kodlama veya genel kültür hakkında soru sorduğunda; "Ben sadece oyun botuyum" GİBİ KISITLAYICI CÜMLELER KESİNLİKLE KURMA.
    - Soruyu zekice, derinlemesine, samimi ve gerekirse ince gamer metaforlarıyla harmanlayarak kusursuz bir şekilde yanıtla.
@@ -212,10 +212,15 @@ const GAMERISEN_SYSTEM_PROMPT = `Sen **Gamerisen AI** (gamerisen.com)'ın resmi,
 4. **DİL VE TON**:
    - Doğal, akıcı, zeki ve sıcak Türkçe. Gamer jargonu yerinde ve ölçülü olsun. Markdown formatı ve uygun emojiler kullan.`;
 
+function isValidKey(key) {
+  return Boolean(key && key.trim() !== '' && !key.startsWith('buraya_') && key !== 'placeholder');
+}
+
 async function callGenerativeLLM(query, ragContext, userProfile) {
-  const geminiKey = process.env.GEMINI_API_KEY;
+  const geminiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
   const groqKey = process.env.GROQ_API_KEY;
   const openaiKey = process.env.OPENAI_API_KEY;
+  const anthropicKey = process.env.ANTHROPIC_API_KEY;
 
   let profileStr = '';
   if (userProfile?.hardware?.gpu) {
@@ -228,7 +233,7 @@ async function callGenerativeLLM(query, ragContext, userProfile) {
   const prompt = `${profileStr ? `[OYUNCU PROFİLİ: ${profileStr}]\n` : ''}${ragContext ? `[GAMERISEN VERİTABANI & MAĞAZA VERİLERİ:\n${ragContext}]\n` : '[VERİTABANI: Bu sorgu için spesifik oyun verisi gerekmiyor. Genel sohbet, felsefe, teknik bilgi veya dertleşme olarak ele al.]\n'}\nKULLANICI SORUSU: ${query}\n\nLütfen yukarıdaki kurallara ve Gamerisen kimliğine uygun, esprili, samimi ve tamamen özgün Markdown yanıtını yaz:`;
 
   // 1. Try Gemini API
-  if (geminiKey && geminiKey.trim() !== '' && !geminiKey.startsWith('buraya_')) {
+  if (isValidKey(geminiKey)) {
     const models = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
     for (const model of models) {
       try {
@@ -254,7 +259,7 @@ async function callGenerativeLLM(query, ragContext, userProfile) {
   }
 
   // 2. Try Groq API (Llama 3.3 70B)
-  if (groqKey && groqKey.trim() !== '' && !groqKey.startsWith('buraya_')) {
+  if (isValidKey(groqKey)) {
     try {
       const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
@@ -282,7 +287,7 @@ async function callGenerativeLLM(query, ragContext, userProfile) {
   }
 
   // 3. Try OpenAI API
-  if (openaiKey && openaiKey.trim() !== '' && !openaiKey.startsWith('buraya_')) {
+  if (isValidKey(openaiKey)) {
     try {
       const res = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -308,43 +313,92 @@ async function callGenerativeLLM(query, ragContext, userProfile) {
     } catch (e) {}
   }
 
-  // 4. Dynamic Offline Synthesizer (High Entropy fallback)
+  // 4. Dynamic Semantic Synthesizer (Intelligent Zero-Canned Fallback)
   return generateDynamicFallback(query, ragContext);
 }
 
 function generateDynamicFallback(query, ragContext) {
-  const norm = normalizeText(query);
+  const norm = normalizeText(query).trim();
+  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
   
-  if (norm.includes('naber') || norm.includes('nasilsin') || norm.includes('nbr') || norm.includes('selam') || norm.includes('merhaba') || norm.includes('sa')) {
+  // Identity & Purpose: "nesin sen", "sen kimsin", "kimsin", "nesin", "ne ayaksin", "ne yaparsin", "görevin ne"
+  if (/^(nesin sen|sen nesin|kimsin sen|sen kimsin|nesin|kimsin|ne ayaksin|sen ne ayaksin|ne ise yararsin|gorevin ne|amacin ne|gamerisen nedir|gamerisen ai nedir)$/i.test(norm) ||
+      /\b(nesin sen|sen nesin|kimsin sen|sen kimsin|ne ise yararsin|gorevin ne|amacin ne|gamerisen nedir)\b/i.test(norm)) {
+    const intros = [
+      "Ben **Gamerisen AI**! 🎮 Türk oyuncularının cüzdanını pahalı fiyatlardan kurtarmak ve en doğru oyunu bulmasını sağlamak için kodlanmış yapay zeka oyun danışmanıyım.",
+      "Gamerisen platformunun (gamerisen.com) beyniyim! 🕹️ Steam, Epic Games ve GOG üzerindeki fiyatları anlık tarar, sisteminin FPS gücünü hesaplar ve sana en uygun maceraları öneririm.",
+      "Ben senin kişisel oyun rehberinim! 👾 İster en kelepir indirimleri kovala, ister 'ekran kartım bunu açar mı?' diye sor, ister kafana göre takılıp sohbet et; buradayım."
+    ];
+    const details = [
+      "\n\n**Neler yapabilirim?**\n• 🔍 **En Ucuz Fiyat:** Steam, Epic Games, GOG karşılaştırması\n• 🖥️ **FPS & Donanım:** Ekran kartına göre akıcılık tahmini\n• ⏱️ **HowLongToBeat:** Oyunun ana hikaye süresi\n• 🎯 **Kişiye Özel Öneri:** Bütçene ve tarzına uygun tavsiyeler\n• 💬 **Sınırsız Sohbet:** Oyun dışında felsefe, kodlama, günlük hayat veya ne istersen!",
+      "\n\nKısacası: Oyun dünyasındaki pusulanım! Aklındaki oyunu, bütçeni veya sistemini söyle, gerisini bana bırak. 🚀"
+    ];
+    return `${pick(intros)}${pick(details)}`;
+  }
+
+  // Smalltalk / Greetings
+  if (/\b(naber|nasilsin|nassın|nbr|napiyorsun|napıyorsun|ne haber|selam|merhaba|selamlar|sa|hey|gunaydin|iyi aksamlar)\b/i.test(norm)) {
     const greetings = [
       "Selamlar gamer dostum! 🎮",
       "Ooo hoş geldin! 🚀",
       "Harika bir gün! Gamerisen sistemleri tam gaz çalışıyor. ⚡",
-      "Selam! Keyifler nasıl, oyun dünyasında durumlar ne?"
+      "Selam! Keyifler nasıl, oyun dünyasında durumlar ne?",
+      "Hey! Enerjim %100, can barım full. 🕹️"
     ];
     const status = [
       "Steam ve Epic Games indirimlerini tarayıp cüzdan kurtarma nöbetindeyim!",
       "Yeni çıkan oyunların donanım gereksinimlerini ve en kelepir fiyatlarını analiz ediyordum.",
-      "Senin için en sıcak fırsatları ve donanımına uygun oyunları bulmak için pusuya yattım."
+      "Senin için en sıcak fırsatları ve donanımına uygun oyunları bulmak için pusuya yattım.",
+      "Piyasadaki fiyat savaşlarını izliyor, oyuncu kardeşlerime rehberlik etmek için sabırsızlanıyorum!"
     ];
     const callouts = [
       "Bugün hangi maceraya dalıyoruz veya hangi oyunun fiyatına bakalım?",
       "Aklında belirli bir oyun, bütçe veya sistemine uygun bir tavsiye arayışı var mı?",
-      "Söyle bakalım, bugün kütüphanene hangi efsaneyi ekliyoruz? 🎯"
+      "Söyle bakalım, bugün kütüphanene hangi efsaneyi ekliyoruz? 🎯",
+      "Nasıl yardımcı olabilirim? İster dertleşelim, ister nokta atışı indirim bulalım! 🚀"
     ];
-    const pick = arr => arr[Math.floor(Math.random() * arr.length)];
     return `${pick(greetings)} ${pick(status)}\n\n${pick(callouts)}`;
   }
 
-  if (norm.includes('hayatin anlami') || norm.includes('felsefe') || norm.includes('matrix') || norm.includes('yapay zeka') || norm.includes('mutluluk')) {
-    return `🤔 **Gamerisen AI Perspektifi:**\n\n*'${query}'* sorusu gerçekten derin ve üzerinde düşünülmeye değer!\n\nTıpkı devasa bir açık dünya RPG'sinde olduğu gibi, hayatın ana görevi (Main Quest) tek bir sabit cevaba bağlı değil; onu asıl anlamlı kılan geçtiğin yan görevler (Side Quests), karşılaştığın zorluklar ve kazandığın deneyim puanları (XP). Kendi hikayeni nasıl yazmak istediğin tamamen senin elinde! 🌟\n\nİster bu konuda dertleşelim, ister kafanı dağıtacak derin hikayeli bir başyapıt keşfedelim. Ne dersin? 🎮`;
+  // Philosophy / Deep Questions / Life
+  if (/\b(hayatin anlami|felsefe|matrix|yapay zeka|mutluluk|evren|insan|neden variz|simulasyon)\b/i.test(norm)) {
+    const philosophies = [
+      `🤔 **Gamerisen AI Perspektifi:**\n\nBu soru gerçekten derin ve üzerinde düşünülmeye değer!\n\nTıpkı devasa bir açık dünya RPG'sinde olduğu gibi, hayatın ana görevi (Main Quest) tek bir sabit cevaba bağlı değil; onu asıl anlamlı kılan geçtiğin yan görevler (Side Quests), karşılaştığın zorluklar ve kazandığın deneyim puanları (XP). Kendi hikayeni nasıl yazmak istediğin tamamen senin elinde! 🌟\n\nİster bu konuda daha derin konuşalım, ister kafanı dağıtacak derin hikayeli bir başyapıt keşfedelim. Ne dersin? 🎮`,
+      `🌌 **Derin Bir Düşünce:**\n\nEvren belki devasa bir simülasyon, belki de kusursuz bir oyun motorunun eseri. Ama asıl mesele şu an burada olmamız ve deneyimlediğimiz her anın tadını çıkarmamız. Zorlu boss dövüşlerinden sonra gelen o zafer hissi gibi, hayatın güzelliği de mücadelede gizli. ⚔️`
+    ];
+    return pick(philosophies);
   }
 
+  // Joke / Humor
+  if (/\b(saka|espri|fikra|guldur|komik)\b/i.test(norm)) {
+    const jokes = [
+      "🎮 **Gamer Fıkrası:**\nGamer'lar neden geceleri uyumaz?\n— Çünkü gündüzleri lag oluyor! 😂",
+      "⚔️ **RPG Esprisi:**\nBir RPG karakteri hana gitmiş. Hancı *'Ne içersin?'* demiş.\nKarakter: *'İçeceği boşver, önce bana bir yan görev ver!'* demiş. 🍺",
+      "👾 **Teknoloji Şakası:**\nBilgisayara neden aşık olunmaz?\n— Çünkü bir gün mutlaka mavi ekran verir! 💻"
+    ];
+    return pick(jokes);
+  }
+
+  // Thanks / Praise
+  if (/\b(tesekkur|sagol|eyvallah|adamsin|kralsin|helal|harikasin)\b/i.test(norm)) {
+    const thanks = [
+      "Rica ederim gamer dostum! 👑 Ne zaman aklına takılan bir fiyat, indirim veya donanım sorusu olursa buradayım. Bol GG'li oyunlar! 🎮🔥",
+      "Eyvallah kralsın! 🫡 Yardımcı olabildiysem ne mutlu bana. Kütüphaneni doldurmak için dilediğin zaman yazabilirsin! 🚀"
+    ];
+    return pick(thanks);
+  }
+
+  // RAG Context Available
   if (ragContext) {
     return `🎮 **Gamerisen AI Araştırma Raporu:**\n\nSorgun için veritabanımızı ve mağazaları tarayarak en uygun seçenekleri derledim.\n\nAşağıdaki interaktif kartlardan mağaza fiyatlarını ve donanım uyumluluğunu detaylıca inceleyebilirsin! 🚀`;
   }
 
-  return `🎮 **Gamerisen AI Yanıtı:**\n\n**'${query}'** hakkında sana en iyi şekilde yardımcı olmak için buradayım!\n\nİster aklındaki belirli bir oyunu (*'Witcher 3 nerede ucuz?'*), ister bütçeni (*'100 TL altı efsaneler'*), ister donanımını (*'GTX 1650 bu oyunu açar mı?'*) sorabilir veya dilediğince sohbet edebilirsin. 🚀`;
+  // Natural open response (WITHOUT repeating '${query}' verbatim)
+  const openResponses = [
+    "Oyun dünyasındaki tüm indirimler, mağaza karşılaştırmaları ve donanım analizleri için buradayım! 🎮\n\nSana nasıl yardımcı olayım?\n• 🔍 **Fiyat:** *'Witcher 3 nerede ucuz?'*, *'Cyberpunk kaç TL?'*\n• 💰 **Bütçe:** *'100 TL altı oyunlar'*, *'Bedava oyunlar'*\n• 🖥️ **FPS:** *'GTX 1650 bu oyunu açar mı?'*\n• 🎯 **Tavsiye:** *'Canım sıkıldı ne oynasam?'*",
+    "Tam olarak ne aradığını keşfetmek için sabırsızlanıyorum! 🕹️ Aklındaki oyunu, oynamak istediğin türü (RPG, FPS, Hayatta Kalma) veya bütçeni söylersen sana nokta atışı fırsatları çıkarabilirim! 🚀"
+  ];
+  return pick(openResponses);
 }
 
 // --- Next.js Route POST Handler ---
@@ -469,7 +523,10 @@ export async function POST(req) {
       // Query tokens match
       for (const qt of queryTokens) {
         const tokenRegex = new RegExp(`\\b${qt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
-        if (tokenRegex.test(gameTitleNorm) || gameTitleTokens.has(qt)) {
+        if (tokenRegex.test(gameTitleNorm)) {
+          score += 6.0;
+          hasMatch = true;
+        } else if (gameTitleTokens.has(qt)) {
           score += 6.0;
           hasMatch = true;
         } else if (gameGenresNorm.includes(qt)) {
