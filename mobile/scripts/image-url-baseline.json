@@ -1,0 +1,13 @@
+{
+  "app/api/dlc/route.js": 1,
+  "app/api/games/route.js": 2,
+  "app/api/oyun/route.js": 1,
+  "app/api/oyun-merged/route.js": 1,
+  "app/api/rawg-game/route.js": 1,
+  "app/api/social/friend-activity/route.js": 1,
+  "app/api/social/reviews/eligible/route.js": 1,
+  "app/api/social/reviews/feed/route.js": 1,
+  "app/api/steam-library/route.js": 1,
+  "app/components/GameImage.jsx": 1,
+  "mobile/src/utils/widgetImage.js": 1
+}

@@ -50,6 +50,9 @@ export function hasFriendSignal(games) {
 }
 
 export default function FriendActivity({ games }) {
+  // Sunucu kapağı çözemediğini `gorselYok` ile bildiriyor ve zaten sona
+  // atıyor (bkz. api/social/friend-activity). Burada ek bir şey yapmaya
+  // gerek yok — sıra sunucudan geldiği gibi çiziliyor.
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const { t } = useLanguage();

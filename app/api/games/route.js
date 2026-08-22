@@ -277,6 +277,12 @@ async function fetchSteamSearchPaginated(searchUrl, isFree = false, isOnSale = f
         if (!appid) return null;
 
         let releasedDate = null;
+        // GERÇEK KAPAK ADRESİ. Steam varlık yollarını hash'li biçime taşıdı;
+        // `/apps/<appid>/header.jpg` YENİ oyunlarda 404 veriyor ve hash
+        // kurulamıyor, yalnızca API'den okunuyor. Detay ZATEN burada
+        // çekiliyordu ama `header_image` kullanılmıyordu — kapak elle
+        // birleştiriliyordu. Kırılmanın kökü buydu.
+        let gercekKapak = null;
         try {
           const steamData = await getSteamDetailsCached(appid);
           if (steamData) {
@@ -287,6 +293,7 @@ async function fetchSteamSearchPaginated(searchUrl, isFree = false, isOnSale = f
               return null;
             }
             releasedDate = steamData.release_date?.date || null;
+            gercekKapak = steamData.header_image || null;
           }
         } catch {}
 
@@ -296,7 +303,12 @@ async function fetchSteamSearchPaginated(searchUrl, isFree = false, isOnSale = f
           rawgId: appid,
           rawgSlug: slug,
           name: item.name,
-          image: appid ? `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/header.jpg` : item.logo,
+          // Sıra: Steam'in verdiği gerçek adres → öne çıkanlar kapsülü →
+          // (son çare) düz yol. Düz yol yalnızca ESKİ oyunlarda çalışıyor.
+          image: gercekKapak || item.logo
+            || (appid ? `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/header.jpg` : null),
+          // Kapak Steam'den çözülemediyse işaretle — istemci sona atsın.
+          gorselYok: !gercekKapak && !item.logo,
           logo: item.logo,
           metacritic: null,
           reviewScore: 0,

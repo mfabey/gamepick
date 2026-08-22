@@ -68,20 +68,30 @@ export default function HomeScreen() {
   const { data: newData }   = useQuery('home:new', fetchNewGames, { ttl: 5 * 60 * 1000 });
   const { data: saleData }  = useQuery('home:sale', fetchSaleGames, { ttl: 5 * 60 * 1000 });
 
-  const trend = useMemo(() => {
-    const list = trendData?.results || trendData?.games || [];
-    return list.filter(g => !!(g?.image && typeof g.image === 'string' && g.image.trim() !== '')).slice(0, 14);
-  }, [trendData]);
+  // ── ŞERİT HAZIRLIĞI ──
+  // Boş `image` alanı SÜZÜLÜYOR (aşağıdaki `kapakVar`) — ama ölçüldü: alan
+  // pratikte hiç boş gelmiyor, gelen ADRES 404 veriyor. Steam varlık
+  // yollarını hash'li biçime taşıdı ve `/apps/<id>/header.jpg` yeni
+  // oyunlarda yok. Sunucu artık kapağı çözemediğinde `gorselYok`
+  // işaretliyor (bkz. api/games/route.js).
+  //
+  // İŞARETLİLER ELENMİYOR, SONA ATILIYOR: oyun gerçek ve aranabilir
+  // kalmalı — yalnız ilk ekranı boş kutuyla açmasın. Sıra içindeki göreli
+  // düzen korunuyor.
+  const hazirla = useCallback((list, n) => {
+    const kapakVar = list.filter(
+      (g) => !!(g?.image && typeof g.image === 'string' && g.image.trim() !== '')
+    );
+    if (!kapakVar.some((g) => g.gorselYok)) return kapakVar.slice(0, n);
+    return [...kapakVar]
+      .sort((a, b) => (a.gorselYok === b.gorselYok ? 0 : a.gorselYok ? 1 : -1))
+      .slice(0, n);
+  }, []);
 
-  const fresh = useMemo(() => {
-    const list = newData?.results || [];
-    return list.filter(g => !!(g?.image && typeof g.image === 'string' && g.image.trim() !== '')).slice(0, 12);
-  }, [newData]);
-
-  const sale = useMemo(() => {
-    const list = saleData?.results || [];
-    return list.filter(g => !!(g?.image && typeof g.image === 'string' && g.image.trim() !== '')).slice(0, 12);
-  }, [saleData]);
+  const trend = useMemo(
+    () => hazirla(trendData?.results || trendData?.games || [], 14), [trendData, hazirla]);
+  const fresh = useMemo(() => hazirla(newData?.results || [], 12), [newData, hazirla]);
+  const sale  = useMemo(() => hazirla(saleData?.results || [], 12), [saleData, hazirla]);
 
   // Haber verisi ARTIK BURADA ÇEKİLMİYOR. Anasayfada haber şeridi yokken
   // her açılışta haber isteği atmak boşa ağ trafiğiydi; /news kendi
