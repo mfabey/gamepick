@@ -90,7 +90,7 @@ export default function NavBar() {
           <div className="nav-left-group" style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '12px',
+            gap: '16px',
             marginRight: 'auto',
             zIndex: 10,
           }}>
