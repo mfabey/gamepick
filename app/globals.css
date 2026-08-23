@@ -727,7 +727,7 @@ html[data-theme="light"] .nav-header {
     padding: 1px !important;
     border-radius: 7px !important;
     gap: 1px !important;
-    margin-right: 0 !important;
+    margin-right: auto !important;
   }
   
   .nav-lang-selector button {
