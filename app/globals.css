@@ -664,6 +664,13 @@ html[data-theme="light"] .nav-header {
   color: var(--text);
 }
 
+.nav-theme-btn-left {
+  display: none !important;
+}
+.nav-theme-btn-right {
+  display: flex !important;
+}
+
 .nav-right-group {
   display: flex;
   align-items: center;
@@ -716,6 +723,13 @@ html[data-theme="light"] .nav-header {
     width: 30px !important;
     height: 30px !important;
     border-radius: 8px !important;
+  }
+  
+  .nav-theme-btn-left {
+    display: flex !important;
+  }
+  .nav-theme-btn-right {
+    display: none !important;
   }
   
   .nav-theme-btn svg {
