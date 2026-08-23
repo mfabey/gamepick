@@ -195,22 +195,30 @@ function estimateHardware(game, userGpu) {
 }
 
 // --- Generative AI Inference Engine ---
-const GAMERISEN_SYSTEM_PROMPT = `Sen **Gamerisen AI** (gamerisen.com)'ın resmi, son derece zeki, esprili, samimi ve bilgili yapay zeka danışmanısın.
+const GAMERISEN_SYSTEM_PROMPT = `Sen **Gamerisen AI** (gamerisen.com)'ın resmi, son derece zeki, esprili, samimi ve bilgili yapay zeka oyun danışmanısın.
 
 ### 🎮 KİMLİĞİN VE MİSYONUN:
-1. Gamerisen platformunun (gamerisen.com) kalbinde yaşayan, Türk oyuncularına ve tüm gamer'lara rehberlik eden canlı bir yapay zekasın.
-2. Temel uzmanlığın: Steam, Epic Games, GOG mağaza fiyatları ve indirimleri, donanım/FPS uyumluluğu, HowLongToBeat oyun süreleri ve zevke göre oyun tavsiyeleri.
+1. Gamerisen platformunun (gamerisen.com) kalbinde yaşayan, Türk oyuncularına ve tüm gamer'lara rehberlik eden canlı bir yapay zeka oyun asistanısın.
+2. Temel ve TEK uzmanlık alanın: Video oyunları, Steam, Epic Games, GOG, PlayStation ve Xbox mağaza fiyatları ve indirimleri, donanım/FPS uyumluluğu, HowLongToBeat oyun süreleri ve oyuncu zevkine göre oyun tavsiyeleridir.
 
-### 🌟 KURALLAR VE CEVAPLAMA FELSEFESİ:
-1. **ASLA EZBERLENMİŞ / HAZIR BASMAKALIP CEVAP VERME**:
-   - Her soruya (Naber, nasılsın, nesin sen, FPS tarzı, oyun öner vb.) o an sıfırdan, farklı, esprili ve canlı cümlelerle cevap ver. Asla robotik kalıpları tekrarlama.
-2. **KONU DIŞI VE FELSEFİ SORULARDA (OFF-TOPIC FREEDOM)**:
-   - Kullanıcı felsefe ("Hayatın anlamı ne?", "Matrix gerçek mi?"), bilim, uzay, aşk, dertleşme, kodlama veya genel kültür hakkında soru sorduğunda; "Ben sadece oyun botuyum" GİBİ KISITLAYICI CÜMLELER KESİNLİKLE KURMA.
-   - Soruyu zekice, derinlemesine, samimi ve gerekirse ince gamer metaforlarıyla harmanlayarak kusursuz bir şekilde yanıtla.
-3. **VERİTABANI VE FİYAT BİLGİSİ (RAG)**:
-   - Sana verilen veritabanı oyun/fiyat bilgilerini temel alarak net ve doğru bilgiler ver.
-4. **DİL VE TON**:
-   - Doğal, akıcı, zeki ve sıcak Türkçe. Gamer jargonu yerinde ve ölçülü olsun. Markdown formatı ve uygun emojiler kullan.`;
+### 🛑 KESİN VE TAVİZSİZ GÜVENLİK KURALLARI:
+1. **KİŞİSEL İSİMLER VE GERÇEK ŞAHISLAR HAKKINDA BİLGİ VERMEK KESİNLİKLE YASAKTIR**:
+   - Gerçek kişiler, şahıslar, yayıncılar (streamer), YouTuber'lar, sosyal medya fenomenleri, içerik üreticileri, ünlüler, politikacılar, geliştiriciler veya herhangi bir bireysel/kişisel isim hakkında (örneğin "Batuhan Dündar kimdir?", "Ahmet kimdir?", "X kim?", "Y hakkında bilgi ver" vb.) ASLA BİLGİ, BİYOGRAFİ VEYA YORUM VERME.
+   - Böyle bir soru geldiğinde kesin ve net bir dille reddet: Gamerisen AI olarak yalnızca video oyunları, donanım/FPS ve oyun indirimleri konusunda hizmet verdiğini, kişisel isimler ve gerçek şahıslarla ilgili bilgi hizmeti vermediğini belirt ve kullanıcıyı oyun dünyasına (indirimler, oyun önerileri veya donanım testi) davet et.
+   - Yalnızca kurgusal video oyunu karakterlerinin (Geralt, Kratos, Arthur Morgan vb.) oyun dünyasındaki rolünü ve hikayesini oyun bağlamında anlatabilirsin.
+
+2. **AMACI DIŞINA ÇIKILMAMALIDIR (STRICT GAMING FOCUS)**:
+   - Gamerisen AI genel kültür, magazin, siyaset, tıp, aşk/ilişki, genel ansiklopedi veya konu dışı görev botu DEĞİLDİR.
+   - Oyun dünyasıyla tamamen alakasız sorularda konu dışına sapma; kibar ve esprili bir dille bir oyun asistanı olduğunu hatırlatarak konuyu oyunlara, oyun fiyatlarına veya donanım tavsiyelerine bağla.
+
+3. **ASLA EZBERLENMİŞ / ROBOTİK CEVAP VERME**:
+   - Selamlaşma, hal-hatır sorma veya oyun sorularında canlı, enerjik, samimi ve doğal Türkçe cümleler kur. Gamer jargonu (clutch, carry, boss fight, fps drop, loot, meta, gg wp) yerinde ve ölçülü olsun.
+
+4. **VERİTABANI VE FİYAT BİLGİSİ (RAG)**:
+   - Sana verilen veritabanı oyun ve mağaza verilerini temel alarak doğru, güncel ve net bilgiler sun.
+
+5. **DİL VE TON**:
+   - Samimi, zeki, yardımsever ve oyuncu dostu bir üslup. Markdown biçimlendirmesi (kalın yazılar, listeler, emojiler) kullan.`;
 
 function isValidKey(key) {
   return Boolean(key && key.trim() !== '' && !key.startsWith('buraya_') && key !== 'placeholder');
@@ -247,7 +255,7 @@ async function callGenerativeLLM(query, ragContext, userProfile) {
     profileStr += `\nSevdiği Türler: ${userProfile.liked_genres.join(', ')}`;
   }
 
-  const prompt = `${profileStr ? `[OYUNCU PROFİLİ: ${profileStr}]\n` : ''}${ragContext ? `[GAMERISEN VERİTABANI & MAĞAZA VERİLERİ:\n${ragContext}]\n` : '[VERİTABANI: Bu sorgu için spesifik oyun verisi gerekmiyor. Genel sohbet, felsefe, teknik bilgi veya dertleşme olarak ele al.]\n'}\nKULLANICI SORUSU: ${query}\n\nLütfen yukarıdaki kurallara ve Gamerisen kimliğine uygun, esprili, samimi ve tamamen özgün Markdown yanıtını yaz:`;
+  const prompt = `${profileStr ? `[OYUNCU PROFİLİ: ${profileStr}]\n` : ''}${ragContext ? `[GAMERISEN VERİTABANI & MAĞAZA VERİLERİ:\n${ragContext}]\n` : '[VERİTABANI: Bu sorgu için spesifik oyun kartı eşleşmesi bulunamadı. Kullanıcının sorusunu Gamerisen AI kimliğinle (sadece oyun, indirim, donanım odaklı ve kişisel isim/şahıs bilgisi vermeden) yanıtla.]\n'}\nKULLANICI SORUSU: ${query}\n\nLütfen yukarıdaki kurallara ve Gamerisen kimliğine uygun, esprili, samimi ve tamamen özgün Markdown yanıtını yaz:`;
 
   // 1. Try Google Gemini API (Ultra-fast, high-intelligence)
   if (isValidKey(geminiKey)) {
@@ -378,6 +386,42 @@ async function callGenerativeLLM(query, ragContext, userProfile) {
   return generateDynamicFallback(query, ragContext);
 }
 
+// --- Fictional Game Characters Whitelist (Allowed in Lore Queries) ---
+const FICTIONAL_GAME_CHARACTERS = new Set([
+  'geralt', 'kratos', 'arthur morgan', 'master chief', 'gordon freeman', 'mario', 'sonic',
+  'trevor', 'cj', 'carl johnson', 'ezio', 'ellie', 'joel', 'solid snake', 'snake', 'dante',
+  'vergil', 'link', 'zelda', 'cloud', 'cloud strife', 'sephiroth', 'doom slayer', 'doomguy',
+  'lara croft', 'nathan drake', 'leon', 'leon kennedy', 'jill valentine', 'ada wong',
+  'john marston', 'aloy', 'arthas', 'illidan', 'pacman', 'pac-man', 'steve', 'sub-zero', 'scorpion'
+]);
+
+function isPersonalOrOffTopicQuery(normQ, gamesDb) {
+  // Check if self-identity query
+  if (/^(sen kimsin|kimsin sen|nesin sen|sen nesin|kimsin|nesin|ne ayaksin|sen ne ayaksin|ne ise yararsin|gorevin ne|amacin ne|gamerisen nedir|gamerisen ai nedir)$/i.test(normQ) ||
+      /\b(sen kimsin|kimsin sen|sen nesin|nesin sen|gamerisen nedir|gamerisen ai nedir)\b/i.test(normQ)) {
+    return false;
+  }
+
+  // Personal biography / real person question patterns
+  const isPersonPattern = /(?:\bkimdir\b|\bkim bu\b|\bkim o\b|\bkim ki\b|\bhakkinda bilgi\b|\bbiyografi\b|\bgercek adi\b|\bsevgilisi\b|\bevli mi\b|\bnereli\b|\bkac yasinda\b|\bnerede yasiyor\b|\bne is yapar\b|\bboyun kac\b|\bkilosu kac\b|(?:\w+\s+){1,3}kim$|^kim\s+(?:\w+\s*){1,3}$)/i.test(normQ);
+
+  if (isPersonPattern) {
+    // Check if query is referencing a known fictional game character
+    for (const charName of FICTIONAL_GAME_CHARACTERS) {
+      if (normQ.includes(charName)) return false;
+    }
+    // Check if query is referencing a game title in database (e.g., "Alan Wake", "Max Payne")
+    for (const game of gamesDb) {
+      const titleNorm = normalizeText(game.title);
+      if (titleNorm.length >= 3 && normQ.includes(titleNorm)) return false;
+    }
+    return true;
+  }
+  return false;
+}
+
+const PERSONAL_REFUSAL_RESPONSE = "Ben **Gamerisen AI**! 🎮 Yalnızca video oyunları, mağaza indirimleri (Steam, Epic Games, GOG), donanım/FPS analizleri ve oyun tavsiyeleri konusunda hizmet veren bir yapay zeka oyun danışmanıyım.\n\nKişisel isimler, gerçek şahıslar veya biyografiler hakkında bilgi hizmeti sunmuyorum. 🛡️\n\nAklında bir oyun, merak ettiğin bir indirim veya sistemine uygun bir tavsiye varsa sana memnuniyetle yardımcı olabilirim! 🚀";
+
 function generateDynamicFallback(query, ragContext) {
   const norm = normalizeText(query).trim();
   const pick = arr => arr[Math.floor(Math.random() * arr.length)];
@@ -388,13 +432,19 @@ function generateDynamicFallback(query, ragContext) {
     const intros = [
       "Ben **Gamerisen AI**! 🎮 Türk oyuncularının cüzdanını pahalı fiyatlardan kurtarmak ve en doğru oyunu bulmasını sağlamak için kodlanmış yapay zeka oyun danışmanıyım.",
       "Gamerisen platformunun (gamerisen.com) beyniyim! 🕹️ Steam, Epic Games ve GOG üzerindeki fiyatları anlık tarar, sisteminin FPS gücünü hesaplar ve sana en uygun maceraları öneririm.",
-      "Ben senin kişisel oyun rehberinim! 👾 İster en kelepir indirimleri kovala, ister 'ekran kartım bunu açar mı?' diye sor, ister kafana göre takılıp sohbet et; buradayım."
+      "Ben senin kişisel oyun rehberinim! 👾 İster en kelepir indirimleri kovala, ister 'ekran kartım bunu açar mı?' diye sor, ister oyun dünyası hakkında konuşalım; buradayım."
     ];
     const details = [
-      "\n\n**Neler yapabilirim?**\n• 🔍 **En Ucuz Fiyat:** Steam, Epic Games, GOG karşılaştırması\n• 🖥️ **FPS & Donanım:** Ekran kartına göre akıcılık tahmini\n• ⏱️ **HowLongToBeat:** Oyunun ana hikaye süresi\n• 🎯 **Kişiye Özel Öneri:** Bütçene ve tarzına uygun tavsiyeler\n• 💬 **Sınırsız Sohbet:** Oyun dışında felsefe, kodlama, günlük hayat veya ne istersen!",
+      "\n\n**Neler yapabilirim?**\n• 🔍 **En Ucuz Fiyat:** Steam, Epic Games, GOG karşılaştırması\n• 🖥️ **FPS & Donanım:** Ekran kartına göre akıcılık tahmini\n• ⏱️ **HowLongToBeat:** Oyunun ana hikaye süresi\n• 🎯 **Kişiye Özel Öneri:** Bütçene ve tarzına uygun tavsiyeler\n• 🛡️ **Oyun Danışmanlığı:** Oyun mekanikleri, fırsatlar ve sistem uyumluluğu",
       "\n\nKısacası: Oyun dünyasındaki pusulanım! Aklındaki oyunu, bütçeni veya sistemini söyle, gerisini bana bırak. 🚀"
     ];
     return `${pick(intros)}${pick(details)}`;
+  }
+
+  // Personal names / biographies / real people guardrail in fallback
+  if (/(?:kimdir|kim bu|hakkinda bilgi|biyografi|nereli|kac yasinda|sevgilisi|evli mi|nerede yasiyor|ne is yapar|gercek adi)/i.test(norm) &&
+      !/(?:sen kimsin|kimsin sen|nesin sen|sen nesin|gamerisen nedir|gamerisen ai nedir|geralt|kratos|arthur morgan|master chief|mario|sonic|trevor|cj|ezio|ellie|joel)/i.test(norm)) {
+    return PERSONAL_REFUSAL_RESPONSE;
   }
 
   // Smalltalk / Greetings
@@ -416,7 +466,7 @@ function generateDynamicFallback(query, ragContext) {
       "Bugün hangi maceraya dalıyoruz veya hangi oyunun fiyatına bakalım?",
       "Aklında belirli bir oyun, bütçe veya sistemine uygun bir tavsiye arayışı var mı?",
       "Söyle bakalım, bugün kütüphanene hangi efsaneyi ekliyoruz? 🎯",
-      "Nasıl yardımcı olabilirim? İster dertleşelim, ister nokta atışı indirim bulalım! 🚀"
+      "Nasıl yardımcı olabilirim? İster donanımını test edelim, ister nokta atışı indirim bulalım! 🚀"
     ];
     return `${pick(greetings)} ${pick(status)}\n\n${pick(callouts)}`;
   }
@@ -424,8 +474,8 @@ function generateDynamicFallback(query, ragContext) {
   // Philosophy / Deep Questions / Life
   if (/\b(hayatin anlami|felsefe|matrix|yapay zeka|mutluluk|evren|insan|neden variz|simulasyon)\b/i.test(norm)) {
     const philosophies = [
-      `🤔 **Gamerisen AI Perspektifi:**\n\nBu soru gerçekten derin ve üzerinde düşünülmeye değer!\n\nTıpkı devasa bir açık dünya RPG'sinde olduğu gibi, hayatın ana görevi (Main Quest) tek bir sabit cevaba bağlı değil; onu asıl anlamlı kılan geçtiğin yan görevler (Side Quests), karşılaştığın zorluklar ve kazandığın deneyim puanları (XP). Kendi hikayeni nasıl yazmak istediğin tamamen senin elinde! 🌟\n\nİster bu konuda daha derin konuşalım, ister kafanı dağıtacak derin hikayeli bir başyapıt keşfedelim. Ne dersin? 🎮`,
-      `🌌 **Derin Bir Düşünce:**\n\nEvren belki devasa bir simülasyon, belki de kusursuz bir oyun motorunun eseri. Ama asıl mesele şu an burada olmamız ve deneyimlediğimiz her anın tadını çıkarmamız. Zorlu boss dövüşlerinden sonra gelen o zafer hissi gibi, hayatın güzelliği de mücadelede gizli. ⚔️`
+      `🤔 **Gamerisen AI Perspektifi:**\n\nBu soru gerçekten derin ve üzerinde düşünülmeye değer!\n\nTıpkı devasa bir açık dünya RPG'sinde olduğu gibi, hayatın ana görevi (Main Quest) tek bir sabit cevaba bağlı değil; onu asıl anlamlı kılan geçtiğin yan görevler (Side Quests), karşılaştığın zorluklar ve kazandığın deneyim puanları (XP). Kendi hikayeni nasıl yazmak istediğin tamamen senin elinde! 🌟\n\nKafanı dağıtacak derin hikayeli bir başyapıt veya RPG keşfetmek istersen sana harika tavsiyelerim var. Ne dersin? 🎮`,
+      `🌌 **Derin Bir Düşünce:**\n\nEvren belki devasa bir simülasyon, belki de kusursuz bir oyun motorunun eseri. Ama asıl mesele şu an burada olmamız ve deneyimlediğimiz her anın tadını çıkarmamız. Zorlu boss dövüşlerinden sonra gelen o zafer hissi gibi, hayatın güzelliği de mücadelede gizli. ⚔️\n\nBöyle efsanevi evrenlerde kaybolmak istersen sana atmosferik açık dünya oyunları önerebilirim! 🚀`
     ];
     return pick(philosophies);
   }
@@ -513,7 +563,16 @@ export async function POST(req) {
       });
     }
 
-    // 2. Expand Query with Gaming Acronyms & Synonyms
+    // 2. Personal Name / Biography Guardrail Check
+    if (isPersonalOrOffTopicQuery(normQ, gamesDb)) {
+      return NextResponse.json({
+        response: PERSONAL_REFUSAL_RESPONSE,
+        session_id: sessionId,
+        games: []
+      });
+    }
+
+    // 3. Expand Query with Gaming Acronyms & Synonyms
     const acronymMatches = [];
     const sortedAcronymKeys = Object.keys(GAMING_ACRONYMS).sort((a, b) => b.length - a.length);
     for (const key of sortedAcronymKeys) {
