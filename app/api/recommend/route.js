@@ -4,7 +4,7 @@ const GROQ_KEY = process.env.GROQ_API_KEY;
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 async function groq(messages, maxTokens = 300) {
-  const models = ['openai/gpt-oss-20b', 'qwen/qwen3.6-27b', 'openai/gpt-oss-120b', 'groq/compound', 'llama-3.1-8b-instant'];
+  const models = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'groq/compound'];
   for (const modelName of models) {
     try {
       const res = await fetch(GROQ_URL, {
@@ -12,7 +12,7 @@ async function groq(messages, maxTokens = 300) {
         headers: {
           'Authorization': `Bearer ${GROQ_KEY}`,
           'Content-Type':  'application/json',
-          'User-Agent':    'GamerisenAI/2.0 (gamerisen.com)'
+          'User-Agent':    'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
         },
         body: JSON.stringify({
           model:       modelName,

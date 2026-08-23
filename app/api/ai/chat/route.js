@@ -287,10 +287,8 @@ async function callGenerativeLLM(query, ragContext, userProfile) {
   if (isValidKey(groqKey)) {
     const groqModels = [
       'openai/gpt-oss-120b',
-      'qwen/qwen3.6-27b',
       'openai/gpt-oss-20b',
-      'groq/compound',
-      'llama-3.3-70b-versatile'
+      'groq/compound'
     ];
     for (const modelName of groqModels) {
       try {
@@ -299,7 +297,7 @@ async function callGenerativeLLM(query, ragContext, userProfile) {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${groqKey}`,
-            'User-Agent': 'GamerisenAI/2.0 (gamerisen.com)'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
           },
           body: JSON.stringify({
             model: modelName,
@@ -307,7 +305,7 @@ async function callGenerativeLLM(query, ragContext, userProfile) {
               { role: 'system', content: GAMERISEN_SYSTEM_PROMPT },
               { role: 'user', content: prompt }
             ],
-            temperature: 0.85,
+            temperature: 0.6,
             max_tokens: 2048,
             top_p: 0.95
           })
@@ -439,6 +437,11 @@ function generateDynamicFallback(query, ragContext) {
       "\n\nKısacası: Oyun dünyasındaki pusulanım! Aklındaki oyunu, bütçeni veya sistemini söyle, gerisini bana bırak. 🚀"
     ];
     return `${pick(intros)}${pick(details)}`;
+  }
+
+  // Creator / Code Ownership / GitHub / Security Defense
+  if (/(?:seni kim yapti|seni kim kodladi|seni kim gelistirdi|kodlarin kime ait|kodlarin nerde|kodlarin nerede|kaynak kod|github|sahibin kim|kimin projesin|kim yapti seni|arkandaki ekip|yapimcin kim|gelistiricin kim)/i.test(norm)) {
+    return "Ben **Gamerisen** (gamerisen.com) platformu tarafından Türk oyuncularına tarafsız, bağımsız ve kesintisiz rehberlik sunmak üzere geliştirilmiş resmi yapay zeka oyun ve donanım danışmanıyım. 🎮⚡\n\nSistem mimarim, algoritmalarım ve veritabanım Gamerisen platformunun tescilli mülkiyetindedir ve güvenlik ilkelerimiz gereği gizlidir. Benim temel görevim; oyunculara Steam, Epic Games ve GOG üzerindeki en güncel indirimleri sunmak, gerçekçi donanım/FPS analizleri yapmak ve kütüphanene en uygun yapımları önermektir.\n\nAklında merak ettiğin bir oyun, donanım uyumluluğu veya fiyat araştırması varsa hemen yardımcı olabilirim! 🚀";
   }
 
   // Personal names / biographies / real people guardrail in fallback

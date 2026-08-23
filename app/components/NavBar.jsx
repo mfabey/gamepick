@@ -148,15 +148,7 @@ export default function NavBar() {
               color: pathname.startsWith('/support') ? 'var(--accent)' : 'var(--text-2)',
               transition: 'color 0.15s',
             }}>{t('nav.support')}</Link>
-            
-            {/* Mobil Destek İkonu */}
-            <Link href="/support" className="nav-support-icon-mobile" style={{ display: 'none' }} title={t('nav.support')}>
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"/>
-                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
-                <line x1="12" y1="17" x2="12.01" y2="17"/>
-              </svg>
-            </Link>
+            {/* Mobil Destek İkonu kaldırıldı (mobil görünümde sıkışıklığı önlemek için) */}
 
             {/* Tema Toggle Butonu */}
             {mounted && (

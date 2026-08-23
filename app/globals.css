@@ -709,18 +709,7 @@ html[data-theme="light"] .nav-header {
   }
   
   .nav-support-icon-mobile {
-    display: flex !important;
-    width: 30px;
-    height: 30px;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    color: var(--text-2);
-    align-items: center;
-    justify-content: center;
-    transition: background-color 0.15s;
-  }
-  .nav-support-icon-mobile:hover {
-    background-color: var(--bg-hover);
+    display: none !important;
   }
   
   .nav-theme-btn {
