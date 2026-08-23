@@ -275,32 +275,42 @@ async function callGenerativeLLM(query, ragContext, userProfile) {
     }
   }
 
-  // 2. Try Groq API (Llama 3.3 70B)
+  // 2. Try Groq API (High Performance Multi-Model Fallback)
   if (isValidKey(groqKey)) {
-    try {
-      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${groqKey}`
-        },
-        body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
-          messages: [
-            { role: 'system', content: GAMERISEN_SYSTEM_PROMPT },
-            { role: 'user', content: prompt }
-          ],
-          temperature: 0.85,
-          max_tokens: 2048,
-          top_p: 0.95
-        })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const text = data?.choices?.[0]?.message?.content;
-        if (text && text.trim()) return text.trim();
-      }
-    } catch (e) {}
+    const groqModels = [
+      'openai/gpt-oss-120b',
+      'qwen/qwen3.6-27b',
+      'openai/gpt-oss-20b',
+      'groq/compound',
+      'llama-3.3-70b-versatile'
+    ];
+    for (const modelName of groqModels) {
+      try {
+        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${groqKey}`,
+            'User-Agent': 'GamerisenAI/2.0 (gamerisen.com)'
+          },
+          body: JSON.stringify({
+            model: modelName,
+            messages: [
+              { role: 'system', content: GAMERISEN_SYSTEM_PROMPT },
+              { role: 'user', content: prompt }
+            ],
+            temperature: 0.85,
+            max_tokens: 2048,
+            top_p: 0.95
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const text = data?.choices?.[0]?.message?.content;
+          if (text && text.trim()) return text.trim();
+        }
+      } catch (e) {}
+    }
   }
 
   // 3. Try Local Self-Hosted Ollama Engine (100% Free, Local GPU/CPU)

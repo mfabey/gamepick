@@ -186,29 +186,39 @@ Generate a response in the following JSON format in English:
 Select appropriate tags in English (8-15 tags, lowercase). You can choose from standard tags (action, adventure, rpg, strategy, shooter, cowboy, sci-fi, horror, survival, open-world, rich-story, multiplayer, co-op) or custom ones. Only return JSON. Do not add any other text.
 `.trim();
 
-    const aiRes = await fetch(GROQ_URL, {
-      method:  'POST',
-      headers: {
-        'Authorization': `Bearer ${GROQ_KEY}`,
-        'Content-Type':  'application/json',
-      },
-      body: JSON.stringify({
-        model:       MODEL,
-        max_tokens:  800,
-        temperature: 0.7,
-        messages: [
-          { role: 'system',  content: systemContent },
-          { role: 'user',    content: userPrompt },
-        ],
-      }),
-    });
+    const candidateModels = ['openai/gpt-oss-120b', 'qwen/qwen3.6-27b', 'openai/gpt-oss-20b', 'groq/compound', MODEL];
+    let aiData = null;
+    for (const modelName of candidateModels) {
+      try {
+        const aiRes = await fetch(GROQ_URL, {
+          method:  'POST',
+          headers: {
+            'Authorization': `Bearer ${GROQ_KEY}`,
+            'Content-Type':  'application/json',
+            'User-Agent':    'GamerisenAI/2.0 (gamerisen.com)'
+          },
+          body: JSON.stringify({
+            model:       modelName,
+            max_tokens:  800,
+            temperature: 0.7,
+            messages: [
+              { role: 'system',  content: systemContent },
+              { role: 'user',    content: userPrompt },
+            ],
+          }),
+        });
 
-    if (!aiRes.ok) {
-      const errText = await aiRes.text();
-      throw new Error(`Groq HTTP ${aiRes.status}: ${errText.slice(0, 200)}`);
+        if (aiRes.ok) {
+          aiData = await aiRes.json();
+          break;
+        }
+      } catch (e) {}
     }
 
-    const aiData  = await aiRes.json();
+    if (!aiData) {
+      throw new Error('Groq model yanıtı alınamadı.');
+    }
+
     const rawText = aiData?.choices?.[0]?.message?.content || '';
 
     // JSON'u raw içinden çıkar
