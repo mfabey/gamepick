@@ -723,11 +723,16 @@ html[data-theme="light"] .nav-header {
     height: 15px;
   }
   
+  .nav-left-group {
+    margin-right: auto !important;
+    gap: 8px !important;
+  }
+  
   .nav-lang-selector {
     padding: 1px !important;
     border-radius: 7px !important;
     gap: 1px !important;
-    margin-right: auto !important;
+    margin-right: 0 !important;
   }
   
   .nav-lang-selector button {

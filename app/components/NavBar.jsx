@@ -86,69 +86,58 @@ export default function NavBar() {
       {/* ── Üst bar: ortalı logo + sağda tema & hesap ── */}
       <header className="nav-header">
         <div className="nav-container">
-          {/* Sol: Dil seçimi */}
-          <div className="nav-lang-selector" style={{
-            marginRight: 'auto',
+          {/* Sol: Dil seçimi ve Tema seçimi (sol grup) */}
+          <div className="nav-left-group" style={{
             display: 'flex',
             alignItems: 'center',
-            background: 'var(--bg-input)',
-            border: '1px solid var(--border)',
-            borderRadius: 9,
-            padding: '2px',
-            gap: 2,
-            fontSize: 12,
-            fontWeight: 600,
+            gap: '8px',
+            marginRight: 'auto',
             zIndex: 10,
           }}>
-            <button
-              onClick={() => changeLanguage('tr')}
-              style={{
-                padding: '4px 8px',
-                borderRadius: 7,
-                border: 'none',
-                background: lang === 'tr' ? 'var(--accent)' : 'transparent',
-                color: lang === 'tr' ? '#fff' : 'var(--text-3)',
-                cursor: 'pointer',
-                fontSize: 11,
-                fontWeight: 700,
-                transition: 'background 0.2s, color 0.2s',
-              }}
-            >
-              TR
-            </button>
-            <button
-              onClick={() => changeLanguage('en')}
-              style={{
-                padding: '4px 8px',
-                borderRadius: 7,
-                border: 'none',
-                background: lang === 'en' ? 'var(--accent)' : 'transparent',
-                color: lang === 'en' ? '#fff' : 'var(--text-3)',
-                cursor: 'pointer',
-                fontSize: 11,
-                fontWeight: 700,
-                transition: 'background 0.2s, color 0.2s',
-              }}
-            >
-              EN
-            </button>
-          </div>
-
-          {/* Ortalı logo */}
-          <Link href="/" className="nav-logo">
-            <img src={LOGO_SRC} alt="" className="nav-logo-img" width={36} height={36} style={{ display: 'block', filter: 'drop-shadow(0 4px 12px var(--accent-glow))' }} />
-            <span className="nav-logo-text">Gamerisen</span>
-          </Link>
-
-          {/* Sağ: destek + tema + hesap */}
-          <div className="nav-right-group">
-            {/* Desktop Destek Linki */}
-            <Link href="/support" className="nav-support-link-desktop" style={{
-              padding: '8px 14px', fontSize: 14, fontWeight: 500, whiteSpace: 'nowrap',
-              color: pathname.startsWith('/support') ? 'var(--accent)' : 'var(--text-2)',
-              transition: 'color 0.15s',
-            }}>{t('nav.support')}</Link>
-            {/* Mobil Destek İkonu kaldırıldı (mobil görünümde sıkışıklığı önlemek için) */}
+            <div className="nav-lang-selector" style={{
+              display: 'flex',
+              alignItems: 'center',
+              background: 'var(--bg-input)',
+              border: '1px solid var(--border)',
+              borderRadius: 9,
+              padding: '2px',
+              gap: 2,
+              fontSize: 12,
+              fontWeight: 600,
+            }}>
+              <button
+                onClick={() => changeLanguage('tr')}
+                style={{
+                  padding: '4px 8px',
+                  borderRadius: 7,
+                  border: 'none',
+                  background: lang === 'tr' ? 'var(--accent)' : 'transparent',
+                  color: lang === 'tr' ? '#fff' : 'var(--text-3)',
+                  cursor: 'pointer',
+                  fontSize: 11,
+                  fontWeight: 700,
+                  transition: 'background 0.2s, color 0.2s',
+                }}
+              >
+                TR
+              </button>
+              <button
+                onClick={() => changeLanguage('en')}
+                style={{
+                  padding: '4px 8px',
+                  borderRadius: 7,
+                  border: 'none',
+                  background: lang === 'en' ? 'var(--accent)' : 'transparent',
+                  color: lang === 'en' ? '#fff' : 'var(--text-3)',
+                  cursor: 'pointer',
+                  fontSize: 11,
+                  fontWeight: 700,
+                  transition: 'background 0.2s, color 0.2s',
+                }}
+              >
+                EN
+              </button>
+            </div>
 
             {/* Tema Toggle Butonu */}
             {mounted && (
@@ -179,6 +168,25 @@ export default function NavBar() {
                 )}
               </button>
             )}
+          </div>
+
+          {/* Ortalı logo */}
+          <Link href="/" className="nav-logo">
+            <img src={LOGO_SRC} alt="" className="nav-logo-img" width={36} height={36} style={{ display: 'block', filter: 'drop-shadow(0 4px 12px var(--accent-glow))' }} />
+            <span className="nav-logo-text">Gamerisen</span>
+          </Link>
+
+          {/* Sağ: destek + tema + hesap */}
+          <div className="nav-right-group">
+            {/* Desktop Destek Linki */}
+            <Link href="/support" className="nav-support-link-desktop" style={{
+              padding: '8px 14px', fontSize: 14, fontWeight: 500, whiteSpace: 'nowrap',
+              color: pathname.startsWith('/support') ? 'var(--accent)' : 'var(--text-2)',
+              transition: 'color 0.15s',
+            }}>{t('nav.support')}</Link>
+            {/* Mobil Destek İkonu kaldırıldı (mobil görünümde sıkışıklığı önlemek için) */}
+
+
 
 
             {user ? (
