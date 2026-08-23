@@ -725,7 +725,7 @@ html[data-theme="light"] .nav-header {
   
   .nav-left-group {
     margin-right: auto !important;
-    gap: 8px !important;
+    gap: 12px !important;
   }
   
   .nav-lang-selector {
