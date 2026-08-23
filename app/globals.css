@@ -678,11 +678,11 @@ html[data-theme="light"] .nav-header {
   }
   
   .nav-logo {
-    position: static;
-    transform: none;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
     gap: 6px;
-    margin-right: auto !important;
-    margin-left: 16px;
+    margin: 0 !important;
   }
   
   .nav-logo-icon {
