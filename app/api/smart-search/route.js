@@ -89,23 +89,34 @@ function keywordHints(query) {
 }
 
 async function groqJson(messages, maxTokens = 400) {
-  const res = await fetch(GROQ_URL, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${GROQ_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'llama-3.1-8b-instant',
-      max_tokens: maxTokens,
-      temperature: 0.2,          // filtre çıkarımı yaratıcılık değil tutarlılık ister
-      response_format: { type: 'json_object' },
-      messages,
-    }),
-    signal: AbortSignal.timeout(12000),
-  });
-  if (!res.ok) throw new Error(`Groq HTTP ${res.status}`);
-  const data = await res.json();
-  const text = data?.choices?.[0]?.message?.content || '';
-  const match = text.match(/\{[\s\S]*\}/);
-  return match ? JSON.parse(match[0]) : {};
+  const models = ['openai/gpt-oss-20b', 'qwen/qwen3.6-27b', 'openai/gpt-oss-120b', 'groq/compound', 'llama-3.1-8b-instant'];
+  for (const modelName of models) {
+    try {
+      const res = await fetch(GROQ_URL, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${GROQ_KEY}`,
+          'Content-Type': 'application/json',
+          'User-Agent': 'GamerisenAI/2.0 (gamerisen.com)'
+        },
+        body: JSON.stringify({
+          model: modelName,
+          max_tokens: maxTokens,
+          temperature: 0.2,
+          response_format: { type: 'json_object' },
+          messages,
+        }),
+        signal: AbortSignal.timeout(12000),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const text = data?.choices?.[0]?.message?.content || '';
+        const match = text.match(/\{[\s\S]*\}/);
+        if (match) return JSON.parse(match[0]);
+      }
+    } catch (e) {}
+  }
+  return {};
 }
 
 // Kullanıcı cümlesi → yapılandırılmış filtre

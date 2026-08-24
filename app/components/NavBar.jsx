@@ -86,83 +86,64 @@ export default function NavBar() {
       {/* ── Üst bar: ortalı logo + sağda tema & hesap ── */}
       <header className="nav-header">
         <div className="nav-container">
-          {/* Sol: Dil seçimi */}
-          <div className="nav-lang-selector" style={{
-            marginRight: 'auto',
+          {/* Sol: Dil seçimi ve Tema seçimi (sol grup) */}
+          <div className="nav-left-group" style={{
             display: 'flex',
             alignItems: 'center',
-            background: 'var(--bg-input)',
-            border: '1px solid var(--border)',
-            borderRadius: 9,
-            padding: '2px',
-            gap: 2,
-            fontSize: 12,
-            fontWeight: 600,
+            gap: '16px',
+            marginRight: 'auto',
             zIndex: 10,
           }}>
-            <button
-              onClick={() => changeLanguage('tr')}
-              style={{
-                padding: '4px 8px',
-                borderRadius: 7,
-                border: 'none',
-                background: lang === 'tr' ? 'var(--accent)' : 'transparent',
-                color: lang === 'tr' ? '#fff' : 'var(--text-3)',
-                cursor: 'pointer',
-                fontSize: 11,
-                fontWeight: 700,
-                transition: 'background 0.2s, color 0.2s',
-              }}
-            >
-              TR
-            </button>
-            <button
-              onClick={() => changeLanguage('en')}
-              style={{
-                padding: '4px 8px',
-                borderRadius: 7,
-                border: 'none',
-                background: lang === 'en' ? 'var(--accent)' : 'transparent',
-                color: lang === 'en' ? '#fff' : 'var(--text-3)',
-                cursor: 'pointer',
-                fontSize: 11,
-                fontWeight: 700,
-                transition: 'background 0.2s, color 0.2s',
-              }}
-            >
-              EN
-            </button>
-          </div>
-
-          {/* Ortalı logo */}
-          <Link href="/" className="nav-logo">
-            <img src={LOGO_SRC} alt="" className="nav-logo-img" width={36} height={36} style={{ display: 'block', filter: 'drop-shadow(0 4px 12px var(--accent-glow))' }} />
-            <span className="nav-logo-text">Gamerisen</span>
-          </Link>
-
-          {/* Sağ: destek + tema + hesap */}
-          <div className="nav-right-group">
-            {/* Desktop Destek Linki */}
-            <Link href="/support" className="nav-support-link-desktop" style={{
-              padding: '8px 14px', fontSize: 14, fontWeight: 500, whiteSpace: 'nowrap',
-              color: pathname.startsWith('/support') ? 'var(--accent)' : 'var(--text-2)',
-              transition: 'color 0.15s',
-            }}>{t('nav.support')}</Link>
-            
-            {/* Mobil Destek İkonu */}
-            <Link href="/support" className="nav-support-icon-mobile" style={{ display: 'none' }} title={t('nav.support')}>
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"/>
-                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
-                <line x1="12" y1="17" x2="12.01" y2="17"/>
-              </svg>
-            </Link>
+            <div className="nav-lang-selector" style={{
+              display: 'flex',
+              alignItems: 'center',
+              background: 'var(--bg-input)',
+              border: '1px solid var(--border)',
+              borderRadius: 9,
+              padding: '2px',
+              gap: 2,
+              fontSize: 12,
+              fontWeight: 600,
+            }}>
+              <button
+                onClick={() => changeLanguage('tr')}
+                style={{
+                  padding: '4px 8px',
+                  borderRadius: 7,
+                  border: 'none',
+                  background: lang === 'tr' ? 'var(--accent)' : 'transparent',
+                  color: lang === 'tr' ? '#fff' : 'var(--text-3)',
+                  cursor: 'pointer',
+                  fontSize: 11,
+                  fontWeight: 700,
+                  transition: 'background 0.2s, color 0.2s',
+                }}
+              >
+                TR
+              </button>
+              <button
+                onClick={() => changeLanguage('en')}
+                style={{
+                  padding: '4px 8px',
+                  borderRadius: 7,
+                  border: 'none',
+                  background: lang === 'en' ? 'var(--accent)' : 'transparent',
+                  color: lang === 'en' ? '#fff' : 'var(--text-3)',
+                  cursor: 'pointer',
+                  fontSize: 11,
+                  fontWeight: 700,
+                  transition: 'background 0.2s, color 0.2s',
+                }}
+              >
+                EN
+              </button>
+            </div>
 
             {/* Tema Toggle Butonu */}
             {mounted && (
               <button
                 onClick={toggleTheme}
-                className="nav-theme-btn"
+                className="nav-theme-btn nav-theme-btn-left"
                 title={theme === 'dark' ? 'Açık temaya geç' : 'Koyu temaya geç'}
                 style={{
                   width: 34, height: 34, borderRadius: 9,
@@ -187,7 +168,53 @@ export default function NavBar() {
                 )}
               </button>
             )}
+          </div>
 
+          {/* Ortalı logo */}
+          <Link href="/" className="nav-logo">
+            <img src={LOGO_SRC} alt="" className="nav-logo-img" width={36} height={36} style={{ display: 'block', filter: 'drop-shadow(0 4px 12px var(--accent-glow))' }} />
+            <span className="nav-logo-text">Gamerisen</span>
+          </Link>
+
+          {/* Sağ: destek + tema + hesap */}
+          <div className="nav-right-group">
+            {/* Desktop Destek Linki */}
+            <Link href="/support" className="nav-support-link-desktop" style={{
+              padding: '8px 14px', fontSize: 14, fontWeight: 500, whiteSpace: 'nowrap',
+              color: pathname.startsWith('/support') ? 'var(--accent)' : 'var(--text-2)',
+              transition: 'color 0.15s',
+            }}>{t('nav.support')}</Link>
+            {/* Mobil Destek İkonu kaldırıldı (mobil görünümde sıkışıklığı önlemek için) */}
+
+            {/* Tema Toggle Butonu (Masaüstü için sağda kalır, Mobilde gizlenir) */}
+            {mounted && (
+              <button
+                onClick={toggleTheme}
+                className="nav-theme-btn nav-theme-btn-right"
+                title={theme === 'dark' ? 'Açık temaya geç' : 'Koyu temaya geç'}
+                style={{
+                  width: 34, height: 34, borderRadius: 9,
+                  border: '1.5px solid var(--border-hover)',
+                  background: 'var(--bg-card)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', color: 'var(--text-2)',
+                  transition: 'color 0.15s, border-color 0.15s',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.color = 'var(--accent)'; e.currentTarget.style.borderColor = 'var(--accent-border)'; }}
+                onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-2)'; e.currentTarget.style.borderColor = 'var(--border-hover)'; }}
+              >
+                {theme === 'dark' ? (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="5"/>
+                    <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                  </svg>
+                ) : (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                  </svg>
+                )}
+              </button>
+            )}
 
             {user ? (
               <div className="nav-auth-group" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

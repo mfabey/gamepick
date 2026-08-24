@@ -4,22 +4,31 @@ const GROQ_KEY = process.env.GROQ_API_KEY;
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 async function groq(messages, maxTokens = 300) {
-  const res = await fetch(GROQ_URL, {
-    method:  'POST',
-    headers: {
-      'Authorization': `Bearer ${GROQ_KEY}`,
-      'Content-Type':  'application/json',
-    },
-    body: JSON.stringify({
-      model:       'llama-3.1-8b-instant',
-      max_tokens:  maxTokens,
-      temperature: 0.7,
-      messages,
-    }),
-  });
-  if (!res.ok) throw new Error(`Groq HTTP ${res.status}`);
-  const data = await res.json();
-  return data?.choices?.[0]?.message?.content || '';
+  const models = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'groq/compound'];
+  for (const modelName of models) {
+    try {
+      const res = await fetch(GROQ_URL, {
+        method:  'POST',
+        headers: {
+          'Authorization': `Bearer ${GROQ_KEY}`,
+          'Content-Type':  'application/json',
+          'User-Agent':    'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+        },
+        body: JSON.stringify({
+          model:       modelName,
+          max_tokens:  maxTokens,
+          temperature: 0.7,
+          messages,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const text = data?.choices?.[0]?.message?.content || '';
+        if (text) return text;
+      }
+    } catch (e) {}
+  }
+  return '';
 }
 
 // POST /api/recommend

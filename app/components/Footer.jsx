@@ -114,7 +114,6 @@ export default function Footer() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
             <Link href="/terms" style={linkStyle} onMouseEnter={onEnter} onMouseLeave={onLeave}>{t('footer.terms')}</Link>
             <Link href="/privacy" style={linkStyle} onMouseEnter={onEnter} onMouseLeave={onLeave}>{t('footer.privacy')}</Link>
-            <a href="https://partner.steamgames.com/" target="_blank" rel="noopener noreferrer" style={linkStyle} onMouseEnter={onEnter} onMouseLeave={onLeave}>{t('footer.poweredBy')}</a>
           </div>
         </div>
       </div>
