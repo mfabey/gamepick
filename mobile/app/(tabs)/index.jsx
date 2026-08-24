@@ -3,7 +3,7 @@ import { View, Text, Pressable, ScrollView, StyleSheet, Alert, ActivityIndicator
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomFade } from '../../src/components/EdgeFade';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchTrending, fetchGames } from '../../src/api/games';
 import { radius, spacing, TAB_SPACE, PRESSED, type, SECTION_TITLE, TOUCH_MIN } from '../../src/theme';
@@ -28,6 +28,7 @@ import PostCard from '../../src/components/PostCard';
 import FriendActivity, { hasFriendSignal } from '../../src/components/FriendActivity';
 import ReportSheet from '../../src/components/ReportSheet';
 import ShareToFriendSheet from '../../src/components/ShareToFriendSheet';
+import CardExpand from '../../src/components/CardExpand';
 import { fetchForYouCandidates } from '../../src/api/recommend';
 import { getReviewFeed, getFriendActivity, fetchPosts } from '../../src/api/social';
 import { getSession, subscribeSession } from '../../src/services/session';
@@ -35,6 +36,7 @@ import { getCollections, subscribeCollections } from '../../src/services/collect
 import { genreSlugsFor, rankCandidates } from '../../src/services/recommend';
 import { interleaveReviews, mergeSocial, orderHighlights, mergeHighlights, highlightIds } from '../../src/services/homeFeed';
 import { useTabPressAction, scrollRefToTop } from '../../src/hooks/useTabPressAction';
+import { useReducedMotion } from '../../src/hooks/useReducedMotion';
 
 // Stabil fetcher'lar (key'in saf fonksiyonu)
 const fetchNewGames = () => fetchGames({ section: 'new', num: 12 });
@@ -328,6 +330,30 @@ export default function HomeScreen() {
     ]);
   }, [t]);
 
+  // ── BÜYÜME GEÇİŞİ ──
+  // Kart, kapağının ekrandaki çerçevesini veriyor; bindirme oradan
+  // detayın kapak alanına (0,0,genişlik,320) büyüyor ve VARINCA
+  // gezinme yapılıyor. Bindirme, detay ilk karesini çizene kadar duruyor.
+  //
+  // Reduce Motion'da geçiş hiç kurulmuyor: hareket bilgi taşımıyor,
+  // yalnız sürekliliği anlatıyor.
+  const azalt = useReducedMotion();
+  const [buyuyen, setBuyuyen] = useState(null);   // { cerceve, game }
+
+  const kartAc = useCallback((cerceve, game) => {
+    console.log('[EXPAND] basla', JSON.stringify({ cerceve, azalt, ad: game?.name }));
+    if (azalt || !cerceve) { go(router, game); return; }
+    setBuyuyen({ ...cerceve, game });
+  }, [azalt, router]);
+
+  const buyumeVardi = useCallback(() => {
+    console.log('[EXPAND] vardi');
+    if (buyuyen?.game) go(router, buyuyen.game);
+  }, [buyuyen, router]);
+
+  // Ekrandan çıkıp geri dönüldüğünde bindirme kalmasın.
+  useFocusEffect(useCallback(() => () => setBuyuyen(null), []));
+
   const paylasAc = useCallback((game) => {
     setPaylas({ gameId: String(game.id), name: game.name });
   }, []);
@@ -466,17 +492,17 @@ export default function HomeScreen() {
         )}
 
         {lead === 'forYou' && (
-          <FadeIn delay={140}><Section title={t('home.forYou')} games={forYou} router={router} onDismiss={handleDismiss} onShare={paylasAc} /></FadeIn>
+          <FadeIn delay={140}><Section title={t('home.forYou')} games={forYou} router={router} onDismiss={handleDismiss} onShare={paylasAc} onExpand={kartAc} /></FadeIn>
         )}
         {lead === 'trend' && (
-          <FadeIn delay={140}><Section title={t('home.trend')} games={trend} router={router} onShare={paylasAc} /></FadeIn>
+          <FadeIn delay={140}><Section title={t('home.trend')} games={trend} router={router} onShare={paylasAc} onExpand={kartAc} /></FadeIn>
         )}
 
         {/* Yeni Çıkanlar ve İndirimdekiler LİDERİN ALTINDA, tam ağırlıkta.
             Akışa karıştırılmışlardı; geri alındı çünkü ikisi de NİYETLE
             aranıyor — "indirime ne girmiş" sorusunun akışta karşılığı yok. */}
-        <FadeIn delay={200}><Section title={t('home.new')} games={fresh} router={router} onShare={paylasAc} /></FadeIn>
-        <FadeIn delay={260}><Section title={t('home.sale')} games={sale} router={router} onShare={paylasAc} /></FadeIn>
+        <FadeIn delay={200}><Section title={t('home.new')} games={fresh} router={router} onShare={paylasAc} onExpand={kartAc} /></FadeIn>
+        <FadeIn delay={260}><Section title={t('home.sale')} games={sale} router={router} onShare={paylasAc} onExpand={kartAc} /></FadeIn>
     </View>
   );
 
@@ -510,6 +536,13 @@ export default function HomeScreen() {
       />
 
       {/* Raporlama, akıştaki inceleme kartlarına uzun basınca açılıyor. */}
+      {/* Büyüme geçişi bindirmesi — her şeyin ÜSTÜNDE. */}
+      <CardExpand
+        kaynak={buyuyen}
+        onVar={buyumeVardi}
+        onBitti={() => setBuyuyen(null)}
+      />
+
       <ShareToFriendSheet
         visible={!!paylas}
         onClose={() => setPaylas(null)}
@@ -534,7 +567,7 @@ function go(router, g) {
   });
 }
 
-function Section({ title, games, router, onDismiss, onShare }) {
+function Section({ title, games, router, onDismiss, onShare, onExpand }) {
   const { t } = useLanguage();
   // Kanca erken donusten ONCE: asagida `games` bossa null donuluyor.
   const styles = useStyles(makeStyles);
@@ -553,7 +586,7 @@ function Section({ title, games, router, onDismiss, onShare }) {
         </Pressable>
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-        {games.map(g => <HomeCard key={g.id} game={g} router={router} onDismiss={onDismiss} onShare={onShare} />)}
+        {games.map(g => <HomeCard key={g.id} game={g} router={router} onDismiss={onDismiss} onShare={onShare} onExpand={onExpand} />)}
       </ScrollView>
     </View>
   );
@@ -563,12 +596,15 @@ function Section({ title, games, router, onDismiss, onShare }) {
 // kart vardı: kendi rozetleri, kendi ad bindirmesi, kendi 132pt genişliği.
 // HTML ölçüsü 148 ("eski 132 değil") ve ad kapağın altında — ikisi de
 // GameCard'ın rail varyantında.
-const HomeCard = memo(function HomeCard({ game, router, onDismiss, onShare }) {
+const HomeCard = memo(function HomeCard({ game, router, onDismiss, onShare, onExpand }) {
   return (
     <GameCard
       game={game}
       variant="rail"
-      onPress={() => go(router, game)}
+      // `onExpand` verildiğinde dokunuş doğrudan gezinmiyor: kapak
+      // çerçevesi ölçülüp büyüme geçişi başlıyor (bkz. CardExpand).
+      onPress={onExpand ? undefined : () => go(router, game)}
+      onExpand={onExpand}
       // FAZ 1: eleme artık GÖRÜNÜR bir "×". `onDismiss` yalnızca "Senin için"
       // şeridinden geliyor — Yeni ve İndirim şeritleri onu göndermiyor,
       // dolayısıyla orada daire de çıkmıyor.
