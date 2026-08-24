@@ -170,7 +170,7 @@ export default function NewsPage() {
                 <div className="news-featured-image-wrapper" style={{ background: featured.art }}>
                   {featured.image && (
                     /* eslint-disable-next-line @next/next/no-img-element */
-                    <img src={featured.image} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.85 }} />
+                    <img src={featured.image} alt="" referrerPolicy="no-referrer" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.85 }} />
                   )}
                   <span style={{ position: 'absolute', right: -12, bottom: -34, fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 230, lineHeight: 1, color: 'rgba(255,255,255,0.15)', userSelect: 'none' }}>{featured.mono}</span>
                   <span style={{ position: 'absolute', left: 20, top: 20, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 999, background: 'var(--accent)', color: '#fff', fontSize: 11.5, fontWeight: 800, letterSpacing: '0.06em', boxShadow: '0 6px 16px rgba(0,0,0,0.2)' }}>
@@ -207,7 +207,7 @@ export default function NewsPage() {
                   <div style={{ position: 'relative', height: 166, background: n.art, overflow: 'hidden' }}>
                     {n.image && (
                       /* eslint-disable-next-line @next/next/no-img-element */
-                      <img src={n.image} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.85 }} />
+                      <img src={n.image} alt="" referrerPolicy="no-referrer" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.85 }} />
                     )}
                     <span style={{ position: 'absolute', right: -8, bottom: -24, fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 128, lineHeight: 1, color: 'rgba(255,255,255,0.16)', userSelect: 'none' }}>{n.mono}</span>
                     <span style={{ position: 'absolute', left: 14, top: 14, padding: '5px 12px', borderRadius: 999, background: 'rgba(255,255,255,0.94)', color: '#241d14', fontSize: 11.5, fontWeight: 700, boxShadow: '0 2px 8px rgba(0,0,0,0.12)' }}>{n.cat}</span>

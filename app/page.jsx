@@ -840,7 +840,7 @@ function HomeNews() {
             <div style={{ position: 'relative', height: 148, background: n.art, backgroundSize: 'cover', backgroundPosition: 'center', overflow: 'hidden' }}>
               {n.image && (
                 /* eslint-disable-next-line @next/next/no-img-element */
-                <img src={n.image} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.85 }} />
+                <img src={n.image} alt="" referrerPolicy="no-referrer" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.85 }} />
               )}
               <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(6,7,9,0.6), transparent 60%)', zIndex: 1 }} />
               <span style={{ position: 'absolute', left: 13, top: 13, padding: '4px 11px', borderRadius: 999, background: 'rgba(8,10,14,0.65)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.16)', fontSize: 11, fontWeight: 700, color: '#fff', zIndex: 2 }}>{n.cat || 'Haberler'}</span>
