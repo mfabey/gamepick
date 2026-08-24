@@ -23,7 +23,7 @@
 // tutmuyordu: geçiş kartın alt üçte birinde başlayıp bir anda koyuluyor,
 // aradaki parlak şeritte beyaz yazı eriyordu. Orta durak o şeridi kapatıyor.
 // ─────────────────────────────────────────────────────────────────────────────
-import { useState, useEffect } from 'react';
+import { useState, useEffect, forwardRef } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -43,7 +43,11 @@ const FADE_MS = 200;
  * @param {node}   [children]     rozetler, ad — karartmanın ÜSTÜNDE çizilir
  * @param {bool}  [kapakNotu]     kapak yoksa köşedeki 11pt not (sol alt dolu ise false)
  */
-export default function GameCover({ uri, name, recyclingKey, style, children, kapakNotu = true, ...rest }) {
+// forwardRef: büyüme geçişi kapağın EKRANDAKİ çerçevesini ölçüyor
+// (measureInWindow) ve bunun için köke bir ref gerekiyor.
+const GameCover = forwardRef(function GameCover(
+  { uri, name, recyclingKey, style, children, kapakNotu = true, ...rest }, ref
+) {
   const [failed, setFailed] = useState(false);
 
   // GERİ DÖNÜŞÜM SIFIRLAMASI ŞART. FlashList kartları yeniden kullanıyor;
@@ -54,7 +58,7 @@ export default function GameCover({ uri, name, recyclingKey, style, children, ka
   // Monogram karartmanın ALTINDA: üstünde olsaydı gradyan onu da karartır ve
   // harfler okunmazdı. Kapak yüklenince görsel monogramın üstünü örtüyor.
   return (
-    <View style={style}>
+    <View ref={ref} style={style} collapsable={false}>
       {failed || !uri ? (
         <Monogram name={name} style={StyleSheet.absoluteFill} not={kapakNotu} />
       ) : (
@@ -77,4 +81,6 @@ export default function GameCover({ uri, name, recyclingKey, style, children, ka
       {children}
     </View>
   );
-}
+});
+
+export default GameCover;

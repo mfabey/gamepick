@@ -21,7 +21,7 @@
 // Ölçülmüştü: erişilebilirlik boyutunda şerit adları "Robocr…" diye
 // kırpılıyordu.
 // ─────────────────────────────────────────────────────────────────────────────
-import { memo } from 'react';
+import { memo, useRef, useCallback } from 'react';
 import { View, Text, Pressable, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -43,9 +43,11 @@ import { turAdi } from '../../services/genreName';
  * @param {func}   [onLongPress]
  * @param {func}   [onDismiss] verilirse kapakta 26pt "×" çıkar (yalnız öneri)
  * @param {func}   [onShare]   verilirse kapakta 26pt gönderme düğmesi çıkar
+ * @param {func}   [onExpand]  verilirse dokunuş KAPAK ÇERÇEVESİYLE bildirilir
+ *                             (büyüme geçişi için) — `onPress` yerine geçer
  * @param {object} [style]    dış kap (ızgara hücresi genişliği buradan)
  */
-function GameCard({ game, variant = 'grid', context, overlay, onPress, onLongPress, onDismiss, onShare, style }) {
+function GameCard({ game, variant = 'grid', context, overlay, onPress, onLongPress, onDismiss, onShare, onExpand, style }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const { t, formatPrice } = useLanguage();
@@ -59,7 +61,24 @@ function GameCard({ game, variant = 'grid', context, overlay, onPress, onLongPre
   const isFree = game?.isFree || price?.isFree;
   const onSale = price?.discount > 0 && !isFree;
 
-  const git = onPress || (() => router.push({
+  // ── BÜYÜME GEÇİŞİ İÇİN ÖLÇÜM ──
+  // `onExpand` verilmişse dokunuş doğrudan gezinmiyor: kapağın EKRANDAKİ
+  // çerçevesi ölçülüp çağrı yerine veriliyor, bindirme oradan başlıyor.
+  // Ölçüm başarısız olursa (nadir) düz gezinmeye düşülüyor — geçiş bir
+  // süsleme, yolu kapatmamalı.
+  const kapakRef = useRef(null);
+  const buyuterekAc = useCallback(() => {
+    const el = kapakRef.current;
+    if (!el?.measureInWindow) { onExpand(null, game); return; }
+    el.measureInWindow((x, y, width, height) => {
+      onExpand(
+        (width && height) ? { x, y, width, height, image: game?.image, name: game?.name } : null,
+        game
+      );
+    });
+  }, [onExpand, game]);
+
+  const git = (onExpand ? buyuterekAc : onPress) || (() => router.push({
     pathname: '/game/[id]',
     params: {
       id: String(game.id), name: game.name, image: game.image || '',
@@ -193,6 +212,7 @@ function GameCard({ game, variant = 'grid', context, overlay, onPress, onLongPre
           {/* Aydınlanma KAPAĞA, karta değil: kartın metin bloğunun zemini
               saydam, oraya %6 beyaz koymak sayfanın kendisini lekelerdi. */}
           <GameCover
+            ref={kapakRef}
             uri={game?.image}
             fallbackUri={game?.logo}
             name={game?.name}

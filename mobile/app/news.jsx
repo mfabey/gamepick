@@ -24,6 +24,7 @@ import EmptyState from '../src/components/EmptyState';
 import { radius, spacing, PRESSED, type, CHIP, CHIP_TEXT } from '../src/theme';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
+import { bagilZaman } from '../src/utils/relativeTime';
 import { useQuery } from '../src/hooks/useQuery';
 
 export default function NewsScreen() {
@@ -142,7 +143,7 @@ export default function NewsScreen() {
                 <View style={styles.featuredInfo}>
                   <View style={styles.catRow}>
                     <View style={styles.catPill}><Text style={styles.catPillText}>{featured.cat}</Text></View>
-                    <Text style={styles.metaText}>{featured.source} · {featured.date}</Text>
+                    <Text style={styles.metaText}>{featured.source} · {bagilZaman(featured.ts, t) || featured.date}</Text>
                   </View>
                   <Text numberOfLines={3} style={styles.featuredTitle}>{featured.title}</Text>
                 </View>
@@ -206,7 +207,13 @@ const NewsRow = memo(function NewsRow({ item, onPress, onShare }) {
           <View style={styles.catPillSm}><Text style={styles.catPillTextSm}>{item.cat}</Text></View>
         </View>
         <Text numberOfLines={3} style={styles.rowTitle}>{item.title}</Text>
-        <Text style={styles.rowMeta} numberOfLines={1}>{item.source} · {item.date}{item.read ? ` · ${item.read}` : ''}</Text>
+        {/* TAZELİK, okuma süresi değil. Eskiden `item.read` yazıyordu ve
+            34 haberin 34'ü "1 dk" diyordu — RSS özeti okuma süresini
+            ölçmeye yetmiyor. Bir haftadan eskisinde bağıl ifade bilgi
+            taşımadığı için mutlak tarihe dönülüyor. */}
+        <Text style={styles.rowMeta} numberOfLines={1}>
+          {item.source} · {bagilZaman(item.ts, t) || item.date}
+        </Text>
       </View>
 
       {/* GÖRÜNÜR GÖNDERME DÜĞMESİ. Uzun basmaya bağlıydı — keşfedilemiyordu
