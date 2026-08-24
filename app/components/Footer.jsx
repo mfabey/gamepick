@@ -134,7 +134,8 @@ export default function Footer() {
                 </div>
               </a>
 
-              {/* App Store */}
+              {/* App Store (Şimdilik gizli, iOS uygulaması yayınlandığında bu yorum satırını kaldırabilirsiniz) */}
+              {/*
               <a
                 href="https://apps.apple.com/app/gamerisen/idYOUR_APP_ID"
                 target="_blank"
@@ -167,6 +168,7 @@ export default function Footer() {
                   </span>
                 </div>
               </a>
+              */}
             </div>
           </div>
         </div>
