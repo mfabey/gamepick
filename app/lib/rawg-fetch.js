@@ -21,15 +21,14 @@
 // fark yaratıyor.
 // ─────────────────────────────────────────────────────────────────────────────
 
-// 2.5 sn: RAWG sağlıklıyken tipik yanıt 300-800 ms, yani bu pay fazlasıyla
-// yeterli. Daha uzun tutmanın tek etkisi, çöküş sırasında beklemeyi uzatmak.
-const DEFAULT_TIMEOUT_MS = 2500;
+// 5 sn: Vercel sunucularından RAWG'a erişim zaman zaman yerel makineden
+// daha yavaş olabiliyor. 2.5 sn bazı durumlarda yetmiyordu ve devre kesici
+// gereksiz yere devreye girip tüm istekleri yedek listeye düşürüyordu.
+const DEFAULT_TIMEOUT_MS = 5000;
 
-// 5 dakika: 60 sn'de bir yeniden denemek, dakikada bir isteğin zaman aşımını
-// ödemesi demekti ve o isteğe denk gelen kullanıcı yine boş liste görüyordu.
-// Beşe bölmek o olasılığı beşte bire indiriyor. RAWG geri geldiğinde en fazla
-// 5 dakika gecikmeyle normale dönülüyor.
-const COOLDOWN_MS = 5 * 60 * 1000;
+// 2 dakika: RAWG geçici yavaşlıklarda hızla normale dönüyor. 5 dakika
+// beklemenin pratik faydası az, 2 dakika yeterli soğuma süresi sağlıyor.
+const COOLDOWN_MS = 2 * 60 * 1000;
 
 let downUntil = 0;
 
