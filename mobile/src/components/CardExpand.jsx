@@ -47,9 +47,11 @@ const EGRI = Easing.bezier(0.2, 0.9, 0.2, 1);
 /**
  * @param {object|null} kaynak  { x, y, width, height, image, name, id }
  * @param {func}        onVar   hedefe varınca (gezinme burada yapılıyor)
- * @param {func}        onBitti bindirme kaldırılacağı an
  */
-export default function CardExpand({ kaynak, onVar, onBitti }) {
+// Bindirme KENDİSİ kalkmıyor: anasayfa, odağı kaybettiğinde temizliyor
+// (useFocusEffect). Böylece bindirme, detay ekranı devralana kadar
+// duruyor — erken kalksaydı bir kare boyunca boşluk görünürdü.
+export default function CardExpand({ kaynak, onVar }) {
   const { colors } = useTheme();
   const ilerleme = useSharedValue(0);
   const { width: EKRAN_G } = Dimensions.get('window');

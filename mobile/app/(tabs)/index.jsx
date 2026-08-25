@@ -346,7 +346,19 @@ export default function HomeScreen() {
   }, [azalt, router]);
 
   const buyumeVardi = useCallback(() => {
-    if (buyuyen?.game) go(router, buyuyen.game);
+    const g = buyuyen?.game;
+    if (!g) return;
+    // `buyume: '1'` → ekranın kendi alttan-kayması KAPALI (bkz. _layout).
+    // Kapak zaten büyüyerek yerine oturdu; ikinci bir açılış animasyonu
+    // sayfayı iki kez açıyormuş gibi gösteriyordu.
+    router.push({
+      pathname: '/game/[id]',
+      params: {
+        id: String(g.id), name: g.name, image: g.image || '',
+        slug: g.rawgSlug || '', hasSteam: g.hasSteam ? '1' : '',
+        buyume: '1',
+      },
+    });
   }, [buyuyen, router]);
 
   // Ekrandan çıkıp geri dönüldüğünde bindirme kalmasın.
@@ -538,7 +550,6 @@ export default function HomeScreen() {
       <CardExpand
         kaynak={buyuyen}
         onVar={buyumeVardi}
-        onBitti={() => setBuyuyen(null)}
       />
 
       <ShareToFriendSheet

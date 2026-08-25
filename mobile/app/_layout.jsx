@@ -48,7 +48,21 @@ function TemaliYigin() {
         }}
       >
                 <Stack.Screen name="(tabs)" />
-                <Stack.Screen name="game/[id]" options={{ animation: 'slide_from_bottom' }} />
+                {/* ÇİFT ANİMASYON DÜZELTMESİ.
+                    Anasayfa kartından gelindiğinde kapak zaten BÜYÜYEREK
+                    tam ekrana oturuyor (CardExpand). Ekranın kendi
+                    alttan-kayması da çalışınca sayfa ikinci kez açılıyordu:
+                    önce büyüme, sonra alttan kayma.
+
+                    Animasyon route parametresine bağlandı — büyümeyle
+                    gelindiğinde `none`, öteki yollardan (arama, sohbetteki
+                    paylaşım, bildirim) eskisi gibi alttan kayma. */}
+                <Stack.Screen
+                  name="game/[id]"
+                  options={({ route }) => ({
+                    animation: route?.params?.buyume === '1' ? 'none' : 'slide_from_bottom',
+                  })}
+                />
                 <Stack.Screen name="wishlist" />
                 <Stack.Screen name="discover" />
                 <Stack.Screen name="swipe" />
