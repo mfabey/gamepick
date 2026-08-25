@@ -341,13 +341,11 @@ export default function HomeScreen() {
   const [buyuyen, setBuyuyen] = useState(null);   // { cerceve, game }
 
   const kartAc = useCallback((cerceve, game) => {
-    console.log('[EXPAND] basla', JSON.stringify({ cerceve, azalt, ad: game?.name }));
     if (azalt || !cerceve) { go(router, game); return; }
     setBuyuyen({ ...cerceve, game });
   }, [azalt, router]);
 
   const buyumeVardi = useCallback(() => {
-    console.log('[EXPAND] vardi');
     if (buyuyen?.game) go(router, buyuyen.game);
   }, [buyuyen, router]);
 
