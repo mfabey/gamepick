@@ -86,15 +86,31 @@ export async function GET(request) {
     priceMap[key] = await fetchPrice(origin, g);
   }));
 
+  const force = request.nextUrl.searchParams.get('force') === 'true';
+
   // Karşılaştır, bildirim kuyruğu oluştur, kayıtları güncelle
   const messages = [];
   for (const rec of records) {
     let changed = false;
     for (const w of rec.watch) {
       const price = priceMap[w.key];
-      if (!price || price.price == null) continue;
-      const discount = price.discount || 0;
+      const discount = price?.discount || 0;
       const prev = w.lastDiscount;
+
+      // force=true ise baseline'a bakılmaksızın test bildirimi fırlat
+      if (force) {
+        messages.push({
+          to: rec.token,
+          title: discount > 0 ? '💸 İndirim Alarmı!' : '🔔 Fiyat Takibi Aktif',
+          body: discount > 0 ? `${w.name} şu anda -%${discount} indirimde!` : `${w.name} için fiyat takibi aktif. İndirim olduğunda bildirim alacaksınız.`,
+          data: { slug: w.slug || '', name: w.name, type: 'price-alert' },
+          sound: 'default',
+          priority: 'high',
+        });
+        continue;
+      }
+
+      if (!price || price.price == null) continue;
 
       // İlk kez görülüyorsa baseline ayarla, bildirim gönderme
       if (prev == null) {
