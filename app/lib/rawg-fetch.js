@@ -13,12 +13,31 @@
 // RAWG çağrısı yapabiliyor ve her biri ayrı ayrı zaman aşımını bekler.
 // RAWG'ın çöktüğü bir kez anlaşıldıysa sonrakiler doğrudan yedeğe gidiyor.
 //
-// Süre dolunca bir istek yeniden deniyor → RAWG geri geldiğinde sistem
-// kendiliğinden normale dönüyor, elle müdahale gerekmiyor.
-//
 // NOT: Vercel'de her fonksiyon örneği kendi durumunu tutuyor, yani devre
 // örnek başına. Yine de tek bir örneğe düşen ardışık isteklerde belirgin
 // fark yaratıyor.
+//
+// ── 26 AĞUSTOS 2026: KESİCİNİN KENDİSİ ARIZAYA DÖNÜŞTÜ ──────────────────────
+// Üretimde ölçüldü. RAWG'ın kendisi SAĞLAMDI (/api/debug-rawg: HTTP 200,
+// 236 ms, count 559 436) ama /api/games sürekli yedek listeye düşüyordu:
+//
+//   3 / 6 / 12 PARALEL istek (her biri ayrı, soğuk örnek) → 0/3 · 0/6 · 0/12
+//   TEK BAĞLANTIDA ardışık 4 istek (aynı sıcak örnek)     → 4/4 sınırlı
+//   Ara vermeden ardışık 18 istek                          → 18/18 sınırlı
+//
+// Soğuk örnek sağlam, sıcak örnek bozuk. Sebebi: `downUntil` modül kapsamında
+// ve bu dosyayı 4 rota paylaşıyor (games · trending · card-price · rawg-game).
+// TEK bir yavaş çağrı, o örneğe düşen BÜTÜN rotaları 2 dakika boyunca yedeğe
+// yolluyordu. Sürekli trafik altında kesici pratikte hiç kapanmıyordu.
+//
+// İki değişiklik, ikisi de bu ölçüme dayanıyor:
+//   • Tek hata artık kesiciyi AÇMIYOR — art arda 3 hata gerekiyor. Tekil bir
+//     zaman aşımı sık, kalıcı bir çöküş değil; birini diğeri sanmak pahalıydı.
+//   • Soğuma 120 sn → 20 sn. 120 sn, RAWG'ın geri geldiği anla kesicinin
+//     kapandığı an arasına iki dakikalık kör pencere koyuyordu.
+//
+// YARI AÇIK: soğuma bitince ilk istek deneme atışıdır — hâlâ bozuksa kesici
+// üç hata beklemeden TEK hatayla yeniden açılır (bkz. ardArda başlangıcı).
 // ─────────────────────────────────────────────────────────────────────────────
 
 // 5 sn: Vercel sunucularından RAWG'a erişim zaman zaman yerel makineden
@@ -26,15 +45,33 @@
 // gereksiz yere devreye girip tüm istekleri yedek listeye düşürüyordu.
 const DEFAULT_TIMEOUT_MS = 5000;
 
-// 2 dakika: RAWG geçici yavaşlıklarda hızla normale dönüyor. 5 dakika
-// beklemenin pratik faydası az, 2 dakika yeterli soğuma süresi sağlıyor.
-const COOLDOWN_MS = 2 * 60 * 1000;
+// 20 sn: kesicinin amacı "askıda bekleyen isteği önlemek", "RAWG'ı cezalandırmak"
+// değil. Bir örneğe saniyede birkaç istek düşüyor; 20 sn zincirleme zaman
+// aşımını kesmeye yetiyor, RAWG toparlandığında geri dönüşü geciktirmiyor.
+const COOLDOWN_MS = 20 * 1000;
+
+// 3: tek bir zaman aşımı gürültüdür, üçü art arda sinyaldir.
+const FAIL_THRESHOLD = 3;
 
 let downUntil = 0;
+let ardArda   = 0;   // art arda başarısız çağrı sayısı; her başarıda sıfırlanır
 
 /** RAWG şu an devre dışı sayılıyor mu? (çağıran taraf isterse erken yedeğe gider) */
 export function isRawgDown() {
-  return Date.now() < downUntil;
+  if (Date.now() < downUntil) return true;
+  // Soğuma yeni bitti: kesici kapandı ama sayaç eşiğin bir altında bırakılıyor,
+  // böylece deneme atışı da başarısız olursa hemen yeniden açılır.
+  if (downUntil !== 0) {
+    downUntil = 0;
+    ardArda   = FAIL_THRESHOLD - 1;
+  }
+  return false;
+}
+
+/** Test/teşhis için: kesiciyi elle sıfırla. */
+export function resetRawgCircuit() {
+  downUntil = 0;
+  ardArda   = 0;
 }
 
 /**
@@ -53,9 +90,16 @@ export async function rawgJson(url, { timeout = DEFAULT_TIMEOUT_MS, revalidate =
     if (!res.ok) throw new Error(`RAWG ${res.status}`);
     const json = await res.json();
     downUntil = 0;                       // sağlıklı yanıt → devreyi kapat
+    ardArda   = 0;
     return json;
   } catch (err) {
-    downUntil = Date.now() + COOLDOWN_MS;
+    // EŞİĞE VARMADAN AÇMA. Öncesi tek hatada 2 dakika kapatıyordu; ölçüm
+    // bunun sıcak örnekleri kalıcı olarak yedeğe kilitlediğini gösterdi.
+    ardArda += 1;
+    if (ardArda >= FAIL_THRESHOLD) {
+      downUntil = Date.now() + COOLDOWN_MS;
+      ardArda   = 0;
+    }
     if (err?.name === 'AbortError') throw new Error(`RAWG zaman aşımı (${timeout}ms)`);
     throw err;
   } finally {

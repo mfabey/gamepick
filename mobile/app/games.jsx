@@ -124,7 +124,12 @@ export default function GamesScreen() {
     tags:       filters.tags.join(','),
   }), [filters]);
 
-  const load = useCallback(async () => {
+  // ── `zorla`: "TEKRAR DENE" ÖNBELLEĞİ ATLAMALI ──────────────────────────
+  // Bu düğme HİÇBİR ŞEY YAPMIYORDU. Sınırlı yanıt da başarılı bir yanıttır ve
+  // `fetchQuery` onu 5 dk boyunca (PAGE1_TTL) önbellekte tutar; `load()` aynı
+  // anahtarı okuduğu için düğme aynı sınırlı listeyi geri koyuyordu. Kullanıcı
+  // basıyor, ekran değişmiyor, hatayı kendinde arıyordu.
+  const load = useCallback(async (zorla = false) => {
     const r = ref.current;
     r.page = 1; r.canMore = true; r.fetching = true; r.seen = new Set();
     r.section = section; r.query = searchTerm; r.filters = apiFilters;
@@ -133,13 +138,13 @@ export default function GamesScreen() {
     // ANAHTAR TÜM FİLTRELERİ TAŞIMALI: taşımasaydı tür değiştirince önbellekten
     // eski listenin 1. sayfası dönerdi ve filtre çalışmıyor görünürdü.
     const key = `games:${section}|${searchTerm}|${Object.values(apiFilters).join('|')}`;
-    const cacheHit = isFresh(getEntry(key), PAGE1_TTL);
+    const cacheHit = !zorla && isFresh(getEntry(key), PAGE1_TTL);
     if (!cacheHit) setLoading(true);   // önbellekten geliyorsa skeleton yanıp sönmesin
     try {
       const data = await fetchQuery(
         key,
         () => fetchGames({ page: 1, num: NUM, section, q: searchTerm, ...apiFilters }),
-        { ttl: PAGE1_TTL }
+        { ttl: PAGE1_TTL, force: zorla }
       );
       const results = (data.results || []).filter(g => {
         if (r.seen.has(g.id)) return false;
@@ -147,7 +152,14 @@ export default function GamesScreen() {
       });
       setGames(results);
       setBozuk(false);
-      setLimited(data.limited ? { unavailable: data.unavailable || [] } : null);
+      // `cevrimdisi` AYRI TAŞINIYOR: `limited` artık "bant göster" demek,
+      // "çevrimdışıyız" demek değil. Sunucu canlı Steam listesi döndürüp
+      // yalnız bir filtreyi uygulayamadığında da bant çıkıyor — ama metni
+      // farklı olmalı (bkz. LimitedMode). Alan yoksa (eski sunucu) eski
+      // anlam korunuyor: çevrimdışı.
+      setLimited(data.limited
+        ? { unavailable: data.unavailable || [], cevrimdisi: data.cevrimdisi !== false }
+        : null);
       prefetchImages(results.map(g => g.image));
       r.canMore = (data.total || 0) > NUM;
     } catch {
@@ -364,7 +376,7 @@ export default function GamesScreen() {
             <View style={styles.bozukBant}>
               <Text style={styles.bozukBaslik}>{t('games.degraded')}</Text>
               <Text style={styles.bozukMetin}>{t('games.degradedDesc')}</Text>
-              <Pressable onPress={load} hitSlop={8} style={({ pressed }) => [styles.bozukEylem, pressed && PRESSED]}>
+              <Pressable onPress={() => load(true)} hitSlop={8} style={({ pressed }) => [styles.bozukEylem, pressed && PRESSED]}>
                 <Text style={styles.bozukEylemText}>{t('common.retry')}</Text>
               </Pressable>
             </View>
@@ -421,7 +433,8 @@ export default function GamesScreen() {
                 <View style={{ paddingHorizontal: spacing.s20, paddingBottom: spacing.s16 }}>
                   <LimitedMode
                     unavailable={limited.unavailable}
-                    onRetry={load}
+                    cevrimdisi={limited.cevrimdisi}
+                    onRetry={() => load(true)}
                     onDismiss={() => setLimitedGizli(true)}
                   />
                 </View>

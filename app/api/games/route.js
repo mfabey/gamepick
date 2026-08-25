@@ -348,6 +348,15 @@ async function fetchSteamSearchPaginated(searchUrl, isFree = false, isOnSale = f
       filtered.sort((a, b) => new Date(b.released || 0) - new Date(a.released || 0));
     }
 
+    // HAM SAYI DİZİYE İLİŞTİRİLİYOR — sayfalamanın tek doğru girdisi bu.
+    // Süzgeç (yetişkin · DLC · appid'siz kayıt) 24 isteğin 20'ye düşmesine yol
+    // açıyor; çağıran taraf yalnız `filtered.length`i görünce bunu "Steam'de
+    // daha fazla oyun yok" sanıyor ve sonsuz kaydırmayı kapatıyordu. Steam KAÇ
+    // kayıt döndürdüğü ayrı bilgi ve ayrı taşınmalı.
+    // Dizi üzerinde alan: JSON.stringify yok sayar, mevcut 6 çağrı yerinin
+    // hiçbiri bozulmaz — dönüş türünü değiştirmek altısını da elden geçirirdi.
+    Object.defineProperty(filtered, 'hamSayi', { value: items.length, enumerable: false });
+
     return filtered;
   } catch (err) {
     console.error("Steam search fallback failed:", err);
@@ -764,7 +773,18 @@ export async function GET(request) {
           }
 
           const rawgResults = (rawgData.results || []).filter(g => !isAdultContent(g) && !isDlc(g)).map(formatRawgGame);
+          // RAWG DÜŞTÜYSE count 0 GELİR ve toplam yalnız Steam'in verdiği
+          // kadar olur. Ölçüldü: n=20, total=20 → istemcinin `canMore =
+          // total > 24` hesabı İLK sayfada kapanıyor, "Yeni Çıkanlar" 20
+          // oyunda bitiyordu.
+          //
+          // EŞİK `>= num` DEĞİL: fetchSteamNewReleases, Steam'in curated
+          // `featuredcategories` listesi — sabit ~20 kayıt, SAYFALANMIYOR.
+          // Yani 20 gelmesi "kaynak tükendi" demek değil; 2. sayfa bambaşka
+          // ve derin bir kaynağa (Steam sort_by=Released_DESC) düşüyor.
+          // Tekrar eden kayıtları istemci zaten `seen` kümesiyle eliyor.
           total = (rawgData.count || 0) + filteredSteam.length;
+          if (!rawgData.count && filteredSteam.length > 0) total = page * num + 48;
 
           // Temizleme: hasStores olanları ve silinenleri filtrele
           const filteredRawg = rawgResults.filter(g => g.hasStores && !KNOWN_DELISTED_SLUGS.has(g.rawgSlug));
@@ -796,12 +816,6 @@ export async function GET(request) {
         if (section === 'free') {
           // Ücretsiz oyunlar RAWG'da çoğunlukla mağaza linki olmaz, hasStores şartı arama
           results = results.filter(g => !KNOWN_DELISTED_SLUGS.has(g.rawgSlug));
-          if (page === 1) {
-            const seenRawgIds = new Set(results.map(g => g.id));
-            const extra = STATIC_FREE_GAMES.filter(g => !seenRawgIds.has(g.id));
-            results = [...extra, ...results];
-            total = total + extra.length;
-          }
         } else {
           results = results.filter(g => g.hasStores && !KNOWN_DELISTED_SLUGS.has(g.rawgSlug));
         }
@@ -809,17 +823,24 @@ export async function GET(request) {
     } catch (err) {
       console.warn('RAWG API fetch failed, proceeding to fallback:', err.message);
     }
+
     } // end of RAWG wrap block
 
-    // Fallback logic for sections when RAWG is limited or returns no results
+    // ── YEDEK YOLLAR ─────────────────────────────────────────────────────
+    // ÜÇ AYRI SONUÇ VAR VE ÜÇÜ AYNI ŞEY DEĞİL:
+    //   1) RAWG yolu doldu           → tam liste, tüm filtreler işledi
+    //   2) Steam CANLI araması doldu → liste TAZE; yalnız bazı filtreler
+    //                                  uygulanamadı
+    //   3) 122 oyunluk statik DB     → gerçekten çevrimdışıyız
+    //
+    // Öncesinde bu blok en başında koşulsuz `limited = true` yazıyordu, yani
+    // 2 ile 3 aynı sayılıyordu. Sonucu ölçüldü: `free` bölümü 24 CANLI Steam
+    // oyunu gösterirken kullanıcı "veritabanına ulaşılamıyor, çevrimdışı
+    // listeyi gösteriyoruz" okuyor ve filtreleri gri görüyordu. Sessiz
+    // başarısızlık yasaksa, çalışan bir şeye bozuk demek de yasak.
+    let steamYedegi = false;
     if (results.length === 0) {
       console.log(`Applying paginated fallback for section: ${section || 'all'}, page: ${page}, query: ${q}`);
-      // SESSIZ BASARISIZLIK YASAK (tasarim handoff'u). Buraya dusuldugunde
-      // istemci bunu BILMELI: yedek yol yalnizca tur/ucretsiz/arama suzuyor,
-      // magaza-puan-etiket filtreleri UYGULANMIYOR. Yanit govdesinde bunu
-      // soyleyen bir alan yoktu; iki yol da source:'rawg-steam-merge'
-      // donduruyordu ve istemci farki anlayamiyordu.
-      limited = true;
 
       const GENRE_MAP = {
         'action': 'Aksiyon',
@@ -878,17 +899,57 @@ export async function GET(request) {
         }
         dynamicResults = await fetchSteamSearchPaginated(url, false, false, true);
         fetchedDynamically = true;
+      } else {
+        // ── KALAN HER ŞEY: "Tümü", "En yüksek puan" ve yalnız-tür filtresi ──
+        // Bu üçünün dinamik yedeği HİÇ YOKTU; doğrudan 122 oyunluk statik
+        // DB'ye düşüyorlardı. Ölçüm: section=topscore → total=122, yani
+        // listenin tamamı çevrimdışı tabandı ve 122'de bitiyordu.
+        //
+        // Steam'in metacritic sıralaması yok; en yakın vekil `topsellers`.
+        // Puan eşiği burada UYGULANMIYOR — bu yüzden `mc` seçiliyse aşağıda
+        // `unavailable`a yazılıyor, sessizce yutulmuyor.
+        let url = `https://store.steampowered.com/search/results/?filter=topsellers&category1=998&cc=tr&l=tr&json=1&start=${(page-1)*num}&count=${num}`;
+        if (genres) {
+          if (STEAM_GENRE_MAP[genres]) url += `&genre=${STEAM_GENRE_MAP[genres]}`;
+          if (STEAM_TAG_MAP[genres]) url += `&tags=${STEAM_TAG_MAP[genres]}`;
+        }
+        dynamicResults = await fetchSteamSearchPaginated(url, false, false);
+        // topscore'da elimizdeki tek puan bilgisi FALLBACK_GAMES eşleşmesinden
+        // geliyor (fetchSteamSearchPaginated onu zaten iliştiriyor). Puanı
+        // olanı öne al — sıralama iddiası kadarını tut, fazlasını değil.
+        // YERİNDE sırala: kopyalamak `hamSayi` alanını düşürür ve sayfalama
+        // yeniden süzgeç kaybını "liste bitti" sanmaya başlardı.
+        if (section === 'topscore') {
+          dynamicResults.sort((a, b) => (b.metacritic || 0) - (a.metacritic || 0));
+        }
+        fetchedDynamically = true;
       }
 
       if (fetchedDynamically && dynamicResults.length > 0) {
         results = dynamicResults;
-        if (results.length < num) {
-          total = (page - 1) * num + results.length;
+        steamYedegi = true;
+
+        // ── SAYFALAMA SÜZGEÇ KAYBINI "LİSTE BİTTİ" SAYMIYOR ────────────────
+        // Eski hesap `results.length < num` ise son sayfa diyordu. Ama liste
+        // num'dan kısa olmasının İKİ ayrı sebebi var:
+        //   • Steam gerçekten daha az kayıt döndürdü  → liste bitti
+        //   • Steam num kadar döndürdü, yetişkin/DLC süzgeci kırptı → BİTMEDİ
+        // Ölçüm: section=popular → n=20, total=20. İstemci `canMore = total >
+        // 24` hesapladığı için (mobile/app/games.jsx) sonsuz kaydırma İLK
+        // sayfada ölüyordu: kullanıcı 20 oyun görüp "sınırlı liste" diyordu.
+        // Karar STEAM'İN HAM SAYISINA bakıyor, süzgeçten çıkana değil.
+        const hamSayi = dynamicResults.hamSayi ?? results.length;
+        if (hamSayi >= num) {
+          total = page * num + 48;                      // daha var, açık tut
         } else {
-          total = page * num + 48; // keep paging enabled
+          total = (page - 1) * num + results.length;    // kaynak tükendi
         }
       } else {
-        // Fallback to our local high-quality database (or if dynamic fetching failed/was empty)
+        // ── GERÇEKTEN ÇEVRİMDIŞIYIZ ──
+        // `limited` YALNIZ BURADA açılıyor. Bu dal 122 oyunluk elle yazılmış
+        // tabandan servis ediyor; "veritabanına ulaşılamıyor, çevrimdışı
+        // listeyi gösteriyoruz" cümlesi ancak burada DOĞRU.
+        limited = true;
         let dbGames = [...FALLBACK_GAMES];
         
         // Filter by genre
@@ -925,6 +986,26 @@ export async function GET(request) {
         const startIndex = (page - 1) * num;
         results = dbGames.slice(startIndex, startIndex + num);
         total = dbGames.length;
+      }
+    }
+
+    // ── ÜCRETSİZLERİN GARANTİ ÇEKİRDEĞİ ───────────────────────────────────
+    // Bu yedi oyun (CS2, Dota 2, Apex…) RAWG'a HİÇ bağlı değil, elle yazılı.
+    // İKİ KEZ YANLIŞ YERDEYDİ, ikisi de ölçümle çıktı:
+    //   • Başta RAWG çağrısının arkasında, aynı try içindeydi — RAWG istisna
+    //     atınca garanti liste de atlanıyor, "Ücretsiz" 122'lik çevrimdışı
+    //     tabana düşüyordu (yalıtılmış 4 soğuk istekte 4/4 sınırlı).
+    //   • try'ın hemen dışına alınca ters yönde kırdı: 7 oyun `results`ı
+    //     doldurduğu için dinamik Steam yedeği HİÇ çalışmıyor, bölüm 24 canlı
+    //     oyun yerine 7 sabit oyun gösteriyordu (ölçüldü: n=24 → n=7).
+    // Doğru yer YEDEK ÇÖZÜLDÜKTEN SONRASI: hangi kaynaktan gelirse gelsin
+    // listenin önüne ekleniyor, hiçbir yolu kısa devre yaptırmıyor.
+    if (section === 'free' && page === 1) {
+      const varOlan = new Set(results.map(g => g.id));
+      const ekstra  = STATIC_FREE_GAMES.filter(g => !varOlan.has(g.id));
+      if (ekstra.length > 0) {
+        results = [...ekstra, ...results];
+        total   = total + ekstra.length;
       }
     }
 
@@ -987,13 +1068,37 @@ export async function GET(request) {
       results = results.slice(0, num);
     }
 
-    // `limited` ve `unavailable` istemcinin "sinirli mod" uyarisini
-    // cizmesi icin. unavailable = yedek yolun UYGULAMADIGI filtreler;
-    // istemci onlari devre disi GOSTERIYOR, gizlemiyor.
+    // ── `unavailable` ARTIK SABİT LİSTE DEĞİL ────────────────────────────
+    // Öncesi yedeğe düşen HER yanıtta koşulsuz ['store','metacritic','tags']
+    // yazıyordu. İki yönden de yanlıştı: kullanıcı hiç puan filtresi
+    // seçmemişken "Metacritic puanı çalışmıyor" diyordu, ve Steam yedeğinde
+    // mağaza filtresi aslında İŞLİYORKEN (sonuçların hepsi Steam) onu da
+    // kapalı gösteriyordu.
+    //
+    // Kural: yalnızca kullanıcının GERÇEKTEN SEÇTİĞİ ve bu yolun
+    // UYGULAYAMADIĞI filtreler yazılır. Hiçbiri yoksa liste boş kalır.
+    const unavailable = [];
+    if (steamYedegi || limited) {
+      // Steam yedeğinde sonuçların tamamı Steam; 'steam' seçimi karşılanıyor,
+      // 'epic' karşılanmıyor. Statik tabanda ikisi de süzülmüyor.
+      if (store && (limited || store !== 'steam')) unavailable.push('store');
+      if (mc)   unavailable.push('metacritic');
+      if (tags) unavailable.push('tags');
+      if (mode) unavailable.push('mode');
+    }
+
+    // Bant, uygulanamayan bir filtre VARSA da çıkıyor — yoksa çıkmıyor.
+    // "Sessiz başarısızlık yasak" kuralı burada korunuyor: kullanıcı seçtiği
+    // filtrenin işlemediğini öğreniyor. Değişen tek şey, HİÇ filtre
+    // seçilmemişken taze bir Steam listesine "çevrimdışı" dememesi.
+    const sinirli = limited || unavailable.length > 0;
+
     return NextResponse.json({
-      results, total, source: 'rawg-steam-merge',
-      limited,
-      unavailable: limited ? ['store', 'metacritic', 'tags'] : [],
+      results, total,
+      source: limited ? 'offline-db' : steamYedegi ? 'steam-fallback' : 'rawg-steam-merge',
+      limited: sinirli,
+      cevrimdisi: limited,   // gerçekten 122'lik tabandan mı geliyor
+      unavailable,
     });
 
   } catch (err) {

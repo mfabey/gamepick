@@ -76,6 +76,11 @@ export default {
   'limited.retry': 'Tekrar dene',
   'limited.browse': 'Yine de gez',
   'limited.off': 'çalışmıyor',
+  // Sunucu yedeğe düşse de liste TAZE olabiliyor (canlı Steam listesi).
+  // O durumda 'çevrimdışı' demek yanlış olur; söylenmesi gereken tek şey
+  // hangi filtrenin işlemediğidir. bkz. LimitedMode `cevrimdisi`.
+  'limited.partialTitle': 'Bazı filtreler uygulanamadı',
+  'limited.partialBody': 'Liste güncel, ama seçtiğin bazı filtreler şu an işlemiyor.',
   'store.steam': 'Steam',
   'store.epic': 'Epic Games',
   'genre.action': 'Aksiyon',

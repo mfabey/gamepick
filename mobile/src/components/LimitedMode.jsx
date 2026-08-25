@@ -16,6 +16,14 @@
 // (app/api/games/route.js). Öncesinde iki yol da source:'rawg-steam-merge'
 // döndürdüğü için istemci farkı anlayamıyordu.
 //
+// ── 26 AĞUSTOS 2026: KURALIN TERSİ DE GEÇERLİ ──
+// "Sessiz başarısızlık yasak" ise, ÇALIŞAN BİR ŞEYE BOZUK DEMEK de yasak.
+// Ölçüldü: `free` bölümü 24 CANLI Steam oyunu gösterirken bu bant yine de
+// "veritabanına ulaşılamıyor, çevrimdışı listeyi gösteriyoruz" diyordu,
+// çünkü sunucu "RAWG boş döndü" ile "çevrimdışı tabandayız"ı tek bayrakta
+// topluyordu. Artık ayrı: `cevrimdisi` true ise gerçekten 122'lik tabandayız,
+// false ise liste taze ve söylenecek tek şey hangi filtrenin işlemediği.
+//
 // ── FİLTRELER GİZLENMİYOR, DEVRE DIŞI GÖRÜNÜYOR ──
 // Kontrol listesi bunu ayrıca şart koşuyor. Gizlemek "böyle bir özellik
 // yok" der; devre dışı göstermek "var ama şu an çalışmıyor" der. İkincisi
@@ -29,11 +37,13 @@ import { useLanguage } from '../context/LanguageContext';
 import { type, radius, spacing, PRESSED } from '../theme';
 
 /**
- * @param {string[]} unavailable  çalışmayan filtre adları ('store'|'metacritic'|'tags')
+ * @param {string[]} unavailable  çalışmayan filtre adları ('store'|'metacritic'|'tags'|'mode')
+ * @param {bool}    [cevrimdisi]  true → 122'lik çevrimdışı taban; false → liste
+ *                                TAZE, yalnız bazı filtreler uygulanamadı
  * @param {func}     onRetry      "Tekrar dene"
  * @param {func}    [onDismiss]   "Yine de gez" — uyarıyı kapatır
  */
-export default function LimitedMode({ unavailable = [], onRetry, onDismiss }) {
+export default function LimitedMode({ unavailable = [], cevrimdisi = true, onRetry, onDismiss }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const { t } = useLanguage();
@@ -46,12 +56,18 @@ export default function LimitedMode({ unavailable = [], onRetry, onDismiss }) {
   return (
     <View style={styles.kutu}>
       <View style={styles.baslikSatir}>
-        <Ionicons name="cloud-offline-outline" size={18} color={colors.accentText} />
-        <Text style={styles.baslik}>{t('limited.title')}</Text>
+        <Ionicons
+          name={cevrimdisi ? 'cloud-offline-outline' : 'funnel-outline'}
+          size={18}
+          color={colors.accentText}
+        />
+        <Text style={styles.baslik}>
+          {t(cevrimdisi ? 'limited.title' : 'limited.partialTitle')}
+        </Text>
       </View>
 
       <Text style={styles.metin}>
-        {t('limited.body')}
+        {t(cevrimdisi ? 'limited.body' : 'limited.partialBody')}
         {adlar ? ` ${t('limited.disabled')}: ${adlar}.` : ''}
       </Text>
 
