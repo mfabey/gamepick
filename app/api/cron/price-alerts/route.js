@@ -16,7 +16,7 @@ async function fetchPrice(origin, g) {
   try {
     const res = await fetch(`${origin}/api/card-price?${p.toString()}`, { cache: 'no-store' });
     if (!res.ok) return null;
-    return res.json();  // { price, original, discount, isFree, ... }
+    return await res.json().catch(() => null);  // { price, original, discount, isFree, ... }
   } catch {
     return null;
   }
@@ -33,7 +33,8 @@ async function sendExpoPush(messages) {
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify(chunk),
       });
-      const json = await res.json();
+      if (!res.ok) continue;
+      const json = await res.json().catch(() => null);
       const tickets = json?.data || [];
       tickets.forEach((tk, idx) => {
         if (tk?.status === 'error' && tk?.details?.error === 'DeviceNotRegistered') {
