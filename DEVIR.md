@@ -1,111 +1,117 @@
-# Devir notu — oturum özeti
+# Gamerisen — oturum devri
 
-Bu dosya, uzun bir oturumun sonunda yeni bir sohbete geçerken gereken
-bilgiyi taşıyor. Kod ve commit mesajları asıl kaynaktır; burası harita.
-
----
-
-## 1. Ne yapıldı
-
-### Tasarım fazları 1–8 (tamamlandı)
-
-Claude Design projesi `d06a1d2b-1d55-41d5-b942-af050a5af412` faz faz uygulandı.
-Her fazın gerekçesi kendi commit mesajında.
-
-| Faz | Konu | Commit |
-|---|---|---|
-| 1 | Anasayfa: selamlama, arama kutusu, şerit kartı 3/4 + 32pt ad | `3497d49` |
-| 2 | Kart ailesi: sekme çubuğu etiketsiz, sinyal sözleşmesi, `GameRow` | `ccb7913` `6725a0c` `c4f1928` `4dce97c` |
-| 3 | Oyun detayı: tek fiyat sistemi, sahiplik bandı, fragman izne bağlı | `a05d013` `9059572` |
-| 4 | Arama/keşif: hata ≠ boşluk, etkin filtre çipleri | `33027b5` |
-| 5 | Topluluk: davet varsayılan sekmede, seçim dili birleşti | `d95ba5c` |
-| 6 | Yazma akışları: tek gönder dili, şikayet kusuru | `7a94fa9` |
-| 7 | Profil ve kişiler: "⋯" gerçek menü, Avatar kopyası silindi | `04ef99e` |
-| 8 | Gizlilik: arızada bilinmezliğe düş, accent ratchet'i | `0eea222` |
-
-### Sonrasında yapılanlar
-
-- `b59beec` — accent borcu 33 → 0 (sıfır tolerans)
-- `adadc72` — üç "yapma" kararı `mobile/AGENTS.md`'ye yazıldı
-- `109af3e` — **paylaşım**: oyun ve haber de arkadaşa gönderilebiliyor
-- `1295e97` — haber başlığı altındaki solma şeridi kaldırıldı
-- `f5d983c` — **kapak hatası**: Steam hash'li varlık yolları
-- `d60eae6` — haber "1 dk" → gerçek tazelik
-- `da76faf` — **kart büyüme geçişi** (App Store kalıbı)
+Bu belge, uzun bir oturumun sonunda **yeni bir sohbetin sıfırdan başlaması**
+için yazıldı. Yalnızca koddan/git'ten okunamayacak şeyler burada.
 
 ---
 
-## 2. Kurulan denetimler (`npm run check`)
+## 1. Hemen yapılması gerekenler
 
-`mobile/` içinde sekiz ratchet. Üçünü bu oturumda ekledim; **üçü de gerçek
-hata yakaladığı için** var:
+### a) Push
+```bash
+git push origin main
+```
+Yazıldığı anda **1 commit** yerelde bekliyordu.
 
-| Denetim | Ne yakalar | Taban |
-|---|---|---|
-| `check:theme` | Gerekçesiz sabit renk | 0 |
-| `check:spacing` | Ölçek dışı boşluk | 328 |
-| `check:contrast` | WCAG AA + dolu CTA tonu | — |
-| `check:i18n` | Beş dil parite + tanımsız anahtar | 636 |
-| `check:reactive` | Donuk (tema-tepkisiz) dosya | 0 |
-| `check:imports` **(yeni)** | Kullanılıp içe aktarılmamış tema sabiti | 0 |
-| `check:accent` **(yeni)** | `colors.accent`'in metin/dolgu olarak kullanımı | 0 |
-| `check:images` **(yeni)** | Elle kurulan Steam kapak adresi | 12 |
+### b) Sunucu deploy'u doğrula — EN ÖNEMLİSİ
+Birkaç düzeltme **sunucu tarafında** ve deploy edilmeden hiçbiri işe yaramaz.
+Son kontrolde canlı API hâlâ eski kodu döndürüyordu.
 
-**Neden önemli:** `expo export` bu hataların hiçbirini yakalamıyor —
-hepsi çalışma anı `ReferenceError`'ı ya da sessiz görsel bozulma.
-Bu oturumda **beş kez** aynı sınıf hata çıktı.
+```bash
+curl -s "https://www.gamerisen.com/api/games?page=1&num=6&section=new" \
+  | python3 -c "import json,sys; r=json.load(sys.stdin)['results']; print('gorselYok tasiyan:', sum('gorselYok' in g for g in r), '/', len(r))"
+```
+`0 / 6` → **eski kod yayında**. Vercel panelinden derlemeye bakılmalı.
+Sıfırdan büyük → yeni kod yayında.
 
----
-
-## 3. Açık işler
-
-### Öncelikli
-
-1. **Kart büyüme geçişi gözle doğrulanmadı.** Mekanizma günlükle kanıtlı
-   (çerçeve `143.56 × 191.41` = tam 3:4, animasyon tamamlanıyor, gezinme
-   tetikleniyor) ama **uçuş anı görülmedi**. Ekran görüntüsü ~700 ms
-   aralıklı, animasyon 380 ms. Ekran kaydı ile doğrulanmalı.
-   → `mobile/src/components/CardExpand.jsx`
-
-2. **Paylaşım uçtan uca denenmedi.** Sunucu tarafı (`gameId` / `newsUrl`
-   çözücüleri) deploy edilince "Gönder" akışı sohbete kadar izlenmeli.
-
-3. **Kapak hatası 6 dosyada daha var** (`steam-library`, `dlc`, `oyun`,
-   `oyun-merged`, `reviews/feed`, `GameImage.jsx`). Kütüphane yolu yüzlerce
-   oyun döndürebiliyor; oyun başına Steam detayı çekmek makul değil —
-   toplu bir uç ya da istemci tarafı geri dönüş ister.
-
-### Bilerek yapılmayanlar
-
-`mobile/AGENTS.md` sonundaki "Kapatılan kararlar" bölümünde gerekçeleriyle
-yazılı: **"Sıra sende" bölümü**, **Android sekme çubuğu**, **boşluk borcu
-toplu düzeltmesi**.
-
----
-
-## 4. Yayın durumu
-
-- **Yerli değişiklik YOK** → yeni derleme gerekmiyor, **OTA yeterli**.
-  `runtimeVersion` politikası `appVersion` = **2.5.0**; güncelleme yalnız
-  2.5.0 kurulumlara ulaşır.
+### c) OTA (yerli derleme GEREKMİYOR)
+Ölçüldü: `mobile/package.json`'da yalnız `scripts` değişti, **bağımlılık
+eklenmedi**; `app.json` hiç değişmedi. `expo-updates ~29.0.19` kurulu.
 
 ```bash
 cd mobile && eas update --branch production --message "tasarım fazları + paylaşım + kapak düzeltmesi"
 ```
 
-- **Sunucu tarafı**: son kontrolde canlı API hâlâ eski kodu döndürüyordu
-  (`gorselYok` alanı yok). Vercel derlemesi doğrulanmalı.
+> **Dikkat:** `runtimeVersion` politikası `appVersion` ve sürüm **2.5.0**.
+> Bu güncelleme yalnız 2.5.0 kurulumlarına ulaşır; daha eski sürümdeki
+> kullanıcılar için mağaza derlemesi gerekir.
 
 ---
 
-## 5. Çalışma biçimi (bu repoda işe yarayanlar)
+## 2. Doğrulanmamış kalan tek şey
 
-- **Ölç, tahmin etme.** Bu oturumda birkaç kez kaynağı okumadan varsayım
-  yaptım ve yanıldım — canlı uca `curl` atmak, simülatörde piksel ölçmek,
-  Metro log'unu okumak her seferinde daha hızlı çıktı.
-- **Metro log'u tut.** `nohup npx expo start --dev-client > log 2>&1 &` —
-  RN `console.warn`/`ERROR` OSLog'a değil Metro'ya gidiyor.
-- **Simülatörde iki cihaz açıksa UDID ver.** `simctl io booted` yanlış
-  cihazı yakalayabiliyor.
-- **Geçici hata enjeksiyonu.** Yalnız arızada çalışan yollar (bozuk bant,
-  boş durum) başka türlü görülmüyor; bu oturumda üç gerçek hata böyle çıktı.
+**Kart → detay büyüme geçişi uçuş hâlinde gözle görülmedi.**
+
+Mekanizmanın çalıştığı **günlükle kesin**: ölçülen çerçeve `143.56 × 191.41`
+(tam 3:4, şerit kapağı), `basla → vardi → gezinme` sırası doğru, iki ayrı
+kartta tekrarlandı. Ama aradaki kareler görülmedi — ekran görüntüsü ~700 ms
+aralıklı, animasyon 380 ms. Yavaşlatıp denendi, şerit içeriği kareler
+arasında kaydığı için dokunuşlar karta isabet etmedi.
+
+**Yapılacak:** cihazda/simülatörde bir karta dokunup gözle bakmak. Aranacak
+kusur: bindirmeden gerçek ekrana geçerken **titreme** (bir karelik boşluk).
+Olursa `CardExpand`'in `onBitti`'si detayın ilk karesinden sonraya
+alınmalı.
+
+---
+
+## 3. Bilerek yapılmayanlar — yeniden açma
+
+Gerekçeleri `mobile/AGENTS.md` sonunda yazılı:
+- **"Sıra sende" bölümü** — anasayfadan kullanıcı kaldırttı; detayda verisi yok
+- **Android sekme çubuğu** — `android/` dizini yok, doğrulanamaz
+- **Ölçek dışı boşluk borcu (328)** — ratchet altında, toplu düzeltme riskli
+
+Ayrıca:
+- **Yazarken öneri** — `/api/suggest` uç noktası yok (Kararlar, Karar 3)
+- **curated-lists.js'teki 200+ sabit kapak adresi** — kullanıcı kararı: dokunma
+
+---
+
+## 4. Açık teknik borç
+
+**Steam hash'li kapak yolları** 6 dosyada daha var:
+`steam-library`, `dlc`, `oyun`, `oyun-merged`, `reviews/feed`,
+`app/components/GameImage.jsx`.
+
+Kütüphane yolu yüzlerce oyun döndürebiliyor; oyun başına Steam detayı
+çekmek orada makul değil — **toplu bir uç ya da istemci tarafı geri dönüş**
+ister. `npm run check:images` bunları tabanda tutuyor, büyümelerini
+engelliyor. Bu ekranlar şu an kırık kapakta monograma düşüyor (boş kutu
+değil), yani acil değil.
+
+---
+
+## 5. Çalışma biçimi — bu oturumda işe yarayanlar
+
+`CLAUDE.md`'deki kuralların ötesinde, pratikte kanıtlananlar:
+
+**Derleme hataları yakalamıyor.** `expo export` geçtiği hâlde çalışma
+anında patlayan **beş** hata çıktı: eksik `TOUCH_MIN`, `withDelay`,
+`PRESSED`, `WebBrowser`, ve JSX içine `//` yorumu. Yeni kod yazınca
+kullanılan her adın içe aktarıldığı **ayrıca** denetlenmeli.
+
+**Yalnız hata yolunda çalışan kod, hata enjekte edilmeden doğrulanamaz.**
+Geçici `throw`/`Promise.reject` ile üç gerçek hata bulundu (çapraz sekme
+verisi çöp çiziyordu, ikinci `ListHeaderComponent` gerçek başlığı siliyordu,
+`renderItem` diye olmayan bir ada bakılıyordu). Enjeksiyonu **geri almayı
+unutma**.
+
+**Fast Refresh `useRef`'i hayatta tutuyor.** Bir kez "temizleme çalışmıyor"
+sanıldı; soğuk başlatmayla doğru çıktı. Durum hatası şüphesinde
+`terminate + launch`.
+
+**Metro log'u kolay bayatlıyor.** Uyarı/hata okumadan önce log dosyasının
+tarihine bak; RN `console.warn` OSLog'a değil **Metro'ya** gidiyor.
+
+**İki simülatör açıksa `simctl io booted` yanlış olana gider** — UDID ver.
+
+---
+
+## 8 ratchet — hepsi `npm run check`
+
+`theme` · `spacing` · `contrast` (+CTA dolgusu) · `i18n` (5 dil parite) ·
+`reactive` · `imports` · `accent` (sıfır tolerans) · `images`
+
+Üçü bu oturumda eklendi (`i18n`, `imports`, `accent`, `images`) ve
+**dördü de gerçek hata yakaladığı için** var.
