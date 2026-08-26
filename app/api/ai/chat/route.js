@@ -110,7 +110,15 @@ const GAMING_ACRONYMS = {
   'nfs': ['need for speed', 'need for speed unbound', 'need for speed heat'],
   'skyrim': ['the elder scrolls v: skyrim', 'the elder scrolls v: skyrim special edition', 'skyrim'],
   'fallout 4': ['fallout 4', 'fo4'],
-  'fallout': ['fallout 4', 'fallout 76', 'fallout: new vegas']
+  'fallout': ['fallout 4', 'fallout 76', 'fallout: new vegas'],
+  'ark': ['ark: survival evolved', 'ark: survival ascended', 'ark'],
+  'mta': ['multi theft auto', 'mta: san andreas', 'mta sa', 'grand theft auto san andreas'],
+  'mta sa': ['multi theft auto', 'mta: san andreas', 'mta sa'],
+  'samp': ['san andreas multiplayer', 'sa-mp', 'gta san andreas'],
+  'sa-mp': ['san andreas multiplayer', 'sa-mp', 'gta san andreas'],
+  'palworld': ['palworld'],
+  'helldivers 2': ['helldivers 2', 'helldivers ii', 'helldivers'],
+  'helldivers': ['helldivers 2', 'helldivers']
 };
 
 // --- Text Normalization & Dialogue Engine ---
@@ -260,7 +268,7 @@ function getApiKey(name) {
   return process.env[name] || '';
 }
 
-async function callGenerativeLLM(query, ragContext, userProfile) {
+async function callGenerativeLLM(query, ragContext, userProfile, history = []) {
   const geminiKey = getApiKey('GEMINI_API_KEY') || getApiKey('NEXT_PUBLIC_GEMINI_API_KEY');
   const groqKey = getApiKey('GROQ_API_KEY');
   const openaiKey = getApiKey('OPENAI_API_KEY');
@@ -280,12 +288,26 @@ async function callGenerativeLLM(query, ragContext, userProfile) {
     const models = ['gemini-3.6-flash', 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
     for (const model of models) {
       try {
+        const contents = [];
+        if (Array.isArray(history) && history.length > 0) {
+          for (const h of history.slice(-6)) {
+            const hText = (h.text || h.content || '').trim();
+            if (!hText) continue;
+            if (h.role === 'user') {
+              contents.push({ role: 'user', parts: [{ text: hText }] });
+            } else if (h.role === 'ai' || h.role === 'assistant' || h.role === 'model') {
+              contents.push({ role: 'model', parts: [{ text: hText.slice(0, 350) }] });
+            }
+          }
+        }
+        contents.push({ role: 'user', parts: [{ text: prompt }] });
+
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`;
         const res = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
+            contents,
             systemInstruction: { parts: [{ text: GAMERISEN_SYSTEM_PROMPT }] },
             generationConfig: { temperature: 0.85, topP: 0.95, maxOutputTokens: 2048 }
           })
@@ -310,6 +332,20 @@ async function callGenerativeLLM(query, ragContext, userProfile) {
       'openai/gpt-oss-20b',
       'groq/compound'
     ];
+    const messages = [{ role: 'system', content: GAMERISEN_SYSTEM_PROMPT }];
+    if (Array.isArray(history) && history.length > 0) {
+      for (const h of history.slice(-6)) {
+        const hText = (h.text || h.content || '').trim();
+        if (!hText) continue;
+        if (h.role === 'user') {
+          messages.push({ role: 'user', content: hText });
+        } else if (h.role === 'ai' || h.role === 'assistant' || h.role === 'model') {
+          messages.push({ role: 'assistant', content: hText.slice(0, 350) });
+        }
+      }
+    }
+    messages.push({ role: 'user', content: prompt });
+
     for (const modelName of groqModels) {
       try {
         const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -321,10 +357,7 @@ async function callGenerativeLLM(query, ragContext, userProfile) {
           },
           body: JSON.stringify({
             model: modelName,
-            messages: [
-              { role: 'system', content: GAMERISEN_SYSTEM_PROMPT },
-              { role: 'user', content: prompt }
-            ],
+            messages,
             temperature: 0.65,
             max_tokens: 1024,
             top_p: 0.95
@@ -341,6 +374,20 @@ async function callGenerativeLLM(query, ragContext, userProfile) {
 
   // 3. Try Local Self-Hosted Ollama Engine (100% Free, Local GPU/CPU)
   const localModels = ['gamerisen-ai', 'qwen2.5:7b', 'llama3.2', 'llama3.1'];
+  const ollamaMessages = [{ role: 'system', content: GAMERISEN_SYSTEM_PROMPT }];
+  if (Array.isArray(history) && history.length > 0) {
+    for (const h of history.slice(-6)) {
+      const hText = (h.text || h.content || '').trim();
+      if (!hText) continue;
+      if (h.role === 'user') {
+        ollamaMessages.push({ role: 'user', content: hText });
+      } else if (h.role === 'ai' || h.role === 'assistant' || h.role === 'model') {
+        ollamaMessages.push({ role: 'assistant', content: hText.slice(0, 350) });
+      }
+    }
+  }
+  ollamaMessages.push({ role: 'user', content: prompt });
+
   for (const modelName of localModels) {
     try {
       const controller = new AbortController();
@@ -351,10 +398,7 @@ async function callGenerativeLLM(query, ragContext, userProfile) {
         signal: controller.signal,
         body: JSON.stringify({
           model: modelName,
-          messages: [
-            { role: 'system', content: GAMERISEN_SYSTEM_PROMPT },
-            { role: 'user', content: prompt }
-          ],
+          messages: ollamaMessages,
           stream: false,
           options: {
             temperature: 0.85,
@@ -376,6 +420,20 @@ async function callGenerativeLLM(query, ragContext, userProfile) {
   // 4. Try OpenAI API
   if (isValidKey(openaiKey)) {
     try {
+      const openAiMessages = [{ role: 'system', content: GAMERISEN_SYSTEM_PROMPT }];
+      if (Array.isArray(history) && history.length > 0) {
+        for (const h of history.slice(-6)) {
+          const hText = (h.text || h.content || '').trim();
+          if (!hText) continue;
+          if (h.role === 'user') {
+            openAiMessages.push({ role: 'user', content: hText });
+          } else if (h.role === 'ai' || h.role === 'assistant' || h.role === 'model') {
+            openAiMessages.push({ role: 'assistant', content: hText.slice(0, 350) });
+          }
+        }
+      }
+      openAiMessages.push({ role: 'user', content: prompt });
+
       const res = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -384,10 +442,7 @@ async function callGenerativeLLM(query, ragContext, userProfile) {
         },
         body: JSON.stringify({
           model: 'gpt-4o-mini',
-          messages: [
-            { role: 'system', content: GAMERISEN_SYSTEM_PROMPT },
-            { role: 'user', content: prompt }
-          ],
+          messages: openAiMessages,
           temperature: 0.85,
           max_tokens: 1024
         })
@@ -608,19 +663,62 @@ function extractGpuFromQuery(query) {
   return null;
 }
 
+// --- Core Game Name Extraction Helper ---
+function extractCoreGameName(query) {
+  if (!query) return '';
+  return query
+    .replace(/fiyat[ıi]?|ne\s*kadar|kaç\s*tl|kaç\s*para|nerede\s*ucuz|hikaye(?:si)?|konusu|sistem(?:im)?\s*kaldırır\s*mı|oyunu?|indirim(?:de)?|tavsiye|öneri?|kaç\s*fps|fps|nasıl\s*bir\s*oyun|hakkında\s*bilgi/gi, '')
+    .replace(/[?!.,;:'"()[\]{}]/g, ' ')
+    .trim();
+}
+
+// --- Extract Last Discussed Game Entity from Multi-Turn History ---
+function extractLastGameFromHistory(history, gamesDb) {
+  if (!Array.isArray(history) || history.length === 0) return null;
+  for (let i = history.length - 1; i >= 0; i--) {
+    const item = history[i];
+    const text = item?.text || item?.content || '';
+    if (!text) continue;
+
+    const norm = normalizeText(text);
+
+    // 1. Check known acronyms in user or AI message
+    for (const key of Object.keys(GAMING_ACRONYMS)) {
+      const keyRegex = new RegExp(`\\b${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+      if (keyRegex.test(norm)) {
+        return key;
+      }
+    }
+
+    // 2. Check games in local DB
+    for (const game of gamesDb) {
+      const gameTitleNorm = normalizeText(game.title);
+      if (gameTitleNorm.length >= 3) {
+        const titleRegex = new RegExp(`\\b${gameTitleNorm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+        if (titleRegex.test(norm)) {
+          return game.title;
+        }
+      }
+    }
+
+    // 3. Extract bold titles from AI message (e.g. **ARK: Survival Evolved**)
+    const boldMatch = text.match(/\*\*([A-Za-z0-9\s:_\-–]{3,35})\*\*/);
+    if (boldMatch && !/Gamerisen|BETA|Steam|Epic|GOG/i.test(boldMatch[1])) {
+      return boldMatch[1].trim();
+    }
+  }
+  return null;
+}
+
 // --- Live Steam Store Search Engine (Zero Hallucination for ANY Game) ---
 async function searchSteamLive(query, userGpu) {
   try {
-    const cleanTerm = query
-      .replace(/fiyat[ıi]?|ne\s*kadar|kaç\s*tl|kaç\s*para|nerede\s*ucuz|hikaye(?:si)?|konusu|sistem(?:im)?\s*kaldırır\s*mı|oyunu?|indirim(?:de)?|tavsiye|öneri?/gi, '')
-      .replace(/[?!.,;:'"()[\]{}]/g, ' ')
-      .trim();
-
+    const cleanTerm = extractCoreGameName(query);
     if (!cleanTerm || cleanTerm.length < 2) return [];
 
     const searchUrl = `https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(cleanTerm)}&l=turkish&cc=tr`;
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3500);
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
 
     const res = await fetch(searchUrl, {
       signal: controller.signal,
@@ -634,13 +732,23 @@ async function searchSteamLive(query, userGpu) {
     if (items.length === 0) return [];
 
     const cleanNorm = normalizeText(cleanTerm);
-    const validItems = items.filter(item => {
+    const cleanTokens = cleanNorm.split(/\s+/).filter(Boolean);
+
+    // Precise filtering on Steam results
+    let validItems = items.filter(item => {
       const itemTitleNorm = normalizeText(item.name);
       if (itemTitleNorm === cleanNorm) return true;
-      if (itemTitleNorm.startsWith(cleanNorm) || cleanNorm.startsWith(itemTitleNorm)) return true;
-      if (itemTitleNorm.includes(cleanNorm) && (itemTitleNorm.length - cleanNorm.length) <= 14) return true;
+      if (itemTitleNorm.startsWith(cleanNorm + ' ') || cleanNorm.startsWith(itemTitleNorm + ' ')) return true;
+      const itemTokens = new Set(itemTitleNorm.split(/\s+/).filter(Boolean));
+      if (cleanTokens.every(ct => itemTokens.has(ct))) return true;
       return false;
-    }).slice(0, 2);
+    });
+
+    if (validItems.length === 0) {
+      validItems = items.slice(0, 2);
+    } else {
+      validItems = validItems.slice(0, 2);
+    }
 
     const results = [];
     for (const item of validItems) {
@@ -664,7 +772,7 @@ async function searchSteamLive(query, userGpu) {
         id: item.id,
         title: item.name,
         genres: ['Aksiyon', 'Macera'],
-        description: `${item.name} - Steam platformunda yer alan popüler bir video oyunudur.`,
+        description: `${item.name} — Steam platformundaki güncel mağaza fiyatı ve donanım uyumluluğu.`,
         rating: item.metascore ? parseInt(item.metascore) : 85,
         image_url: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${item.id}/header.jpg`,
         store_url: `https://store.steampowered.com/app/${item.id}`,
@@ -710,6 +818,7 @@ export async function POST(req) {
     const userQuery = (body.message || '').trim();
     const userProfile = body.profile || {};
     const sessionId = body.session_id || `sess_${Date.now()}`;
+    const history = Array.isArray(body.history) ? body.history : [];
 
     if (!userQuery) {
       return NextResponse.json({ error: 'Mesaj boş olamaz' }, { status: 400 });
@@ -764,18 +873,30 @@ export async function POST(req) {
     const isIdentityQuery = /^(sen kimsin|kimsin sen|nesin sen|sen nesin|ne ise yararsin|gorevin ne|amacin ne|gamerisen nedir|gamerisen ai nedir)$/i.test(normQ);
     const isCreatorQuery = /(?:seni kim yapti|seni kim kodladi|seni kim gelistirdi|kodlarin kime ait|kaynak kod|github)/i.test(normQ);
 
-    // 4. Expand Query with Gaming Acronyms & Synonyms
+    // 4. Follow-up / Anaphoric Query Context Resolution
+    const isFollowUpQuery = /^(fiyat|fiyati|fiyatlar|fiyat bilgisi|kac tl|kac para|ne kadar|nerede ucuz|sistemim kaldirir mi|kaldirir mi|acar mi|kac fps|kac fps verir|hikayesi ne|hikaye|konusu ne|oynanis suresi|kac saat surer|nereden indirebilirim|nasil indirilir|almak mantikli mi|alinir mi|indirime girer mi)\??$/i.test(normQ) ||
+      (/^(fiyat|ne kadar|kac tl|fps|hikayesi|sistemim|donanim)\b/i.test(normQ) && normQ.split(/\s+/).length <= 3);
+
+    let effectiveSearchTerm = normQ;
+    if (isFollowUpQuery) {
+      const lastGame = extractLastGameFromHistory(history, gamesDb);
+      if (lastGame) {
+        effectiveSearchTerm = normalizeText(lastGame);
+      }
+    }
+
+    // 5. Expand Effective Query with Gaming Acronyms & Synonyms
     const acronymMatches = [];
     const sortedAcronymKeys = Object.keys(GAMING_ACRONYMS).sort((a, b) => b.length - a.length);
     for (const key of sortedAcronymKeys) {
       const keyRegex = new RegExp(`\\b${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
-      if (keyRegex.test(normQ)) {
+      if (keyRegex.test(effectiveSearchTerm)) {
         const synList = GAMING_ACRONYMS[key];
         acronymMatches.push(...synList);
       }
     }
 
-    // 5. Parse Price Constraints
+    // 6. Parse Price Constraints
     let maxPrice = null;
     let minPrice = null;
     let aroundPrice = null;
@@ -803,9 +924,10 @@ export async function POST(req) {
     const isRecommendationQuery = /(?:ne oynasam|oyun oner|oyun tavsiyesi|hangi oyunu oynasam|sıkıldım|sikildim|ne oynayayim|en iyi oyunlar|onerin var mi)/i.test(normQ);
     const isHardwareSpecificQuery = Boolean(queryGpu) || /(?:sistemim|donanim|ekran kartim|kaldirir mi|fps|akici)/i.test(normQ);
 
-    // 6. Search Database with High Precision
+    // 7. Search Local Database with High-Precision Token Matching (No Substring Bugs)
     let scoredGames = [];
-    const queryTokens = normQ.split(/\s+/).filter(w => w.length >= 2 && !STOP_WORDS.has(w));
+    const queryTokens = effectiveSearchTerm.split(/\s+/).filter(w => w.length >= 2 && !STOP_WORDS.has(w));
+    const targetNorm = extractCoreGameName(effectiveSearchTerm);
 
     if (!isSmalltalk && !isIdentityQuery && !isCreatorQuery) {
       for (const game of gamesDb) {
@@ -827,35 +949,39 @@ export async function POST(req) {
 
         let hasMatch = false;
 
-        // Acronym match
-        for (const syn of acronymMatches) {
-          const synNorm = normalizeText(syn);
-          const synTokens = synNorm.split(/\s+/).filter(w => !STOP_WORDS.has(w));
-          const synRegex = new RegExp(`\\b${synNorm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
-          
-          if (synRegex.test(gameTitleNorm) || gameTitleNorm === synNorm) {
-            score += 35.0;
-            hasMatch = true;
-          } else if (synTokens.length > 0 && synTokens.every(st => gameTitleTokens.has(st))) {
-            score += 25.0;
-            hasMatch = true;
+        // 1. Exact Title Equality
+        if (targetNorm && gameTitleNorm === targetNorm) {
+          score += 100.0;
+          hasMatch = true;
+        } 
+        // 2. Acronym Match (Exact or Whole-word Match)
+        else {
+          for (const syn of acronymMatches) {
+            const synNorm = normalizeText(syn);
+            if (gameTitleNorm === synNorm) {
+              score += 85.0;
+              hasMatch = true;
+            } else if (gameTitleNorm.startsWith(synNorm + ' ') || synNorm.startsWith(gameTitleNorm + ' ')) {
+              score += 65.0;
+              hasMatch = true;
+            }
           }
         }
 
-        // Exact title equality / startsWith
-        if (gameTitleNorm === normQ || normQ.startsWith(gameTitleNorm) || gameTitleNorm.startsWith(normQ)) {
-          score += 30.0;
+        // 3. Title Starts With target
+        if (!hasMatch && targetNorm && (gameTitleNorm.startsWith(targetNorm + ' ') || targetNorm.startsWith(gameTitleNorm + ' '))) {
+          score += 55.0;
           hasMatch = true;
         }
 
-        // Meaningful query tokens match
+        // 4. Exact Whole-Word Token Matches (Set.has - strictly NO substring includes)
         if (queryTokens.length > 0) {
-          const matchedTokens = queryTokens.filter(qt => gameTitleTokens.has(qt) || gameTitleNorm.includes(qt));
-          if (matchedTokens.length === queryTokens.length) {
-            score += 20.0;
+          const matchedTokenCount = queryTokens.filter(qt => gameTitleTokens.has(qt)).length;
+          if (matchedTokenCount === queryTokens.length) {
+            score += 40.0;
             hasMatch = true;
-          } else if (matchedTokens.length > 0) {
-            score += matchedTokens.length * 6.0;
+          } else if (matchedTokenCount > 0 && matchedTokenCount / queryTokens.length >= 0.5) {
+            score += matchedTokenCount * 10.0;
             hasMatch = true;
           }
 
@@ -889,7 +1015,7 @@ export async function POST(req) {
           score += 5.0 + ((game.rating || 80) / 20.0);
         }
 
-        if (isConstraint || isRecommendationQuery || isHardwareSpecificQuery || (hasMatch && score >= 12.0)) {
+        if (isConstraint || isRecommendationQuery || isHardwareSpecificQuery || (hasMatch && score >= 25.0)) {
           scoredGames.push({
             game,
             best_deal: bestDeal,
@@ -904,8 +1030,8 @@ export async function POST(req) {
 
     let structuredGames = [];
 
-    // 7. If database has high-confidence match or recommendation/constraint results, use them
-    if (scoredGames.length > 0 && (isConstraint || isRecommendationQuery || isHardwareSpecificQuery || scoredGames[0].score >= 15.0)) {
+    // 8. If database has high-confidence exact/token match (score >= 35.0) or recommendation/constraint results, use them
+    if (scoredGames.length > 0 && (isConstraint || isRecommendationQuery || isHardwareSpecificQuery || scoredGames[0].score >= 35.0)) {
       structuredGames = scoredGames.slice(0, 3).map(r => ({
         id: r.game.id,
         title: r.game.title,
@@ -919,15 +1045,16 @@ export async function POST(req) {
         currency: 'TL',
         hardware_compatibility: r.hw_compat
       }));
-    } else if (!isSmalltalk && !isIdentityQuery && !isCreatorQuery && queryTokens.length > 0) {
-      // 8. If NO database match found for a specific game query (e.g. "The Forest"), call Live Steam Search!
-      const steamLiveGames = await searchSteamLive(userQuery, userGpu);
+    } else if (!isSmalltalk && !isIdentityQuery && !isCreatorQuery && (queryTokens.length > 0 || effectiveSearchTerm)) {
+      // 9. If NO database match found (or specific game like "Ark", "Palworld", "The Forest" asked), call Live Steam Search!
+      const steamSearchTarget = effectiveSearchTerm || userQuery;
+      const steamLiveGames = await searchSteamLive(steamSearchTarget, userGpu);
       if (steamLiveGames.length > 0) {
         structuredGames = steamLiveGames;
       }
     }
 
-    // 9. Build RAG Context for Generative LLM
+    // 10. Build RAG Context for Generative LLM
     let ragContext = '';
     if (structuredGames.length > 0) {
       ragContext = JSON.stringify(structuredGames.map(g => ({
@@ -941,8 +1068,8 @@ export async function POST(req) {
       })), null, 2);
     }
 
-    // 10. Generate Response via LLM Engine (Gemini / Groq / Ollama / OpenAI)
-    const aiResponse = await callGenerativeLLM(userQuery, ragContext, userProfile);
+    // 11. Generate Response via LLM Engine with full conversation history
+    const aiResponse = await callGenerativeLLM(userQuery, ragContext, userProfile, history);
 
     return NextResponse.json({
       response: aiResponse,

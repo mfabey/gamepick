@@ -158,7 +158,8 @@ export default function GamerisenAiWidget() {
         body: JSON.stringify({
           message: text,
           session_id: sessionId,
-          profile: userProfile
+          profile: userProfile,
+          history: newMessages.slice(-8)
         })
       });
 
