@@ -30,8 +30,7 @@ import { reportActivity } from '../../src/api/social';
 import { useQuery } from '../../src/hooks/useQuery';
 import { usePop } from '../../src/hooks/usePop';
 import { useReducedMotion } from '../../src/hooks/useReducedMotion';
-import CardExpand from '../../src/components/CardExpand';
-import { kaynakOku, kaynakSil } from '../../src/services/gecisKaynak';
+import { kaynakOku, kaynakSil, kucultmeIste } from '../../src/services/gecisKaynak';
 import { GenreChipsSkeleton, ShotStripSkeleton, TextBlockSkeleton, PriceListSkeleton } from '../../src/components/Skeleton';
 import { recordSignal } from '../../src/services/tasteProfile';
 import { recordSeen } from '../../src/services/seenStore';
@@ -267,29 +266,32 @@ export default function GameDetail() {
   // Çerçeve YOKSA (arama, bildirim, sohbet paylaşımı, detaydan detaya) düz
   // `back()` kalıyor — o yollarda büyüyerek gelinmedi, küçülerek gitmek de
   // yanlış olurdu. Reduce Motion'da da düz `back()`.
-  const [kuculen, setKuculen] = useState(null);
+  //
+  // ── ANİMASYON BU EKRANDA OYNAMIYOR ──
+  // İlk sürümde oynuyordu ve kullanıcı "kasıyor" diye bildirdi. Sebep açık:
+  // küçülme boyunca bu ekran TAM AYAKTA kalıyordu — ScrollView, ekran
+  // görüntüsü şeridi, expo-video oynatıcısı — ve bindirme opak zeminle
+  // açıldığı için 380 ms donmuş bir sayfa görünüyordu ("yenileniyor" hissi).
+  //
+  // Sıra ters çevrildi: yalnızca İSTEK bırakılıp hemen çıkılıyor; küçülmeyi
+  // anasayfa, bu ekran söküldükten SONRA oynatıyor.
   const cikiliyor = useRef(false);
 
   const geriDon = useCallback(() => {
-    // Çift dokunuş koruması: bindirme pointerEvents:'none' olduğu için
-    // altındaki düğme 380 ms boyunca hâlâ basılabilir durumda.
-    if (cikiliyor.current) return;
+    if (cikiliyor.current) return;   // çift dokunuş koruması
     const cerceve = kaynakOku(id);
     if (azalt || !cerceve) { router.back(); return; }
     cikiliyor.current = true;
-    setKuculen({
+    kucultmeIste({
       ...cerceve,
       // Kapak adresi çerçeveyle birlikte saklandı; yoksa rota parametresine
       // düş — ikisi de yoksa GameCover monograma iniyor, boş kutu çıkmıyor.
       image: cerceve.image || image,
       name:  cerceve.name  || name,
     });
-  }, [azalt, id, image, name, router]);
-
-  const kucultmeBitti = useCallback(() => {
-    kaynakSil(id);          // kullanıldı; ikinci bir dönüş aynı kutuyu oynatmasın
+    kaynakSil(id);       // tüketildi; ikinci bir dönüş aynı kutuyu oynatmasın
     router.back();
-  }, [id, router]);
+  }, [azalt, id, image, name, router]);
 
   const coverStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: azalt ? 0 : -scrollY.value * 0.9 }],
@@ -685,12 +687,6 @@ export default function GameDetail() {
         }}
         onCreate={(nm) => createCollection(nm)}
       />
-
-      {/* GERİ ÇIKIŞ BİNDİRMESİ — her şeyin ÜSTÜNDE ve en sonda.
-          Sıra önemli: bindirme ağaçta sonuncu olduğu için kardeşlerinin
-          üstünde çiziliyor; koleksiyon sayfasının önüne konsaydı küçülen
-          kapak modalın ARKASINDA kalırdı. */}
-      <CardExpand kaynak={kuculen} yon="kucul" onVar={kucultmeBitti} />
     </View>
   );
 }

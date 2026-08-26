@@ -49,3 +49,34 @@ export function kaynakOku(id) {
 export function kaynakSil(id) {
   kayitlar.delete(String(id));
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BEKLEYEN KÜÇÜLME — çıkış animasyonunun HANGİ EKRANDA oynadığı meselesi.
+//
+// İlk sürümde küçülme DETAY ekranında oynuyor, bitince `back()` yapılıyordu.
+// Kullanıcı bunu "kasıyor" diye bildirdi ve sebebi açık: animasyon boyunca
+// detay ekranı tam ayakta duruyor — ScrollView, ekran görüntüsü şeridi,
+// expo-video oynatıcısı. Üstelik bindirme opak zeminle açıldığı için 380 ms
+// boyunca donmuş bir ekran görünüyordu ("sayfa yenileniyor" hissi).
+//
+// Yeni sıra TERS: önce `back()`, sonra ANASAYFADA küçülme. Detay o anda
+// çoktan sökülmüş oluyor, animasyon boş bir sahnede çalışıyor ve kullanıcı
+// gerçek anasayfayı hemen görüyor. Giriş yönü zaten aynı kalıbı kullanıyor.
+//
+// TEK YUVA yeterli: aynı anda birden fazla geri çıkış olamaz. Okuyan taraf
+// tüketiyor (bir kez oynasın diye).
+// ─────────────────────────────────────────────────────────────────────────────
+
+let bekleyen = null;
+
+/** Detay ekranı: geri çıkarken "anasayfa bunu küçültsün" diye bırakır. */
+export function kucultmeIste(cerceve) {
+  bekleyen = cerceve || null;
+}
+
+/** Anasayfa: odağı geri alınca bir kez okur ve yuvayı boşaltır. */
+export function kucultmeAl() {
+  const k = bekleyen;
+  bekleyen = null;
+  return k;
+}

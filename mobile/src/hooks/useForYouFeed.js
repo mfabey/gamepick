@@ -27,9 +27,31 @@ export function useForYouFeed({
   const [loadingMore, setLoadingMore] = useState(false);
   const ref = useRef({ page: 0, canMore: true, fetching: false, ids: new Set() });
 
-  const slugsKey = slugs.join(',');
+  // ── SIFIRLAMA İMZASI SIRASIZ ─────────────────────────────────────────────
+  // ÖLÇÜLDÜ (26 Ağustos 2026). Detay ekranı her açılışta
+  // `recordSignal({type:'view'})` çağırıyor; tür ağırlıkları oynuyor ve
+  // topGenres'in ilk dördünün SIRASI değişiyor. Küme aynı kalsa bile SIRALI
+  // anahtar farklı çıkıyor ve bu efekt akışı siliyordu: setItems([]), sayfa
+  // 0'dan yeniden çekim, kaydırma konumu sıfır.
+  //
+  // Aynı kartla art arda dört gidiş-dönüş, dört farklı anasayfa ölçüldü:
+  // Balatro → Factorio → Total War: WARHAMMER II → Slay the Spire.
+  // Kullanıcının "sayfa yenileniyor, karışıyor" dediği şey buydu; geri çıkış
+  // animasyonu eklenene kadar tek karelik geçiş bunu gizliyordu.
+  //
+  // SIRANIN İÇERİK AÇISINDAN ANLAMI YOK: aşağıda slug'lar `i % slugs.length`
+  // ile SIRAYLA dolaşılıyor, yani küme aynıysa gelen oyunlar da aynı. Sırayı
+  // imzadan çıkarınca akış yalnız GERÇEKTEN yeni bir tür girip çıktığında
+  // sıfırlanıyor.
+  const slugsKey = [...slugs].sort().join(',');
 
-  // Tür imzası değişince akışı sıfırla (zevk profili kaydıysa baştan kur)
+  // Tur sırası YİNE ZEVK SIRALI. Slug dizisi ref'te tutuluyor: imza sırasız
+  // ama gezinme sırası değil, yani ilk sayfa hâlâ en sevilen türden başlıyor.
+  // Ref olmasaydı `loadMore` kapanışı eski sırayla kalırdı.
+  const slugsRef = useRef(slugs);
+  slugsRef.current = slugs;
+
+  // Tür KÜMESİ değişince akışı sıfırla (zevk profili gerçekten kaydıysa)
   useEffect(() => {
     ref.current = { page: 0, canMore: true, fetching: false, ids: new Set() };
     setItems([]);
@@ -37,13 +59,14 @@ export function useForYouFeed({
 
   const loadMore = useCallback(async () => {
     const r = ref.current;
-    if (!enabled || r.fetching || !r.canMore || slugs.length === 0) return;
+    const sl = slugsRef.current;
+    if (!enabled || r.fetching || !r.canMore || sl.length === 0) return;
     r.fetching = true;
     setLoadingMore(true);
     try {
       const i = r.page;
-      const slug = slugs[i % slugs.length];                 // türler arasında dön
-      const rawgPage = Math.floor(i / slugs.length) + 1;    // her tur bir sonraki sayfa
+      const slug = sl[i % sl.length];                 // türler arasında dön
+      const rawgPage = Math.floor(i / sl.length) + 1;  // her tur bir sonraki sayfa
       const data = await fetchGames({ genres: slug, page: rawgPage, num: PAGE_SIZE });
       const raw = data.results || [];
 

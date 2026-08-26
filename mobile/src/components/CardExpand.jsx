@@ -93,20 +93,21 @@ export default function CardExpand({ kaynak, onVar, yon = 'buyu' }) {
     };
   }, [kaynak, EKRAN_G]);
 
-  // ── ZEMİN YÖNE GÖRE TERS ÇALIŞIYOR ──────────────────────────────────────
-  // Büyürken: 0'da saydam (anasayfa görünür), 1'de opak — detayın gelişi
-  // zeminin arkasında olup bitiyor.
+  // ── ZEMİN HER İKİ YÖNDE DE AYNI: opaklık = ilerleme ─────────────────────
+  // Zeminin işi tek: HEDEF OLMAYAN ekranı gizlemek. İki animasyon da artık
+  // ANASAYFADA oynadığı için kural ikisinde de aynı çıkıyor:
+  //   · 0 = kartın çerçevesi → anasayfa GÖRÜNMELİ  → saydam
+  //   · 1 = detayın kapağı   → anasayfa GİZLENMELİ → opak
+  // Büyürken 0→1 (anasayfa kapanır, detay devralır), küçülürken 1→0 (kapak
+  // yerine otururken anasayfa açılır).
   //
-  // Küçülürken AYNI FORMÜL YANLIŞ OLURDU. İlerleme 1'den başladığı için zemin
-  // daha ilk karede tam opak olur, detayın gövdesi tek karede yok olur ve
-  // geçiş bir "flaş"la başlardı. Doğrusu tersi: başta saydam (detay hâlâ
-  // görünür), kart küçüldükçe zemin kapanıyor; en sonda ekran zaten düz zemin
-  // olduğu için pop görünmüyor ve anasayfa aynı zeminle devralıyor.
+  // Bir ara sürümde bu formül yöne göre TERSTİ. O sürümde küçülme detay
+  // ekranında oynuyordu ve orada doğruydu; animasyon anasayfaya taşınınca
+  // ters formül anasayfayı geçişin SONUNDA siyahla kapatıyordu — ölçüldü,
+  // karede yalnız kart ve sekme çubuğu görünüyordu.
   const zeminStil = useAnimatedStyle(() => ({
-    opacity: kucul
-      ? interpolate(ilerleme.value, [0, 1], [1, 0])
-      : interpolate(ilerleme.value, [0, 1], [0, 1]),
-  }), [kucul]);
+    opacity: interpolate(ilerleme.value, [0, 1], [0, 1]),
+  }), []);
 
   if (!kaynak) return null;
 

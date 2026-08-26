@@ -29,7 +29,7 @@ import FriendActivity, { hasFriendSignal } from '../../src/components/FriendActi
 import ReportSheet from '../../src/components/ReportSheet';
 import ShareToFriendSheet from '../../src/components/ShareToFriendSheet';
 import CardExpand from '../../src/components/CardExpand';
-import { kaynakYaz } from '../../src/services/gecisKaynak';
+import { kaynakYaz, kucultmeAl } from '../../src/services/gecisKaynak';
 import { fetchForYouCandidates } from '../../src/api/recommend';
 import { getReviewFeed, getFriendActivity, fetchPosts } from '../../src/api/social';
 import { getSession, subscribeSession } from '../../src/services/session';
@@ -134,10 +134,40 @@ export default function HomeScreen() {
   // Bağlı Steam kütüphanesini türle eşle → saat-ağırlıklı zevk sinyali (en güçlü)
   useLibraryTaste();
   const { isCold, topGenres, normalizedGenres, profile } = useTasteProfile();
-  const forYouSlugs = genreSlugsFor(topGenres(4));
-  // Adaylar tür imzasına göre cache'li
+  // ── TÜR İMZASI OTURUM BOYUNCA SABİT ──────────────────────────────────────
+  // ÖLÇÜLDÜ, ÜÇ AŞAMADA. "Senin için" şeridi her geri dönüşte değişiyordu ve
+  // arkasında üç ayrı mekanizma vardı; ikisini kapatınca üçüncüsü kaldı:
+  //   1. useForYouFeed'in SIRALI sıfırlama imzası      → sırasız yapıldı
+  //   2. rankCandidates'ın seenIds/profile bağımlılığı → bağımlılıktan çıktı
+  //   3. topGenres(4)'ün KÜMESİ                        → burası
+  //
+  // Detay her açılışta `recordSignal({type:'view'})` çağırıyor; ağırlıklar
+  // oynayınca 4. sıradaki tür değişebiliyor, aday sorgusunun anahtarı farklı
+  // çıkıyor ve şerit baştan çekiliyordu. Ölçüm: ilk karta girip çıkınca şerit
+  // Manor Lords · SUPERHOT VR · Baldur's iken Crusader Kings III · Sayonara
+  // Wild Hearts · Red Alert oluyordu.
+  //
+  // İLK DOLU DEĞER DONUYOR: profil AsyncStorage'dan asenkron geliyor, ilk
+  // render'da boş olabiliyor — boş değeri dondurmak şeridi kalıcı olarak
+  // yedek türlere kilitlerdi.
+  //
+  // Öneri KAYBOLMUYOR: profil birikmeye devam ediyor ve uygulamanın bir
+  // sonraki açılışında yeni imza kullanılıyor. Değişen tek şey, kullanıcı
+  // ekrandayken listenin ayağının altından kaymaması.
+  const canliSluglar = genreSlugsFor(topGenres(4));
+  const sluglarRef = useRef(null);
+  if (!sluglarRef.current && canliSluglar.length > 0) sluglarRef.current = canliSluglar;
+  const forYouSlugs = sluglarRef.current || canliSluglar;
+  // Adaylar tür imzasına göre cache'li.
+  //
+  // ANAHTAR SIRASIZ — bkz. useForYouFeed'deki aynı gerekçe. Sıralı anahtar,
+  // her detay ziyaretinden sonra tür ağırlıkları oynayınca DEĞİŞİYOR ve
+  // önbelleği ıskalıyordu: "Senin için" şeridi her dönüşte baştan çekiliyor,
+  // farklı oyunlar gösteriyordu. Küme aynıysa adaylar da aynı; sıra yalnızca
+  // sıralamayı etkiliyor, o da aşağıda `genreWeights` ile ayrıca yapılıyor.
+  const candKey = `foryou-cand:${[...forYouSlugs].sort().join(',')}`;
   const { data: candData } = useQuery(
-    `foryou-cand:${forYouSlugs.join(',')}`,
+    candKey,
     () => fetchForYouCandidates(forYouSlugs),
     { ttl: 5 * 60 * 1000, enabled: !isCold }
   );
@@ -148,10 +178,28 @@ export default function HomeScreen() {
   // "İlgilenmiyorum" (sert eleme)
   const dismissedIds = useDismissed();
   // Sıralama saf/istemci-tarafı → owned/görülen/dismiss/zevk değişince yeniden FETCH yok
+  //
+  // ── ŞERİT AYAĞIN ALTINDAN KAYMIYOR ───────────────────────────────────────
+  // `seenIds` ve `profile` BİLEREK bağımlılık DEĞİL. İkisi de bir oyuna
+  // bakıldığı anda değişiyor (detay `recordSignal({type:'view'})` çağırıyor,
+  // oyun "görüldü"ye yazılıyor) ve şerit geri dönüldüğünde baştan sıralanıyordu.
+  //
+  // ÖLÇÜLDÜ: ilk karttan girip geri çıkınca şerit RimWorld · RDR2 · Baldur's
+  // iken Manor Lords · SUPERHOT VR · Baldur's oluyordu. Büyüme geçişi eklenince
+  // bu görünür bir kusura döndü: kapak, artık BAŞKA bir oyunun durduğu yuvaya
+  // küçülüyor.
+  //
+  // Kural zaten depoda yazılı (useForYouFeed başlığı): "her sayfa çekildiği
+  // anda sıralanır ve bir daha yeniden sıralanmaz; böylece kullanıcı
+  // kaydırırken liste ayağının altından kaymaz." Şerit de aynı yüzeyde.
+  // Değerler yine GÜNCEL okunuyor — yalnız yeniden hesabı tetiklemiyorlar.
+  //
+  // `dismissedIds` bağımlılıkta KALIYOR: "×" kullanıcının kendi eylemi,
+  // sonucunu anında görmeli.
   const forYou = useMemo(
     () => (candData ? rankCandidates(candData, { genreWeights: normalizedGenres(), ownedNames, seenIds, dismissedIds, limit: 12 }) : []),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [candData, ownedNames, seenIds, dismissedIds, profile]
+    [candData, ownedNames, dismissedIds]
   );
 
   // ── Sonsuz keşif akışı ──
@@ -370,8 +418,24 @@ export default function HomeScreen() {
     });
   }, [buyuyen, router]);
 
-  // Ekrandan çıkıp geri dönüldüğünde bindirme kalmasın.
-  useFocusEffect(useCallback(() => () => setBuyuyen(null), []));
+  // ── GERİ ÇIKIŞ KÜÇÜLMESİ BURADA OYNUYOR ─────────────────────────────────
+  // Detay ekranı animasyonu KENDİ üstünde oynatıyordu; kullanıcı "kasıyor"
+  // dedi. Ağır bir ekranın (ScrollView + ekran görüntüsü şeridi + video
+  // oynatıcı) üstünde 380 ms animasyon, üstelik opak zeminin arkasında
+  // donmuş görünen bir sayfa. Şimdi detay yalnız istek bırakıp hemen
+  // çıkıyor, küçülme burada — o ekran söküldükten sonra — oynuyor.
+  //
+  // Odak etkisinde okunuyor: pop `animation:'none'` ile anında olduğu için
+  // bu ekran görünür olur olmaz bindirme p=1'de (tam ekran kapak) açılıyor.
+  const [kuculen, setKuculen] = useState(null);
+  const kucultmeBitti = useCallback(() => setKuculen(null), []);
+
+  useFocusEffect(useCallback(() => {
+    const bekleyen = kucultmeAl();
+    if (bekleyen) setKuculen(bekleyen);
+    // Ekrandan çıkarken BÜYÜME bindirmesi kalmasın (detay devraldı).
+    return () => setBuyuyen(null);
+  }, []));
 
   const paylasAc = useCallback((game) => {
     setPaylas({ gameId: String(game.id), name: game.name });
@@ -553,6 +617,13 @@ export default function HomeScreen() {
       <CardExpand
         kaynak={buyuyen}
         onVar={buyumeVardi}
+      />
+
+      {/* Geri çıkış: kapak detayın 320pt alanından kartın çerçevesine küçülür. */}
+      <CardExpand
+        kaynak={kuculen}
+        yon="kucul"
+        onVar={kucultmeBitti}
       />
 
       <ShareToFriendSheet
