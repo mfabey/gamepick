@@ -36,6 +36,7 @@ import { View, StyleSheet, Dimensions } from 'react-native';
 import Animated, {
   useSharedValue, useAnimatedStyle, withTiming, interpolate, Easing, runOnJS,
 } from 'react-native-reanimated';
+import { Image } from 'expo-image';
 
 import GameCover from './GameCover';
 import { useTheme } from '../context/ThemeContext';
@@ -56,6 +57,9 @@ const EGRI = Easing.bezier(0.2, 0.9, 0.2, 1);
  * @param {object|null} kaynak  { x, y, width, height, image, name, id }
  * @param {func}        onVar   hedefe varınca (gezinme burada yapılıyor)
  * @param {string}     [yon]    'buyu' (karttan detaya) | 'kucul' (detaydan karta)
+ *
+ * `kaynak.hedefGorsel` — detayın gösterdiği kapak. Verilmezse ham `image`
+ * kullanılıyor: detay da veri gelene kadar zaten onu basıyor.
  */
 // Bindirme KENDİSİ kalkmıyor: anasayfa, odağı kaybettiğinde temizliyor
 // (useFocusEffect). Böylece bindirme, detay ekranı devralana kadar
@@ -109,18 +113,56 @@ export default function CardExpand({ kaynak, onVar, yon = 'buyu' }) {
     opacity: interpolate(ilerleme.value, [0, 1], [0, 1]),
   }), []);
 
+  // ── GÖRSEL DE ÇERÇEVEYLE BİRLİKTE DÖNÜŞÜYOR ─────────────────────────────
+  // ÖLÇÜLDÜ: utils/images.js → posterImage() Steam kapaklarını yeniden
+  // yazıyor — `/apps/<id>/header.jpg` (yatay) → `/library_600x900.jpg`
+  // (dikey 3:4). Kart GameCover üzerinden çizdiği için DİKEY afişi, detay
+  // ham URL'yi bastığı için YATAY header'ı gösteriyor. Yani aynı oyunun iki
+  // yüzeydeki görseli gerçekten farklı.
+  //
+  // Bindirme tek katmanken çerçeve yumuşak büyüyor ama içindeki resim devir
+  // anında TEK KAREDE değişiyordu. İki katman bunu çözüyor:
+  //   A (altta) — kartın gösterdiği hâl, opaklığı SABİT 1
+  //   B (üstte) — detayın gösterdiği hâl, opaklık = ilerleme
+  //
+  // A SÖNDÜRÜLMÜYOR, bilerek. İki katmanı zıt yönde söndürmek orta noktada
+  // toplam opaklığı düşürür ve geçişin ortasında bir "çukur" görünürdü. Üst
+  // katman zaten opaklaşınca alttakini tamamen kapatıyor.
+  // Yan faydası: hedef görsel geç gelirse ya da hiç gelmezse alt katman
+  // görünür kalıyor — hiçbir karede boş kutu çıkmıyor.
+  //
+  // İki adres aynıysa (RAWG kaynaklı oyunlar; ölçüldü: Disco Elysium'da
+  // birebir aynı URL) sönüm görünmüyor, ek maliyeti de yok.
+  const hedefUri = kaynak?.hedefGorsel || kaynak?.image || null;
+  const hedefStil = useAnimatedStyle(() => ({ opacity: ilerleme.value }), []);
+
   if (!kaynak) return null;
 
   return (
     <View style={[StyleSheet.absoluteFill, styles.bindirme]} pointerEvents="none">
       <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: colors.bg }, zeminStil]} />
       <Animated.View style={[styles.kutu, kutuStil]}>
+        {/* A — kartın gösterdiği hâl (dikey afiş + karartma) */}
         <GameCover
           uri={kaynak.image}
           name={kaynak.name}
           style={StyleSheet.absoluteFill}
           kapakNotu={false}
         />
+        {/* B — detayın gösterdiği hâl (ham/yatay görsel). GameCover DEĞİL:
+            o PosterImage üzerinden yine dikey afişe çevirirdi ve iki katman
+            aynı resmi gösterirdi. Monogram da yok — yüklenemezse saydam
+            kalıp alttaki katmanı göstermeli, harf basmamalı. */}
+        {hedefUri ? (
+          <Animated.View style={[StyleSheet.absoluteFill, hedefStil]}>
+            <Image
+              source={hedefUri}
+              style={StyleSheet.absoluteFill}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+            />
+          </Animated.View>
+        ) : null}
       </Animated.View>
     </View>
   );

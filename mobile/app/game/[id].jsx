@@ -275,6 +275,12 @@ export default function GameDetail() {
   //
   // Sıra ters çevrildi: yalnızca İSTEK bırakılıp hemen çıkılıyor; küçülmeyi
   // anasayfa, bu ekran söküldükten SONRA oynatıyor.
+  // `cover` BURADA tanımlı, aşağıda değil: `geriDon` onu bağımlılık olarak
+  // alıyor ve bağımlılık dizisi RENDER SIRASINDA değerlendiriliyor. Aşağıda
+  // kalsaydı const'ın geçici ölü bölgesine (TDZ) düşer, ekran açılır açılmaz
+  // ReferenceError verirdi.
+  const cover = detail?.image || image;
+
   const cikiliyor = useRef(false);
 
   const geriDon = useCallback(() => {
@@ -288,10 +294,15 @@ export default function GameDetail() {
       // düş — ikisi de yoksa GameCover monograma iniyor, boş kutu çıkmıyor.
       image: cerceve.image || image,
       name:  cerceve.name  || name,
+      // O AN EKRANDA DURAN kapak. Bindirme küçülürken bundan kartın dikey
+      // afişine çapraz sönüyor; yoksa resim daha animasyon başlamadan tek
+      // karede takas olurdu. `detail` yüklendiyse gerçek hedef bu, yüklenmediyse
+      // zaten rota parametresindeki görsel.
+      hedefGorsel: cover || image,
     });
     kaynakSil(id);       // tüketildi; ikinci bir dönüş aynı kutuyu oynatmasın
     router.back();
-  }, [azalt, id, image, name, router]);
+  }, [azalt, cover, id, image, name, router]);
 
   const coverStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: azalt ? 0 : -scrollY.value * 0.9 }],
@@ -319,7 +330,6 @@ export default function GameDetail() {
     []
   );
 
-  const cover = detail?.image || image;
   const title = detail?.name || name;
   const isFree = price?.isFree;
   const onSale = price?.discount > 0 && !isFree;
