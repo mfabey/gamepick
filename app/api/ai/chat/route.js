@@ -195,11 +195,29 @@ function estimateHardware(game, userGpu) {
 }
 
 // --- Generative AI Inference Engine ---
-const GAMERISEN_SYSTEM_PROMPT = `Sen **Gamerisen AI** (gamerisen.com)'ın resmi, son derece zeki, esprili, samimi ve bilgili yapay zeka oyun danışmanısın.
+const GAMERISEN_SYSTEM_PROMPT = `Sen **Gamerisen AI** (gamerisen.com)'ın resmi, son derece zeki, esprili, samimi, özlü ve bilgili yapay zeka oyun danışmanısın.
 
 ### 🎮 KİMLİĞİN VE MİSYONUN:
 1. Gamerisen platformunun (gamerisen.com) kalbinde yaşayan, Türk oyuncularına ve tüm gamer'lara rehberlik eden canlı bir yapay zeka oyun asistanısın.
 2. Temel ve TEK uzmanlık alanın: Video oyunları, Steam, Epic Games, GOG, PlayStation ve Xbox mağaza fiyatları ve indirimleri, donanım/FPS uyumluluğu, HowLongToBeat oyun süreleri ve oyuncu zevkine göre oyun tavsiyeleridir.
+
+### 📏 YANIT UZUNLUĞU VE KONUŞMA KURALI (ÇOK ÖNEMLİ):
+1. **STANDART YANITLARDA 4-6 CÜMLE SINIRI:**
+   - Normal sohbetlerde, selamlaşmalarda, genel tavsiyelerde ve cevaplarda asla upuzun paragraflar yazma.
+   - Yanıtların maksimum **4-6 cümle** olacak şekilde samimi, özlü, net ve doğrudan konuya odaklı olsun.
+2. **ESNEME PAYI (İSTİSNA):**
+   - Yalnızca kullanıcının sorduğu soru veya konu evrensel/felsefi, derinlemesine teknik donanım/FPS analizi veya çok kapsamlı bir oyun evreni/kıyaslama detayı gerektiriyorsa mesajını uzatabilir, esneme payı bırakabilirsin. Ancak bu durumlarda dahi gereksiz laf kalabalığından kaçın.
+
+### 🏷️ FİYAT, HİKAYE VE OYUN BİLGİSİ SUNMA KURALI (ÇOK ÖNEMLİ):
+1. **AŞIRI SOHBET ETME, DOĞRUDAN VE DİNAMİK GİRİŞ YAP:**
+   - Kullanıcı bir oyunla ilgili fiyat, indirim, hikaye veya oyun bilgisi istediğinde lafı uzatıp aşırı sohbet edercesine upuzun paragraflar yazma.
+   - Bilgiyi sunarken doğrudan, net ve dinamik bir giriş cümlesi kur. Örneğin:
+     - *"Tabii, işte aradığın [Oyun Adı] ile ilgili hikaye ve fiyat detayları aşağıdaki gibidir:"*
+     - *"İstediğin yapımın güncel mağaza fiyatları ve özet bilgileri hemen aşağıda:"*
+     - *"[Oyun Adı] için en son fırsatları ve hikaye özetini çıkardım, işte detaylar:"*
+     - *"Aradığın oyunun güncel mağaza fiyatları ve detayları şöyle:"*
+   - **ASLA HEP AYNI CÜMLEYİ KULLANMA:** Yukarıdaki kalıpları ve benzerlerini her seferinde doğal bir şekilde türet, çeşitlendir ve dinamik bir giriş cümlesiyle bilgiyi aktar.
+   - Kullanıcı hikaye istediyse 2-4 cümlelik vurucu bir hikaye özeti ver; fiyatlar zaten altındaki kartlarda detaylı listelendiği için gereksiz tekrarlardan kaçın.
 
 ### 🛑 KESİN VE TAVİZSİZ GÜVENLİK KURALLARI:
 1. **KİŞİSEL İSİMLER VE GERÇEK ŞAHISLAR HAKKINDA BİLGİ VERMEK KESİNLİKLE YASAKTIR**:
@@ -218,7 +236,7 @@ const GAMERISEN_SYSTEM_PROMPT = `Sen **Gamerisen AI** (gamerisen.com)'ın resmi,
    - Sana verilen veritabanı oyun ve mağaza verilerini temel alarak doğru, güncel ve net bilgiler sun.
 
 5. **DİL VE TON**:
-   - Samimi, zeki, yardımsever ve oyuncu dostu bir üslup. Markdown biçimlendirmesi (kalın yazılar, listeler, emojiler) kullan.`;
+   - Samimi, zeki, yardımsever, özlü ve oyuncu dostu bir üslup. Markdown biçimlendirmesi (kalın yazılar, listeler, emojiler) kullan.`;
 
 function isValidKey(key) {
   return Boolean(key && key.trim() !== '' && !key.startsWith('buraya_') && key !== 'placeholder');
@@ -255,7 +273,7 @@ async function callGenerativeLLM(query, ragContext, userProfile) {
     profileStr += `\nSevdiği Türler: ${userProfile.liked_genres.join(', ')}`;
   }
 
-  const prompt = `${profileStr ? `[OYUNCU PROFİLİ: ${profileStr}]\n` : ''}${ragContext ? `[GAMERISEN VERİTABANI & MAĞAZA VERİLERİ:\n${ragContext}]\n` : '[VERİTABANI: Bu sorgu için spesifik oyun kartı eşleşmesi bulunamadı. Kullanıcının sorusunu Gamerisen AI kimliğinle (sadece oyun, indirim, donanım odaklı ve kişisel isim/şahıs bilgisi vermeden) yanıtla.]\n'}\nKULLANICI SORUSU: ${query}\n\nLütfen yukarıdaki kurallara ve Gamerisen kimliğine uygun, esprili, samimi ve tamamen özgün Markdown yanıtını yaz:`;
+  const prompt = `${profileStr ? `[OYUNCU PROFİLİ: ${profileStr}]\n` : ''}${ragContext ? `[GAMERISEN VERİTABANI & MAĞAZA VERİLERİ:\n${ragContext}]\n` : '[VERİTABANI: Bu sorgu için spesifik oyun kartı eşleşmesi bulunamadı. Kullanıcının sorusunu Gamerisen AI kimliğinle (sadece oyun, indirim, donanım odaklı ve kişisel isim/şahıs bilgisi vermeden) yanıtla.]\n'}\nKULLANICI SORUSU: ${query}\n\nLütfen yukarıdaki kurallara ve Gamerisen kimliğine uygun, aşırı uzatmadan (standart sorularda max 4-6 cümle), fiyat/hikaye/bilgi sorgularında dinamik türetilmiş doğrudan giriş cümlesi kullanarak özgün Markdown yanıtını yaz:`;
 
   // 1. Try Google Gemini API (Ultra-fast, high-intelligence)
   if (isValidKey(geminiKey)) {
@@ -286,6 +304,8 @@ async function callGenerativeLLM(query, ragContext, userProfile) {
   // 2. Try Groq API (High Performance Multi-Model Fallback)
   if (isValidKey(groqKey)) {
     const groqModels = [
+      'llama-3.3-70b-versatile',
+      'llama-3.1-8b-instant',
       'openai/gpt-oss-120b',
       'openai/gpt-oss-20b',
       'groq/compound'
@@ -305,8 +325,8 @@ async function callGenerativeLLM(query, ragContext, userProfile) {
               { role: 'system', content: GAMERISEN_SYSTEM_PROMPT },
               { role: 'user', content: prompt }
             ],
-            temperature: 0.6,
-            max_tokens: 2048,
+            temperature: 0.65,
+            max_tokens: 1024,
             top_p: 0.95
           })
         });
@@ -369,7 +389,7 @@ async function callGenerativeLLM(query, ragContext, userProfile) {
             { role: 'user', content: prompt }
           ],
           temperature: 0.85,
-          max_tokens: 2048
+          max_tokens: 1024
         })
       });
       if (res.ok) {
@@ -433,15 +453,15 @@ function generateDynamicFallback(query, ragContext) {
       "Ben senin kişisel oyun rehberinim! 👾 İster en kelepir indirimleri kovala, ister 'ekran kartım bunu açar mı?' diye sor, ister oyun dünyası hakkında konuşalım; buradayım."
     ];
     const details = [
-      "\n\n**Neler yapabilirim?**\n• 🔍 **En Ucuz Fiyat:** Steam, Epic Games, GOG karşılaştırması\n• 🖥️ **FPS & Donanım:** Ekran kartına göre akıcılık tahmini\n• ⏱️ **HowLongToBeat:** Oyunun ana hikaye süresi\n• 🎯 **Kişiye Özel Öneri:** Bütçene ve tarzına uygun tavsiyeler\n• 🛡️ **Oyun Danışmanlığı:** Oyun mekanikleri, fırsatlar ve sistem uyumluluğu",
-      "\n\nKısacası: Oyun dünyasındaki pusulanım! Aklındaki oyunu, bütçeni veya sistemini söyle, gerisini bana bırak. 🚀"
+      "\n\n**Neler yapabilirim?**\n• 🔍 **En Ucuz Fiyat:** Steam, Epic Games, GOG karşılaştırması\n• 🖥️ **FPS & Donanım:** Ekran kartına göre akıcılık tahmini\n• ⏱️ **HowLongToBeat:** Oyunun ana hikaye süresi\n• 🎯 **Kişiye Özel Öneri:** Bütçene ve tarzına uygun tavsiyeler",
+      "\n\nKısacası oyun dünyasındaki pusulanım! Aklındaki oyunu, bütçeni veya sistemini söyle, gerisini bana bırak. 🚀"
     ];
     return `${pick(intros)}${pick(details)}`;
   }
 
   // Creator / Code Ownership / GitHub / Security Defense
   if (/(?:seni kim yapti|seni kim kodladi|seni kim gelistirdi|kodlarin kime ait|kodlarin nerde|kodlarin nerede|kaynak kod|github|sahibin kim|kimin projesin|kim yapti seni|arkandaki ekip|yapimcin kim|gelistiricin kim)/i.test(norm)) {
-    return "Ben **Gamerisen** (gamerisen.com) platformu tarafından Türk oyuncularına tarafsız, bağımsız ve kesintisiz rehberlik sunmak üzere geliştirilmiş resmi yapay zeka oyun ve donanım danışmanıyım. 🎮⚡\n\nSistem mimarim, algoritmalarım ve veritabanım Gamerisen platformunun tescilli mülkiyetindedir ve güvenlik ilkelerimiz gereği gizlidir. Benim temel görevim; oyunculara Steam, Epic Games ve GOG üzerindeki en güncel indirimleri sunmak, gerçekçi donanım/FPS analizleri yapmak ve kütüphanene en uygun yapımları önermektir.\n\nAklında merak ettiğin bir oyun, donanım uyumluluğu veya fiyat araştırması varsa hemen yardımcı olabilirim! 🚀";
+    return "Ben **Gamerisen** (gamerisen.com) platformu tarafından Türk oyuncularına tarafsız ve bağımsız rehberlik sunmak üzere geliştirilmiş resmi yapay zeka oyun danışmanıyım. 🎮⚡\n\nSistem mimarim ve veritabanım Gamerisen'a aittir. Görevim; en güncel mağaza indirimlerini sunmak, FPS analizleri yapmak ve sana en uygun oyunları önermektir. Aklındaki oyunu veya sistemi sorabilirsin! 🚀";
   }
 
   // Personal names / biographies / real people guardrail in fallback
@@ -477,8 +497,8 @@ function generateDynamicFallback(query, ragContext) {
   // Philosophy / Deep Questions / Life
   if (/\b(hayatin anlami|felsefe|matrix|yapay zeka|mutluluk|evren|insan|neden variz|simulasyon)\b/i.test(norm)) {
     const philosophies = [
-      `🤔 **Gamerisen AI Perspektifi:**\n\nBu soru gerçekten derin ve üzerinde düşünülmeye değer!\n\nTıpkı devasa bir açık dünya RPG'sinde olduğu gibi, hayatın ana görevi (Main Quest) tek bir sabit cevaba bağlı değil; onu asıl anlamlı kılan geçtiğin yan görevler (Side Quests), karşılaştığın zorluklar ve kazandığın deneyim puanları (XP). Kendi hikayeni nasıl yazmak istediğin tamamen senin elinde! 🌟\n\nKafanı dağıtacak derin hikayeli bir başyapıt veya RPG keşfetmek istersen sana harika tavsiyelerim var. Ne dersin? 🎮`,
-      `🌌 **Derin Bir Düşünce:**\n\nEvren belki devasa bir simülasyon, belki de kusursuz bir oyun motorunun eseri. Ama asıl mesele şu an burada olmamız ve deneyimlediğimiz her anın tadını çıkarmamız. Zorlu boss dövüşlerinden sonra gelen o zafer hissi gibi, hayatın güzelliği de mücadelede gizli. ⚔️\n\nBöyle efsanevi evrenlerde kaybolmak istersen sana atmosferik açık dünya oyunları önerebilirim! 🚀`
+      `🤔 **Gamerisen AI Perspektifi:**\n\nBu soru gerçekten derin ve üzerinde düşünülmeye değer! Tıpkı devasa bir açık dünya RPG'sinde olduğu gibi, hayatın ana görevi tek bir cevaba bağlı değil; onu asıl anlamlı kılan yan görevler ve kazandığın deneyimlerdir. Kendi hikayeni nasıl yazmak istediğin tamamen senin elinde! 🌟\n\nKafanı dağıtacak derin hikayeli bir başyapıt keşfetmek istersen sana harika tavsiyelerim var. Ne dersin? 🎮`,
+      `🌌 **Derin Bir Düşünce:**\n\nEvren belki devasa bir simülasyon, belki de kusursuz bir oyun motorunun eseri. Asıl mesele şu an burada olmamız ve deneyimlediğimiz her anın tadını çıkarmamızdır. Zorlu boss dövüşlerinden sonra gelen o zafer hissi gibi, hayatın güzelliği de mücadelede gizli. ⚔️\n\nBöyle efsanevi evrenlerde kaybolmak istersen sana atmosferik açık dünya oyunları önerebilirim! 🚀`
     ];
     return pick(philosophies);
   }
@@ -512,15 +532,49 @@ function generateDynamicFallback(query, ragContext) {
     return pick(jokes);
   }
 
-  // RAG Context Available
+  // RAG Context Available - Dynamic, varied, concise lead-in sentence
   if (ragContext) {
-    return `🎮 **Gamerisen AI Araştırma Raporu:**\n\nSorgun için veritabanımızı ve mağazaları tarayarak en uygun seçenekleri derledim.\n\nAşağıdaki interaktif kartlardan mağaza fiyatlarını ve donanım uyumluluğunu detaylıca inceleyebilirsin! 🚀`;
+    let parsedGames = [];
+    try {
+      parsedGames = JSON.parse(ragContext);
+    } catch (e) {}
+
+    const gameTitle = parsedGames[0]?.title;
+    const isStoryQuery = /(?:hikaye|hikayesi|konusu|lore|plot|senaryo)/i.test(norm);
+
+    if (gameTitle) {
+      if (isStoryQuery) {
+        const storyLeadIns = [
+          `Tabii, işte aradığın **${gameTitle}** ile ilgili hikaye ve detay bilgileri aşağıdaki gibidir:`,
+          `**${gameTitle}** için hikaye özetini ve oyun detaylarını çıkardım, hemen aşağıdan inceleyebilirsin:`,
+          `Harika yapım! **${gameTitle}** hakkındaki hikaye detayları ve mağaza bilgileri şöyle:`,
+          `Aradığın **${gameTitle}** hikayesi ve genel detayları aşağıdaki gibidir:`
+        ];
+        return pick(storyLeadIns);
+      }
+
+      const priceLeadIns = [
+        `Tabii, işte aradığın **${gameTitle}** ile ilgili fiyat ve mağaza bilgileri aşağıdaki gibidir:`,
+        `İstediğin **${gameTitle}** için güncel mağaza fiyatları ve özet detaylar hemen aşağıda:`,
+        `**${gameTitle}** için en son mağaza indirimlerini ve fırsatları derledim, işte detaylar:`,
+        `Aradığın **${gameTitle}** ile ilgili en avantajlı fiyatlar ve donanım bilgileri şöyle:`
+      ];
+      return pick(priceLeadIns);
+    }
+
+    const genericLeadIns = [
+      "Tabii, işte aradığın kriterlere uygun oyun ve fiyat bilgileri aşağıdaki gibidir:",
+      "İstediğin oyunlar için en avantajlı mağaza fiyatlarını ve detayları derledim, hemen aşağıda:",
+      "Veritabanımızdaki en sıcak fırsatları ve mağaza bilgilerini senin için çıkardım, detaylar şöyle:",
+      "Aradığın oyunlarla ilgili güncel fiyat seçenekleri ve detaylar aşağıdaki gibidir:"
+    ];
+    return pick(genericLeadIns);
   }
 
   // Natural open response
   const openResponses = [
     "Oyun dünyasındaki tüm indirimler, mağaza karşılaştırmaları ve donanım analizleri için buradayım! 🎮\n\nSana nasıl yardımcı olayım?\n• 🔍 **Fiyat:** *'Witcher 3 nerede ucuz?'*, *'Cyberpunk kaç TL?'*\n• 💰 **Bütçe:** *'100 TL altı oyunlar'*, *'Bedava oyunlar'*\n• 🖥️ **FPS:** *'GTX 1650 bu oyunu açar mı?'*\n• 🎯 **Tavsiye:** *'Canım sıkıldı ne oynasam?'*",
-    "Tam olarak ne aradığını keşfetmek için sabırsızlanıyorum! 🕹️ Aklındaki oyunu, oynamak istediğin türü (RPG, FPS, Hayatta Kalma) veya bütçeni söylersen sana nokta atışı fırsatları çıkarabilirim! 🚀",
+    "Tam olarak ne aradığını keşfetmek için sabırsızlanıyorum! 🕹️ Aklındaki oyunu, oynamak istediğin türü veya bütçeni söylersen sana nokta atışı fırsatları çıkarabilirim! 🚀",
     "Gamerisen sistemleri emrine amade! ⚡ İster mağazalardaki en dip fiyatları bulalım, ister sisteminin gücünü test edelim. Ne yapmak istersin? 🎯"
   ];
   return pick(openResponses);
