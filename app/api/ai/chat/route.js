@@ -216,13 +216,16 @@ const GAMERISEN_SYSTEM_PROMPT = `Sen **Gamerisen AI** (gamerisen.com)'ın resmi,
 2. **ESNEME PAYI (İSTİSNA):**
    - Yalnızca kullanıcının sorduğu soru veya konu evrensel/felsefi, derinlemesine teknik donanım/FPS analizi veya çok kapsamlı bir oyun evreni/kıyaslama detayı gerektiriyorsa mesajını uzatabilir, esneme payı bırakabilirsin. Ancak bu durumlarda dahi gereksiz laf kalabalığından kaçın.
 
-### 🏷️ FİYAT, HİKAYE VE OYUN BİLGİSİ SUNMA KURALI (ÇOK ÖNEMLİ):
-1. **AŞIRI SOHBET ETME, DOĞRUDAN VE DİNAMİK GİRİŞ YAP:**
-   - Kullanıcı bir oyunla ilgili fiyat, indirim, hikaye veya oyun bilgisi istediğinde lafı uzatıp aşırı sohbet edercesine upuzun paragraflar yazma.
-   - Bilgiyi sunarken doğrudan, net ve dinamik bir giriş cümlesi kur. Örneğin:
-     - *"Tabii, işte aradığın [Oyun Adı] ile ilgili hikaye ve fiyat detayları aşağıdaki gibidir:"*
-     - *"İstediğin yapımın güncel mağaza fiyatları ve özet bilgileri hemen aşağıda:"*
-     - *"[Oyun Adı] için en son fırsatları ve hikaye özetini çıkardım, işte detaylar:"*
+### 🏷️ FİYAT, İNDİRİM VE HİKAYE BİLGİSİ SUNMA KURALI (ÇOK ÖNEMLİ):
+1. **METİN İÇİNDE ASLA DEVASA FİYAT TABLOLARI VEYA LİSTELERİ ÇİZME:**
+   - Kullanıcı "İndirimde neler var?", "En iyi fırsatlar", "Hangi oyunlar indirimde?", fiyat veya oyun sorduğunda metin içinde ASLA Markdown tabloları (`| Oyun | Platform | Fiyat |`) veya uzun fiyat listeleri yazma.
+   - Çünkü oyunların indirimli fiyatları, indirim oranları, platformları, donanım uyumlulukları ve **doğrudan mağaza yönlendirme linkleri ("Mağazaya Git 🚀")** mesajının hemen altında şık interaktif kartlar olarak gösterilmektedir.
+2. **KARTLARA YÖNLENDİREN ŞIK VE DİNAMİK BİR GİRİŞ YAP:**
+   - Bilgiyi sunarken doğrudan, net ve dinamik bir giriş cümlesi kur. 2-4 samimi ve özlü cümleyle özetle, ardından doğrudan kartlardaki mağaza linklerine yönlendir.
+   - Örneğin:
+     - *"Tabii, işte sistemine ve zevkine uygun en sıcak indirim fırsatları ve mağaza bilgileri aşağıdaki kartlarda listelenmiştir:"*
+     - *"Aşağıdaki interaktif kartlardan güncel indirimleri inceleyebilir ve 'Mağazaya Git' butonuyla doğrudan indirimli sayfaya ulaşabilirsin: 🚀"*
+     - *"[Oyun Adı] için en son fırsatları ve detayları çıkardım, hemen aşağıdaki karttan mağaza linkine ulaşabilirsin:"*
      - *"Aradığın oyunun güncel mağaza fiyatları ve detayları şöyle:"*
    - **ASLA HEP AYNI CÜMLEYİ KULLANMA:** Yukarıdaki kalıpları ve benzerlerini her seferinde doğal bir şekilde türet, çeşitlendir ve dinamik bir giriş cümlesiyle bilgiyi aktar.
    - Kullanıcı hikaye istediyse 2-4 cümlelik vurucu bir hikaye özeti ver; fiyatlar zaten altındaki kartlarda detaylı listelendiği için gereksiz tekrarlardan kaçın.
@@ -617,11 +620,20 @@ function generateDynamicFallback(query, ragContext) {
       return pick(priceLeadIns);
     }
 
+    if (/(?:indirim|indirimde|indirimler|firsat|firsatlar|kampanya|kelepir|ucuz)/i.test(norm)) {
+      const dealsLeadIns = [
+        "Şu anki en sıcak indirimleri ve mağaza fırsatlarını senin için listeledim! Aşağıdaki kartlardan güncel indirim oranlarını inceleyebilir ve 'Mağazaya Git' butonlarıyla doğrudan indirimli sayfaya ulaşabilirsin: 🚀",
+        "Piyasadaki en avantajlı oyun indirimlerini derledim! Detayları ve doğrudan mağaza yönlendirme linklerini hemen aşağıdaki kartlarda bulabilirsin: 🎮",
+        "Kütüphaneni genişletmen için en kelepir indirim fırsatları aşağıda listelendi. 'Mağazaya Git' butonuna basarak doğrudan mağaza sayfasına gidebilirsin: ⚡"
+      ];
+      return pick(dealsLeadIns);
+    }
+
     const genericLeadIns = [
-      "Tabii, işte aradığın kriterlere uygun oyun ve fiyat bilgileri aşağıdaki gibidir:",
-      "İstediğin oyunlar için en avantajlı mağaza fiyatlarını ve detayları derledim, hemen aşağıda:",
-      "Veritabanımızdaki en sıcak fırsatları ve mağaza bilgilerini senin için çıkardım, detaylar şöyle:",
-      "Aradığın oyunlarla ilgili güncel fiyat seçenekleri ve detaylar aşağıdaki gibidir:"
+      "Tabii, işte aradığın kriterlere uygun en avantajlı oyunlar ve mağaza bilgileri aşağıdaki kartlarda listelenmiştir:",
+      "İstediğin oyunlar için en avantajlı mağaza fiyatlarını ve detayları derledim, aşağıdaki kartlardan doğrudan mağazaya gidebilirsin: 🚀",
+      "Veritabanımızdaki en sıcak fırsatları ve mağaza bilgilerini senin için çıkardım, detaylar hemen aşağıdaki kartlarda:",
+      "Aradığın oyunlarla ilgili güncel fiyat seçenekleri ve mağaza linkleri aşağıdaki kartlarda yer alıyor:"
     ];
     return pick(genericLeadIns);
   }
@@ -922,6 +934,7 @@ export async function POST(req) {
 
     const isConstraint = (maxPrice !== null) || (minPrice !== null) || (aroundPrice !== null) || isFree || isCheapest;
     const isRecommendationQuery = /(?:ne oynasam|oyun oner|oyun tavsiyesi|hangi oyunu oynasam|sıkıldım|sikildim|ne oynayayim|en iyi oyunlar|onerin var mi)/i.test(normQ);
+    const isDealsQuery = /(?:indirim|indirimde|indirimler|indirimdeki|firsat|firsatlar|kampanya|kampanyalar|kelepir|fiyati dusen|fiyatlari dusen|en iyi indirimler|cazip|ucuzluk)/i.test(normQ);
     const isHardwareSpecificQuery = Boolean(queryGpu) || /(?:sistemim|donanim|ekran kartim|kaldirir mi|fps|akici)/i.test(normQ);
 
     // 7. Search Local Database with High-Precision Token Matching (No Substring Bugs)
@@ -1001,7 +1014,11 @@ export async function POST(req) {
           else if (hw?.status?.includes('Oynanabilir')) score += 4.0;
         }
 
-        if (isCheapest) {
+        if (isDealsQuery) {
+          const discount = bestDeal.discount || 0;
+          const rating = game.rating || 80;
+          score += (discount * 2.5) + (rating / 3.0) + 25.0;
+        } else if (isCheapest) {
           const rating = game.rating || 80;
           const qualityMult = Math.pow(rating / 80.0, 1.5);
           const cheapBoost = 180.0 / (price + 10.0);
@@ -1015,7 +1032,7 @@ export async function POST(req) {
           score += 5.0 + ((game.rating || 80) / 20.0);
         }
 
-        if (isConstraint || isRecommendationQuery || isHardwareSpecificQuery || (hasMatch && score >= 25.0)) {
+        if (isConstraint || isRecommendationQuery || isDealsQuery || isHardwareSpecificQuery || (hasMatch && score >= 25.0)) {
           scoredGames.push({
             game,
             best_deal: bestDeal,
@@ -1030,9 +1047,9 @@ export async function POST(req) {
 
     let structuredGames = [];
 
-    // 8. If database has high-confidence exact/token match (score >= 35.0) or recommendation/constraint results, use them
-    if (scoredGames.length > 0 && (isConstraint || isRecommendationQuery || isHardwareSpecificQuery || scoredGames[0].score >= 35.0)) {
-      structuredGames = scoredGames.slice(0, 3).map(r => ({
+    // 8. If database has high-confidence exact/token match (score >= 35.0) or recommendation/constraint/deals results, use them
+    if (scoredGames.length > 0 && (isConstraint || isRecommendationQuery || isDealsQuery || isHardwareSpecificQuery || scoredGames[0].score >= 35.0)) {
+      structuredGames = scoredGames.slice(0, isDealsQuery ? 4 : 3).map(r => ({
         id: r.game.id,
         title: r.game.title,
         genres: r.game.genres || ['Aksiyon'],
