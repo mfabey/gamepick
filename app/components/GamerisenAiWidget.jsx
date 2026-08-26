@@ -41,11 +41,29 @@ export default function GamerisenAiWidget() {
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId, setSessionId] = useState(null);
   const [hasAcknowledgedBeta, setHasAcknowledgedBeta] = useState(false);
+  const [userGpu, setUserGpu] = useState('');
+  const [showHardwareModal, setShowHardwareModal] = useState(false);
+  const [customGpuInput, setCustomGpuInput] = useState('');
+
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const promptsRef = useRef(null);
 
   const API_BASE = process.env.NEXT_PUBLIC_AI_API_URL || '';
+
+  // Load saved user GPU from localStorage
+  useEffect(() => {
+    try {
+      const savedProfile = localStorage.getItem('gamerisen_user_profile');
+      if (savedProfile) {
+        const parsed = JSON.parse(savedProfile);
+        if (parsed?.hardware?.gpu) {
+          setUserGpu(parsed.hardware.gpu);
+          setCustomGpuInput(parsed.hardware.gpu);
+        }
+      }
+    } catch (e) {}
+  }, []);
 
   const acknowledgeBeta = () => {
     setHasAcknowledgedBeta(true);
@@ -62,6 +80,26 @@ export default function GamerisenAiWidget() {
     ]);
     setInputValue('');
     setHasAcknowledgedBeta(false);
+    setShowHardwareModal(false);
+  };
+
+  const handleSelectGpu = (gpuToSet) => {
+    const cleanGpu = (gpuToSet || customGpuInput || '').trim();
+    if (!cleanGpu) return;
+    setUserGpu(cleanGpu);
+    setCustomGpuInput(cleanGpu);
+    setShowHardwareModal(false);
+
+    try {
+      const savedProfile = localStorage.getItem('gamerisen_user_profile');
+      let profileObj = savedProfile ? JSON.parse(savedProfile) : {};
+      if (!profileObj.hardware) profileObj.hardware = {};
+      profileObj.hardware.gpu = cleanGpu;
+      localStorage.setItem('gamerisen_user_profile', JSON.stringify(profileObj));
+    } catch (e) {}
+
+    // Send immediate recommendation query tailored for this GPU
+    sendMessage(`${cleanGpu} ekran kartıma göre akıcı oynayabileceğim en iyi oyunları öner`);
   };
 
   // Initial welcome message with user's name
@@ -108,6 +146,11 @@ export default function GamerisenAiWidget() {
         const savedProfile = localStorage.getItem('gamerisen_user_profile');
         if (savedProfile) userProfile = JSON.parse(savedProfile);
       } catch (e) {}
+
+      if (userGpu) {
+        if (!userProfile.hardware) userProfile.hardware = {};
+        userProfile.hardware.gpu = userGpu;
+      }
 
       const res = await fetch(`${API_BASE}/api/ai/chat`, {
         method: 'POST',
@@ -228,11 +271,18 @@ export default function GamerisenAiWidget() {
     }
   };
 
+  const popularGpus = [
+    'RTX 4090', 'RTX 4080', 'RTX 4070', 'RTX 4060',
+    'RTX 3060', 'RTX 2060', 'GTX 1650', 'GTX 1060',
+    'RX 7800 XT', 'RX 6700', 'RX 580', 'Intel Iris Xe', 'Apple M-Series'
+  ];
+
   const quickPrompts = [
+    ...(userGpu ? [{ label: `🎮 ${userGpu} için oyun öner`, query: `${userGpu} için akıcı oynayabileceğim en iyi oyunları öner` }] : []),
     { label: '🎲 Canım sıkıldı, ne oynasam?', query: 'Canım sıkıldı, ne oynasam?' },
     { label: '🔥 100 TL altı efsaneler', query: '100 TL altı efsaneler' },
     { label: '🎁 Bedava oyunlar', query: 'Bedava oyunlar' },
-    { label: '🖥️ 500 TL civarı oyunlar', query: '500 TL civarı oyunlar' },
+    { label: '🌲 The Forest fiyatı', query: 'The Forest fiyatı nedir' },
     { label: '⚡ En ucuz oyunlar', query: 'En ucuz oyunlar' },
     { label: '📖 Witcher 3 hikayesi', query: 'Witcher 3 hikayesi' }
   ];
@@ -493,6 +543,214 @@ export default function GamerisenAiWidget() {
             </div>
           )}
 
+          {/* Hardware Selector Bar */}
+          {isAuthenticated && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '6px 14px',
+                background: 'rgba(255, 255, 255, 0.03)',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+                gap: '8px'
+              }}
+            >
+              <button
+                onClick={() => setShowHardwareModal(!showHardwareModal)}
+                style={{
+                  background: userGpu ? 'rgba(0, 255, 136, 0.1)' : 'rgba(255, 255, 255, 0.06)',
+                  border: userGpu ? '1px solid rgba(0, 255, 136, 0.35)' : '1px solid rgba(255, 255, 255, 0.12)',
+                  borderRadius: '20px',
+                  padding: '4px 10px',
+                  color: userGpu ? '#00ff88' : '#d0d0dc',
+                  fontSize: '11.5px',
+                  fontWeight: 650,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.2s'
+                }}
+                title="Sistem Donanımını & Ekran Kartını Seç / Değiştir"
+              >
+                <span>🖥️</span>
+                <span>{userGpu ? `Sistem: ${userGpu}` : 'Donanım/GPU Belirle'}</span>
+                <span style={{ fontSize: '10px', opacity: 0.7 }}>⚙️</span>
+              </button>
+
+              {userGpu ? (
+                <button
+                  onClick={() => sendMessage(`${userGpu} ekran kartıma göre akıcı oynayabileceğim en iyi oyunları öner`)}
+                  style={{
+                    background: 'rgba(229, 9, 20, 0.15)',
+                    border: '1px solid rgba(229, 9, 20, 0.35)',
+                    color: '#ff7777',
+                    borderRadius: '16px',
+                    padding: '3px 8px',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  🎯 Bana Özel Öner
+                </button>
+              ) : (
+                <span style={{ fontSize: '11px', color: '#888899' }}>Özel FPS Analizi</span>
+              )}
+            </div>
+          )}
+
+          {/* Hardware Selector Popover Modal */}
+          {isAuthenticated && showHardwareModal && (
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                zIndex: 90,
+                background: 'rgba(12, 12, 18, 0.97)',
+                backdropFilter: 'blur(20px)',
+                padding: '20px 16px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                borderRadius: '20px',
+                overflowY: 'auto'
+              }}
+            >
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '20px' }}>🖥️</span>
+                    <div>
+                      <h4 style={{ margin: 0, color: '#fff', fontSize: '14px', fontWeight: 800 }}>
+                        Sistem & Donanımını Belirle
+                      </h4>
+                      <p style={{ margin: '2px 0 0 0', color: '#9090a2', fontSize: '11px' }}>
+                        Yapay zeka sisteminin FPS gücüne göre oyun önerir.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowHardwareModal(false)}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.08)',
+                      border: 'none',
+                      color: '#fff',
+                      borderRadius: '50%',
+                      width: '26px',
+                      height: '26px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {/* Popular GPUs Selection Grid */}
+                <div>
+                  <div style={{ fontSize: '11.5px', color: '#d0d0dc', fontWeight: 700, marginBottom: '8px' }}>
+                    ⚡ Popüler Ekran Kartları:
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {popularGpus.map((gpu, gIdx) => (
+                      <button
+                        key={gIdx}
+                        onClick={() => handleSelectGpu(gpu)}
+                        style={{
+                          background: userGpu === gpu ? 'rgba(0, 255, 136, 0.2)' : 'rgba(255, 255, 255, 0.06)',
+                          border: userGpu === gpu ? '1px solid #00ff88' : '1px solid rgba(255, 255, 255, 0.1)',
+                          color: userGpu === gpu ? '#00ff88' : '#e0e0e0',
+                          borderRadius: '8px',
+                          padding: '5px 9px',
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          transition: 'all 0.15s'
+                        }}
+                      >
+                        {gpu}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Custom GPU / Hardware Input */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <div style={{ fontSize: '11.5px', color: '#d0d0dc', fontWeight: 700 }}>
+                    ✍️ Veya Kendi Sistemini Yaz:
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Örn: RTX 3070 Ti, Ryzen 5 5600..."
+                    value={customGpuInput}
+                    onChange={(e) => setCustomGpuInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleSelectGpu();
+                    }}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.06)',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
+                      borderRadius: '10px',
+                      padding: '10px 12px',
+                      color: '#fff',
+                      fontSize: '12.5px',
+                      outline: 'none'
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '16px' }}>
+                <button
+                  onClick={() => handleSelectGpu()}
+                  disabled={!customGpuInput.trim()}
+                  style={{
+                    width: '100%',
+                    background: 'linear-gradient(135deg, #e50914 0%, #b81d24 100%)',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '10px',
+                    padding: '11px',
+                    fontSize: '12.5px',
+                    fontWeight: 750,
+                    cursor: customGpuInput.trim() ? 'pointer' : 'not-allowed',
+                    opacity: customGpuInput.trim() ? 1 : 0.5,
+                    boxShadow: '0 4px 15px rgba(229, 9, 20, 0.4)'
+                  }}
+                >
+                  ✅ Kaydet & Sistemime Göre Öneri Al
+                </button>
+                {userGpu && (
+                  <button
+                    onClick={() => {
+                      setUserGpu('');
+                      setCustomGpuInput('');
+                      setShowHardwareModal(false);
+                      try {
+                        const savedProfile = localStorage.getItem('gamerisen_user_profile');
+                        let profileObj = savedProfile ? JSON.parse(savedProfile) : {};
+                        if (profileObj.hardware) delete profileObj.hardware.gpu;
+                        localStorage.setItem('gamerisen_user_profile', JSON.stringify(profileObj));
+                      } catch (e) {}
+                    }}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: '#888899',
+                      fontSize: '11px',
+                      cursor: 'pointer',
+                      textDecoration: 'underline'
+                    }}
+                  >
+                    Donanım bilgisini kaldır
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* If NOT Authenticated: Show High-Converting Member Lock Screen */}
           {!isAuthenticated ? (
             <div
@@ -650,27 +908,54 @@ export default function GamerisenAiWidget() {
                           <div
                             key={gIdx}
                             style={{
-                              background: 'rgba(25, 25, 32, 0.88)',
-                              border: '1px solid rgba(255, 255, 255, 0.1)',
+                              background: 'rgba(25, 25, 32, 0.92)',
+                              border: '1px solid rgba(255, 255, 255, 0.12)',
                               borderRadius: '14px',
                               padding: '12px',
                               display: 'flex',
                               flexDirection: 'column',
-                              gap: '8px'
+                              gap: '8px',
+                              boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
                             }}
                           >
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <div style={{ fontWeight: 700, fontSize: '14px', color: '#fff' }}>{g.title}</div>
-                              <div style={{ background: '#00ff8820', color: '#00ff88', border: '1px solid #00ff8840', padding: '2px 8px', borderRadius: '8px', fontSize: '11px', fontWeight: 800 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                              <div style={{ fontWeight: 750, fontSize: '14px', color: '#fff' }}>{g.title}</div>
+                              <div style={{ background: '#00ff8820', color: '#00ff88', border: '1px solid #00ff8840', padding: '2px 8px', borderRadius: '8px', fontSize: '11px', fontWeight: 800, whiteSpace: 'nowrap' }}>
                                 ⭐ {g.rating}/100
                               </div>
                             </div>
 
+                            {/* Hardware & FPS Compatibility Badge */}
+                            {g.hardware_compatibility && (
+                              <div
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  background: 'rgba(0, 255, 136, 0.07)',
+                                  border: '1px solid rgba(0, 255, 136, 0.22)',
+                                  borderRadius: '8px',
+                                  padding: '6px 10px',
+                                  fontSize: '11.5px',
+                                  gap: '6px'
+                                }}
+                              >
+                                <span style={{ color: '#00ff88', fontWeight: 700 }}>
+                                  {g.hardware_compatibility.status}
+                                </span>
+                                <span style={{ color: '#c0c0d0', fontSize: '11px', fontWeight: 600 }}>
+                                  {g.hardware_compatibility.fps_estimate}
+                                </span>
+                              </div>
+                            )}
+
                             {g.best_deal && (
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.04)', padding: '8px 10px', borderRadius: '8px' }}>
-                                <div style={{ fontSize: '12px', color: '#aaa' }}>{g.best_deal.platform}</div>
+                                <div style={{ fontSize: '12px', color: '#aaa', fontWeight: 600 }}>{g.best_deal.platform}</div>
                                 <div style={{ fontWeight: 800, color: '#00ff88', fontSize: '13px' }}>
-                                  {g.best_deal.current_price} {g.currency || 'TL'}
+                                  {typeof g.best_deal.current_price === 'string' && (g.best_deal.current_price.startsWith('$') || g.best_deal.current_price.includes('TL') || g.best_deal.current_price === 'Ücretsiz')
+                                    ? g.best_deal.current_price
+                                    : `${g.best_deal.current_price} ${g.currency || 'TL'}`}
                                   {g.best_deal.discount > 0 && (
                                     <span style={{ marginLeft: '6px', color: '#ff4444', fontSize: '11px' }}>
                                       (-%{g.best_deal.discount})
@@ -694,7 +979,8 @@ export default function GamerisenAiWidget() {
                                 borderRadius: '8px',
                                 fontWeight: 700,
                                 fontSize: '12px',
-                                marginTop: '2px'
+                                marginTop: '2px',
+                                boxShadow: '0 3px 12px rgba(229, 9, 20, 0.35)'
                               }}
                             >
                               Mağazaya Git 🚀

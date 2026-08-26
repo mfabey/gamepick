@@ -580,6 +580,129 @@ function generateDynamicFallback(query, ragContext) {
   return pick(openResponses);
 }
 
+// --- Hardware & GPU Extraction ---
+function extractGpuFromQuery(query) {
+  if (!query) return null;
+  const q = normalizeText(query);
+  
+  // NVIDIA RTX 40/30/20 series
+  const rtxMatch = q.match(/\b(rtx\s*(?:4090|4080\s*ti|4080|4070\s*ti|4070|4060\s*ti|4060|4050|3090\s*ti|3090|3080\s*ti|3080|3070\s*ti|3070|3060\s*ti|3060|3050|2080\s*ti|2080|2070|2060))\b/i);
+  if (rtxMatch) return rtxMatch[1].toUpperCase().replace(/\s+/g, ' ');
+
+  // NVIDIA GTX series
+  const gtxMatch = q.match(/\b(gtx\s*(?:1660\s*ti|1660\s*super|1660|1650\s*super|1650|1080\s*ti|1080|1070\s*ti|1070|1060|1050\s*ti|1050|970|960|750\s*ti|750))\b/i);
+  if (gtxMatch) return gtxMatch[1].toUpperCase().replace(/\s+/g, ' ');
+
+  // AMD Radeon RX series
+  const rxMatch = q.match(/\b(rx\s*(?:7900\s*xtx|7900\s*xt|7800\s*xt|7700\s*xt|7600|6950\s*xt|6900\s*xt|6800\s*xt|6800|6750\s*xt|6700\s*xt|6700|6650\s*xt|6600\s*xt|6600|5700\s*xt|5700|5600\s*xt|580|570|560|550))\b/i);
+  if (rxMatch) return rxMatch[1].toUpperCase().replace(/\s+/g, ' ');
+
+  // Intel Iris / UHD / Arc
+  const intelMatch = q.match(/\b(intel\s*arc\s*a\d\d\d|intel\s*iris\s*xe|intel\s*uhd\s*\d+|iris\s*xe)\b/i);
+  if (intelMatch) return intelMatch[1].toUpperCase().replace(/\s+/g, ' ');
+
+  // Apple Silicon
+  const appleMatch = q.match(/\b(apple\s*m[1234](?:\s*pro|\s*max|\s*ultra)?|m[1234]\s*(?:pro|max|ultra)?)\b/i);
+  if (appleMatch) return appleMatch[1].toUpperCase().replace(/\s+/g, ' ');
+
+  return null;
+}
+
+// --- Live Steam Store Search Engine (Zero Hallucination for ANY Game) ---
+async function searchSteamLive(query, userGpu) {
+  try {
+    const cleanTerm = query
+      .replace(/fiyat[ıi]?|ne\s*kadar|kaç\s*tl|kaç\s*para|nerede\s*ucuz|hikaye(?:si)?|konusu|sistem(?:im)?\s*kaldırır\s*mı|oyunu?|indirim(?:de)?|tavsiye|öneri?/gi, '')
+      .replace(/[?!.,;:'"()[\]{}]/g, ' ')
+      .trim();
+
+    if (!cleanTerm || cleanTerm.length < 2) return [];
+
+    const searchUrl = `https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(cleanTerm)}&l=turkish&cc=tr`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3500);
+
+    const res = await fetch(searchUrl, {
+      signal: controller.signal,
+      headers: { 'Accept-Language': 'tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7' }
+    });
+    clearTimeout(timeoutId);
+
+    if (!res.ok) return [];
+    const data = await res.json();
+    const items = data.items || [];
+    if (items.length === 0) return [];
+
+    const cleanNorm = normalizeText(cleanTerm);
+    const validItems = items.filter(item => {
+      const itemTitleNorm = normalizeText(item.name);
+      if (itemTitleNorm === cleanNorm) return true;
+      if (itemTitleNorm.startsWith(cleanNorm) || cleanNorm.startsWith(itemTitleNorm)) return true;
+      if (itemTitleNorm.includes(cleanNorm) && (itemTitleNorm.length - cleanNorm.length) <= 14) return true;
+      return false;
+    }).slice(0, 2);
+
+    const results = [];
+    for (const item of validItems) {
+      let currentPrice = 'Ücretsiz';
+      let originalPrice = 'Ücretsiz';
+      let discount = 0;
+      let currency = 'USD';
+
+      if (item.price) {
+        currency = item.price.currency || 'USD';
+        const finalVal = (item.price.final / 100).toFixed(2);
+        const initVal = (item.price.initial / 100).toFixed(2);
+        currentPrice = currency === 'USD' ? `$${finalVal}` : `${finalVal} ${currency}`;
+        originalPrice = currency === 'USD' ? `$${initVal}` : `${initVal} ${currency}`;
+        if (item.price.initial > item.price.final) {
+          discount = Math.round(((item.price.initial - item.price.final) / item.price.initial) * 100);
+        }
+      }
+
+      const gameObj = {
+        id: item.id,
+        title: item.name,
+        genres: ['Aksiyon', 'Macera'],
+        description: `${item.name} - Steam platformunda yer alan popüler bir video oyunudur.`,
+        rating: item.metascore ? parseInt(item.metascore) : 85,
+        image_url: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${item.id}/header.jpg`,
+        store_url: `https://store.steampowered.com/app/${item.id}`,
+        deals: [{
+          platform: 'Steam',
+          current_price: currentPrice,
+          original_price: originalPrice,
+          discount
+        }],
+        best_deal: {
+          platform: 'Steam',
+          current_price: currentPrice,
+          original_price: originalPrice,
+          discount
+        },
+        currency
+      };
+
+      gameObj.hardware_compatibility = estimateHardware(gameObj, userGpu);
+      results.push(gameObj);
+    }
+
+    return results;
+  } catch (err) {
+    return [];
+  }
+}
+
+const STOP_WORDS = new Set([
+  'the', 'a', 'an', 'and', 'for', 'with', 'in', 'on', 'at', 'to', 'of', 'by',
+  've', 'ile', 'de', 'da', 'icin', 'olan', 'var', 'mi', 'mu', 'muydun', 'bu', 'su', 'o',
+  'bir', 'cok', 'en', 'nasil', 'hakkinda', 'oyun', 'oyunu', 'oyunlar', 'oyunlari',
+  'nerede', 'nereden', 'ucuz', 'fiyat', 'fiyati', 'fiyatlar', 'fiyatlari', 'kac', 'kadar',
+  'ne', 'steam', 'epic', 'gog', 'indirim', 'indirimde', 'al', 'satinal', 'bul', 'oner',
+  'tavsiye', 'bana', 'bize', 'benim', 'senin', 'kaldırır', 'kaldırırmı', 'açar', 'açarmı',
+  'sistem', 'sistemim', 'donanım', 'donanımım', 'ekran', 'kartı', 'kartım', 'fps', 'grafik', 'grafikler'
+]);
+
 // --- Next.js Route POST Handler ---
 export async function POST(req) {
   try {
@@ -595,7 +718,14 @@ export async function POST(req) {
     const normQ = normalizeText(userQuery);
     const gamesDb = loadDatabase();
     const customKnowledge = loadCustomKnowledge();
-    const userGpu = userProfile?.hardware?.gpu;
+    
+    // Auto-detect GPU from query or profile
+    const queryGpu = extractGpuFromQuery(userQuery);
+    const userGpu = queryGpu || userProfile?.hardware?.gpu;
+    if (queryGpu && !userProfile?.hardware?.gpu) {
+      if (!userProfile.hardware) userProfile.hardware = {};
+      userProfile.hardware.gpu = queryGpu;
+    }
 
     // 0. Check Learned Custom Knowledge
     for (const item of customKnowledge) {
@@ -629,7 +759,12 @@ export async function POST(req) {
       });
     }
 
-    // 3. Expand Query with Gaming Acronyms & Synonyms
+    // 3. Check if Query is Pure Smalltalk / Non-Game Info Query
+    const isSmalltalk = /^(selam|merhaba|naber|nasilsin|nbr|sa|hey|gunaydin|iyi aksamlar|eyvallah|adamsin|kralsin|helal|harikasin|tesekkur|sagol|saka|fikra|espri)$/i.test(normQ);
+    const isIdentityQuery = /^(sen kimsin|kimsin sen|nesin sen|sen nesin|ne ise yararsin|gorevin ne|amacin ne|gamerisen nedir|gamerisen ai nedir)$/i.test(normQ);
+    const isCreatorQuery = /(?:seni kim yapti|seni kim kodladi|seni kim gelistirdi|kodlarin kime ait|kaynak kod|github)/i.test(normQ);
+
+    // 4. Expand Query with Gaming Acronyms & Synonyms
     const acronymMatches = [];
     const sortedAcronymKeys = Object.keys(GAMING_ACRONYMS).sort((a, b) => b.length - a.length);
     for (const key of sortedAcronymKeys) {
@@ -640,7 +775,7 @@ export async function POST(req) {
       }
     }
 
-    // 3. Parse Price Constraints
+    // 5. Parse Price Constraints
     let maxPrice = null;
     let minPrice = null;
     let aroundPrice = null;
@@ -665,120 +800,149 @@ export async function POST(req) {
     }
 
     const isConstraint = (maxPrice !== null) || (minPrice !== null) || (aroundPrice !== null) || isFree || isCheapest;
+    const isRecommendationQuery = /(?:ne oynasam|oyun oner|oyun tavsiyesi|hangi oyunu oynasam|sıkıldım|sikildim|ne oynayayim|en iyi oyunlar|onerin var mi)/i.test(normQ);
+    const isHardwareSpecificQuery = Boolean(queryGpu) || /(?:sistemim|donanim|ekran kartim|kaldirir mi|fps|akici)/i.test(normQ);
 
-    // 4. Search & Grade Games Database for RAG Grounding
+    // 6. Search Database with High Precision
     let scoredGames = [];
-    const stopWords = new Set(['nerede', 'nereden', 'ucuz', 'fiyat', 'fiyati', 'fiyatlar', 'kac', 'kadar', 'ne', 'oyun', 'oyunu', 'oyunlar', 'steam', 'epic', 'gog', 'indirim', 'indirimde', 'al', 'satinal', 'bul', 'oner', 'tavsiye']);
-    const queryTokens = normQ.split(/\s+/).filter(w => w.length >= 2 && !stopWords.has(w));
+    const queryTokens = normQ.split(/\s+/).filter(w => w.length >= 2 && !STOP_WORDS.has(w));
 
-    for (const game of gamesDb) {
-      const deals = game.deals || [];
-      if (deals.length === 0) continue;
+    if (!isSmalltalk && !isIdentityQuery && !isCreatorQuery) {
+      for (const game of gamesDb) {
+        const deals = game.deals || [];
+        if (deals.length === 0) continue;
 
-      const bestDeal = deals.reduce((min, d) => (d.current_price < min.current_price ? d : min), deals[0]);
-      const price = bestDeal.current_price;
+        const bestDeal = deals.reduce((min, d) => (d.current_price < min.current_price ? d : min), deals[0]);
+        const price = bestDeal.current_price;
 
-      if (isFree && price > 0.0) continue;
-      if (isCheapest && price <= 0.0) continue;
-      if (maxPrice !== null && price > maxPrice) continue;
-      if (minPrice !== null && price < minPrice) continue;
+        if (isFree && price > 0.0) continue;
+        if (isCheapest && price <= 0.0) continue;
+        if (maxPrice !== null && price > maxPrice) continue;
+        if (minPrice !== null && price < minPrice) continue;
 
-      let score = 0.0;
-      const gameTitleNorm = normalizeText(game.title);
-      const gameTitleTokens = new Set(gameTitleNorm.split(/\s+/));
-      const gameGenresNorm = (game.genres || []).map(g => normalizeText(g)).join(' ');
+        let score = 0.0;
+        const gameTitleNorm = normalizeText(game.title);
+        const gameTitleTokens = new Set(gameTitleNorm.split(/\s+/).filter(w => !STOP_WORDS.has(w)));
+        const gameGenresNorm = (game.genres || []).map(g => normalizeText(g)).join(' ');
 
-      let hasMatch = false;
+        let hasMatch = false;
 
-      // Acronym match
-      for (const syn of acronymMatches) {
-        const synNorm = normalizeText(syn);
-        const synTokens = synNorm.split(/\s+/);
-        const synRegex = new RegExp(`\\b${synNorm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
-        
-        if (synRegex.test(gameTitleNorm) || gameTitleNorm === synNorm) {
-          score += 25.0;
-          hasMatch = true;
-        } else if (synTokens.every(st => gameTitleTokens.has(st))) {
-          score += 20.0;
-          hasMatch = true;
-        } else if (synTokens.filter(st => gameTitleTokens.has(st)).length >= 2) {
-          score += 10.0;
+        // Acronym match
+        for (const syn of acronymMatches) {
+          const synNorm = normalizeText(syn);
+          const synTokens = synNorm.split(/\s+/).filter(w => !STOP_WORDS.has(w));
+          const synRegex = new RegExp(`\\b${synNorm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+          
+          if (synRegex.test(gameTitleNorm) || gameTitleNorm === synNorm) {
+            score += 35.0;
+            hasMatch = true;
+          } else if (synTokens.length > 0 && synTokens.every(st => gameTitleTokens.has(st))) {
+            score += 25.0;
+            hasMatch = true;
+          }
+        }
+
+        // Exact title equality / startsWith
+        if (gameTitleNorm === normQ || normQ.startsWith(gameTitleNorm) || gameTitleNorm.startsWith(normQ)) {
+          score += 30.0;
           hasMatch = true;
         }
-      }
 
-      // Query tokens match
-      for (const qt of queryTokens) {
-        const tokenRegex = new RegExp(`\\b${qt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
-        if (tokenRegex.test(gameTitleNorm)) {
-          score += 6.0;
-          hasMatch = true;
-        } else if (gameTitleTokens.has(qt)) {
-          score += 6.0;
-          hasMatch = true;
-        } else if (gameGenresNorm.includes(qt)) {
-          score += 6.0;
-          hasMatch = true;
+        // Meaningful query tokens match
+        if (queryTokens.length > 0) {
+          const matchedTokens = queryTokens.filter(qt => gameTitleTokens.has(qt) || gameTitleNorm.includes(qt));
+          if (matchedTokens.length === queryTokens.length) {
+            score += 20.0;
+            hasMatch = true;
+          } else if (matchedTokens.length > 0) {
+            score += matchedTokens.length * 6.0;
+            hasMatch = true;
+          }
+
+          // Genre match
+          for (const qt of queryTokens) {
+            if (gameGenresNorm.includes(qt)) {
+              score += 5.0;
+              hasMatch = true;
+            }
+          }
         }
-      }
 
-      if (isCheapest) {
-        const rating = game.rating || 80;
-        const qualityMult = Math.pow(rating / 80.0, 1.5);
-        const cheapBoost = 180.0 / (price + 10.0);
-        score += cheapBoost * qualityMult + 10.0;
-      } else if (aroundPrice !== null) {
-        const closeness = Math.abs(price - aroundPrice);
-        score += 2.0 + (3.0 / (1.0 + (closeness / 100.0)));
-      } else if (isConstraint) {
-        score += 2.0 + ((game.rating || 80) / 30.0);
-      }
+        // Hardware tailored boost
+        if (isHardwareSpecificQuery && userGpu) {
+          const hw = estimateHardware(game, userGpu);
+          if (hw?.status?.includes('Mükemmel')) score += 8.0;
+          else if (hw?.status?.includes('Oynanabilir')) score += 4.0;
+        }
 
-      if (isConstraint || (hasMatch && score >= 4.0)) {
-        scoredGames.push({
-          game,
-          best_deal: bestDeal,
-          score,
-          hw_compat: estimateHardware(game, userGpu)
-        });
+        if (isCheapest) {
+          const rating = game.rating || 80;
+          const qualityMult = Math.pow(rating / 80.0, 1.5);
+          const cheapBoost = 180.0 / (price + 10.0);
+          score += cheapBoost * qualityMult + 10.0;
+        } else if (aroundPrice !== null) {
+          const closeness = Math.abs(price - aroundPrice);
+          score += 2.0 + (3.0 / (1.0 + (closeness / 100.0)));
+        } else if (isConstraint) {
+          score += 2.0 + ((game.rating || 80) / 30.0);
+        } else if (isRecommendationQuery) {
+          score += 5.0 + ((game.rating || 80) / 20.0);
+        }
+
+        if (isConstraint || isRecommendationQuery || isHardwareSpecificQuery || (hasMatch && score >= 12.0)) {
+          scoredGames.push({
+            game,
+            best_deal: bestDeal,
+            score,
+            hw_compat: estimateHardware(game, userGpu)
+          });
+        }
       }
     }
 
     scoredGames.sort((a, b) => b.score - a.score);
-    const topResults = scoredGames.slice(0, 4);
 
-    // 5. Build RAG Context for Generative LLM
-    let ragContext = '';
-    if (topResults.length > 0) {
-      ragContext = JSON.stringify(topResults.map(r => ({
+    let structuredGames = [];
+
+    // 7. If database has high-confidence match or recommendation/constraint results, use them
+    if (scoredGames.length > 0 && (isConstraint || isRecommendationQuery || isHardwareSpecificQuery || scoredGames[0].score >= 15.0)) {
+      structuredGames = scoredGames.slice(0, 3).map(r => ({
+        id: r.game.id,
         title: r.game.title,
-        genres: r.game.genres,
-        rating: r.game.rating,
-        description: r.game.description,
+        genres: r.game.genres || ['Aksiyon'],
+        description: r.game.description || '',
+        rating: r.game.rating || 88,
+        image_url: r.game.image_url || '',
+        store_url: r.game.store_url || `https://store.steampowered.com/search/?term=${encodeURIComponent(r.game.title)}`,
         best_deal: r.best_deal,
-        deals: r.game.deals,
+        deals: r.game.deals || [],
+        currency: 'TL',
         hardware_compatibility: r.hw_compat
+      }));
+    } else if (!isSmalltalk && !isIdentityQuery && !isCreatorQuery && queryTokens.length > 0) {
+      // 8. If NO database match found for a specific game query (e.g. "The Forest"), call Live Steam Search!
+      const steamLiveGames = await searchSteamLive(userQuery, userGpu);
+      if (steamLiveGames.length > 0) {
+        structuredGames = steamLiveGames;
+      }
+    }
+
+    // 9. Build RAG Context for Generative LLM
+    let ragContext = '';
+    if (structuredGames.length > 0) {
+      ragContext = JSON.stringify(structuredGames.map(g => ({
+        title: g.title,
+        genres: g.genres,
+        rating: g.rating,
+        description: g.description,
+        best_deal: g.best_deal,
+        deals: g.deals,
+        hardware_compatibility: g.hardware_compatibility
       })), null, 2);
     }
 
-    // 6. Generate Dynamic Response via LLM Engine
+    // 10. Generate Response via LLM Engine (Gemini / Groq / Ollama / OpenAI)
     const aiResponse = await callGenerativeLLM(userQuery, ragContext, userProfile);
-
-    // Format Structured Game Cards
-    const structuredGames = topResults.map(r => ({
-      id: r.game.id,
-      title: r.game.title,
-      genres: r.game.genres || ['Aksiyon'],
-      description: r.game.description || '',
-      rating: r.game.rating || 88,
-      image_url: r.game.image_url || '',
-      store_url: r.game.store_url || `https://store.steampowered.com/search/?term=${encodeURIComponent(r.game.title)}`,
-      best_deal: r.best_deal,
-      deals: r.game.deals || [],
-      currency: 'TL',
-      hardware_compatibility: r.hw_compat
-    }));
 
     return NextResponse.json({
       response: aiResponse,
@@ -794,3 +958,4 @@ export async function POST(req) {
     );
   }
 }
+
