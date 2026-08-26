@@ -29,6 +29,7 @@ import FriendActivity, { hasFriendSignal } from '../../src/components/FriendActi
 import ReportSheet from '../../src/components/ReportSheet';
 import ShareToFriendSheet from '../../src/components/ShareToFriendSheet';
 import CardExpand from '../../src/components/CardExpand';
+import { kaynakYaz } from '../../src/services/gecisKaynak';
 import { fetchForYouCandidates } from '../../src/api/recommend';
 import { getReviewFeed, getFriendActivity, fetchPosts } from '../../src/api/social';
 import { getSession, subscribeSession } from '../../src/services/session';
@@ -342,6 +343,10 @@ export default function HomeScreen() {
 
   const kartAc = useCallback((cerceve, game) => {
     if (azalt || !cerceve) { go(router, game); return; }
+    // ÇERÇEVE GERİ DÖNÜŞ İÇİN SAKLANIYOR. Detay ekranı geri çıkarken aynı
+    // kutuya küçülüyor; kartın nerede durduğunu ondan başka bilen yok ve
+    // o an anasayfa çoktan arka planda kalmış oluyor.
+    kaynakYaz(game?.id, { ...cerceve });
     setBuyuyen({ ...cerceve, game });
   }, [azalt, router]);
 
@@ -356,6 +361,10 @@ export default function HomeScreen() {
       params: {
         id: String(g.id), name: g.name, image: g.image || '',
         slug: g.rawgSlug || '', hasSteam: g.hasSteam ? '1' : '',
+        // appid ŞART OLDU: geçiş artık arkadaş ve inceleme kartlarını da
+        // taşıyor, ikisi de detaya slug'la değil appid'yle gidiyor. Burada
+        // düşseydi o iki yol büyüdükten sonra boş detaya inerdi.
+        ...(g.appid ? { appid: String(g.appid) } : {}),
         buyume: '1',
       },
     });
@@ -393,20 +402,14 @@ export default function HomeScreen() {
     ) : item.kind === 'review' ? (
       <ReviewCard
         review={item.review}
-        onPress={() => router.push({
-          pathname: '/game/[id]',
-          params: {
-            id: `rawg_${item.review.appid}`, appid: item.review.appid,
-            name: item.review.gameName || '', image: item.review.image,
-          },
-        })}
+        onExpand={kartAc}
         onLongPress={() => setReportTarget(item.review)}
         style={styles.feedReview}
       />
     ) : (
-      <GamePostCard game={item.game} tag={item.tag} onDismiss={handleDismiss} />
+      <GamePostCard game={item.game} tag={item.tag} onDismiss={handleDismiss} onExpand={kartAc} />
     )
-  ), [handleDismiss, router, requireAccount, styles]);
+  ), [handleDismiss, kartAc, requireAccount, styles]);
 
   // Mevcut bölümlerin tamamı listenin başlığı olur → tek kaydırma, tek liste.
   const header = (
@@ -497,7 +500,7 @@ export default function HomeScreen() {
             üstünde durmalı. */}
         {lead === 'friends' && (
           <FadeIn delay={120}>
-            <FriendActivity games={friendGames} />
+            <FriendActivity games={friendGames} onExpand={kartAc} />
           </FadeIn>
         )}
 

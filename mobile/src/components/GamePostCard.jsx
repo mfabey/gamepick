@@ -24,6 +24,7 @@ import { fetchGameDetail } from '../api/games';
 import { useQuery } from '../hooks/useQuery';
 import { useLanguage } from '../context/LanguageContext';
 import { usePrice } from '../hooks/usePrice';
+import { useKapakOlcum } from '../hooks/useKapakOlcum';
 import { summarize } from '../utils/text';
 import { radius, spacing, PRESSED, type, NUMERIC, metacriticColor, motion } from '../theme';
 import { turAdi } from '../services/genreName';
@@ -44,7 +45,7 @@ function hash(str) {
   return h >>> 0;
 }
 
-function GamePostCard({ game, onDismiss, tag }) {
+function GamePostCard({ game, onDismiss, tag, onExpand }) {
   const styles = useStyles(makeStyles);
   const router = useRouter();
   const { t, lang, formatPrice } = useLanguage();
@@ -91,6 +92,16 @@ function GamePostCard({ game, onDismiss, tag }) {
     });
   }, [router, game]);
 
+  // BÜYÜME GEÇİŞİ. Akış kartı da anasayfada duruyor ve aynı jestle aynı yere
+  // gidiyor; şerit kartı büyüyerek açılırken bunun sert atlaması, kullanıcının
+  // "oyun kartı" saydığı iki şeyin iki farklı davranması demekti.
+  // `onExpand` verilmediğinde (akış dışı kullanımlar) eski düz gezinme kalıyor.
+  //
+  // ÖLÇÜLEN ALAN KAPAK GÖRSELİ, kartın tamamı DEĞİL: bindirme detayın kapak
+  // alanına iniyor, kaynak da kapak olmalı — kart gövdesi ölçülseydi geçiş
+  // metin bloğunu da içine alır, hedefte kaybederdi.
+  const [kapakRef, buyuterekAc] = useKapakOlcum(onExpand, game);
+
   const onTextLayout = useCallback((e) => {
     // "Devamını gör" YALNIZCA metin gerçekten kırpıldıysa çıksın; kısa
     // açıklamalarda hiçbir şey açmayan bir bağlantı göstermek yanıltıcı olur.
@@ -103,8 +114,11 @@ function GamePostCard({ game, onDismiss, tag }) {
 
   return (
     <View style={styles.card}>
-      <Pressable onPress={open} onLongPress={() => onDismiss?.(game)} style={({ pressed }) => pressed && PRESSED}>
-        <View style={[styles.media, { height: mediaH }]}>
+      <Pressable onPress={onExpand ? buyuterekAc : open} onLongPress={() => onDismiss?.(game)} style={({ pressed }) => pressed && PRESSED}>
+        {/* collapsable={false} ŞART: RN Android'de yalnız düzen taşıyan
+            View'leri ağaçtan düşürebiliyor ve düşen View `measureInWindow`
+            veremiyor — ölçüm null döner, geçiş sessizce kaybolurdu. */}
+        <View ref={kapakRef} collapsable={false} style={[styles.media, { height: mediaH }]}>
           {source && !imgFailed ? (
             <Image source={source} style={StyleSheet.absoluteFill} contentFit="cover"
               cachePolicy="memory-disk" transition={motion.image}

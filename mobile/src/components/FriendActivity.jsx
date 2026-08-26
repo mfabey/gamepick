@@ -49,7 +49,7 @@ export function hasFriendSignal(games) {
   return total >= MIN_TOTAL_HOURS_2W;
 }
 
-export default function FriendActivity({ games }) {
+export default function FriendActivity({ games, onExpand }) {
   // Sunucu kapağı çözemediğini `gorselYok` ile bildiriyor ve zaten sona
   // atıyor (bkz. api/social/friend-activity). Burada ek bir şey yapmaya
   // gerek yok — sıra sunucudan geldiği gibi çiziliyor.
@@ -95,10 +95,18 @@ export default function FriendActivity({ games }) {
           // ARKADAŞ".
           <GameCard
             key={g.appid}
-            game={{ ...g, id: g.appid }}
+            // id BÜYÜME YOLUNDA DA DOĞRU OLMALI: `onPress` elle
+            // `rawg_${appid}` kuruyordu ama `game.id` düz appid'di. Geçiş
+            // gezinmeyi `game`den türettiği için ikisi ayrışırsa büyüyen kart
+            // yanlış oyuna iner. Tek kaynak: burada birleştiriliyor.
+            game={{ ...g, id: `rawg_${g.appid}`, appid: g.appid }}
             variant="social"
             context={names(g, t)}
-            onPress={() => router.push({
+            // Arkadaş kartı da anasayfada ve aynı jestle detaya gidiyor;
+            // şerit kartlarıyla aynı geçişi taşıyor. `onExpand` verilmediğinde
+            // (bu bileşen başka bir ekranda kullanılırsa) düz gezinme kalıyor.
+            onExpand={onExpand}
+            onPress={onExpand ? undefined : () => router.push({
               pathname: '/game/[id]',
               params: { id: `rawg_${g.appid}`, appid: g.appid, name: g.name || '', image: g.image },
             })}

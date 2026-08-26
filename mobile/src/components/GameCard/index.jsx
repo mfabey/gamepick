@@ -21,7 +21,7 @@
 // Ölçülmüştü: erişilebilirlik boyutunda şerit adları "Robocr…" diye
 // kırpılıyordu.
 // ─────────────────────────────────────────────────────────────────────────────
-import { memo, useRef, useCallback } from 'react';
+import { memo } from 'react';
 import { View, Text, Pressable, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -30,6 +30,7 @@ import GameCover from '../GameCover';
 import { useStyles, useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { usePrice } from '../../hooks/usePrice';
+import { useKapakOlcum } from '../../hooks/useKapakOlcum';
 import { type, radius, spacing, PRESSED, PRESSED_CARD, metacriticColor } from '../../theme';
 import { KART, VARYANT } from './variants';
 import { turAdi } from '../../services/genreName';
@@ -66,17 +67,11 @@ function GameCard({ game, variant = 'grid', context, overlay, onPress, onLongPre
   // çerçevesi ölçülüp çağrı yerine veriliyor, bindirme oradan başlıyor.
   // Ölçüm başarısız olursa (nadir) düz gezinmeye düşülüyor — geçiş bir
   // süsleme, yolu kapatmamalı.
-  const kapakRef = useRef(null);
-  const buyuterekAc = useCallback(() => {
-    const el = kapakRef.current;
-    if (!el?.measureInWindow) { onExpand(null, game); return; }
-    el.measureInWindow((x, y, width, height) => {
-      onExpand(
-        (width && height) ? { x, y, width, height, image: game?.image, name: game?.name } : null,
-        game
-      );
-    });
-  }, [onExpand, game]);
+  //
+  // ÖLÇÜM ARTIK BURADA DEĞİL: aynı sözleşme akış kartında ve inceleme
+  // kartında da gerekiyor (anasayfadaki her kapaklı giriş büyüyerek açılsın).
+  // Üç kopya yerine tek kanca — bkz. hooks/useKapakOlcum.js.
+  const [kapakRef, buyuterekAc] = useKapakOlcum(onExpand, game);
 
   const git = (onExpand ? buyuterekAc : onPress) || (() => router.push({
     pathname: '/game/[id]',

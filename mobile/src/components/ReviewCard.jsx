@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,6 +7,7 @@ import Avatar from './Avatar';
 import { radius, spacing, type, PRESSED, NUMERIC, motion } from '../theme';
 import { useStyles, useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useKapakOlcum } from '../hooks/useKapakOlcum';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Doğrulanmış inceleme kartı.
@@ -23,21 +25,41 @@ import { useLanguage } from '../context/LanguageContext';
 // `onLongPress` ile bağlamalı.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export default function ReviewCard({ review, onPress, onLongPress, onEdit, style }) {
+export default function ReviewCard({ review, onPress, onLongPress, onEdit, onExpand, style }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const { t, lang } = useLanguage();
   const name = review.author?.displayName || review.author?.username || '?';
 
+  // BÜYÜME GEÇİŞİ — anasayfa akışındaki inceleme kartı da bir oyuna gidiyor.
+  //
+  // KAYNAK ÇERÇEVE BURADA KÜÇÜK: kapak 56×26'lık satır içi bir görsel, şerit
+  // kartındaki gibi bir kapak değil. Yine de AYNI oyunun kapağı ve
+  // `contentFit: cover` sayesinde çerçeve büyürken görsel esnemiyor,
+  // kırpılıyor — küçük bir öğenin tam ekrana açılması App Store'da da böyle.
+  // `review` bir oyun nesnesi değil; kancaya görsel/ad ayrıca veriliyor.
+  // useMemo: kart FlashList içinde ve her render'da yeni bir nesne, kancanın
+  // useCallback'ini de her render'da tazelerdi.
+  const oyunYuk = useMemo(() => ({
+    id: `rawg_${review.appid}`, appid: review.appid,
+    name: review.gameName || '', image: review.image,
+  }), [review.appid, review.gameName, review.image]);
+  const [kapakRef, buyuterekAc] = useKapakOlcum(onExpand, oyunYuk, oyunYuk);
+
   return (
     <Pressable
       style={({ pressed }) => [styles.card, style, pressed && PRESSED]}
-      onPress={onPress}
+      onPress={onExpand ? buyuterekAc : onPress}
       onLongPress={onLongPress}
       delayLongPress={400}
     >
       <View style={styles.cardHead}>
-        <Image source={review.image} style={styles.cardImg} contentFit="cover" transition={motion.image} />
+        {/* Ölçüm için sarmalayıcı View: expo-image'ın measureInWindow'u
+            platformlar arasında güvenilir değil, düz View her yerde ölçülüyor.
+            collapsable={false} — bkz. GamePostCard'daki aynı not. */}
+        <View ref={kapakRef} collapsable={false} style={styles.cardImg}>
+          <Image source={review.image} style={StyleSheet.absoluteFill} contentFit="cover" transition={motion.image} />
+        </View>
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={styles.cardGame} numberOfLines={1}>{review.gameName || review.appid}</Text>
           <View style={styles.byline}>
@@ -76,7 +98,9 @@ const makeStyles = (colors) => StyleSheet.create({
     padding: spacing.md, gap: spacing.sm,
   },
   cardHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  cardImg:  { width: 56, height: 26, borderRadius: 4, backgroundColor: colors.bgInput },
+  // overflow ŞART: görsel artık içeride mutlak konumlu, kırpılmazsa 4pt
+  // yarıçap görünmez olurdu.
+  cardImg:  { width: 56, height: 26, borderRadius: 4, overflow: 'hidden', backgroundColor: colors.bgInput },
   cardGame: { color: colors.text, fontSize: type.footnote, fontWeight: '700' },
   byline:   { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: 2 },
   avatar: {

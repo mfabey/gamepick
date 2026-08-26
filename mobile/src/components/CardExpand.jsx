@@ -22,6 +22,14 @@
 // REDUCE MOTION: animasyon hiç kurulmuyor, çağrı yeri doğrudan gidiyor.
 // Hareket bir bilgi taşımıyor — yalnız sürekliliği anlatıyor — o yüzden
 // kapalıyken kaybolan bir şey yok.
+//
+// ── GERİ DÖNÜŞ (`yon="kucul"`) ──
+// Detay ekranı `buyume:'1'` ile açıldığında yığın animasyonu `none` yapılıyor
+// (çift açılışı önlemek için, bkz. _layout.jsx). Ama bu ayar İKİ YÖNE birden
+// uygulanıyor: geri çıkışta da hiçbir animasyon kalmıyordu, detay tek karede
+// yok oluyordu. Girişteki düzeltmenin görünmeyen bedeli buydu.
+// Çözüm, girişin aynısını ters oynatmak: kapak detayın 320pt alanından
+// kartın çerçevesine küçülüyor, sonra pop yapılıyor.
 // ─────────────────────────────────────────────────────────────────────────────
 import { useEffect } from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
@@ -47,22 +55,28 @@ const EGRI = Easing.bezier(0.2, 0.9, 0.2, 1);
 /**
  * @param {object|null} kaynak  { x, y, width, height, image, name, id }
  * @param {func}        onVar   hedefe varınca (gezinme burada yapılıyor)
+ * @param {string}     [yon]    'buyu' (karttan detaya) | 'kucul' (detaydan karta)
  */
 // Bindirme KENDİSİ kalkmıyor: anasayfa, odağı kaybettiğinde temizliyor
 // (useFocusEffect). Böylece bindirme, detay ekranı devralana kadar
 // duruyor — erken kalksaydı bir kare boyunca boşluk görünürdü.
-export default function CardExpand({ kaynak, onVar }) {
+export default function CardExpand({ kaynak, onVar, yon = 'buyu' }) {
   const { colors } = useTheme();
   const ilerleme = useSharedValue(0);
   const { width: EKRAN_G } = Dimensions.get('window');
 
+  // GERİ DÖNÜŞ AYNI YOLUN TERSİ. 0 = kartın çerçevesi, 1 = detayın kapağı;
+  // büyüme 0→1, küçülme 1→0. Aradaki interpolasyonlar aynen paylaşılıyor —
+  // ikinci bir animasyon yazılsaydı iki yön zamanla birbirinden ayrışırdı.
+  const kucul = yon === 'kucul';
+
   useEffect(() => {
-    if (!kaynak) { ilerleme.value = 0; return; }
-    ilerleme.value = 0;
-    ilerleme.value = withTiming(1, { duration: SURE, easing: EGRI }, (bitti) => {
+    if (!kaynak) { ilerleme.value = kucul ? 1 : 0; return; }
+    ilerleme.value = kucul ? 1 : 0;
+    ilerleme.value = withTiming(kucul ? 0 : 1, { duration: SURE, easing: EGRI }, (bitti) => {
       if (bitti) runOnJS(onVar)();
     });
-  }, [kaynak, ilerleme, onVar]);
+  }, [kaynak, kucul, ilerleme, onVar]);
 
   const kutuStil = useAnimatedStyle(() => {
     if (!kaynak) return { opacity: 0 };
@@ -79,15 +93,25 @@ export default function CardExpand({ kaynak, onVar }) {
     };
   }, [kaynak, EKRAN_G]);
 
-  // Arka plan sönmesi — videoda kart büyürken altındaki akış kararıyor.
+  // ── ZEMİN YÖNE GÖRE TERS ÇALIŞIYOR ──────────────────────────────────────
+  // Büyürken: 0'da saydam (anasayfa görünür), 1'de opak — detayın gelişi
+  // zeminin arkasında olup bitiyor.
+  //
+  // Küçülürken AYNI FORMÜL YANLIŞ OLURDU. İlerleme 1'den başladığı için zemin
+  // daha ilk karede tam opak olur, detayın gövdesi tek karede yok olur ve
+  // geçiş bir "flaş"la başlardı. Doğrusu tersi: başta saydam (detay hâlâ
+  // görünür), kart küçüldükçe zemin kapanıyor; en sonda ekran zaten düz zemin
+  // olduğu için pop görünmüyor ve anasayfa aynı zeminle devralıyor.
   const zeminStil = useAnimatedStyle(() => ({
-    opacity: interpolate(ilerleme.value, [0, 1], [0, 1]),
-  }), []);
+    opacity: kucul
+      ? interpolate(ilerleme.value, [0, 1], [1, 0])
+      : interpolate(ilerleme.value, [0, 1], [0, 1]),
+  }), [kucul]);
 
   if (!kaynak) return null;
 
   return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+    <View style={[StyleSheet.absoluteFill, styles.bindirme]} pointerEvents="none">
       <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: colors.bg }, zeminStil]} />
       <Animated.View style={[styles.kutu, kutuStil]}>
         <GameCover
@@ -102,5 +126,11 @@ export default function CardExpand({ kaynak, onVar }) {
 }
 
 const styles = StyleSheet.create({
+  // zIndex ŞART — ölçüldü. Detay ekranının üst bandı (topBarWrap) zIndex:10
+  // taşıyor; bindirme ağaçta sondaki kardeş olmasına rağmen onun ALTINDA
+  // kalıyordu. Geri çıkış karesinde kapak küçülürken geri/paylaş/koleksiyon
+  // düğmeleri tam parlaklıkta havada asılı duruyordu.
+  // 100: ekrandaki bilinen en yüksek katmanın (10) belirgin üstünde.
+  bindirme: { zIndex: 100, elevation: 100 },
   kutu: { position: 'absolute', overflow: 'hidden' },
 });

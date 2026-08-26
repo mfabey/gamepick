@@ -30,6 +30,8 @@ import { reportActivity } from '../../src/api/social';
 import { useQuery } from '../../src/hooks/useQuery';
 import { usePop } from '../../src/hooks/usePop';
 import { useReducedMotion } from '../../src/hooks/useReducedMotion';
+import CardExpand from '../../src/components/CardExpand';
+import { kaynakOku, kaynakSil } from '../../src/services/gecisKaynak';
 import { GenreChipsSkeleton, ShotStripSkeleton, TextBlockSkeleton, PriceListSkeleton } from '../../src/components/Skeleton';
 import { recordSignal } from '../../src/services/tasteProfile';
 import { recordSeen } from '../../src/services/seenStore';
@@ -256,6 +258,39 @@ export default function GameDetail() {
   });
   const azalt = useReducedMotion();
 
+  // ── GERİ ÇIKIŞTA KÜÇÜLME ──────────────────────────────────────────────
+  // Bu ekran `buyume:'1'` ile açıldığında yığın animasyonu `none` (bkz.
+  // _layout.jsx). O ayar İKİ YÖNE birden uygulanıyor, yani geri çıkışta da
+  // hiçbir animasyon kalmıyordu: detay tek karede yok oluyordu. Girişteki
+  // çift-animasyon düzeltmesinin görünmeyen bedeli buydu.
+  //
+  // Çerçeve YOKSA (arama, bildirim, sohbet paylaşımı, detaydan detaya) düz
+  // `back()` kalıyor — o yollarda büyüyerek gelinmedi, küçülerek gitmek de
+  // yanlış olurdu. Reduce Motion'da da düz `back()`.
+  const [kuculen, setKuculen] = useState(null);
+  const cikiliyor = useRef(false);
+
+  const geriDon = useCallback(() => {
+    // Çift dokunuş koruması: bindirme pointerEvents:'none' olduğu için
+    // altındaki düğme 380 ms boyunca hâlâ basılabilir durumda.
+    if (cikiliyor.current) return;
+    const cerceve = kaynakOku(id);
+    if (azalt || !cerceve) { router.back(); return; }
+    cikiliyor.current = true;
+    setKuculen({
+      ...cerceve,
+      // Kapak adresi çerçeveyle birlikte saklandı; yoksa rota parametresine
+      // düş — ikisi de yoksa GameCover monograma iniyor, boş kutu çıkmıyor.
+      image: cerceve.image || image,
+      name:  cerceve.name  || name,
+    });
+  }, [azalt, id, image, name, router]);
+
+  const kucultmeBitti = useCallback(() => {
+    kaynakSil(id);          // kullanıldı; ikinci bir dönüş aynı kutuyu oynatmasın
+    router.back();
+  }, [id, router]);
+
   const coverStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: azalt ? 0 : -scrollY.value * 0.9 }],
   }), [azalt]);
@@ -330,7 +365,7 @@ export default function GameDetail() {
       <View style={styles.topBarWrap} pointerEvents="box-none">
         <Animated.View style={[StyleSheet.absoluteFill, styles.barBg, barStyle]} pointerEvents="none" />
         <SafeAreaView edges={['top']} style={styles.topBar}>
-          <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
+          <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={geriDon} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
             <Ionicons name="chevron-back" size={24} color="#fff" />
           </Pressable>
 
@@ -650,6 +685,12 @@ export default function GameDetail() {
         }}
         onCreate={(nm) => createCollection(nm)}
       />
+
+      {/* GERİ ÇIKIŞ BİNDİRMESİ — her şeyin ÜSTÜNDE ve en sonda.
+          Sıra önemli: bindirme ağaçta sonuncu olduğu için kardeşlerinin
+          üstünde çiziliyor; koleksiyon sayfasının önüne konsaydı küçülen
+          kapak modalın ARKASINDA kalırdı. */}
+      <CardExpand kaynak={kuculen} yon="kucul" onVar={kucultmeBitti} />
     </View>
   );
 }
