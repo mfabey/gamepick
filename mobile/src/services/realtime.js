@@ -1,4 +1,19 @@
-import Pusher from 'pusher-js/react-native';
+// ADLANDIRILMIŞ İÇE AKTARIM ŞART — `import Pusher from ...` ÇALIŞMIYOR.
+//
+// `pusher-js` 8.6.0'ın react-native paketi CJS ve şöyle bitiyor:
+//     var r = n(42); module.exports.Pusher = r
+// Yani `module.exports` sınıfın KENDİSİ değil, `{ Pusher: <sınıf> }`.
+// Üstelik `__esModule` işareti YOK ve `.default` da yok (ölçüldü: paket
+// Node'da yüklenip `Object.keys` ile bakıldı → `['Pusher']`).
+//
+// Varsayılan içe aktarımda Babel interop bu yüzden nesnenin TAMAMINI
+// veriyordu ve aşağıdaki `new Pusher(...)` Hermes'te şunu atıyordu:
+//     TypeError: constructor is not callable
+//
+// Hata sessiz değildi ama ZARARI sessizdi: sohbet yedek yoklamaya düşüp
+// çalışmaya devam ettiği için (bkz. aşağıdaki not) yalnızca "anlık teslim
+// yok" olarak hissediliyordu.
+import { Pusher } from 'pusher-js/react-native';
 import { API_BASE } from '../api/client';
 import { getValidToken } from './session';
 import { getChatConfig } from '../api/social';

@@ -8,7 +8,7 @@
 // Gönderim yanıtındaki mesajı yerel olarak eklediğimiz için aynı mesaj iki kez
 // gelir; kimliğe göre elenmezse ekranda çift görünür.
 // ─────────────────────────────────────────────────────────────────────────────
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   View, Text, TextInput, Pressable, StyleSheet, FlatList,
   ActivityIndicator, KeyboardAvoidingView, Platform, Alert, Keyboard, Clipboard,
@@ -34,10 +34,21 @@ import EmptyState from '../../src/components/EmptyState';
 import ReportSheet from '../../src/components/ReportSheet';
 import MessageMenu from '../../src/components/MessageMenu';
 import GifPicker from '../../src/components/GifPicker';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import BubbleTail from '../../src/components/BubbleTail';
+import TypingBubble from '../../src/components/TypingBubble';
+import GlassSurface from '../../src/components/GlassSurface';
+import Animated, {
+  FadeIn, ZoomIn, withSpring, withTiming, useSharedValue, useAnimatedStyle,
+} from 'react-native-reanimated';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { useReducedMotion } from '../../src/hooks/useReducedMotion';
 import { getAvatarPreset } from '../../src/utils/avatar';
+import {
+  ayracGerekli, ayracParcalari, kuyrukVar, ustBosluk,
+} from '../../src/utils/messageGroups';
+import { saltEmojiMi, EMOJI_BOY } from '../../src/utils/emojiOnly';
 import { REACTIONS, reactionList } from '../../src/services/reactions';
-import { radius, spacing, type, PRESSED, motion } from '../../src/theme';
+import { radius, spacing, type, PRESSED, motion, TOUCH_MIN, NUMERIC } from '../../src/theme';
 import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { useLanguage } from '../../src/context/LanguageContext';
 
@@ -47,6 +58,141 @@ import { useLanguage } from '../../src/context/LanguageContext';
 const TAM_EKRAN_ACIK = { enable: true };
 
 const MAX_TEXT = 1000;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// iOS Messages ölçüleri — kaynak: .claude/skills/ios-messages/SKILL.md
+//
+// Bir kısmı iOS 26.5 Simulator'da piksel ölçümüyle bulundu, bir kısmı
+// topluluk tersine mühendisliğinden. Hangisinin hangisi olduğu skill
+// dosyasında satır satır işaretli.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Baloncuğun en fazla genişliği. Bizde %78'di; iOS %75. */
+const BALONCUK_EN = '75%';
+
+/** Baloncuk köşesi. Bizde radius.lg (16) idi; iOS 18. */
+const BALONCUK_YARICAP = 18;
+
+/**
+ * Tapback rozetinin satırın üstünde açtığı yer.
+ *
+ * Rozet baloncuğun DIŞ üst köşesine biniyor (position: absolute). Bu pay
+ * olmadan üstteki mesajın üstüne çıkıyor — grup içi boşluk 2pt ve rozet
+ * 26pt yüksek.
+ */
+const TAPBACK_PAYI = 20;
+
+/**
+ * "Yazıyor" için sahte satır.
+ *
+ * DONDURULMUŞ ve modül düzeyinde: her render'da yeni nesne üretmek listeyi
+ * gereksiz yere yeniden çizdiriyor. Ters çevrilmiş listede EN BAŞA giriyor,
+ * yani ekranda en alta.
+ */
+const YAZIYOR_SATIRI = Object.freeze({ id: '__yaziyor__', typing: true });
+
+// ── Kompozitör ölçüleri [ÖLÇÜLDÜ] ──
+// iPhone 17 Pro (402pt): "+" Ø40, soldan 28 · alan 294×40, tam yuvarlak ·
+// sağdan 28 · aradaki boşluk 12.
+const EK_BTN = 40;
+const KAPSUL_YARICAP = 20;
+/** Kompozitörün yan kenar boşluğu. Ölçek dışı (28) — bu yüzden adlandırıldı. */
+const KOMPOZITOR_KENAR = 28;
+/** Gönder oku: alanın içinde, sağ uçta. */
+const GONDER_BTN = 32;
+
+// ── Başlık ölçüleri [ÖLÇÜLDÜ] ──
+/** Ortalanmış avatar. */
+const BASLIK_AVATAR = 60;
+/** Ad hapının yüksekliği (ölçüm 32.3). */
+const AD_HAPI_H = 32;
+/** Hap avatarın alt kenarına bu kadar biniyor. */
+const HAP_BINME = 5;
+
+// ── Baloncuk dolgusu ──
+// iOS: yatay 14, dikey 9. Bizde 13×9 idi.
+const BALONCUK_YAN = 14;
+const BALONCUK_DIKEY = 9;
+
+// ── Tapback rozeti ──
+// 26pt daire, baloncuğun üst kenarından 14 yukarı ve yan kenardan 6 dışarı.
+const TAPBACK_H = 26;
+const TAPBACK_BINME = 14;
+const TAPBACK_YAN = 6;
+
+// ── Ölçek dışı kalan eski dolgular ──
+// Bunlar bu ekranda zaten vardı ve değiştirilmedi; ham sayı olarak
+// bırakmak yerine adlandırıldı, böylece ne oldukları okunuyor.
+const ALINTI_DOLGU = 7;
+const ALINTI_ALT = 6;
+const PIN_DOLGU = 7;
+const REPLY_DOLGU = 9;
+/** Girdi dolgusu: 4 (kapsül) + 5 + 22 (satır) + 5 + 4 = 40pt kapsül. */
+const GIRDI_DIKEY = 5;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GÖNDERİM ANİMASYONU — baloncuk kompozitörden yukarı çıkıyor.
+//
+// ── HAZIR `FadeInDown` KULLANILMIYOR ──
+// Liste ters çevrilmiş ve kodda bunun izi duruyordu: "yönlü animasyonlar
+// çevrilmiş eksende ters görünüyor". Reanimated'in hazır yönlü animasyonları
+// başlangıç ötelemesini kendileri hesaplıyor; burada `initialValues` ile
+// AÇIKÇA veriliyor, yani hangi yöne gittiği tahmine bırakılmıyor.
+//
+// ── YALNIZ EKRAN AÇIKKEN GELEN MESAJDA ──
+// Ekran ilk açıldığında yirmi baloncuğun birden zıplaması istenmiyor; o an
+// hiçbir şey OLMUYOR, sadece geçmiş çiziliyor. Ayrım `mountedAt` ile
+// yapılıyor: ondan eski mesajlar sade `FadeIn` ile geliyor.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Baloncuğun aşağıdan geldiği mesafe. Kompozitör o tarafta. */
+const GIRIS_MESAFE = 24;
+/** ζ = 14 / (2·√260) ≈ 0,43 — aşma İSTENEN yer: "bir şey oldu" hissi. */
+const GONDERIM_YAY = motion.pop;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SAAT SÜTUNU — sola sürükleyince kenardan giriyor.
+//
+// Saatler KALICI DEĞİL, çünkü kalıcı olsalardı iki bedeli olurdu: sohbet
+// kalabalıklaşır ve baloncuğun %75'lik genişliği sütuna yer açmak için
+// daralırdı. iOS bu yüzden gizliyor ve bir hareketle veriyor.
+//
+// SÜTUN SATIRIN İÇİNDE, ayrı bir katman değil: ayrı bir sütun olsaydı her
+// saatin kendi mesajının dikey hizasına oturması ayrıca hesaplanacaktı.
+// Satırın içinde `right: -SAAT_SUTUN` ile bekliyor ve satırla birlikte
+// aynı `translateX`'i alıyor — hizalama kendiliğinden doğru.
+// ─────────────────────────────────────────────────────────────────────────────
+const SAAT_SUTUN = 56;
+
+// ── Medya ölçüleri ──
+// Kuyruk, görselin İKİNCİ bir kopyasını kendi ölçüsünde çiziyor (bkz.
+// BubbleTail) — o yüzden bu sayılar artık stil dosyasında gömülü kalamaz,
+// iki yerden okunuyorlar.
+const MEDYA_EN = 220;
+// 4:3 — telefon fotoğraflarının çoğunda üstten/alttan kırpma az oluyor.
+const MEDYA_BOY = 165;
+// GIF oranları çok değişken; kare kap + contain, kırpma olmuyor.
+const GIF_OLCU = 200;
+
+
+function girisYayla() {
+  'worklet';
+  return {
+    initialValues: {
+      opacity: 0,
+      transform: [{ translateY: GIRIS_MESAFE }, { scale: 0.92 }],
+    },
+    animations: {
+      // Opaklık YAYLA DEĞİL: yay aşarken opaklık 1'i geçemiyor, o yüzden
+      // sönümlü bir zamanlama daha temiz duruyor.
+      opacity: withTiming(1, { duration: 120 }),
+      transform: [
+        { translateY: withSpring(0, GONDERIM_YAY) },
+        { scale: withSpring(1, GONDERIM_YAY) },
+      ],
+    },
+  };
+}
 
 /**
  * Metinsiz mesajin etiketi — '📷 Fotoğraf' gibi.
@@ -153,6 +299,11 @@ export default function ChatScreen() {
   // tek hedef, iki çağıran.
   const [reportTarget, setReportTarget] = useState(null);
   const [gifOpen, setGifOpen] = useState(false);
+  // "+" ek menüsü. Mesaj menüsüyle AYNI bileşen kullanılıyor: ikisi de
+  // bir düğmeye tutturulmuş kısa bir eylem listesi ve ikinci bir menü
+  // bileşeni yazmak aynı hizalama hatalarını bir kez daha yapmak olurdu.
+  const [ekMenu, setEkMenu] = useState(null);
+  const ekBtnRef = useRef(null);
   // Uzun basılan mesaj: { msg, mine, anchor }. `anchor` baloncuğun pencere
   // koordinatı — menü ona tutturuluyor.
   const [menu, setMenu] = useState(null);
@@ -170,6 +321,8 @@ export default function ChatScreen() {
   // görünüp kaybolan düğme demek olurdu.
   const [caps, setCaps] = useState({ photos: false, videos: false, gifs: false });
   useEffect(() => { chatCapabilities().then(setCaps).catch(() => {}); }, []);
+  // Kaç ek türü açık? 0 → "+" hiç çizilmiyor, 1 → menü yok doğrudan eylem.
+  const ekSayisi = (caps.photos ? 1 : 0) + (caps.gifs ? 1 : 0);
   // Karşı tarafın en son okuma zamanı. Kendi mesajlarımdan `at`'i bundan
   // küçük veya eşit olanlar görülmüş sayılıyor.
   const [otherReadAt, setOtherReadAt] = useState(0);
@@ -186,6 +339,30 @@ export default function ChatScreen() {
   const msgsRef = useRef([]);
   // Alıntıya dokununca aslına kaydırmak için (bkz. jumpTo).
   const listRef = useRef(null);
+  // LİSTEYE VERİLEN dizi — mesajlarla aynı DEĞİL: "yazıyor" satırı varken
+  // başa bir sahte satır giriyor ve bütün dizinler bir kayıyor. jumpTo
+  // scrollToIndex çağırıyor, yani gerçek listedeki dizini bilmek zorunda.
+  const veriRef = useRef([]);
+  // Ekranın açıldığı an. Bundan SONRAKİ mesajlar yaylanarak giriyor, öncekiler
+  // sade beliriyor — ilk açılışta geçmişin tamamı zıplamasın.
+  const acilisRef = useRef(Date.now());
+
+  // ── Saat sütununun kayması ──
+  // Paylaşılan değer: her satır kendi `useAnimatedStyle`inde bunu okuyor,
+  // yani kaydırma UI iş parçacığında kalıyor ve JS'e hiç uğramıyor.
+  const kayma = useSharedValue(0);
+  const saatSurukle = Gesture.Pan()
+    // Yatayda 20pt'den önce etkinleşmiyor, dikeyde 15pt'de VAZGEÇİYOR:
+    // ikisi olmadan jest, listenin kendi dikey kaydırmasıyla yarışıyor ve
+    // sohbeti kaydırmak imkânsız hâle geliyor.
+    .activeOffsetX([-20, 20])
+    .failOffsetY([-15, 15])
+    .onUpdate((e) => {
+      // YALNIZ SOLA. Sağa çekmek saatleri ters yönden getirirdi ve
+      // ekranın solunda gösterecek bir şey yok.
+      kayma.value = Math.min(0, Math.max(-SAAT_SUTUN, e.translationX));
+    })
+    .onEnd(() => { kayma.value = withSpring(0, GONDERIM_YAY); });
 
   // uid `session.user.uid` içinde. `session.uid` yazılırsa daima null olur ve
   // KENDİ mesajların da karşı tarafınmış gibi sola hizalı çizilir.
@@ -319,7 +496,7 @@ export default function ChatScreen() {
   }, [other, pinned, t]);
 
   const jumpTo = useCallback((id) => {
-    const i = msgsRef.current.findIndex((m) => m.id === id);
+    const i = veriRef.current.findIndex((m) => m.id === id);
     if (i < 0) return;
     Haptics.selectionAsync().catch(() => {});
     // viewPosition 0.5 = ekranın ortası. Tepeye yaslamak, ters çevrilmiş
@@ -676,6 +853,31 @@ export default function ChatScreen() {
     }
   }, [sending, other, addMessage, replyTo, caps.videos, t]);
 
+  /**
+   * "+" düğmesi.
+   *
+   * TEK YETENEK VARSA MENÜ AÇMIYOR. Tek satırlık bir menü, kullanıcıya
+   * hiçbir seçim sunmadan fazladan bir dokunuş bindiriyor.
+   */
+  const ekAc = useCallback(() => {
+    if (ekSayisi === 1) {
+      if (caps.photos) pickAndSend(); else setGifOpen(true);
+      return;
+    }
+    const node = ekBtnRef.current;
+    if (!node?.measureInWindow) { setEkMenu({ x: 0, y: 0, width: 0, height: 0 }); return; }
+    node.measureInWindow((x, y, width, height) => setEkMenu({ x, y, width, height }));
+  }, [ekSayisi, caps.photos, pickAndSend]);
+
+  const ekActions = useCallback(() => ([
+    ...(caps.photos ? [{
+      key: 'photo', icon: 'image-outline', label: t('msg.photo'), onPress: pickAndSend,
+    }] : []),
+    ...(caps.gifs ? [{
+      key: 'gif', icon: 'happy-outline', label: t('msg.gif'), onPress: () => setGifOpen(true),
+    }] : []),
+  ]), [caps.photos, caps.gifs, t, pickAndSend]);
+
   // Goruldu isareti YALNIZCA EN YENI okunmus kendi mesajimda. Her okunmus
   // mesaja koymak sohbeti isaret cop luguna cevirir; kullanicinin bilmek
   // istedigi tek sey nereye kadar okundugu.
@@ -685,6 +887,15 @@ export default function ChatScreen() {
     const m = msgs.find((x) => x.from === myUid && !x.deleted && x.at <= otherReadAt);
     return m ? m.id : null;
   })();
+
+  // Listeye verilen dizi. "Yazıyor" baloncuğu sahte bir satır olarak EN BAŞA
+  // giriyor: liste ters çevrilmiş, yani baş = ekranın en altı.
+  const veri = useMemo(
+    () => (typingNow ? [YAZIYOR_SATIRI, ...msgs] : msgs),
+    [typingNow, msgs],
+  );
+  useEffect(() => { veriRef.current = veri; }, [veri]);
+
   const preset = getAvatarPreset(peer?.avatar);
   const name = peer?.displayName || peer?.username || '…';
 
@@ -706,41 +917,58 @@ export default function ChatScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
+      {/* ── Başlık — iOS 26 düzeni ──
+          Avatar ORTALANMIŞ ve BÜYÜK (Ø60), adı taşıyan cam hap avatarın alt
+          kenarına biniyor. Ölçüler iOS 26.5 Simulator'da piksel ölçümüyle
+          alındı (bkz. ios-messages skill'i).
+
+          Geri ve "daha fazla" düğmeleri MUTLAK KONUMLU: akışa girselerdi
+          ortadaki sütunu iterlerdi ve ad ekranın ortasında durmazdı — iki
+          düğme aynı genişlikte olmadığı için kaydırma da simetrik olmazdı.
+
+          Ad hapında ÇEVRON YOK. iOS'ta var ve kişi kartını açıyor; bizde
+          başka bir kullanıcının profil ekranı yok. Hiçbir yere gitmeyen bir
+          çevron, olmayan bir ekran vaat ederdi. */}
       <View style={styles.header}>
-        <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]}
-                   onPress={() => router.back()} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </Pressable>
+        <View style={styles.kimlik}>
+          {preset ? (
+            <View style={[styles.avatar, { backgroundColor: preset.bg }]}>
+              <Ionicons name={preset.icon} size={28} color={preset.iconColor} />
+            </View>
+          ) : (
+            <View style={styles.avatar}>
+              <Text style={styles.avatarLetter}>{name.charAt(0).toUpperCase()}</Text>
+            </View>
+          )}
 
-        {preset ? (
-          <View style={[styles.avatar, { backgroundColor: preset.bg }]}>
-            <Ionicons name={preset.icon} size={16} color={preset.iconColor} />
-          </View>
-        ) : (
-          <View style={styles.avatar}>
-            <Text style={styles.avatarLetter}>{name.charAt(0).toUpperCase()}</Text>
-          </View>
-        )}
+          <GlassSurface style={styles.adHapi} radius={radius.lg}>
+            <Text style={styles.title} numberOfLines={1}>{name}</Text>
+          </GlassSurface>
 
-        <View style={styles.titleWrap}>
-          <Text style={styles.title} numberOfLines={1}>{name}</Text>
-          {/* Durum satırı yalnızca paylaşan kullanıcılarda çiziliyor; kapalıysa
-              boş satır bile bırakmıyoruz. */}
-          {/* YAZIYOR, DURUMUN YERINE gecer — ikisini alt alta gostermek
-              basligi sisiriyor ve "yaziyor" zaten cevrimici demek. */}
-          {typingNow ? (
-            <Text style={[styles.status, styles.typing]} numberOfLines={1}>{t('msg.typing')}</Text>
-          ) : presence ? (
+          {/* Durum satırı yalnızca paylaşan kullanıcılarda çiziliyor.
+              "YAZIYOR" ARTIK BURADA DEĞİL: akışın en altında kendi
+              baloncuğu var (bkz. TypingBubble) — yazılmakta olan şey bir
+              mesaj ve yeri diğer mesajların yanı. */}
+          {presence ? (
             <Text style={styles.status} numberOfLines={1}>
               {presence.online ? t('msg.online') : lastSeenLabel(presence.lastSeen, t, lang)}
             </Text>
           ) : null}
         </View>
 
-        <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]}
-                   onPress={() => setReportTarget(cid || other)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.more')}>
-          <Ionicons name="ellipsis-horizontal" size={20} color={colors.text2} />
-        </Pressable>
+        <GlassSurface style={[styles.yuvarlakBtn, styles.geriBtn]} radius={TOUCH_MIN / 2}>
+          <Pressable style={({ pressed }) => [styles.yuvarlakHit, pressed && PRESSED]}
+                     onPress={() => router.back()} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
+            <Ionicons name="chevron-back" size={22} color={colors.text} />
+          </Pressable>
+        </GlassSurface>
+
+        <GlassSurface style={[styles.yuvarlakBtn, styles.dahaBtn]} radius={TOUCH_MIN / 2}>
+          <Pressable style={({ pressed }) => [styles.yuvarlakHit, pressed && PRESSED]}
+                     onPress={() => setReportTarget(cid || other)} accessibilityRole="button" accessibilityLabel={t('a11y.more')}>
+            <Ionicons name="ellipsis-horizontal" size={19} color={colors.text2} />
+          </Pressable>
+        </GlassSurface>
       </View>
 
       {/* ── Sabit mesaj bandı ──
@@ -784,59 +1012,73 @@ export default function ChatScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}
         >
-          <FlatList
-            ref={listRef}
-            data={msgs}
-            inverted
-            keyExtractor={(m) => m.id}
-            contentContainerStyle={styles.listPad}
-            keyboardDismissMode="interactive"
-            // scrollToIndex, henüz çizilmemiş bir satır istendiğinde HATA
-            // ATIYOR. Alıntıya dokunmak eski bir mesaja gidiyor ve o mesaj
-            // çoğu zaman çizilmemiş oluyor — bu işleyici olmadan uygulama
-            // çöker.
-            onScrollToIndexFailed={({ index, averageItemLength }) => {
-              listRef.current?.scrollToOffset({
-                offset: index * (averageItemLength || 64), animated: true,
-              });
-            }}
-            renderItem={({ item }) => (
-              <Bubble
-                msg={item}
-                mine={item.from === myUid}
-                seen={item.id === seenId}
-                onLongPress={openMenu}
-                onReact={(emoji) => react(item, emoji)}
-                onJumpTo={jumpTo}
-                peerName={peer?.displayName || peer?.username || ''}
-                myUid={myUid}
-                // HEDEF TÜRE GÖRE: fragman ve oyun oyun detayına, haber
-                // tarayıcıya. Haber zaten dış bir yazı — uygulama içinde
-                // gösterecek bir ekranı yok, o yüzden "↗" davranışı.
-                onOpenShare={() => {
-                  const sh = item.share;
-                  if (!sh) return;
-                  if (sh.kind === 'news') { if (sh.url) WebBrowser.openBrowserAsync(sh.url); return; }
-                  // `appid` OLMAYABİLİR: RAWG kataloğundan paylaşılan oyunda
-                  // Steam karşılığı yok (bkz. lib/chat-share.js — kimlik
-                  // uzayı çift anlamlı). Detay ekranı `rawg_<id>` ile
-                  // açılıyor, appid'e ihtiyaç duymuyor.
-                  const id = sh.gameId || (sh.appid ? `rawg_${sh.appid}` : null);
-                  if (!id) return;
-                  router.push({
-                    pathname: '/game/[id]',
-                    params: { id, appid: sh.appid || '', name: sh.name, image: sh.image || '' },
-                  });
-                }}
-                t={t}
-              />
-            )}
-            ListEmptyComponent={
-              <View style={styles.emptyWrap}>
-                <Text style={styles.emptyText}>{t('msg.startText')}</Text>
-              </View>
-            }
-          />
+          {/* Sola sürükleyince saat sütunu kenardan giriyor. Sarmalayıcı
+              LİSTENİN DIŞINDA: jest listenin tamamını kapsamalı, tek tek
+              satırları değil — parmağın nereye denk geldiği önemli değil. */}
+          <GestureDetector gesture={saatSurukle}>
+            <FlatList
+              ref={listRef}
+              data={veri}
+              inverted
+              keyExtractor={(m) => m.id}
+              contentContainerStyle={styles.listPad}
+              keyboardDismissMode="interactive"
+              // scrollToIndex, henüz çizilmemiş bir satır istendiğinde HATA
+              // ATIYOR. Alıntıya dokunmak eski bir mesaja gidiyor ve o mesaj
+              // çoğu zaman çizilmemiş oluyor — bu işleyici olmadan uygulama
+              // çöker.
+              onScrollToIndexFailed={({ index, averageItemLength }) => {
+                listRef.current?.scrollToOffset({
+                  offset: index * (averageItemLength || 64), animated: true,
+                });
+              }}
+              renderItem={({ item, index }) => (item.typing ? <TypingBubble /> : (
+                <Bubble
+                  msg={item}
+                  mine={item.from === myUid}
+                  seen={item.id === seenId}
+                  // ESKİ = zamanda önceki = ekranda ÜSTTEKİ (liste ters).
+                  // YENİ = zamanda sonraki = ekranda ALTTAKİ.
+                  // Gruplama, kuyruk ve tarih ayracı bu ikisinden çıkıyor.
+                  eski={veri[index + 1]}
+                  yeni={veri[index - 1]}
+                  // Ekran açıkken mi geldi? Gönderim animasyonu buna bağlı.
+                  taze={(item.at || 0) > acilisRef.current}
+                  kayma={kayma}
+                  lang={lang}
+                  onLongPress={openMenu}
+                  onReact={(emoji) => react(item, emoji)}
+                  onJumpTo={jumpTo}
+                  peerName={peer?.displayName || peer?.username || ''}
+                  myUid={myUid}
+                  // HEDEF TÜRE GÖRE: fragman ve oyun oyun detayına, haber
+                  // tarayıcıya. Haber zaten dış bir yazı — uygulama içinde
+                  // gösterecek bir ekranı yok, o yüzden "↗" davranışı.
+                  onOpenShare={() => {
+                    const sh = item.share;
+                    if (!sh) return;
+                    if (sh.kind === 'news') { if (sh.url) WebBrowser.openBrowserAsync(sh.url); return; }
+                    // `appid` OLMAYABİLİR: RAWG kataloğundan paylaşılan oyunda
+                    // Steam karşılığı yok (bkz. lib/chat-share.js — kimlik
+                    // uzayı çift anlamlı). Detay ekranı `rawg_<id>` ile
+                    // açılıyor, appid'e ihtiyaç duymuyor.
+                    const id = sh.gameId || (sh.appid ? `rawg_${sh.appid}` : null);
+                    if (!id) return;
+                    router.push({
+                      pathname: '/game/[id]',
+                      params: { id, appid: sh.appid || '', name: sh.name, image: sh.image || '' },
+                    });
+                  }}
+                  t={t}
+                />
+              ))}
+              ListEmptyComponent={
+                <View style={styles.emptyWrap}>
+                  <Text style={styles.emptyText}>{t('msg.startText')}</Text>
+                </View>
+              }
+            />
+          </GestureDetector>
 
           {/* ── Yanıt önizlemesi ──
               Gönderme kutusunun ÜSTÜNDE, klavyeyle birlikte yükseliyor.
@@ -876,56 +1118,59 @@ export default function ChatScreen() {
             styles.composer,
             { paddingBottom: kbVisible ? spacing.sm : Math.max(insets.bottom, spacing.sm) },
           ]}>
-            {/* DÜĞMELER YETENEĞE BAĞLI. Yapılandırma eksikken çizilmiyorlar:
-                basınca "şu an kapalı" diyen bir düğme uygulamayı yarım
-                gösteriyor (Guideline 2.2). Ortam değişkeni eklendiği anda
-                yeni build olmadan geri geliyorlar. */}
-            {caps.photos ? (
-              <Pressable
-                style={({ pressed }) => [styles.attachBtn, pressed && PRESSED]}
-                onPress={pickAndSend}
-                disabled={sending}
-                hitSlop={6}
-                accessibilityRole="button"
-                accessibilityLabel={t('msg.photo')}
-              >
-                <Ionicons name="image-outline" size={22} color={colors.text2} />
-              </Pressable>
+            {/* ── TEK "+" DÜĞMESİ ──
+                Öncesinde fotoğraf ve GIF için iki ayrı simge duruyordu.
+                iOS'ta tek bir "+" var ve ekleri bir menüde topluyor; sebebi
+                de görünür: kompozitörün solu her yeni ek türünde büyümüyor.
+
+                YETENEĞE BAĞLI kalıyor. Yapılandırma eksikken düğme hiç
+                çizilmiyor — basınca "şu an kapalı" diyen bir düğme
+                uygulamayı yarım gösteriyor (Guideline 2.2). Tek yetenek
+                açıksa menü açmıyor, doğrudan onu çalıştırıyor: tek satırlık
+                bir menü, fazladan bir dokunuş demek. */}
+            {ekSayisi > 0 ? (
+              <GlassSurface style={styles.ekBtn} radius={EK_BTN / 2}>
+                <Pressable
+                  ref={ekBtnRef}
+                  style={({ pressed }) => [styles.ekHit, pressed && PRESSED]}
+                  onPress={ekAc}
+                  disabled={sending}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('msg.attach')}
+                >
+                  <Ionicons name="add" size={26} color={colors.text} />
+                </Pressable>
+              </GlassSurface>
             ) : null}
-            {caps.gifs ? (
-              <Pressable
-                style={({ pressed }) => [styles.attachBtn, pressed && PRESSED]}
-                onPress={() => setGifOpen(true)}
-                hitSlop={6}
-                accessibilityRole="button"
-                accessibilityLabel={t('msg.gif')}
-              >
-                <Ionicons name="happy-outline" size={22} color={colors.text2} />
-              </Pressable>
-            ) : null}
-            <TextInput
-              style={styles.input}
-              value={text}
-              onChangeText={onChangeText}
-              placeholder={t('msg.placeholder')}
-              placeholderTextColor={colors.text3}
-              maxLength={MAX_TEXT}
-              multiline
-            />
-            <Pressable
-              style={({ pressed }) => [
-                styles.sendBtn,
-                (!text.trim() || sending) && styles.sendBtnOff,
-                pressed && PRESSED,
-              ]}
-              onPress={send}
-              disabled={!text.trim() || sending}
-              hitSlop={6}
-            >
-              {sending
-                ? <ActivityIndicator size="small" color="#fff" />
-                : <Ionicons name="arrow-up" size={19} color="#fff" />}
-            </Pressable>
+
+            {/* Gönder düğmesi ALANIN İÇİNDE. Dışarıdaki ayrı daire,
+                kompozitörü üç parçalı bir alet çubuğuna çeviriyordu; iOS'ta
+                ok metin alanının sağ ucunda ve yalnızca yazacak bir şey
+                varken beliriyor. */}
+            <GlassSurface style={styles.girdiKapsul} radius={KAPSUL_YARICAP}>
+              <TextInput
+                style={styles.input}
+                value={text}
+                onChangeText={onChangeText}
+                placeholder={t('msg.placeholder')}
+                placeholderTextColor={colors.text3}
+                maxLength={MAX_TEXT}
+                multiline
+              />
+              {text.trim() || sending ? (
+                <Pressable
+                  style={({ pressed }) => [styles.sendBtn, pressed && PRESSED]}
+                  onPress={send}
+                  disabled={sending}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('msg.send')}
+                >
+                  {sending
+                    ? <ActivityIndicator size="small" color={colors.onAccent} />
+                    : <Ionicons name="arrow-up" size={18} color={colors.onAccent} />}
+                </Pressable>
+              ) : null}
+            </GlassSurface>
           </View>
         </KeyboardAvoidingView>
       )}
@@ -940,6 +1185,16 @@ export default function ChatScreen() {
         actions={menu ? menuActions(menu) : []}
         onReact={(emoji) => react(menu.msg, emoji)}
         myReaction={menu ? myReactionOf(menu.msg, myUid) : null}
+      />
+
+      {/* Ek menüsü — "+" düğmesine tutturulu. `onReact` VERİLMİYOR: tepki
+          satırı yalnızca mesaj menüsüne ait. */}
+      <MessageMenu
+        visible={!!ekMenu}
+        onClose={() => setEkMenu(null)}
+        anchor={ekMenu}
+        mine={false}
+        actions={ekMenu ? ekActions() : []}
       />
 
       <GifPicker
@@ -958,13 +1213,68 @@ export default function ChatScreen() {
   );
 }
 
-function Bubble({ msg, mine, seen, onLongPress, onOpenShare, onReact, onJumpTo, myUid, peerName, t }) {
+/**
+ * Tarih ayracı — iOS'un "Bugün 14:32" satırı.
+ *
+ * GÜN KALIN, SAAT NORMAL. Tek ağırlıkta yazınca ikisi tek bir dizeye
+ * dönüşüyor ve göz hangisinin ne olduğunu ayırmak için duraklıyor.
+ */
+function Ayrac({ at, t, lang }) {
   const styles = useStyles(makeStyles);
+  const { gun, saat } = ayracParcalari(at, t, lang);
+  return (
+    <View style={styles.ayrac}>
+      <Text style={styles.ayracMetin}>
+        <Text style={styles.ayracGun}>{gun}</Text>{'  '}{saat}
+      </Text>
+    </View>
+  );
+}
+
+/** Saat:dakika — okundu satırı ve ayraç dışında bir yerde kullanılmıyor. */
+function saatOf(ts, lang) {
+  const loc = lang === 'tr' ? 'tr-TR' : lang === 'de' ? 'de-DE'
+    : lang === 'es' ? 'es-ES' : lang === 'pt' ? 'pt-BR' : 'en-US';
+  return new Date(ts || 0).toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit' });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Baloncuk.
+//
+// ── GRUPLAMA ──
+// Üç şey komşulardan çıkıyor ve üçü de saf fonksiyonlarda (utils/messageGroups):
+//   kuyruk  → grubun EN YENİ üyesinde var, diğerlerinde yok
+//   ayraç   → üstteki mesajla arada gün ya da 1 saat varsa
+//   boşluk  → grup içi 2pt, grup arası 8pt
+//
+// "eski" ekranda ÜSTTEKİ, "yeni" ekranda ALTTAKİ mesaj. Liste ters çevrilmiş
+// olduğu için dizinle karıştırmamak adına adlar zamana göre verildi.
+//
+// ── KUYRUK KİMDE YOK ──
+// GIF, paylaşım kartı ve salt görsel baloncukta kuyruk çizilmiyor: kuyruğun
+// dolgusu baloncuğun ZEMİN RENGİNİ taşıyor ve zemini olmayan (ya da zemini
+// görselin kendisi olan) bir baloncukta o dolgu görselin köşesini boyardı.
+// iOS bunu maskeleyerek çözüyor; maskeleme burada üç ayrı ölçüde görsel
+// için ayrı ayrı yazılacak bir iş ve kazancı kuyruğun kendisinden küçük.
+// ─────────────────────────────────────────────────────────────────────────────
+function Bubble({
+  msg, mine, seen, eski, yeni, taze, kayma, lang,
+  onLongPress, onOpenShare, onReact, onJumpTo, myUid, peerName, t,
+}) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
+  const azHareket = useReducedMotion();
+
+  // Sola sürükleme. HAREKETİ AZALT BUNU KAPATMIYOR: doğrudan manipülasyon
+  // animasyon sayılmıyor (bkz. hooks/useReducedMotion) — kapatılsaydı
+  // saatlere ulaşmanın hiçbir yolu kalmazdı.
+  const kaydir = useAnimatedStyle(() => ({
+    transform: [{ translateX: kayma.value }],
+  }));
+
   // Menu baloncuga TUTTURULUYOR, ekranin altina degil — hangi mesaja ait
   // oldugunu konumu soylemeli. Bunun icin baloncugun pencere koordinati
   // gerekiyor ve o ancak olculerek bulunuyor.
-  //
-  // Tek ref, dort dalin hepsinde: ayni anda yalnizca biri ciziliyor.
   const rowRef = useRef(null);
   const handleLongPress = useCallback(() => {
     const node = rowRef.current;
@@ -987,118 +1297,132 @@ function Bubble({ msg, mine, seen, onLongPress, onOpenShare, onReact, onJumpTo, 
   // tasindigindan burada okunmuyor.
   const chips = reactionList(msg.reactions, myUid);
 
-  // Geri alınan mesaj listeden ÇIKMIYOR, yerinde bir iz bırakıyor — sıra ve
-  // sayfalama bozulmasın, karşı taraf da bir şeyin geri alındığını görsün.
-  if (msg.deleted) {
-    return (
-      <View style={[styles.bubbleRow, mine ? styles.rowMine : styles.rowTheirs]}>
-        <View style={[styles.bubble, styles.bubbleGone]}>
-          <Text style={styles.goneText}>{t('msg.wasUndone')}</Text>
-        </View>
-      </View>
-    );
-  }
-
-  // ── Paylasilan Reels ──
-  // Kendi baloncugu var: medya degil, bir OYUNA REFERANS. Dokununca oyun
-  // sayfasi aciliyor — paylasimin amaci zaten karsi tarafin oyunu gormesi.
-  if (msg.share) {
-    return (
-      <Pressable
-        style={[styles.bubbleRow, mine ? styles.rowMine : styles.rowTheirs]}
-        ref={rowRef}
-        onLongPress={handleLongPress}
-        delayLongPress={400}
-        onPress={onOpenShare}
-      >
-        <View style={styles.shareCard}>
-          {/* Haberde görsel EKSİK OLABİLİR (RSS her zaman vermiyor);
-              o hâlde kaynak baş harfi yer tutuyor, kutu boş kalmıyor. */}
-          {msg.share.image ? (
-            <Image source={msg.share.image} style={styles.shareImg} contentFit="cover" transition={motion.image} />
-          ) : (
-            <View style={[styles.shareImg, styles.shareImgBos]}>
-              <Text style={styles.shareImgHarf}>
-                {String(msg.share.source || msg.share.name || '?').charAt(0).toUpperCase()}
-              </Text>
-            </View>
-          )}
-          <View style={styles.shareBody}>
-            <Text style={styles.shareName} numberOfLines={2}>{msg.share.name}</Text>
-            <Text style={styles.shareHint}>
-              {msg.share.kind === 'news' ? (msg.share.source || t('share.news'))
-                : msg.share.kind === 'game' ? t('share.game')
-                : t('msg.sharedReel')}
-            </Text>
-          </View>
-        </View>
-      </Pressable>
-    );
-  }
-
-  // ── GIF ──
-  // Kendi baloncugu: dolgusuz, cerceve yok. GIF zaten kendi kenarina sahip
-  // ve etrafina renkli bir baloncuk koymak gorseli kalabaliklastiriyor.
-  if (msg.gif?.url) {
-    return (
-      <Animated.View entering={FadeIn.duration(160)}>
-        <Pressable
-          style={[styles.bubbleRow, mine ? styles.rowMine : styles.rowTheirs]}
-          ref={rowRef}
-          onLongPress={handleLongPress}
-          delayLongPress={400}
-          onPress={onTap}
-        >
-          {/* GIF'in ustunde alinti: GIF'le yanit vermek de mumkun. */}
-          {msg.quote ? (
-            <View style={styles.gifQuoteWrap}>
-              <Quote quote={msg.quote} mine={mine} myUid={myUid} peerName={peerName}
-                     onPress={() => onJumpTo?.(msg.quote.id)} t={t} />
-            </View>
-          ) : null}
-          <Image
-            source={msg.gif.url}
-            style={styles.gifBubble}
-            contentFit="contain"
-            transition={motion.image}
-          />
-          <Reactions chips={chips} mine={mine} onPress={onReact} />
-          {msg.pending ? <Text style={styles.state}>{t('msg.sending')}</Text> : null}
-          {msg.failed ? <Text style={[styles.state, styles.stateFail]}>{t('msg.notSent')}</Text> : null}
-          {seen && !msg.pending && !msg.failed ? <Text style={styles.seen}>{t('msg.seen')}</Text> : null}
-        </Pressable>
-      </Animated.View>
-    );
-  }
+  const kuyruk = kuyrukVar(msg, yeni);
+  const ayrac = ayracGerekli(msg, eski);
+  // Tapback baloncuğun DIŞ üst köşesine biniyor; binen rozet için satırın
+  // üstünde yer açılmazsa grup içi 2pt boşlukta üstteki mesaja giriyor.
+  const ustPay = ustBosluk(msg, eski) + (chips.length ? TAPBACK_PAYI : 0);
 
   const hasMedia = !!msg.media?.url;
   const hasText = !!msg.text;
   const isVideo = !!msg.media?.type?.startsWith('video/');
+  const saltGorsel = hasMedia && !hasText;
+  // Baloncuksuz büyük emoji YALNIZ yalın mesajda: alıntı ya da medya
+  // varsa mesaj artık bir jest değil, bağlamı olan bir yanıt.
+  const saltEmoji = hasText && !hasMedia && !msg.quote && saltEmojiMi(msg.text);
 
-  return (
-    // GİRİŞ ANİMASYONU sade: liste ters çevrilmiş, yönlü animasyonlar
-    // (FadeInDown gibi) çevrilmiş eksende ters görünüyor. Yönsüz belirme
-    // her iki eksende de doğru duruyor.
-    <Animated.View entering={FadeIn.duration(160)}>
-    <Pressable
-      style={[styles.bubbleRow, mine ? styles.rowMine : styles.rowTheirs]}
-      ref={rowRef}
-      onLongPress={handleLongPress}
-      delayLongPress={400}
-      onPress={onTap}
-    >
+  // ── Gövde ──
+  let govde;
+  if (msg.deleted) {
+    // Geri alınan mesaj listeden ÇIKMIYOR, yerinde bir iz bırakıyor — sıra ve
+    // sayfalama bozulmasın, karşı taraf da bir şeyin geri alındığını görsün.
+    govde = (
+      <View style={[styles.bubble, styles.bubbleGone]}>
+        <Text style={styles.goneText}>{t('msg.wasUndone')}</Text>
+      </View>
+    );
+  } else if (msg.share) {
+    // Paylaşım: medya değil, bir OYUNA/HABERE referans. Kendi kartı var.
+    govde = (
+      <View style={styles.shareCard}>
+        {/* Kartın ALT bölümü (shareBody) düz renk, yani kuyruk dolgusu
+            oraya kusursuz kaynaşıyor — görsel kopyasına gerek yok. */}
+        {kuyruk ? (
+          <BubbleTail mine={mine} dolgu={colors.bgInput} zemin={colors.bg} />
+        ) : null}
+        {/* Haberde görsel EKSİK OLABİLİR (RSS her zaman vermiyor);
+            o hâlde kaynak baş harfi yer tutuyor, kutu boş kalmıyor. */}
+        {msg.share.image ? (
+          <Image source={msg.share.image} style={styles.shareImg} contentFit="cover" transition={motion.image} />
+        ) : (
+          <View style={[styles.shareImg, styles.shareImgBos]}>
+            <Text style={styles.shareImgHarf}>
+              {String(msg.share.source || msg.share.name || '?').charAt(0).toUpperCase()}
+            </Text>
+          </View>
+        )}
+        <View style={styles.shareBody}>
+          <Text style={styles.shareName} numberOfLines={2}>{msg.share.name}</Text>
+          <Text style={styles.shareHint}>
+            {msg.share.kind === 'news' ? (msg.share.source || t('share.news'))
+              : msg.share.kind === 'game' ? t('share.game')
+              : t('msg.sharedReel')}
+          </Text>
+        </View>
+      </View>
+    );
+  } else if (saltEmoji) {
+    // Baloncuk YOK: ne zemin, ne dolgu, ne kuyruk. Emoji kendi başına
+    // duruyor — iOS'ta da öyle.
+    govde = <Text style={styles.emojiTek}>{msg.text.trim()}</Text>;
+  } else if (msg.gif?.url) {
+    // GIF'in kendi baloncuğu yok: dolgusuz, çerçevesiz. GIF zaten kendi
+    // kenarına sahip ve etrafına renkli bir baloncuk koymak kalabalık yapıyor.
+    govde = (
+      <View>
+        {msg.quote ? (
+          <View style={styles.gifQuoteWrap}>
+            <Quote quote={msg.quote} mine={mine} myUid={myUid} peerName={peerName}
+                   onPress={() => onJumpTo?.(msg.quote.id)} t={t} />
+          </View>
+        ) : null}
+        {/* Kuyruk GIF'in kendi kabına tutturuluyor, dıştaki sarmalayıcıya
+            değil: alıntı varsa sarmalayıcı ondan da yüksek ve kuyruk
+            alıntının hizasına düşerdi. */}
+        <View style={styles.gifKap}>
+          {kuyruk ? (
+            <BubbleTail
+              mine={mine}
+              gorsel={{ url: msg.gif.url, w: GIF_OLCU, h: GIF_OLCU, fit: 'contain' }}
+              zemin={colors.bg}
+            />
+          ) : null}
+          <Image source={msg.gif.url} style={styles.gifBubble} contentFit="contain" transition={motion.image} />
+        </View>
+      </View>
+    );
+  } else {
+    govde = (
       <View style={[
         styles.bubble,
         mine ? styles.bubbleMine : styles.bubbleTheirs,
         // Salt görsel mesajda dolgu YOK: görselin baloncuğu tamamen doldurması
         // gerekiyor, aksi hâlde kenarlarda renkli bir çerçeve kalıyor.
-        hasMedia && !hasText && styles.bubbleMediaOnly,
+        saltGorsel && styles.bubbleMediaOnly,
       ]}>
+        {/* Kuyruk İLK ÇOCUK: baloncuğun zemininin üstüne, metnin altına
+            giriyor. Sonraya konsa metnin son satırını örterdi.
+
+            SALT GÖRSELDE dolgu değil GÖRSELİN KOPYASI kullanılıyor: o
+            baloncukta zemin rengi yok, baloncuğu görsel dolduruyor. Kopya
+            görselin ARKASINDA kalıyor ve yalnızca yuvarlak köşenin saydam
+            bıraktığı yerden görünüyor — köşeyi kuyruğa o bağlıyor.
+
+            VİDEODA KUYRUK YOK: kopyalanacak bir kare elimizde yok (poster
+            görseli tutulmuyor). Maskeliyormuş gibi yapmak yerine kuyruksuz
+            bırakılıyor. */}
+        {kuyruk && !(saltGorsel && isVideo) ? (
+          <BubbleTail
+            mine={mine}
+            gorsel={saltGorsel
+              ? { url: msg.media.url, w: MEDYA_EN, h: MEDYA_BOY }
+              : undefined}
+            dolgu={mine ? colors.accentFillStrong : colors.bgInput}
+            zemin={colors.bg}
+          />
+        ) : null}
         <Quote quote={msg.quote} mine={mine} myUid={myUid} peerName={peerName}
                onPress={() => onJumpTo?.(msg.quote.id)} t={t} />
         {hasMedia && (isVideo
           ? <VideoBubble url={msg.media.url} />
-          : <Image source={msg.media.url} style={styles.media} contentFit="cover" transition={motion.image} />
+          : (
+            <Image
+              source={msg.media.url}
+              style={[styles.media, saltGorsel && styles.medyaTek]}
+              contentFit="cover"
+              transition={motion.image}
+            />
+          )
         )}
         {hasText && (
           <Text style={[
@@ -1110,29 +1434,54 @@ function Bubble({ msg, mine, seen, onLongPress, onOpenShare, onReact, onJumpTo, 
           </Text>
         )}
       </View>
-      {/* Goruldu YALNIZCA en yeni okunmus kendi mesajimda (bkz. seenId) —
-          her okunmus mesaja koymak sohbeti isaret coplugune cevirir. */}
-      {/* Kalp baloncuğun ALT KENARINA oturuyor, içine değil: metnin akışını
-          bozmuyor ve medya baloncuğunda da aynı yerde duruyor. */}
-      <Reactions chips={chips} mine={mine} onPress={onReact} />
+    );
+  }
 
-      {/* Gönderiliyor / başarısız — iyimser gönderimin görünen tarafı. */}
-      {msg.pending ? <Text style={styles.state}>{t('msg.sending')}</Text> : null}
-      {msg.failed ? <Text style={[styles.state, styles.stateFail]}>{t('msg.notSent')}</Text> : null}
-      {seen && !msg.pending && !msg.failed ? <Text style={styles.seen}>{t('msg.seen')}</Text> : null}
-    </Pressable>
+  return (
+    <Animated.View style={[{ marginTop: ustPay }, kaydir]}>
+      {ayrac ? <Ayrac at={msg.at} t={t} lang={lang} /> : null}
+
+      {/* Ekran açıkken gelen mesaj YAYLANARAK, aşağıdan (kompozitörün
+          olduğu taraftan) giriyor. Geçmiş mesajlar ve "hareketi azalt"
+          açıkken sade belirme. */}
+      <Animated.View
+        entering={taze && !azHareket ? girisYayla : FadeIn.duration(motion.fast)}
+        style={mine ? styles.hizaBenim : styles.hizaOnun}
+      >
+        <Pressable
+          ref={rowRef}
+          style={styles.sarmal}
+          onLongPress={msg.deleted ? undefined : handleLongPress}
+          delayLongPress={400}
+          onPress={msg.share ? onOpenShare : onTap}
+        >
+          {govde}
+          {/* Tapback baloncuğun DIŞ üst köşesinde — kendi mesajımda solda,
+              gelen mesajda sağda. iOS'un yerleşimi bu ve sebebi konum:
+              rozet ekranın ortasına doğru bakıyor, kenara değil. */}
+          <Reactions chips={chips} mine={mine} onPress={onReact} />
+        </Pressable>
+
+        {/* Gönderiliyor / başarısız — iyimser gönderimin görünen tarafı.
+            "Okundu" YALNIZCA en yeni okunmuş kendi mesajımda (bkz. seenId)
+            ve iOS gibi saatiyle birlikte. */}
+        {msg.pending ? <Text style={styles.state}>{t('msg.sending')}</Text> : null}
+        {msg.failed ? <Text style={[styles.state, styles.stateFail]}>{t('msg.notSent')}</Text> : null}
+        {seen && !msg.pending && !msg.failed ? (
+          <Text style={styles.seen}>{`${t('msg.seen')} ${saatOf(msg.at, lang)}`}</Text>
+        ) : null}
+
+        {/* Saat: satırın SAĞ DIŞINDA bekliyor, sürükleyince içeri giriyor.
+            Kapsayıcı tam genişlikte olduğu için baloncuk ne kadar dar
+            olursa olsun saatler DÜZ BİR SÜTUN oluşturuyor. */}
+        <View style={styles.saatKutu} pointerEvents="none">
+          <Text style={styles.saat} numberOfLines={1}>{saatOf(msg.at, lang)}</Text>
+        </View>
+      </Animated.View>
     </Animated.View>
   );
 }
 
-/**
- * Sohbet içi video.
- *
- * OTOMATİK OYNATMA YOK ve SES KAPALI BAŞLAMIYOR — kullanıcı dokunup oynatıyor.
- * Sohbet listesi kaydırılırken birden çok videonun kendiliğinden başlaması hem
- * veri hem dikkat israfı; Reels ekranından farklı olarak burada video akışın
- * kendisi değil, mesajın bir parçası.
- */
 function VideoBubble({ url }) {
   const styles = useStyles(makeStyles);
   const player = useVideoPlayer(url, (p) => { p.loop = false; });
@@ -1184,11 +1533,14 @@ function Quote({ quote, mine, myUid, peerName, onPress, t }) {
 }
 
 /**
- * Baloncugun altina oturan tepki rozetleri.
+ * Tepki rozetleri — iOS'un "tapback"i.
  *
- * AKISA GIRIYOR, mutlak konumlu DEGIL. Onceki kalp rozeti baloncugun
- * uzerine biniyordu; tek bir kucuk simge icin sorun degildi ama uc dort
- * rozet metnin son satirini kapatir.
+ * ── BALONCUĞUN DIŞ ÜST KÖŞESİNDE, MUTLAK KONUMLU ──
+ * Bir ara akışa alınmışlardı ve gerekçe doğruydu: rozetler baloncuğun ALT
+ * kenarındayken metnin son satırını kapatıyordu. Çözüm rozetleri akışa
+ * sokmak değil, iOS'un koyduğu yere koymak — üst köşeye ve baloncuğun
+ * DIŞINA. Orada kapatacak metin yok; açılan tek şey satırın üstündeki
+ * boşluk ve o da TAPBACK_PAYI ile veriliyor.
  *
  * ROZETE BASMAK O TEPKIYI ACIP KAPATIYOR — menuyu acmadan hizli yol.
  * Sayi YALNIZCA birden fazlaysa yaziliyor: "1" bilgi tasimiyor,
@@ -1196,19 +1548,30 @@ function Quote({ quote, mine, myUid, peerName, onPress, t }) {
  */
 function Reactions({ chips, mine, onPress }) {
   const styles = useStyles(makeStyles);
+  const azHareket = useReducedMotion();
   if (!chips.length) return null;
   return (
     <View style={[styles.chips, mine ? styles.chipsMine : styles.chipsTheirs]}>
       {chips.map((c) => (
-        <Pressable
+        // Rozet KÜÇÜKTEN YAYLANARAK geliyor. Dokunsal geri bildirim zaten
+        // vardı (bkz. react()) ama görsel karşılığı yoktu; rozet birden var
+        // oluyordu ve dokunuşla arasındaki bağ kopuktu.
+        //
+        // `entering` yalnız BAĞLANIRKEN çalışıyor, yani tepki eklenince —
+        // sohbet açılırken duran rozetler animasyonsuz geliyor, doğrusu bu.
+        <Animated.View
           key={c.emoji}
-          style={({ pressed }) => [styles.chip, c.mine && styles.chipMine, pressed && PRESSED]}
-          onPress={() => onPress?.(c.emoji)}
-          hitSlop={6}
+          entering={azHareket ? undefined : ZoomIn.springify().damping(14).stiffness(260)}
         >
-          <Text style={styles.chipEmoji}>{c.emoji}</Text>
-          {c.count > 1 ? <Text style={styles.chipCount}>{c.count}</Text> : null}
-        </Pressable>
+          <Pressable
+            style={({ pressed }) => [styles.chip, c.mine && styles.chipMine, pressed && PRESSED]}
+            onPress={() => onPress?.(c.emoji)}
+            hitSlop={6}
+          >
+            <Text style={styles.chipEmoji}>{c.emoji}</Text>
+            {c.count > 1 ? <Text style={styles.chipCount}>{c.count}</Text> : null}
+          </Pressable>
+        </Animated.View>
       ))}
     </View>
   );
@@ -1219,62 +1582,99 @@ const makeStyles = (colors) => StyleSheet.create({
   flex:   { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
+  // ── Başlık — iOS 26 [ÖLÇÜLDÜ] ──
+  // Ortalanmış sütun; düğmeler mutlak konumlu, akışın dışında.
+  // ALT KENARLIK YOK: iOS 26'da başlık içerikle aynı zeminde duruyor ve
+  // ayrımı çizgi değil, camın kendisi yapıyor.
   header: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
-    paddingHorizontal: spacing.lg, paddingBottom: spacing.sm,
-    borderBottomWidth: 1, borderBottomColor: colors.cardBorder,
+    alignItems: 'center',
+    paddingBottom: spacing.s12,
   },
-  iconBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  kimlik: { alignItems: 'center', maxWidth: '70%' },
   avatar: {
-    width: 32, height: 32, borderRadius: 16, backgroundColor: colors.bgInput,
+    width: BASLIK_AVATAR, height: BASLIK_AVATAR, borderRadius: BASLIK_AVATAR / 2,
+    backgroundColor: colors.surfaceTile,
     alignItems: 'center', justifyContent: 'center',
   },
-  avatarLetter: { color: colors.text2, fontSize: type.footnote, fontWeight: '800' },
-  titleWrap: { flex: 1, minWidth: 0 },
-  title: { color: colors.text, fontSize: type.body, fontWeight: '700' },
+  avatarLetter: { color: colors.text2, fontSize: type.title3, fontWeight: '800' },
+  // Hap avatarın alt kenarına biniyor — ölçüm 5pt.
+  adHapi: {
+    marginTop: -HAP_BINME,
+    height: AD_HAPI_H, justifyContent: 'center',
+    paddingHorizontal: spacing.s12,
+    maxWidth: '100%',
+  },
+  title: { color: colors.text, fontSize: type.subhead, fontWeight: '700' },
   // Durum satiri kucuk ve sessiz: bilgi tasiyor ama ada rakip olmamali.
-  status: { color: colors.text3, fontSize: type.caption2, marginTop: 1 },
-  typing: { color: colors.green, fontWeight: '700' },
-  // Goruldu isareti baloncugun ALTINDA ve saga dayali; icerigin parcasi degil.
-  seen: { color: colors.text3, fontSize: type.caption2, marginTop: 3, marginRight: spacing.xs },
-  state: { color: colors.text3, fontSize: type.caption2, marginTop: 3, marginRight: spacing.xs },
-  stateFail: { color: colors.danger },
-  // Baloncuğun alt kenarına binen küçük madalyon.
-  // Rozetler AKIŞTA, mutlak konumlu değil (eski tek kalp öyleydi). Üç dört
-  // rozet mutlak konumda metnin son satırını kapatıyordu.
+  status: { color: colors.text3, fontSize: type.caption2, marginTop: spacing.s4 },
+
+  // Geri ve "daha fazla": aynı geometri, farklı kenar.
+  yuvarlakBtn: {
+    position: 'absolute', top: 0,
+    width: TOUCH_MIN, height: TOUCH_MIN, borderRadius: TOUCH_MIN / 2,
+  },
+  geriBtn: { left: spacing.s16 },
+  dahaBtn: { right: spacing.s16 },
+  yuvarlakHit: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+
+  // ── Tarih ayracı ──
+  // Ortada, sessiz. Gün kalın, saat normal.
+  ayrac: { alignItems: 'center', paddingTop: spacing.s24, paddingBottom: spacing.s12 },
+  ayracMetin: { color: colors.text3, fontSize: type.caption, lineHeight: 16 },
+  ayracGun:   { color: colors.text2, fontWeight: '700' },
+
+  // ── Baloncuk satırı ──
+  hizaBenim: { alignItems: 'flex-end' },
+  hizaOnun:  { alignItems: 'flex-start' },
+  // Kuyruk ve tapback baloncuğun DIŞINA taşıyor; sarmal onların
+  // konumlandığı kutu.
   //
-  // marginTop NEGATİF: rozet baloncuğun alt kenarına hafifçe biniyor —
-  // ayrı bir satır gibi değil, baloncuğa ait bir eklenti gibi okunsun.
+  // GENİŞLİK SINIRI BURADA DEĞİL, `bubble`da: paylaşım kartı 240pt sabit
+  // genişlikte ve dar bir telefonda %75 onun altına düşüyor — sınır sarmalda
+  // olsaydı kart sıkışırdı.
+  sarmal: { position: 'relative' },
+
+  // Goruldu / durum isareti baloncugun ALTINDA ve hizasi satirdan geliyor.
+  seen:  { color: colors.text3, fontSize: type.caption2, marginTop: spacing.s4 },
+  // Sürüklenince görünen saat. `right` NEGATİF: satırın dışında, kenar
+  // boşluğunun ötesinde duruyor ve translateX onu içeri getiriyor.
+  // NUMERIC şart: orantılı yazıda "1" ile "8" farklı genişlikte ve sütun
+  // kaydırırken titriyor.
+  //
+  // DİKEY ORTALAMA SARMALAYICIYLA: `textAlignVertical` yalnızca Android'de
+  // çalışıyor, iOS'ta hiçbir şey yapmıyor. Kapsayıcının yüksekliği
+  // baloncuğa göre değiştiği için sabit bir lineHeight da olmuyor.
+  saatKutu: {
+    position: 'absolute', right: -SAAT_SUTUN, top: 0, bottom: 0,
+    width: SAAT_SUTUN, alignItems: 'flex-end', justifyContent: 'center',
+  },
+  saat: { color: colors.text3, fontSize: type.caption2, ...NUMERIC },
+  state: { color: colors.text3, fontSize: type.caption2, marginTop: spacing.s4 },
+  stateFail: { color: colors.danger },
+
   // ── Alıntı (baloncuğun içinde) ──
   // Şeritli sol kenar, sohbet uygulamalarının ortak dili: alıntıyı metinden
-  // ayıran şey renk değil o dikey çizgi. Renk tek başına yeterli olmazdı,
-  // kendi baloncuğumda zemin zaten renkli.
+  // ayıran şey renk değil o dikey çizgi.
   quote: {
     flexDirection: 'row', gap: spacing.sm,
-    // Karşı tarafın baloncuğu colors.card; beyaz katman açık temada beyaz
-    // üstünde beyazdı. bgHover her iki zeminde de ayrışıyor.
     backgroundColor: colors.bgHover,
     borderRadius: radius.sm,
-    padding: 7, marginBottom: 6,
+    padding: ALINTI_DOLGU, marginBottom: ALINTI_ALT,
   },
-  // Kendi baloncuğumun zemini vurgu renginde; aynı beyaz katman orada
-  // yeterince ayrışmıyordu.
-  // tema-bagimsiz: kendi baloncugumun zemini colors.accent; katman ona gore
+  // tema-bagimsiz: kendi baloncugumun zemini colors.accentFillStrong; katman ona gore
   quoteMine:       { backgroundColor: 'rgba(0,0,0,0.18)' },
   // accent-serbest: 3px alinti seridi, uzerinde metin yok
   quoteStripe:     { width: 3, borderRadius: 2, backgroundColor: colors.accent },
-  // tema-bagimsiz: kendi baloncugumun zemini colors.accent; katman ona gore
+  // tema-bagimsiz: kendi baloncugumun zemini colors.accentFillStrong; katman ona gore
   quoteStripeMine: { backgroundColor: 'rgba(255,255,255,0.55)' },
   quoteWho:  { color: colors.text2, fontSize: type.caption2, fontWeight: '800' },
   quoteText: { color: colors.text2, fontSize: type.caption, lineHeight: 16 },
   quoteGone: { fontStyle: 'italic', color: colors.text3 },
 
   // ── Sabit mesaj bandı (başlığın hemen altında) ──
-  // Alt kenarlık ŞART: bant listeyle aynı zeminde duruyor ve çizgi olmadan
-  // ilk mesaj bandın devamı gibi okunuyordu.
   pinBar: {
     flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: spacing.lg, paddingVertical: 7,
+    paddingHorizontal: spacing.lg, paddingVertical: PIN_DOLGU,
     backgroundColor: colors.bgElevated,
     borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.cardBorder,
   },
@@ -1286,8 +1686,8 @@ const makeStyles = (colors) => StyleSheet.create({
   // ── Yanıt önizlemesi (gönderme kutusunun üstünde) ──
   replyBar: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
-    marginHorizontal: spacing.lg, marginBottom: 6,
-    paddingVertical: 7, paddingHorizontal: 9,
+    marginHorizontal: KOMPOZITOR_KENAR, marginBottom: spacing.s8,
+    paddingVertical: PIN_DOLGU, paddingHorizontal: REPLY_DOLGU,
     backgroundColor: colors.card,
     borderRadius: radius.md,
     borderWidth: 1, borderColor: colors.cardBorder,
@@ -1298,45 +1698,64 @@ const makeStyles = (colors) => StyleSheet.create({
   replyText:   { color: colors.text2, fontSize: type.caption },
   replyClose:  { width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
 
-  chips: { flexDirection: 'row', gap: spacing.xs, marginTop: -6, marginBottom: 2 },
-  chipsMine:   { alignSelf: 'flex-end' },
-  chipsTheirs: { alignSelf: 'flex-start' },
+  // ── Tapback ──
+  // Baloncuğun DIŞ üst köşesi. Kenarlık sayfa zemini renginde: rozet
+  // baloncuğa değil, sayfaya oturuyormuş gibi görünsün.
+  chips: { position: 'absolute', top: -TAPBACK_BINME, flexDirection: 'row', gap: spacing.s4 },
+  chipsMine:   { left: -TAPBACK_YAN },
+  chipsTheirs: { right: -TAPBACK_YAN },
   chip: {
-    flexDirection: 'row', alignItems: 'center', gap: 3,
-    paddingHorizontal: 7, height: 24, borderRadius: 12,
-    backgroundColor: colors.bgElevated,
-    borderWidth: 1, borderColor: colors.cardBorder,
+    flexDirection: 'row', alignItems: 'center', gap: spacing.s4,
+    paddingHorizontal: spacing.s8, height: TAPBACK_H, borderRadius: TAPBACK_H / 2,
+    backgroundColor: colors.bgInput,
+    borderWidth: 2, borderColor: colors.bg,
   },
   // Kendi tepkim vurgulu: hangi rozetin bana ait olduğunu renk söylüyor.
-  chipMine:  { borderColor: colors.accentBorder, backgroundColor: colors.accentSoft },
-  chipEmoji: { fontSize: 12 },
+  chipMine:  { backgroundColor: colors.accentSoft, borderColor: colors.accentBorder },
+  chipEmoji: { fontSize: type.caption },
   chipCount: { color: colors.text2, fontSize: type.caption2, fontWeight: '700' },
 
-  listPad: { paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
+  // Kuyruk ve tapback baloncuğun dışına taşıyor; kenar boşluğu onları
+  // ekranın kenarına yapıştırmayacak kadar geniş olmalı.
+  listPad: { paddingHorizontal: spacing.s16, paddingVertical: spacing.s12 },
 
   emptyWrap: { paddingVertical: spacing.xl, alignItems: 'center', transform: [{ scaleY: -1 }] },
   emptyText: { color: colors.text3, fontSize: type.footnote, textAlign: 'center' },
 
-  // SÜTUN, satır DEĞİL. Önce `row` idi ve "Görüldü" metni baloncuğun kardeşi
-  // olduğu için altında değil YANINDA çiziliyordu (üstelik flex-end yüzünden
-  // solunda). Sütunda baloncuk ve etiket alt alta, hizalama alignItems ile.
-  bubbleRow:  { flexDirection: 'column', marginBottom: 6, position: 'relative' },
-  rowMine:    { alignItems: 'flex-end' },
-  rowTheirs:  { alignItems: 'flex-start' },
-
-  bubble: { maxWidth: '78%', paddingHorizontal: 13, paddingVertical: 9, borderRadius: radius.lg },
-  bubbleMine:   { backgroundColor: colors.accentFillStrong, borderBottomRightRadius: 4 },
-  bubbleTheirs: { backgroundColor: colors.card, borderBottomLeftRadius: 4 },
-  bubbleMediaOnly: { padding: 0, overflow: 'hidden' },
+  // ── Baloncuk ──
+  // 17/22 metin (HIG gövdesi), 14×9 dolgu, 18 köşe — iOS ölçüleri.
+  bubble: {
+    maxWidth: BALONCUK_EN,
+    paddingHorizontal: BALONCUK_YAN, paddingVertical: BALONCUK_DIKEY,
+    borderRadius: BALONCUK_YARICAP,
+  },
+  bubbleMine:   { backgroundColor: colors.accentFillStrong },
+  // Karşı tarafın baloncuğu surface2 idi ve koyu temada sayfa zemininden
+  // (bg) ayrışmıyordu: #15161A ile #0A0B0D arasındaki fark gözle zor
+  // seçiliyor. surface3 (#1C1E23) iOS'un zemin–baloncuk farkına yakın.
+  bubbleTheirs: { backgroundColor: colors.bgInput },
+  // `overflow: 'hidden'` KALDIRILDI: kuyruk baloncugun DISINA tasiyor ve
+  // kirpma onu yok ediyordu. Kose yuvarlakligi artik gorselin kendisinde
+  // (medyaTek), yani kirpmaya gerek kalmadi.
+  bubbleMediaOnly: { padding: 0 },
   // Paylasim karti baloncuk degil kart: icerik bizim degil, bir oyuna isaret.
   shareImgBos: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bgInput },
   shareImgHarf: { color: colors.text2, fontSize: type.title3, fontWeight: '800' },
+  // ARTIK BIR BALONCUK, kart degil: kuyrugu olan bir seyin kenarligi
+  // olamaz — kenarlik kuyrugu takip etmez ve kuyruk 'yapistirilmis'
+  // gorunur. Zemin de gelen baloncukla ayni (bgInput), boylece
+  // paylasim iOS'un zengin baglanti baloncugu gibi okunuyor.
+  // `overflow: 'hidden'` KALKTI (kuyrugu kirpiyordu); ust kose
+  // yuvarlakligi gorselin kendisine tasindi.
   shareCard: {
-    width: 240, backgroundColor: colors.card, borderRadius: radius.md,
-    borderWidth: 1, borderColor: colors.cardBorder, overflow: 'hidden',
+    width: 240, backgroundColor: colors.bgInput,
+    borderRadius: BALONCUK_YARICAP,
   },
-  shareImg:  { width: 240, height: 112, backgroundColor: colors.bgInput },
-  shareBody: { padding: spacing.sm, gap: 2 },
+  shareImg:  {
+    width: 240, height: 112, backgroundColor: colors.surfaceTile,
+    borderTopLeftRadius: BALONCUK_YARICAP, borderTopRightRadius: BALONCUK_YARICAP,
+  },
+  shareBody: { padding: spacing.sm, gap: spacing.s4 },
   shareName: { color: colors.text, fontSize: type.footnote, fontWeight: '700' },
   shareHint: { color: colors.text3, fontSize: type.caption2 },
   // Geri alınan mesaj: dolgusuz, kesikli çerçeve — baloncuk olduğu belli olsun
@@ -1346,35 +1765,45 @@ const makeStyles = (colors) => StyleSheet.create({
     borderWidth: 1, borderColor: colors.cardBorder, borderStyle: 'dashed',
   },
   goneText: { color: colors.text3, fontSize: type.footnote, fontStyle: 'italic' },
-  bubbleText:     { color: colors.text, fontSize: type.subhead, lineHeight: 20 },
-  bubbleTextMine: { color: '#fff' },
-  bubbleTextUnderMedia: { marginTop: 7 },
+  // Satır yüksekliği boydan büyük: emojinin altı/üstü kırpılıyordu.
+  emojiTek: { fontSize: EMOJI_BOY, lineHeight: EMOJI_BOY + 8 },
+  bubbleText:     { color: colors.text, fontSize: type.body, lineHeight: 22 },
+  bubbleTextMine: { color: colors.onAccent },
+  bubbleTextUnderMedia: { marginTop: spacing.s8 },
 
-  // 4:3 — telefon fotoğraflarının çoğunda üstten/alttan kırpma az oluyor
-  media: { width: 220, height: 165, borderRadius: radius.md, backgroundColor: colors.bgInput },
+  media: { width: MEDYA_EN, height: MEDYA_BOY, borderRadius: radius.md, backgroundColor: colors.bgInput },
+  // Salt gorselde baloncuk = gorsel, yani kose baloncuk yaricapinda olmali.
+  medyaTek: { borderRadius: BALONCUK_YARICAP },
   // GIF oranlari cok degisken (kare, genis, uzun). Sabit yukseklik yerine
   // en-boy orani birakip contain kullaniyoruz — kirpma olmuyor.
-  // GIF'in kendi baloncugu yok; alintiya bir kap gerekiyor ki genislik
-  // GIF'e uysun ve metin tasmasin.
   gifQuoteWrap: { width: 200 },
-  gifBubble: { width: 200, height: 200, borderRadius: radius.md, backgroundColor: colors.bgInput },
+  gifKap: { position: 'relative' },
+  gifBubble: {
+    width: GIF_OLCU, height: GIF_OLCU,
+    borderRadius: BALONCUK_YARICAP, backgroundColor: colors.bgInput,
+  },
 
+  // ── Kompozitör — iOS 26 [ÖLÇÜLDÜ] ──
+  // "+" Ø40 soldan 28, alan yüksekliği 40 tam yuvarlak, aradaki boşluk 12.
   composer: {
-    flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm,
-    paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.sm,
-    borderTopWidth: 1, borderTopColor: colors.cardBorder,
+    flexDirection: 'row', alignItems: 'flex-end', gap: spacing.s12,
+    paddingHorizontal: KOMPOZITOR_KENAR, paddingTop: spacing.s8,
+  },
+  ekBtn: { width: EK_BTN, height: EK_BTN, borderRadius: EK_BTN / 2 },
+  ekHit: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  // Kapsül girdiyle gönder okunu birlikte taşıyor; okun yeri alanın İÇİ.
+  girdiKapsul: {
+    flex: 1, flexDirection: 'row', alignItems: 'flex-end',
+    minHeight: EK_BTN, borderRadius: KAPSUL_YARICAP,
+    paddingLeft: spacing.s16, paddingRight: spacing.s4, paddingVertical: spacing.s4,
   },
   input: {
-    flex: 1, maxHeight: 120, color: colors.text, fontSize: type.subhead,
-    backgroundColor: colors.bgInput, borderRadius: radius.xl,
-    paddingHorizontal: spacing.md, paddingTop: 10, paddingBottom: 10,
+    flex: 1, maxHeight: 120, color: colors.text, fontSize: type.body,
+    paddingTop: GIRDI_DIKEY, paddingBottom: GIRDI_DIKEY,
   },
-  attachBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  // 40×40 + hitSlop 6 → etkin dokunma alanı 52×52, HIG alt sınırının üstünde
   sendBtn: {
-    // accent-serbest: 40pt daire, yalniz simge
-    width: 40, height: 40, borderRadius: 20, backgroundColor: colors.accent,
+    width: GONDER_BTN, height: GONDER_BTN, borderRadius: GONDER_BTN / 2,
+    backgroundColor: colors.accentFillStrong,
     alignItems: 'center', justifyContent: 'center',
   },
-  sendBtnOff: { backgroundColor: colors.bgHover },
 });

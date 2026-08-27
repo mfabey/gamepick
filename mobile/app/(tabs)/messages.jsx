@@ -22,11 +22,20 @@ import { getSession, subscribeSession } from '../../src/services/session';
 import { refreshUnread } from '../../src/services/unread';
 import EmptyState from '../../src/components/EmptyState';
 import { getAvatarPreset } from '../../src/utils/avatar';
-import { radius, spacing, type, PRESSED, TAB_SPACE } from '../../src/theme';
+import { spacing, type, PRESSED, TAB_SPACE } from '../../src/theme';
 import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { useTabBarScroll } from '../../src/context/TabBarContext';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useTabPressAction, scrollRefToTop } from '../../src/hooks/useTabPressAction';
+
+// ── iOS Messages listesi ölçüleri [ÖLÇÜLDÜ] ──
+// iOS 26.5 Simulator, iPhone 17 Pro (402pt). Ayrıntı için
+// .claude/skills/ios-messages/SKILL.md.
+
+/** Avatarın solundaki oluk — okunmamış noktasının yeri. */
+const OLUK = 26;
+/** Liste avatarı. Bizde 46'ydı; ölçüm 45. */
+const AVATAR = 45;
 
 /** Kısa zaman: bugünse saat, bu haftaysa gün, değilse tarih. */
 function shortTime(ts, lang) {
@@ -112,8 +121,9 @@ export default function MessagesScreen() {
           scrollEventThrottle={16}
           data={rows}
           keyExtractor={(r) => r.cid}
-          estimatedItemSize={72}
+          estimatedItemSize={78}
           contentContainerStyle={{ paddingBottom: TAB_SPACE }}
+          ItemSeparatorComponent={Ayirici}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.text2} />
           }
@@ -129,6 +139,30 @@ export default function MessagesScreen() {
   );
 }
 
+/**
+ * Satır ayracı.
+ *
+ * MODÜL DÜZEYİNDE bir bileşen, satır içi ok fonksiyonu değil: FlashList
+ * `ItemSeparatorComponent`i kimlik karşılaştırmasıyla tutuyor ve her
+ * render'da yeni bir fonksiyon vermek bütün ayraçları yeniden çizdiriyor.
+ */
+function Ayirici() {
+  const styles = useStyles(makeStyles);
+  return <View style={styles.ayirici} />;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Konuşma satırı — iOS Messages listesinin düzeni.
+//
+// ── SOLDAKİ OLUK ──
+// Avatarın solunda 26pt boşluk var ve keyfi değil: okunmamış noktasının yeri.
+// iOS'ta nokta SOLDA, satırın en başında; bizde sağda, saatin altındaydı.
+// Sol taraf gözün satıra girdiği yer, yani "bunu okumadın" bilgisinin
+// okunacağı ilk nokta orası.
+//
+// Ölçüm (iOS 26.5 Simulator, iPhone 17 Pro): avatar Ø45, merkezi soldan
+// 48.3pt (yani sol kenarı 25.8), metin sütunu 86pt'de başlıyor.
+// ─────────────────────────────────────────────────────────────────────────────
 function ConversationRow({ item, onPress, t, lang }) {
   const styles = useStyles(makeStyles);
   const preset = getAvatarPreset(item.other.avatar);
@@ -136,26 +170,41 @@ function ConversationRow({ item, onPress, t, lang }) {
 
   return (
     <Pressable style={({ pressed }) => [styles.row, pressed && PRESSED]} onPress={onPress}>
-      {preset ? (
-        <View style={[styles.avatar, { backgroundColor: preset.bg }]}>
-          <Ionicons name={preset.icon} size={21} color={preset.iconColor} />
-        </View>
-      ) : (
-        <View style={styles.avatar}>
-          <Text style={styles.avatarLetter}>{name.charAt(0).toUpperCase()}</Text>
-        </View>
-      )}
+      {/* Okunmamış oluğu — nokta yoksa da yer kaplıyor, aksi hâlde okunmuş
+          ve okunmamış satırlar farklı hizada duruyor. */}
+      <View style={styles.oluk}>
+        {item.unread ? <View style={styles.dot} /> : null}
+      </View>
 
-      {/* Cevrimici noktasi avatarin uzerinde. presence null ise (kullanici
-          paylasmiyorsa) hicbir sey cizilmiyor. */}
-      {item.presence?.online ? <View style={styles.onlineDot} /> : null}
+      <View>
+        {preset ? (
+          <View style={[styles.avatar, { backgroundColor: preset.bg }]}>
+            <Ionicons name={preset.icon} size={21} color={preset.iconColor} />
+          </View>
+        ) : (
+          <View style={styles.avatar}>
+            <Text style={styles.avatarLetter}>{name.charAt(0).toUpperCase()}</Text>
+          </View>
+        )}
+
+        {/* Cevrimici noktasi avatarin uzerinde. presence null ise (kullanici
+            paylasmiyorsa) hicbir sey cizilmiyor. */}
+        {item.presence?.online ? <View style={styles.onlineDot} /> : null}
+      </View>
 
       <View style={styles.rowMid}>
-        <Text style={styles.name} numberOfLines={1}>{name}</Text>
+        <View style={styles.ustSatir}>
+          <Text style={styles.name} numberOfLines={1}>{name}</Text>
+          {/* Saat ADIN HİZASINDA, satırın sonunda değil: iOS'ta zaman satırın
+              üst çizgisine ait ve önizleme onun altından tam genişlikte
+              akıyor. Sağda ayrı bir sütun olarak dursaydı önizleme iki
+              satıra çıkamazdı. */}
+          <Text style={styles.time}>{shortTime(item.lastAt, lang)}</Text>
+        </View>
         {/* Metinsiz medya mesajında sunucu `lastKind` gönderiyor; etiket burada
             çevriliyor çünkü kullanıcının dili sunucuda değil, istemcide belli.
             Metin varsa metin kazanır. */}
-        <Text style={[styles.preview, item.unread && styles.previewUnread]} numberOfLines={1}>
+        <Text style={[styles.preview, item.unread && styles.previewUnread]} numberOfLines={2}>
           {item.lastDeleted
             ? t('msg.wasUndone')
             : item.lastText
@@ -166,11 +215,6 @@ function ConversationRow({ item, onPress, t, lang }) {
             : item.lastKind === 'photo' ? `📷 ${t('msg.photo')}`
             : ''}
         </Text>
-      </View>
-
-      <View style={styles.rowEnd}>
-        <Text style={styles.time}>{shortTime(item.lastAt, lang)}</Text>
-        {item.unread && <View style={styles.dot} />}
       </View>
     </Pressable>
   );
@@ -191,29 +235,42 @@ const makeStyles = (colors) => StyleSheet.create({
   title:   { flex: 1, color: colors.text, fontSize: type.title1, fontWeight: '700', letterSpacing: -0.28 },
 
 
+  // Sol dolgu YOK: oluğun kendisi (26pt) o boşluğu veriyor.
   row: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.md,
-    paddingVertical: spacing.md, paddingHorizontal: spacing.s20,
+    flexDirection: 'row', alignItems: 'center',
+    paddingVertical: spacing.s12, paddingRight: spacing.s16,
   },
+  // Okunmamış oluğu — nokta olsa da olmasa da yer kaplıyor.
+  oluk: { width: OLUK, alignItems: 'center', justifyContent: 'center' },
   avatar: {
-    width: 46, height: 46, borderRadius: 23, backgroundColor: colors.bgInput,
+    width: AVATAR, height: AVATAR, borderRadius: AVATAR / 2, backgroundColor: colors.bgInput,
     alignItems: 'center', justifyContent: 'center',
   },
   avatarLetter: { color: colors.text2, fontSize: type.subhead, fontWeight: '800' },
 
   // Avatarin sag altina oturuyor; koyu cerceve arka planla ayirtiyor.
   onlineDot: {
-    position: 'absolute', left: 50, top: 46,
+    position: 'absolute', right: -1, bottom: -1,
     width: 13, height: 13, borderRadius: 7,
     backgroundColor: colors.green, borderWidth: 2.5, borderColor: colors.bg,
   },
-  rowMid:  { flex: 1, gap: 2 },
-  name:    { color: colors.text, fontSize: type.subhead, fontWeight: '700' },
-  preview: { color: colors.text3, fontSize: type.footnote },
-  previewUnread: { color: colors.text, fontWeight: '600' },
+  // 16pt: oluk (26) + avatar (45) + bu = 87, ölçülen metin sütunu 86.
+  rowMid:   { flex: 1, marginLeft: spacing.s16 },
+  ustSatir: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.s8 },
+  // iOS listesi adı gövde ölçüsünde yazıyor (17); bizde 15'ti ve önizlemeyle
+  // arasındaki fark yalnızca kalınlıktan çıkıyordu.
+  name:    { flex: 1, color: colors.text, fontSize: type.body, fontWeight: '600' },
+  preview: { color: colors.text3, fontSize: type.subhead, lineHeight: 20 },
+  previewUnread: { color: colors.text2, fontWeight: '600' },
 
-  rowEnd: { alignItems: 'flex-end', gap: 6 },
-  time:   { color: colors.text3, fontSize: type.caption2 },
-  // accent-serbest: 9x9 okunmamis noktasi, uzerinde metin yok
-  dot:    { width: 9, height: 9, borderRadius: 5, backgroundColor: colors.accent },
+  time:   { color: colors.text3, fontSize: type.footnote },
+  // accent-serbest: 10x10 okunmamis noktasi, uzerinde metin yok
+  dot:    { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.accent },
+
+  // Ayraç metin sütunundan başlıyor: avatarın altından geçen bir çizgi
+  // satırları değil avatarları ayırıyormuş gibi duruyor.
+  ayirici: {
+    height: StyleSheet.hairlineWidth, backgroundColor: colors.cardBorder,
+    marginLeft: OLUK + AVATAR + spacing.s16,
+  },
 });

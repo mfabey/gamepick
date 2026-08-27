@@ -1,10 +1,8 @@
 {
-  "app/(tabs)/messages.jsx": 2,
   "app/(tabs)/profile.jsx": 12,
   "app/(tabs)/reviews.jsx": 4,
   "app/(tabs)/videos.jsx": 7,
   "app/account.jsx": 15,
-  "app/chat/[uid].jsx": 20,
   "app/collection/[id].jsx": 9,
   "app/collections.jsx": 16,
   "app/delete-account.jsx": 4,
