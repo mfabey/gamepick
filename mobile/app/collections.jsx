@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -34,6 +34,7 @@ export default function CollectionsScreen() {
 
 function CollectionsScreenContent() {
   const styles = useStyles(makeStyles);
+  const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const router = useRouter();
   const { t } = useLanguage();
@@ -122,7 +123,7 @@ function CollectionsScreenContent() {
           data={collections}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 30 }]}
           showsVerticalScrollIndicator={false}
         />
       )}
@@ -228,7 +229,7 @@ const makeStyles = (colors) => StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
 
-  list: { paddingHorizontal: spacing.md, paddingBottom: 30 },
+  list: { paddingHorizontal: spacing.md },
   row: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.md,
     paddingVertical: 10, paddingRight: 6,

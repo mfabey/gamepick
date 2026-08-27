@@ -28,6 +28,7 @@ import { useOwnedGames } from '../src/hooks/useOwnedGames';
 import { useSeen } from '../src/hooks/useSeen';
 import { useDismissed } from '../src/hooks/useDismissed';
 import { useForYouFeed } from '../src/hooks/useForYouFeed';
+import { useAltBosluk } from '../src/hooks/useAltBosluk';
 import { genreSlugsFor } from '../src/services/recommend';
 import { recordSignal } from '../src/services/tasteProfile';
 import { recordDismiss } from '../src/services/dismissStore';
@@ -135,6 +136,9 @@ export default function SwipeScreen() {
 
   const top = deck[0];
   const initialLoading = items.length === 0 && loadingMore;
+  // Aksiyon satırı ekranın en altında; Android gezinme çubuğu 48dp'ye kadar
+  // çıkıyor ve 18dp'lik dolgu 62dp'lik düğmelerin altını yutuyordu.
+  const altBosluk = useAltBosluk(18);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -178,7 +182,7 @@ export default function SwipeScreen() {
 
       {/* Aksiyon butonları — kaydırmak istemeyen kullanıcı için */}
       {remaining > 0 && !initialLoading && (
-        <View style={styles.actions}>
+        <View style={[styles.actions, { paddingBottom: altBosluk }]}>
           <Pressable
             style={[styles.actionBtn, styles.passBtn]}
             onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); commit(top, false); }}
@@ -370,7 +374,8 @@ const makeStyles = (colors) => StyleSheet.create({
 
   actions: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 22, paddingVertical: 18,
+    // paddingBottom ÇALIŞMA ZAMANINDA (useAltBosluk) — alt kenar güvenli.
+    gap: 22, paddingTop: 18,
   },
   actionBtn: {
     width: 62, height: 62, borderRadius: 31,

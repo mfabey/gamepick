@@ -7,7 +7,7 @@
 // ayarlarının arasında gezinmemeli.
 // ─────────────────────────────────────────────────────────────────────────────
 import { View, Text, Pressable, StyleSheet, ScrollView, Switch, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
@@ -42,6 +42,7 @@ const SUPPORT_EMAIL = 'support@gamerisen.com';
 export default function SettingsScreen() {
   const { colors, pref, setPref } = useTheme();
   const styles = useStyles(makeStyles);
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { t, lang, setLang } = useLanguage();
   const { account } = useAuth();
@@ -114,7 +115,7 @@ export default function SettingsScreen() {
         <View style={styles.iconBtn} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 40 }]} showsVerticalScrollIndicator={false}>
         {/* BÖLÜM BAŞLIĞI YOK — gruplama boşlukla yapılıyor. Kategori adları
             ("Genel", "Gizlilik", "Hesap") bilgi taşımıyordu; kullanıcı satırı
             zaten okuyor. Ekranı üretilmiş bir taksonomi gibi gösteriyorlardı. */}
@@ -216,5 +217,5 @@ const makeStyles = (colors) => StyleSheet.create({
   title: { flex: 1, textAlign: 'center', fontSize: type.body, fontWeight: '900', color: colors.text },
   iconBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
 
-  body: { padding: spacing.lg, paddingBottom: 40 },
+  body: { padding: spacing.lg },
 });

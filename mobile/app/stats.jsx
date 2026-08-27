@@ -7,7 +7,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { View, Text, Pressable, StyleSheet, ScrollView, Share } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -36,6 +36,7 @@ export default function StatsScreen() {
 
 function StatsScreenContent() {
   const styles = useStyles(makeStyles);
+  const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const router = useRouter();
   const { t } = useLanguage();
@@ -107,7 +108,7 @@ function StatsScreenContent() {
           onAction={() => router.replace('/games')}
         />
       ) : (
-        <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 40 }]} showsVerticalScrollIndicator={false}>
           {/* Kahraman sayı — haftanın ana metriği */}
           <View style={styles.hero}>
             <Text style={styles.heroNum}>{report.discovered}</Text>
@@ -199,7 +200,7 @@ const makeStyles = (colors) => StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
 
-  body: { paddingHorizontal: spacing.lg, paddingBottom: 40 },
+  body: { paddingHorizontal: spacing.lg },
 
   hero: {
     alignItems: 'center', paddingVertical: 28,

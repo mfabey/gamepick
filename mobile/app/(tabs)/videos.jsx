@@ -40,7 +40,8 @@ import ShareToFriendSheet from '../../src/components/ShareToFriendSheet';
 import { recordSignal } from '../../src/services/tasteProfile';
 import { reportActivity } from '../../src/api/social';
 import { recordSeen } from '../../src/services/seenStore';
-import { radius, spacing, PRESSED, TAB_SPACE, TAB_BAR, type, motion } from '../../src/theme';
+import { radius, spacing, PRESSED, TAB_BAR, type, motion } from '../../src/theme';
+import { useTabBosluk } from '../../src/hooks/useAltBosluk';
 import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { useLanguage } from '../../src/context/LanguageContext';
 
@@ -454,6 +455,9 @@ const VideoItem = memo(function VideoItem({
   // sensör yuvasının altında kalıp kırpılıyordu. Dikeyde bu insetler 0, yani
   // ekleme dikey görünümü değiştirmiyor.
   const itemInsets = useSafeAreaInsets();
+  // Dikey kaplamalar sekme çubuğunun üstünde duruyor; çubuğun yüksekliği
+  // alt inset'e bağlı, sabit sayı üç düğmeli gezinmede kısa kalıyordu.
+  const tabBosluk = useTabBosluk();
 
   // Daireler ve boşluk küçülünce sütun 315 → ~254pt: 402'lik ekrana rahat
   // sığıyor, üstelik video için ortada daha çok yer kalıyor.
@@ -468,8 +472,8 @@ const VideoItem = memo(function VideoItem({
   // üstüne 12pt nefes payı. Aksi hâlde yatay şerit çubuğun altında kalıyordu.
   const railBottom = isLandscape
     ? TAB_BAR.height + itemInsets.bottom + 12
-    : TAB_SPACE + 90;
-  const infoBottom = isLandscape ? 80 : TAB_SPACE + 6;
+    : tabBosluk + 90;
+  const infoBottom = isLandscape ? 80 : tabBosluk + 6;
   const { isWatched, toggle } = useWishlist();
   const { account } = useAuth();
   const collections = useCollections();

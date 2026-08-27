@@ -6,7 +6,8 @@ import { BottomFade } from '../../src/components/EdgeFade';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchTrending, fetchGames } from '../../src/api/games';
-import { radius, spacing, TAB_SPACE, PRESSED, type, SECTION_TITLE, TOUCH_MIN } from '../../src/theme';
+import { radius, spacing, PRESSED, type, SECTION_TITLE, TOUCH_MIN } from '../../src/theme';
+import { useTabBosluk } from '../../src/hooks/useAltBosluk';
 import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { useTabBarScroll } from '../../src/context/TabBarContext';
 import { useLanguage } from '../../src/context/LanguageContext';
@@ -59,6 +60,7 @@ const FALLBACK_SLUGS = ['action', 'adventure', 'role-playing-games-rpg', 'indie'
 
 export default function HomeScreen() {
   const styles = useStyles(makeStyles);
+  const tabBosluk = useTabBosluk();
   const { colors } = useTheme();
   // Sekmeye tekrar basınca listeyi başa sar (iOS'ta beklenen davranış)
   const listRef = useRef(null);
@@ -606,7 +608,7 @@ export default function HomeScreen() {
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         ListFooterComponent={
-          <View style={{ height: TAB_SPACE, alignItems: 'center', justifyContent: 'center' }}>
+          <View style={{ height: tabBosluk, alignItems: 'center', justifyContent: 'center' }}>
             {loadingMore ? <ActivityIndicator color={colors.accent} /> : null}
           </View>
         }

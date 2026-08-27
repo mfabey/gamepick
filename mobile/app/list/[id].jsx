@@ -6,7 +6,7 @@ import {
   View, Text, Pressable, StyleSheet, ActivityIndicator, Alert,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -22,6 +22,7 @@ import GameRow, { SATIR_Y } from '../../src/components/GameRow';
 
 export default function PublicListScreen() {
   const styles = useStyles(makeStyles);
+  const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const router = useRouter();
   const { id } = useLocalSearchParams();
@@ -130,7 +131,7 @@ export default function PublicListScreen() {
         data={list.games || []}
         keyExtractor={(item, i) => `${item.id}_${i}`}
         renderItem={renderItem}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 30 }]}
         estimatedItemSize={SATIR_Y}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
@@ -207,7 +208,7 @@ const makeStyles = (colors) => StyleSheet.create({
   likeBtn: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   likeCount: { color: colors.text3, fontSize: type.footnote, fontWeight: '700' },
 
-  list: { paddingHorizontal: spacing.s20, paddingBottom: 30 },
+  list: { paddingHorizontal: spacing.s20 },
 
   emptyTitle: { color: colors.text, fontSize: type.body, fontWeight: '800', marginTop: spacing.md },
 

@@ -22,7 +22,8 @@ import { getSession, subscribeSession } from '../../src/services/session';
 import { refreshUnread } from '../../src/services/unread';
 import EmptyState from '../../src/components/EmptyState';
 import { getAvatarPreset } from '../../src/utils/avatar';
-import { spacing, type, PRESSED, TAB_SPACE } from '../../src/theme';
+import { spacing, type, PRESSED } from '../../src/theme';
+import { useTabBosluk } from '../../src/hooks/useAltBosluk';
 import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { useTabBarScroll } from '../../src/context/TabBarContext';
 import { useLanguage } from '../../src/context/LanguageContext';
@@ -51,6 +52,7 @@ function shortTime(ts, lang) {
 
 export default function MessagesScreen() {
   const styles = useStyles(makeStyles);
+  const tabBosluk = useTabBosluk();
   const { colors } = useTheme();
   const router = useRouter();
   const { t, lang } = useLanguage();
@@ -122,7 +124,7 @@ export default function MessagesScreen() {
           data={rows}
           keyExtractor={(r) => r.cid}
           estimatedItemSize={78}
-          contentContainerStyle={{ paddingBottom: TAB_SPACE }}
+          contentContainerStyle={{ paddingBottom: tabBosluk }}
           ItemSeparatorComponent={Ayirici}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.text2} />

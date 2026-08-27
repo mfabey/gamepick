@@ -34,7 +34,8 @@ import { TopFade, BottomFade } from '../../src/components/EdgeFade';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { radius, spacing, type, TAB_SPACE, PRESSED, PRESSED_CARD, NUMERIC, SECTION_TITLE, basiliYuzey } from '../../src/theme';
+import { radius, spacing, type, PRESSED, PRESSED_CARD, NUMERIC, SECTION_TITLE, basiliYuzey } from '../../src/theme';
+import { useTabBosluk } from '../../src/hooks/useAltBosluk';
 import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { useTabBarScroll } from '../../src/context/TabBarContext';
 import { useLanguage } from '../../src/context/LanguageContext';
@@ -75,6 +76,7 @@ function tileWidth(windowWidth) {
 
 export default function ProfileScreen() {
   const styles = useStyles(makeStyles);
+  const tabBosluk = useTabBosluk();
   const { colors } = useTheme();
   // Sekmeye tekrar basınca listeyi başa sar (iOS'ta beklenen davranış)
   const scrollRef = useRef(null);
@@ -236,7 +238,7 @@ export default function ProfileScreen() {
       <BottomFade />
       <ScrollView
         ref={scrollRef}
-        contentContainerStyle={styles.body}
+        contentContainerStyle={[styles.body, { paddingBottom: tabBosluk + spacing.s16 }]}
         showsVerticalScrollIndicator={false}
         onScroll={onTabScroll}
         scrollEventThrottle={16}
@@ -687,7 +689,9 @@ const makeStyles = (colors) => StyleSheet.create({
   basili: { backgroundColor: basiliYuzey(colors) },
   safe: { flex: 1, backgroundColor: colors.bg },
   // Maket ekran kenari 20.
-  body: { padding: BODY_PAD, paddingBottom: TAB_SPACE + spacing.s16 },
+  // paddingBottom ÇALIŞMA ZAMANINDA (useTabBosluk): sekme çubuğu yüksekliği
+  // alt inset'e bağlı, sabit sayı üç düğmeli gezinmede yetmiyor.
+  body: { padding: BODY_PAD },
 
   headRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm },
   // Maket: ekran basligi 28 / 700 / -0.28. Uc sekmede uc farkli deger vardi.

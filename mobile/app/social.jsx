@@ -14,7 +14,7 @@ import {
   View, Text, Pressable, StyleSheet, TextInput, ActivityIndicator,
   Alert, ScrollView, RefreshControl, KeyboardAvoidingView, Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -187,6 +187,7 @@ function Gate({ icon, text, ctaLabel, onPress, onBack, title }) {
 
 function UsernameSetup({ onDone, onBack }) {
   const styles = useStyles(makeStyles);
+  const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const { t } = useLanguage();
   const [name, setName] = useState('');
@@ -236,7 +237,7 @@ function UsernameSetup({ onDone, onBack }) {
     <SafeAreaView style={styles.safe} edges={['top']}>
       <Header title={t('soc.title')} onBack={onBack} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.setupBody} keyboardShouldPersistTaps="handled">
+        <ScrollView contentContainerStyle={[styles.setupBody, { paddingBottom: insets.bottom + spacing.xl }]} keyboardShouldPersistTaps="handled">
           <Ionicons name="people-circle-outline" size={58} color={colors.accent} />
           <Text style={styles.setupTitle}>{t('soc.setupTitle')}</Text>
           <Text style={styles.setupText}>{t('soc.setupText')}</Text>
@@ -296,6 +297,7 @@ const ACT_LABEL = {
 
 function FeedTab() {
   const styles = useStyles(makeStyles);
+  const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const { t } = useLanguage();
   const router = useRouter();
@@ -330,7 +332,7 @@ function FeedTab() {
 
   return (
     <ScrollView
-      contentContainerStyle={styles.list}
+      contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 30 }]}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text3} />}
       showsVerticalScrollIndicator={false}
     >
@@ -374,6 +376,7 @@ function timeAgo(ts, t) {
 
 function FriendsTab() {
   const styles = useStyles(makeStyles);
+  const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const { t } = useLanguage();
   const router = useRouter();
@@ -479,7 +482,7 @@ function FriendsTab() {
         ) : null}
       </View>
 
-      <ScrollView contentContainerStyle={styles.list} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 30 }]} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         {showing ? (
           results.length === 0
             ? <Text style={styles.inlineEmpty}>{q.trim().length < 2 ? t('soc.searchHint') : t('soc.noResults')}</Text>
@@ -549,6 +552,7 @@ function FriendsTab() {
 
 function RequestsTab() {
   const styles = useStyles(makeStyles);
+  const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const { t } = useLanguage();
   const [data, setData] = useState(null);
@@ -569,7 +573,7 @@ function RequestsTab() {
   if (none) return <EmptyState icon="mail-outline" title={t('soc.noRequests')} />;
 
   return (
-    <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
+    <ScrollView contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 30 }]} showsVerticalScrollIndicator={false}>
       {data.incoming.length > 0 && (
         <>
           <Text style={styles.sectionLabel}>{t('soc.incoming')}</Text>
@@ -664,7 +668,7 @@ const makeStyles = (colors) => StyleSheet.create({
   tabText: { color: colors.text2, fontSize: type.footnote, fontWeight: '700' },
   tabTextOn: { color: colors.bg },
 
-  list: { paddingHorizontal: spacing.md, paddingBottom: 30 },
+  list: { paddingHorizontal: spacing.md },
   sectionLabel: {
     ...SECTION_TITLE, color: colors.text2,
     marginBottom: spacing.s8, marginTop: spacing.xs,

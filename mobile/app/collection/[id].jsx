@@ -7,7 +7,7 @@ import {
   KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -27,6 +27,7 @@ import GameRow, { SATIR_Y } from '../../src/components/GameRow';
 
 export default function CollectionDetailScreen() {
   const styles = useStyles(makeStyles);
+  const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const router = useRouter();
   const { id } = useLocalSearchParams();
@@ -144,7 +145,7 @@ export default function CollectionDetailScreen() {
           data={games}
           keyExtractor={(item) => String(item.id)}
           renderItem={renderItem}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 30 }]}
           estimatedItemSize={SATIR_Y}
           showsVerticalScrollIndicator={false}
         />
@@ -207,7 +208,7 @@ const makeStyles = (colors) => StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
 
-  list: { paddingHorizontal: spacing.s20, paddingBottom: 30 },
+  list: { paddingHorizontal: spacing.s20 },
 
 
 

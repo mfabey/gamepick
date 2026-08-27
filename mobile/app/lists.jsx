@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -25,6 +25,7 @@ import { useLanguage } from '../src/context/LanguageContext';
 
 export default function ListsScreen() {
   const styles = useStyles(makeStyles);
+  const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const router = useRouter();
   const { t } = useLanguage();
@@ -154,7 +155,7 @@ export default function ListsScreen() {
           data={items}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 30 }]}
           showsVerticalScrollIndicator={false}
           onEndReached={onEnd}
           onEndReachedThreshold={0.5}
@@ -251,7 +252,7 @@ const makeStyles = (colors) => StyleSheet.create({
   tabText: { color: colors.text2, fontSize: type.footnote, fontWeight: '700' },
   tabTextOn: { color: colors.bg },
 
-  list: { paddingHorizontal: spacing.md, paddingBottom: 30 },
+  list: { paddingHorizontal: spacing.md },
   card: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: 11 },
   covers: {
     width: 66, height: 66, borderRadius: radius.md, overflow: 'hidden',

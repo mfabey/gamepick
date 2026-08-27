@@ -245,3 +245,24 @@ yanındaki animasyonsuz referans 22pt.
 
 `entering` yalnız BAĞLANIRKEN çalışıyor, yani tepki eklendiğinde — sohbet
 açılırken zaten duran rozetler animasyonsuz geliyor, doğrusu da bu.
+
+## Ek: simülatörde ANIMASYON DOĞRULAMA tuzağı
+
+Bu oturumda saatler harcandı; bir daha harcanmasın.
+
+`swipe` ve `touch_path` parmağı **yol biter bitmez kaldırıyor**. `touch_path`
+sonuna aynı noktadan bekleme noktaları koymak dokunuşu basılı TUTMUYOR.
+Yaylanarak geri dönen bir etkileşimde (bırakınca 0'a dönen kaydırma gibi)
+ekran görüntüsü her zaman OTURMUŞ hâli yakalıyor — özellik çalışsa bile
+"çalışmıyor" gibi görünüyor.
+
+**Güvenilir yöntemler:**
+1. Geri dönüşü geçici kapat (`.onEnd(() => {})`), ölç, geri al.
+2. Paylaşılan değere sabit bir başlangıç ver (`useSharedValue(-56)`), ölç.
+3. Worklet'in içine `console.log` koy ve Metro çıktısını oku — EN KESİN
+   yöntem: jestin başlayıp başlamadığını, hangi değerin stile ulaştığını
+   doğrudan söylüyor.
+
+**Ayrıca: Fast Refresh'e güvenme.** Bu oturumda birkaç ölçüm, dosya
+değişmiş ama uygulamaya ulaşmamışken alındı ve yanlış sonuç verdi. Ölçüm
+öncesi `simctl terminate` + `launch` ile sert yeniden başlat.

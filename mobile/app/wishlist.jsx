@@ -1,7 +1,7 @@
 import { memo, useEffect, useState, useCallback } from 'react';
 import { View, Text, Pressable, StyleSheet, Alert } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchCardPrice } from '../src/api/games';
@@ -23,6 +23,7 @@ export default function WishlistScreen() {
 
 function WishlistScreenContent() {
   const styles = useStyles(makeStyles);
+  const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const router = useRouter();
   const { t } = useLanguage();
@@ -76,7 +77,7 @@ function WishlistScreenContent() {
           renderItem={renderWish}
           // Yatay dolgu SATIRDA değil listede: ayırıcı çizgi kenardan
           // kenara gitmiyor, metin bloğuyla hizalanıyor.
-          contentContainerStyle={{ paddingBottom: 32, paddingHorizontal: spacing.s20 }}
+          contentContainerStyle={{ paddingBottom: insets.bottom + 32, paddingHorizontal: spacing.s20 }}
           // Sabit yükseklikli satır → tahmin değil ÖLÇÜ (Faz 2 sözleşmesi).
           estimatedItemSize={SATIR_Y}
           showsVerticalScrollIndicator={false}

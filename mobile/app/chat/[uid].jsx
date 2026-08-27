@@ -8,7 +8,7 @@
 // Gönderim yanıtındaki mesajı yerel olarak eklediğimiz için aynı mesaj iki kez
 // gelir; kimliğe göre elenmezse ekranda çift görünür.
 // ─────────────────────────────────────────────────────────────────────────────
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo, memo } from 'react';
 import {
   View, Text, TextInput, Pressable, StyleSheet, FlatList,
   ActivityIndicator, KeyboardAvoidingView, Platform, Alert, Keyboard, Clipboard,
@@ -174,6 +174,27 @@ const MEDYA_BOY = 165;
 // GIF oranları çok değişken; kare kap + contain, kırpma olmuyor.
 const GIF_OLCU = 200;
 
+
+/**
+ * Geçici baloncuğu sunucunun döndürdüğü gerçeğiyle değiştirir.
+ *
+ * ── ÖNCE VAR MI DİYE BAKIYOR ──
+ * Pusher mesajı GÖNDERENE DE düşürüyor (bkz. dosya başlığı). Yanıt
+ * gelmeden önce yankı düşmüşse gerçek mesaj listede ZATEN var; düz bir
+ * `map` o durumda tmp'yi ikinci bir kopyayla değiştiriyor ve aynı
+ * kimlikten iki satır kalıyor.
+ *
+ * Cihazda görüldü: "Encountered two children with the same key".
+ * Hata koddaydı ama ERİŞİLEMİYORDU — Pusher hiç bağlanmadığı için yankı
+ * hiç gelmiyordu (bkz. services/realtime.js'teki içe aktarım düzeltmesi).
+ * Bağlantı çalışır çalışmaz yarış gerçek oldu.
+ */
+function tmpDegistir(liste, tempId, gercek) {
+  return liste.some((m) => m.id === gercek.id)
+    // Yankı bizden önce düşmüş: tmp satırını at, gerçeği yerinde bırak.
+    ? liste.filter((m) => m.id !== tempId)
+    : liste.map((m) => (m.id === tempId ? gercek : m));
+}
 
 function girisYayla() {
   'worklet';
@@ -351,7 +372,17 @@ export default function ChatScreen() {
   // Paylaşılan değer: her satır kendi `useAnimatedStyle`inde bunu okuyor,
   // yani kaydırma UI iş parçacığında kalıyor ve JS'e hiç uğramıyor.
   const kayma = useSharedValue(0);
-  const saatSurukle = Gesture.Pan()
+  // ── JEST NESNESİ EZBERLENİYOR ──
+  // RNGH'nin önerisi: ezberlenmezse her render'da yeni bir Gesture nesnesi
+  // üretiliyor ve GestureDetector yerel işleyiciyi söküp yeniden bağlıyor.
+  // Bu ekran 4 saniyede bir yokluyor (yedek yoklama), yani render sık.
+  //
+  // DÜRÜSTLÜK NOTU: bu bir HATA DÜZELTMESİ DEĞİL. Jest `useMemo` olmadan da
+  // çalışıyordu — ölçüldü: worklet'e ulaşan translateX tam -56'ya kadar
+  // gidiyor. Bir süre "jest çalışmıyor" sanıldı; sebebi üründe değil
+  // ÖLÇÜMDEYDİ: sentetik swipe parmağı yol biter bitmez kaldırıyor, yay
+  // ~400ms'de geri dönüyor ve ekran görüntüsü hep oturmuş hâli yakalıyordu.
+  const saatSurukle = useMemo(() => Gesture.Pan()
     // Yatayda 20pt'den önce etkinleşmiyor, dikeyde 15pt'de VAZGEÇİYOR:
     // ikisi olmadan jest, listenin kendi dikey kaydırmasıyla yarışıyor ve
     // sohbeti kaydırmak imkânsız hâle geliyor.
@@ -362,7 +393,8 @@ export default function ChatScreen() {
       // ekranın solunda gösterecek bir şey yok.
       kayma.value = Math.min(0, Math.max(-SAAT_SUTUN, e.translationX));
     })
-    .onEnd(() => { kayma.value = withSpring(0, GONDERIM_YAY); });
+    .onEnd(() => { kayma.value = withSpring(0, GONDERIM_YAY); }),
+  [kayma]);
 
   // uid `session.user.uid` içinde. `session.uid` yazılırsa daima null olur ve
   // KENDİ mesajların da karşı tarafınmış gibi sola hizalı çizilir.
@@ -494,6 +526,29 @@ export default function ChatScreen() {
       Alert.alert(t('msg.pinFailed'));
     }
   }, [other, pinned, t]);
+
+  /**
+   * Paylasilan icerigi ac — HEDEF TÜRE GÖRE: fragman ve oyun oyun detayına,
+   * haber tarayıcıya. Haber zaten dış bir yazı — uygulama içinde gösterecek
+   * bir ekranı yok, o yüzden "↗" davranışı.
+   *
+   * `renderItem` içinde satır içi ok fonksiyonuydu: her render'da her satır
+   * için yeni bir closure, yani `Bubble`in memo'su hiçbir zaman tutmazdı.
+   */
+  const paylasimAc = useCallback((item) => {
+    const sh = item?.share;
+    if (!sh) return;
+    if (sh.kind === 'news') { if (sh.url) WebBrowser.openBrowserAsync(sh.url); return; }
+    // `appid` OLMAYABİLİR: RAWG kataloğundan paylaşılan oyunda Steam
+    // karşılığı yok (bkz. lib/chat-share.js — kimlik uzayı çift anlamlı).
+    // Detay ekranı `rawg_<id>` ile açılıyor, appid'e ihtiyaç duymuyor.
+    const id = sh.gameId || (sh.appid ? `rawg_${sh.appid}` : null);
+    if (!id) return;
+    router.push({
+      pathname: '/game/[id]',
+      params: { id, appid: sh.appid || '', name: sh.name, image: sh.image || '' },
+    });
+  }, [router]);
 
   const jumpTo = useCallback((id) => {
     const i = veriRef.current.findIndex((m) => m.id === id);
@@ -723,9 +778,7 @@ export default function ChatScreen() {
       const r = await sendChat(other, body, undefined, undefined, undefined, yanit?.id);
       // Geçici baloncuğu gerçeğiyle değiştir. Kaldırıp yeniden eklemek
       // listede zıplama yaratırdı.
-      if (r?.message) {
-        setMsgs((cur) => cur.map((m) => (m.id === tempId ? r.message : m)));
-      }
+      if (r?.message) setMsgs((cur) => tmpDegistir(cur, tempId, r.message));
     } catch (e) {
       // Baloncuk KALIYOR, hata işaretiyle. Kaldırsaydık kullanıcı yazdığı
       // metni de kaybederdi.
@@ -774,7 +827,7 @@ export default function ChatScreen() {
 
     try {
       const r = await sendChat(other, '', undefined, undefined, { url: g.url, w: g.w, h: g.h }, yanit?.id);
-      if (r?.message) setMsgs((cur) => cur.map((m) => (m.id === tempId ? r.message : m)));
+      if (r?.message) setMsgs((cur) => tmpDegistir(cur, tempId, r.message));
     } catch {
       setMsgs((cur) => cur.map((m) => (
         m.id === tempId ? { ...m, pending: false, failed: true } : m
@@ -1047,28 +1100,12 @@ export default function ChatScreen() {
                   kayma={kayma}
                   lang={lang}
                   onLongPress={openMenu}
-                  onReact={(emoji) => react(item, emoji)}
+                  // İkisi de KARARLI: baloncuk kendi `msg`ini ekleyip çağırıyor.
+                  onReact={react}
+                  onOpenShare={paylasimAc}
                   onJumpTo={jumpTo}
                   peerName={peer?.displayName || peer?.username || ''}
                   myUid={myUid}
-                  // HEDEF TÜRE GÖRE: fragman ve oyun oyun detayına, haber
-                  // tarayıcıya. Haber zaten dış bir yazı — uygulama içinde
-                  // gösterecek bir ekranı yok, o yüzden "↗" davranışı.
-                  onOpenShare={() => {
-                    const sh = item.share;
-                    if (!sh) return;
-                    if (sh.kind === 'news') { if (sh.url) WebBrowser.openBrowserAsync(sh.url); return; }
-                    // `appid` OLMAYABİLİR: RAWG kataloğundan paylaşılan oyunda
-                    // Steam karşılığı yok (bkz. lib/chat-share.js — kimlik
-                    // uzayı çift anlamlı). Detay ekranı `rawg_<id>` ile
-                    // açılıyor, appid'e ihtiyaç duymuyor.
-                    const id = sh.gameId || (sh.appid ? `rawg_${sh.appid}` : null);
-                    if (!id) return;
-                    router.push({
-                      pathname: '/game/[id]',
-                      params: { id, appid: sh.appid || '', name: sh.name, image: sh.image || '' },
-                    });
-                  }}
                   t={t}
                 />
               ))}
@@ -1257,7 +1294,20 @@ function saatOf(ts, lang) {
 // iOS bunu maskeleyerek çözüyor; maskeleme burada üç ayrı ölçüde görsel
 // için ayrı ayrı yazılacak bir iş ve kazancı kuyruğun kendisinden küçük.
 // ─────────────────────────────────────────────────────────────────────────────
-function Bubble({
+// ─────────────────────────────────────────────────────────────────────────────
+// BALONCUK — memo'lu.
+//
+// Ölçüldü: memo YOKKEN ebeveynin her render'ı görünen baloncukların hepsini
+// yeniden çizdiriyordu ve her baloncuk `eski`/`yeni` komşularından gruplama,
+// kuyruk ve tarih ayracını sıfırdan hesaplıyor. Kompozitörde yazarken bu
+// hesap her karakterde 8–15 kez tekrarlanıyordu.
+//
+// memo'nun İŞE YARAMASI İÇİN prop'lar kararlı olmak zorundaydı: `onReact` ve
+// `onOpenShare` `renderItem` içinde satır içi ok fonksiyonuydu, yani her
+// render'da yeni kimlik — memo hiçbir zaman tutmazdı. İkisi de artık
+// ebeveynde kararlı, mesajı argüman olarak alan işlevler.
+// ─────────────────────────────────────────────────────────────────────────────
+const Bubble = memo(function Bubble({
   msg, mine, seen, eski, yeni, taze, kayma, lang,
   onLongPress, onOpenShare, onReact, onJumpTo, myUid, peerName, t,
 }) {
@@ -1287,11 +1337,16 @@ function Bubble({
   // Çift dokunuş — React Native'de yerleşik değil, elle ölçülüyor. 280 ms:
   // altında yanlışlıkla tetikleniyor, üstünde iki ayrı dokunuş gibi geliyor.
   const lastTapRef = useRef(0);
+  // Mesaji baglayan sarmalayicilar BURADA: ebeveyn kararli bir islev
+  // veriyor, baloncuk kendi `msg`ini ekliyor. Kimlik yalnizca msg
+  // degisince degisiyor — memo'nun tutmasi bu yuzden mumkun.
+  const tepki = useCallback((emoji) => onReact?.(msg, emoji), [onReact, msg]);
+  const paylasimAc = useCallback(() => onOpenShare?.(msg), [onOpenShare, msg]);
   const onTap = useCallback(() => {
     const now = Date.now();
-    if (now - lastTapRef.current < 280) { lastTapRef.current = 0; onReact?.(REACTIONS[0]); }
+    if (now - lastTapRef.current < 280) { lastTapRef.current = 0; tepki(REACTIONS[0]); }
     else lastTapRef.current = now;
-  }, [onReact]);
+  }, [tepki]);
 
   // Sunucu `reactions` gonderiyor; `likes` yalnizca eski istemciler icin
   // tasindigindan burada okunmuyor.
@@ -1453,13 +1508,13 @@ function Bubble({
           style={styles.sarmal}
           onLongPress={msg.deleted ? undefined : handleLongPress}
           delayLongPress={400}
-          onPress={msg.share ? onOpenShare : onTap}
+          onPress={msg.share ? paylasimAc : onTap}
         >
           {govde}
           {/* Tapback baloncuğun DIŞ üst köşesinde — kendi mesajımda solda,
               gelen mesajda sağda. iOS'un yerleşimi bu ve sebebi konum:
               rozet ekranın ortasına doğru bakıyor, kenara değil. */}
-          <Reactions chips={chips} mine={mine} onPress={onReact} />
+          <Reactions chips={chips} mine={mine} onPress={tepki} />
         </Pressable>
 
         {/* Gönderiliyor / başarısız — iyimser gönderimin görünen tarafı.
@@ -1480,7 +1535,7 @@ function Bubble({
       </Animated.View>
     </Animated.View>
   );
-}
+});
 
 function VideoBubble({ url }) {
   const styles = useStyles(makeStyles);

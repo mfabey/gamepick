@@ -8,7 +8,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, Pressable, StyleSheet, Switch, ScrollView, ActivityIndicator, Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -22,6 +22,7 @@ import { SettingsGroup, SettingsRow, AYIRICI_SOL } from '../src/components/Setti
 
 export default function SocialSettingsScreen() {
   const styles = useStyles(makeStyles);
+  const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const router = useRouter();
   const { t } = useLanguage();
@@ -106,7 +107,7 @@ export default function SocialSettingsScreen() {
       {privacy === null ? (
         <View style={styles.center}><ActivityIndicator color={colors.accent} /></View>
       ) : (
-        <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 40 }]} showsVerticalScrollIndicator={false}>
           {/* Anahtarlar kapalı ama bu bir DURUM değil bir BİLİNMEZLİK —
               bant tam olarak bunu söylüyor. Kırmızı yok. */}
           {bozuk ? (
@@ -210,7 +211,7 @@ const makeStyles = (colors) => StyleSheet.create({
   title: { flex: 1, textAlign: 'center', fontSize: type.body, fontWeight: '900', color: colors.text },
   iconBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
 
-  body: { padding: spacing.lg, paddingBottom: 40 },
+  body: { padding: spacing.lg },
   card: {
     backgroundColor: colors.card, borderRadius: radius.lg,
     borderWidth: 1, borderColor: colors.cardBorder, paddingHorizontal: 15,

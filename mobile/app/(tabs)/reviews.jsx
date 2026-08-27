@@ -32,7 +32,8 @@ import PostCard from '../../src/components/PostCard';
 import PostComposer from '../../src/components/PostComposer';
 import ReportSheet from '../../src/components/ReportSheet';
 import { FeedSkeleton, Reveal } from '../../src/components/Skeleton';
-import { radius, spacing, type, PRESSED, NUMERIC, TAB_SPACE, TOUCH_MIN, motion, SECTION_TITLE, CHIP_TEXT_ON } from '../../src/theme';
+import { radius, spacing, type, PRESSED, NUMERIC, TOUCH_MIN, motion, SECTION_TITLE, CHIP_TEXT_ON } from '../../src/theme';
+import { useTabBosluk } from '../../src/hooks/useAltBosluk';
 import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useTimeToData } from '../../src/dev/perf';
@@ -49,6 +50,7 @@ function itemKey(x) {
 
 export default function ReviewsScreen() {
   const styles = useStyles(makeStyles);
+  const tabBosluk = useTabBosluk();
   const { colors } = useTheme();
   const router = useRouter();
   const { t, lang } = useLanguage();
@@ -383,7 +385,7 @@ export default function ReviewsScreen() {
           // (davet şeridi + sekmeler) tamamen siliyordu.
           ListEmptyComponent={bozuk ? null : <EmptyState compact {...bosDurum} />}
           ListFooterComponent={
-            <View style={{ height: TAB_SPACE, alignItems: 'center', paddingTop: spacing.md }}>
+            <View style={{ height: tabBosluk, alignItems: 'center', paddingTop: spacing.md }}>
               {loadingMore ? <ActivityIndicator color={colors.accent} /> : null}
             </View>
           }

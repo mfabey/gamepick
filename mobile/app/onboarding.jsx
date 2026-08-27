@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { fetchGames } from '../src/api/games';
 import { useQuery } from '../src/hooks/useQuery';
+import { useAltBosluk } from '../src/hooks/useAltBosluk';
 import { recordSignal } from '../src/services/tasteProfile';
 import { completeOnboarding } from '../src/services/onboarding';
 import { radius, spacing, PRESSED, type } from '../src/theme';
@@ -27,6 +28,9 @@ export default function OnboardingScreen() {
   const { colors } = useTheme();
   const router = useRouter();
   const { t } = useLanguage();
+  // Alt aksiyon çubuğu ekranın en altına yaslı; Android'de gezinme çubuğu
+  // onun üstüne biner. Sabit 24dp yetmiyordu — bkz. useAltBosluk.
+  const altBosluk = useAltBosluk(spacing.xl);
 
   const { data, loading } = useQuery('onboarding:pool', fetchPool, { ttl: 60 * 60 * 1000 });
   const [picked, setPicked] = useState({});   // id -> game
@@ -102,7 +106,7 @@ export default function OnboardingScreen() {
       )}
 
       {/* Alt aksiyon çubuğu */}
-      <View style={styles.bar}>
+      <View style={[styles.bar, { paddingBottom: altBosluk }]}>
         <Pressable onPress={() => finish(true)} hitSlop={8} disabled={saving}>
           <Text style={styles.skip}>{t('onb.skip')}</Text>
         </Pressable>
@@ -177,7 +181,9 @@ const makeStyles = (colors) => StyleSheet.create({
 
   bar: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.xl,
+    paddingHorizontal: spacing.lg, paddingTop: spacing.md,
+    // paddingBottom ÇALIŞMA ZAMANINDA veriliyor (useAltBosluk): sabit değer
+    // üç düğmeli gezinmede (48dp) düğmenin altını çubuğun ardında bırakıyor.
     borderTopWidth: 1, borderTopColor: colors.cardBorder, backgroundColor: colors.bg,
   },
   skip: { color: colors.text3, fontSize: type.subhead, fontWeight: '600' },
