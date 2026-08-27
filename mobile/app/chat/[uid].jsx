@@ -59,6 +59,10 @@ const TAM_EKRAN_ACIK = { enable: true };
 
 const MAX_TEXT = 1000;
 
+// Modul duzeyinde: satir ici verilseydi her render'da yeni kimlik olur ve
+// FlatList tum hucreleri yeniden anahtarlamak zorunda kalirdi.
+const anahtar = (m) => m.id;
+
 // ─────────────────────────────────────────────────────────────────────────────
 // iOS Messages ölçüleri — kaynak: .claude/skills/ios-messages/SKILL.md
 //
@@ -313,7 +317,6 @@ export default function ChatScreen() {
   const [cid, setCid]       = useState(null);
   const [error, setError]   = useState(null);
   const [loading, setLoading] = useState(true);
-  const [text, setText]     = useState('');
   const [sending, setSending] = useState(false);
   // Raporlama hedefi METİN olarak tutuluyor, boolean değil: başlıktaki düğme
   // KONUŞMAYI, mesaj menüsü ise TEK MESAJI raporluyor. İki ayrı state yerine
@@ -725,15 +728,10 @@ export default function ChatScreen() {
     return () => clearTimeout(id);
   }, [typingUntil]);
 
-  // Yazarken karsi tarafa haber ver — EN FAZLA 3 saniyede bir.
-  const lastTypingRef = useRef(0);
-  const onChangeText = useCallback((v) => {
-    setText(v);
-    const now = Date.now();
-    if (v && now - lastTypingRef.current > 3000) {
-      lastTypingRef.current = now;
-      sendTyping(other).catch(() => {});
-    }
+  // Yazarken karsi tarafa haber ver. 3 saniyelik kisitlama KOMPOZITOR'DE:
+  // metin state'i artik orada, burada degil. Bu islev kararli kaliyor.
+  const bildirYaziyor = useCallback(() => {
+    sendTyping(other).catch(() => {});
   }, [other]);
 
   /**
@@ -748,8 +746,8 @@ export default function ChatScreen() {
    * ise başarısız olursa baloncuk EKRANDA KALIYOR ve hata işareti alıyor —
    * kullanıcı ne olduğunu görüyor, hiçbir şey kaybolmuyor.
    */
-  const send = useCallback(async () => {
-    const body = text.trim();
+  const send = useCallback(async (govde) => {
+    const body = (govde || '').trim();
     if (!body) return;
 
     // Geçici kimlik: sunucu gerçeğini döndürünce bununla değiştiriliyor.
@@ -769,7 +767,8 @@ export default function ChatScreen() {
       };
     }
 
-    setText('');
+    // setText BURADA DEĞİL: kutuyu Kompozitor kendi temizliyor — metin
+    // state'i orada. Temizleme yine ANINDA, sunucu beklenmiyor.
     setReplyTo(null);
     addMessage(optimistic);
     Haptics.selectionAsync().catch(() => {});
@@ -796,7 +795,7 @@ export default function ChatScreen() {
           : t('msg.sendFailed')
       );
     }
-  }, [text, other, myUid, addMessage, replyTo, t]);
+  }, [other, myUid, addMessage, replyTo, t]);
 
   /**
    * GIF gönder — İYİMSER, metin gönderimiyle aynı mantık.
@@ -947,6 +946,43 @@ export default function ChatScreen() {
     () => (typingNow ? [YAZIYOR_SATIRI, ...msgs] : msgs),
     [typingNow, msgs],
   );
+
+  /**
+   * Satır çizimi — KARARLI.
+   *
+   * Satır içi ok fonksiyonuydu: her render'da yeni kimlik, yani FlatList
+   * `renderItem` değişti sanıp bütün hücreleri yeniden çiziyordu. `Bubble`
+   * artık memo'lu ama memo, ebeveyn onu YENİDEN ÇAĞIRMADAN önce devreye
+   * girmiyor — bu yüzden ikisi birlikte anlamlı.
+   *
+   * `veri`ye bağlı: komşular (eski/yeni) oradan okunuyor ve yeni mesaj
+   * geldiğinde gruplama gerçekten yeniden hesaplanmalı.
+   */
+  const satirCiz = useCallback(({ item, index }) => (item.typing ? <TypingBubble /> : (
+    <Bubble
+      msg={item}
+      mine={item.from === myUid}
+      seen={item.id === seenId}
+      // ESKİ = zamanda önceki = ekranda ÜSTTEKİ (liste ters).
+      // YENİ = zamanda sonraki = ekranda ALTTAKİ.
+      // Gruplama, kuyruk ve tarih ayracı bu ikisinden çıkıyor.
+      eski={veri[index + 1]}
+      yeni={veri[index - 1]}
+      // Ekran açıkken mi geldi? Gönderim animasyonu buna bağlı.
+      taze={(item.at || 0) > acilisRef.current}
+      kayma={kayma}
+      lang={lang}
+      onLongPress={openMenu}
+      // İkisi de KARARLI: baloncuk kendi `msg`ini ekleyip çağırıyor.
+      onReact={react}
+      onOpenShare={paylasimAc}
+      onJumpTo={jumpTo}
+      peerName={peer?.displayName || peer?.username || ''}
+      myUid={myUid}
+      t={t}
+    />
+  )), [veri, myUid, seenId, kayma, lang, openMenu, react, paylasimAc, jumpTo, peer, t]);
+
   useEffect(() => { veriRef.current = veri; }, [veri]);
 
   const preset = getAvatarPreset(peer?.avatar);
@@ -1073,9 +1109,24 @@ export default function ChatScreen() {
               ref={listRef}
               data={veri}
               inverted
-              keyExtractor={(m) => m.id}
+              keyExtractor={anahtar}
               contentContainerStyle={styles.listPad}
               keyboardDismissMode="interactive"
+              // ── RENDER PENCERESİ ──
+              // RN varsayılanı 21 (kaynak: VirtualizedListProps.js,
+              // `windowSize ?? 21`) — yani görünen alanın 10 ekran üstü ve
+              // 10 ekran altı kadar hücre BAĞLI tutuluyor. Baloncuklar hafif
+              // değil: görsel, video, alıntı ve tepki satırı taşıyorlar.
+              //
+              // 11 = her yönde 5 ekran. Takas açık: çok hızlı kaydırmada
+              // kısa boş alan görülebilir. Cihazda doğrulanacak tek sayı bu;
+              // boşluk görülürse 15'e çekilir.
+              //
+              // removeClippedSubviews BİLEREK AÇILMADI: baloncuklarda
+              // translateX animasyonu (saat sütunu) ve baloncuğun DIŞINA
+              // taşan tapback rozeti var — Android'de bu prop tam olarak bu
+              // iki durumda içerik kaybettiriyor.
+              windowSize={11}
               // scrollToIndex, henüz çizilmemiş bir satır istendiğinde HATA
               // ATIYOR. Alıntıya dokunmak eski bir mesaja gidiyor ve o mesaj
               // çoğu zaman çizilmemiş oluyor — bu işleyici olmadan uygulama
@@ -1085,30 +1136,7 @@ export default function ChatScreen() {
                   offset: index * (averageItemLength || 64), animated: true,
                 });
               }}
-              renderItem={({ item, index }) => (item.typing ? <TypingBubble /> : (
-                <Bubble
-                  msg={item}
-                  mine={item.from === myUid}
-                  seen={item.id === seenId}
-                  // ESKİ = zamanda önceki = ekranda ÜSTTEKİ (liste ters).
-                  // YENİ = zamanda sonraki = ekranda ALTTAKİ.
-                  // Gruplama, kuyruk ve tarih ayracı bu ikisinden çıkıyor.
-                  eski={veri[index + 1]}
-                  yeni={veri[index - 1]}
-                  // Ekran açıkken mi geldi? Gönderim animasyonu buna bağlı.
-                  taze={(item.at || 0) > acilisRef.current}
-                  kayma={kayma}
-                  lang={lang}
-                  onLongPress={openMenu}
-                  // İkisi de KARARLI: baloncuk kendi `msg`ini ekleyip çağırıyor.
-                  onReact={react}
-                  onOpenShare={paylasimAc}
-                  onJumpTo={jumpTo}
-                  peerName={peer?.displayName || peer?.username || ''}
-                  myUid={myUid}
-                  t={t}
-                />
-              ))}
+              renderItem={satirCiz}
               ListEmptyComponent={
                 <View style={styles.emptyWrap}>
                   <Text style={styles.emptyText}>{t('msg.startText')}</Text>
@@ -1151,64 +1179,15 @@ export default function ChatScreen() {
               (edges={['top']}) cunku liste tepeye kadar uzanmali. Alt kenar
               burada elle veriliyor — verilmezse gonderme dugmesi ana ekran
               cizgisinin altinda kaliyordu. */}
-          <View style={[
-            styles.composer,
-            { paddingBottom: kbVisible ? spacing.sm : Math.max(insets.bottom, spacing.sm) },
-          ]}>
-            {/* ── TEK "+" DÜĞMESİ ──
-                Öncesinde fotoğraf ve GIF için iki ayrı simge duruyordu.
-                iOS'ta tek bir "+" var ve ekleri bir menüde topluyor; sebebi
-                de görünür: kompozitörün solu her yeni ek türünde büyümüyor.
-
-                YETENEĞE BAĞLI kalıyor. Yapılandırma eksikken düğme hiç
-                çizilmiyor — basınca "şu an kapalı" diyen bir düğme
-                uygulamayı yarım gösteriyor (Guideline 2.2). Tek yetenek
-                açıksa menü açmıyor, doğrudan onu çalıştırıyor: tek satırlık
-                bir menü, fazladan bir dokunuş demek. */}
-            {ekSayisi > 0 ? (
-              <GlassSurface style={styles.ekBtn} radius={EK_BTN / 2}>
-                <Pressable
-                  ref={ekBtnRef}
-                  style={({ pressed }) => [styles.ekHit, pressed && PRESSED]}
-                  onPress={ekAc}
-                  disabled={sending}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('msg.attach')}
-                >
-                  <Ionicons name="add" size={26} color={colors.text} />
-                </Pressable>
-              </GlassSurface>
-            ) : null}
-
-            {/* Gönder düğmesi ALANIN İÇİNDE. Dışarıdaki ayrı daire,
-                kompozitörü üç parçalı bir alet çubuğuna çeviriyordu; iOS'ta
-                ok metin alanının sağ ucunda ve yalnızca yazacak bir şey
-                varken beliriyor. */}
-            <GlassSurface style={styles.girdiKapsul} radius={KAPSUL_YARICAP}>
-              <TextInput
-                style={styles.input}
-                value={text}
-                onChangeText={onChangeText}
-                placeholder={t('msg.placeholder')}
-                placeholderTextColor={colors.text3}
-                maxLength={MAX_TEXT}
-                multiline
-              />
-              {text.trim() || sending ? (
-                <Pressable
-                  style={({ pressed }) => [styles.sendBtn, pressed && PRESSED]}
-                  onPress={send}
-                  disabled={sending}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('msg.send')}
-                >
-                  {sending
-                    ? <ActivityIndicator size="small" color={colors.onAccent} />
-                    : <Ionicons name="arrow-up" size={18} color={colors.onAccent} />}
-                </Pressable>
-              ) : null}
-            </GlassSurface>
-          </View>
+          <Kompozitor
+            ekSayisi={ekSayisi}
+            ekAc={ekAc}
+            ekBtnRef={ekBtnRef}
+            sending={sending}
+            onSend={send}
+            onTyping={bildirYaziyor}
+            altDolgu={kbVisible ? spacing.sm : Math.max(insets.bottom, spacing.sm)}
+          />
         </KeyboardAvoidingView>
       )}
 
@@ -1295,6 +1274,110 @@ function saatOf(ts, lang) {
 // için ayrı ayrı yazılacak bir iş ve kazancı kuyruğun kendisinden küçük.
 // ─────────────────────────────────────────────────────────────────────────────
 // ─────────────────────────────────────────────────────────────────────────────
+// KOMPOZİTÖR — metin state'i BURADA, ekranda değil.
+//
+// ── NEDEN AYRILDI (ölçüldü) ──
+//
+// `text` state'i sohbet ekranının gövdesindeydi ve liste de aynı bileşende
+// çiziliyor. Yani HER KARAKTERDE ekranın tamamı yeniden render oluyordu:
+// görünen 8–15 baloncuk, her biri `eski`/`yeni` komşularından gruplama,
+// kuyruk ve tarih ayracını yeniden hesaplayarak. Yazma gecikmesi sohbetin
+// uzunluğuna bağlıydı — uzun sohbette tuş vuruşu ile harfin ekrana gelmesi
+// arasındaki mesafe açılıyordu.
+//
+// Metin buraya taşınınca yazmak yalnız BU bileşeni render ediyor. Ekran
+// gövdesi ve baloncuklar tuş vuruşundan tamamen habersiz.
+//
+// Gönderme sözleşmesi: kutu ANINDA temizleniyor, sonra `onSend(govde)`.
+// İyimser gönderim mantığı ekranda kaldı (bkz. `send`), çünkü iyimser
+// baloncuğu listeye ekleyen ve hata durumunu yöneten taraf orası.
+// ─────────────────────────────────────────────────────────────────────────────
+const Kompozitor = memo(function Kompozitor({
+  ekSayisi, ekAc, ekBtnRef, sending, onSend, onTyping, altDolgu,
+}) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
+  const { t } = useLanguage();
+  const [text, setText] = useState('');
+
+  // Yazarken karsi tarafa haber ver — EN FAZLA 3 saniyede bir.
+  const sonYazmaRef = useRef(0);
+  const yaz = useCallback((v) => {
+    setText(v);
+    const now = Date.now();
+    if (v && now - sonYazmaRef.current > 3000) {
+      sonYazmaRef.current = now;
+      onTyping?.();
+    }
+  }, [onTyping]);
+
+  const gonder = useCallback(() => {
+    const govde = text.trim();
+    if (!govde) return;
+    setText('');
+    onSend?.(govde);
+  }, [text, onSend]);
+
+  return (
+    <View style={[styles.composer, { paddingBottom: altDolgu }]}>
+      {/* ── TEK "+" DÜĞMESİ ──
+          Öncesinde fotoğraf ve GIF için iki ayrı simge duruyordu.
+          iOS'ta tek bir "+" var ve ekleri bir menüde topluyor; sebebi
+          de görünür: kompozitörün solu her yeni ek türünde büyümüyor.
+
+          YETENEĞE BAĞLI kalıyor. Yapılandırma eksikken düğme hiç
+          çizilmiyor — basınca "şu an kapalı" diyen bir düğme
+          uygulamayı yarım gösteriyor (Guideline 2.2). Tek yetenek
+          açıksa menü açmıyor, doğrudan onu çalıştırıyor: tek satırlık
+          bir menü, fazladan bir dokunuş demek. */}
+      {ekSayisi > 0 ? (
+        <GlassSurface style={styles.ekBtn} radius={EK_BTN / 2}>
+          <Pressable
+            ref={ekBtnRef}
+            style={({ pressed }) => [styles.ekHit, pressed && PRESSED]}
+            onPress={ekAc}
+            disabled={sending}
+            accessibilityRole="button"
+            accessibilityLabel={t('msg.attach')}
+          >
+            <Ionicons name="add" size={26} color={colors.text} />
+          </Pressable>
+        </GlassSurface>
+      ) : null}
+
+      {/* Gönder düğmesi ALANIN İÇİNDE. Dışarıdaki ayrı daire,
+          kompozitörü üç parçalı bir alet çubuğuna çeviriyordu; iOS'ta
+          ok metin alanının sağ ucunda ve yalnızca yazacak bir şey
+          varken beliriyor. */}
+      <GlassSurface style={styles.girdiKapsul} radius={KAPSUL_YARICAP}>
+        <TextInput
+          style={styles.input}
+          value={text}
+          onChangeText={yaz}
+          placeholder={t('msg.placeholder')}
+          placeholderTextColor={colors.text3}
+          maxLength={MAX_TEXT}
+          multiline
+        />
+        {text.trim() || sending ? (
+          <Pressable
+            style={({ pressed }) => [styles.sendBtn, pressed && PRESSED]}
+            onPress={gonder}
+            disabled={sending}
+            accessibilityRole="button"
+            accessibilityLabel={t('msg.send')}
+          >
+            {sending
+              ? <ActivityIndicator size="small" color={colors.onAccent} />
+              : <Ionicons name="arrow-up" size={18} color={colors.onAccent} />}
+          </Pressable>
+        ) : null}
+      </GlassSurface>
+    </View>
+  );
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // BALONCUK — memo'lu.
 //
 // Ölçüldü: memo YOKKEN ebeveynin her render'ı görünen baloncukların hepsini
@@ -1341,7 +1424,7 @@ const Bubble = memo(function Bubble({
   // veriyor, baloncuk kendi `msg`ini ekliyor. Kimlik yalnizca msg
   // degisince degisiyor — memo'nun tutmasi bu yuzden mumkun.
   const tepki = useCallback((emoji) => onReact?.(msg, emoji), [onReact, msg]);
-  const paylasimAc = useCallback(() => onOpenShare?.(msg), [onOpenShare, msg]);
+  const acPaylasimi = useCallback(() => onOpenShare?.(msg), [onOpenShare, msg]);
   const onTap = useCallback(() => {
     const now = Date.now();
     if (now - lastTapRef.current < 280) { lastTapRef.current = 0; tepki(REACTIONS[0]); }
@@ -1508,7 +1591,7 @@ const Bubble = memo(function Bubble({
           style={styles.sarmal}
           onLongPress={msg.deleted ? undefined : handleLongPress}
           delayLongPress={400}
-          onPress={msg.share ? paylasimAc : onTap}
+          onPress={msg.share ? acPaylasimi : onTap}
         >
           {govde}
           {/* Tapback baloncuğun DIŞ üst köşesinde — kendi mesajımda solda,

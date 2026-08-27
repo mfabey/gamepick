@@ -8,7 +8,7 @@
 // Mesajlaşma YALNIZCA arkadaşlar arasında. Bu, yabancıdan gelen spam'i kökten
 // kapatan kural; sunucu da aynı kuralı uyguluyor (NOT_FRIENDS).
 // ─────────────────────────────────────────────────────────────────────────────
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, memo } from 'react';
 import {
   View, Text, Pressable, StyleSheet, ActivityIndicator, RefreshControl,
 } from 'react-native';
@@ -18,6 +18,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { getChatList } from '../../src/api/social';
+import { useQuery } from '../../src/hooks/useQuery';
 import { getSession, subscribeSession } from '../../src/services/session';
 import { refreshUnread } from '../../src/services/unread';
 import EmptyState from '../../src/components/EmptyState';
@@ -37,6 +38,9 @@ import { useTabPressAction, scrollRefToTop } from '../../src/hooks/useTabPressAc
 const OLUK = 26;
 /** Liste avatarı. Bizde 46'ydı; ölçüm 45. */
 const AVATAR = 45;
+
+// Modul duzeyinde: satir ici verilseydi her render'da yeni kimlik olurdu.
+const anahtar = (r) => r.cid;
 
 /** Kısa zaman: bugünse saat, bu haftaysa gün, değilse tarih. */
 function shortTime(ts, lang) {
@@ -64,33 +68,56 @@ export default function MessagesScreen() {
   const [session, setSession] = useState(() => getSession());
   useEffect(() => subscribeSession(() => setSession(getSession())), []);
 
-  const [rows, setRows]       = useState(null);
-  const [error, setError]     = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  // ── ÖNCE ÖNBELLEK, SONRA AĞ (SWR) ──
+  //
+  // Öncesi elle state'ti: her odaklanmada `loading` true'ya dönüyordu ve
+  // sohbetten geri dönen kullanıcı listeyi görmeden önce bir ağ turu
+  // bekliyordu. Ölçülen maliyet FPS değil, ALGILANAN GECİKME — liste zaten
+  // bir saniye önce ekrandaydı.
+  //
+  // `useQuery` önbellekteki veriyi ANINDA veriyor, tazelemeyi arkada
+  // yapıyor ve aynı anahtardaki istekleri tekilleştiriyor.
+  //
+  // ANAHTAR UID İÇERİYOR — bu ŞART, süs değil: queryCache diske yazıyor
+  // (AsyncStorage) ve `clearQueryCache` hiçbir yerden çağrılmıyor. Anahtar
+  // hesaba kapsanmasaydı çıkış yapıp başka hesapla girenin karşısına ÖNCEKİ
+  // hesabın konuşma listesi çıkardı.
+  const uid = session?.user?.uid || null;
+  const { data, error: qErr, loading, refetch } = useQuery(
+    uid ? `chat:list:${uid}` : null,
+    getChatList,
+    { ttl: 30 * 1000 },
+  );
+  const rows = data ? (data.conversations || []) : null;
+  const error = qErr ? (qErr.code || 'UNKNOWN') : null;
 
-  const load = useCallback(async (isRefresh = false) => {
-    if (isRefresh) setRefreshing(true);
-    try {
-      const r = await getChatList();
-      setRows(r?.conversations || []);
-      setError(null);
-    } catch (e) {
-      setError(e?.code || 'UNKNOWN');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
+  // Elle çekme yenilemesi. `useQuery`nin `isValidating`i kullanılamaz: o
+  // ARKA PLAN tazelemesinde de true, yani her odaklanmada çekme göstergesi
+  // yanıp sönerdi. Gösterge yalnız kullanıcı çektiğinde dönmeli.
+  const [refreshing, setRefreshing] = useState(false);
+  const cek = useCallback(async () => {
+    setRefreshing(true);
+    try { await refetch(); } finally { setRefreshing(false); }
+  }, [refetch]);
 
   // Sohbetten geri dönünce liste TAZELENMELİ: son mesaj ve okundu durumu
   // değişmiş olabilir. useEffect tek başına bunu yakalamıyor.
   //
+  // Artık SPINNER YOK: eldeki liste ekranda kalıyor, tazeleme arkada.
+  //
   // Sekme rozeti de burada tazeleniyor: bir sohbet okunduğunda sekme
   // indeksi değişmiyor, dolayısıyla çubuğun kendi tetikleyicisi çalışmıyor.
   useFocusEffect(useCallback(() => {
-    if (session) { load(); refreshUnread(); }
-  }, [session, load]));
+    if (uid) { refetch(); refreshUnread(); }
+  }, [uid, refetch]));
+
+  // Satir icindeki `() => router.push(...)` her render'da her satir icin yeni
+  // bir closure uretiyordu; ConversationRow memo'lansa bile tutmazdi.
+  const sohbetAc = useCallback((r) => router.push(`/chat/${r.other.uid}`), [router]);
+  const satirCiz = useCallback(
+    ({ item }) => <ConversationRow item={item} t={t} lang={lang} onPress={sohbetAc} />,
+    [t, lang, sohbetAc],
+  );
 
   let body = null;
   if (!session) {
@@ -99,9 +126,12 @@ export default function MessagesScreen() {
       onAction={() => router.push('/account')} />;
   } else if (loading) {
     body = <View style={styles.center}><ActivityIndicator color={colors.accent} /></View>;
-  } else if (error) {
+  // HATA EKRANI YALNIZ ELDE VERİ YOKKEN. SWR'de bir ağ hatası, önbellekte
+  // duran geçerli listeyi geçersiz kılmıyor: bağlantı gidince kullanıcıyı
+  // dolu bir listeden boş bir hata ekranına düşürmek gerileme olurdu.
+  } else if (error && !rows) {
     body = <EmptyState icon="cloud-offline-outline" title={t('sf.error')} text={t('sf.errorText')}
-      actionLabel={t('sf.retry')} onAction={() => load()} />;
+      actionLabel={t('sf.retry')} onAction={refetch} />;
   } else if (!rows?.length) {
     body = <EmptyState icon="chatbubbles-outline" title={t('msg.empty')} text={t('msg.emptyText')}
       actionLabel={t('msg.goFriends')} onAction={() => router.push('/social')} />;
@@ -122,19 +152,13 @@ export default function MessagesScreen() {
           onScroll={onTabScroll}
           scrollEventThrottle={16}
           data={rows}
-          keyExtractor={(r) => r.cid}
-          estimatedItemSize={78}
+          keyExtractor={anahtar}
           contentContainerStyle={{ paddingBottom: tabBosluk }}
           ItemSeparatorComponent={Ayirici}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.text2} />
+            <RefreshControl refreshing={refreshing} onRefresh={cek} tintColor={colors.text2} />
           }
-          renderItem={({ item }) => (
-            <ConversationRow
-              item={item} t={t} lang={lang}
-              onPress={() => router.push(`/chat/${item.other.uid}`)}
-            />
-          )}
+          renderItem={satirCiz}
         />
       )}
     </SafeAreaView>
@@ -165,13 +189,15 @@ function Ayirici() {
 // Ölçüm (iOS 26.5 Simulator, iPhone 17 Pro): avatar Ø45, merkezi soldan
 // 48.3pt (yani sol kenarı 25.8), metin sütunu 86pt'de başlıyor.
 // ─────────────────────────────────────────────────────────────────────────────
-function ConversationRow({ item, onPress, t, lang }) {
+const ConversationRow = memo(function ConversationRow({ item, onPress, t, lang }) {
   const styles = useStyles(makeStyles);
   const preset = getAvatarPreset(item.other.avatar);
   const name = item.other.displayName || item.other.username || '?';
+  // Ebeveyn kararli bir islev veriyor, satir kendi ogesini ekliyor.
+  const ac = useCallback(() => onPress?.(item), [onPress, item]);
 
   return (
-    <Pressable style={({ pressed }) => [styles.row, pressed && PRESSED]} onPress={onPress}>
+    <Pressable style={({ pressed }) => [styles.row, pressed && PRESSED]} onPress={ac}>
       {/* Okunmamış oluğu — nokta yoksa da yer kaplıyor, aksi hâlde okunmuş
           ve okunmamış satırlar farklı hizada duruyor. */}
       <View style={styles.oluk}>
@@ -220,7 +246,7 @@ function ConversationRow({ item, onPress, t, lang }) {
       </View>
     </Pressable>
   );
-}
+});
 
 const makeStyles = (colors) => StyleSheet.create({
   safe:   { flex: 1, backgroundColor: colors.bg },

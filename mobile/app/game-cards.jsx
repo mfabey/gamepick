@@ -9,7 +9,7 @@
 // SIRALAMA on üç ayrı özel kütüphaneden hesaplanıyor (sunucu tarafı) — bu
 // ekranın Steam'in gösterebileceği hiçbir şeye benzemediği yer orası.
 // ─────────────────────────────────────────────────────────────────────────────
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import {
   View, Text, Pressable, StyleSheet, ActivityIndicator, RefreshControl, Share, Alert,
 } from 'react-native';
@@ -26,6 +26,9 @@ import EmptyState from '../src/components/EmptyState';
 import { radius, spacing, type, PRESSED, NUMERIC, TAB_SPACE } from '../src/theme';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
+
+// Modul duzeyinde: satir ici verilseydi her render'da yeni kimlik olurdu.
+const anahtar = (c) => String(c.appid);
 
 export default function GameCardsScreen() {
   const styles = useStyles(makeStyles);
@@ -100,6 +103,13 @@ export default function GameCardsScreen() {
   }, [t, city, lang]);
 
   // ── Kapılar ───────────────────────────────────────────────────────────────
+  // `onShare={() => share(item)}` her render'da her satir icin yeni bir
+  // closure uretiyordu. `share` zaten karti arguman aliyor.
+  const satirCiz = useCallback(
+    ({ item, index }) => <CardRow card={item} place={index + 1} onShare={share} t={t} />,
+    [share, t],
+  );
+
   let body = null;
 
   if (!session) {
@@ -139,8 +149,7 @@ export default function GameCardsScreen() {
       {body || (
         <FlashList
           data={data.cards}
-          keyExtractor={(c) => String(c.appid)}
-          estimatedItemSize={72}
+          keyExtractor={anahtar}
           contentContainerStyle={{ paddingBottom: TAB_SPACE }}
           ListHeaderComponent={
             <Summary s={data.summary} t={t} city={city} busy={cityBusy} onToggleCity={toggleCity} />
@@ -148,9 +157,7 @@ export default function GameCardsScreen() {
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.text2} />
           }
-          renderItem={({ item, index }) => (
-            <CardRow card={item} place={index + 1} onShare={() => share(item)} t={t} />
-          )}
+          renderItem={satirCiz}
         />
       )}
     </SafeAreaView>
@@ -214,10 +221,12 @@ function Cell({ n, label, tint }) {
   );
 }
 
-function CardRow({ card, place, onShare, t }) {
+const CardRow = memo(function CardRow({ card, place, onShare, t }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const hasRank = Number.isFinite(card.rank) && card.owners > 1;
+  // Ebeveyn kararli `share`i veriyor, satir kendi kartini ekliyor.
+  const paylas = useCallback(() => onShare?.(card), [onShare, card]);
   return (
     <View style={styles.row}>
       <Text style={[styles.place, NUMERIC]}>{place}</Text>
@@ -241,13 +250,13 @@ function CardRow({ card, place, onShare, t }) {
           bozuk bir bağlantıyla kullanıcıyı 403 sayfasına göndermektense yok. */}
       {!!card.shareUrl && (
         <Pressable style={({ pressed }) => [styles.shareBtn, pressed && PRESSED]}
-                   onPress={onShare} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('a11y.share')}>
+                   onPress={paylas} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('a11y.share')}>
           <Ionicons name="share-outline" size={19} color={colors.text2} />
         </Pressable>
       )}
     </View>
   );
-}
+});
 
 const makeStyles = (colors) => StyleSheet.create({
   safe:   { flex: 1, backgroundColor: colors.bg },

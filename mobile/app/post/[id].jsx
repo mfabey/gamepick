@@ -23,6 +23,15 @@ import PostComposer from '../../src/components/PostComposer';
 // bağlıyor. İç içe thread küçük toplulukta boş görünür ve okuması zordur.
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Modul duzeyinde, cunku ikisi de her render'da yeniden uretiliyordu ve
+// PostCard ZATEN memo'lu (bkz. components/PostCard.jsx sonu) — taze kimlikli
+// prop'lar o memo'yu her seferinde bosa cikariyordu.
+const anahtar = (item) => item.id;
+// Bu ekranda karta basmak HICBIR SEY yapmamali: zaten o gonderidesin.
+// PostCard `onOpen` verilmediginde /post/<id>'ye gidiyor, yani prop'u
+// kaldirmak kartlari kendilerine yonlendirirdi.
+const ACMA_YOK = () => {};
+
 export default function PostThread() {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
@@ -76,6 +85,13 @@ export default function PostThread() {
     setComposing(true);
   }, [requireAccount]);
 
+  // Satir ici ok fonksiyonuydu: FlashList her render'da `renderItem` degisti
+  // sanip butun hucreleri yeniden ciziyordu.
+  const satirCiz = useCallback(
+    ({ item }) => <PostCard post={item} onRequireAccount={requireAccount} onOpen={ACMA_YOK} />,
+    [requireAccount],
+  );
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.head}>
@@ -105,13 +121,11 @@ export default function PostThread() {
       ) : (
         <FlashList
           data={data.replies || []}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <PostCard post={item} onRequireAccount={requireAccount} onOpen={() => {}} />
-          )}
+          keyExtractor={anahtar}
+          renderItem={satirCiz}
           ListHeaderComponent={
             <View>
-              <PostCard post={data.post} onRequireAccount={requireAccount} onOpen={() => {}} kok />
+              <PostCard post={data.post} onRequireAccount={requireAccount} onOpen={ACMA_YOK} kok />
               <Pressable
                 onPress={onReply}
                 style={({ pressed }) => [styles.replyBar, pressed && PRESSED]}

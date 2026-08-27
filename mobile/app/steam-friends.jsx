@@ -12,7 +12,7 @@
 // her arkadaşta aynı oyun tepeye çıkıyordu (Counter-Strike 2) — doğru ama
 // işe yaramaz bir cevap.
 // ─────────────────────────────────────────────────────────────────────────────
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import {
   View, Text, Pressable, StyleSheet, ActivityIndicator, RefreshControl,
 } from 'react-native';
@@ -30,6 +30,9 @@ import { getAvatarPreset } from '../src/utils/avatar';
 import { radius, spacing, type, PRESSED, NUMERIC, TAB_SPACE, motion } from '../src/theme';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
+
+// Modul duzeyinde: satir ici verilseydi her render'da yeni kimlik olurdu.
+const anahtar = (f) => f.steamId;
 
 export default function SteamFriendsScreen() {
   const styles = useStyles(makeStyles);
@@ -76,6 +79,14 @@ export default function SteamFriendsScreen() {
   }, []);
 
   // ── Kapılar ───────────────────────────────────────────────────────────────
+  // `onToggle={() => toggle(item.steamId)}` her render'da her satir icin yeni
+  // bir closure uretiyordu. `toggle` zaten kimligi arguman aliyor; satir onu
+  // kendisi ekliyor, sarmalayici gereksizdi.
+  const satirCiz = useCallback(
+    ({ item }) => <FriendRow item={item} open={open === item.steamId} onToggle={toggle} t={t} />,
+    [open, toggle, t],
+  );
+
   let body = null;
 
   if (!session) {
@@ -165,15 +176,12 @@ export default function SteamFriendsScreen() {
       {body || (
         <FlashList
           data={data.friends}
-          keyExtractor={(f) => f.steamId}
-          estimatedItemSize={78}
+          keyExtractor={anahtar}
           contentContainerStyle={{ paddingBottom: TAB_SPACE }}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.text2} />
           }
-          renderItem={({ item }) => (
-            <FriendRow item={item} open={open === item.steamId} onToggle={() => toggle(item.steamId)} t={t} />
-          )}
+          renderItem={satirCiz}
         />
       )}
     </SafeAreaView>
@@ -182,17 +190,19 @@ export default function SteamFriendsScreen() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-function FriendRow({ item, open, onToggle, t }) {
+const FriendRow = memo(function FriendRow({ item, open, onToggle, t }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const preset = getAvatarPreset(item.gamerisen?.avatar);
   const locked = item.private;
+  // Ebeveyn kararli `toggle`i veriyor, satir kendi kimligini ekliyor.
+  const ac = useCallback(() => onToggle?.(item.steamId), [onToggle, item.steamId]);
 
   return (
     <View style={styles.card}>
       <Pressable
         style={({ pressed }) => [styles.row, pressed && !locked && PRESSED]}
-        onPress={locked ? undefined : onToggle}
+        onPress={locked ? undefined : ac}
         disabled={locked}
       >
         {/* Steam avatarı bir URL; Gamerisen ön ayarı ise ikon. İkisi farklı
@@ -254,7 +264,7 @@ function FriendRow({ item, open, onToggle, t }) {
       )}
     </View>
   );
-}
+});
 
 const makeStyles = (colors) => StyleSheet.create({
   safe:   { flex: 1, backgroundColor: colors.bg },
