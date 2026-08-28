@@ -47,6 +47,7 @@ import {
   ayracGerekli, ayracParcalari, kuyrukVar, ustBosluk,
 } from '../../src/utils/messageGroups';
 import { saltEmojiMi, EMOJI_BOY } from '../../src/utils/emojiOnly';
+import { tmpDegistir, bekleyenEsIndeks } from '../../src/utils/gonderimEsleme';
 import { REACTIONS, reactionList } from '../../src/services/reactions';
 import { radius, spacing, type, PRESSED, motion, TOUCH_MIN, NUMERIC } from '../../src/theme';
 import { useStyles, useTheme } from '../../src/context/ThemeContext';
@@ -61,7 +62,16 @@ const MAX_TEXT = 1000;
 
 // Modul duzeyinde: satir ici verilseydi her render'da yeni kimlik olur ve
 // FlatList tum hucreleri yeniden anahtarlamak zorunda kalirdi.
-const anahtar = (m) => m.id;
+//
+// ── `yerelId` ÖNCE GELİYOR ──
+// İyimser gönderimde satır önce `tmp-…` kimliğiyle giriyor, sunucu yanıtı
+// gelince gerçek kimliğe geçiyor. Anahtar `m.id` olsaydı bu geçişte
+// DEĞİŞİRDİ; FlatList hücreyi söküp yeniden kurar ve giriş animasyonu
+// ikinci kez oynardı (cihazda görüldü: baloncuk iki kez zıplıyor).
+//
+// `yerelId` istemcide üretiliyor ve mesaj gerçek kimliğine kavuştuktan
+// SONRA da üstünde kalıyor — anahtar böylece satırın ömrü boyunca sabit.
+const anahtar = (m) => m.yerelId || m.id;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // iOS Messages ölçüleri — kaynak: .claude/skills/ios-messages/SKILL.md
@@ -179,26 +189,6 @@ const MEDYA_BOY = 165;
 const GIF_OLCU = 200;
 
 
-/**
- * Geçici baloncuğu sunucunun döndürdüğü gerçeğiyle değiştirir.
- *
- * ── ÖNCE VAR MI DİYE BAKIYOR ──
- * Pusher mesajı GÖNDERENE DE düşürüyor (bkz. dosya başlığı). Yanıt
- * gelmeden önce yankı düşmüşse gerçek mesaj listede ZATEN var; düz bir
- * `map` o durumda tmp'yi ikinci bir kopyayla değiştiriyor ve aynı
- * kimlikten iki satır kalıyor.
- *
- * Cihazda görüldü: "Encountered two children with the same key".
- * Hata koddaydı ama ERİŞİLEMİYORDU — Pusher hiç bağlanmadığı için yankı
- * hiç gelmiyordu (bkz. services/realtime.js'teki içe aktarım düzeltmesi).
- * Bağlantı çalışır çalışmaz yarış gerçek oldu.
- */
-function tmpDegistir(liste, tempId, gercek) {
-  return liste.some((m) => m.id === gercek.id)
-    // Yankı bizden önce düşmüş: tmp satırını at, gerçeği yerinde bırak.
-    ? liste.filter((m) => m.id !== tempId)
-    : liste.map((m) => (m.id === tempId ? gercek : m));
-}
 
 function girisYayla() {
   'worklet';
@@ -407,8 +397,24 @@ export default function ChatScreen() {
 
   /** Kimliğe göre tekilleştirerek ekler; en yeni başta düzeni korunur. */
   const addMessage = useCallback((m) => {
-    setMsgs((cur) => (cur.some((x) => x.id === m.id) ? cur : [m, ...cur]));
-  }, []);
+    setMsgs((cur) => {
+      // Kimlikten tekillestirme (Pusher gonderene de dusuruyor).
+      if (cur.some((x) => x.id === m.id)) return cur;
+      // ── YANKI BEKLEYEN SATIRA YAZILIR ──
+      // Kendi gonderdigim mesajin yankisi, sunucunun HTTP yanitindan ONCE
+      // gelebiliyor. Ayri bir satir olarak eklenirse ayni mesaj bir sure
+      // IKI BALONCUK olarak duruyor (cihazda goruldu). Bekleyen kendi
+      // satirimla eslesiyorsa onun uzerine yaziliyor ve `yerelId`
+      // korunuyor — anahtar degismedigi icin hucre de sokulmuyor.
+      const i = bekleyenEsIndeks(cur, m, myUid);
+      if (i >= 0) {
+        const kopya = cur.slice();
+        kopya[i] = { ...m, yerelId: cur[i].yerelId };
+        return kopya;
+      }
+      return [m, ...cur];
+    });
+  }, [myUid]);
 
   /**
    * Mesajı geri alınmış olarak işaretler — LİSTEDEN ÇIKARMAZ.
@@ -752,7 +758,12 @@ export default function ChatScreen() {
 
     // Geçici kimlik: sunucu gerçeğini döndürünce bununla değiştiriliyor.
     const tempId = 'tmp-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7);
-    const optimistic = { id: tempId, from: myUid, text: body, at: Date.now(), pending: true };
+    // `yerelId` = satırın ÖMÜR BOYU anahtarı (bkz. anahtar()). Sunucu
+    // kimliği geldiğinde de üstünde kalıyor, böylece hücre sökülmüyor.
+    const optimistic = {
+      id: tempId, yerelId: tempId,
+      from: myUid, text: body, at: Date.now(), pending: true,
+    };
     // İYİMSER ALINTI: sunucu `quote`u yanıtla döndürüyor ama baloncuk o ana
     // kadar alıntısız kalırsa mesaj gönderilir gönderilmez bağlamını
     // kaybediyor. Yerel kopya yalnızca çizim için; sunucu yanıtı üzerine yazıyor.
@@ -806,7 +817,8 @@ export default function ChatScreen() {
     setGifOpen(false);
     const tempId = 'tmp-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7);
     const optimistic = {
-      id: tempId, from: myUid, text: '', at: Date.now(), pending: true,
+      id: tempId, yerelId: tempId,
+      from: myUid, text: '', at: Date.now(), pending: true,
       gif: { url: g.url, w: g.w, h: g.h },
     };
     // Yanıt kipindeysek alıntıyı iyimser olarak da taşıyoruz (bkz. send).
@@ -1588,7 +1600,7 @@ const Bubble = memo(function Bubble({
       >
         <Pressable
           ref={rowRef}
-          style={styles.sarmal}
+          style={[styles.sarmal, msg.pending && styles.sarmalBekliyor]}
           onLongPress={msg.deleted ? undefined : handleLongPress}
           delayLongPress={400}
           onPress={msg.share ? acPaylasimi : onTap}
@@ -1603,7 +1615,14 @@ const Bubble = memo(function Bubble({
         {/* Gönderiliyor / başarısız — iyimser gönderimin görünen tarafı.
             "Okundu" YALNIZCA en yeni okunmuş kendi mesajımda (bkz. seenId)
             ve iOS gibi saatiyle birlikte. */}
-        {msg.pending ? <Text style={styles.state}>{t('msg.sending')}</Text> : null}
+        {/* "Gönderiliyor…" ARTIK YAZI DEĞİL, OPAKLIK (bkz. sarmalBekliyor).
+            Yazı olarak baloncuğun altına giriyordu; gönderim bitince
+            kaybolunca satır kısalıyor ve altındaki her şey kayıyordu —
+            cihazda görüldü. iOS'ta da gönderim sırasında ayrı bir yazı
+            yok. Opaklık yerleşimi hiç değiştirmiyor.
+
+            "Gönderilmedi" YAZI OLARAK KALIYOR: nadir, kullanıcıdan bir
+            karşılık bekleyen bir durum ve yer açmayı hak ediyor. */}
         {msg.failed ? <Text style={[styles.state, styles.stateFail]}>{t('msg.notSent')}</Text> : null}
         {seen && !msg.pending && !msg.failed ? (
           <Text style={styles.seen}>{`${t('msg.seen')} ${saatOf(msg.at, lang)}`}</Text>
@@ -1771,6 +1790,10 @@ const makeStyles = (colors) => StyleSheet.create({
   // genişlikte ve dar bir telefonda %75 onun altına düşüyor — sınır sarmalda
   // olsaydı kart sıkışırdı.
   sarmal: { position: 'relative' },
+  // Gönderim uçuşta: baloncuk soluk. Metin satırı yerine bu kullanılıyor
+  // çünkü opaklık YERLEŞİMİ DEĞİŞTİRMİYOR — giren/çıkan bir yazı satırı
+  // her gönderimde listeyi kaydırıyordu.
+  sarmalBekliyor: { opacity: 0.55 },
 
   // Goruldu / durum isareti baloncugun ALTINDA ve hizasi satirdan geliyor.
   seen:  { color: colors.text3, fontSize: type.caption2, marginTop: spacing.s4 },
