@@ -93,13 +93,58 @@ export default function VideosScreen() {
   // olmaz ve aynı videolar tekrar gelirdi.
   const seedRef = useRef(String(Date.now()) + Math.random().toString(36).slice(2, 8));
 
-  // Tam ekran eleman ölçüleri — paging bunun tam katlarına oturur.
+  // Tam ekran eleman ölçüleri.
   //
   // useWindowDimensions ŞART: eskiden modül düzeyinde Dimensions.get('window')
   // vardı ve döndürmede GÜNCELLENMİYORDU. Yatay moda geçince eleman yüksekliği
   // hâlâ dikey ekranın yüksekliği olurdu; sayfalama tamamen bozulurdu.
   const { width: winW, height: winH } = useWindowDimensions();
-  const itemH = winH;
+
+  // ÖĞE YÜKSEKLİĞİ PENCEREDEN DEĞİL, LİSTENİN ÖLÇÜLEN YÜKSEKLİĞİNDEN.
+  //
+  // Önceden `itemH = winH` idi ve buradaki yorum "paging bunun tam katlarına
+  // oturur" diyordu. Yanlıştı: `pagingEnabled` öğe yüksekliğine değil
+  // KAYDIRMA ALANININ yüksekliğine göre sayfalar. İkisi bir piksel ayrışsa
+  // fark her sayfada BİRİKİYOR — videolar giderek kayıyordu.
+  //
+  // Pencere ile liste görünümü eşit olmak zorunda değil: FloatingTabBar
+  // mutlak konumlu ama Tabs'ın screenOptions'ında
+  // `tabBarStyle: { position: 'absolute' }` yok, yani react-navigation
+  // çubuğa yer ayırabiliyor. Ölçülen yüksekliği kullanmak bu belirsizliği
+  // tamamen ortadan kaldırıyor — tanımı gereği eşitler.
+  const [listH, setListH] = useState(0);
+  const onListLayout = useCallback((e) => {
+    const h = Math.round(e.nativeEvent.layout.height);
+    setListH((onceki) => (onceki === h ? onceki : h));
+  }, []);
+  // Ölçüm gelene kadar pencereye düş: ilk kare boş kalmasın.
+  const itemH = listH || winH;
+
+  // DÖNDÜRMEDE YENİDEN HİZALA.
+  //
+  // Yükseklik değişince (914 → 411) mevcut kaydırma konumu yeni öğe
+  // yüksekliğinin katı olmuyor ve liste iki videonun arasında kalıyor.
+  // `pagingEnabled` bunu kendiliğinden toparlamıyor: sonraki savurmalar
+  // aynı sabit ofseti koruyor (ölçüldü 2026-08-31, yatayda ~%9,5 şerit).
+  //
+  // Bağımlılık YALNIZ listH: `active`ı da eklersek her video değişiminde
+  // yeniden kaydırır ve akışı kilitler.
+  // İKİ KARE BEKLETİLİYOR. Efekt doğrudan çalıştırıldığında FlashList yeni
+  // yüksekliğe göre yeniden yerleşimi HENÜZ bitirmemiş oluyor ve kaydırma
+  // eski düzene göre hesaplanıyor. Ölçüldü: yataya geçiş düzeliyordu ama
+  // dikeye dönüşte liste yine iki videonun arasında kalıyordu.
+  useEffect(() => {
+    if (!listH || !items.length) return;
+    let iptal = false;
+    const kare1 = requestAnimationFrame(() => {
+      const kare2 = requestAnimationFrame(() => {
+        if (!iptal) listRef.current?.scrollToIndex?.({ index: active, animated: false });
+      });
+      if (iptal) cancelAnimationFrame(kare2);
+    });
+    return () => { iptal = true; cancelAnimationFrame(kare1); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listH]);
   // Üst çubuğun yatay paylarında kullanılıyor. Ekranın `landscape` durumundan
   // değil gerçek ölçüden okunuyor: kilit uygulanana kadar ikisi ayrışıyor ve
   // geçiş anında düğme yanlış yere sıçrardı.
@@ -363,11 +408,20 @@ export default function VideosScreen() {
 
   return (
     <View style={styles.root}>
+      {/* `pagingEnabled` KALIYOR — sorun onda değildi.
+          Android'in native sayfalaması kaydırma alanının yüksekliğinin
+          katlarına oturur ve bu yol sağlam. Tek eksik, ÖĞENİN de tam o
+          yüksekte olmasıydı; `onLayout` ölçümü artık bunu garanti ediyor.
+
+          `snapToInterval` + `disableIntervalMomentum` denendi ve GERİ ALINDI:
+          yatayda kısa savurmalarda liste iki videonun arasında duruyordu
+          (ölçüldü 2026-08-31, Android 16 emülatör). */}
       <FlashList
         ref={listRef}
         data={items}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
+        onLayout={onListLayout}
         pagingEnabled
         showsVerticalScrollIndicator={false}
         onViewableItemsChanged={onViewableItemsChanged}
