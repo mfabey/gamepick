@@ -217,7 +217,9 @@ export default function Footer() {
           flexWrap: 'wrap',
         }}
       >
-        <span style={{ fontSize: 13, color: 'var(--text-3)', fontWeight: 500 }}>© {year} Gamerisen</span>
+        <span style={{ fontSize: 13, color: 'var(--text-3)', fontWeight: 500 }}>
+          © {year} Gamerisen – {tr ? 'Tüm hakları saklıdır.' : 'All rights reserved.'}
+        </span>
         <p style={{ margin: 0, fontSize: 11.5, lineHeight: 1.6, color: 'color-mix(in srgb, var(--text-3) 70%, transparent)', maxWidth: 560 }}>
           {t('footer.disclaimer')}
         </p>
