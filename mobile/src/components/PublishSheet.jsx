@@ -7,7 +7,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, Pressable, StyleSheet, Modal, TextInput,
-  KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
+  KeyboardAvoidingView, ActivityIndicator, Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -62,7 +62,7 @@ export default function PublishSheet({ visible, onClose, collection, publishedId
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={({ pressed }) => [styles.backdrop, pressed && PRESSED]} onPress={onClose}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <KeyboardAvoidingView behavior="padding">
           <Pressable style={({ pressed }) => [styles.sheet, pressed && PRESSED]} onPress={(e) => e.stopPropagation()}>
             <View style={styles.grabber} />
             <Text style={styles.title}>{t('pl.publishTitle')}</Text>

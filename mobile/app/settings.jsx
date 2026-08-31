@@ -6,6 +6,7 @@
 // ilkesi gereği ayrıldı: kullanıcı koleksiyonunu ararken dil ve bildirim
 // ayarlarının arasında gezinmemeli.
 // ─────────────────────────────────────────────────────────────────────────────
+import { useState } from 'react';
 import { View, Text, Pressable, StyleSheet, ScrollView, Switch, Alert } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -19,6 +20,7 @@ import { useWishlist } from '../src/context/WishlistContext';
 import { signOut } from '../src/services/session';
 import { LANGUAGES } from '../src/services/locale';
 import { SettingsGroup, SettingsRow } from '../src/components/SettingsList';
+import ChoiceSheet from '../src/components/ChoiceSheet';
 import { pushHataAnahtari } from '../src/notifications';
 import { useTheme, useStyles } from '../src/context/ThemeContext';
 
@@ -46,6 +48,7 @@ export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { t, lang, setLang } = useLanguage();
+  const [dilAcik, setDilAcik] = useState(false);
   const { account } = useAuth();
   const { items, enabled, enableNotifications, disableNotifications } = useWishlist();
 
@@ -80,21 +83,16 @@ export default function SettingsScreen() {
    * aradığı satırı ancak kendi dilinin adından bulabilir.
    *
    * Liste `LANGUAGES` üzerinden kuruluyor; yeni dil eklemek tek satır.
+   *
+   * ALERT DEĞİL ChoiceSheet — çünkü Alert bu listeyi TAŞIYAMIYORDU.
+   * Öncesinde `Alert.alert` buton dizisiydi: 5 dil + İptal = 6 buton.
+   * Android'in AlertDialog'u üçten fazlasını göstermiyor ve fazlasını
+   * SESSİZCE düşürüyor. Ölçüldü (2026-08-31, Android 16, release APK):
+   * ekranda yalnız ENGLISH / ESPAÑOL / PORTUGUÊS çıkıyordu — LANGUAGES
+   * sırasındaki son iki dil, Deutsch ve TÜRKÇE, hiç görünmüyordu.
+   * Uygulamayı Türkçe kullanmak isteyen biri Android'de bunu yapamıyordu.
    */
-  const showLanguagePicker = () => {
-    Alert.alert(
-      t('set.language'),
-      undefined,
-      [
-        ...LANGUAGES.map((l) => ({
-          text: lang === l.code ? `✓ ${l.name}` : l.name,
-          onPress: () => { if (lang !== l.code) setLang(l.code); },
-        })),
-        { text: t('common.cancel'), style: 'cancel' },
-      ],
-      { cancelable: true }
-    );
-  };
+  const showLanguagePicker = () => setDilAcik(true);
 
   const onSignOut = () => {
     Alert.alert(t('acc.signOut'), account?.email || '', [
@@ -201,6 +199,15 @@ export default function SettingsScreen() {
           </SettingsGroup>
         )}
       </ScrollView>
+
+      <ChoiceSheet
+        visible={dilAcik}
+        title={t('set.language')}
+        options={LANGUAGES.map((l) => ({ key: l.code, label: l.name }))}
+        selectedKey={lang}
+        onSelect={setLang}
+        onClose={() => setDilAcik(false)}
+      />
     </SafeAreaView>
   );
 }

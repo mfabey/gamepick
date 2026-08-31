@@ -5,7 +5,7 @@
 import { useState, useCallback } from 'react';
 import {
   View, Text, Pressable, StyleSheet, Modal, TextInput, ScrollView,
-  KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
+  KeyboardAvoidingView, ActivityIndicator, Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -60,7 +60,7 @@ export default function ReportSheet({ visible, onClose, targetType, targetId, ta
           yüzeye değil. İkisi de hâlâ Pressable — biri kapatıyor, öteki
           dokunuşu yutuyor — ama görsel tepki vermiyorlar. */}
       <Pressable style={styles.backdrop} onPress={close}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <KeyboardAvoidingView behavior="padding">
           <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
             <View style={styles.grabber} />
             <Text style={styles.title}>{t('soc.reportTitle')}</Text>

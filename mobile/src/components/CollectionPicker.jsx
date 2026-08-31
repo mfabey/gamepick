@@ -5,7 +5,7 @@
 import { useState, useCallback } from 'react';
 import {
   View, Text, Pressable, StyleSheet, Modal, TextInput, ScrollView,
-  KeyboardAvoidingView, Platform, Alert,
+  KeyboardAvoidingView, Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -39,7 +39,7 @@ export default function CollectionPicker({
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={({ pressed }) => [styles.backdrop, pressed && PRESSED]} onPress={onClose}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <KeyboardAvoidingView behavior="padding">
           <Pressable style={({ pressed }) => [styles.sheet, pressed && PRESSED]} onPress={(e) => e.stopPropagation()}>
             <View style={styles.grabber} />
             <Text style={styles.title}>{t('col.addTo')}</Text>

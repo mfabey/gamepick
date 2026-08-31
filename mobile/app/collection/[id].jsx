@@ -4,7 +4,7 @@
 import { useState, useCallback } from 'react';
 import {
   View, Text, Pressable, StyleSheet, TextInput, Alert, Modal,
-  KeyboardAvoidingView, Platform,
+  KeyboardAvoidingView, 
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -159,7 +159,7 @@ export default function CollectionDetailScreen() {
 
       <Modal visible={editing} transparent animationType="fade" onRequestClose={() => setEditing(false)}>
         <Pressable style={({ pressed }) => [styles.backdrop, pressed && PRESSED]} onPress={() => setEditing(false)}>
-          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <KeyboardAvoidingView behavior="padding">
             <Pressable style={({ pressed }) => [styles.sheet, pressed && PRESSED]} onPress={(e) => e.stopPropagation()}>
               <Text style={styles.sheetTitle}>{t('col.rename')}</Text>
               <TextInput

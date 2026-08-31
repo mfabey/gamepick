@@ -12,7 +12,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, Pressable, StyleSheet, TextInput, ActivityIndicator,
-  Alert, ScrollView, RefreshControl, KeyboardAvoidingView, Platform,
+  Alert, ScrollView, RefreshControl, KeyboardAvoidingView, 
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -236,7 +236,7 @@ function UsernameSetup({ onDone, onBack }) {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <Header title={t('soc.title')} onBack={onBack} />
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
         <ScrollView contentContainerStyle={[styles.setupBody, { paddingBottom: insets.bottom + spacing.xl }]} keyboardShouldPersistTaps="handled">
           <Ionicons name="people-circle-outline" size={58} color={colors.accent} />
           <Text style={styles.setupTitle}>{t('soc.setupTitle')}</Text>

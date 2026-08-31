@@ -1107,10 +1107,20 @@ export default function ChatScreen() {
         </Animated.View>
       ) : null}
 
+      {/* ANDROID'DE DE 'padding' — `undefined` DEĞİL.
+          `undefined` bırakıldığında KeyboardAvoidingView Android'de HİÇBİR
+          ŞEY yapmaz; tamamen pencerenin adjustResize ile küçülmesine güvenir.
+          Android 15+ edge-to-edge zorlamasıyla pencere artık klavye için
+          KÜÇÜLMÜYOR — klavye bir inset olarak geliyor ve uygulamanın onu
+          kendisi tüketmesi gerekiyor.
+
+          Ölçüldü (2026-08-31, Android 16 emülatör, release APK): klavye
+          açılınca yazma alanı da mesajlar da klavyenin ALTINDA kalıyordu,
+          hiç yukarı kaymıyorlardı. Aynı kalıp beş dosyada daha var. */}
       {body || (
         <KeyboardAvoidingView
           style={styles.flex}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          behavior="padding"
           keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}
         >
           {/* Sola sürükleyince saat sütunu kenardan giriyor. Sarmalayıcı

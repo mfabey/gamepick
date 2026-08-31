@@ -4,7 +4,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState, useCallback } from 'react';
 import {
-  View, Text, Pressable, StyleSheet, TextInput, Alert, Modal, KeyboardAvoidingView, Platform,
+  View, Text, Pressable, StyleSheet, TextInput, Alert, Modal, KeyboardAvoidingView, 
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
@@ -131,7 +131,7 @@ function CollectionsScreenContent() {
       {/* Oluşturma sayfası */}
       <Modal visible={creating} transparent animationType="fade" onRequestClose={() => setCreating(false)}>
         <Pressable style={({ pressed }) => [styles.backdrop, pressed && PRESSED]} onPress={() => setCreating(false)}>
-          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <KeyboardAvoidingView behavior="padding">
             <Pressable style={({ pressed }) => [styles.sheet, pressed && PRESSED]} onPress={(e) => e.stopPropagation()}>
               <Text style={styles.sheetTitle}>{t('col.new')}</Text>
 
