@@ -331,6 +331,7 @@ export default {
   'share.send': 'Enviar',
   'share.sent': 'Enviado',
   'share.noFriends': 'Você ainda não tem amigos. Adicione alguém primeiro.',
+  'share.otherApps': 'Outros apps',
   'vid.share': 'Enviar',
   'msg.seen': 'Visto',
   'msg.sending': 'Enviando…',

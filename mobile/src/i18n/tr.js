@@ -326,6 +326,7 @@ export default {
   'share.send': 'Gönder',
   'share.sent': 'Gönderildi',
   'share.noFriends': 'Henüz arkadaşın yok. Önce arkadaş ekle.',
+  'share.otherApps': 'Diğer uygulamalar',
   'vid.share': 'Gönder',
   'msg.seen': 'Görüldü',
   'msg.sending': 'Gönderiliyor…',

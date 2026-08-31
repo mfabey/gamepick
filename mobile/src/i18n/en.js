@@ -324,6 +324,7 @@ export default {
   'share.send': 'Send',
   'share.sent': 'Sent',
   'share.noFriends': 'No friends yet. Add someone first.',
+  'share.otherApps': 'Other apps',
   'vid.share': 'Send',
   'msg.seen': 'Seen',
   'msg.sending': 'Sending…',

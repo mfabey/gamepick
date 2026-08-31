@@ -28,7 +28,6 @@ import ReviewCard from '../../src/components/ReviewCard';
 import PostCard from '../../src/components/PostCard';
 import FriendActivity, { hasFriendSignal } from '../../src/components/FriendActivity';
 import ReportSheet from '../../src/components/ReportSheet';
-import ShareToFriendSheet from '../../src/components/ShareToFriendSheet';
 import CardExpand from '../../src/components/CardExpand';
 import { kaynakYaz, kucultmeAl } from '../../src/services/gecisKaynak';
 import { fetchForYouCandidates } from '../../src/api/recommend';
@@ -367,11 +366,11 @@ export default function HomeScreen() {
     return mergeHighlights(interleaveReviews(sortedGames, social), highlights);
   }, [feedItems, dismissedIds, reviews, posts, highlights]);
 
-  // ── Paylaşım ──
-  // GÖRÜNÜR DÜĞME, gizli jest değil. Bir ara uzun basma + menü olarak
-  // yazılmıştı; uzun basma keşfedilemiyor ve menü tek dokunuşluk bir işi
-  // iki dokunuşa çıkarıyordu. Düğme kartın sağ alt köşesinde.
-  const [paylas, setPaylas] = useState(null);       // { gameId, name }
+  // ── Paylaşım BU EKRANDA DEĞİL ──
+  // Şerit kartlarının kapağında bir "arkadaşa gönder" dairesi vardı; dört
+  // şeritteki her kartta çıkıyor, kapağı kaplıyordu. Eylem oyun detayına
+  // taşındı: gönderme kararı kartta değil, oyunu açtıktan sonra veriliyor.
+  // Bkz. app/game/[id].jsx üst çubuğundaki gönderme düğmesi.
 
   // "İlgilenmiyorum" — "×" düğmesinden → onay → feed'den kaldır
   const handleDismiss = useCallback((game) => {
@@ -438,10 +437,6 @@ export default function HomeScreen() {
     // Ekrandan çıkarken BÜYÜME bindirmesi kalmasın (detay devraldı).
     return () => setBuyuyen(null);
   }, []));
-
-  const paylasAc = useCallback((game) => {
-    setPaylas({ gameId: String(game.id), name: game.name });
-  }, []);
 
   const keyExtractor = useCallback((item) => item.key, []);
   // FlashList'e TÜR bildiriliyor: iki farklı yükseklikte kart var ve tür
@@ -571,17 +566,17 @@ export default function HomeScreen() {
         )}
 
         {lead === 'forYou' && (
-          <FadeIn delay={140}><Section title={t('home.forYou')} games={forYou} router={router} onDismiss={handleDismiss} onShare={paylasAc} onExpand={kartAc} /></FadeIn>
+          <FadeIn delay={140}><Section title={t('home.forYou')} games={forYou} router={router} onDismiss={handleDismiss} onExpand={kartAc} /></FadeIn>
         )}
         {lead === 'trend' && (
-          <FadeIn delay={140}><Section title={t('home.trend')} games={trend} router={router} onShare={paylasAc} onExpand={kartAc} /></FadeIn>
+          <FadeIn delay={140}><Section title={t('home.trend')} games={trend} router={router} onExpand={kartAc} /></FadeIn>
         )}
 
         {/* Yeni Çıkanlar ve İndirimdekiler LİDERİN ALTINDA, tam ağırlıkta.
             Akışa karıştırılmışlardı; geri alındı çünkü ikisi de NİYETLE
             aranıyor — "indirime ne girmiş" sorusunun akışta karşılığı yok. */}
-        <FadeIn delay={200}><Section title={t('home.new')} games={fresh} router={router} onShare={paylasAc} onExpand={kartAc} /></FadeIn>
-        <FadeIn delay={260}><Section title={t('home.sale')} games={sale} router={router} onShare={paylasAc} onExpand={kartAc} /></FadeIn>
+        <FadeIn delay={200}><Section title={t('home.new')} games={fresh} router={router} onExpand={kartAc} /></FadeIn>
+        <FadeIn delay={260}><Section title={t('home.sale')} games={sale} router={router} onExpand={kartAc} /></FadeIn>
     </View>
   );
 
@@ -628,13 +623,6 @@ export default function HomeScreen() {
         onVar={kucultmeBitti}
       />
 
-      <ShareToFriendSheet
-        visible={!!paylas}
-        onClose={() => setPaylas(null)}
-        gameId={paylas?.gameId}
-        gameName={paylas?.name}
-      />
-
       <ReportSheet
         visible={!!reportTarget}
         onClose={() => setReportTarget(null)}
@@ -652,7 +640,7 @@ function go(router, g) {
   });
 }
 
-function Section({ title, games, router, onDismiss, onShare, onExpand }) {
+function Section({ title, games, router, onDismiss, onExpand }) {
   const { t } = useLanguage();
   // Kanca erken donusten ONCE: asagida `games` bossa null donuluyor.
   const styles = useStyles(makeStyles);
@@ -671,7 +659,7 @@ function Section({ title, games, router, onDismiss, onShare, onExpand }) {
         </Pressable>
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-        {games.map(g => <HomeCard key={g.id} game={g} router={router} onDismiss={onDismiss} onShare={onShare} onExpand={onExpand} />)}
+        {games.map(g => <HomeCard key={g.id} game={g} router={router} onDismiss={onDismiss} onExpand={onExpand} />)}
       </ScrollView>
     </View>
   );
@@ -681,7 +669,7 @@ function Section({ title, games, router, onDismiss, onShare, onExpand }) {
 // kart vardı: kendi rozetleri, kendi ad bindirmesi, kendi 132pt genişliği.
 // HTML ölçüsü 148 ("eski 132 değil") ve ad kapağın altında — ikisi de
 // GameCard'ın rail varyantında.
-const HomeCard = memo(function HomeCard({ game, router, onDismiss, onShare, onExpand }) {
+const HomeCard = memo(function HomeCard({ game, router, onDismiss, onExpand }) {
   return (
     <GameCard
       game={game}
@@ -694,8 +682,6 @@ const HomeCard = memo(function HomeCard({ game, router, onDismiss, onShare, onEx
       // şeridinden geliyor — Yeni ve İndirim şeritleri onu göndermiyor,
       // dolayısıyla orada daire de çıkmıyor.
       onDismiss={onDismiss}
-      // Paylaşım GÖRÜNÜR bir düğme: kapağın sağ alt köşesinde.
-      onShare={onShare}
     />
   );
 });

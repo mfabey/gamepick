@@ -24,7 +24,6 @@
 import { memo } from 'react';
 import { View, Text, Pressable, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 
 import GameCover from '../GameCover';
 import { useStyles, useTheme } from '../../context/ThemeContext';
@@ -43,12 +42,11 @@ import { turAdi } from '../../services/genreName';
  * @param {func}    onPress
  * @param {func}   [onLongPress]
  * @param {func}   [onDismiss] verilirse kapakta 26pt "×" çıkar (yalnız öneri)
- * @param {func}   [onShare]   verilirse kapakta 26pt gönderme düğmesi çıkar
  * @param {func}   [onExpand]  verilirse dokunuş KAPAK ÇERÇEVESİYLE bildirilir
  *                             (büyüme geçişi için) — `onPress` yerine geçer
  * @param {object} [style]    dış kap (ızgara hücresi genişliği buradan)
  */
-function GameCard({ game, variant = 'grid', context, overlay, onPress, onLongPress, onDismiss, onShare, onExpand, style }) {
+function GameCard({ game, variant = 'grid', context, overlay, onPress, onLongPress, onDismiss, onExpand, style }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const { t, formatPrice } = useLanguage();
@@ -100,6 +98,14 @@ function GameCard({ game, variant = 'grid', context, overlay, onPress, onLongPre
     </>
   );
 
+  // ── GÖNDERME DÜĞMESİ KAPAKTAN KALKTI ──
+  // Kapağın sağ alt köşesinde 26pt bir "arkadaşa gönder" dairesi vardı ve
+  // anasayfanın DÖRT şeridindeki HER kartta çıkıyordu. Paylaşım kart
+  // seviyesinde alınan bir karar değil: kullanıcı önce oyunu açıyor, sonra
+  // göndermeye karar veriyor. Şeritteki kopya kapağın üstünü kaplıyor,
+  // yanlışlıkla tetikleniyor ve "×" ile aynı kartta iki bindirmeli hedef
+  // yaratıyordu. Eylem oyun detayına taşındı (bkz. app/game/[id].jsx).
+
   // ── "×" — ÖZERKLİK (Faz 1) ────────────────────────────────────────────────
   // "Yalnızca 'Senin için' şeridinde, 26pt sessiz daire; uzun basınca
   //  'Neden bunu görüyorum?'. Katalog şeritlerinde (Yeni, İndirim) YOK —
@@ -111,26 +117,6 @@ function GameCard({ game, variant = 'grid', context, overlay, onPress, onLongPre
   // Eskiden eleme KARTIN TAMAMINA uzun basmaktı: keşfedilemezdi ve yanlışlıkla
   // tetikleniyordu. Artık görünür bir hedefi var; uzun basma da boşa gitmiyor,
   // gerekçeyi açıklıyor.
-  // ── ARKADAŞA GÖNDER ──
-  // GÖRÜNÜR BİR DÜĞME, gizli bir jest değil. Önce uzun basmaya bağlanmıştı;
-  // uzun basma keşfedilemiyor ve bu ekranda zaten "×" ile paylaşılmış bir
-  // jest — ikisini aynı jeste yüklemek menü gerektiriyordu, menü de tek
-  // dokunuşluk bir işi iki dokunuşa çıkarıyordu.
-  //
-  // SAĞ ALT KÖŞE: üst iki köşe dolu (puan sağ üstte, "×" ve indirim rozeti
-  // sol üstte), sol alt köşe kapaksız oyunda "kapak yok" notunun.
-  const gonder = onShare ? (
-    <Pressable
-      onPress={() => onShare(game)}
-      hitSlop={9}
-      accessibilityRole="button"
-      accessibilityLabel={t('share.toFriend')}
-      style={({ pressed }) => [styles.gonder, pressed && PRESSED]}
-    >
-      <Ionicons name="paper-plane" size={13} color="#fff" />
-    </Pressable>
-  ) : null;
-
   const carpi = onDismiss ? (
     <Pressable
       onPress={() => onDismiss(game)}
@@ -220,7 +206,6 @@ function GameCard({ game, variant = 'grid', context, overlay, onPress, onLongPre
           >
             {rozetler}
             {carpi}
-            {gonder}
           </GameCover>
 
           {/* SABİT YÜKSEKLİKLİ metin bloğu — kart uzar, yazı kırpılmaz. */}
@@ -312,15 +297,6 @@ const makeStyles = (colors) => StyleSheet.create({
   },
   // tema-bagimsiz: koyu cam dairenin uzerinde
   carpiText: { color: '#fff', fontSize: 15, lineHeight: 18 },
-  // "×" ile AYNI dil: 26pt sessiz daire, koyu cam. Farkı yalnız konum ve
-  // simge — biri eliyor, öteki gönderiyor.
-  gonder: {
-    position: 'absolute', bottom: spacing.sm, right: spacing.sm,
-    width: CARPI, height: CARPI, borderRadius: radius.pill,
-    alignItems: 'center', justifyContent: 'center',
-    // tema-bagimsiz: oyun kapaginin ustunde duruyor, zemin gorsel
-    backgroundColor: 'rgba(8,10,14,0.6)',
-  },
   // tema-bagimsiz: dolu yesil/kirmizi rozet uzerindeki metin
   tagFree: { fontSize: type.caption2, fontWeight: '800', color: '#04130d' },
   // tema-bagimsiz: dolu kirmizi rozet uzerindeki metin

@@ -34,8 +34,11 @@ import { useLanguage } from '../context/LanguageContext';
  * @param {string} [gameId]   oyun paylaşımı (`rawg_<id>`)
  * @param {string} [newsUrl]  haber paylaşımı
  * @param {string} [gameName] başlıkta gösterilecek ad (yalnız görsel)
+ * @param {func} [onSystemShare] verilirse listenin sonuna "Diğer uygulamalar"
+ *                               satırı geliyor ve işletim sisteminin paylaşım
+ *                               katmanını açıyor
  */
-export default function ShareToFriendSheet({ visible, onClose, appid, gameId, newsUrl, gameName }) {
+export default function ShareToFriendSheet({ visible, onClose, appid, gameId, newsUrl, gameName, onSystemShare }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const { t } = useLanguage();
@@ -75,6 +78,25 @@ export default function ShareToFriendSheet({ visible, onClose, appid, gameId, ne
     finally { setBusy(null); }
   }, [busy, sent, appid, gameId, newsUrl]);
 
+  // ── "DİĞER UYGULAMALAR" ──
+  // Yalnız çağıran verirse çıkıyor. Oyun detayında paylaşımın TEK kapısı bu
+  // sayfa (üst çubukta ayrı bir sistem-paylaşım ikonu yok, orada başlığa yer
+  // kalmıyordu) — o yüzden sistem katmanına giden bir çıkış şart. Arkadaşı
+  // olmayan kullanıcı da böylece boş bir sayfayla kalmıyor.
+  const digerSatiri = onSystemShare ? (
+    <Pressable
+      onPress={() => { onClose?.(); onSystemShare(); }}
+      accessibilityRole="button"
+      style={({ pressed }) => [styles.row, styles.diger, pressed && PRESSED]}
+    >
+      <View style={styles.digerIkon}>
+        <Ionicons name="share-outline" size={19} color={colors.text2} />
+      </View>
+      <Text style={styles.name} numberOfLines={1}>{t('share.otherApps')}</Text>
+      <Ionicons name="chevron-forward" size={16} color={colors.text3} />
+    </Pressable>
+  ) : null;
+
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose} />
@@ -87,14 +109,20 @@ export default function ShareToFriendSheet({ visible, onClose, appid, gameId, ne
         {friends === null ? (
           <View style={styles.center}><ActivityIndicator color={colors.accent} /></View>
         ) : friends.length === 0 ? (
-          <View style={styles.center}>
-            <Text style={styles.empty}>{t('share.noFriends')}</Text>
+          <View>
+            <View style={styles.center}>
+              <Text style={styles.empty}>{t('share.noFriends')}</Text>
+            </View>
+            {digerSatiri}
           </View>
         ) : (
           <FlatList
             data={friends}
             keyExtractor={(f) => f.uid}
             contentContainerStyle={{ paddingBottom: spacing.xl }}
+            // Liste ALTINDA, sabit bir alt bant olarak değil: sabit bant
+            // sayfanın 70% tavanıyla çakışıp arkadaş listesini kısaltırdı.
+            ListFooterComponent={digerSatiri}
             renderItem={({ item }) => {
               const name = item.displayName || item.username || '?';
               const done = !!sent[item.uid];
@@ -149,6 +177,14 @@ const makeStyles = (colors) => StyleSheet.create({
     paddingVertical: spacing.md,
   },
   name: { flex: 1, color: colors.text, fontSize: type.subhead, fontWeight: '600' },
+  // Arkadaş satırlarından bir çizgiyle ayrılıyor: aynı listede ama farklı
+  // cinsten bir eylem.
+  diger: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.cardBorder },
+  // 38 = Avatar boyutu; ikon avatar sütunuyla hizalı kalıyor.
+  digerIkon: {
+    width: 38, height: 38, borderRadius: 19,
+    backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center',
+  },
   send: { color: colors.accentText, fontSize: type.footnote, fontWeight: '800' },
   done: { color: colors.green, fontSize: type.footnote, fontWeight: '700' },
 });

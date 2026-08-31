@@ -26,6 +26,7 @@ import { toggleGameInCollection, createCollection } from '../../src/services/col
 import { turAdi } from '../../src/services/genreName';
 import OwnershipBand from '../../src/components/OwnershipBand';
 import CollectionPicker from '../../src/components/CollectionPicker';
+import ShareToFriendSheet from '../../src/components/ShareToFriendSheet';
 import { reportActivity } from '../../src/api/social';
 import { useQuery } from '../../src/hooks/useQuery';
 import { usePop } from '../../src/hooks/usePop';
@@ -217,6 +218,20 @@ export default function GameDetail() {
     }
   };
 
+  // ── PAYLAŞIM: ÖNCE ARKADAŞ, SONRA SİSTEM ─────────────────────────────────
+  // Gönderme düğmesi anasayfa kartlarının kapağından buraya taşındı: paylaşım
+  // kararı kartta değil, oyun açıldıktan sonra veriliyor.
+  //
+  // ÜST ÇUBUĞA DÖRDÜNCÜ İKON EKLENMEDİ, ölçüldü: 375pt genişlikte çubuk
+  // (12 dolgu ×2 · 44 geri · 12 boşluk ×2 · 3×44 ikon · 10 boşluk ×2)
+  // başlığa 131pt bırakıyor. Dördüncü ikon bunu 77pt'ye — yaklaşık 9 karaktere
+  // düşürüyordu; kaydırınca beliren oyun adı çoğu oyunda okunmaz olurdu.
+  //
+  // Bu yüzden paylaşım TEK KAPI: ikon "gönder" oldu, sistem paylaşım katmanı
+  // sayfanın içindeki "Diğer uygulamalar" satırına indi. Arkadaşı olmayan
+  // kullanıcı da çıkışsız kalmıyor.
+  const [paylasAcik, setPaylasAcik] = useState(false);
+
   // Oyunu iOS paylaşım katmanıyla paylaş
   const onShare = useCallback(async () => {
     const url = detail?.steamUrl || detail?.officialUrl || '';
@@ -228,6 +243,26 @@ export default function GameDetail() {
       });
     } catch { /* kullanıcı iptal etti */ }
   }, [detail, name]);
+
+  // ── SOHBET PAYLAŞIMININ KİMLİĞİ ──
+  // Sunucu `rawg_<sayı>` bekliyor (app/lib/chat-share.js → OYUN_KIMLIK) ama bu
+  // ekrana ÜÇ farklı `id` biçimiyle geliniyor: kart listesi `rawg_<id>`,
+  // gönderi kartı çıplak Steam appid'i, evrensel bağlantı ise SLUG. Kimlik
+  // burada tek biçime çekiliyor; çözülemiyorsa (slug) düğme doğrudan sistem
+  // paylaşımına düşüyor — sohbete bozuk kimlik yollamaktansa.
+  const paylasGameId = useMemo(() => {
+    const ham = String(id || '');
+    if (/^rawg_\d{1,12}$/.test(ham)) return ham;
+    if (/^\d{1,12}$/.test(ham)) return `rawg_${ham}`;
+    if (detail?.steamAppId) return `rawg_${detail.steamAppId}`;
+    return null;
+  }, [id, detail?.steamAppId]);
+
+  const paylasAc = useCallback(() => {
+    if (!paylasGameId) { onShare(); return; }
+    Haptics.selectionAsync();
+    setPaylasAcik(true);
+  }, [paylasGameId, onShare]);
 
   const wishStyle = usePop(watched);
 
@@ -390,7 +425,16 @@ export default function GameDetail() {
           </Animated.Text>
 
           <View style={{ flexDirection: 'row', gap: 10 }}>
-            <IconButton icon='share-outline' size={21} color="#fff" onPress={onShare} style={styles.iconBtn} />
+            {/* Tek paylaşım kapısı: arkadaşa gönderme sayfası. Sistem
+                paylaşımı o sayfanın "Diğer uygulamalar" satırında. */}
+            <IconButton
+              icon='paper-plane-outline'
+              size={20}
+              color="#fff"
+              onPress={paylasAc}
+              label={t('share.toFriend')}
+              style={styles.iconBtn}
+            />
             <Pressable
               style={[styles.iconBtn, inAnyCollection && styles.iconBtnActive]}
               onPress={() => { Haptics.selectionAsync(); setPickerOpen(true); }}
@@ -696,6 +740,15 @@ export default function GameDetail() {
           return added;
         }}
         onCreate={(nm) => createCollection(nm)}
+      />
+
+      {/* Arkadaşa gönderme sayfası — anasayfa kartlarından buraya taşındı. */}
+      <ShareToFriendSheet
+        visible={paylasAcik}
+        onClose={() => setPaylasAcik(false)}
+        gameId={paylasGameId}
+        gameName={title}
+        onSystemShare={onShare}
       />
     </View>
   );
