@@ -629,6 +629,8 @@ export default {
   'notif.enabled': 'Notificações ativadas',
   'notif.permissionError': 'Permissão de notificação negada',
   'notif.needDevBuild': 'As notificações push não funcionam no Expo Go; é preciso uma build de desenvolvimento ou de loja.',
+  'notif.needRealDevice': 'As notificações push precisam de um dispositivo real; não funcionam em emuladores.',
+  'notif.tokenFailed': 'Não foi possível obter o token de notificações. Verifique a sua ligação e tente novamente.',
   'wishlist.title': 'Acompanhados',
   'wishlist.empty': 'Sua lista de desejos está vazia',
   'wishlist.emptyDesc': 'Adicione jogos aqui e avisaremos quando entrarem em promoção.',

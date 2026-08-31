@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import { getSteamDetailsCached } from '../../../lib/steam-cache';
 
 // --- In-Memory Database Loading ---
 function loadDatabase() {
@@ -780,13 +781,28 @@ async function searchSteamLive(query, userGpu) {
         }
       }
 
+      // KAPAK ADRESİ STEAM'DEN ALINIYOR, KURULMUYOR.
+      //
+      // Ölçüldü (2026-08-31): `/apps/<id>/header.jpg` biçimi ESKİ oyunlarda
+      // çalışıyor (1145350, 227300, 2670630 → 200) ama YENİ oyunlarda 404
+      // veriyor (4656000, 4704690). Yeni oyunların varlıkları hash'li bir alt
+      // klasörde duruyor ve hash kurulamıyor.
+      //
+      // storesearch'ün `tiny_image`'i hash'li ama capsule_231x87 — kart için
+      // fazla küçük. Onun hash'inden header.jpg türetmeyi de denedim: 404,
+      // her varlık ayrı hash klasöründe.
+      //
+      // Maliyet düşük: `validItems` en fazla 2 öğe ve getSteamDetailsCached
+      // bellekte önbellekli + promise-coalescing'li + 1 saat revalidate.
+      const steamDetay = await getSteamDetailsCached(item.id);
+
       const gameObj = {
         id: item.id,
         title: item.name,
         genres: ['Aksiyon', 'Macera'],
         description: `${item.name} — Steam platformundaki güncel mağaza fiyatı ve donanım uyumluluğu.`,
         rating: item.metascore ? parseInt(item.metascore) : 85,
-        image_url: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${item.id}/header.jpg`,
+        image_url: steamDetay?.header_image || item.tiny_image || `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${item.id}/header.jpg`,
         store_url: `https://store.steampowered.com/app/${item.id}`,
         deals: [{
           platform: 'Steam',

@@ -38,3 +38,31 @@ uygulanabilir.
 ölçeğe çekmek 328 yerleşim sayısını değiştirmek demek — görsel gerileme
 riski kazancından büyük. Dokunulan dosyada fırsat varsa azaltılır, kampanya
 yapılmaz.
+
+## expo-video PiP (`ExpoVideo: ... does not support picture-in-picture`) — AÇILMIYOR
+
+Release build'de logcat'te bu satır her video yerleşiminde bir kez düşüyor.
+Ölçüldü (2026-08-31, Android 16 emülatörde R8'li release APK):
+
+- Uygulama kodunda PiP çağrısı **yok** — `allowsPictureInPicture`,
+  `startPictureInPicture`, hiçbiri geçmiyor.
+- Kaynak `VideoView.kt:328` → `applyRectHint()`. Video görünümü her
+  yerleştiğinde KOŞULSUZ çalışıyor, `setPictureInPictureParams` deniyor,
+  manifest izin vermeyince `IllegalStateException` alıyor. Kütüphane bunu
+  `runWithPiPMisconfigurationSoftHandling` ile yakalıyor — **çökme yok**.
+- Kaybedilen tek şey `sourceRectHint`: PiP'e geçiş animasyonunu yumuşatan
+  ipucu. PiP kullanılmadığı için kaybedilen bir şey yok.
+
+AÇMAMA GEREKÇESİ. `expo-video` plugin'ini `supportsPictureInPicture: true`
+ile eklemek hata düzeltmek değil, ÖZELLİK EKLEMEK:
+
+- Android'e "PiP destekliyorum" dedirtir; sistem video oynarken ana ekran
+  tuşunda PiP penceresi teklif edebilir. PiP yaşam döngüsü kodda
+  yönetilmiyor — sonuç bozuk pencere olur.
+- Plugin kaynağında (`plugin/build/withExpoVideo.js`) aynı bayrak iOS'ta
+  `UIBackgroundModes`'a `audio` EKLİYOR. `infoPlist`'imizde şu an yalnız
+  `ITSAppUsesNonExemptEncryption` var. Kullanılmayan bir arka plan yetkisi
+  App Store incelemesinde açıklama ister — `APPEAL_4.2.2.md` ortada.
+
+Yani log zararsız, açmanın bedeli değil. PiP gerçekten istenirse ayrı bir
+özellik işi olarak planlanmalı, log susturmak için değil.

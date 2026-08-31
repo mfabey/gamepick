@@ -19,6 +19,7 @@ import { useWishlist } from '../src/context/WishlistContext';
 import { signOut } from '../src/services/session';
 import { LANGUAGES } from '../src/services/locale';
 import { SettingsGroup, SettingsRow } from '../src/components/SettingsList';
+import { pushHataAnahtari } from '../src/notifications';
 import { useTheme, useStyles } from '../src/context/ThemeContext';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -52,7 +53,7 @@ export default function SettingsScreen() {
     if (val) {
       const r = await enableNotifications();
       if (r.error) {
-        const msg = r.error === 'permission-denied' ? t('notif.permissionError') : t('notif.needDevBuild');
+        const msg = t(pushHataAnahtari(r.error));
         Alert.alert(t('notif.title'), msg);
       }
     } else {

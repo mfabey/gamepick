@@ -624,6 +624,8 @@ export default {
   'notif.enabled': 'Bildirimler açık',
   'notif.permissionError': 'Bildirim izni verilmedi',
   'notif.needDevBuild': 'Push bildirimleri Expo Go\'da çalışmaz; geliştirme veya mağaza sürümü gerekir.',
+  'notif.needRealDevice': 'Push bildirimleri gerçek cihaz gerektirir; emülatörde çalışmaz.',
+  'notif.tokenFailed': 'Bildirim jetonu alınamadı. Bağlantını kontrol edip tekrar dene.',
   'wishlist.title': 'İstek Listesi',
   'wishlist.empty': 'İstek listen boş',
   'wishlist.emptyDesc': 'İndirime girdiğinde haber vereceğimiz oyunları buraya ekle.',

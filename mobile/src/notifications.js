@@ -37,7 +37,22 @@ Notifications.setNotificationHandler({
 });
 
 // İzin iste + Expo push token al
+//
+// HATA KODLARI AYRI TUTULUYOR. Önceden üç ayrı arıza tek mesaja düşüyordu
+// ("Expo Go'dasın"): emülatörde de, gerçek cihazda projectId/FCM bozukken
+// de aynı şey yazıyordu. Ölçüldü (2026-08-31, Android 16 emülatör): cihaz
+// `physical-device-required` dönerken kullanıcı Expo Go mesajı görüyordu.
+// Yanlış teşhis, hata ayıklamayı tamamen yanlış yöne sokuyordu.
+//
+// Expo Go artık BURADA ayrılıyor: `token-failed`e bırakılsaydı gerçek token
+// arızasından ayırt edilemezdi — ikisi de aynı catch'e düşüyor.
 export async function registerForPushToken() {
+  // En özgül kontrol önce: Expo Go gerçek cihazda da çalışır, yani
+  // isDevice kontrolüne bırakılırsa yakalanmaz.
+  if (Constants.executionEnvironment === 'storeClient') {
+    return { error: 'expo-go' };
+  }
+
   if (!Device.isDevice) {
     return { error: 'physical-device-required' };
   }
@@ -71,8 +86,29 @@ export async function registerForPushToken() {
     );
     return { token: tokenResp.data };
   } catch (e) {
-    // Expo Go (SDK 53+) uzak push desteklemez → dev/store build gerekir
+    // Buraya artık GERÇEK token arızaları düşüyor: eksik/yanlış projectId,
+    // bozuk google-services.json, FCM'e ulaşamama. Expo Go yukarıda ayrıldı.
     return { error: 'token-failed', detail: e.message };
+  }
+}
+
+// Hata kodu → i18n anahtarı.
+//
+// BURADA duruyor çünkü kodları üreten yer burası. Eşleme çağrı yerlerine
+// dağılmıştı (settings.jsx ve wishlist.jsx) ve ikisi de aynı eksik ternary'yi
+// taşıyordu: yalnız 'permission-denied' ayrılıp geri kalan HER ŞEY
+// 'notif.needDevBuild'e düşüyordu. Yeni bir kod eklendiğinde iki dosyayı da
+// güncellemeyi hatırlamak gerekiyordu; biri unutulduğunda sessizce yanlış
+// mesaj çıkıyordu.
+export function pushHataAnahtari(error) {
+  switch (error) {
+    case 'permission-denied':        return 'notif.permissionError';
+    case 'physical-device-required': return 'notif.needRealDevice';
+    case 'expo-go':                  return 'notif.needDevBuild';
+    case 'token-failed':             return 'notif.tokenFailed';
+    // Bilinmeyen kod: Expo Go'yu suçlamak yerine token arızası de — yeni
+    // kodların çoğu token yolundan gelir ve bu teşhis en az yanıltıcı olan.
+    default:                         return 'notif.tokenFailed';
   }
 }
 

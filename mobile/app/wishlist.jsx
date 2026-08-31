@@ -10,6 +10,7 @@ import { radius, spacing, PRESSED, type } from '../src/theme';
 import GameRow, { SATIR_Y } from '../src/components/GameRow';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
+import { pushHataAnahtari } from '../src/notifications';
 import { useWishlist } from '../src/context/WishlistContext';
 import ProfileGate from '../src/components/ProfileGate';
 
@@ -32,7 +33,7 @@ function WishlistScreenContent() {
   const onEnable = async () => {
     const r = await enableNotifications();
     if (r.error) {
-      const msg = r.error === 'permission-denied' ? t('notif.permissionError') : t('notif.needDevBuild');
+      const msg = t(pushHataAnahtari(r.error));
       Alert.alert(t('notif.title'), msg);
     }
   };

@@ -622,6 +622,8 @@ export default {
   'notif.enabled': 'Notifications on',
   'notif.permissionError': 'Notification permission denied',
   'notif.needDevBuild': 'Push notifications don\'t work in Expo Go; a dev or store build is required.',
+  'notif.needRealDevice': 'Push notifications need a real device; they don\'t work on emulators.',
+  'notif.tokenFailed': 'Couldn\'t get a notification token. Check your connection and try again.',
   'wishlist.title': 'Wishlist',
   'wishlist.empty': 'Your wishlist is empty',
   'wishlist.emptyDesc': 'Add games here and we will tell you when they go on sale.',

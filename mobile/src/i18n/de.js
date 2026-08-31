@@ -631,6 +631,8 @@ export default {
   'notif.enabled': 'Mitteilungen an',
   'notif.permissionError': 'Berechtigung für Mitteilungen abgelehnt',
   'notif.needDevBuild': 'Push-Mitteilungen funktionieren in Expo Go nicht; dafür braucht es einen Dev- oder Store-Build.',
+  'notif.needRealDevice': 'Push-Mitteilungen brauchen ein echtes Gerät; im Emulator funktionieren sie nicht.',
+  'notif.tokenFailed': 'Das Mitteilungs-Token konnte nicht abgerufen werden. Prüfe deine Verbindung und versuche es erneut.',
   'wishlist.title': 'Merkliste',
   'wishlist.empty': 'Deine Merkliste ist leer',
   'wishlist.emptyDesc': 'Füge hier Spiele hinzu — wir sagen dir Bescheid, wenn sie im Angebot sind.',
