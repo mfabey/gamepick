@@ -20,8 +20,9 @@
 // Kullanım: node scripts/check-contrast.mjs
 // ─────────────────────────────────────────────────────────────────────────────
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
-const KOK = new URL('..', import.meta.url).pathname;
+const KOK = fileURLToPath(new URL('..', import.meta.url));
 const METIN_YUZEY = ['bg', 'surface', 'surface2', 'surface3'];
 const METIN_TONU = ['text1', 'text2', 'text3', 'brandText'];
 const ESIK = 4.5;
@@ -31,7 +32,9 @@ const ESIK = 4.5;
 // çalışma anında değiştiriliyor. Geri kalan kod AYNEN çalışıyor.
 const kaynak = readFileSync(KOK + 'src/design/tokens.js', 'utf8')
   .replace(/^import ham from '\.\/tokens\.json';$/m,
-           `const ham = JSON.parse(readFileSync('${KOK}src/design/tokens.json','utf8'));`)
+           // JSON.stringify ŞART: KOK Windows'ta ters bölü içeriyor ve bu metin
+           // new Function ile derleniyor — düz gömülürse \U, \b escape sanılıyor.
+           `const ham = JSON.parse(readFileSync(${JSON.stringify(KOK + 'src/design/tokens.json')},'utf8'));`)
   .replace(/^import hareket from '\.\/motion\.json';$/m, 'const hareket = {};')
   .replace(/^export /gm, '');
 

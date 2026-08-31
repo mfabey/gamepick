@@ -13,6 +13,25 @@
 // react-native-screens, expo-image-picker. Yani uyarı bilgilendirmeydi;
 // yayını engellemiyordu ve bizim silebileceğimiz bir satır yoktu.
 //
+// UYARI TAMAMEN KALDIRILAMIYOR — 2026-08 ölçümü. SDK 57'ye çıkılsa 9 çağrı
+// noktasının 5'i düşüyor, 4'ü KALIYOR. Her biri ilgili sürümün kaynağından
+// doğrulandı:
+//
+//   DÜŞEN   StatusBarModule.setColor            RN 0.86'da kaldırılmış
+//   DÜŞEN   StatusBarModule.getTypedExported…   artık yalnız HEIGHT dönüyor
+//   DÜŞEN   ScreenWindowTraits.setColor         rn-screens 4.26 →
+//   DÜŞEN   ScreenWindowTraits.setNavigationB…  WindowInsetsControllerCompat
+//   DÜŞEN   ExpoCropImageUtils.applyWindowThe…  expo-image-picker 57'de silinmiş
+//   KALIYOR WindowUtilKt.enableEdgeToEdge       RN 0.86 VE 0.87'de duruyor
+//   KALIYOR Material EdgeToEdgeUtils / BottomSheetDialog / SheetDialog
+//
+// Material'ınki `if (SDK_INT < VANILLA_ICE_CREAM)` korumasının ALTINDA, yani
+// Android 15'te hiç çalışmıyor — kod doğru, yine de işaretleniyor. Google'ın
+// kendi kütüphanesi Google'ın kendi tarayıcısına takılıyor. Sebep: tarama
+// erişilebilirlik değil REFERANS taraması, DEX'te sembol geçmesi yetiyor.
+//
+// Sonuç: SDK yükseltmesini bu uyarı için yapma, gerekçe olmaz. Uyarı kalır.
+//
 // TEHLİKE BUNDAN SONRASI. Aşağıdakilerden BİRİ eklenirse o çağrılar gerçekten
 // bizim koda taşınır ve uyarı haklı hale gelir:
 //
@@ -45,9 +64,10 @@
 // Bu bir RATCHET DEĞİL, sert kural: doğru sayı sıfır, taban dosyası yok.
 // ─────────────────────────────────────────────────────────────────────────────
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const KOK = new URL('..', import.meta.url).pathname;
+const KOK = fileURLToPath(new URL('..', import.meta.url));
 
 function dosyalar(dizin, cikti = []) {
   if (!existsSync(dizin)) return cikti;
@@ -129,10 +149,10 @@ const taranan = dosyalar(KOK + 'app')
   .concat(dosyalar(KOK + 'plugins'));
 
 for (const yol of taranan) {
-  if (yol.endsWith('scripts/check-edge-to-edge.mjs')) continue;
+  if (yol.split(sep).join('/').endsWith('scripts/check-edge-to-edge.mjs')) continue;
   const govde = temizle(readFileSync(yol, 'utf8'));
   for (const k of KURALLAR) {
-    if (k.sina(govde)) bildir(yol.replace(KOK, ''), k.ad, k.cozum);
+    if (k.sina(govde)) bildir(yol.replace(KOK, '').split(sep).join('/'), k.ad, k.cozum);
   }
 }
 

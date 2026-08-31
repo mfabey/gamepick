@@ -21,9 +21,10 @@
 // güvenilirliğini kaybeder. Sabitler belirsizlik taşımıyor.
 // ─────────────────────────────────────────────────────────────────────────────
 import { readFileSync, readdirSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const KOK = new URL('..', import.meta.url).pathname;
+const KOK = fileURLToPath(new URL('..', import.meta.url));
 
 function dosyalar(dizin, cikti = []) {
   for (const ad of readdirSync(dizin)) {
@@ -47,7 +48,7 @@ const temizle = (s) => s
 
 const bulgular = [];
 for (const yol of dosyalar(KOK + 'app').concat(dosyalar(KOK + 'src'))) {
-  if (yol.endsWith('src/theme.js')) continue;
+  if (yol.split(sep).join('/').endsWith('src/theme.js')) continue;
   const ham = readFileSync(yol, 'utf8');
   const m = ham.match(/import \{([^}]*)\} from '[^']*theme';/);
   const alinan = new Set(m ? m[1].split(',').map((x) => x.trim().split(' as ')[0]) : []);
@@ -55,7 +56,7 @@ for (const yol of dosyalar(KOK + 'app').concat(dosyalar(KOK + 'src'))) {
   for (const ad of SABITLER) {
     if (alinan.has(ad)) continue;
     if (new RegExp(`(?<![\\w.])${ad}(?![\\w])`).test(govde)) {
-      bulgular.push(`${yol.replace(KOK, '')}: ${ad}`);
+      bulgular.push(`${yol.replace(KOK, '').split(sep).join('/')}: ${ad}`);
     }
   }
 }

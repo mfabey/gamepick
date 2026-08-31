@@ -22,10 +22,11 @@
 // değiştiriyor. Yeni satır eklenirse burada görünsün diye SAYILIYOR.
 // ─────────────────────────────────────────────────────────────────────────────
 import { readFileSync, readdirSync, statSync, existsSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const KOK = new URL('../..', import.meta.url).pathname;   // depo kökü
-const TABAN = new URL('./image-url-baseline.json', import.meta.url).pathname;
+const KOK = fileURLToPath(new URL('../..', import.meta.url));   // depo kökü
+const TABAN = fileURLToPath(new URL('./image-url-baseline.json', import.meta.url));
 const GUNCELLE = process.argv.includes('--guncelle');
 
 // Şablon ifadesiyle appid'den adres kuran satırlar.
@@ -49,7 +50,7 @@ function dosyalar(dizin, cikti = []) {
 
 const simdi = {};
 for (const yol of dosyalar(KOK)) {
-  const goreli = yol.replace(KOK, '');
+  const goreli = yol.replace(KOK, '').split(sep).join('/');
   if (goreli.includes('scripts/check-image-urls')) continue;
   const satirlar = readFileSync(yol, 'utf8').split('\n');
   let n = 0;

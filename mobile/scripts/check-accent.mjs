@@ -24,9 +24,10 @@
 // Faz 0 kuralı: renk değere bağlıysa kalır.
 // ─────────────────────────────────────────────────────────────────────────────
 import { readFileSync, writeFileSync, readdirSync, statSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const KOK = new URL('..', import.meta.url).pathname;
+const KOK = fileURLToPath(new URL('..', import.meta.url));
 const TABAN = KOK + 'scripts/accent-baseline.json';
 const GUNCELLE = process.argv.includes('--guncelle');
 
@@ -55,7 +56,7 @@ for (const yol of dosyalar(KOK + 'app').concat(dosyalar(KOK + 'src'))) {
     if (((satirlar[i - 1] || '') + satir).includes('accent-serbest:')) return;
     n++;
   });
-  if (n > 0) simdi[yol.replace(KOK, '')] = n;
+  if (n > 0) simdi[yol.replace(KOK, '').split(sep).join('/')] = n;
 }
 
 const toplam = Object.values(simdi).reduce((a, b) => a + b, 0);

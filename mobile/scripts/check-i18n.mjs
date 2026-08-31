@@ -56,7 +56,7 @@ const dosyalar = [];
     if (e.name === 'node_modules' || e.name.startsWith('.')) continue;
     const p = path.join(d, e.name);
     if (e.isDirectory()) tara(p);
-    else if (/\.(jsx?|tsx?)$/.test(p) && !p.includes('/i18n/')) dosyalar.push(p);
+    else if (/\.(jsx?|tsx?)$/.test(p) && !p.split(path.sep).join('/').includes('/i18n/')) dosyalar.push(p);
   }
 })(KOK + '/app');
 (function tara(d) {
@@ -64,7 +64,7 @@ const dosyalar = [];
     if (e.name === 'node_modules' || e.name.startsWith('.')) continue;
     const p = path.join(d, e.name);
     if (e.isDirectory()) tara(p);
-    else if (/\.(jsx?|tsx?)$/.test(p) && !p.includes('/i18n/')) dosyalar.push(p);
+    else if (/\.(jsx?|tsx?)$/.test(p) && !p.split(path.sep).join('/').includes('/i18n/')) dosyalar.push(p);
   }
 })(KOK + '/src');
 

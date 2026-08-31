@@ -28,9 +28,10 @@
 // Çıkış kodu 1 = işaretsiz sabit renk var.
 // ─────────────────────────────────────────────────────────────────────────────
 import { readFileSync, readdirSync, statSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { join, relative, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const ROOT = new URL('..', import.meta.url).pathname;
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const TARAN = ['app', 'src'];
 const PROP = /(backgroundColor|borderColor|shadowColor)\s*:\s*'(#[0-9a-fA-F]{3,8}|rgba?\([^)]*\))'/g;
 const ISARET = /tema-bagimsiz\s*:\s*\S/;
@@ -56,7 +57,7 @@ for (const kok of TARAN) {
         // satırlarında yorumu üste almak tek okunur seçenek.
         const ust = satirlar[i - 1] || '';
         if (ISARET.test(satir) || ISARET.test(ust)) continue;
-        bulgular.push({ f: relative(ROOT, f), n: i + 1, prop: m[1], val: m[2] });
+        bulgular.push({ f: relative(ROOT, f).split(sep).join('/'), n: i + 1, prop: m[1], val: m[2] });
       }
     });
   }
@@ -87,7 +88,7 @@ for (const kok of TARAN) {
       for (let j = i - 1; j >= 0; j--) if (satirlar[j].trim()) { onceki = satirlar[j].trim(); break; }
       for (let j = i + 1; j < satirlar.length; j++) if (satirlar[j].trim()) { sonraki = satirlar[j].trim(); break; }
       if (onceki.endsWith('>') && sonraki.startsWith('<')) {
-        jsxYorum.push({ f: relative(ROOT, f), n: i + 1 });
+        jsxYorum.push({ f: relative(ROOT, f).split(sep).join('/'), n: i + 1 });
       }
     });
   }

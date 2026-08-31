@@ -73,6 +73,15 @@
           "isAndroidBackgroundLocationEnabled": false,
           "locationWhenInUsePermission": "Gamerisen, paylaştığınız oyun kartına yalnızca şehir adını eklemek için konumunuzu kullanır. Konum bilginiz cihazınızdan çıkmaz."
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableMinifyInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true
+          }
+        }
       ]
     ],
     "extra": {

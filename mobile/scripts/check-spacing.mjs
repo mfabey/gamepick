@@ -21,9 +21,10 @@
 //   node scripts/check-spacing.mjs --guncelle → tabanı yeniden yaz (azalınca)
 // ─────────────────────────────────────────────────────────────────────────────
 import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { join, relative, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const ROOT = new URL('..', import.meta.url).pathname;
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const TABAN = join(ROOT, 'scripts', 'spacing-baseline.json');
 const OLCEK = new Set([0, 4, 8, 12, 16, 20, 24, 32, 40, 48]);
 const PROP = /\b(padding|margin|gap)([A-Za-z]*)\s*:\s*(-?\d+(?:\.\d+)?)\b/g;
@@ -50,7 +51,7 @@ for (const kok of ['app', 'src']) {
     let m, n = 0;
     PROP.lastIndex = 0;
     while ((m = PROP.exec(s))) if (!OLCEK.has(Number(m[3]))) n++;
-    if (n) sayim[relative(ROOT, f)] = n;
+    if (n) sayim[relative(ROOT, f).split(sep).join('/')] = n;
   }
 }
 

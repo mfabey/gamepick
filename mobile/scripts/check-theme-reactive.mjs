@@ -59,7 +59,7 @@ for (const f of dosyalar) {
   if (!blok) continue;
   const icerdeki = blok.match(/\bcolors\.\w+/g);
   if (!icerdeki) continue;
-  donuk.push({ dosya: path.relative(KOK, f), n: icerdeki.length });
+  donuk.push({ dosya: path.relative(KOK, f).split(path.sep).join('/'), n: icerdeki.length });
 }
 donuk.sort((a, b) => b.n - a.n);
 
