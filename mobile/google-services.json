@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "554716473983",
+    "firebase_url": "https://gamerisen-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "gamerisen",
+    "storage_bucket": "gamerisen.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:554716473983:android:53330c7deea89ff4512d4a",
+        "android_client_info": {
+          "package_name": "com.gamerisen.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "554716473983-pc6au7o7nquofb6k7b25ll7mge502pp8.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDmzOqHJVYtajDpe99A3TLzCt3JQzx0Nfg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "554716473983-n0iiv1mcqcrf48b8ueo3cbabmcnj850g.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "554716473983-va5s65omaff712glia0fnl2lb6c92hv6.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.gamerisen.app"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

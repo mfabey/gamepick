@@ -24,3 +24,13 @@ yarn-error.log*
 .DS_Store
 *.pem
 .vercel
+
+# Firebase / Google servis hesabi anahtarlari — ASLA commit'lenmez.
+# FCM'e push gonderme ve Firebase Admin SDK yetkisi veren GIZLI kimlik
+# bilgileri. Firebase'in indirdigi ad kalibi
+# "<proje>-firebase-adminsdk-<hash>.json"; bu yuzden genel bir
+# "*-service-account.json" kurali bunu YAKALAMAZ — ada gore eleniyor.
+*-firebase-adminsdk-*.json
+*-service-account.json
+google-play-service-account.json
+credentials/

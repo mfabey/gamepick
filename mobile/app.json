@@ -26,6 +26,7 @@
     },
     "android": {
       "package": "com.gamerisen.app",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#000000",
         "foregroundImage": "./assets/android-icon-foreground.png"
