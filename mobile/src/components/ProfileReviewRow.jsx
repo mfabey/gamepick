@@ -77,13 +77,17 @@ export default function ProfileReviewRow({ review, onPress, onLongPress, onEdit,
 
         <View style={styles.actions}>
           {/* Yanıtlar OYUN SAYFASINDA DEĞİL topluluk konusunda okunuyor;
-              buradaki satır o konuyu açan kapı. Sayı 0 ise hiç çizilmiyor:
-              "0 yanıt" yazmak sayfayı ıssız gösterir. */}
-          {Number(review.replyCount) > 0 ? (
+              buradaki satır o konuyu açan kapı — ve KOŞULSUZ çiziliyor.
+              Yalnız sayı varken çizmek, ilk yanıtı yazmayı imkânsız
+              kılıyordu (bkz. GameReviews'taki aynı düzeltme). Sayı yoksa
+              satır "Yanıtla" diyor; hiçbir yerde "0 yanıt" yazmıyor. */}
+          {onReplies ? (
             <Pressable onPress={onReplies} hitSlop={8} style={({ pressed }) => [styles.action, pressed && PRESSED]}>
               <Ionicons name="arrow-undo-outline" size={13} color={colors.text3} />
               <Text style={styles.actionText}>
-                <Text style={NUMERIC}>{review.replyCount}</Text> {t('post.repliesCount')}
+                {Number(review.replyCount) > 0
+                  ? <><Text style={NUMERIC}>{review.replyCount}</Text> {t('post.repliesCount')}</>
+                  : t('post.replyTitle')}
               </Text>
             </Pressable>
           ) : null}

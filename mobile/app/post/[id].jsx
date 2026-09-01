@@ -13,6 +13,7 @@ import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { fetchPost } from '../../src/api/social';
 import { getSession, subscribeSession } from '../../src/services/session';
+import { useAuth } from '../../src/context/AuthContext';
 import PostCard from '../../src/components/PostCard';
 import PostComposer from '../../src/components/PostComposer';
 import ReviewRoot from '../../src/components/ReviewRoot';
@@ -44,6 +45,7 @@ export default function PostThread() {
   const router = useRouter();
   const { t } = useLanguage();
   const insets = useSafeAreaInsets();
+  const { account } = useAuth();
 
   const [session, setSession] = useState(() => getSession());
   useEffect(() => subscribeSession(() => setSession(getSession())), []);
@@ -197,7 +199,9 @@ export default function PostThread() {
           geometri aynı kalıyor (jetonun kendi kuralı). */}
       {data?.post ? (
         <View style={[styles.replyDock, { paddingBottom: insets.bottom || spacing.s12 }]}>
-          <Avatar avatar={null} name="" size={avatarSize.md} />
+          {/* Kendi baş harfin: kutunun kime ait olduğunu söylüyor. Adsız
+              geçildiğinde "?" çiziliyordu. */}
+          <Avatar avatar={null} name={account?.name || account?.email || ''} size={avatarSize.md} />
           <Pressable
             onPress={onReply}
             style={({ pressed }) => [styles.replyInput, pressed && PRESSED]}

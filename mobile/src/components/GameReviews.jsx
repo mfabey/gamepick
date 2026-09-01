@@ -1,6 +1,6 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import Avatar from './Avatar';
@@ -65,17 +65,22 @@ function Row({ review, onOpenThread, onAuthor }) {
 
       <Text style={styles.text} numberOfLines={3}>{review.text}</Text>
 
-      {/* Yanıt satırı yalnız yanıt VARSA. "0 yanıt" yazmak, bu bölümün
-          kaçındığı boşluk hissinin küçük ölçekli tekrarı olurdu. */}
-      {Number(review.replyCount) > 0 ? (
-        <Pressable onPress={onOpenThread} hitSlop={8}
-                   style={({ pressed }) => [styles.threadBtn, pressed && PRESSED]}>
-          <Ionicons name="arrow-undo-outline" size={13} color={colors.text3} />
-          <Text style={styles.threadText}>
-            <Text style={NUMERIC}>{review.replyCount}</Text> {t('post.repliesCount')} · {t('rev.openThread')}
-          </Text>
-        </Pressable>
-      ) : null}
+      {/* ── YANIT KAPISI HER ZAMAN AÇIK ──
+          Bu satır bir sürüm boyunca YALNIZ `replyCount > 0` iken çizildi ve
+          sonuç kısır döngüydü: ilk yanıtı yazmanın yolu yoktu, kapı ancak
+          birileri ondan geçtikten sonra beliriyordu.
+          Kural "0 yanıt yazma"ydı ve SAYIYA aitti — eylemi de birlikte
+          silmek yanlıştı. Sayı yoksa satır bir sayı değil, bir DAVET:
+          "Yanıtla". */}
+      <Pressable onPress={onOpenThread} hitSlop={8}
+                 style={({ pressed }) => [styles.threadBtn, pressed && PRESSED]}>
+        <Ionicons name="arrow-undo-outline" size={13} color={colors.text3} />
+        <Text style={styles.threadText}>
+          {Number(review.replyCount) > 0 ? (
+            <><Text style={NUMERIC}>{review.replyCount}</Text> {t('post.repliesCount')} · {t('rev.openThread')}</>
+          ) : t('post.replyTitle')}
+        </Text>
+      </Pressable>
     </View>
   );
 }
@@ -109,6 +114,20 @@ export default function GameReviews({ appid, gameName }) {
 
   const [hepsiAcik, setHepsiAcik] = useState(false);
   const gorunen = hepsiAcik ? liste : liste.slice(0, GOSTERILEN);
+
+  // ── EKRANA DÖNÜNCE TAZELE ──
+  // Yanıt yazmak KONU ekranında oluyor; oraya gidip dönen kullanıcı 5 dakikalık
+  // önbellek yüzünden kendi yazdığı yanıtı sayaçta göremiyordu — satır hâlâ
+  // "Yanıtla" diyordu. Emülatörde görüldü; sunucunun doğru saydığı ayrıca
+  // canlı uçtan doğrulandı (replyCount=1), yani sorun yalnız bayat önbellekti.
+  //
+  // İLK ODAK ATLANIYOR: useQuery zaten mount'ta çekiyor; burada da çekmek her
+  // açılışta ikinci bir istek olurdu.
+  const ilkOdak = useRef(true);
+  useFocusEffect(useCallback(() => {
+    if (ilkOdak.current) { ilkOdak.current = false; return; }
+    refetch();
+  }, [refetch]));
 
   const yaz = useCallback(() => {
     if (!getSession()) { router.push('/account'); return; }

@@ -244,6 +244,7 @@ export default function UserProfileScreen() {
       return (
         <ProfileReviewRow
           review={item}
+          onReplies={() => router.push('/post/' + encodeURIComponent('r:' + item.appid + ':' + item.uid))}
           onPress={() => router.push({
             pathname: '/game/[id]',
             params: { id: `rawg_${item.appid}`, appid: item.appid, name: item.gameName || '', image: item.image || '' },
