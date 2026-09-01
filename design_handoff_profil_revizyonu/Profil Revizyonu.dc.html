@@ -1,0 +1,1354 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<style>
+  body{margin:0;background:#06070A;-webkit-font-smoothing:antialiased;font-family:-apple-system,"SF Pro Text",system-ui,sans-serif}
+  a{color:#FF6B6F;text-decoration:none}
+  a:hover{color:#E8242B}
+  @keyframes skel{0%{background-position:-320px 0}100%{background-position:320px 0}}
+</style>
+</helmet>
+
+<div style="padding:48px;display:flex;flex-direction:column;gap:48px;color:#F4F4F6">
+
+  <div style="display:flex;flex-direction:column;gap:12px;max-width:900px">
+    <div style="font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase;color:#82858F">Gamerisen · profil &amp; topluluk revizyonu</div>
+    <div style="font-size:34px;font-weight:700;letter-spacing:-.75px;line-height:1.1">Profil artık menü değil, kimlik + üretilen içerik</div>
+    <div style="font-size:15px;line-height:1.6;color:#A1A3AB;text-wrap:pretty">390×844, koyu tema varsayılan. Tüm ölçüler pt. Jetonlar brifteki listeden; tek türetilmiş jeton <b style="color:#F4F4F6">success #3FB950</b> (aşağıda gerekçesi). İkon adları Ionicons; maketlerde glif yer tutucu, ölçü kutusunda gerçek ikon adı yazılı.</div>
+  </div>
+
+  <!-- ============ 1. BİLGİ MİMARİSİ ============ -->
+  <div style="display:flex;flex-direction:column;gap:20px">
+    <div style="font-size:22px;font-weight:650;letter-spacing:-.22px">1 · Bilgi mimarisi — önce / sonra</div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start">
+      <div style="width:420px;background:#101114;border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase;color:#82858F">Önce · profil sekmesi = menü</div>
+        <sc-for list="{{ iaBefore }}" as="row" hint-placeholder-count="6">
+          <div style="display:flex;gap:10px;align-items:baseline;font-size:13px;font-weight:500;line-height:1.5">
+            <div style="width:8px;height:8px;border-radius:999px;background:#2A2C33;margin-top:5px;flex:none"></div>
+            <div style="flex:1;color:#F4F4F6">{{ row.item }}</div>
+            <div style="color:#82858F;font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase">{{ row.tag }}</div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="width:420px;background:#101114;border:1px solid rgba(232,36,43,.28);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase;color:#FF6B6F">Sonra · profil = içerik</div>
+        <sc-for list="{{ iaAfter }}" as="row" hint-placeholder-count="6">
+          <div style="display:flex;gap:10px;align-items:baseline;font-size:13px;font-weight:500;line-height:1.5">
+            <div style="width:8px;height:8px;border-radius:999px;background:#E8242B;margin-top:5px;flex:none"></div>
+            <div style="flex:1;color:#F4F4F6">{{ row.item }}</div>
+            <div style="color:#82858F;font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase">{{ row.tag }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="width:856px;background:#15161A;border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:16px;font-size:13px;line-height:1.6;color:#A1A3AB">
+      <b style="color:#F4F4F6">Kalkan yüzeyler:</b> 10 karolu kısayol ızgarası (→ ayarlar), 2 sayaç kartı (→ üç dokunulabilir sayaç), <code>/social</code> üç sekmeli ekran (→ arkadaş listesi + topluluk akışı), topluluk “benimkiler” sekmesi (→ profil sekmeleri), Steam arkadaşları (→ ayarlar).
+    </div>
+  </div>
+
+  <!-- ============ 2. KARARLAR ============ -->
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <div style="font-size:22px;font-weight:650;letter-spacing:-.22px">2 · Sekiz karar</div>
+    <div style="display:flex;flex-direction:column;gap:8px;max-width:1290px">
+      <sc-for list="{{ decisions }}" as="d" hint-placeholder-count="8">
+        <div style="display:flex;gap:16px;background:#101114;border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:14px 16px;align-items:flex-start">
+          <div style="width:24px;height:24px;border-radius:999px;background:#1C1E23;color:#A1A3AB;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;flex:none">{{ d.n }}</div>
+          <div style="width:250px;font-size:13px;font-weight:600;color:#F4F4F6;line-height:1.5;flex:none">{{ d.q }}</div>
+          <div style="width:230px;font-size:13px;font-weight:600;color:#FF6B6F;line-height:1.5;flex:none">{{ d.a }}</div>
+          <div style="flex:1;font-size:13px;font-weight:400;color:#A1A3AB;line-height:1.6">{{ d.why }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <!-- ============ 3. KENDİ PROFİLİM ============ -->
+  <div style="display:flex;flex-direction:column;gap:20px">
+    <div style="font-size:22px;font-weight:650;letter-spacing:-.22px">3 · Kendi profilim — dört içerik sekmesi</div>
+    <div style="display:flex;gap:32px;flex-wrap:wrap;align-items:flex-start">
+
+      <!-- 3a Koleksiyon -->
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase;color:#82858F">3a · Koleksiyon</div>
+        <div style="width:390px;height:844px;background:#0A0B0D;border:1px solid rgba(255,255,255,.12);border-radius:20px;overflow:hidden;position:relative;flex:none">
+          <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-size:13px;font-weight:600;color:#F4F4F6"><div>9:41</div><div style="letter-spacing:2px">▮▮▮</div></div>
+          <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px"><div style="font-size:17px;font-weight:600;color:#F4F4F6">@deniz.kaya</div><div style="width:44px;height:44px;display:flex;align-items:center;justify-content:flex-end;font-size:20px;color:#A1A3AB">⚙</div></div>
+          <div style="padding:8px 20px 0;display:flex;gap:20px;align-items:center">
+            <div style="width:88px;height:88px;border-radius:999px;background:#2A2C33;border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:700;color:#82858F;flex:none">D</div>
+            <div style="flex:1;display:flex;height:44px">
+              <sc-for list="{{ ownCounters }}" as="c" hint-placeholder-count="3">
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px">
+                  <div style="font-size:17px;font-weight:600;color:#F4F4F6;font-variant-numeric:tabular-nums">{{ c.n }}</div>
+                  <div style="font-size:13px;font-weight:500;color:#A1A3AB">{{ c.label }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="padding:12px 20px 0;display:flex;flex-direction:column;gap:8px">
+            <div style="font-size:17px;font-weight:600;color:#F4F4F6">Deniz Kaya</div>
+            <div style="font-size:15px;font-weight:400;line-height:1.4;color:#A1A3AB">Soulslike ve taktiksel FPS. Co-op için her zaman müsait.</div>
+            <div style="display:flex;gap:8px;padding-top:4px">
+              <div style="height:28px;padding:0 12px;border-radius:999px;background:#15161A;border:1px solid rgba(255,255,255,.07);display:flex;align-items:center;gap:8px"><div style="width:6px;height:6px;border-radius:999px;background:#3FB950"></div><div style="font-size:13px;font-weight:500;color:#A1A3AB">Steam bağlı</div></div>
+              <div style="height:28px;padding:0 12px;border-radius:999px;background:#15161A;border:1px solid rgba(255,255,255,.07);display:flex;align-items:center;gap:8px"><div style="width:6px;height:6px;border-radius:999px;background:#3FB950"></div><div style="font-size:13px;font-weight:500;color:#A1A3AB">Xbox bağlı</div></div>
+            </div>
+          </div>
+          <div style="padding:16px 20px 0;display:flex;gap:8px">
+            <div style="flex:1;height:44px;border-radius:12px;background:#1C1E23;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;color:#F4F4F6">✎ Profili düzenle</div>
+            <div style="width:44px;height:44px;border-radius:12px;background:#1C1E23;display:flex;align-items:center;justify-content:center;font-size:18px;color:#F4F4F6">↗</div>
+          </div>
+          <div style="padding:16px 20px 0">
+            <div style="height:64px;background:#101114;border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:0 16px;display:flex;align-items:center;gap:16px">
+              <div style="display:flex;align-items:flex-end;gap:4px;height:32px">
+                <sc-for list="{{ week }}" as="b" hint-placeholder-count="7">
+                  <div style="width:8px;border-radius:4px;background:#2A2C33;height:{{ b.h }}"></div>
+                </sc-for>
+              </div>
+              <div style="flex:1;display:flex;flex-direction:column;gap:2px">
+                <div style="font-size:15px;font-weight:600;color:#F4F4F6;font-variant-numeric:tabular-nums">12sa 40dk</div>
+                <div style="font-size:13px;font-weight:500;color:#82858F">bu hafta · yalnız sende görünür</div>
+              </div>
+              <div style="font-size:17px;color:#82858F">›</div>
+            </div>
+          </div>
+          <div style="margin-top:20px;height:48px;display:flex;border-top:1px solid rgba(255,255,255,.07)">
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;color:#F4F4F6;border-bottom:2px solid #E8242B">▦</div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;color:#82858F">♡</div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;color:#82858F">✓</div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;color:#82858F">▤</div>
+          </div>
+          <div style="padding:12px 20px 8px;display:flex;justify-content:space-between;align-items:center">
+            <div style="font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase;color:#82858F">Koleksiyon · 214</div>
+            <div style="font-size:13px;font-weight:500;color:#A1A3AB">Son eklenen ⌄</div>
+          </div>
+          <div style="padding:0 20px;display:grid;grid-template-columns:repeat(3,114px);gap:4px;height:184px;overflow:hidden;align-content:start">
+            <sc-for list="{{ collection }}" as="g" hint-placeholder-count="9">
+              <div style="width:114px;height:152px;border-radius:12px;background:#2A2C33;display:flex;align-items:flex-end;padding:8px;overflow:hidden;position:relative">
+                <div style="position:absolute;top:8px;left:10px;font-size:22px;font-weight:700;color:#82858F">{{ g.initial }}</div>
+                <div style="font-size:11px;font-weight:600;color:#F4F4F6;line-height:1.2">{{ g.name }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="position:absolute;left:20px;right:20px;bottom:24px;height:64px;border-radius:999px;background:rgba(22,23,27,.58);backdrop-filter:blur(32px) saturate(1.8);-webkit-backdrop-filter:blur(32px) saturate(1.8);border:1px solid rgba(255,255,255,.10);display:flex;align-items:center">
+            <sc-for list="{{ tabbar }}" as="t" hint-placeholder-count="5">
+              <div style="flex:1;display:flex;align-items:center;justify-content:center;height:64px;position:relative;font-size:22px;color:{{ t.color }}">{{ t.glyph }}</div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3b İstek listesi -->
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase;color:#82858F">3b · İstek listesi</div>
+        <div style="width:390px;height:844px;background:#0A0B0D;border:1px solid rgba(255,255,255,.12);border-radius:20px;overflow:hidden;position:relative;flex:none">
+          <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-size:13px;font-weight:600;color:#F4F4F6"><div>9:41</div><div style="letter-spacing:2px">▮▮▮</div></div>
+          <div style="height:52px;display:flex;align-items:center;gap:12px;padding:0 20px;border-bottom:1px solid rgba(255,255,255,.07)">
+            <div style="width:32px;height:32px;border-radius:999px;background:#2A2C33;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#82858F">D</div>
+            <div style="flex:1;font-size:17px;font-weight:600;color:#F4F4F6">@deniz.kaya</div>
+            <div style="font-size:20px;color:#A1A3AB">⚙</div>
+          </div>
+          <div style="margin-top:12px;height:48px;display:flex;border-top:1px solid rgba(255,255,255,.07);border-bottom:1px solid rgba(255,255,255,.07)">
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;color:#82858F">▦</div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;color:#F4F4F6;border-bottom:2px solid #E8242B">♡</div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;color:#82858F">✓</div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;color:#82858F">▤</div>
+          </div>
+          <div style="padding:12px 20px 8px;display:flex;justify-content:space-between;align-items:center">
+            <div style="font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase;color:#82858F">İstek listesi · 37</div>
+            <div style="font-size:13px;font-weight:500;color:#A1A3AB">İndirimde 4 ⌄</div>
+          </div>
+          <div style="padding:0 20px;display:grid;grid-template-columns:repeat(3,114px);gap:4px;height:542px;overflow:hidden;align-content:start">
+            <sc-for list="{{ wishlist }}" as="g" hint-placeholder-count="9">
+              <div style="width:114px;height:152px;border-radius:12px;background:#2A2C33;display:flex;align-items:flex-end;padding:8px;position:relative;overflow:hidden">
+                <div style="position:absolute;top:8px;left:10px;font-size:22px;font-weight:700;color:#82858F">{{ g.initial }}</div>
+                <sc-if value="{{ g.sale }}" hint-placeholder-val="{{ true }}">
+                  <div style="position:absolute;top:8px;right:8px;height:20px;padding:0 8px;border-radius:999px;background:#E8242B;color:#FFFFFF;font-size:11px;font-weight:600;letter-spacing:.66px;display:flex;align-items:center">{{ g.sale }}</div>
+                </sc-if>
+                <div style="font-size:11px;font-weight:600;color:#F4F4F6;line-height:1.2">{{ g.name }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="position:absolute;left:20px;right:20px;bottom:24px;height:64px;border-radius:999px;background:rgba(22,23,27,.58);backdrop-filter:blur(32px) saturate(1.8);-webkit-backdrop-filter:blur(32px) saturate(1.8);border:1px solid rgba(255,255,255,.10);display:flex;align-items:center">
+            <sc-for list="{{ tabbar }}" as="t" hint-placeholder-count="5">
+              <div style="flex:1;display:flex;align-items:center;justify-content:center;height:64px;font-size:22px;color:{{ t.color }}">{{ t.glyph }}</div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3c İncelemeler -->
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase;color:#82858F">3c · İncelemeler</div>
+        <div style="width:390px;height:844px;background:#0A0B0D;border:1px solid rgba(255,255,255,.12);border-radius:20px;overflow:hidden;position:relative;flex:none">
+          <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-size:13px;font-weight:600;color:#F4F4F6"><div>9:41</div><div style="letter-spacing:2px">▮▮▮</div></div>
+          <div style="height:52px;display:flex;align-items:center;gap:12px;padding:0 20px;border-bottom:1px solid rgba(255,255,255,.07)">
+            <div style="width:32px;height:32px;border-radius:999px;background:#2A2C33;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#82858F">D</div>
+            <div style="flex:1;font-size:17px;font-weight:600;color:#F4F4F6">@deniz.kaya</div>
+            <div style="font-size:20px;color:#A1A3AB">⚙</div>
+          </div>
+          <div style="height:48px;display:flex;border-bottom:1px solid rgba(255,255,255,.07)">
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;color:#82858F">▦</div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;color:#82858F">♡</div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;color:#F4F4F6;border-bottom:2px solid #E8242B">✓</div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;color:#82858F">▤</div>
+          </div>
+          <div style="padding:12px 20px 8px;font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase;color:#82858F">İncelemeler · 12</div>
+          <div style="display:flex;flex-direction:column;height:554px;overflow:hidden">
+            <sc-for list="{{ myReviews }}" as="r" hint-placeholder-count="4">
+              <div style="padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;gap:12px">
+                <div style="width:66px;height:88px;border-radius:12px;background:#2A2C33;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#82858F;flex:none">{{ r.initial }}</div>
+                <div style="flex:1;display:flex;flex-direction:column;gap:6px;min-width:0">
+                  <div style="font-size:15px;font-weight:600;color:#F4F4F6">{{ r.game }}</div>
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <div style="height:24px;padding:0 8px;border-radius:999px;background:rgba(63,185,80,.10);border:1px solid rgba(63,185,80,.28);display:flex;align-items:center;gap:4px"><div style="font-size:11px;color:#3FB950">✓</div><div style="font-size:11px;font-weight:600;letter-spacing:.66px;color:#3FB950;font-variant-numeric:tabular-nums">{{ r.hours }}</div></div>
+                    <div style="font-size:13px;font-weight:500;color:#A1A3AB">{{ r.thumb }}</div>
+                  </div>
+                  <div style="font-size:13px;font-weight:400;line-height:1.5;color:#A1A3AB">{{ r.text }}</div>
+                  <div style="display:flex;gap:16px;padding-top:2px">
+                    <div style="font-size:13px;font-weight:500;color:#82858F">↩ {{ r.replies }}</div>
+                    <div style="font-size:13px;font-weight:500;color:#82858F">✎ Düzenle</div>
+                  </div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="position:absolute;left:20px;right:20px;bottom:24px;height:64px;border-radius:999px;background:rgba(22,23,27,.58);backdrop-filter:blur(32px) saturate(1.8);-webkit-backdrop-filter:blur(32px) saturate(1.8);border:1px solid rgba(255,255,255,.10);display:flex;align-items:center">
+            <sc-for list="{{ tabbar }}" as="t" hint-placeholder-count="5">
+              <div style="flex:1;display:flex;align-items:center;justify-content:center;height:64px;font-size:22px;color:{{ t.color }}">{{ t.glyph }}</div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3d Gönderiler -->
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase;color:#82858F">3d · Gönderiler</div>
+        <div style="width:390px;height:844px;background:#0A0B0D;border:1px solid rgba(255,255,255,.12);border-radius:20px;overflow:hidden;position:relative;flex:none">
+          <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-size:13px;font-weight:600;color:#F4F4F6"><div>9:41</div><div style="letter-spacing:2px">▮▮▮</div></div>
+          <div style="height:52px;display:flex;align-items:center;gap:12px;padding:0 20px;border-bottom:1px solid rgba(255,255,255,.07)">
+            <div style="width:32px;height:32px;border-radius:999px;background:#2A2C33;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#82858F">D</div>
+            <div style="flex:1;font-size:17px;font-weight:600;color:#F4F4F6">@deniz.kaya</div>
+            <div style="font-size:20px;color:#A1A3AB">⚙</div>
+          </div>
+          <div style="height:48px;display:flex;border-bottom:1px solid rgba(255,255,255,.07)">
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;color:#82858F">▦</div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;color:#82858F">♡</div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;color:#82858F">✓</div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;color:#F4F4F6;border-bottom:2px solid #E8242B">▤</div>
+          </div>
+          <div style="padding:12px 20px 8px;font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase;color:#82858F">Gönderiler · 48</div>
+          <div style="display:flex;flex-direction:column;height:554px;overflow:hidden">
+            <sc-for list="{{ myPosts }}" as="p" hint-placeholder-count="4">
+              <div style="padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;gap:12px">
+                <div style="width:40px;height:40px;border-radius:999px;background:#2A2C33;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#82858F;flex:none">D</div>
+                <div style="flex:1;display:flex;flex-direction:column;gap:8px;min-width:0">
+                  <div style="display:flex;gap:6px;align-items:baseline"><div style="font-size:15px;font-weight:600;color:#F4F4F6">Deniz Kaya</div><div style="font-size:13px;font-weight:500;color:#82858F">@deniz.kaya · {{ p.time }}</div></div>
+                  <div style="font-size:15px;font-weight:400;line-height:1.45;color:#F4F4F6">{{ p.text }}</div>
+                  <sc-if value="{{ p.game }}" hint-placeholder-val="{{ true }}">
+                    <div style="height:28px;padding:0 12px;border-radius:999px;background:#15161A;border:1px solid rgba(255,255,255,.07);display:inline-flex;align-items:center;gap:8px;align-self:flex-start"><div style="width:16px;height:16px;border-radius:4px;background:#2A2C33"></div><div style="font-size:13px;font-weight:500;color:#A1A3AB">{{ p.game }}</div></div>
+                  </sc-if>
+                  <div style="display:flex;gap:24px;padding-top:2px">
+                    <div style="font-size:13px;font-weight:500;color:#82858F">↩ {{ p.replies }}</div>
+                    <div style="font-size:13px;font-weight:500;color:#82858F">♡ {{ p.likes }}</div>
+                    <div style="font-size:13px;font-weight:500;color:#82858F">↗</div>
+                  </div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="position:absolute;left:20px;right:20px;bottom:24px;height:64px;border-radius:999px;background:rgba(22,23,27,.58);backdrop-filter:blur(32px) saturate(1.8);-webkit-backdrop-filter:blur(32px) saturate(1.8);border:1px solid rgba(255,255,255,.10);display:flex;align-items:center">
+            <sc-for list="{{ tabbar }}" as="t" hint-placeholder-count="5">
+              <div style="flex:1;display:flex;align-items:center;justify-content:center;height:64px;font-size:22px;color:{{ t.color }}">{{ t.glyph }}</div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="width:820px;background:#101114;border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px;font-size:12px;line-height:1.6;color:#A1A3AB">
+      <div style="font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase;color:#82858F">Ölçü notu · kendi profilim</div>
+      <div><b style="color:#F4F4F6">Üst çubuk</b> 44 (kaydırınca 52pt sabit daraltılmış çubuğa dönüşür: avatar 32 + @kullanıcı 17/600 + ⚙). Sabit kalan tek şey bu çubuk ve 48pt sekme şeridi; kimlik bloğu kayıp gider — parallax yok.</div>
+      <div><b style="color:#F4F4F6">Kimlik</b> avatar 88 (yeni jeton <b>avatar.xl 88</b>; mevcut listede 30/32 var, profilde yetersiz) · ekran dolgusu 20 · avatar–sayaç boşluğu 20 · ad 17/600 · bio 15/400 text2, 2 satır kırpma · çip h28, dolgu 12, radius pill, surface2, nokta 6.</div>
+      <div><b style="color:#F4F4F6">Sayaçlar</b> 3×eşit, h44 (dokunma hedefi), sayı 17/600 tabular, etiket 13/500 text2. Gönderi → 3d sekmesi, arkadaş → arkadaş listesi, oyun → ayarlar/Kütüphane.</div>
+      <div><b style="color:#F4F4F6">Eylem satırı</b> h44, radius 12 (sm), surface3; “Profili düzenle” 15/600 · paylaş 44×44 kare (Almanca “Profil bearbeiten” +%40 uzamaya sığar, ikon ayrı kutuda olduğu için metin daralmıyor).</div>
+      <div><b style="color:#F4F4F6">Bu hafta</b> h64, surface, border, radius 16 (md), dolgu 16, çubuk 8 geniş × max 32, gap 4, radius 4 — kimlik ile sekme şeridi arasında; grafiğe marka rengi verilmedi (surface4), çünkü ekranda kırmızı kotası birincil eyleme ayrıldı.</div>
+      <div><b style="color:#F4F4F6">Sekme şeridi</b> h48, 4×97.5 dokunma hedefi, aktif ikon text1 + 2pt brand alt çizgi, pasif text3. Altında 11/600 uppercase bağlam satırı (aktif sekme adı + sayı) → sekme adı hiçbir dilde kırpılmıyor.</div>
+      <div><b style="color:#F4F4F6">Alt güvenli boşluk</b> 104: kaydırılabilir alan 740pt’te bitiyor (844 − 104), yani son öğe her zaman yüzen çubuğun üstüne çıkarılabiliyor. Maketlerde kırpma çizgisi bu değeri gösteriyor; içerik cam çubuğun arkasından geçebilir ama listenin sonu geçemez. Kaydırınca sabit kalan tek şey 52pt daraltılmış üst çubuk ve 48pt sekme şeridi — kimlik bloğu kayıp gidiyor, parallax yok.</div>
+      <div><b style="color:#F4F4F6">Izgara</b> 3 sütun: (390 − 2×20 − 2×4) / 3 = <b style="color:#F4F4F6">114 geniş × 152 yüksek</b> (3:4), radius 12, surface4 dolgu + baş harf 22/700 text3, ad 11/600 alt hizalı.</div>
+      <div><b style="color:#F4F4F6">İkonlar</b> ⚙ <code>settings-outline</code> · ✎ <code>create-outline</code> · ↗ <code>share-outline</code> · ▦ <code>grid-outline</code> · ♡ <code>heart-outline</code> · ✓ <code>shield-checkmark-outline</code> · ▤ <code>chatbubble-outline</code> · ↩ <code>arrow-undo-outline</code> · › <code>chevron-forward</code>. Sekme çubuğu: <code>home</code> · <code>chatbubbles-outline</code> · <code>play-circle-outline</code> · <code>mail-outline</code> · <code>person-outline</code>.</div>
+      <div><b style="color:#F4F4F6">Türetilen renk</b> success #3FB950 — jeton listesinde bağlantı/doğrulama durumu için renk yok; brand ile aynı doygunlukta ama yeşil hue, surface2 üstünde kontrast 5.9:1, rozet kenarı rgba(63,185,80,.28) brandWashBorder kalıbıyla aynı.</div>
+      <div><b style="color:#F4F4F6">Gerekçe</b> 10 karolu kısayol ızgarası ve 2 sayaç kartı kalktı; yerine kullanıcının ürettiği içerik geldi. Koleksiyon sayacı yok — o sayı sekme şeridinin bağlam satırında zaten duruyor. FlashList tek liste; sekme değişimi yalnız <code>data</code>yı değiştiriyor, dört kaydırma alanı yok, pager yok.</div>
+    </div>
+  </div>
+
+  <!-- ============ 4. BAŞKASININ PROFİLİ ============ -->
+  <div style="display:flex;flex-direction:column;gap:20px">
+    <div style="font-size:22px;font-weight:650;letter-spacing:-.22px">4 · Başkasının profili — arkadaşlık durum makinesi</div>
+    <div style="display:flex;gap:32px;flex-wrap:wrap;align-items:flex-start">
+
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase;color:#82858F">4a · Durum 1 · arkadaş değil</div>
+        <div style="width:390px;height:844px;background:#0A0B0D;border:1px solid rgba(255,255,255,.12);border-radius:20px;overflow:hidden;position:relative;flex:none">
+          <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-size:13px;font-weight:600;color:#F4F4F6"><div>9:41</div><div style="letter-spacing:2px">▮▮▮</div></div>
+          <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px"><div style="display:flex;align-items:center;gap:12px"><div style="font-size:20px;color:#F4F4F6">‹</div><div style="font-size:17px;font-weight:600;color:#F4F4F6">@ecem.tan</div></div><div style="width:44px;height:44px;display:flex;align-items:center;justify-content:flex-end;font-size:20px;color:#A1A3AB">⋯</div></div>
+          <div style="padding:8px 20px 0;display:flex;gap:20px;align-items:center">
+            <div style="width:88px;height:88px;border-radius:999px;background:#2A2C33;border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:700;color:#82858F;flex:none">E</div>
+            <div style="flex:1;display:flex;height:44px">
+              <sc-for list="{{ otherCounters }}" as="c" hint-placeholder-count="3">
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px">
+                  <div style="font-size:17px;font-weight:600;color:#F4F4F6;font-variant-numeric:tabular-nums">{{ c.n }}</div>
+                  <div style="font-size:13px;font-weight:500;color:#A1A3AB">{{ c.label }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="padding:12px 20px 0;display:flex;flex-direction:column;gap:8px">
+            <div style="font-size:17px;font-weight:600;color:#F4F4F6">Ecem Tan</div>
+            <div style="font-size:15px;font-weight:400;line-height:1.4;color:#A1A3AB">Strateji ve şehir kurma. Manor Lords’ta 300 saat, hâlâ ekmek yetmiyor.</div>
+            <div style="display:flex;gap:8px;padding-top:4px">
+              <div style="height:28px;padding:0 12px;border-radius:999px;background:#15161A;border:1px solid rgba(255,255,255,.07);display:flex;align-items:center;gap:8px"><div style="width:6px;height:6px;border-radius:999px;background:#3FB950"></div><div style="font-size:13px;font-weight:500;color:#A1A3AB">Steam bağlı</div></div>
+              <div style="height:28px;padding:0 12px;border-radius:999px;background:#15161A;border:1px solid rgba(255,255,255,.07);display:flex;align-items:center;gap:8px"><div style="font-size:13px;font-weight:500;color:#82858F">8 ortak arkadaş</div></div>
+            </div>
+          </div>
+          <div style="padding:16px 20px 0;display:flex;gap:8px">
+            <div style="flex:1;height:44px;border-radius:12px;background:#E8242B;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;color:#FFFFFF">✚ Arkadaş ekle</div>
+            <div style="flex:1;height:44px;border-radius:12px;background:#1C1E23;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;color:#F4F4F6">✉ Mesaj</div>
+          </div>
+          <div style="margin-top:20px;height:48px;display:flex;border-top:1px solid rgba(255,255,255,.07)">
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;color:#F4F4F6;border-bottom:2px solid #E8242B">▦</div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;color:#82858F">♡</div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;color:#82858F">✓</div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;color:#82858F">▤</div>
+          </div>
+          <div style="padding:12px 20px 8px;font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase;color:#82858F">Koleksiyon · 189</div>
+          <div style="padding:0 20px;display:grid;grid-template-columns:repeat(3,114px);gap:4px;height:264px;overflow:hidden;align-content:start">
+            <sc-for list="{{ otherCollection }}" as="g" hint-placeholder-count="9">
+              <div style="width:114px;height:152px;border-radius:12px;background:#2A2C33;display:flex;align-items:flex-end;padding:8px;position:relative;overflow:hidden">
+                <div style="position:absolute;top:8px;left:10px;font-size:22px;font-weight:700;color:#82858F">{{ g.initial }}</div>
+                <div style="font-size:11px;font-weight:600;color:#F4F4F6;line-height:1.2">{{ g.name }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="position:absolute;left:20px;right:20px;bottom:24px;height:64px;border-radius:999px;background:rgba(22,23,27,.58);backdrop-filter:blur(32px) saturate(1.8);-webkit-backdrop-filter:blur(32px) saturate(1.8);border:1px solid rgba(255,255,255,.10);display:flex;align-items:center">
+            <sc-for list="{{ tabbarCommunity }}" as="t" hint-placeholder-count="5">
+              <div style="flex:1;display:flex;align-items:center;justify-content:center;height:64px;font-size:22px;color:{{ t.color }}">{{ t.glyph }}</div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:20px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase;color:#82858F">4b–4d · Diğer üç durum (eylem satırı kırpması)</div>
+        <sc-for list="{{ friendStates }}" as="s" hint-placeholder-count="3">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="font-size:13px;font-weight:600;color:#F4F4F6">{{ s.title }}</div>
+            <div style="width:390px;background:#0A0B0D;border:1px solid rgba(255,255,255,.12);border-radius:20px;overflow:hidden;padding-bottom:20px">
+              <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px"><div style="display:flex;align-items:center;gap:12px"><div style="font-size:20px;color:#F4F4F6">‹</div><div style="font-size:17px;font-weight:600;color:#F4F4F6">{{ s.handle }}</div></div><div style="font-size:20px;color:#A1A3AB">⋯</div></div>
+              <div style="padding:8px 20px 0;display:flex;gap:20px;align-items:center">
+                <div style="width:88px;height:88px;border-radius:999px;background:#2A2C33;border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:700;color:#82858F;flex:none">{{ s.initial }}</div>
+                <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+                  <div style="font-size:17px;font-weight:600;color:#F4F4F6">{{ s.name }}</div>
+                  <div style="font-size:13px;font-weight:500;color:#82858F">{{ s.meta }}</div>
+                </div>
+              </div>
+              <div style="padding:16px 20px 0;display:flex;gap:8px">
+                <div style="flex:1;height:44px;border-radius:12px;background:{{ s.bg1 }};border:1px solid {{ s.bd1 }};display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;color:{{ s.fg1 }}">{{ s.t1 }}</div>
+                <sc-if value="{{ s.t2 }}" hint-placeholder-val="{{ true }}">
+                  <div style="flex:1;height:44px;border-radius:12px;background:{{ s.bg2 }};display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;color:{{ s.fg2 }}">{{ s.t2 }}</div>
+                </sc-if>
+              </div>
+              <div style="padding:12px 20px 0;font-size:13px;font-weight:400;line-height:1.5;color:#A1A3AB">{{ s.note }}</div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase;color:#82858F">4e · ⋯ menüsü (alttan sheet)</div>
+        <div style="width:390px;height:844px;background:#0A0B0D;border:1px solid rgba(255,255,255,.12);border-radius:20px;overflow:hidden;position:relative;flex:none">
+          <div style="position:absolute;inset:0;background:#0A0B0D;opacity:.55"></div>
+          <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-size:13px;font-weight:600;color:#82858F"><div>9:41</div><div style="letter-spacing:2px">▮▮▮</div></div>
+          <div style="padding:20px;opacity:.35;display:flex;gap:20px;align-items:center">
+            <div style="width:88px;height:88px;border-radius:999px;background:#2A2C33"></div>
+            <div style="flex:1;display:flex;flex-direction:column;gap:8px"><div style="height:16px;width:140px;border-radius:4px;background:#2A2C33"></div><div style="height:12px;width:200px;border-radius:4px;background:#1C1E23"></div></div>
+          </div>
+          <div style="position:absolute;left:0;right:0;bottom:0;background:#15161A;border-top:1px solid rgba(255,255,255,.07);border-radius:20px 20px 0 0;padding:12px 0 34px">
+            <div style="width:36px;height:5px;border-radius:999px;background:#2A2C33;margin:0 auto 12px"></div>
+            <div style="padding:0 20px 12px;font-size:17px;font-weight:600;color:#F4F4F6">Ecem Tan</div>
+            <sc-for list="{{ moreMenu }}" as="m" hint-placeholder-count="4">
+              <div style="height:56px;padding:0 20px;display:flex;align-items:center;gap:16px;border-top:1px solid rgba(255,255,255,.07)">
+                <div style="font-size:20px;color:{{ m.color }};width:24px">{{ m.glyph }}</div>
+                <div style="flex:1;font-size:15px;font-weight:500;color:{{ m.color }}">{{ m.label }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase;color:#82858F">5 · Gizli profil (privateProfile açık)</div>
+        <div style="width:390px;height:844px;background:#0A0B0D;border:1px solid rgba(255,255,255,.12);border-radius:20px;overflow:hidden;position:relative;flex:none">
+          <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-size:13px;font-weight:600;color:#F4F4F6"><div>9:41</div><div style="letter-spacing:2px">▮▮▮</div></div>
+          <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px"><div style="display:flex;align-items:center;gap:12px"><div style="font-size:20px;color:#F4F4F6">‹</div><div style="font-size:17px;font-weight:600;color:#F4F4F6">@mert.aydin</div></div><div style="font-size:20px;color:#A1A3AB">⋯</div></div>
+          <div style="padding:8px 20px 0;display:flex;gap:20px;align-items:center">
+            <div style="width:88px;height:88px;border-radius:999px;background:#2A2C33;border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:700;color:#82858F;flex:none">M</div>
+            <div style="flex:1;display:flex;height:44px">
+              <sc-for list="{{ privateCounters }}" as="c" hint-placeholder-count="3">
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px">
+                  <div style="font-size:17px;font-weight:600;color:#F4F4F6;font-variant-numeric:tabular-nums">{{ c.n }}</div>
+                  <div style="font-size:13px;font-weight:500;color:#A1A3AB">{{ c.label }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="padding:12px 20px 0;display:flex;flex-direction:column;gap:8px">
+            <div style="font-size:17px;font-weight:600;color:#F4F4F6">Mert Aydın</div>
+            <div style="height:28px;padding:0 12px;border-radius:999px;background:#15161A;border:1px solid rgba(255,255,255,.07);display:inline-flex;align-items:center;gap:8px;align-self:flex-start"><div style="display:flex;flex-direction:column;align-items:center;transform:scale(0.85)"><div style="width:9px;height:6px;border:1.5px solid #A1A3AB;border-bottom:none;border-radius:5px 5px 0 0"></div><div style="width:14px;height:10px;background:#A1A3AB;border-radius:2px"></div></div><div style="font-size:13px;font-weight:500;color:#A1A3AB">Gizli profil</div></div>
+          </div>
+          <div style="padding:16px 20px 0;display:flex;gap:8px">
+            <div style="flex:1;height:44px;border-radius:12px;background:#E8242B;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;color:#FFFFFF">✚ Arkadaş ekle</div>
+            <div style="flex:1;height:44px;border-radius:12px;background:#1C1E23;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;color:#F4F4F6">✉ Mesaj</div>
+          </div>
+          <div style="margin-top:20px;height:48px;display:flex;border-top:1px solid rgba(255,255,255,.07);opacity:.4">
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;color:#82858F">▦</div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;color:#82858F">♡</div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;color:#82858F">✓</div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;color:#82858F">▤</div>
+          </div>
+          <div style="padding:48px 20px 0;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center">
+            <div style="width:64px;height:64px;border-radius:999px;background:#15161A;border:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center"><div style="display:flex;flex-direction:column;align-items:center;transform:scale(1.6)"><div style="width:9px;height:6px;border:1.5px solid #82858F;border-bottom:none;border-radius:5px 5px 0 0"></div><div style="width:14px;height:10px;background:#82858F;border-radius:2px"></div></div></div>
+            <div style="font-size:17px;font-weight:600;color:#F4F4F6">Bu profil gizli</div>
+            <div style="font-size:15px;font-weight:400;line-height:1.5;color:#A1A3AB;max-width:280px">Mert’in koleksiyonunu, incelemelerini ve gönderilerini yalnız arkadaşları görebiliyor.</div>
+          </div>
+          <div style="position:absolute;left:20px;right:20px;bottom:24px;height:64px;border-radius:999px;background:rgba(22,23,27,.58);backdrop-filter:blur(32px) saturate(1.8);-webkit-backdrop-filter:blur(32px) saturate(1.8);border:1px solid rgba(255,255,255,.10);display:flex;align-items:center">
+            <sc-for list="{{ tabbarCommunity }}" as="t" hint-placeholder-count="5">
+              <div style="flex:1;display:flex;align-items:center;justify-content:center;height:64px;font-size:22px;color:{{ t.color }}">{{ t.glyph }}</div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="width:820px;background:#101114;border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px;font-size:12px;line-height:1.6;color:#A1A3AB">
+      <div style="font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase;color:#82858F">Ölçü notu · başkasının profili &amp; gizli</div>
+      <div><b style="color:#F4F4F6">İskelet aynı</b>: yalnız üst blok değişiyor. ⚙ yerine ⋯ (<code>ellipsis-horizontal</code>), sola ‹ (<code>chevron-back</code>) 44×44 dokunma hedefi. “Bu hafta” satırı yok, “Profili düzenle” yok. Bio yerine ikinci çipte ortak arkadaş sayısı.</div>
+      <div><b style="color:#F4F4F6">Durum butonları</b> hepsi h44, radius 12, 15/600. Durum 1 brand dolgu + <code>person-add-outline</code>. Durum 2 surface3 dolgu + borderStrong 1px + <code>time-outline</code>, metin text2 (geri alınabilir; dokunuş “İsteği geri al” onayı açar). Durum 3 surface2 dolgu + <code>checkmark-circle</code> success ikon, metin text1 — kırmızı yok, çünkü arkadaşlık artık eylem değil durum. Durum 4 iki buton 1:1: Kabul brand, Reddet surface3.</div>
+      <div><b style="color:#F4F4F6">Marka-kırmızı sayımı</b>: durum 1 → 2 (buton + aktif sekme çizgisi). Durum 3 → 1 (yalnız sekme çizgisi). Durum 4 → 2. Hiçbirinde 3’ü aşmıyor.</div>
+      <div><b style="color:#F4F4F6">⋯ sheet</b>: tutamaç 36×5, radius 20 üst köşeler, satır h56, dolgu 20, ayırıcı hairline, alt güvenli boşluk 34. Şikayet/engelle listenin altında ama <b>aynı sheet’te ve kaydırmasız</b> — Guideline 1.2 için bulunabilirlik şartı. Engelle/Şikayet metni brandText #FF6B6F (yıkıcı eylem), diğerleri text1.</div>
+      <div><b style="color:#F4F4F6">Gizli</b>: kimlik + 3 sayaç + eylem satırı görünür; sekme şeridi %40 opaklıkla görünür ama dokunulamaz (yapının ne olduğunu öğretiyor, yalan söylemiyor). Kilit dairesi 64, surface2, ikon <code>lock-closed-outline</code> 26. Sayaçlar gizlide de gösteriliyor çünkü <code>discoverable</code> kapalı değil — profil bulunabilir, içeriği kapalı.</div>
+      <div><b style="color:#F4F4F6">Yeni anahtar</b> <code>privateProfile</code> · Ayarlar → Gizlilik grubu, <code>discoverable</code>’ın üstünde ilk satır. Açıklama satırı: “Koleksiyon, incelemeler ve gönderilerini yalnız arkadaşların görür.”</div>
+    </div>
+  </div>
+
+  <!-- ============ 6. ARKADAŞ LİSTESİ ============ -->
+  <div style="display:flex;flex-direction:column;gap:20px">
+    <div style="font-size:22px;font-weight:650;letter-spacing:-.22px">6 · Arkadaş listesi + gelen istekler · 7 · Topluluk</div>
+    <div style="display:flex;gap:32px;flex-wrap:wrap;align-items:flex-start">
+
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase;color:#82858F">6a · Arkadaş listesi (tam ekran)</div>
+        <div style="width:390px;height:844px;background:#0A0B0D;border:1px solid rgba(255,255,255,.12);border-radius:20px;overflow:hidden;position:relative;flex:none">
+          <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-size:13px;font-weight:600;color:#F4F4F6"><div>9:41</div><div style="letter-spacing:2px">▮▮▮</div></div>
+          <div style="height:44px;display:flex;align-items:center;gap:12px;padding:0 20px"><div style="font-size:20px;color:#F4F4F6">‹</div><div style="flex:1;font-size:17px;font-weight:600;color:#F4F4F6">Arkadaşlar · 126</div></div>
+          <div style="padding:12px 20px 0">
+            <div style="height:44px;border-radius:12px;background:#15161A;border:1px solid rgba(255,255,255,.07);display:flex;align-items:center;gap:8px;padding:0 12px">
+              <div style="font-size:17px;color:#82858F">⌕</div>
+              <div style="flex:1;font-size:15px;font-weight:400;color:#82858F">Kullanıcı ara</div>
+            </div>
+          </div>
+          <div style="padding:16px 20px 0">
+            <div style="border-radius:16px;background:rgba(232,36,43,.08);border:1px solid rgba(232,36,43,.28);padding:16px;display:flex;align-items:center;gap:12px">
+              <div style="display:flex">
+                <div style="width:32px;height:32px;border-radius:999px;background:#2A2C33;border:2px solid #0A0B0D;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#82858F">E</div>
+                <div style="width:32px;height:32px;border-radius:999px;background:#2A2C33;border:2px solid #0A0B0D;margin-left:-10px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#82858F">K</div>
+                <div style="width:32px;height:32px;border-radius:999px;background:#2A2C33;border:2px solid #0A0B0D;margin-left:-10px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#82858F">B</div>
+              </div>
+              <div style="flex:1;display:flex;flex-direction:column;gap:2px">
+                <div style="font-size:15px;font-weight:600;color:#F4F4F6">Gelen istekler</div>
+                <div style="font-size:13px;font-weight:500;color:#A1A3AB">Ecem, Kaan ve 1 kişi daha</div>
+              </div>
+              <div style="min-width:24px;height:24px;padding:0 8px;border-radius:999px;background:#E8242B;color:#FFFFFF;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums">3</div>
+              <div style="font-size:17px;color:#82858F">›</div>
+            </div>
+          </div>
+          <div style="padding:20px 20px 8px;font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase;color:#82858F">Tümü · 126</div>
+          <div style="display:flex;flex-direction:column;height:520px;overflow:hidden">
+            <sc-for list="{{ friends }}" as="f" hint-placeholder-count="8">
+              <div style="height:64px;padding:0 20px;display:flex;align-items:center;gap:12px">
+                <div style="width:44px;height:44px;border-radius:999px;background:#2A2C33;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:#82858F;flex:none">{{ f.initial }}</div>
+                <div style="flex:1;display:flex;flex-direction:column;gap:2px;min-width:0">
+                  <div style="font-size:15px;font-weight:600;color:#F4F4F6">{{ f.name }}</div>
+                  <div style="font-size:13px;font-weight:500;color:#82858F">{{ f.meta }}</div>
+                </div>
+                <div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#82858F">✉</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase;color:#82858F">6b · Gelen istekler</div>
+        <div style="width:390px;height:844px;background:#0A0B0D;border:1px solid rgba(255,255,255,.12);border-radius:20px;overflow:hidden;position:relative;flex:none">
+          <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-size:13px;font-weight:600;color:#F4F4F6"><div>9:41</div><div style="letter-spacing:2px">▮▮▮</div></div>
+          <div style="height:44px;display:flex;align-items:center;gap:12px;padding:0 20px"><div style="font-size:20px;color:#F4F4F6">‹</div><div style="flex:1;font-size:17px;font-weight:600;color:#F4F4F6">Gelen istekler · 3</div></div>
+          <div style="padding:12px 0 0;display:flex;flex-direction:column">
+            <sc-for list="{{ requests }}" as="r" hint-placeholder-count="3">
+              <div style="padding:16px 20px;display:flex;flex-direction:column;gap:12px;border-bottom:1px solid rgba(255,255,255,.07)">
+                <div style="display:flex;align-items:center;gap:12px">
+                  <div style="width:44px;height:44px;border-radius:999px;background:#2A2C33;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:#82858F;flex:none">{{ r.initial }}</div>
+                  <div style="flex:1;display:flex;flex-direction:column;gap:2px;min-width:0">
+                    <div style="font-size:15px;font-weight:600;color:#F4F4F6">{{ r.name }}</div>
+                    <div style="font-size:13px;font-weight:500;color:#82858F">{{ r.meta }}</div>
+                  </div>
+                </div>
+                <div style="display:flex;gap:8px">
+                  <div style="flex:1;height:44px;border-radius:12px;background:#E8242B;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;color:#FFFFFF">Kabul et</div>
+                  <div style="flex:1;height:44px;border-radius:12px;background:#1C1E23;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;color:#F4F4F6">Reddet</div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="padding:32px 20px;display:flex;flex-direction:column;gap:8px">
+            <div style="font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase;color:#82858F">Gönderilen · 2</div>
+            <div style="font-size:13px;font-weight:400;line-height:1.5;color:#A1A3AB">Gönderdiğin istekler bu listenin altında ayrı bölümde; rozet saymıyor çünkü sende eylem yok.</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase;color:#82858F">7a · Topluluk akışı</div>
+        <div style="width:390px;height:844px;background:#0A0B0D;border:1px solid rgba(255,255,255,.12);border-radius:20px;overflow:hidden;position:relative;flex:none">
+          <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-size:13px;font-weight:600;color:#F4F4F6"><div>9:41</div><div style="letter-spacing:2px">▮▮▮</div></div>
+          <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px"><div style="font-size:22px;font-weight:650;letter-spacing:-.22px;color:#F4F4F6">Topluluk</div><div style="font-size:20px;color:#A1A3AB">✎</div></div>
+          <div style="height:44px;display:flex;padding:0 20px;gap:24px;border-bottom:1px solid rgba(255,255,255,.07)">
+            <div style="display:flex;align-items:center;font-size:15px;font-weight:600;color:#F4F4F6;box-shadow:inset 0 -2px 0 #E8242B">Keşfet</div>
+            <div style="display:flex;align-items:center;font-size:15px;font-weight:500;color:#82858F">Arkadaşlar</div>
+          </div>
+          <div style="padding:16px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(255,255,255,.07)">
+            <div style="width:40px;height:40px;border-radius:999px;background:#2A2C33;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#82858F;flex:none">D</div>
+            <div style="flex:1;font-size:15px;font-weight:400;color:#82858F">Ne düşünüyorsun?</div>
+            <div style="height:32px;padding:0 12px;border-radius:999px;background:#1C1E23;display:flex;align-items:center;font-size:13px;font-weight:600;color:#F4F4F6">Gönder</div>
+          </div>
+          <div style="padding:12px 20px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;flex-direction:column;gap:8px">
+            <div style="font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase;color:#82858F">İnceleme yazabilirsin</div>
+            <div style="display:flex;gap:8px">
+              <sc-for list="{{ writable }}" as="w" hint-placeholder-count="4">
+                <div style="width:80px;display:flex;flex-direction:column;gap:4px;flex:none">
+                  <div style="width:80px;height:60px;border-radius:12px;background:#2A2C33;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#82858F">{{ w.initial }}</div>
+                  <div style="font-size:11px;font-weight:600;color:#A1A3AB;line-height:1.2">{{ w.name }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;height:356px;overflow:hidden">
+            <sc-for list="{{ feed }}" as="p" hint-placeholder-count="4">
+              <div style="padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;gap:12px">
+                <div style="width:40px;height:40px;border-radius:999px;background:#2A2C33;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#82858F;flex:none">{{ p.initial }}</div>
+                <div style="flex:1;display:flex;flex-direction:column;gap:8px;min-width:0">
+                  <div style="display:flex;gap:6px;align-items:baseline"><div style="font-size:15px;font-weight:600;color:#F4F4F6">{{ p.name }}</div><div style="font-size:13px;font-weight:500;color:#82858F">{{ p.handle }} · {{ p.time }}</div></div>
+                  <div style="font-size:15px;font-weight:400;line-height:1.45;color:#F4F4F6">{{ p.text }}</div>
+                  <sc-if value="{{ p.game }}" hint-placeholder-val="{{ true }}">
+                    <div style="height:28px;padding:0 12px;border-radius:999px;background:#15161A;border:1px solid rgba(255,255,255,.07);display:inline-flex;align-items:center;gap:8px;align-self:flex-start"><div style="width:16px;height:16px;border-radius:4px;background:#2A2C33"></div><div style="font-size:13px;font-weight:500;color:#A1A3AB">{{ p.game }}</div></div>
+                  </sc-if>
+                  <div style="display:flex;gap:24px;padding-top:2px">
+                    <div style="font-size:13px;font-weight:500;color:#82858F">↩ {{ p.replies }}</div>
+                    <div style="font-size:13px;font-weight:500;color:#82858F">♡ {{ p.likes }}</div>
+                    <div style="font-size:13px;font-weight:500;color:#82858F">↗</div>
+                  </div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="position:absolute;left:20px;right:20px;bottom:24px;height:64px;border-radius:999px;background:rgba(22,23,27,.58);backdrop-filter:blur(32px) saturate(1.8);-webkit-backdrop-filter:blur(32px) saturate(1.8);border:1px solid rgba(255,255,255,.10);display:flex;align-items:center">
+            <sc-for list="{{ tabbarCommunity }}" as="t" hint-placeholder-count="5">
+              <div style="flex:1;display:flex;align-items:center;justify-content:center;height:64px;font-size:22px;color:{{ t.color }}">{{ t.glyph }}</div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase;color:#82858F">7b · Konu · normal gönderi kökü</div>
+        <div style="width:390px;height:844px;background:#0A0B0D;border:1px solid rgba(255,255,255,.12);border-radius:20px;overflow:hidden;position:relative;flex:none">
+          <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-size:13px;font-weight:600;color:#F4F4F6"><div>9:41</div><div style="letter-spacing:2px">▮▮▮</div></div>
+          <div style="height:44px;display:flex;align-items:center;gap:12px;padding:0 20px;border-bottom:1px solid rgba(255,255,255,.07)"><div style="font-size:20px;color:#F4F4F6">‹</div><div style="flex:1;font-size:17px;font-weight:600;color:#F4F4F6">Konu</div></div>
+          <div style="padding:20px;display:flex;flex-direction:column;gap:12px;border-bottom:1px solid rgba(255,255,255,.07)">
+            <div style="display:flex;align-items:center;gap:12px">
+              <div style="width:44px;height:44px;border-radius:999px;background:#2A2C33;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:#82858F">K</div>
+              <div style="flex:1;display:flex;flex-direction:column;gap:2px"><div style="font-size:15px;font-weight:600;color:#F4F4F6">Kaan Demir</div><div style="font-size:13px;font-weight:500;color:#82858F">@kaan · 2sa</div></div>
+              <div style="font-size:20px;color:#82858F">⋯</div>
+            </div>
+            <div style="font-size:22px;font-weight:400;line-height:1.35;letter-spacing:-.22px;color:#F4F4F6">Helldivers 2’de zorluk 9’u üç kişiyle geçmenin tek yolu kalkan üretecini bırakmak. Değişmeyin diyorlar ama sayılar başka söylüyor.</div>
+            <div style="height:28px;padding:0 12px;border-radius:999px;background:#15161A;border:1px solid rgba(255,255,255,.07);display:inline-flex;align-items:center;gap:8px;align-self:flex-start"><div style="width:16px;height:16px;border-radius:4px;background:#2A2C33"></div><div style="font-size:13px;font-weight:500;color:#A1A3AB">Helldivers 2</div></div>
+            <div style="display:flex;gap:24px;padding-top:4px;font-size:13px;font-weight:500;color:#82858F"><div>↩ 18 yanıt</div><div>♡ 142</div><div>↗</div></div>
+          </div>
+          <div style="display:flex;flex-direction:column;height:419px;overflow:hidden">
+            <sc-for list="{{ threadReplies }}" as="r" hint-placeholder-count="4">
+              <div style="padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;gap:12px;padding-left:{{ r.indent }}">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:none">
+                  <div style="width:40px;height:40px;border-radius:999px;background:#2A2C33;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#82858F">{{ r.initial }}</div>
+                  <div style="width:1px;flex:1;background:rgba(255,255,255,.07)"></div>
+                </div>
+                <div style="flex:1;display:flex;flex-direction:column;gap:6px;min-width:0">
+                  <div style="display:flex;gap:6px;align-items:baseline"><div style="font-size:15px;font-weight:600;color:#F4F4F6">{{ r.name }}</div><div style="font-size:13px;font-weight:500;color:#82858F">{{ r.handle }} · {{ r.time }}</div></div>
+                  <div style="font-size:15px;font-weight:400;line-height:1.45;color:#F4F4F6">{{ r.text }}</div>
+                  <div style="display:flex;gap:24px;font-size:13px;font-weight:500;color:#82858F"><div>↩ {{ r.replies }}</div><div>♡ {{ r.likes }}</div></div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="position:absolute;left:0;right:0;bottom:0;height:76px;background:rgba(22,23,27,.58);backdrop-filter:blur(32px) saturate(1.8);-webkit-backdrop-filter:blur(32px) saturate(1.8);border-top:1px solid rgba(255,255,255,.10);display:flex;align-items:center;gap:12px;padding:0 20px 20px">
+            <div style="width:32px;height:32px;border-radius:999px;background:#2A2C33;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#82858F">D</div>
+            <div style="flex:1;height:44px;border-radius:999px;background:#15161A;border:1px solid rgba(255,255,255,.07);display:flex;align-items:center;padding:0 16px;font-size:15px;color:#82858F">Yanıt yaz</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase;color:#82858F">7c · Konu · inceleme kökü</div>
+        <div style="width:390px;height:844px;background:#0A0B0D;border:1px solid rgba(255,255,255,.12);border-radius:20px;overflow:hidden;position:relative;flex:none">
+          <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-size:13px;font-weight:600;color:#F4F4F6"><div>9:41</div><div style="letter-spacing:2px">▮▮▮</div></div>
+          <div style="height:44px;display:flex;align-items:center;gap:12px;padding:0 20px;border-bottom:1px solid rgba(255,255,255,.07)"><div style="font-size:20px;color:#F4F4F6">‹</div><div style="flex:1;font-size:17px;font-weight:600;color:#F4F4F6">Konu</div></div>
+          <div style="padding:12px 20px 0;display:flex;align-items:center;gap:8px">
+            <div style="font-size:13px;color:#82858F">↩</div>
+            <div style="font-size:13px;font-weight:500;color:#82858F">Selin, Deniz’in incelemesine yanıt verdi</div>
+          </div>
+          <div style="padding:12px 20px 20px;border-bottom:1px solid rgba(255,255,255,.07)">
+            <div style="background:#101114;border:1px solid rgba(255,255,255,.07);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:0 8px 20px rgba(0,0,0,.35)">
+              <div style="display:flex;gap:12px">
+                <div style="width:66px;height:88px;border-radius:12px;background:#2A2C33;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#82858F;flex:none">E</div>
+                <div style="flex:1;display:flex;flex-direction:column;gap:8px;min-width:0">
+                  <div style="font-size:17px;font-weight:600;color:#F4F4F6">Elden Ring</div>
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <div style="width:32px;height:32px;border-radius:999px;background:#2A2C33;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#82858F">D</div>
+                    <div style="font-size:13px;font-weight:500;color:#A1A3AB">Deniz Kaya</div>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <div style="height:24px;padding:0 8px;border-radius:999px;background:rgba(63,185,80,.10);border:1px solid rgba(63,185,80,.28);display:flex;align-items:center;gap:4px"><div style="font-size:11px;color:#3FB950">✓</div><div style="font-size:11px;font-weight:600;letter-spacing:.66px;color:#3FB950;font-variant-numeric:tabular-nums">312 SA</div></div>
+                    <div style="font-size:13px;font-weight:500;color:#A1A3AB">△ Öneriyorum</div>
+                  </div>
+                </div>
+              </div>
+              <div style="font-size:15px;font-weight:400;line-height:1.45;color:#F4F4F6">Şimdiye kadar oynadığım en cömert açık dünya. Ama Ağaç Sentinel’i geçene kadar iki hafta boyunca oyunu bıraktım ve geri döndüğümde her şey yerine oturdu.</div>
+              <div style="display:flex;gap:24px;font-size:13px;font-weight:500;color:#82858F"><div>↩ 14 yanıt</div><div>♡ 88</div><div>↗</div></div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;height:386px;overflow:hidden">
+            <sc-for list="{{ reviewThread }}" as="r" hint-placeholder-count="3">
+              <div style="padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;gap:12px;padding-left:{{ r.indent }}">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:none">
+                  <div style="width:40px;height:40px;border-radius:999px;background:#2A2C33;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#82858F">{{ r.initial }}</div>
+                  <div style="width:1px;flex:1;background:rgba(255,255,255,.07)"></div>
+                </div>
+                <div style="flex:1;display:flex;flex-direction:column;gap:6px;min-width:0">
+                  <div style="display:flex;gap:6px;align-items:baseline"><div style="font-size:15px;font-weight:600;color:#F4F4F6">{{ r.name }}</div><div style="font-size:13px;font-weight:500;color:#82858F">{{ r.handle }} · {{ r.time }}</div></div>
+                  <div style="font-size:15px;font-weight:400;line-height:1.45;color:#F4F4F6">{{ r.text }}</div>
+                  <div style="display:flex;gap:24px;font-size:13px;font-weight:500;color:#82858F"><div>↩ {{ r.replies }}</div><div>♡ {{ r.likes }}</div></div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="position:absolute;left:0;right:0;bottom:0;height:76px;background:rgba(22,23,27,.58);backdrop-filter:blur(32px) saturate(1.8);-webkit-backdrop-filter:blur(32px) saturate(1.8);border-top:1px solid rgba(255,255,255,.10);display:flex;align-items:center;gap:12px;padding:0 20px 20px">
+            <div style="width:32px;height:32px;border-radius:999px;background:#2A2C33;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#82858F">D</div>
+            <div style="flex:1;height:44px;border-radius:999px;background:#15161A;border:1px solid rgba(255,255,255,.07);display:flex;align-items:center;padding:0 16px;font-size:15px;color:#82858F">İncelemeye yanıt yaz</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="width:820px;background:#101114;border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px;font-size:12px;line-height:1.6;color:#A1A3AB">
+      <div style="font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase;color:#82858F">Ölçü notu · arkadaşlar, akış, konu</div>
+      <div><b style="color:#F4F4F6">Arkadaş listesi</b> tam ekran push. Arama h44, radius 12, surface2, ikon <code>search-outline</code> — uygulamadaki tek kullanıcı arama kutusu. Satır h64, avatar 44 (dokunma hedefi olarak da yeterli), ad 15/600, alt satır 13/500 text3, sağda ✉ <code>chatbubble-ellipses-outline</code> 44×44.</div>
+      <div><b style="color:#F4F4F6">İstek bandı</b> radius 16, dolgu 16, brandWash dolgu + brandWashBorder kenar; yığılmış avatar 32, örtüşme −10, 2pt bg kenarı. Rozet h24, min-genişlik 24, dolgu 8, brand dolgu, 13/600 tabular. Listenin en üstünde, aramanın hemen altında; kaydırınca yukarı gidiyor — sabit değil, çünkü tek dokunuşta çözülen bir iş.</div>
+      <div><b style="color:#F4F4F6">Rozet kuralı</b>: sayılı kırmızı yalnız burada ve sekme çubuğundaki Profil ikonunda (orada 6pt nokta, sayısız). Profil sayaçlarında rozet yok.</div>
+      <div><b style="color:#F4F4F6">Akış satırı</b> (kart değil): dolgu 16/20, avatar 40, ad 15/600 + <code>@kullanıcı · 2sa</code> 13/500 text3, metin 15/400 satır aralığı 1.45, oyun çipi h28, eylem sırası 13/500 text3 gap 24 — ↩ <code>chatbubble-outline</code>, ♡ <code>heart-outline</code>, ↗ <code>share-outline</code>. Ayırıcı 1px border; gölge yok.</div>
+      <div><b style="color:#F4F4F6">Kompozitör</b> h72 (16 dolgu + 40 avatar), sabit değil — akışın ilk satırı; onun altında “İnceleme yazabilirsin” şeridi 80×60 (16:9’a yakın kapak kırpması) kalıyor, ama iki akış sekmesinin altında, yani sayfa hiçbir zaman boş görünmüyor.</div>
+      <div><b style="color:#F4F4F6">Akış sekmeleri</b> iki: Keşfet / Arkadaşlar. Metinli (iki etiket, Almanca “Entdecken / Freunde” sığıyor); aktif olanda 2pt brand alt çizgi.</div>
+      <div><b style="color:#F4F4F6">Konu</b> kök gönderi metni 22/400 (sectionTitle punto, body ağırlık) — hiyerarşi puntoyla kuruluyor, kalınlıkla değil. Yanıtlar 15/400. Dikey bağlantı çizgisi 1px borderStrong yerine border; ikinci seviye yanıt sol dolgu 20 → 52 (avatar 40 + 12 gap hizası). Yanıt kutusu alt sabit 76 (44 giriş + 20 alt güvenli), cam jetonu.</div>
+      <div><b style="color:#F4F4F6">İnceleme kökü</b> iki katmanlı: üstte 13/500 text3 bağlam satırı, altında inceleme kartı — burada <b>kart gölgesi var</b> (siyah .35, r20, offsetY 8), çünkü kök öğe akış satırından farklı bir nesne olduğunu söylemek zorunda. Kapak 66×88 (3:4), doğrulanmış rozet success, başparmak △/▽ <code>thumbs-up-outline</code>/<code>thumbs-down-outline</code>.</div>
+      <div><b style="color:#F4F4F6">Marka-kırmızı sayımı</b>: akış 2 (aktif sekme çizgisi + sekme çubuğu Profil… hayır: aktif sekme çizgisi + kompozitör “Gönder” pasifken surface3, yani 1) · arkadaş listesi 1 (rozet) · konu 0.</div>
+    </div>
+  </div>
+
+  <!-- ============ 8. OYUN SAYFASI + 9. AYARLAR ============ -->
+  <div style="display:flex;flex-direction:column;gap:20px">
+    <div style="font-size:22px;font-weight:650;letter-spacing:-.22px">8 · Oyun sayfası inceleme bölümü · 9 · Ayarlar</div>
+    <div style="display:flex;gap:32px;flex-wrap:wrap;align-items:flex-start">
+
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase;color:#82858F">8a · İncelemeler var</div>
+        <div style="width:390px;height:844px;background:#0A0B0D;border:1px solid rgba(255,255,255,.12);border-radius:20px;overflow:hidden;position:relative;flex:none">
+          <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-size:13px;font-weight:600;color:#F4F4F6"><div>9:41</div><div style="letter-spacing:2px">▮▮▮</div></div>
+          <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px"><div style="font-size:20px;color:#F4F4F6">‹</div><div style="font-size:20px;color:#A1A3AB">♡</div></div>
+          <div style="padding:8px 20px 0;display:flex;gap:16px;align-items:flex-start">
+            <div style="width:100px;height:133px;border-radius:12px;background:#2A2C33;display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:700;color:#82858F;flex:none">E</div>
+            <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+              <div style="font-size:22px;font-weight:650;letter-spacing:-.22px;color:#F4F4F6;line-height:1.2">Elden Ring</div>
+              <div style="font-size:13px;font-weight:500;color:#82858F">FromSoftware · 2022</div>
+              <div style="height:28px;padding:0 12px;border-radius:999px;background:rgba(63,185,80,.10);border:1px solid rgba(63,185,80,.28);display:inline-flex;align-items:center;align-self:flex-start;font-size:13px;font-weight:600;color:#3FB950">Steam: %93 olumlu</div>
+            </div>
+          </div>
+          <div style="padding:20px 20px 0;display:flex;justify-content:space-between;align-items:center">
+            <div style="font-size:17px;font-weight:600;color:#F4F4F6">İncelemeler</div>
+            <div style="height:32px;padding:0 12px;border-radius:999px;background:#1C1E23;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#F4F4F6">✎ İncelemeni düzenle</div>
+          </div>
+          <div style="display:flex;flex-direction:column;padding-top:8px">
+            <sc-for list="{{ gameReviews }}" as="r" hint-placeholder-count="3">
+              <div style="padding:16px 20px;border-top:1px solid rgba(255,255,255,.07);display:flex;gap:12px">
+                <div style="width:32px;height:32px;border-radius:999px;background:#2A2C33;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#82858F;flex:none">{{ r.initial }}</div>
+                <div style="flex:1;display:flex;flex-direction:column;gap:6px;min-width:0">
+                  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                    <div style="font-size:15px;font-weight:600;color:#F4F4F6">{{ r.name }}</div>
+                    <div style="height:24px;padding:0 8px;border-radius:999px;background:rgba(63,185,80,.10);border:1px solid rgba(63,185,80,.28);display:flex;align-items:center;gap:4px"><div style="font-size:11px;color:#3FB950">✓</div><div style="font-size:11px;font-weight:600;letter-spacing:.66px;color:#3FB950;font-variant-numeric:tabular-nums">{{ r.hours }}</div></div>
+                    <div style="font-size:13px;font-weight:500;color:#A1A3AB">{{ r.thumb }}</div>
+                  </div>
+                  <div style="font-size:15px;font-weight:400;line-height:1.45;color:#F4F4F6">{{ r.text }}</div>
+                  <div style="font-size:13px;font-weight:500;color:#82858F">↩ {{ r.replies }} · konuyu aç</div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="padding:16px 20px 0;border-top:1px solid rgba(255,255,255,.07);margin-top:0">
+            <div style="height:44px;border-radius:12px;background:#1C1E23;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;color:#F4F4F6">12 incelemenin tümünü gör</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase;color:#82858F">8b · İnceleme yok · kütüphanede</div>
+        <div style="width:390px;background:#0A0B0D;border:1px solid rgba(255,255,255,.12);border-radius:20px;overflow:hidden;padding-bottom:24px">
+          <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px"><div style="font-size:20px;color:#F4F4F6">‹</div><div style="font-size:20px;color:#A1A3AB">♡</div></div>
+          <div style="padding:8px 20px 0;display:flex;gap:16px;align-items:flex-start">
+            <div style="width:100px;height:133px;border-radius:12px;background:#2A2C33;display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:700;color:#82858F;flex:none">N</div>
+            <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+              <div style="font-size:22px;font-weight:650;letter-spacing:-.22px;color:#F4F4F6;line-height:1.2">Nine Sols</div>
+              <div style="font-size:13px;font-weight:500;color:#82858F">Red Candle Games · 2024</div>
+              <div style="height:28px;padding:0 12px;border-radius:999px;background:rgba(63,185,80,.10);border:1px solid rgba(63,185,80,.28);display:inline-flex;align-items:center;align-self:flex-start;font-size:13px;font-weight:600;color:#3FB950">Steam: %96 olumlu</div>
+            </div>
+          </div>
+          <div style="padding:20px 20px 0">
+            <div style="border-radius:16px;background:rgba(232,36,43,.08);border:1px solid rgba(232,36,43,.28);padding:16px;display:flex;flex-direction:column;gap:12px">
+              <div style="display:flex;align-items:center;gap:8px">
+                <div style="height:24px;padding:0 8px;border-radius:999px;background:rgba(63,185,80,.10);border:1px solid rgba(63,185,80,.28);display:flex;align-items:center;gap:4px"><div style="font-size:11px;color:#3FB950">✓</div><div style="font-size:11px;font-weight:600;letter-spacing:.66px;color:#3FB950;font-variant-numeric:tabular-nums">28 SA</div></div>
+                <div style="font-size:13px;font-weight:500;color:#A1A3AB">senin oynama süren</div>
+              </div>
+              <div style="font-size:17px;font-weight:600;color:#F4F4F6;line-height:1.3">Bu oyunu oynadın. İlk incelemeyi sen yaz.</div>
+              <div style="font-size:13px;font-weight:400;line-height:1.5;color:#A1A3AB">Saatin Steam’den okunuyor, doğrulanmış olarak görünür.</div>
+              <div style="height:44px;border-radius:12px;background:#E8242B;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;color:#FFFFFF">✎ İnceleme yaz</div>
+            </div>
+          </div>
+          <div style="padding:24px 20px 0;font-size:12px;line-height:1.6;color:#82858F">Aynı oyun <b style="color:#A1A3AB">kütüphanede değilse</b>: bu blok hiç çizilmiyor. Sayfa Steam yüzdesinden doğrudan “Benzer oyunlar” bölümüne geçiyor — “0 inceleme” yazısı hiçbir yerde görünmüyor.</div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase;color:#82858F">9 · Ayarlar · tam liste</div>
+        <div style="width:390px;background:#0A0B0D;border:1px solid rgba(255,255,255,.12);border-radius:20px;overflow:hidden">
+          <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-size:13px;font-weight:600;color:#F4F4F6"><div>9:41</div><div style="letter-spacing:2px">▮▮▮</div></div>
+          <div style="height:44px;display:flex;align-items:center;gap:12px;padding:0 20px"><div style="font-size:20px;color:#F4F4F6">‹</div><div style="flex:1;font-size:17px;font-weight:600;color:#F4F4F6">Ayarlar</div></div>
+          <sc-for list="{{ settings }}" as="grp" hint-placeholder-count="4">
+            <div style="padding:20px 20px 8px;font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase;color:#82858F">{{ grp.title }}</div>
+            <div style="margin:0 20px;background:#101114;border:1px solid rgba(255,255,255,.07);border-radius:16px;overflow:hidden">
+              <sc-for list="{{ grp.rows }}" as="row" hint-placeholder-count="5">
+                <div style="min-height:52px;padding:12px 16px;display:flex;align-items:center;gap:12px;border-top:1px solid rgba(255,255,255,.07)">
+                  <div style="width:24px;font-size:18px;color:#A1A3AB;flex:none">{{ row.glyph }}</div>
+                  <div style="flex:1;display:flex;flex-direction:column;gap:2px;min-width:0">
+                    <div style="font-size:15px;font-weight:500;color:#F4F4F6">{{ row.label }}</div>
+                    <sc-if value="{{ row.sub }}" hint-placeholder-val="{{ true }}">
+                      <div style="font-size:13px;font-weight:400;line-height:1.4;color:#82858F">{{ row.sub }}</div>
+                    </sc-if>
+                  </div>
+                  <div style="font-size:13px;font-weight:500;color:#82858F">{{ row.value }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </sc-for>
+          <div style="height:104px"></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="width:820px;background:#101114;border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px;font-size:12px;line-height:1.6;color:#A1A3AB">
+      <div style="font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase;color:#82858F">Ölçü notu · oyun sayfası &amp; ayarlar</div>
+      <div><b style="color:#F4F4F6">Oyun sayfası</b> kapak 100×133 (3:4), radius 12. Steam çipi h28, success wash — toplu yüzde <b>kalıyor</b> ve kullanıcı incelemelerinin üstünde. Bölüm başlığı 17/600 + sağda “İncelemeni düzenle” h32 pill (yalnız kendi incelemem varsa).</div>
+      <div><b style="color:#F4F4F6">İnceleme satırı</b> avatar 32, doğrulanmış rozet h24 success + <code>shield-checkmark</code>, metin 15/400 3 satır kırpma, altta yanıt sayısı 13/500 text3 → dokunuş topluluk konusunu açıyor. <b>Yanıt metni burada yok.</b> En fazla 3 satır + “Tümünü gör” h44 surface3.</div>
+      <div><b style="color:#F4F4F6">Davet bloğu</b> (karar 5) radius 16, brandWash + brandWashBorder, dolgu 16, birincil buton h44 brand. Yalnız oyun kütüphanede ve saat &gt; 0 ise. Aksi halde bölüm hiç render edilmiyor — “0 inceleme” metni hiçbir durumda yok.</div>
+      <div><b style="color:#F4F4F6">Ayarlar</b> (karar 6) dört bölüm başlığı 11/600 uppercase text3, grup kartı radius 16 surface, satır min-h 52 (dolgu 14/16, çift satırda büyüyor), ikon sütunu 24, etiket 15/500, açıklama 13/400 text3, sağ değer 13/500 text3. Sıra: <b>Hesap → Oyun verim → Gizlilik → Uygulama</b>. Profilden taşınan altı hedef (Kütüphane, İstatistik, Oyun kartları, Listeler, Keşfet, Steam arkadaşları) “Oyun verim” grubunda toplandı; başlıklar kategori adı değil, ne bulacağının adı.</div>
+      <div><b style="color:#F4F4F6">privateProfile</b> Gizlilik grubunun ilk satırı, <code>discoverable</code>’ın üstünde; altında 13/400 açıklama. Alt güvenli boşluk 104.</div>
+    </div>
+  </div>
+
+  <!-- ============ 10. DURUMLAR ============ -->
+  <div style="display:flex;flex-direction:column;gap:20px">
+    <div style="font-size:22px;font-weight:650;letter-spacing:-.22px">10 · Dört durum · boş · iskelet · oturum yok</div>
+    <div style="display:flex;gap:32px;flex-wrap:wrap;align-items:flex-start">
+
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase;color:#82858F">10a · Boş · kendi profilim (eylem önerir)</div>
+        <div style="width:390px;height:844px;background:#0A0B0D;border:1px solid rgba(255,255,255,.12);border-radius:20px;overflow:hidden;position:relative;flex:none">
+          <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-size:13px;font-weight:600;color:#F4F4F6"><div>9:41</div><div style="letter-spacing:2px">▮▮▮</div></div>
+          <div style="height:52px;display:flex;align-items:center;gap:12px;padding:0 20px;border-bottom:1px solid rgba(255,255,255,.07)">
+            <div style="width:32px;height:32px;border-radius:999px;background:#2A2C33;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#82858F">D</div>
+            <div style="flex:1;font-size:17px;font-weight:600;color:#F4F4F6">@deniz.kaya</div>
+            <div style="font-size:20px;color:#A1A3AB">⚙</div>
+          </div>
+          <div style="height:48px;display:flex;border-bottom:1px solid rgba(255,255,255,.07)">
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;color:#82858F">▦</div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;color:#82858F">♡</div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;color:#F4F4F6;border-bottom:2px solid #E8242B">✓</div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;color:#82858F">▤</div>
+          </div>
+          <div style="padding:48px 20px 0;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center">
+            <div style="width:64px;height:64px;border-radius:999px;background:#15161A;border:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;font-size:24px;color:#82858F">✓</div>
+            <div style="font-size:17px;font-weight:600;color:#F4F4F6">Henüz inceleme yazmadın</div>
+            <div style="font-size:15px;font-weight:400;line-height:1.5;color:#A1A3AB;max-width:280px">Elden Ring’de 312 saatin var. Saat Steam’den okunuyor, incelemen doğrulanmış görünür.</div>
+            <div style="height:44px;padding:0 20px;border-radius:12px;background:#E8242B;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;color:#FFFFFF;margin-top:8px">✎ İlk incelemeni yaz</div>
+          </div>
+          <div style="position:absolute;left:20px;right:20px;bottom:24px;height:64px;border-radius:999px;background:rgba(22,23,27,.58);backdrop-filter:blur(32px) saturate(1.8);-webkit-backdrop-filter:blur(32px) saturate(1.8);border:1px solid rgba(255,255,255,.10);display:flex;align-items:center">
+            <sc-for list="{{ tabbar }}" as="t" hint-placeholder-count="5">
+              <div style="flex:1;display:flex;align-items:center;justify-content:center;height:64px;font-size:22px;color:{{ t.color }}">{{ t.glyph }}</div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase;color:#82858F">10b · Boş · başkasının profili (yalnız bilgi)</div>
+        <div style="width:390px;background:#0A0B0D;border:1px solid rgba(255,255,255,.12);border-radius:20px;overflow:hidden;padding-bottom:32px">
+          <div style="height:44px;display:flex;align-items:center;gap:12px;padding:0 20px"><div style="font-size:20px;color:#F4F4F6">‹</div><div style="flex:1;font-size:17px;font-weight:600;color:#F4F4F6">@nilarslan</div><div style="font-size:20px;color:#A1A3AB">⋯</div></div>
+          <div style="height:48px;display:flex;border-top:1px solid rgba(255,255,255,.07);border-bottom:1px solid rgba(255,255,255,.07)">
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;color:#82858F">▦</div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;color:#82858F">♡</div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;color:#F4F4F6;border-bottom:2px solid #E8242B">✓</div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;color:#82858F">▤</div>
+          </div>
+          <div style="padding:48px 20px 0;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center">
+            <div style="width:64px;height:64px;border-radius:999px;background:#15161A;border:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;font-size:24px;color:#82858F">✓</div>
+            <div style="font-size:17px;font-weight:600;color:#F4F4F6">Nil henüz inceleme yazmadı</div>
+            <div style="font-size:15px;font-weight:400;line-height:1.5;color:#A1A3AB;max-width:280px">Yazdığında burada görünecek.</div>
+          </div>
+          <div style="padding:32px 20px 0;font-size:12px;line-height:1.6;color:#82858F">Buton yok: başkasının boş sekmesinde eylem önermek kullanıcıyı yönlendireceği bir yere götürmüyor. Aynı kalıp dört sekmenin hepsinde geçerli — yalnız ikon ve metin değişiyor (▦ “koleksiyon paylaşmadı”, ♡ “istek listesi boş”, ▤ “gönderi yok”).</div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase;color:#82858F">10c · İskelet</div>
+        <div style="width:390px;height:844px;background:#0A0B0D;border:1px solid rgba(255,255,255,.12);border-radius:20px;overflow:hidden;position:relative;flex:none">
+          <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-size:13px;font-weight:600;color:#F4F4F6"><div>9:41</div><div style="letter-spacing:2px">▮▮▮</div></div>
+          <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px"><div style="width:120px;height:16px;border-radius:4px;background:linear-gradient(90deg,#1F2126,#2A2C33,#1F2126);background-size:320px 100%;animation:skel 1400ms linear infinite"></div><div style="font-size:20px;color:#2A2C33">⚙</div></div>
+          <div style="padding:8px 20px 0;display:flex;gap:20px;align-items:center">
+            <div style="width:88px;height:88px;border-radius:999px;background:linear-gradient(90deg,#1F2126,#2A2C33,#1F2126);background-size:320px 100%;animation:skel 1400ms linear infinite;flex:none"></div>
+            <div style="flex:1;display:flex;gap:16px">
+              <sc-for list="{{ three }}" as="s" hint-placeholder-count="3">
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px">
+                  <div style="width:32px;height:16px;border-radius:4px;background:linear-gradient(90deg,#1F2126,#2A2C33,#1F2126);background-size:320px 100%;animation:skel 1400ms linear infinite"></div>
+                  <div style="width:48px;height:12px;border-radius:4px;background:linear-gradient(90deg,#1F2126,#2A2C33,#1F2126);background-size:320px 100%;animation:skel 1400ms linear infinite"></div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="padding:20px 20px 0;display:flex;flex-direction:column;gap:8px">
+            <div style="width:160px;height:16px;border-radius:4px;background:linear-gradient(90deg,#1F2126,#2A2C33,#1F2126);background-size:320px 100%;animation:skel 1400ms linear infinite"></div>
+            <div style="width:300px;height:14px;border-radius:4px;background:linear-gradient(90deg,#1F2126,#2A2C33,#1F2126);background-size:320px 100%;animation:skel 1400ms linear infinite"></div>
+            <div style="width:220px;height:14px;border-radius:4px;background:linear-gradient(90deg,#1F2126,#2A2C33,#1F2126);background-size:320px 100%;animation:skel 1400ms linear infinite"></div>
+          </div>
+          <div style="padding:16px 20px 0;display:flex;gap:8px">
+            <div style="flex:1;height:44px;border-radius:12px;background:linear-gradient(90deg,#1F2126,#2A2C33,#1F2126);background-size:320px 100%;animation:skel 1400ms linear infinite"></div>
+            <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(90deg,#1F2126,#2A2C33,#1F2126);background-size:320px 100%;animation:skel 1400ms linear infinite"></div>
+          </div>
+          <div style="padding:16px 20px 0"><div style="height:64px;border-radius:16px;background:linear-gradient(90deg,#1F2126,#2A2C33,#1F2126);background-size:320px 100%;animation:skel 1400ms linear infinite"></div></div>
+          <div style="margin-top:20px;height:48px;display:flex;border-top:1px solid rgba(255,255,255,.07)">
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;color:#2A2C33">▦</div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;color:#2A2C33">♡</div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;color:#2A2C33">✓</div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;color:#2A2C33">▤</div>
+          </div>
+          <div style="padding:20px 20px 0;display:grid;grid-template-columns:repeat(3,114px);gap:4px;height:248px;overflow:hidden;align-content:start">
+            <sc-for list="{{ nine }}" as="s" hint-placeholder-count="9">
+              <div style="width:114px;height:152px;border-radius:12px;background:linear-gradient(90deg,#1F2126,#2A2C33,#1F2126);background-size:320px 100%;animation:skel 1400ms linear infinite"></div>
+            </sc-for>
+          </div>
+          <div style="position:absolute;left:20px;right:20px;bottom:24px;height:64px;border-radius:999px;background:rgba(22,23,27,.58);backdrop-filter:blur(32px) saturate(1.8);-webkit-backdrop-filter:blur(32px) saturate(1.8);border:1px solid rgba(255,255,255,.10);display:flex;align-items:center">
+            <sc-for list="{{ tabbar }}" as="t" hint-placeholder-count="5">
+              <div style="flex:1;display:flex;align-items:center;justify-content:center;height:64px;font-size:22px;color:{{ t.color }}">{{ t.glyph }}</div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase;color:#82858F">10d · Oturum yok</div>
+        <div style="width:390px;height:844px;background:#0A0B0D;border:1px solid rgba(255,255,255,.12);border-radius:20px;overflow:hidden;position:relative;flex:none">
+          <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-size:13px;font-weight:600;color:#F4F4F6"><div>9:41</div><div style="letter-spacing:2px">▮▮▮</div></div>
+          <div style="height:44px;display:flex;align-items:center;padding:0 20px;font-size:17px;font-weight:600;color:#F4F4F6">Profil</div>
+          <div style="padding:120px 20px 0;display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center">
+            <div style="width:88px;height:88px;border-radius:999px;background:#15161A;border:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;font-size:34px;color:#82858F">⊙</div>
+            <div style="font-size:22px;font-weight:650;letter-spacing:-.22px;color:#F4F4F6">Kendi profilini kur</div>
+            <div style="font-size:15px;font-weight:400;line-height:1.5;color:#A1A3AB;max-width:300px">Steam’ini bağla; koleksiyonun ve oynama saatlerin otomatik gelsin, doğrulanmış inceleme yazabilesin.</div>
+            <div style="width:100%;display:flex;flex-direction:column;gap:8px;margin-top:8px">
+              <div style="height:44px;border-radius:12px;background:#E8242B;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;color:#FFFFFF">Giriş yap</div>
+              <div style="height:44px;border-radius:12px;background:#1C1E23;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;color:#F4F4F6">Hesap oluştur</div>
+            </div>
+            <div style="font-size:13px;font-weight:500;color:#82858F;margin-top:8px">Girmeden gezinmeye devam et</div>
+          </div>
+          <div style="position:absolute;left:20px;right:20px;bottom:24px;height:64px;border-radius:999px;background:rgba(22,23,27,.58);backdrop-filter:blur(32px) saturate(1.8);-webkit-backdrop-filter:blur(32px) saturate(1.8);border:1px solid rgba(255,255,255,.10);display:flex;align-items:center">
+            <sc-for list="{{ tabbar }}" as="t" hint-placeholder-count="5">
+              <div style="flex:1;display:flex;align-items:center;justify-content:center;height:64px;font-size:22px;color:{{ t.color }}">{{ t.glyph }}</div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="width:820px;background:#101114;border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px;font-size:12px;line-height:1.6;color:#A1A3AB">
+      <div style="font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase;color:#82858F">Ölçü notu · durumlar</div>
+      <div><b style="color:#F4F4F6">Boş durum</b> daire 64 surface2, ikon 24 text3, başlık 17/600, metin 15/400 text2 max 280 geniş, buton h44 dolgu 20. Üst 48 boşluk. Kendi profilimde buton var ve metin <b>gerçek veriye</b> dayanıyor (Steam saati); başkasında buton yok.</div>
+      <div><b style="color:#F4F4F6">İskelet</b> #1F2126 → #2A2C33 → #1F2126, süpürme 320px, 1400ms doğrusal döngü. Blok yarıçapı gerçek öğeyle aynı (kapak 12, buton 12, kart 16, avatar pill). Sekme ikonları surface4 renginde duruyor — düzen zıplamıyor. Kapak ızgarası ilk ekranda 9 blok.</div>
+      <div><b style="color:#F4F4F6">Oturum yok</b> sekme çubuğu görünür kalıyor (uygulama gezilebilir); daire 88, başlık 22/650, iki buton h44, üçüncü seçenek metin bağlantısı 13/500 — üç eşit ağırlıkta buton yerine hiyerarşi.</div>
+      <div><b style="color:#F4F4F6">Ağ hatası</b> ayrı bir boş durum değil: liste başlığında “Bağlantı yok — son yüklenen gösteriliyor” bandı (surface2, 13/500) + eylemler pasif. Boş sonuç gibi göstermiyoruz.</div>
+    </div>
+  </div>
+
+  <!-- ============ 11. AÇIK TEMA ============ -->
+  <div style="display:flex;flex-direction:column;gap:20px">
+    <div style="font-size:22px;font-weight:650;letter-spacing:-.22px">11 · Açık tema</div>
+    <div style="display:flex;gap:32px;flex-wrap:wrap;align-items:flex-start">
+
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase;color:#82858F">11a · Profil · açık</div>
+        <div style="width:390px;height:844px;background:#FFFFFF;border:1px solid rgba(0,0,0,.14);border-radius:20px;overflow:hidden;position:relative;flex:none">
+          <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-size:13px;font-weight:600;color:#0A0B0D"><div>9:41</div><div style="letter-spacing:2px">▮▮▮</div></div>
+          <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px"><div style="font-size:17px;font-weight:600;color:#0A0B0D">@deniz.kaya</div><div style="font-size:20px;color:#5C5F66">⚙</div></div>
+          <div style="padding:8px 20px 0;display:flex;gap:20px;align-items:center">
+            <div style="width:88px;height:88px;border-radius:999px;background:#D8D9DE;border:1px solid rgba(0,0,0,.08);display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:700;color:#64676D;flex:none">D</div>
+            <div style="flex:1;display:flex;height:44px">
+              <sc-for list="{{ ownCounters }}" as="c" hint-placeholder-count="3">
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px">
+                  <div style="font-size:17px;font-weight:600;color:#0A0B0D;font-variant-numeric:tabular-nums">{{ c.n }}</div>
+                  <div style="font-size:13px;font-weight:500;color:#5C5F66">{{ c.label }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="padding:12px 20px 0;display:flex;flex-direction:column;gap:8px">
+            <div style="font-size:17px;font-weight:600;color:#0A0B0D">Deniz Kaya</div>
+            <div style="font-size:15px;font-weight:400;line-height:1.4;color:#5C5F66">Soulslike ve taktiksel FPS. Co-op için her zaman müsait.</div>
+            <div style="display:flex;gap:8px;padding-top:4px">
+              <div style="height:28px;padding:0 12px;border-radius:999px;background:#EFEFF2;border:1px solid rgba(0,0,0,.08);display:flex;align-items:center;gap:8px"><div style="width:6px;height:6px;border-radius:999px;background:#2E9E45"></div><div style="font-size:13px;font-weight:500;color:#5C5F66">Steam bağlı</div></div>
+              <div style="height:28px;padding:0 12px;border-radius:999px;background:#EFEFF2;border:1px solid rgba(0,0,0,.08);display:flex;align-items:center;gap:8px"><div style="width:6px;height:6px;border-radius:999px;background:#2E9E45"></div><div style="font-size:13px;font-weight:500;color:#5C5F66">Xbox bağlı</div></div>
+            </div>
+          </div>
+          <div style="padding:16px 20px 0;display:flex;gap:8px">
+            <div style="flex:1;height:44px;border-radius:12px;background:#E6E6EA;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;color:#0A0B0D">✎ Profili düzenle</div>
+            <div style="width:44px;height:44px;border-radius:12px;background:#E6E6EA;display:flex;align-items:center;justify-content:center;font-size:18px;color:#0A0B0D">↗</div>
+          </div>
+          <div style="padding:16px 20px 0">
+            <div style="height:64px;background:#F5F5F7;border:1px solid rgba(0,0,0,.08);border-radius:16px;padding:0 16px;display:flex;align-items:center;gap:16px">
+              <div style="display:flex;align-items:flex-end;gap:4px;height:32px">
+                <sc-for list="{{ week }}" as="b" hint-placeholder-count="7">
+                  <div style="width:8px;border-radius:4px;background:#D8D9DE;height:{{ b.h }}"></div>
+                </sc-for>
+              </div>
+              <div style="flex:1;display:flex;flex-direction:column;gap:2px">
+                <div style="font-size:15px;font-weight:600;color:#0A0B0D;font-variant-numeric:tabular-nums">12sa 40dk</div>
+                <div style="font-size:13px;font-weight:500;color:#64676D">bu hafta · yalnız sende görünür</div>
+              </div>
+              <div style="font-size:17px;color:#64676D">›</div>
+            </div>
+          </div>
+          <div style="margin-top:20px;height:48px;display:flex;border-top:1px solid rgba(0,0,0,.08)">
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;color:#0A0B0D;border-bottom:2px solid #D81E25">▦</div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;color:#64676D">♡</div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;color:#64676D">✓</div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:20px;color:#64676D">▤</div>
+          </div>
+          <div style="padding:12px 20px 8px;display:flex;justify-content:space-between;align-items:center">
+            <div style="font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase;color:#64676D">Koleksiyon · 214</div>
+            <div style="font-size:13px;font-weight:500;color:#5C5F66">Son eklenen ⌄</div>
+          </div>
+          <div style="padding:0 20px;display:grid;grid-template-columns:repeat(3,114px);gap:4px;height:184px;overflow:hidden;align-content:start">
+            <sc-for list="{{ collection }}" as="g" hint-placeholder-count="9">
+              <div style="width:114px;height:152px;border-radius:12px;background:#D8D9DE;display:flex;align-items:flex-end;padding:8px;position:relative;overflow:hidden">
+                <div style="position:absolute;top:8px;left:10px;font-size:22px;font-weight:700;color:#64676D">{{ g.initial }}</div>
+                <div style="font-size:11px;font-weight:600;color:#0A0B0D;line-height:1.2">{{ g.name }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="position:absolute;left:20px;right:20px;bottom:24px;height:64px;border-radius:999px;background:rgba(255,255,255,.62);backdrop-filter:blur(32px) saturate(1.8);-webkit-backdrop-filter:blur(32px) saturate(1.8);border:1px solid rgba(0,0,0,.08);display:flex;align-items:center">
+            <sc-for list="{{ tabbarLight }}" as="t" hint-placeholder-count="5">
+              <div style="flex:1;display:flex;align-items:center;justify-content:center;height:64px;font-size:22px;color:{{ t.color }}">{{ t.glyph }}</div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase;color:#82858F">11b · Topluluk akışı · açık</div>
+        <div style="width:390px;height:844px;background:#FFFFFF;border:1px solid rgba(0,0,0,.14);border-radius:20px;overflow:hidden;position:relative;flex:none">
+          <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-size:13px;font-weight:600;color:#0A0B0D"><div>9:41</div><div style="letter-spacing:2px">▮▮▮</div></div>
+          <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px"><div style="font-size:22px;font-weight:650;letter-spacing:-.22px;color:#0A0B0D">Topluluk</div><div style="font-size:20px;color:#5C5F66">✎</div></div>
+          <div style="height:44px;display:flex;padding:0 20px;gap:24px;border-bottom:1px solid rgba(0,0,0,.08)">
+            <div style="display:flex;align-items:center;font-size:15px;font-weight:600;color:#0A0B0D;box-shadow:inset 0 -2px 0 #D81E25">Keşfet</div>
+            <div style="display:flex;align-items:center;font-size:15px;font-weight:500;color:#64676D">Arkadaşlar</div>
+          </div>
+          <div style="padding:16px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(0,0,0,.08)">
+            <div style="width:40px;height:40px;border-radius:999px;background:#D8D9DE;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#64676D;flex:none">D</div>
+            <div style="flex:1;font-size:15px;font-weight:400;color:#64676D">Ne düşünüyorsun?</div>
+            <div style="height:32px;padding:0 12px;border-radius:999px;background:#E6E6EA;display:flex;align-items:center;font-size:13px;font-weight:600;color:#0A0B0D">Gönder</div>
+          </div>
+          <div style="padding:12px 20px;border-bottom:1px solid rgba(0,0,0,.08);display:flex;flex-direction:column;gap:8px">
+            <div style="font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase;color:#64676D">İnceleme yazabilirsin</div>
+            <div style="display:flex;gap:8px">
+              <sc-for list="{{ writable }}" as="w" hint-placeholder-count="4">
+                <div style="width:80px;display:flex;flex-direction:column;gap:4px;flex:none">
+                  <div style="width:80px;height:60px;border-radius:12px;background:#D8D9DE;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#64676D">{{ w.initial }}</div>
+                  <div style="font-size:11px;font-weight:600;color:#5C5F66;line-height:1.2">{{ w.name }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;height:356px;overflow:hidden">
+            <sc-for list="{{ feed }}" as="p" hint-placeholder-count="4">
+              <div style="padding:16px 20px;border-bottom:1px solid rgba(0,0,0,.08);display:flex;gap:12px">
+                <div style="width:40px;height:40px;border-radius:999px;background:#D8D9DE;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#64676D;flex:none">{{ p.initial }}</div>
+                <div style="flex:1;display:flex;flex-direction:column;gap:8px;min-width:0">
+                  <div style="display:flex;gap:6px;align-items:baseline"><div style="font-size:15px;font-weight:600;color:#0A0B0D">{{ p.name }}</div><div style="font-size:13px;font-weight:500;color:#64676D">{{ p.handle }} · {{ p.time }}</div></div>
+                  <div style="font-size:15px;font-weight:400;line-height:1.45;color:#0A0B0D">{{ p.text }}</div>
+                  <sc-if value="{{ p.game }}" hint-placeholder-val="{{ true }}">
+                    <div style="height:28px;padding:0 12px;border-radius:999px;background:#F5F5F7;border:1px solid rgba(0,0,0,.08);display:inline-flex;align-items:center;gap:8px;align-self:flex-start"><div style="width:16px;height:16px;border-radius:4px;background:#D8D9DE"></div><div style="font-size:13px;font-weight:500;color:#5C5F66">{{ p.game }}</div></div>
+                  </sc-if>
+                  <div style="display:flex;gap:24px;padding-top:2px;font-size:13px;font-weight:500;color:#64676D"><div>↩ {{ p.replies }}</div><div>♡ {{ p.likes }}</div><div>↗</div></div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="position:absolute;left:20px;right:20px;bottom:24px;height:64px;border-radius:999px;background:rgba(255,255,255,.62);backdrop-filter:blur(32px) saturate(1.8);-webkit-backdrop-filter:blur(32px) saturate(1.8);border:1px solid rgba(0,0,0,.08);display:flex;align-items:center">
+            <sc-for list="{{ tabbarLightCommunity }}" as="t" hint-placeholder-count="5">
+              <div style="flex:1;display:flex;align-items:center;justify-content:center;height:64px;font-size:22px;color:{{ t.color }}">{{ t.glyph }}</div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:390px;background:#101114;border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px;font-size:12px;line-height:1.6;color:#A1A3AB">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase;color:#82858F">Ölçü notu · açık tema</div>
+        <div><b style="color:#F4F4F6">Geometri birebir aynı</b>; yalnız jetonlar değişiyor. Kapak yer tutucu surface4 #D8D9DE, baş harf text3 #64676D — beyaz üzerinde 4.6:1.</div>
+        <div><b style="color:#F4F4F6">Cam</b> glassFill rgba(255,255,255,.62) + glassBorder rgba(0,0,0,.08); Android’de düz #F7F7F9 dolgu, geometri değişmiyor.</div>
+        <div><b style="color:#F4F4F6">success açık varyantı</b> #2E9E45 — koyu temadaki #3FB950 beyaz üzerinde 2.6:1 kalıyordu; aynı hue, düşürülmüş açıklıkla 3.9:1 (6pt nokta metin değil, grafik öğe; yanındaki etiket text2 ile 5.6:1).</div>
+        <div><b style="color:#F4F4F6">brand</b> #D81E25 (açık tema jetonu) — aktif sekme çizgisi ve birincil buton. Kırmızı sayımı koyu temayla aynı.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 12 + 13 ============ -->
+  <div style="display:flex;flex-direction:column;gap:20px">
+    <div style="font-size:22px;font-weight:650;letter-spacing:-.22px">12 · Değişiklik tablosu</div>
+    <div style="max-width:1180px;display:flex;flex-direction:column;gap:6px">
+      <div style="display:flex;gap:16px;padding:0 16px;font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase;color:#82858F">
+        <div style="width:260px;flex:none">Kalkan öğe</div>
+        <div style="width:260px;flex:none">Nereye taşındı</div>
+        <div style="flex:1">Sebep</div>
+      </div>
+      <sc-for list="{{ changes }}" as="c" hint-placeholder-count="10">
+        <div style="display:flex;gap:16px;background:#101114;border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:14px 16px;font-size:13px;line-height:1.55">
+          <div style="width:260px;flex:none;font-weight:600;color:#F4F4F6">{{ c.item }}</div>
+          <div style="width:260px;flex:none;font-weight:600;color:#FF6B6F">{{ c.to }}</div>
+          <div style="flex:1;font-weight:400;color:#A1A3AB">{{ c.why }}</div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="font-size:22px;font-weight:650;letter-spacing:-.22px;padding-top:12px">13 · Kontrol listesi</div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap">
+      <div style="width:560px;background:#101114;border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:8px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase;color:#82858F">Ekran başına marka-kırmızı öğe (limit 3)</div>
+        <sc-for list="{{ redCount }}" as="r" hint-placeholder-count="8">
+          <div style="display:flex;align-items:baseline;gap:12px;font-size:13px;line-height:1.5">
+            <div style="width:24px;font-weight:600;color:#3FB950;font-variant-numeric:tabular-nums;flex:none">{{ r.n }}</div>
+            <div style="width:160px;font-weight:600;color:#F4F4F6;flex:none">{{ r.screen }}</div>
+            <div style="flex:1;font-weight:400;color:#A1A3AB">{{ r.detail }}</div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="width:560px;background:#101114;border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:10px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.66px;text-transform:uppercase;color:#82858F">Kural denetimi</div>
+        <sc-for list="{{ checks }}" as="c" hint-placeholder-count="6">
+          <div style="display:flex;gap:12px;font-size:13px;line-height:1.55">
+            <div style="color:#3FB950;flex:none">✓</div>
+            <div style="flex:1;color:#A1A3AB"><b style="color:#F4F4F6">{{ c.rule }}</b> — {{ c.result }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1400,&quot;height&quot;:1200}}">
+class Component extends DCLogic {
+  renderVals() {
+    const tab = (glyph, active) => ({ glyph, color: active ? "#E8242B" : "#82858F" });
+    return {
+      iaBefore: [
+        { item: "Kimlik satırı: avatar 56 + ad + @kullanıcı · 214 oyun", tag: "kalıyor" },
+        { item: "2 sayaç kartı 169×80 (arkadaş · istek listesi)", tag: "kalkıyor" },
+        { item: "“Bu hafta” 7 çubuklu grafik", tag: "yeri değişti" },
+        { item: "10 karolu kısayol ızgarası", tag: "→ ayarlar" },
+        { item: "Bağlı hesaplar listesi (Steam / Xbox)", tag: "→ ayarlar" },
+        { item: "/social · akış / arkadaşlar / istekler", tag: "dağıtıldı" },
+        { item: "Topluluk: 3 sekme + yazabileceğin oyunlar", tag: "2 sekme" },
+        { item: "Kullanıcının ürettiği içerik", tag: "yok" },
+      ],
+      iaAfter: [
+        { item: "Kimlik bloğu: avatar 88 + ad + bio + bağlı çipi", tag: "yeni bio" },
+        { item: "3 dokunulabilir sayaç: gönderi · arkadaş · oyun", tag: "yeni" },
+        { item: "“Bu hafta” h64 satır — yalnız kendi profilim", tag: "taşındı" },
+        { item: "4 içerik sekmesi: koleksiyon · istek · inceleme · gönderi", tag: "yeni" },
+        { item: "Başkasının profili + arkadaşlık durum makinesi", tag: "yeni ekran" },
+        { item: "Arkadaş listesi (sayaçtan) + gelen istek bandı", tag: "yeni ekran" },
+        { item: "Topluluk: tek akış + kompozitör + konu görünümü", tag: "yeniden" },
+        { item: "Oyun sayfası: kullanıcı incelemeleri bölümü", tag: "yeni" },
+      ],
+      decisions: [
+        { n: "1", q: "Profil sekmeleri ikon mu, metin mi?", a: "Yalnız ikon + altında bağlam satırı", why: "Dört Almanca etiket (Sammlung · Wunschliste · Bewertungen · Beiträge) 87pt sütuna 11pt’te bile sığmıyor. İkon şeridi dilden bağımsız; aktif sekmenin adı ve sayısı hemen altındaki 11/600 uppercase satırda tam yazılıyor — sayı bilgisi kaybolmuyor." },
+        { n: "2", q: "Arkadaş listesi tam ekran mı, sheet mi?", a: "Tam ekran (push)", why: "Liste uzun, arama kutusu ve gelen istek bandı taşıyor; sheet içinde iç kaydırma + sheet sürükleme çakışır. Push ayrıca kişi profiline gidip geri dönme yığınını doğal kılar." },
+        { n: "3", q: "Gelen istek rozeti nerede?", a: "Arkadaş listesi başlığındaki bant (sayılı) + Profil sekmesinde 6pt noktasız uyarı", why: "Kırmızı sayaç yalnız eyleme dönüşen bilgi için: istek kabul/reddet gerektiriyor, o yüzden sayı bandın üstünde. Profil sayacının üstüne ikinci sayı koymak iki rakamı yarıştırır; sekme çubuğunda sayısız nokta yeterli sinyal." },
+        { n: "4", q: "Kullanıcı arama nereye oturuyor?", a: "Arkadaş listesinin üstü — tek arama kutusu", why: "Topluluk akışının üstünde ikinci bir kutu olmayacak; oradaki keşif işini “Keşfet” akış sekmesi yapıyor. Arama sonucu doğal olarak kişi profiline gider, bu da arkadaş listesiyle aynı yığın." },
+        { n: "5", q: "Oyunun incelemesi yoksa?", a: "Kütüphanedeyse davet, değilse bölüm hiç çizilmez", why: "“0 inceleme” yazmak uygulamayı ölü gösterir. Oyunu oynamış kullanıcıya davet gerçek bir eylem; oynamamışa gösterilen davet ise boşluğu ilan eder, o yüzden bölüm tamamen kaldırılıyor." },
+        { n: "6", q: "Ayarlar bölüm başlığı alacak mı?", a: "Evet — dört başlık, 11/600 uppercase", why: "Liste 9 satırdan 19’a çıkıyor; yalnız boşlukla gruplama bu uzunlukta taranamaz. Başlıklar kategori değil hedef adı taşıyor (Hesap · Oyun verim · Gizlilik · Uygulama), yani eskiden kaldırılma sebebi olan “bilgi taşımayan başlık” sorunu tekrarlanmıyor." },
+        { n: "7", q: "“Bu hafta” grafiği nerede?", a: "Eylem satırı ile sekme şeridi arasında, h64 tek satır", why: "Kimlik bloğunun parçası değil ama ilk ekranda görünür kalıyor; 64pt yükseklik onu ikincil tutuyor, ızgaranın ilk sırası hâlâ katlamanın üstünde. Yalnız kendi profilimde." },
+        { n: "8", q: "Gizli profil için yeni anahtar?", a: "Evet — privateProfile", why: "Mevcut shareActivity / discoverable / showPresence içerik kilitlemiyor. Ayarlar → Gizlilik grubunun ilk satırı, discoverable’ın üstünde; açıkken içerik sekmeleri kilitli, kimlik ve sayaçlar görünür kalıyor." },
+      ],
+      ownCounters: [
+        { n: "48", label: "gönderi" },
+        { n: "126", label: "arkadaş" },
+        { n: "214", label: "oyun" },
+      ],
+      week: [
+        { h: "10px" }, { h: "22px" }, { h: "6px" }, { h: "28px" },
+        { h: "16px" }, { h: "32px" }, { h: "12px" },
+      ],
+      collection: [
+        { name: "Elden Ring", initial: "E" },
+        { name: "Baldur's Gate 3", initial: "B" },
+        { name: "Counter-Strike 2", initial: "C" },
+        { name: "Hades II", initial: "H" },
+        { name: "Cyberpunk 2077", initial: "C" },
+        { name: "Helldivers 2", initial: "H" },
+        { name: "Stardew Valley", initial: "S" },
+        { name: "Rainbow Six Siege", initial: "R" },
+        { name: "Lies of P", initial: "L" },
+      ],
+      wishlist: [
+        { name: "Silksong", initial: "S", sale: "" },
+        { name: "Dragon's Dogma 2", initial: "D", sale: "-40%" },
+        { name: "Frostpunk 2", initial: "F", sale: "" },
+        { name: "Black Myth: Wukong", initial: "B", sale: "-25%" },
+        { name: "Satisfactory", initial: "S", sale: "" },
+        { name: "Sons of the Forest", initial: "S", sale: "" },
+        { name: "Nine Sols", initial: "N", sale: "-50%" },
+        { name: "Palworld", initial: "P", sale: "" },
+        { name: "Manor Lords", initial: "M", sale: "" },
+      ],
+      myReviews: [
+        { game: "Elden Ring", initial: "E", hours: "312 SA", thumb: "△ Öneriyorum", text: "Şimdiye kadar oynadığım en cömert açık dünya. Ama Ağaç Sentinel’i geçene kadar iki hafta boyunca oyunu bıraktım…", replies: "14 yanıt" },
+        { game: "Helldivers 2", initial: "H", hours: "96 SA", thumb: "△ Öneriyorum", text: "Rastgele üç kişiyle oynanan en iyi co-op. Yamalar dengeyi bazen ters çeviriyor, yine de her akşam açıyorum.", replies: "6 yanıt" },
+        { game: "Lies of P", initial: "L", hours: "41 SA", thumb: "▽ Önermiyorum", text: "Dövüş temiz ama parry penceresi kandırıyor; ikinci patronda ilerlemem tamamen durdu.", replies: "2 yanıt" },
+      ],
+      myPosts: [
+        { time: "2sa", text: "Helldivers’ta bugün 4 kişilik ekip arıyorum, saat 21:00 civarı. Mikrofonlu olsun yeter.", game: "Helldivers 2", replies: "8", likes: "23" },
+        { time: "1g", text: "Steam yaz indirimi listesi hazır. İstek listemdeki üç oyun aynı gün düştü, bu bir tuzak mı?", game: "", replies: "12", likes: "64" },
+        { time: "3g", text: "Elden Ring incelemesini güncelledim — DLC sonrası fikrim değişti.", game: "Elden Ring", replies: "4", likes: "31" },
+      ],
+      tabbar: [tab("⌂", false), tab("◎", false), tab("▷", false), tab("✉", false), tab("⊙", true)],
+      tabbarCommunity: [tab("⌂", false), tab("◎", true), tab("▷", false), tab("✉", false), tab("⊙", false)],
+      otherCounters: [
+        { n: "31", label: "gönderi" },
+        { n: "94", label: "arkadaş" },
+        { n: "189", label: "oyun" },
+      ],
+      privateCounters: [
+        { n: "12", label: "gönderi" },
+        { n: "58", label: "arkadaş" },
+        { n: "77", label: "oyun" },
+      ],
+      otherCollection: [
+        { name: "Manor Lords", initial: "M" },
+        { name: "Frostpunk 2", initial: "F" },
+        { name: "Cities: Skylines II", initial: "C" },
+        { name: "Total War: Pharaoh", initial: "T" },
+        { name: "Against the Storm", initial: "A" },
+        { name: "Satisfactory", initial: "S" },
+        { name: "Stardew Valley", initial: "S" },
+        { name: "Baldur's Gate 3", initial: "B" },
+        { name: "Timberborn", initial: "T" },
+      ],
+      friendStates: [
+        {
+          title: "Durum 2 · istek gönderildi (geri alınabilir)",
+          handle: "@ecem.tan", initial: "E", name: "Ecem Tan", meta: "8 ortak arkadaş · 189 oyun",
+          t1: "◷ İstek gönderildi", bg1: "#1C1E23", bd1: "rgba(255,255,255,.12)", fg1: "#A1A3AB",
+          t2: "✉ Mesaj", bg2: "#1C1E23", fg2: "#F4F4F6",
+          note: "Buton borderStrong 1px kazanıyor, dolgu surface3 kalıyor; metin text2 — bekleyen durum eylem gibi görünmüyor. Dokunuş “İsteği geri al” onay sheet’i açıyor, tek dokunuşla iptal etmiyor.",
+        },
+        {
+          title: "Durum 3 · arkadaşsınız",
+          handle: "@ecem.tan", initial: "E", name: "Ecem Tan", meta: "Arkadaş · 12 gündür",
+          t1: "✓ Arkadaşsınız", bg1: "#15161A", bd1: "rgba(255,255,255,.07)", fg1: "#F4F4F6",
+          t2: "✉ Mesaj", bg2: "#1C1E23", fg2: "#F4F4F6",
+          note: "Kırmızı yok: arkadaşlık artık bir eylem değil, durum. Onay ikonu success #3FB950, metin text1. “Arkadaşlıktan çıkar” burada değil, ⋯ menüsünde — yıkıcı eylem birincil satırda durmuyor.",
+        },
+        {
+          title: "Durum 4 · sana istek gönderdi",
+          handle: "@ecem.tan", initial: "E", name: "Ecem Tan", meta: "Sana arkadaşlık isteği gönderdi · 2sa",
+          t1: "✓ Kabul et", bg1: "#E8242B", bd1: "#E8242B", fg1: "#FFFFFF",
+          t2: "✕ Reddet", bg2: "#1C1E23", fg2: "#F4F4F6",
+          note: "İki buton 1:1 genişlik. Almanca “Anfrage annehmen / Ablehnen” +%40 uzamada 15pt’te tek satıra sığıyor; sığmazsa buton yüksekliği 44’te kalıp metin 13/600’e düşüyor — düzen esniyor, metin kısaltılmıyor.",
+        },
+      ],
+      three: [{}, {}, {}],
+      nine: [{}, {}, {}, {}, {}, {}, {}, {}, {}],
+      tabbarLight: [
+        { glyph: "⌂", color: "#64676D" }, { glyph: "◎", color: "#64676D" },
+        { glyph: "▷", color: "#64676D" }, { glyph: "✉", color: "#64676D" },
+        { glyph: "⊙", color: "#D81E25" },
+      ],
+      tabbarLightCommunity: [
+        { glyph: "⌂", color: "#64676D" }, { glyph: "◎", color: "#D81E25" },
+        { glyph: "▷", color: "#64676D" }, { glyph: "✉", color: "#64676D" },
+        { glyph: "⊙", color: "#64676D" },
+      ],
+      changes: [
+        { item: "10 karolu kısayol ızgarası", to: "Ayarlar → Oyun verim grubu", why: "Profilin tamamını menü hâline getiriyordu; kullanıcının ürettiği hiçbir şey ekrana sığmıyordu. Altı hedef ayarlarda tek grupta, dördü (Koleksiyon, İstek listesi, İncelemeler, Gönderiler) içerik sekmesine dönüştü." },
+        { item: "2 sayaç kartı 169×80", to: "Üç dokunulabilir sayaç (kimlik bloğu)", why: "80pt yüksekliğinde iki kart iki sayı taşıyordu. Aynı bilgi 44pt’lik tek satırda üç sayıya çıktı; kazanılan yer ilk kapak sırasına gitti." },
+        { item: "Profil > koleksiyon sayacı", to: "Sekme bağlam satırı (“Koleksiyon · 214”)", why: "Aynı sayı ekranda iki kez durmayacak; sekme aktifken sayı zaten görünüyor." },
+        { item: "/social — üç sekmeli ekran", to: "Arkadaş listesi (tam ekran) + topluluk akışı", why: "Sekme sekmesi (sosyal içinde akış/arkadaş/istek) sekme çubuğuyla yarışıyordu. Bağlantı kurma profilden, konuşma topluluktan açılıyor." },
+        { item: "Sosyal içindeki kullanıcı arama", to: "Arkadaş listesinin üstü — tek kutu", why: "İki arama kutusu olmayacak (karar 4). Arama sonucu kişi profiline gidiyor, o da aynı gezinti yığını." },
+        { item: "Topluluk “benimkiler” sekmesi", to: "Profil → Gönderiler / İncelemeler sekmeleri", why: "“Benim içeriğim” topluluk akışının değil kimliğin parçası. Topluluk üç sekmeden ikiye indi." },
+        { item: "Steam arkadaşları ekranı", to: "Ayarlar → Oyun verim", why: "Tek seferlik davet/keşif aracı; günlük gezinti hedefi değil." },
+        { item: "Bağlı hesaplar listesi (profilde)", to: "Kimlik çipi + Ayarlar → Hesap", why: "Durumu görmek için çip yeterli; yönetimi ayarlarda. Çip aynı zamanda “doğrulanmış inceleme” hakkının görünür dayanağı." },
+        { item: "“Bu hafta” grafiği (kart)", to: "h64 tek satır, sekme şeridinin üstü", why: "Yerel veriden gelen ikincil bilgi; kart olarak kimlik bloğu kadar yer kaplıyordu. Yalnız kendi profilimde (karar 7)." },
+        { item: "Oyun sayfasında “0 inceleme”", to: "Davet bloğu veya hiç yok", why: "Sıfır sayısı uygulamayı ölü gösterir. Oyun kütüphanedeyse davet, değilse bölüm render edilmiyor (karar 5)." },
+        { item: "İnceleme yanıtlarının oyun sayfasında görünmesi", to: "Topluluk konusu (inceleme kökü)", why: "Oyun sayfası katalog, tartışma değil. Yanıt sayısı görünüyor, metin topluluk konusunda." },
+      ],
+      redCount: [
+        { n: "2", screen: "Profil · kendi", detail: "aktif sekme çizgisi + sekme çubuğu aktif ikon. (“Profili düzenle” bilinçli olarak surface3.)" },
+        { n: "2", screen: "Profil · başkası", detail: "“Arkadaş ekle” birincil + aktif sekme çizgisi." },
+        { n: "1", screen: "Profil · arkadaşsınız", detail: "yalnız aktif sekme çizgisi — durum butonu nötr." },
+        { n: "2", screen: "Arkadaş listesi", detail: "istek rozeti + sekme çubuğu aktif ikon." },
+        { n: "3", screen: "Gelen istekler", detail: "üç “Kabul et” butonu görünür durumda — liste kaydırıldıkça aynı eylemin tekrarı sayılıyor, tek sınıf." },
+        { n: "2", screen: "Topluluk akışı", detail: "aktif akış sekmesi çizgisi + sekme çubuğu aktif ikon." },
+        { n: "0", screen: "Konu görünümü", detail: "kırmızı yok; yanıt kutusu nötr." },
+        { n: "2", screen: "Oyun · davet", detail: "davet butonu + brandWash blok kenarı." },
+      ],
+      checks: [
+        { rule: "Ölçek dışı boşluk", result: "yok. Tüm dolgu, gap ve yükseklik değerleri 4·8·12·16·20·24·32·40·48 ölçeğinde (ayarlar satırı ilk taslakta 14/16 idi, 12/16’ya çekildi). Tek negatif değer yığılmış avatarların −10 örtüşmesi; bu bir boşluk değil, üst üste binme miktarı." },
+        { rule: "44pt altı dokunma hedefi", result: "yok. Sayaçlar h44, sekme sütunları 97.5×48, ⚙/⋯/‹ 44×44, liste satırı h64, ızgara kapağı 114×152, ✉ satır ikonu 44×44. 28pt çipler ve 24pt rozetler dokunulabilir değil (bilgi öğesi)." },
+        { rule: "Kontrast ≥ 4.5:1 (küçük metin)", result: "text2 #A1A3AB / bg #0A0B0D = 8.4:1 · text3 #82858F / surface #101114 = 5.4:1 · success #3FB950 / brandWash-yeşil = 5.9:1 · açık temada text3 #64676D / #FFFFFF = 5.3:1." },
+        { rule: "Beş dil parite (+%40)", result: "Sekme etiketi yok (ikon) → taşma riski sıfır. Buton metinleri tek satır, ikon ayrı kutuda; “Anfrage annehmen” 15/600’de 44pt butona sığıyor, sığmazsa punto 13/600’e düşüyor, yükseklik sabit." },
+        { rule: "Bulanıklık yalnız cam jetonunda", result: "sekme çubuğu ve yanıt kutusu; başka hiçbir yerde backdrop-filter yok." },
+        { rule: "FlashList tek liste", result: "profil sekmeleri aynı listenin verisini değiştiriyor; pager yok, dört kaydırma alanı yok. Sabit kalan: 52pt daraltılmış üst çubuk + 48pt sekme şeridi (parallax yok)." },
+        { rule: "Guideline 1.2", result: "Engelle ve Şikayet et, başkasının profilindeki ⋯ sheet’inde, kaydırmasız görünür; ayrıca Ayarlar → Gizlilik → Engellenenler." },
+      ],
+      gameReviews: [
+        { initial: "D", name: "Deniz Kaya", hours: "312 SA", thumb: "△", text: "Şimdiye kadar oynadığım en cömert açık dünya. Ağaç Sentinel’i geçene kadar iki hafta bıraktım, geri döndüğümde her şey yerine oturdu.", replies: "14 yanıt" },
+        { initial: "S", name: "Selin Yücel", hours: "148 SA", thumb: "△", text: "Haritanın seni ödüllendirme biçimi başka hiçbir oyunda yok. Yan zindanlar tekrara düşüyor, o kadar.", replies: "6 yanıt" },
+        { initial: "B", name: "Burak Şen", hours: "27 SA", thumb: "▽", text: "PC tarafında kare düşüşleri hâlâ sorun. Oyunun suçu değil ama benim deneyimim bu.", replies: "9 yanıt" },
+      ],
+      settings: [
+        {
+          title: "Hesap",
+          rows: [
+            { glyph: "◔", label: "Profili düzenle", sub: "Ad, bio, avatar", value: "›" },
+            { glyph: "⊞", label: "Bağlı hesaplar", sub: "Steam · Xbox", value: "2 bağlı ›" },
+            { glyph: "✉", label: "E-posta ve şifre", sub: "", value: "›" },
+          ],
+        },
+        {
+          title: "Oyun verim",
+          rows: [
+            { glyph: "▦", label: "Kütüphane", sub: "214 oyun", value: "›" },
+            { glyph: "▤", label: "Listeler", sub: "Kendi oluşturduğun koleksiyonlar", value: "4 ›" },
+            { glyph: "◫", label: "Oyun kartları", sub: "", value: "›" },
+            { glyph: "◭", label: "İstatistik", sub: "Haftalık süre, tür dağılımı", value: "›" },
+            { glyph: "⌕", label: "Keşfet", sub: "Tür ve etikete göre öneri", value: "›" },
+            { glyph: "☺", label: "Steam arkadaşları", sub: "Gamerisen’de olanları bul, davet et", value: "18 ›" },
+          ],
+        },
+        {
+          title: "Gizlilik",
+          rows: [
+            { glyph: "⊟", label: "Gizli profil", sub: "Koleksiyon, incelemeler ve gönderilerini yalnız arkadaşların görür", value: "Kapalı" },
+            { glyph: "◍", label: "Profilim bulunabilir", sub: "Kullanıcı aramasında görünürüm", value: "Açık" },
+            { glyph: "◈", label: "Etkinliğimi paylaş", sub: "Yeni inceleme ve koleksiyon hareketleri akışa düşer", value: "Açık" },
+            { glyph: "◉", label: "Çevrimiçi durumumu göster", sub: "", value: "Açık" },
+            { glyph: "⛔", label: "Engellenenler", sub: "", value: "3 ›" },
+          ],
+        },
+        {
+          title: "Uygulama",
+          rows: [
+            { glyph: "◐", label: "Görünüm", sub: "", value: "Koyu ›" },
+            { glyph: "⌘", label: "Dil", sub: "", value: "Türkçe ›" },
+            { glyph: "◎", label: "Bildirimler", sub: "", value: "›" },
+            { glyph: "⚑", label: "Yardım ve şikayet", sub: "", value: "›" },
+            { glyph: "⊘", label: "Çıkış yap", sub: "", value: "" },
+          ],
+        },
+      ],
+      friends: [
+        { name: "Ecem Tan", initial: "E", meta: "@ecem.tan · 8 ortak arkadaş" },
+        { name: "Kaan Demir", initial: "K", meta: "@kaan · şu an Helldivers 2" },
+        { name: "Selin Yücel", initial: "S", meta: "@selin.y · 4 ortak arkadaş" },
+        { name: "Burak Şen", initial: "B", meta: "@buraksen · şu an çevrimdışı" },
+        { name: "Mert Aydın", initial: "M", meta: "@mert.aydin · gizli profil" },
+        { name: "Zeynep Kara", initial: "Z", meta: "@zeynepk · 11 ortak arkadaş" },
+        { name: "AliÖztürk", initial: "A", meta: "@aliozturk · şu an CS2" },
+        { name: "Nil Arslan", initial: "N", meta: "@nilarslan · 2 ortak arkadaş" },
+      ],
+      requests: [
+        { name: "Ecem Tan", initial: "E", meta: "@ecem.tan · 8 ortak arkadaş" },
+        { name: "Kaan Demir", initial: "K", meta: "@kaan · 3 ortak arkadaş" },
+        { name: "Burak Şen", initial: "B", meta: "@buraksen · ortak arkadaş yok" },
+      ],
+      writable: [
+        { name: "Hades II", initial: "H" },
+        { name: "Lies of P", initial: "L" },
+        { name: "CS2", initial: "C" },
+        { name: "Stardew", initial: "S" },
+      ],
+      feed: [
+        { initial: "K", name: "Kaan Demir", handle: "@kaan", time: "2sa", text: "Helldivers 2’de zorluk 9’u üç kişiyle geçmenin tek yolu kalkan üretecini bırakmak.", game: "Helldivers 2", replies: "18", likes: "142" },
+        { initial: "S", name: "Selin Yücel", handle: "@selin.y", time: "4sa", text: "Deniz’in Elden Ring incelemesine katılmıyorum — Ağaç Sentinel bir duvar değil, ders.", game: "Elden Ring", replies: "9", likes: "61" },
+        { initial: "Z", name: "Zeynep Kara", handle: "@zeynepk", time: "6sa", text: "Yaz indiriminde Frostpunk 2 alan var mı? Kooperatif yok biliyorum, sadece dertleşmek istiyorum.", game: "", replies: "23", likes: "88" },
+        { initial: "A", name: "Ali Öztürk", handle: "@aliozturk", time: "9sa", text: "CS2’de yeni harita rotasyonu iyi olmuş. Overpass’i özleyen tek kişi ben miyim?", game: "Counter-Strike 2", replies: "31", likes: "204" },
+      ],
+      threadReplies: [
+        { initial: "S", name: "Selin Yücel", handle: "@selin.y", time: "1sa", text: "Kalkan olmadan bot yağmurunda 30 saniye dayanamıyorum. Hangi yükleme?", replies: "3", likes: "12", indent: "20px" },
+        { initial: "K", name: "Kaan Demir", handle: "@kaan", time: "48dk", text: "Sis + otomatik nişancı. Yağmur başlamadan siperi kuruyorsun.", replies: "1", likes: "8", indent: "52px" },
+        { initial: "B", name: "Burak Şen", handle: "@buraksen", time: "20dk", text: "Dört kişiyle de aynısı geçerli, kalkanı tek kişi taşısın yeter.", replies: "0", likes: "4", indent: "20px" },
+      ],
+      reviewThread: [
+        { initial: "S", name: "Selin Yücel", handle: "@selin.y", time: "3sa", text: "Ağaç Sentinel bir duvar değil, ders. Oyun sana “şimdi değil” diyor, sen de dinlemiyorsun.", replies: "2", likes: "34", indent: "20px" },
+        { initial: "D", name: "Deniz Kaya", handle: "@deniz.kaya", time: "2sa", text: "Dinlemedim, doğru. Ama ilk 10 saatte oyunun bunu söylediğini anlamıyorsun.", replies: "1", likes: "19", indent: "52px" },
+        { initial: "Z", name: "Zeynep Kara", handle: "@zeynepk", time: "1sa", text: "312 saat oynayan biri “bıraktım” diyorsa incelemeye güvenirim.", replies: "0", likes: "27", indent: "20px" },
+      ],
+      moreMenu: [
+        { glyph: "✉", label: "Mesaj gönder", color: "#F4F4F6" },
+        { glyph: "⊘", label: "Arkadaşlıktan çıkar", color: "#F4F4F6" },
+        { glyph: "⛔", label: "Engelle", color: "#FF6B6F" },
+        { glyph: "⚑", label: "Şikayet et", color: "#FF6B6F" },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>
