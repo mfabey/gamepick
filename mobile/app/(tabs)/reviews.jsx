@@ -1,16 +1,20 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// İncelemeler — kullanıcı içeriğinin kendi sayfası.
+// Topluluk — tek akış, iki sekme.
 //
-// OYUN SAYFALARINDA DEĞİL, BURADA. Oyun sayfaları uygulamanın kendi verdiği
-// bilgiyi göstermeye devam ediyor (Steam'in toplu analizi). Sebebi terk
-// edilmişlik riski: kullanıcı sayısı azken her oyunun altında "0 inceleme"
-// görmek, uygulamanın ölü olduğunu söyler. Seyrek kullanıcı içeriği, hiç
-// içerik olmamasından kötüdür.
+// ÜÇ SEKMEDEN İKİYE. Önceki yapı "Tartışma / Topluluk / Benimkiler" idi:
+//   · İlk ikisi aynı soruyu (bugün ne konuşuluyor) iki içerik türüyle
+//     cevaplıyordu ve kullanıcıyı tür seçmeye zorluyordu — okuyan kişi
+//     "gönderi mi inceleme mi okuyayım" diye düşünmez.
+//   · "Benimkiler" artık PROFİLDE (üçüncü ve dördüncü sekme). Aynı listeyi
+//     iki yerde tutmak hangisinin güncel olduğunu belirsizleştiriyordu.
 //
-// AYNI RİSK BU SAYFA İÇİN DE GEÇERLİ, o yüzden sayfa bir "akış" olarak
-// kurulmadı: ÜSTTE yazabileceğin oyunlar var ve Steam'i bağlı bir kullanıcıda
-// o liste ilk günden dolu. Sayfa "kimse bir şey yazmamış" yerine "şunlar
-// hakkında yazabilirsin" diye açılıyor.
+// Yerine: KEŞFET (herkes) ve ARKADAŞLAR. Keşfet gönderi ile incelemeyi
+// birlikte gösteriyor — gerekçesi fetchPage'de.
+//
+// TERK EDİLMİŞLİK RİSKİ bu sayfanın kurucu kaygısı ve değişmedi: kullanıcı
+// sayısı azken boş bir akış "burası ölü" der. O yüzden sayfa hâlâ bir akış
+// olarak DEĞİL, bir davetle açılıyor — üstte yazabileceğin oyunlar şeridi
+// duruyor ve Steam'i bağlı bir kullanıcıda o liste ilk günden dolu.
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
@@ -62,7 +66,7 @@ export default function ReviewsScreen() {
   // Ağ bozuk mu — 'kimse yazmamış'tan AYRI durum (Faz 5).
   const [bozuk, setBozuk] = useState(false);
   // Sayfanın ASIL işi artık tartışma; incelemeler ikinci sekmede duruyor.
-  const [tab, setTab] = useState('talk');   // talk | community | mine
+  const [tab, setTab] = useState('discover');   // discover | friends
   // TEK LİSTE, sekme başına ayrı değil: aynı anda yalnızca biri görünüyor ve
   // sekme değişiminde zaten yeniden çekiliyor. İki ayrı dizi tutmak, hangi
   // sayfanın hangi sekmeye ait olduğunu takip etmeyi de gerektirirdi.
@@ -90,7 +94,7 @@ export default function ReviewsScreen() {
   const listRef = useRef(null);
   // seq = YARIŞ MÜHRÜ. Sekme, ağ isteği uçarken değişebiliyor; mühür
   // olmadan eski sekmenin yanıtı yeni sekmenin listesinin üstüne yazardı.
-  const page = useRef({ offset: 0, canMore: true, fetching: false, tab: 'talk', seq: 0 });
+  const page = useRef({ offset: 0, canMore: true, fetching: false, tab: 'discover', seq: 0 });
 
   // Sekmeye göre doğru ucu çağıran TEK yer — load ve loadMore aynı
   // dönüşümü kullanmak zorunda, yoksa ikinci sayfa başka bir sorgu olurdu.
@@ -102,13 +106,31 @@ export default function ReviewsScreen() {
   //
   // Artık HATA `null`, GERÇEK BOŞLUK `[]`. İkisi ayrı cümle kuruyor.
   const fetchPage = useCallback(async (t, offset) => {
-    if (t === 'talk') {
-      const r = await fetchPosts(offset).catch(() => null);
+    if (t === 'friends') {
+      const r = await fetchPosts(offset, 'friends').catch(() => null);
       return r?.posts || (r ? [] : null);
     }
-    const r = await getReviewFeed(!!session && t === 'mine', offset).catch(() => null);
-    return r?.reviews || (r ? [] : null);
-  }, [session]);
+
+    // ── KEŞFET: GÖNDERİ + İNCELEME BİRLİKTE ──
+    // Handoff akışı X gibi, yani yalnız gönderi tarif ediyor. Buradaki sapma
+    // bu dosyanın kendi ölçümüne dayanıyor (bkz. dosya başı): kullanıcı sayısı
+    // azken tek başına gönderi akışı boş kalıyor ve boş akış "burası ölü"
+    // diyor. İnceleme, uygulamanın ilk günden içeriği olan tek türü.
+    //
+    // İkisi AYRI uçlardan sayfalanıyor ve aynı offset ile isteniyor; sınırdaki
+    // sıralama kusurlu olabilir (bir sayfanın sonundaki inceleme, sonraki
+    // sayfanın gönderisinden yeni çıkabilir). Tek listeye taşımanın bedeli
+    // sunucuda birleşik bir dizin; içerik hacmi onu haklı çıkarana kadar bu
+    // yeterli.
+    const [p, r] = await Promise.all([
+      fetchPosts(offset).catch(() => null),
+      getReviewFeed(false, offset).catch(() => null),
+    ]);
+    if (p === null && r === null) return null;           // ikisi de düştü → bozuk
+    const birlesik = [...(p?.posts || []), ...(r?.reviews || [])];
+    birlesik.sort((a, b) => (Number(b.at) || 0) - (Number(a.at) || 0));
+    return birlesik;
+  }, []);
 
   // Topluluk akışı HESAPSIZ okunur — inceleme okumak kayıt gerektirmiyor.
   // Oturumsuzken "yazabileceğin oyunlar" sorulmuyor: o uç jetonlu ve
@@ -216,36 +238,42 @@ export default function ReviewsScreen() {
   // döndürmekten başka bir şey yapmazdı.
   // ─────────────────────────────────────────────────────────────────────────
   const bosDurum = useMemo(() => {
-    if (tab === 'talk') return {
+    // ARKADAŞ AKIŞI iki sebeple boş olabilir ve ikisi AYNI CÜMLEYİ kurmamalı:
+    // ya oturum yok (çözüm: giriş), ya arkadaş yok / yazmamışlar (çözüm:
+    // birini bul). Tek bir "boş" metni ikisini de yanlış anlatırdı.
+    if (tab === 'friends') {
+      if (!session) return {
+        icon: 'person-circle-outline',
+        title: t('post.friendsEmpty'),
+        text: t('rev.communityEmptyGuest'),
+        actionLabel: t('acc.goSignIn'),
+        onAction: () => router.push('/account'),
+      };
+      return {
+        icon: 'people-outline',
+        title: t('post.friendsEmpty'),
+        text: t('post.friendsEmptyDesc'),
+        actionLabel: t('soc.tabFriends'),
+        onAction: () => router.push('/friends'),
+      };
+    }
+    return {
       icon: 'chatbubbles-outline',
       title: t('post.feedEmpty'),
       text: t('post.feedEmptyDesc'),
       actionLabel: t('post.newTitle'),
       onAction: () => { if (!requireAccount()) setComposing(true); },
     };
-    if (!session) return {
-      icon: 'person-circle-outline',
-      title: t('rev.communityEmpty'),
-      text: t('rev.communityEmptyGuest'),
-      actionLabel: t('acc.goSignIn'),
-      onAction: () => router.push('/account'),
-    };
-    const yazabilir = (eligible?.games?.length || 0) > 0;
-    return {
-      icon: yazabilir ? 'create-outline' : 'logo-steam',
-      title: tab === 'mine' ? t('rev.mineEmpty') : t('rev.communityEmpty'),
-      text: yazabilir
-        ? (tab === 'mine' ? t('rev.mineEmptyDesc') : t('rev.communityEmptyDesc'))
-        : t('rev.noEligible'),
-      actionLabel: yazabilir ? undefined : t('sf.goProfile'),
-      onAction: yazabilir ? undefined : () => router.push('/(tabs)/profile'),
-    };
-  }, [tab, session, eligible, t, requireAccount, router]);
+  }, [tab, session, t, requireAccount, router]);
 
   const keyExtractor = useCallback((item) => itemKey(item), []);
 
+  // TÜR SEKMEDEN DEĞİL ÖĞEDEN OKUNUYOR: "Keşfet" tek listede gönderi ve
+  // inceleme taşıyor. Sekmeye bakarak karar vermek, karışık listede her
+  // incelemeyi gönderi kartı olarak çizerdi (bu ekranda bir kez yaşandı —
+  // bkz. load()'daki "başka sekmenin verisi çöp" notu).
   const renderItem = useCallback(({ item }) => (
-    tab === 'talk' ? (
+    item.id != null ? (
       <PostCard post={item} onRequireAccount={requireAccount} compact />
     ) : (
       <ReviewCard
@@ -255,12 +283,9 @@ export default function ReviewsScreen() {
           params: { id: `rawg_${item.appid}`, appid: item.appid, name: item.gameName || '', image: item.image },
         })}
         onLongPress={() => setReportTarget(item)}
-        onEdit={tab === 'mine'
-          ? () => setComposer({ appid: item.appid, name: item.gameName, existing: item })
-          : undefined}
       />
     )
-  ), [tab, requireAccount, router]);
+  ), [requireAccount, router]);
 
   // Başlık BİLEŞEN DEĞİL, ELEMENT olarak veriliyor. Yerel bir bileşen
   // tanımlansaydı her render'da yeni bir tip olurdu ve FlashList başlığı
@@ -303,39 +328,43 @@ export default function ReviewsScreen() {
         <Text style={styles.hint}>{t('rev.noEligible')}</Text>
       )}
 
-      {/* ── Topluluk / Benimkiler ──
-          Hesapsız kullanıcı topluluğu okuyabiliyor ama "Benimkiler"in
-          karşılığı yok; sekmeyi gizlemek yerine kayıt ekranına götürüyoruz
-          — özelliğin varlığını göstermek, yokmuş gibi yapmaktan iyi. */}
+      {/* ── İki akış sekmesi ──
+          ÜÇTEN İKİYE indi. "Benimkiler" kalktı: kullanıcının kendi gönderileri
+          ve incelemeleri artık PROFİLİNİN sekmelerinde ve aynı listeyi iki
+          yerde tutmak, hangisinin güncel olduğunu belirsizleştiriyordu.
+          "Tartışma" ile "Topluluk" da tek akışta birleşti — ikisi de aynı
+          soruyu (bugün ne konuşuluyor) farklı içerik türüyle cevaplıyordu.
+
+          METİN ETİKETİ KULLANILIYOR, ikon değil: iki etiket var ve
+          "Entdecken / Freunde" Almanca'da bile rahat sığıyor. (Profil
+          sekmeleri dört tane olduğu için oradaki karar ikondu.) */}
       <View style={styles.tabs}>
-        {['talk', 'community', 'mine'].map((k) => (
+        {['discover', 'friends'].map((k) => (
           <Pressable
             key={k}
             style={({ pressed }) => [styles.tab, tab === k && styles.tabOn, pressed && PRESSED]}
             onPress={() => {
               Haptics.selectionAsync().catch(() => {});
-              if (k === 'mine' && !session) { requireAccount(); return; }
               setTab(k);
             }}
           >
             <Text style={[styles.tabText, tab === k && styles.tabTextOn]}>
-              {k === 'talk' ? t('rev.talk') : k === 'community' ? t('rev.community') : t('rev.mine')}
+              {k === 'discover' ? t('post.tabDiscover') : t('post.tabFriends')}
             </Text>
           </Pressable>
         ))}
       </View>
 
-      {/* Yazma çağrısı akışın ÜSTÜNDE: sayfanın işi konuşmak, bunu
-          söylemenin yeri en görünür nokta. */}
-      {tab === 'talk' && (
-        <Pressable
-          onPress={() => { if (!requireAccount()) setComposing(true); }}
-          style={({ pressed }) => [styles.composeBar, pressed && PRESSED]}
-        >
-          <Ionicons name="create-outline" size={17} color={colors.text3} />
-          <Text style={styles.composeText}>{t('post.hint')}</Text>
-        </Pressable>
-      )}
+      {/* Yazma çağrısı akışın ÜSTÜNDE ve HER SEKMEDE: sayfanın işi konuşmak,
+          bunu söylemenin yeri en görünür nokta. Öncesinde yalnız bir sekmede
+          duruyordu, yani öteki sekmedeki kullanıcı yazma yolunu görmüyordu. */}
+      <Pressable
+        onPress={() => { if (!requireAccount()) setComposing(true); }}
+        style={({ pressed }) => [styles.composeBar, pressed && PRESSED]}
+      >
+        <Ionicons name="create-outline" size={17} color={colors.text3} />
+        <Text style={styles.composeText}>{t('post.hint')}</Text>
+      </Pressable>
 
       {/* BOZUK AKIŞ — davet şeridinin ve yazma çubuğunun ALTINDA.
           Sıra bilinçli: hata okumayı engelliyor, YAZMAYI değil. Sayfa
@@ -443,7 +472,7 @@ function Header({ t, router, incoming }) {
     <View style={styles.head}>
       <Text style={styles.h1}>{t('rev.section')}</Text>
       <Pressable
-        onPress={() => router.push('/social')}
+        onPress={() => router.push('/friends')}
         hitSlop={8}
         accessibilityRole="button"
         accessibilityLabel={t('soc.title')}

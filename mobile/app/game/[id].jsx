@@ -38,6 +38,7 @@ import { recordSeen } from '../../src/services/seenStore';
 import FadeIn from '../../src/components/FadeIn';
 import StoreLogo from '../../src/components/StoreLogo';
 import IconButton from '../../src/components/IconButton';
+import GameReviews from '../../src/components/GameReviews';
 
 // Olumlu %'den inceleme tier'ı (etiket i18n + renk)
 function tierFor(pct) {
@@ -615,6 +616,22 @@ export default function GameDetail() {
           </Section>
         )}
 
+        {/* ── Kullanıcı incelemeleri ──
+            Steam'in toplu yüzdesinin HEMEN ALTINDA: o sayı binlerce oyuncunun
+            ortalaması, bu satırlar tanıdıkların sesi.
+
+            KENDİ BAŞLIĞINI KENDİ ÇİZİYOR, `Section` ile sarılmıyor: bölüm üç
+            durumdan birine giriyor (liste · davet · hiç yok) ve boş durumda
+            HİÇBİR ŞEY çizmemesi gerekiyor. Section başlığı dışarıda kalsaydı
+            "İncelemeler" başlığı altında boşluk kalırdı — tam da kaçınılan şey.
+            Yalnızca appid VARSA çağrılıyor; incelemelerin tamamı Steam
+            kütüphanesinden doğrulanan saate dayanıyor. */}
+        {(detail?.steamAppId || appid) ? (
+          <View style={styles.userReviews}>
+            <GameReviews appid={detail?.steamAppId || appid} gameName={detail?.name || name} />
+          </View>
+        ) : null}
+
         {/* Türler — veri gelene kadar iskelet.
             TAM EKRAN İSKELET YOK: kapak ve ad rota parametrelerinden anında
             çiziliyor, onları örtmek kazanç değil kayıp olurdu. Boş kalan
@@ -946,6 +963,8 @@ const makeStyles = (colors) => StyleSheet.create({
   revPctLabel: { fontSize: type.footnote, fontWeight: '600', color: colors.text3 },
   revBar: { height: 8, borderRadius: 4, backgroundColor: colors.cardBorder, overflow: 'hidden' },
   revBarFill: { height: '100%', borderRadius: 4 },
+  // Kullanıcı incelemeleri bölümünün dış boşluğu — Section ile aynı ritim.
+  userReviews: { paddingHorizontal: spacing.s20, marginTop: spacing.s24 },
   revCount: { fontSize: type.footnote, color: colors.text3, fontWeight: '600', marginTop: 10 },
 
   sectionTitle: { ...SECTION_TITLE, color: colors.text2, marginBottom: spacing.s12 },
