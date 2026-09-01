@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as ScreenOrientation from 'expo-screen-orientation';
+import * as SplashScreen from 'expo-splash-screen';
 import * as Notifications from 'expo-notifications';
 import { ThemeProvider } from '../src/context/ThemeContext';
 import { LanguageProvider } from '../src/context/LanguageContext';
@@ -22,6 +23,23 @@ import { startDmPushSync } from '../src/services/dmPush';
 import { useLastNotificationResponse } from 'expo-notifications';
 import FpsMeter from '../src/dev/FpsMeter';
 import { useTheme } from '../src/context/ThemeContext';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AÇILIŞ PERDESİ ELDE TUTULUYOR.
+//
+// MODÜL KAPSAMINDA, bileşenin içinde DEĞİL — SDK 57 belgesinin şartı: bir
+// efektten çağrılırsa perde çoktan inmiş olabiliyor ve çağrı boşa gidiyor.
+// `await` de edilmiyor, aynı sebeple.
+//
+// Neden gerekti: perde ilk kare çizilir çizilmez kendiliğinden kalkıyordu ve
+// o ilk kare, keşif ekranına gidecek kullanıcıda bile ANASAYFAYDI. Kullanıcı
+// anasayfa iskeletini bir an görüp oyun seçme ekranına çekiliyordu.
+SplashScreen.preventAutoHideAsync().catch(() => {});
+
+// Sert kesme yerine sönümlenerek iniyor — perdenin ardındaki ekran zaten
+// çizilmiş durumda, geçişin kendisi görünmüyor.
+// YALNIZCA iOS: `fade` Android'de desteklenmiyor, orada sessizce yok sayılıyor.
+SplashScreen.setOptions({ fade: true, duration: 220 });
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TEMALI YIĞIN — RootLayout'tan AYRI bir bileşen olmak ZORUNDA.
@@ -123,12 +141,29 @@ export default function RootLayout() {
     });
   }, []);
 
-  // İlk açılışta oyun seçimi ekranını göster — kişiselleştirme hemen devreye girsin
+  // ── PERDE, DOĞRU EKRANIN ÜSTÜNE KALKIYOR ─────────────────────────────────
+  //
+  // Buradaki iş artık YÖNLENDİRME DEĞİL, yalnızca okuma + perdeyi indirme.
+  // Hangi ekranın açılacağına (tabs)/_layout.jsx bildirimsel olarak karar
+  // veriyor; oradaki <Redirect> kapısı, anasayfanın hiç mount olmamasını da
+  // sağlıyor (taze kurulumda 8 boşa ağ isteği → 0).
   useEffect(() => {
     let alive = true;
-    loadOnboarding().then((done) => {
-      if (alive && !done) router.replace('/onboarding');
-    });
+
+    loadOnboarding().then(() => {
+      if (!alive) return;
+      // İKİ KARE BEKLENİYOR. Durumun çözüldüğü commit'te (tabs) düzeni
+      // <Redirect>'i çiziyor ama yönlendirme BİR SONRAKİ commit'te
+      // gerçekleşiyor. Perde aynı karede kalksaydı arada tek karelik boş
+      // zemin görünürdü. İki rAF, o commit'in de boyanmasını garantiliyor.
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        SplashScreen.hideAsync().catch(() => {});
+      }));
+    // Depo okuması `services/onboarding.js` içinde zaten try/catch'li, yani
+    // reddetmiyor. Yine de catch şart: burada patlarsa perde SONSUZA DEK
+    // yukarıda kalır ve uygulama açılmaz.
+    }).catch(() => { SplashScreen.hideAsync().catch(() => {}); });
+
     return () => { alive = false; };
   }, []);
 

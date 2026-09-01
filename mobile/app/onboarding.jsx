@@ -16,6 +16,7 @@ import { radius, spacing, PRESSED, type } from '../src/theme';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 import GameCover from '../src/components/GameCover';
+import AcilisPerdesi from '../src/components/AcilisPerdesi';
 
 const MIN_PICKS = 3;
 
@@ -35,6 +36,17 @@ export default function OnboardingScreen() {
   const { data, loading } = useQuery('onboarding:pool', fetchPool, { ttl: 60 * 60 * 1000 });
   const [picked, setPicked] = useState({});   // id -> game
   const [saving, setSaving] = useState(false);
+
+  // ── AÇILIŞ PERDESİ ──
+  // Perdenin AYRI BİR DEPOLAMA ANAHTARI YOK ve olmasına gerek de yok: bu
+  // ekran ömürde bir kez açılıyor (gr_onboarded), perde de onunla birlikte
+  // bir kez oynuyor. İkinci bir bayrak, aynı bilgiyi iki yerde tutmak olurdu.
+  //
+  // BİLİNEN YAN ETKİ: resetOnboarding() çağrılırsa perde de tekrar oynar.
+  // Şu an o işlevin hiçbir çağıranı yok; bağlandığında (Ayarlar → "zevkini
+  // yeniden seç") perdenin atlanması istenirse buraya ayrı bir bayrak girer.
+  const [perdeAcik, setPerdeAcik] = useState(true);
+  const perdeBitti = useCallback(() => setPerdeAcik(false), []);
 
   const games = useMemo(
     () => (data?.results || []).filter(g => g?.image && g?.genres?.length),
@@ -129,6 +141,12 @@ export default function OnboardingScreen() {
             )}
         </Pressable>
       </View>
+
+      {/* EN SONA çiziliyor: perde ızgaranın ve alt çubuğun ÜSTÜNDE durmalı.
+          Altındaki havuz isteği perde oynarken devam ediyor — perde
+          kalktığında kapaklar çoğunlukla gelmiş oluyor, yani bu 4 saniye
+          bekleme süresine EKLENMİYOR, onun yerine geçiyor. */}
+      {perdeAcik && <AcilisPerdesi onDone={perdeBitti} />}
     </SafeAreaView>
   );
 }
