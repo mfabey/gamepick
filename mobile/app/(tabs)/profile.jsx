@@ -1,40 +1,39 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Profil.
+// Profil — KİMLİK + KULLANICININ ÜRETTİĞİ İÇERİK.
 //
-// BİLGİ MİMARİSİ — İKİ KEZ DEĞİŞTİ, ikincisi önemli.
+// BİLGİ MİMARİSİ ÜÇÜNCÜ KEZ DEĞİŞTİ; bu en büyüğü.
 //
-// Sorun: profil aynı anda İKİ iş yapıyordu — kimlik sayfası VE gezinme menüsü.
-// Ölçüm (yeniden yazımdan önce): 10 tam genişlik satır, 3 bölüm başlığı,
-// 10 ayırıcı, 7 BETA rozeti. Yaklaşık 560 piksel dikey alan, üç ekran boyu.
-// Hepsi aynı görsel ağırlıktaydı; kullanıcı neye sık ihtiyaç duyduğunu
-// ekrandan çıkaramıyordu.
+// Önce: 10 tam genişlik satır (~560px). Sonra: 10 karolu kısayol ızgarası
+// (~230px). İkisinin de ortak sorunu aynıydı — profil bir MENÜYDÜ. Kullanıcının
+// yazdığı inceleme, kurduğu koleksiyon, attığı gönderi bu sayfada GÖRÜNMÜYORDU;
+// hepsi başka ekranların arkasındaydı.
 //
-// Çözüm: satırlar KISAYOL IZGARASINA döndü (bkz. `Tile`). Aynı on hedef
-// ~230 piksele indi. Liste okunur, ızgara GÖRÜLÜR — on eşit ağırlıklı ve
-// simgeyle tanınan hedef için ızgara doğru biçim.
+// Şimdi: kimlik bloğu + dört İÇERİK sekmesi (koleksiyon · istek listesi ·
+// inceleme · gönderi). Kısayol ızgarası ve bağlı hesap satırları AYARLARA
+// taşındı — gezinme oraya ait, içerik buraya.
 //
-// Gruplar üçten ikiye indi ("Senin" ve "Sosyal"); bağlı hesaplar aşağıda
-// kaldı çünkü kütüphane ve rapor onlara bağımlı.
+// SEKMELER TEK LİSTENİN VERİSİNİ DEĞİŞTİRİYOR, dört ayrı kaydırma alanı ya da
+// yatay pager YOK: dördü aynı FlashList'i besliyor, kimlik bloğu da o listenin
+// başlığı. Pager olsaydı dört liste birden bellekte durur ve kimlik bloğu ya
+// tekrarlanır ya da ayrı bir katmana çıkardı.
 //
-// BETA rozeti 7'den 1'e, sonra 0'a: önce "her şey beta olunca hiçbiri
-// beta okunmuyor" diye teke indi, v2.0'da tamamen kalktı.
-//
-// SOĞUKLUK: profilde kişiye ait tek bir sayı yoktu. Kimlik başlığındaki üç
-// sayaç sayfayı "senin" yapan şey — arkadaş / takipte / oyun.
-//
-// Sayaçta KOLEKSİYON YOK: o sayı zaten hemen aşağıdaki "İçeriğim" satırında
-// duruyordu ve sayaçta tekrar ediyordu. Yeri arkadaş sayısına verildi çünkü
-// arkadaş sayısı hiçbir yerde görünmüyordu.
+// KENDİ VERİM SUNUCUDAN BEKLENMİYOR: koleksiyon, istek listesi ve oyun sayısı
+// cihazda zaten var (WishlistContext, useCollections, useConnectedLibrary) ve
+// ağ turu beklemeden çiziliyor. Sunucudan yalnız BAŞKASININ göremeyeceği
+// sayılar (gönderi, arkadaş) ve uzak içerik (inceleme, gönderi) geliyor.
 // ─────────────────────────────────────────────────────────────────────────────
 import { useRef, useCallback, useEffect, useState, useMemo } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet, Alert, ActivityIndicator, Modal, useWindowDimensions } from 'react-native';
-import { Image } from 'expo-image';
+import {
+  View, Text, Pressable, StyleSheet, ActivityIndicator, RefreshControl,
+  useWindowDimensions, Share,
+} from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { TopFade, BottomFade } from '../../src/components/EdgeFade';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
-import { radius, spacing, type, PRESSED, PRESSED_CARD, NUMERIC, SECTION_TITLE, basiliYuzey } from '../../src/theme';
+
+import { TopFade, BottomFade } from '../../src/components/EdgeFade';
+import { spacing, type, radius, PRESSED, TOUCH_MIN } from '../../src/theme';
 import { useTabBosluk } from '../../src/hooks/useAltBosluk';
 import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { useTabBarScroll } from '../../src/context/TabBarContext';
@@ -44,862 +43,439 @@ import { useAuth } from '../../src/context/AuthContext';
 import { useWishlist } from '../../src/context/WishlistContext';
 import { useCollections } from '../../src/hooks/useCollections';
 import { useConnectedLibrary } from '../../src/hooks/useConnectedLibrary';
-import { getMyProfile, getFriends, setAvatar as apiSetAvatar, uploadAvatarPhoto } from '../../src/api/social';
-import IconButton from '../../src/components/IconButton';
+import { getUserProfile } from '../../src/api/social';
+import { pushGameCount } from '../../src/api/account';
+import { getValidToken } from '../../src/services/session';
 import { useTabPressAction, scrollRefToTop } from '../../src/hooks/useTabPressAction';
-import { AVATAR_PRESET_IDS, getAvatarPreset } from '../../src/utils/avatar';
-import Avatar from '../../src/components/Avatar';
 import { weeklyReport } from '../../src/services/stats';
-import { SettingsGroup, SettingsRow } from '../../src/components/SettingsList';
 
-// ── Kısayol ızgarası ölçüleri ───────────────────────────────────────────────
-// Karo genişliği flex'e bırakılmıyor; ayrıntı ve ölçüm için styles.grid yorumu.
-const GRID_COLS = 4;
-const GRID_GAP = spacing.sm;
+import ProfileHeader from '../../src/components/ProfileHeader';
+import ProfileTabs from '../../src/components/ProfileTabs';
+import CoverCell, { coverWidth, GRID_COLS, GRID_GAP } from '../../src/components/CoverGrid';
+import ProfileReviewRow from '../../src/components/ProfileReviewRow';
+import PostCard from '../../src/components/PostCard';
+import EmptyState from '../../src/components/EmptyState';
 
-// Haftalik rapor grafiginin tam boyu (maket olcusu: en yuksek cubuk 42).
-const CHART_H = 42;
+// Sunucunun sayfa boyutu (`/api/social/profile` PAGE). "Devamı var mı" kararı
+// bu sayıya bakıyor, o yüzden sunucuyla AYNI kalmak zorunda.
+const PAGE = 20;
 
-/**
- * Pencere genişliğinden tek karo genişliği.
- *
- * KENAR PAYI BURADAN OKUNUYOR, elle yazılmıyor: body'nin dolgusu 16'dan
- * maketin 20'sine çekildiğinde bu hesap spacing.lg'de kalmıştı ve ızgara
- * 8pt taşıyordu. Aynı sabite bağlanınca ikisi ayrışamıyor.
- */
-const BODY_PAD = spacing.s20;
+// Sabitlenen öğenin indeksi. Modül düzeyinde: her render'da yeni dizi
+// üretmek FlashList'e 'sabitleme değişti' dedirtirdi.
+const SERIT = [0];
 
-function tileWidth(windowWidth) {
-  const inner = windowWidth - BODY_PAD * 2;
-  return (inner - GRID_GAP * (GRID_COLS - 1)) / GRID_COLS;
+/** Uzak sekmeler ağdan, yerel sekmeler cihazdan besleniyor. */
+const UZAK = new Set(['reviews', 'posts']);
+
+/** Izgara satırlara bölünüyor — bkz. `izgaraSatirlari` gerekçesi. */
+function bol(list, n) {
+  const out = [];
+  for (let i = 0; i < list.length; i += n) out.push(list.slice(i, i + n));
+  return out;
 }
 
 export default function ProfileScreen() {
   const styles = useStyles(makeStyles);
   const tabBosluk = useTabBosluk();
   const { colors } = useTheme();
-  // Sekmeye tekrar basınca listeyi başa sar (iOS'ta beklenen davranış)
-  const scrollRef = useRef(null);
-  useTabPressAction(useCallback(() => scrollRefToTop(scrollRef), []));
-  const onTabScroll = useTabBarScroll();
   const { t } = useLanguage();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { steamAccounts, xbox, busy, loginSteam, loginXbox, logoutSteam, logoutXbox, account } = useAuth();
+  const { width } = useWindowDimensions();
 
-  const { items } = useWishlist();
+  const listRef = useRef(null);
+  useTabPressAction(useCallback(() => scrollRefToTop(listRef), []));
+  const onTabScroll = useTabBarScroll();
+
+  const { account } = useAuth();
+  const { items: wishlist } = useWishlist();
   const collections = useCollections();
   const { steamGames, xboxGames } = useConnectedLibrary();
   const gameCount = steamGames.length + xboxGames.length;
 
-  // HAFTALIK ÖNE ÇIKAN. Tamamen yerel depolardan hesaplanıyor (görülen,
-  // beğenilen, elenen, koleksiyon, zevk profili) — profil açılırken ağ isteği
-  // eklemiyor. Amaç: sayfayı açan kişi ilk olarak KENDİ verisini görsün.
-  // Sayaçlar "kaç" diyor, bu satır "ne yaptın" diyor.
-  const week = useMemo(
-    () => weeklyReport({ wishlistCount: items.length }),
-    [items.length]
+  const [sunucu, setSunucu] = useState(null);      // { profile, friendship, canView }
+  const [yok, setYok] = useState(false);           // kullanıcı adı kurulmamış
+  const [tab, setTab] = useState('collection');
+  const [uzak, setUzak] = useState({ items: [], hasMore: false, offset: 0 });
+  const [yukleniyor, setYukleniyor] = useState(true);
+  const [dahaYukleniyor, setDahaYukleniyor] = useState(false);
+  const [tazeleniyor, setTazeleniyor] = useState(false);
+
+  useTimeToData('Profile', !yukleniyor);
+
+  // ── Yerel sekmeler ──
+  // TEKİLLEŞTİRME: aynı oyun birden çok koleksiyonda olabiliyor; ızgarada iki
+  // kez çıksaydı bağlam satırındaki sayı da yalan söylerdi.
+  const yerelKoleksiyon = useMemo(() => {
+    const gorulen = new Set();
+    const out = [];
+    for (const c of collections || []) {
+      for (const g of c.games || []) {
+        const k = String(g?.id ?? g?.appid ?? '');
+        if (!k || gorulen.has(k)) continue;
+        gorulen.add(k);
+        out.push({ id: k, appid: g.appid || null, name: g.name || '', image: g.image || '' });
+      }
+    }
+    return out;
+  }, [collections]);
+
+  const yerelIstek = useMemo(
+    () => (wishlist || []).map((g) => ({
+      id: String(g.id), appid: g.appid || null, name: g.name || '', image: g.image || '',
+    })),
+    [wishlist]
   );
 
-  // Kullanıcı adı — arkadaş eklemenin temeli, o yüzden profilde GÖRÜNÜR olmalı.
-  // Eskiden hiçbir yerde yazmıyordu; kullanıcı kendi etiketini bilmiyordu.
-  const [username, setUsername] = useState(null);
-  // Avatar — profil kaydındaki ön ayar kimliği (p1–p12 veya null).
-  const [avatar, setAvatarState] = useState(null);
-  const [pickerOpen, setPickerOpen] = useState(false);
-  useEffect(() => {
-    if (!account) { setUsername(null); setAvatarState(null); return; }
-    let alive = true;
-    getMyProfile()
-      .then((r) => {
-        if (!alive) return;
-        setUsername(r?.profile?.username || null);
-        setAvatarState(r?.profile?.avatar || null);
-      })
-      .catch(() => {});
-    return () => { alive = false; };
-  }, [account]);
+  const week = useMemo(() => weeklyReport({ wishlistCount: wishlist.length }), [wishlist.length]);
 
-  // ── Fotoğraf yükleme ──
-  // ÖNCE KÜÇÜLT, SONRA YÜKLE. Avatar ekranda en fazla 56pt çiziliyor; 4 MB'lık
-  // bir fotoğrafı olduğu gibi yüklemek hem kullanıcının verisini hem sunucu
-  // kotasını boşa harcar. 256px kenar, 3x ekranda bile yeterli ve dosya
-  // ~30–60 KB'a iniyor.
-  const [uploading, setUploading] = useState(false);
-  const pickPhoto = useCallback(async () => {
-    if (uploading) return;
-    const ImagePicker = await import('expo-image-picker');
+  // Başlık bir kez alındı mı? YEREL sekmeye geçerken ağa çıkmamak için.
+  // (State DEĞİL ref: state olsaydı efektin bağımlılığına girer ve uzak
+  // sekmelerde sonsuz döngü kurardı — her yükleme kendini tetiklerdi.)
+  const basligiAldik = useRef(false);
 
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) { Alert.alert(t('prof.photoPerm')); return; }
-
-    const res = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],        // avatar daire; kare dışı kırpma zaten kesiliyor
-      quality: 1,            // kalite kaybı boyutlandırmadan SONRA veriliyor
-    });
-    if (res.canceled || !res.assets?.[0]?.uri) return;
-
-    setUploading(true);
-    setPickerOpen(false);
-    const prev = avatar;
+  // ── Yükleme ──
+  // TEK ÇAĞRI: başlık + sayaçlar + (uzak sekmedeyse) ilk sayfa birlikte
+  // geliyor. Sekme yerelse `tab` gönderilmiyor, sunucu yalnız başlığı kuruyor.
+  const yukle = useCallback(async (hedefTab, { tazele = false } = {}) => {
+    const uzakMi = UZAK.has(hedefTab);
+    if (tazele) setTazeleniyor(true); else setYukleniyor(true);
     try {
-      const Manipulator = await import('expo-image-manipulator');
-      const out = await Manipulator.manipulateAsync(
-        res.assets[0].uri,
-        [{ resize: { width: 256, height: 256 } }],
-        { compress: 0.85, format: Manipulator.SaveFormat.JPEG }
-      );
-      const r = await uploadAvatarPhoto(out.uri, 'image/jpeg');
-      setAvatarState(r?.avatar || prev);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      const r = await getUserProfile(uzakMi ? { tab: hedefTab, offset: 0 } : {});
+      setSunucu(r);
+      basligiAldik.current = true;
+      setYok(false);
+      if (uzakMi) {
+        const list = r?.items || [];
+        setUzak({ items: list, hasMore: !!r.hasMore, offset: list.length });
+      }
     } catch (e) {
-      setAvatarState(prev);
-      console.warn('[avatar-photo] upload failed:', e?.code || e?.status || e?.message || e);
-      const code = e?.code || '';
-      Alert.alert(
-        code === 'MEDIA_DISABLED' || code === 'STORAGE_DISABLED' ? t('prof.photoDisabled')
-        : code === 'REJECTED' || code.startsWith?.('BLOCKED_') ? t('prof.photoRejected')
-        : code === 'TOO_LARGE' ? t('prof.photoTooLarge')
-        : code === 'NO_USERNAME' ? t('prof.noUsername')
-        : t('soc.err.generic')
-      );
+      // 404 = kullanıcı adı henüz kurulmamış. Hata DEĞİL, bir sonraki adım:
+      // sosyal kimlik kurulmadan profilin gösterecek bir şeyi yok.
+      if (e?.status === 404) setYok(true);
     } finally {
-      setUploading(false);
+      setYukleniyor(false);
+      setTazeleniyor(false);
     }
-  }, [uploading, avatar, t]);
+  }, []);
 
-  // Avatar seçme — iyimser güncelleme + sunucu yazımı.
-  const pickAvatar = useCallback(async (presetId) => {
-    Haptics.selectionAsync();
-    const prev = avatar;
-    setAvatarState(presetId);
-    setPickerOpen(false);
-    try {
-      await apiSetAvatar(presetId);
-    } catch {
-      // Başarısızsa geri al
-      setAvatarState(prev);
-      Alert.alert(t('soc.err.generic'));
-    }
-  }, [avatar, t]);
-
-  // Arkadaş sayısı — sayaçta koleksiyonun yerini aldı.
-  //
-  // Koleksiyon ve takip listesi sayıları zaten hemen aşağıdaki "İçeriğim"
-  // satırlarında duruyordu; sayaçta tekrar ediyorlardı. Arkadaş sayısı ise
-  // hiçbir yerde görünmüyordu — sayaç yeni bilgi taşısın.
-  //
-  // `incoming` de tutuluyor: bekleyen istek varsa rozetle gösteriliyor,
-  // yoksa kullanıcı isteği hiç fark etmiyor.
-  const [friends, setFriends] = useState({ count: 0, incoming: 0 });
-  useTimeToData('Profile', friends.count >= 0 && username !== null);
   useEffect(() => {
-    if (!account) { setFriends({ count: 0, incoming: 0 }); return; }
-    let alive = true;
-    getFriends()
-      .then((r) => {
-        if (!alive) return;
-        setFriends({
-          count: Array.isArray(r?.friends) ? r.friends.length : 0,
-          incoming: Array.isArray(r?.incoming) ? r.incoming.length : 0,
-        });
-      })
-      .catch(() => {});
-    return () => { alive = false; };
-  }, [account]);
+    if (!account) { setSunucu(null); basligiAldik.current = false; setYukleniyor(false); return; }
+    // Koleksiyon ve istek listesi CİHAZDAN geliyor; başlık da yüklüyse bu
+    // sekmeye geçmek tek bir ağ turu bile gerektirmiyor.
+    if (!UZAK.has(tab) && basligiAldik.current) { setYukleniyor(false); return; }
+    yukle(tab);
+  }, [account, tab, yukle]);
 
-  const doLogin = async (fn) => {
-    const r = await fn();
-    if (!r.ok && r.error) {
-      // Bağlam kod döndürüyor (ACCOUNT_REQUIRED / STEAM_LIMIT / SYNC_FAILED);
-      // çevirisi varsa onu göster, yoksa ham metne düş.
-      const k = `auth.err.${r.error}`;
-      Alert.alert(t('auth.loginFailed'), t(k) !== k ? t(k) : r.error);
+  const dahaYukle = useCallback(async () => {
+    if (!UZAK.has(tab) || dahaYukleniyor || !uzak.hasMore) return;
+    setDahaYukleniyor(true);
+    try {
+      const r = await getUserProfile({ tab, offset: uzak.offset });
+      const list = r?.items || [];
+      setUzak((s) => ({
+        items: [...s.items, ...list],
+        hasMore: list.length === PAGE,
+        offset: s.offset + list.length,
+      }));
+    } catch { /* sessiz: bayat liste duruyor */ }
+    finally { setDahaYukleniyor(false); }
+  }, [tab, uzak.offset, uzak.hasMore, dahaYukleniyor]);
+
+  // ── Profili paylaş ──
+  // WEB ADRESİ paylaşılıyor, uygulama şeması değil: bağlantıyı alan kişide
+  // uygulama olmayabilir ve `gamerisen://` onda hiçbir şey açmaz. Web
+  // sayfası (app/u/[username]) aynı gizlilik kapılarını uyguluyor.
+  const paylas = useCallback(async () => {
+    const kadi = sunucu?.profile?.username;
+    if (!kadi) return;
+    const url = `https://www.gamerisen.com/u/${kadi}`;
+    try {
+      await Share.share({ message: url, url });
+    } catch { /* kullanıcı iptal etti */ }
+  }, [sunucu]);
+
+  const sekmeDegis = useCallback((k) => {
+    setTab(k);
+    setUzak({ items: [], hasMore: false, offset: 0 });
+    scrollRefToTop(listRef);
+  }, []);
+
+  // ── Sayaçlar ──
+  // Oyun sayısı YERELDEN: sunucudaki değer yalnız senkronda tazeleniyor
+  // (bkz. /api/user/data) ve kendi profilimde beklemesi için sebep yok.
+  const sayaclar = useMemo(() => ({
+    posts: sunucu?.profile?.counts?.posts || 0,
+    friends: sunucu?.profile?.counts?.friends || 0,
+    games: gameCount || sunucu?.profile?.counts?.games || 0,
+    collection: yerelKoleksiyon.length,
+    wishlist: yerelIstek.length,
+    reviews: sunucu?.profile?.counts?.reviews || 0,
+  }), [sunucu, gameCount, yerelKoleksiyon.length, yerelIstek.length]);
+
+  const profil = useMemo(
+    () => (sunucu?.profile ? { ...sunucu.profile, counts: sayaclar } : null),
+    [sunucu, sayaclar]
+  );
+
+  // ── Oyun sayısını sunucuya bildir ──
+  // BAŞKASININ profilindeki "oyun" sayacının tek kaynağı bu. Kütüphane
+  // sunucuda önbelleklenmiyor, yani ziyaretçi o sayıyı hesaplayamıyor;
+  // sayıyı bilen tek yer burası.
+  //
+  // YALNIZ DEĞİŞTİĞİNDE: her profil açılışında yazmak, hiçbir şey
+  // değişmemişken tur başına bir yazma isteği demekti.
+  const yazilanSayi = useRef(null);
+  useEffect(() => {
+    const sunucudaki = sunucu?.profile?.counts?.games;
+    if (!account || !sunucu?.profile || gameCount <= 0) return;
+    if (gameCount === sunucudaki || gameCount === yazilanSayi.current) return;
+    yazilanSayi.current = gameCount;
+    getValidToken()
+      .then((tok) => (tok ? pushGameCount(tok, gameCount) : null))
+      .catch(() => { yazilanSayi.current = null; });   // sonraki açılışta yeniden dene
+  }, [account, sunucu, gameCount]);
+
+  // ── Oturum yok ──
+  if (!account) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <TopFade top={insets.top} />
+        <View style={styles.gate}>
+          <View style={styles.gateIcon}>
+            <Ionicons name="person-outline" size={34} color={colors.text3} />
+          </View>
+          <Text style={styles.gateTitle}>{t('prof.lockTitle')}</Text>
+          <Text style={styles.gateText}>{t('prof.lockDesc')}</Text>
+          {/* ÜÇ EŞİT DÜĞME DEĞİL: giriş dolu, kayıt sessiz, üçüncüsü metin
+              bağlantısı. Hiyerarşi olmadan kullanıcı hangisinin ana yol
+              olduğunu seçemiyordu. */}
+          <Pressable style={({ pressed }) => [styles.gateBtn, pressed && PRESSED]}
+                     onPress={() => router.push('/account')}>
+            <Text style={styles.gateBtnText}>{t('acc.signIn')}</Text>
+          </Pressable>
+          <Pressable style={({ pressed }) => [styles.gateBtn2, pressed && PRESSED]}
+                     onPress={() => router.push('/account')}>
+            <Text style={styles.gateBtn2Text}>{t('acc.signUp')}</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const izgara = tab === 'collection' || tab === 'wishlist';
+  const veri = tab === 'collection' ? yerelKoleksiyon
+    : tab === 'wishlist' ? yerelIstek
+    : uzak.items;
+
+  // IZGARA SATIR SATIR ÇİZİLİYOR, FlashList'in numColumns'u ile değil:
+  // numColumns sütun genişliğini eşit bölüyor ve maketin 4pt boşluğu ile
+  // 114pt kapağı aynı anda tutturulamıyor (kapak ya sütuna yayılıp boşluğu
+  // yutuyor ya da sağ kenar tırtıklı kalıyor). Satır bir View, boşluk `gap`.
+  const kapakEn = coverWidth(width);
+
+  // ── SEKME ŞERİDİ LİSTENİN İLK ÖĞESİ ──
+  // Maket şeridi kaydırma boyunca sabit istiyor. FlashList (v2) sabitlemeyi
+  // yalnız VERİ öğeleri için yapıyor — `ListHeaderComponent` sabitlenemiyor.
+  // Bu yüzden şerit başlıktan çıkarılıp listenin 0. öğesi oldu ve
+  // `stickyHeaderIndices={[0]}` ile tepeye yapışıyor. Kimlik bloğu başlıkta
+  // kaldı, yani kayıp gidiyor — maketin istediği tam olarak bu.
+  //
+  // BOŞ DURUM DA ÖĞE: liste artık hiçbir zaman boş değil (şerit hep var), o
+  // yüzden `ListEmptyComponent` hiç çalışmazdı.
+  const izgaraSatirlari = useMemo(() => {
+    const govde = izgara ? bol(veri, GRID_COLS) : veri;
+    if (govde.length === 0) return [{ __serit: true }, { __bos: true }];
+    return [{ __serit: true }, ...govde];
+  }, [izgara, veri]);
+
+  const bosDurum = () => {
+    if (yukleniyor) return null;
+    if (yok) {
+      return (
+        <EmptyState
+          icon="at-outline"
+          title={t('prof.noUsername')}
+          text={t('prof.needUsername')}
+          actionLabel={t('prof.noUsername')}
+          onAction={() => router.push('/username-setup')}
+        />
+      );
     }
+    const map = {
+      collection: { icon: 'albums-outline', title: t('col.empty'), text: t('col.emptyText'), label: t('nav.games'), go: '/games' },
+      wishlist:   { icon: 'heart-outline', title: t('prof.emptyWishlist'), text: t('prof.emptyWishlistDesc'), label: t('nav.games'), go: '/games' },
+      reviews:    { icon: 'shield-checkmark-outline', title: t('rev.mineEmpty'), text: t('rev.mineEmptyDesc'), label: t('tab.community'), go: '/(tabs)/reviews' },
+      posts:      { icon: 'chatbubble-outline', title: t('prof.emptyPosts'), text: t('prof.emptyPostsDesc'), label: t('tab.community'), go: '/(tabs)/reviews' },
+    }[tab];
+    return (
+      <EmptyState
+        compact
+        icon={map.icon}
+        title={map.title}
+        text={map.text}
+        actionLabel={map.label}
+        onAction={() => router.push(map.go)}
+      />
+    );
   };
 
-  // Profil olmadan kilitli olan bölümler. Kilitli bir karoya dokunmak HİÇBİR
-  // ŞEY yapmamalı değil — kullanıcıyı kayıt ekranına götürüyoruz, yoksa
-  // dokunup tepki alamamak bozukluk gibi görünür.
-  const locked = !account;
-  const go = (dest) => () => router.push(locked ? '/account' : dest);
-  const hint = t('prof.lockedHint');
+  const satirCiz = ({ item }) => {
+    // Sabitlenen şerit: zemini OPAK olmak zorunda, altından içerik geçiyor.
+    if (item.__serit) {
+      return (
+        <View style={styles.seritSarmal}>
+          <ProfileTabs active={tab} counts={sayaclar} onChange={sekmeDegis} />
+        </View>
+      );
+    }
+    if (item.__bos) return bosDurum();
+    if (izgara) {
+      return (
+        <View style={styles.gridRow}>
+          {item.map((g) => (
+            <CoverCell
+              key={g.id}
+              item={g}
+              width={kapakEn}
+              onPress={() => router.push({
+                pathname: '/game/[id]',
+                params: { id: g.id, appid: g.appid || '', name: g.name, image: g.image || '' },
+              })}
+            />
+          ))}
+        </View>
+      );
+    }
+    if (tab === 'reviews') {
+      return (
+        <ProfileReviewRow
+          review={item}
+          onPress={() => router.push({
+            pathname: '/game/[id]',
+            params: { id: `rawg_${item.appid}`, appid: item.appid, name: item.gameName || '', image: item.image || '' },
+          })}
+        />
+      );
+    }
+    return <PostCard post={item} compact />;
+  };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      {/* Kenar sönümlemesi — "Profil" başlığı ScrollView'ün İÇİNDE, yani
-          kayıp gidiyor ve içerik tepeye kadar çıkıyor. Bant güvenli alanın
-          bittiği yere, tam da kesme çizgisine oturuyor.
-          (Mutlak konum SafeAreaView'ün paddingTop'unu yok saydığı için
-          top burada açıkça veriliyor.) */}
       <TopFade top={insets.top} />
       <BottomFade />
-      <ScrollView
-        ref={scrollRef}
-        contentContainerStyle={[styles.body, { paddingBottom: tabBosluk + spacing.s16 }]}
-        showsVerticalScrollIndicator={false}
+
+      {/* ── Üst çubuk ──
+          Kullanıcı adı ve ayarlar HER ZAMAN görünür kalıyor: ekran artık
+          kaydırılacak bir içerik sayfası ve ayarların dibe inmesi kabul
+          edilemezdi. Kimlik bloğu kayıp gidiyor (parallax yok — iOS'ta
+          pahalı ve bu ekranın taşıdığı bilgiye değmiyor). */}
+      <View style={styles.topBar}>
+        <Text style={styles.handle} numberOfLines={1}>
+          {profil?.username ? `@${profil.username}` : t('nav.profile')}
+        </Text>
+        <Pressable onPress={() => router.push('/settings')} hitSlop={8}
+                   style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]}
+                   accessibilityRole="button" accessibilityLabel={t('prof.settingsTitle')}>
+          <Ionicons name="settings-outline" size={22} color={colors.text} />
+        </Pressable>
+      </View>
+
+      <FlashList
+        ref={listRef}
+        // IZGARA ↔ LİSTE geçişinde yeniden monte: satır biçimi tamamen
+        // değişiyor, geri dönüştürülen hücreler yanlış ölçüyle çiziliyordu.
+        key={izgara ? 'izgara' : 'liste'}
+        data={izgaraSatirlari}
+        keyExtractor={(item, i) => (item.__serit ? 'serit' : item.__bos ? 'bos' : izgara ? `r${i}` : String(item.id ?? `${item.appid}:${item.uid}`))}
+        renderItem={satirCiz}
+        extraData={tab}
+        estimatedItemSize={izgara ? Math.round((kapakEn * 4) / 3) + GRID_GAP : 140}
+        ListHeaderComponent={(
+          <View>
+            <ProfileHeader
+              profile={profil}
+              friendship="self"
+              week={week}
+              onCounter={(k) => {
+                if (k === 'posts') sekmeDegis('posts');
+                else if (k === 'friends') router.push('/friends');
+                else router.push('/library');
+              }}
+              onEdit={() => router.push('/profile-edit')}
+              onShare={profil?.username ? paylas : undefined}
+              onConnect={() => router.push('/settings')}
+              onWeek={() => router.push('/stats')}
+            />
+          </View>
+        )}
+        stickyHeaderIndices={SERIT}
+        ListFooterComponent={(
+          <View style={{ height: tabBosluk, alignItems: 'center', paddingTop: spacing.s12 }}>
+            {dahaYukleniyor || (yukleniyor && veri.length > 0)
+              ? <ActivityIndicator color={colors.accent} />
+              : null}
+          </View>
+        )}
+        onEndReached={dahaYukle}
+        onEndReachedThreshold={0.6}
         onScroll={onTabScroll}
         scrollEventThrottle={16}
-      >
-        {/* ── Kimlik ──
-            Avatar, ad, kullanıcı adı ve iki sayaç. (Yorum bir sürüm geri
-            kalmıştı: "üç sayaç" diyordu, kod ikisini çiziyor.)
-            Sayaçlar dekoratif değil:
-            profilin kime ait olduğunu tek bakışta söyleyen tek şey onlar. */}
-        <View style={styles.headRow}>
-          <Text style={styles.h1}>{t('nav.profile')}</Text>
-          <IconButton icon="settings-outline" size={22} color={colors.text} onPress={() => router.push('/settings')} />
-        </View>
-
-        {account ? (
-          <View style={styles.identity}>
-           {/* KİMLİK YATAY. Eskiden dikey ve ortalıydı: avatar 68pt + ad +
-               kullanıcı adı + sayaçlar, "SENİN" başlığına kadar 386pt yani
-               ekranın %44'ü, taşıdığı bilgi 5 parça. Yatıya alınınca aynı
-               bilgi ~150pt'ye iniyor ve kazanılan yer içeriğe gidiyor. */}
-           <View style={styles.idRow}>
-            {/* Avatar — dokunulabilir, seçici açar. Ön ayar varsa renk+simge,
-                yoksa baş harf fallback. Küçük kalem rozeti değişebileceğini
-                ima ediyor. */}
-            <Pressable
-              onPress={() => username && setPickerOpen(true)}
-              style={({ pressed }) => pressed && { opacity: 0.8 }}
-              accessibilityLabel={t('prof.chooseAvatar')}
-              accessibilityRole="button"
-            >
-              <Avatar
-                avatar={avatar}
-                name={account.name || account.email}
-                size={56}
-                style={styles.avatarLg}
-              />
-              {username ? (
-                <View style={styles.avatarEditBadge}>
-                  <Ionicons name="pencil" size={10} color="#fff" />
-                </View>
-              ) : null}
-            </Pressable>
-            <View style={styles.idText}>
-              <Text style={styles.idName} numberOfLines={1}>{account.name}</Text>
-              {/* MAKET: "@adayl · 214 oyun" TEK SATIR. İki bilgi ayrı
-                  satırdaydı ve oyun sayısı ayrıca sayaç karosunda
-                  tekrarlıyordu — aynı sayı ekranda iki kez. */}
-              <Pressable onPress={() => router.push('/social')} hitSlop={6}>
-                <Text style={styles.idHandle} numberOfLines={1}>
-                  {username ? `@${username}` : t('prof.noUsername')}
-                  {gameCount > 0 ? ` · ${gameCount} ${t('prof.gamesShort')}` : ''}
-                </Text>
-              </Pressable>
-              {/* DURUM ÇİPİ — maket: 95×25, r99, surface2, dolgu 4/8,
-                  1px kenarlık, içinde 6pt YEŞİL nokta + 12/400 metin.
-                  Öncesinde Steam simgesi + hesap adı düz bir satırdı;
-                  "bağlı" bilgisi biçimden okunmuyordu. */}
-              {steamAccounts[0]?.name ? (
-                <View style={styles.idStore}>
-                  <View style={styles.idStoreDot} />
-                  <Text style={styles.idStoreName} numberOfLines={1}>
-                    {t('prof.steamConnected')}
-                  </Text>
-                </View>
-              ) : null}
-            </View>
-
-           </View>
-
-            {/* Sayaçlar dokunulabilir: profilin en üstünde duran bu üç sayı
-                zaten kısayol gibi okunuyordu, tepki vermemeleri yanıltıcıydı. */}
-            {/* MAKET: sayaçlar ayırıcı çizgili bir satır değil, KART
-                IZGARASI — 169×80, r12, surface2, dolgu 16, 1px kenarlık;
-                sayı 22/700, etiket 13/400.
-
-                "oyun" sayacı KALKTI: o sayı artık kimlik satırında
-                ("@kullanıcı · N oyun") ve bu dosyanın kendi kuralı aynı
-                sayının ekranda iki kez durmamasını söylüyor (bkz. baş
-                yorumdaki koleksiyon sayacı gerekçesi). Kütüphaneye kısayol
-                ızgarasından hâlâ gidiliyor. */}
-            <View style={styles.stats}>
-              <Stat n={friends.count} label={t('prof.statFriends')}
-                    badge={friends.incoming} onPress={() => router.push('/social')} />
-              <Stat n={items.length} label={t('prof.statWishlist')}
-                    onPress={() => router.push('/wishlist')} />
-            </View>
-
-            {/* ── Bu hafta ──
-                Sayaçlar "kaç" diyor; bu satır "NE YAPTIN" diyor. Profilin
-                kişiselleşmesi buradan geçiyor — veri tamamen yerel, ağ isteği
-                yok. Haftası boş olan kullanıcıda gizleniyor: boş bir "wrapped"
-                sayfayı canlı değil ölü gösterir. */}
-            {week.hasActivity ? (
-              <Pressable
-                onPress={() => router.push('/stats')}
-                style={({ pressed }) => [styles.week, pressed && PRESSED_CARD, pressed && styles.basili]}
-              >
-                {/* Başlık satırı — maket: 15/600 başlık solda, 12/600
-                    marka renginde "Gör ›" sağda. */}
-                <View style={styles.weekHead}>
-                  <Text style={styles.weekTitle} numberOfLines={1}>
-                    {t('prof.weekTitle')}
-                  </Text>
-                  <Text style={styles.weekMore}>{t('prof.weekSee')} ›</Text>
-                </View>
-
-                {/* ÇUBUK GRAFİĞİ — maket: 7 çubuk, r4, surface4; en yoğun
-                    gün marka renginde.
-                    Yükseklikler ORANLI, mutlak değil: en yüksek gün tam boy,
-                    ötekiler ona göre. Mutlak olsaydı sakin bir haftada grafik
-                    tamamen yassı görünürdü.
-
-                    ── TABAN 6pt, 0 DEĞİL ──
-                    İlk sürümde boş gün 2pt çiziliyordu ve simülatörde
-                    görüldü: etkinlik tek güne yığıldığında altı çubuk saç
-                    teli kalınlığına iniyor, grafik bozuk görünüyordu.
-                    Makette en düşük çubuk bile en yükseğin ~%31'i.
-                    Boş gün artık görünür bir TABAN — "o gün hiçbir şey yok"
-                    bilgisini veriyor ama yedi günlük ritmi bozmuyor. */}
-                <View style={styles.weekChart}>
-                  {week.byDay.map((n, i) => {
-                    const enCok = Math.max(...week.byDay, 1);
-                    const y = n > 0
-                      ? Math.max(12, Math.round((n / enCok) * CHART_H))
-                      : 6;
-                    return (
-                      <View
-                        key={i}
-                        style={[
-                          styles.weekBar,
-                          { height: y },
-                          n > 0 && i === week.topDay && styles.weekBarTop,
-                        ]}
-                      />
-                    );
-                  })}
-                </View>
-
-                <Text style={styles.weekLine} numberOfLines={2}>
-                  <Text style={[styles.weekNum, NUMERIC]}>{week.discovered}</Text>
-                  {' ' + t('prof.weekDiscovered')}
-                  {week.topGenre ? ` · ${t('prof.weekGenre')} ` : ''}
-                  {week.topGenre ? <Text style={styles.weekStrong}>{week.topGenre}</Text> : null}
-                </Text>
-              </Pressable>
-            ) : null}
-          </View>
-        ) : (
-          /* Giriş yapılmamışsa kimlik yerine tek bir davet — sayfanın
-             başındaki en güçlü eylem bu olmalı. */
-          <Pressable style={({ pressed }) => [styles.signInCard, pressed && PRESSED]} onPress={() => router.push('/account')}>
-            <View style={styles.lockIcon}>
-              <Ionicons name="person-add-outline" size={20} color={colors.accent} />
-            </View>
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={styles.signInTitle}>{t('prof.lockTitle')}</Text>
-              <Text style={styles.signInDesc}>{t('prof.lockDesc')}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.text3} />
-          </Pressable>
+        showsVerticalScrollIndicator={false}
+        refreshControl={(
+          <RefreshControl refreshing={tazeleniyor} onRefresh={() => yukle(tab, { tazele: true })}
+                          tintColor={colors.text2} />
         )}
-
-        {/* ── Kısayollar ──
-            ÖNCE 10 TAM GENİŞLİK SATIRDI, üç bölüm başlığı ve on ayırıcıyla.
-            Ölçüm: ~560 piksel dikey alan, üç ekran boyu kaydırma. Hepsi aynı
-            görsel ağırlıktaydı, yani kullanıcı neye sık ihtiyaç duyduğunu
-            ekrandan çıkaramıyordu.
-            Izgara aynı hedefleri ~230 piksele indiriyor ve tek bakışta
-            taranabilir kılıyor — liste okunur, ızgara görülür. */}
-        <Text style={styles.sectionLabel}>{t('prof.yours')}</Text>
-        <View style={styles.grid}>
-          <Tile icon="albums-outline"      label={t('prof.gCollections')} n={collections.length}
-                locked={locked} onPress={go('/collections')} />
-          <Tile icon="bookmark-outline"    label={t('prof.gWishlist')}    n={items.length}
-                locked={locked} onPress={go('/wishlist')} />
-          <Tile icon="library-outline"     label={t('prof.gLibrary')}     n={gameCount || undefined}
-                onPress={() => router.push('/library')} />
-          <Tile icon="stats-chart-outline" label={t('prof.gStats')}
-                locked={locked} onPress={go('/stats')} />
-          <Tile icon="trophy-outline"      label={t('prof.gCards')}
-                locked={locked} onPress={go('/game-cards')} />
-          {/* İncelemeler — uygulamadaki tek kullanıcı üretimi içerik türü.
-              Oyun sayfalarında DEĞİL burada (bkz. app/reviews.jsx).
-              KİLİTSİZ: okumak hesap istemiyor, yazmak istiyor. Topluluk
-              listeleriyle (aşağıdaki "Liste") aynı kural. */}
-          <Tile icon="chatbox-ellipses-outline" label={t('prof.gReviews')}
-                onPress={() => router.push('/reviews')} />
-          <Tile icon="sparkles-outline"    label={t('prof.gDiscover')}
-                onPress={() => router.push('/discover')} />
-        </View>
-
-        <View style={styles.sectionHead}>
-          <Text style={styles.sectionLabel}>{t('prof.social')}</Text>
-        </View>
-        {/* ARKADAŞ KAROSU YOK. Kimlik başlığındaki arkadaş sayacı zaten aynı
-            yere götürüyor ve bekleyen istek rozetini de o taşıyor — karo,
-            aynı hedefe ikinci bir kapıydı. */}
-        <View style={styles.grid}>
-          <Tile icon="chatbubble-ellipses-outline" label={t('prof.gMessages')}
-                locked={locked} onPress={go('/messages')} />
-          <Tile icon="logo-steam"                  label={t('prof.gSteam')}
-                locked={locked} onPress={go('/steam-friends')} />
-          <Tile icon="list-outline"                label={t('prof.gLists')}
-                onPress={() => router.push('/lists')} />
-        </View>
-
-        {/* Bağlı hesaplar — ayarlar listesiyle AYNI görsel dil.
-            Kontur simge, içeriden ayırıcı, bölüm başlığı yok
-            (bkz. components/SettingsList.jsx). */}
-        {/* KENDİ anahtarı var, prof.lockCta DEĞİL: o anahtar ProfileGate ve
-            kütüphane ekranında "hesap oluştur" anlamında kullanılıyor. Bu satır
-            mağaza bağlamayı anlatıyor; aynı metni paylaşmak, tepedeki hesap
-            kartıyla birebir aynı başlığın iki kez çıkmasına yol açıyordu. */}
-        {locked ? (
-          <SettingsGroup>
-            <SettingsRow
-              icon="lock-closed-outline"
-              label={t('prof.connectTitle')}
-              desc={t('prof.connectHint')}
-              onPress={() => router.push('/account')}
-            />
-          </SettingsGroup>
-        ) : (
-          <SettingsGroup>
-            {steamAccounts.map((acc) => (
-              <SettingsRow
-                key={acc.steamId}
-                icon="logo-steam"
-                label={acc.name}
-                desc={`Steam · ${t('auth.connected')}`}
-                right={(
-                  <IconButton icon="close" size={18} color={colors.text3}
-                              onPress={() => logoutSteam(acc.steamId)} />
-                )}
-              />
-            ))}
-
-            <SettingsRow
-              icon="add-circle-outline"
-              label={steamAccounts.length > 0 ? t('auth.addSteam') : t('auth.connectSteam')}
-              onPress={busy ? undefined : () => doLogin(loginSteam)}
-              disabled={busy}
-              right={busy ? <ActivityIndicator size="small" color={colors.steam} /> : undefined}
-            />
-
-            {xbox ? (
-              <SettingsRow
-                icon="logo-xbox"
-                label={xbox.gamertag}
-                desc={`Xbox · ${t('auth.connected')}`}
-                right={<IconButton icon="close" size={18} color={colors.text3} onPress={logoutXbox} />}
-              />
-            ) : (
-              <SettingsRow
-                icon="logo-xbox"
-                label={t('auth.connectXbox')}
-                onPress={busy ? undefined : () => doLogin(loginXbox)}
-                disabled={busy}
-                right={busy ? <ActivityIndicator size="small" color={colors.xbox} /> : undefined}
-              />
-            )}
-          </SettingsGroup>
-        )}
-      </ScrollView>
-
-      {/* ── Avatar seçici ── */}
-      <AvatarPicker
-        visible={pickerOpen}
-        current={avatar}
-        onSelect={pickAvatar}
-        onClose={() => setPickerOpen(false)}
-        onPickPhoto={pickPhoto}
-        uploading={uploading}
       />
     </SafeAreaView>
   );
 }
 
-/** Kimlik başlığındaki tek sayaç. */
-/**
- * Kimlik başlığındaki tek sayaç.
- *
- * `badge` bekleyen arkadaşlık isteği sayısı: rakamın köşesinde duruyor.
- * Olmadan kullanıcı kendisine gelen isteği hiç fark etmiyordu — sosyal
- * ekrana girmek için bir sebebi olmuyordu.
- */
-function Stat({ n, label, badge, onPress }) {
-  const styles = useStyles(makeStyles);
-  return (
-    <Pressable
-      style={({ pressed }) => [styles.stat, pressed && PRESSED]}
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={`${n} ${label}`}
-    >
-      <View>
-        <Text style={styles.statN}>{n}</Text>
-        {badge > 0 ? (
-          <View style={styles.statBadge}>
-            <Text style={styles.statBadgeText}>{badge > 9 ? '9+' : badge}</Text>
-          </View>
-        ) : null}
-      </View>
-      <Text style={styles.statLabel}>{label}</Text>
-    </Pressable>
-  );
-}
-
-// ─── Avatar seçici ──────────────────────────────────────────────────────────
-// RN Modal kullanılıyor — native kütüphane EKLENMEZ, OTA güvenli.
-// BottomSheet tarzı görünüm: arka plan karartılır, alt yarıda ızgara.
-
-function AvatarPicker({ visible, current, onSelect, onClose, onPickPhoto, uploading }) {
-  const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
-  const { t } = useLanguage();
-  return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={onClose}
-      statusBarTranslucent
-    >
-      <Pressable style={styles.pickerOverlay} onPress={onClose}>
-        <Pressable style={styles.pickerSheet} onPress={(e) => e.stopPropagation()}>
-          {/* Tutamak */}
-          <View style={styles.pickerHandle} />
-          <Text style={styles.pickerTitle}>{t('prof.chooseAvatar')}</Text>
-
-          {/* FAZ 8 — MEVCUT AVATAR GÖRÜNÜR. Seçiciyi açan kullanıcı NEYİ
-              değiştirdiğini görmüyordu: ekranda yalnız seçenekler vardı,
-              başlangıç noktası yoktu. */}
-          <View style={styles.pickerCurrent}>
-            <Avatar avatar={current} name={t('nav.profile')} size={56} />
-            <Text style={styles.pickerCurrentLabel}>{t('prof.currentAvatar')}</Text>
-          </View>
-
-          {/* FOTOĞRAF EN ÜSTTE. Ön ayarlar bir yedek; kişinin kendi fotoğrafı
-              "bu hesap benim" hissini veren asıl şey, o yüzden birincil eylem. */}
-          <Pressable
-            onPress={onPickPhoto}
-            disabled={uploading}
-            style={({ pressed }) => [styles.pickerPhoto, pressed && PRESSED, uploading && { opacity: 0.6 }]}
-          >
-            {uploading
-              ? <ActivityIndicator size="small" color="#fff" />
-              : <Ionicons name="image-outline" size={19} color="#fff" />}
-            <Text style={styles.pickerPhotoText}>
-              {uploading ? t('prof.photoUploading') : t('prof.photoPick')}
-            </Text>
-          </Pressable>
-
-          {/* Veri kullanımı kullanıcının bilmesi gereken şey. */}
-          <Text style={styles.pickerNote}>{t('prof.photoNote')}</Text>
-
-          {/* Izgara — 4 sütun */}
-          <View style={styles.pickerGrid}>
-            {AVATAR_PRESET_IDS.map((id) => {
-              const p = getAvatarPreset(id);
-              const active = current === id;
-              return (
-                <Pressable
-                  key={id}
-                  style={({ pressed }) => [
-                    styles.pickerItem,
-                    active && styles.pickerItemActive,
-                    pressed && { opacity: 0.7 },
-                  ]}
-                  onPress={() => onSelect(id)}
-                >
-                  <View style={[styles.pickerCircle, { backgroundColor: p.bg }]}>
-                    <Ionicons name={p.icon} size={26} color={p.iconColor} />
-                  </View>
-                </Pressable>
-              );
-            })}
-          </View>
-
-          {/* Kaldır — null'a döner, baş harf fallback */}
-          {current ? (
-            <Pressable
-              style={({ pressed }) => [styles.pickerRemove, pressed && { opacity: 0.7 }]}
-              onPress={() => onSelect(null)}
-            >
-              <Ionicons name="close-circle-outline" size={18} color={colors.text3} />
-              <Text style={styles.pickerRemoveText}>{t('prof.removeAvatar')}</Text>
-            </Pressable>
-          ) : null}
-        </Pressable>
-      </Pressable>
-    </Modal>
-  );
-}
-
-/**
- * Kart içi satır. Izgara karosu yerine satır kullanılıyor: yedi karo eşit
- * ağırlıkta bir duvar oluşturuyordu, satırlar ise okunacak bir liste.
- *
- * Kilitliyken kilit simgesi çıkıyor ve dokunuş kayıt ekranına gidiyor —
- * tepkisiz bir satır bozukluk gibi görünür.
- */
-/**
- * Kısayol karosu — eski tam genişlik `Row`'un yerini aldı.
- *
- * SAYI VE ROZET SİMGENİN ÜSTÜNDE, etiketin yanında değil: dört sütunda etiket
- * zaten dar ve yanına sayı koymak etiketi kırpıyordu.
- *
- * KİLİT durumunda karo soluyor ama TIKLANABİLİR kalıyor — `go()` kullanıcıyı
- * kayıt ekranına götürüyor. Tıklanamaz yapmak, dokunup tepki alamamak
- * anlamına gelir ve bozukluk gibi görünür.
- */
-function Tile({ icon, label, n, badge, locked, onPress }) {
-  const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
-  // Genişlik pencereden türetiliyor: flex'e bırakılırsa eksik son satır
-  // kendini şişiriyor (bkz. styles.grid yorumu).
-  const { width } = useWindowDimensions();
-  return (
-    <Pressable
-      style={({ pressed }) => [styles.tile, { width: tileWidth(width) }, pressed && PRESSED_CARD, pressed && styles.basili]}
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-    >
-      <View style={styles.tileIconWrap}>
-        <Ionicons name={icon} size={22} color={locked ? colors.text3 : colors.text} />
-        {/* Bekleyen istek gibi ilgi isteyen şeyler nokta ile; sayılar sessiz. */}
-        {badge > 0 ? <View style={styles.tileDot} /> : null}
-      </View>
-      <Text style={[styles.tileLabel, locked && { color: colors.text3 }]} numberOfLines={1}>
-        {label}
-      </Text>
-      {/* Sayı yoksa da yükseklik ayrılıyor — aksi hâlde sayısı olan ve olmayan
-          karolar farklı boyda çıkıp ızgara satırı dalgalanıyor. Boş bir metin
-          düğümü yerine sabit yükseklikli bir kutu: boşluk karakteri yazmak
-          kırılgan (bir kez kodlama sırasında bozuldu). */}
-      {n > 0 && !locked
-        ? <Text style={[styles.tileN, NUMERIC]}>{n}</Text>
-        : <View style={styles.tileNSpacer} />}
-    </Pressable>
-  );
-}
-
+// REAKTİF STİL: tema değişince yeniden üretiliyor (bkz. ThemeContext).
 const makeStyles = (colors) => StyleSheet.create({
-  // Maket: basmada %6 aydinlanma. Duz zeminde katman yerine karistirma;
-  // yon temaya gore (koyuda acilir, acikta koyulasir).
-  basili: { backgroundColor: basiliYuzey(colors) },
   safe: { flex: 1, backgroundColor: colors.bg },
-  // Maket ekran kenari 20.
-  // paddingBottom ÇALIŞMA ZAMANINDA (useTabBosluk): sekme çubuğu yüksekliği
-  // alt inset'e bağlı, sabit sayı üç düğmeli gezinmede yetmiyor.
-  body: { padding: BODY_PAD },
 
-  headRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm },
-  // Maket: ekran basligi 28 / 700 / -0.28. Uc sekmede uc farkli deger vardi.
-  h1: { flex: 1, fontSize: type.title1, fontWeight: '700', color: colors.text, letterSpacing: -0.28 },
+  topBar: {
+    height: TOUCH_MIN, flexDirection: 'row', alignItems: 'center',
+    paddingLeft: spacing.s20, paddingRight: spacing.s12,
+  },
+  handle: { flex: 1, fontSize: type.body, fontWeight: '600', color: colors.text },
+  iconBtn: { width: TOUCH_MIN, height: TOUCH_MIN, alignItems: 'center', justifyContent: 'center' },
 
-  // ── Kimlik ──
-  identity: { paddingTop: spacing.sm, paddingBottom: spacing.lg },
-  idRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  idText: { flex: 1, minWidth: 0 },
-  // Maket: r99, surface2, dolgu 4/8, 1px kenarlık, ara 4.
-  idStore: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.s4,
-    alignSelf: 'flex-start', marginTop: spacing.s8,
-    paddingVertical: spacing.s4, paddingHorizontal: spacing.s8,
-    borderRadius: radius.pill, backgroundColor: colors.card,
-    borderWidth: 1, borderColor: colors.cardBorder,
-  },
-  // Maket: 6pt yeşil nokta — "bağlı" durumunu renk taşıyor.
-  idStoreDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.green },
-  idStoreName: { fontSize: type.caption, fontWeight: '400', color: colors.text2, flexShrink: 1 },
+  // Sabitlenen şerit: altından içerik geçtiği için zemin OPAK olmak zorunda.
+  seritSarmal: { backgroundColor: colors.bg },
 
-  // Bu hafta satırı — kart değil satır: kimliğin devamı, ayrı bir bölüm değil.
-  // Maket: 350x140, r16, surface2, dolgu 16, 1px kenarlık, ara 12.
-  // Öncesinde yatay bir satırdı (başlık + tek satır + chevron); maket bunu
-  // grafikli bir KART olarak çiziyor.
-  week: {
-    marginTop: spacing.s20, padding: spacing.s16, gap: spacing.s12,
-    backgroundColor: colors.card, borderRadius: radius.lg,
-    borderWidth: 1, borderColor: colors.cardBorder,
+  gridRow: {
+    flexDirection: 'row', gap: GRID_GAP,
+    paddingHorizontal: spacing.s20, marginBottom: GRID_GAP,
   },
-  weekHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.s8 },
-  // Maket: "Gör ›" 12 / 600 / marka.
-  // FAZ 8 — accent → accentText. #e8242b METİN OLARAK 4.27:1 veriyor, taban
-  // 4.72. Bu deponun ALTINCI aynı ölçümü; accentText tam bu durum için var.
-  // (Grafikteki en yoğun günün accent olması DOĞRU ve kalıyor: o renk
-  //  değere bağlı, etikete değil.)
-  weekMore: { fontSize: type.caption, fontWeight: '600', color: colors.accentText },
-  // Maket: çubuklar 42 yüksekliğe kadar, r4, aralarında eşit boşluk.
-  weekChart: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', height: CHART_H, gap: spacing.s4 },
-  weekBar: { flex: 1, borderRadius: radius.xs, backgroundColor: colors.surfaceTile },
-  // accent-serbest: grafikte EN YOGUN GUN — renk degere bagli (Faz 0 kurali), etikete degil
-  weekBarTop: { backgroundColor: colors.accent },
-  weekTitle: {
-    // Maket: kart basligi "Haftalik rapor" = 15 / 600 / text1.
-    fontSize: type.subhead, fontWeight: '600', color: colors.text,
-  },
-  weekLine: { fontSize: type.footnote, color: colors.text2, marginTop: 3, lineHeight: 18 },
-  weekNum: { color: colors.text, fontWeight: '800' },
-  weekStrong: { color: colors.text, fontWeight: '700' },
-  // Boyut Avatar bileşeninden geliyor; burada yalnız kenarlık.
-  avatarLg: { borderWidth: 1.5, borderColor: colors.cardBorder },
-  avatarEditBadge: {
-    position: 'absolute', bottom: -2, right: -2,
-    width: 22, height: 22, borderRadius: 11,
-    // accent-serbest: avatar duzenleme rozeti, yalniz kalem simgesi
-    backgroundColor: colors.accent,
-    borderWidth: 2, borderColor: colors.bg,
+
+  // ── Oturum yok ──
+  gate: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.s32 },
+  gateIcon: {
+    width: 88, height: 88, borderRadius: 44,
     alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder,
   },
-  // Maket: ad 22 / 700; tanıtıcı satırı 13 / 400 / text3.
-  idName: { fontSize: type.title3, fontWeight: '700', color: colors.text },
-  idHandle: { fontSize: type.footnote, fontWeight: '400', color: colors.text3, marginTop: spacing.s4 },
-
-  stats: { flexDirection: 'row', gap: spacing.s12, marginTop: spacing.s20 },
-  // Maket: 169×80, r12, surface2, dolgu 16, 1px kenarlık, ara 4.
-  // Genişlik SABIT DEĞİL: 169 türetilmiş bir sayı (390 − 2×20 − 12 aralık
-  // = 338 / 2). flex ile hesaplanıyor ki dar/geniş cihazlarda bozulmasın.
-  stat: {
-    flex: 1, padding: spacing.s16, gap: spacing.s4,
-    borderRadius: radius.md, backgroundColor: colors.card,
-    borderWidth: 1, borderColor: colors.cardBorder,
+  gateTitle: {
+    fontSize: type.title3, fontWeight: '700', color: colors.text,
+    marginTop: spacing.s24, textAlign: 'center',
   },
-  // Tablo rakamları: sayı değiştikçe sütun genişliği oynamasın
-  // Maket: sayı 22 / 700, etiket 13 / 400 / text2.
-  statN: { fontSize: type.title3, fontWeight: '700', color: colors.text, ...NUMERIC },
-  statLabel: { fontSize: type.footnote, fontWeight: '400', color: colors.text2 },
-  // Bekleyen istek rozeti — rakamın sağ üst köşesi. Sayıya bitişik olmalı,
-  // etikete değil: bilgi "kaç arkadaş" değil, "kaç bekleyen istek".
-  statBadge: {
-    position: 'absolute', top: -3, right: -14,
-    minWidth: 17, height: 17, borderRadius: 9, paddingHorizontal: spacing.xs,
+  gateText: {
+    fontSize: type.subhead, color: colors.text2, textAlign: 'center',
+    lineHeight: 22, marginTop: spacing.s12, maxWidth: 300,
+  },
+  gateBtn: {
+    height: TOUCH_MIN, alignSelf: 'stretch', borderRadius: radius.md,
+    alignItems: 'center', justifyContent: 'center', marginTop: spacing.s24,
     backgroundColor: colors.accentFillStrong,
-    alignItems: 'center', justifyContent: 'center',
   },
-  statBadgeText: { color: '#fff', fontSize: type.caption2, fontWeight: '800' },
-
-  signInCard: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.md,
-    backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1,
-    borderRadius: radius.lg, padding: 14, marginTop: spacing.md,
+  gateBtnText: { fontSize: type.subhead, fontWeight: '600', color: colors.onAccent },
+  gateBtn2: {
+    height: TOUCH_MIN, alignSelf: 'stretch', borderRadius: radius.md,
+    alignItems: 'center', justifyContent: 'center', marginTop: spacing.s8,
+    backgroundColor: colors.bgInput,
   },
-  signInTitle: { fontSize: type.subhead, fontWeight: '700', color: colors.text },
-  signInDesc: { fontSize: type.footnote, color: colors.text2, marginTop: 3, lineHeight: 18 },
-  lockIcon: {
-    width: 38, height: 38, borderRadius: radius.md,
-    backgroundColor: colors.accentSoft,
-    alignItems: 'center', justifyContent: 'center',
-  },
-
-  // ── Gruplar ──
-  sectionHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  sectionLabel: {
-    ...SECTION_TITLE, color: colors.text2,
-    marginTop: spacing.s24, marginBottom: spacing.s8,
-  },
-  // ── Kısayol ızgarası ──
-  // Dört sütun. Üç sütun daha ferah olurdu ama on hedef dört satıra yayılır ve
-  // "tek bakışta gör" kazancı kaybolurdu; dört sütunda yedi hedef iki satıra
-  // sığıyor.
-  //
-  // Genişlik `tileWidth()` ile ARİTMETİKTEN geliyor, flex'ten değil. Önce
-  // `flexGrow: 1` + `flexBasis: '22%'` vardı; eksik son satırda artan boşluk o
-  // satırın karolarına dağılıyordu. Ölçüm (402pt ekran): SENİN satır 1 dört
-  // karo 86,5pt, satır 2 üç karo 118pt, SOSYAL üç karo 118pt — tek ekranda üç
-  // ayrı genişlik. Yüzdeye de dönülmedi: `gap` ile birlikte satır başına üçe
-  // düşürüyor.
-  grid: {
-    flexDirection: 'row', flexWrap: 'wrap',
-    gap: GRID_GAP, marginBottom: spacing.md,
-  },
-  tile: {
-    alignItems: 'center', justifyContent: 'center',
-    paddingVertical: spacing.md, paddingHorizontal: spacing.xs,
-    backgroundColor: colors.card, borderRadius: radius.md,
-    borderWidth: 1, borderColor: colors.cardBorder,
-    // 44pt HIG dokunma hedefinin üstünde
-    minHeight: 78,
-  },
-  tileIconWrap: { position: 'relative' },
-  tileDot: {
-    position: 'absolute', top: -2, right: -4,
-    // accent-serbest: 8x8 durum noktasi, uzerinde metin yok
-    width: 8, height: 8, borderRadius: 4, backgroundColor: colors.accent,
-  },
-  tileLabel: {
-    marginTop: 6, color: colors.text2,
-    fontSize: type.caption2, fontWeight: '600', textAlign: 'center',
-  },
-  tileN: { marginTop: 1, color: colors.text3, fontSize: type.caption2 },
-  tileNSpacer: { height: 14 },
-
-
-
-
-  // ── Avatar seçici ──
-  pickerOverlay: {
-    // colors.overlay zaten var ve açık temada daha hafif (0.45).
-    flex: 1, backgroundColor: colors.overlay,
-    justifyContent: 'flex-end',
-  },
-  // KARAR 2'nin ikinci yarısı: yazma/seçim yüzeyleri bgElevated. `card`
-  // diğer alt sayfalarla farklı katmandaydı.
-  pickerSheet: {
-    backgroundColor: colors.bgElevated,
-    borderTopLeftRadius: 22, borderTopRightRadius: 22,
-    paddingHorizontal: 20, paddingBottom: 40, paddingTop: 10,
-    borderWidth: 1, borderColor: colors.cardBorder, borderBottomWidth: 0,
-  },
-  pickerHandle: {
-    width: 36, height: 4, borderRadius: 2,
-    backgroundColor: colors.text3, opacity: 0.4,
-    alignSelf: 'center', marginBottom: spacing.lg,
-  },
-  pickerTitle: {
-    fontSize: type.headline, fontWeight: '800', color: colors.text,
-    textAlign: 'center', marginBottom: 20,
-  },
-  pickerCurrent: { alignItems: 'center', gap: spacing.s8, marginBottom: spacing.s16 },
-  pickerCurrentLabel: { color: colors.text3, fontSize: type.caption },
-
-  // FAZ 8 — FOTOĞRAF ARTIK GÖRSEL OLARAK DA BİRİNCİL. Kod "fotoğraf
-  // birincil eylem" diyordu ama onu NÖTR bir düğme, seçili ön ayarı ise
-  // accent kenarlıkla çiziyordu: söylenen birincil, görünen en zayıftı.
-  // Faz 6'nın gönder dili: 44pt · radius.md · accentFillStrong.
-  pickerPhoto: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9,
-    marginTop: spacing.lg, height: 44,
-    backgroundColor: colors.accentFillStrong, borderRadius: radius.md,
-  },
-  // tema-bagimsiz: dolu marka dugmesinin uzerinde
-  pickerPhotoText: { color: '#fff', fontSize: type.subhead, fontWeight: '600' },
-  pickerNote: {
-    color: colors.text3, fontSize: type.caption, textAlign: 'center',
-    marginTop: spacing.s8, marginBottom: spacing.s16,
-  },
-
-  pickerGrid: {
-    flexDirection: 'row', flexWrap: 'wrap',
-    justifyContent: 'center', gap: 14,
-  },
-  pickerItem: {
-    padding: spacing.xs, borderRadius: 32,
-    borderWidth: 2.5, borderColor: 'transparent',
-  },
-  // Seçim kenarlığı NÖTR: kırmızı bu sistemde eylem demek, seçim bir
-  // durum (Faz 4/5/6'nın seçim dili).
-  pickerItemActive: {
-    borderColor: colors.text,
-  },
-  pickerCircle: {
-    width: 56, height: 56, borderRadius: 28,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  pickerRemove: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 6, marginTop: 18, paddingVertical: 10,
-  },
-  pickerRemoveText: {
-    color: colors.text3, fontSize: type.footnote, fontWeight: '600',
-  },
+  gateBtn2Text: { fontSize: type.subhead, fontWeight: '600', color: colors.text },
 });

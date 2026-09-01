@@ -58,7 +58,24 @@ function paletten(t) {
 // saydam geçiyor, ne hata ne uyarı. Kopya kaldırıldı.
 export const PALET_EK = {
   dark: {
+    // ── "success" JETONU EKLENMEDİ, `green` KULLANILIYOR ──
+    // Profil revizyonu handoff'u doğrulama/bağlantı durumu için yeni bir
+    // jeton öneriyor (koyu #3FB950, açık #2E9E45). Eklenmedi, çünkü ölçüm
+    // MEVCUT jetonun daha iyi olduğunu söylüyor:
+    //
+    //   koyu   #00d26e / surface2 = 8.99   ·  #3FB950 / surface2 = 7.12
+    //   açık   #00794a / beyaz    = 5.48   ·  #2E9E45 / beyaz    = 3.45
+    //
+    // Handoff'un açık varyantı küçük metin eşiğinin (4.5) ALTINDA ve kendi
+    // notu bunu "grafik öğe" diye geçiştiriyor — oysa aynı renk "312 SA"
+    // rozetinde METİN taşıyor. İkinci bir yeşil eklemek hem kimliği bölerdi
+    // hem de erişilebilirliği düşürürdü.
     green:      '#00d26e',
+    // Doğrulanmış saat rozetinin zemini ve kenarı. Handoff'un ölçüsü
+    // (%10 dolgu · %28 kenar) korundu, rengi yukarıdaki `green`den türetildi
+    // — jeton listesine yeni HEX girmiyor, var olanın alfası kullanılıyor.
+    greenWash:       'rgba(0,210,110,0.10)',
+    greenWashBorder: 'rgba(0,210,110,0.28)',
     steam:      '#1a9fff',
     xbox:       '#4ade80',
     danger:     '#ef4949',
@@ -77,6 +94,8 @@ export const PALET_EK = {
   },
   light: {
     green:      '#00794a',
+    greenWash:       'rgba(0,121,74,0.10)',
+    greenWashBorder: 'rgba(0,121,74,0.28)',
     steam:      '#0b74c4',
     xbox:       '#107c10',
     danger:     '#c62828',
@@ -332,6 +351,18 @@ export const motion = Object.freeze({
 export const radius = { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, pill: 999 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+// AVATAR ÇAPLARI
+//
+// Ölçek 30/32'de bitiyordu; profil revizyonunun kimlik bloğu 88'lik bir avatar
+// istiyor ve arkadaş listesi satırı 44 kullanıyor. Sayılar sekiz dosyaya
+// dağılmadan tek yerde duruyor.
+//
+// BOŞLUK ÖLÇEĞİNDE DEĞİLLER, olmaları da gerekmiyor: bunlar ÇAP, boşluk
+// adımı değil (TOUCH_MIN'in aynı gerekçesi).
+// ─────────────────────────────────────────────────────────────────────────────
+export const avatar = { sm: 30, md: 32, lg: 40, list: 44, xl: 88 };
+
+// ─────────────────────────────────────────────────────────────────────────────
 // YÜKSELTME GÖLGESİ — yüzen sekme çubuğu ve alt sayfalar.
 //
 // Handoff: koyu temada `0 16px 40px rgba(0,0,0,.55)`, açıkta
@@ -346,6 +377,16 @@ export const shadows = {
     ? { shadowColor: '#000', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.55, shadowRadius: 40, elevation: 18 }
     // tema-bagimsiz: ayni gerekce
     : { shadowColor: '#000', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.12, shadowRadius: 32, elevation: 10 },
+
+  // KART GÖLGESİ — handoff'un `elevation.card` jetonu (#000 · .35 · r20 · y8).
+  // TEK KULLANIM YERİ VAR ve olması da gereken bu: konu görünümünün inceleme
+  // kökü. Gölge burada süs değil, "bu öğe akıştaki satırlarla aynı şey değil"
+  // demenin renk harcamayan yolu. İkinci bir yere konursa anlamı düşer.
+  card: isDarkTheme
+    // tema-bagimsiz: golge her zaman siyah; temaya gore degisen opaklik
+    ? { shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.35, shadowRadius: 20, elevation: 8 }
+    // tema-bagimsiz: ayni gerekce — acik temada ayni gecis cok agir durur
+    : { shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.10, shadowRadius: 16, elevation: 4 },
 };
 
 

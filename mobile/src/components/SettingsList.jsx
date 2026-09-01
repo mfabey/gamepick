@@ -1,7 +1,7 @@
 import { Children, Fragment } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { radius, spacing, type, PRESSED } from '../theme';
+import { radius, spacing, type, PRESSED, SECTION_TITLE } from '../theme';
 import { useTheme, useStyles } from '../context/ThemeContext';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -45,19 +45,27 @@ export const AYIRICI_SOL = PAD + ICON_COL + spacing.md;
  * Satır grubu. Çocukların arasına ayırıcıları KENDİ koyuyor — çağıranın
  * `<Div />` serpiştirmesi gerekmiyor ve ayırıcı sayısı yanlış olamıyor.
  */
-export function SettingsGroup({ children, style }) {
+export function SettingsGroup({ children, title, style }) {
   const { colors } = useTheme();
   const styles = useStyles(makeStyles);
   const items = Children.toArray(children).filter(Boolean);
   return (
-    <View style={[styles.group, style]}>
-      {items.map((child, i) => (
-        <Fragment key={i}>
-          {i > 0 && <View style={styles.divider} />}
-          {child}
-        </Fragment>
-      ))}
-    </View>
+    <>
+      {/* BAŞLIK SONRADAN EKLENDİ. Ayarlar listesi boşlukla gruplanıyordu ve
+          9 satırda bu yetiyordu; profilden taşınan hedeflerle liste 19 satıra
+          çıkınca yetmedi — kullanıcı "kütüphane" ile "dil"i aynı ritimde
+          taranan bir yığın olarak görüyordu. Başlıklar kategori adı değil,
+          NE BULACAĞININ adı (Hesap · Oyun verim · Gizlilik · Uygulama). */}
+      {title ? <Text style={styles.groupTitle}>{title}</Text> : null}
+      <View style={[styles.group, style]}>
+        {items.map((child, i) => (
+          <Fragment key={i}>
+            {i > 0 && <View style={styles.divider} />}
+            {child}
+          </Fragment>
+        ))}
+      </View>
+    </>
   );
 }
 
@@ -110,6 +118,10 @@ export function SettingsRow({
 
 // Reaktif stil — tema değişince yeniden üretiliyor (bkz. ThemeContext).
 const makeStyles = (colors) => StyleSheet.create({
+  groupTitle: {
+    ...SECTION_TITLE, color: colors.text3,
+    marginBottom: spacing.s8, paddingHorizontal: spacing.s4,
+  },
   group: {
     backgroundColor: colors.card,
     borderRadius: radius.lg,

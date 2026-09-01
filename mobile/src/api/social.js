@@ -50,8 +50,11 @@ async function openRead(path) {
 // ── Kimlik ──────────────────────────────────────────────────────────────────
 export const getMyProfile      = ()      => authed('/api/social/username');
 export const checkUsername     = (name)  => authed(`/api/social/username?check=${encodeURIComponent(name)}`);
-export const setUsername       = (username, displayName) =>
-  authed('/api/social/username', { method: 'POST', body: { username, displayName } });
+// `bio` UNDEFINED BIRAKILABİLİR: sunucu alan gelmezse mevcut biyografiyi
+// KORUYOR, boş dize gelirse SİLİYOR. Kullanıcı adı kurulum akışı bio
+// göndermiyor; yalnız profil düzenleme ekranı gönderiyor.
+export const setUsername       = (username, displayName, bio) =>
+  authed('/api/social/username', { method: 'POST', body: { username, displayName, bio } });
 
 // ── Arama ───────────────────────────────────────────────────────────────────
 export const searchUsers       = (q)     => authed(`/api/social/search?q=${encodeURIComponent(q)}`);
@@ -173,11 +176,33 @@ export const registerDmPush   = (token) =>
 export const unregisterDmPush = (token) =>
   authed('/api/social/push-token', { method: 'DELETE', body: { token } });
 
+// ── Herkese açık profil ─────────────────────────────────────────────────────
+// TEK ÇAĞRI hem başlığı hem sekme sayfasını getiriyor: profil açılışında
+// sayaçların içerikten sonra gelmesi (iki tur) kabul edilmedi.
+//
+// PARAMETRESİZ = KENDİ PROFİLİM. Kendi sekmemde kullanıcı adı bilinmiyor,
+// sunucu jetondan çözüyor.
+//
+// `openRead`: profil okumak hesap istemiyor (inceleme akışıyla aynı gerekçe —
+// Guideline 5.1.1(v)). Jeton varsa gönderiliyor; arkadaşlık durumu ve engel
+// süzgeci ancak o zaman hesaplanabiliyor.
+export const getUserProfile = ({ username, uid, tab, offset = 0 } = {}) => {
+  const q = new URLSearchParams();
+  if (username) q.set('username', username);
+  else if (uid) q.set('uid', uid);
+  if (tab) { q.set('tab', tab); q.set('offset', String(offset)); }
+  const qs = q.toString();
+  return openRead('/api/social/profile' + (qs ? `?${qs}` : ''));
+};
+
 // ── Doğrulanmış incelemeler ────────────────────────────────────────────────
 // SAAT İSTEMCİDEN GÖNDERİLMİYOR: sunucu Steam kütüphanesinden okuyor.
 // Özelliğin tüm değeri buradan geliyor.
+// OKUMA HESAPSIZ: sunucu 401'i kaldırdı (bkz. app/api/social/reviews).
+// Oyun sayfasını hesapsız bir ziyaretçi de açabiliyor ve incelemeleri
+// görebilmeli; jeton varsa `mine` ve doğrulanmış saat de dolduruluyor.
 export const getGameReviews = (appid) =>
-  authed('/api/social/reviews?appid=' + encodeURIComponent(appid));
+  openRead('/api/social/reviews?appid=' + encodeURIComponent(appid));
 
 export const writeReview = (appid, text, recommended) =>
   authed('/api/social/reviews', { method: 'POST', body: { appid, text, recommended } });
@@ -201,7 +226,11 @@ export const removeReview = (appid) =>
 // ── Tartışma gönderileri ────────────────────────────────────────────────────
 // Okuma hesapsız (openRead), yazma jetonlu. Yanıt da bir gönderi: aynı uçtan
 // `replyTo` ile yazılıyor, ayrı yazma yolu yok.
-export const fetchPosts   = (offset = 0) => openRead(`/api/social/posts?offset=${offset}`);
+// `scope='friends'` → yalnız arkadaşların gönderileri (akışın ikinci sekmesi).
+// Oturumsuzken sunucu BOŞ dönüyor, hata değil: sekme görünür kalıyor ve boş
+// durum kayıt ekranına davet ediyor.
+export const fetchPosts   = (offset = 0, scope = 'all') =>
+  openRead(`/api/social/posts?offset=${offset}${scope === 'friends' ? '&scope=friends' : ''}`);
 export const fetchPost    = (id) => openRead(`/api/social/posts/${encodeURIComponent(id)}`);
 export const createPost   = ({ text, game, replyTo }) =>
   authed('/api/social/posts', { method: 'POST', body: { action: 'create', text, game, replyTo } });

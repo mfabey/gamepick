@@ -36,7 +36,7 @@ export default function SocialSettingsScreen() {
   const load = useCallback(async () => {
     try {
       const [p, b] = await Promise.all([getPrivacy(), getBlocked()]);
-      setPriv(p?.privacy || { shareActivity: false, discoverable: false, showPresence: false });
+      setPriv(p?.privacy || { shareActivity: false, discoverable: false, showPresence: false, privateProfile: false });
       setBozuk(false);
       setBlocked(b?.blocked || []);
     } catch {
@@ -53,7 +53,7 @@ export default function SocialSettingsScreen() {
       // Artık üçü de kapalı ÇİZİLİYOR ama anahtarlar DEVRE DIŞI ve bant
       // "sunucudaki ayarların değişmedi" diyor: gösterilen şey bir durum
       // değil, bir bilinmezlik.
-      setPriv({ shareActivity: false, discoverable: false, showPresence: false });
+      setPriv({ shareActivity: false, discoverable: false, showPresence: false, privateProfile: false });
       setBozuk(true);
       setBlocked([]);
     }
@@ -121,6 +121,26 @@ export default function SocialSettingsScreen() {
           ) : null}
 
           <SettingsGroup>
+            {/* EN ÜSTTE ve `discoverable`'ın ÖNÜNDE: ikisi farklı şeyi
+                kapatıyor ve karıştırılmaları kolay. `privateProfile` içeriği
+                (koleksiyon · inceleme · gönderi) arkadaşlarla sınırlıyor,
+                profilin kendisi bulunabilir kalıyor; `discoverable` profili
+                kullanıcı adıyla açılamaz hâle getiriyor. Sıra bu yüzden dar
+                olandan geniş olana. */}
+            <SettingsRow
+              icon="lock-closed-outline"
+              label={t('soc.privateProfile')}
+              desc={t('soc.privateProfileDesc')}
+              right={(
+                <Switch
+                  value={!bozuk && !!privacy.privateProfile}
+                  onValueChange={(v) => toggle('privateProfile', v)}
+                  disabled={bozuk}
+                  trackColor={{ false: colors.cardBorder, true: colors.green }}
+                  thumbColor="#fff"
+                />
+              )}
+            />
             <SettingsRow
               icon="pulse-outline"
               label={t('soc.shareActivity')}

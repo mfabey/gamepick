@@ -72,7 +72,7 @@ export async function deleteAccount(idToken, reauth) {
  * applyMergedCollections yereldeki koleksiyonları siler — kullanıcı
  * oluşturduğu koleksiyonların kaybolduğunu görür.
  */
-export async function pushUserData(idToken, { taste, wishlist, collections, deleted }) {
+export async function pushUserData(idToken, { taste, wishlist, collections, deleted, gameCount }) {
   const res = await fetch(`${API_BASE}/api/user/data`, {
     method: 'PUT',
     headers: {
@@ -80,8 +80,27 @@ export async function pushUserData(idToken, { taste, wishlist, collections, dele
       'Content-Type': 'application/json',
       Authorization: `Bearer ${idToken}`,
     },
-    body: JSON.stringify({ taste, wishlist, collections, deleted }),
+    // `gameCount` İSTEĞE BAĞLI: verilmezse sunucu mevcut değeri koruyor.
+    // Bu sayının tek okuyucusu BAŞKASININ profilindeki "oyun" sayacı —
+    // kütüphane sunucuda önbelleklenmiyor, yani ziyaretçi onu başka türlü
+    // hesaplayamıyor.
+    body: JSON.stringify({ taste, wishlist, collections, deleted, gameCount }),
   });
   if (!res.ok) throw Object.assign(new Error(`HTTP ${res.status}`), { status: res.status });
   return res.json();
+}
+
+/**
+ * Yalnız oyun sayısını yazar.
+ *
+ * NEDEN AYRI BİR YOL: bağlı kütüphane React'in `useQuery` önbelleğinde
+ * yaşıyor ve `syncAccountData` (bileşen dışı bir servis) ona erişemiyor.
+ * Sayıyı bilen tek yer profil ekranı; oradan tek alanla gönderiliyor.
+ *
+ * PUT'un birleştirmesi YIKICI DEĞİL: takip listesi ve koleksiyonlar gövdede
+ * gelmezse sunucudaki kayıt olduğu gibi kalıyor (bkz. app/api/user/data),
+ * yani bu çağrı veri silmiyor.
+ */
+export async function pushGameCount(idToken, gameCount) {
+  return pushUserData(idToken, { gameCount });
 }
