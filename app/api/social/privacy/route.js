@@ -6,10 +6,15 @@ import { getPrivacy, setPrivacy } from '../../../lib/social-store';
 // Sosyal gizlilik ayarları — Guideline 5.1.2 gereği kullanıcı kendi verisinin
 // paylaşımını denetleyebilmeli.
 //
-//   shareActivity → arkadaşlarım aktivitemi görsün mü
-//   discoverable  → kullanıcı adımla bulunabileyim mi
+//   shareActivity  → arkadaşlarım aktivitemi görsün mü
+//   discoverable   → kullanıcı adımla bulunabileyim mi
+//   showPresence   → çevrimiçi durumum görünsün mü
+//   privateProfile → profil içeriğimi (koleksiyon/inceleme/gönderi) yalnız
+//                    arkadaşlarım görsün mü
 //
 // shareActivity kapatılınca yeni aktivite HİÇ YAZILMAZ (social-store).
+// privateProfile'ın kapısı `/api/social/profile` içinde; anahtarın kendisi
+// setPrivacy'nin beyaz listesinde (gövde doğrudan yazılmıyor).
 // ─────────────────────────────────────────────────────────────────────────────
 
 function unauthorized() {

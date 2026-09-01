@@ -3,6 +3,7 @@ import { verifyMobileToken } from '../../../../lib/mobile-auth';
 import { rateLimit, tooManyRequests } from '../../../../lib/rate-limit';
 import { getProfiles, getHiddenUids } from '../../../../lib/social-store';
 import { listRecentReviews, listUserReviews } from '../../../../lib/review-store';
+import { countReplies, reviewRef } from '../../../../lib/post-store';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // İnceleme akışı — tüm oyunlardan, en yeni önce.
@@ -62,7 +63,10 @@ export async function GET(request) {
     list = rows.filter((r) => !hidden.has(r.uid));
   }
 
-  const profiles = await getProfiles(list.map((r) => r.uid));
+  const [profiles, yanit] = await Promise.all([
+    getProfiles(list.map((r) => r.uid)),
+    countReplies(list.map((r) => reviewRef(r.appid, r.uid))),
+  ]);
 
   return NextResponse.json({
     reviews: list.map((r) => {
@@ -70,6 +74,9 @@ export async function GET(request) {
       return {
         ...r,
         image: headerImage(r.appid),
+        // Yanıtlar oyun sayfasında değil topluluk konusunda okunuyor; kart
+        // yalnız SAYIYI taşıyor ve konuyu açan kapı oluyor.
+        replyCount: yanit[reviewRef(r.appid, r.uid)] || 0,
         author: {
           uid: r.uid,
           username: p?.username || null,

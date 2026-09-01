@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 import { verifyMobileToken } from '../../../lib/mobile-auth';
 import { rateLimit, tooManyRequests } from '../../../lib/rate-limit';
 import { validateFreeText } from '../../../lib/content-filter';
-import { getProfiles, getHiddenUids } from '../../../lib/social-store';
-import { createPost, deletePost, listFeed, toggleLike } from '../../../lib/post-store';
+import { getProfiles, getHiddenUids, getFriends } from '../../../lib/social-store';
+import { createPost, deletePost, listFeed, listFriendFeed, toggleLike } from '../../../lib/post-store';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tartışma akışı.
@@ -46,9 +46,21 @@ export async function GET(request) {
 
   const { searchParams } = new URL(request.url);
   const offset = Math.max(0, Number(searchParams.get('offset')) || 0);
+  // İKİ AKIŞ SEKMESİ: "Keşfet" (herkes) ve "Arkadaşlar". Üçüncü sekme
+  // ("benimkiler") KALKTI — kullanıcının kendi gönderileri artık profilinin
+  // dördüncü sekmesinde ve aynı listeyi iki yerde tutmak, hangisinin güncel
+  // olduğunu belirsizleştiriyordu.
+  const arkadaslar = searchParams.get('scope') === 'friends';
+
+  // Arkadaş akışı oturumsuz ANLAMSIZ; 401 yerine BOŞ dönüyor: hesapsız
+  // kullanıcı sekmeyi görüp dokunabilmeli ve karşısına hata değil, davet
+  // çıkmalı (istemci boş durumda kayıt ekranına götürüyor).
+  if (arkadaslar && !viewerUid) return NextResponse.json({ posts: [] });
 
   const [rows, hidden] = await Promise.all([
-    listFeed({ offset, viewerUid }),
+    arkadaslar
+      ? getFriends(viewerUid).then((uids) => listFriendFeed(uids, { offset, viewerUid }))
+      : listFeed({ offset, viewerUid }),
     // getHiddenUids(null) boş küme döner — anonim okuyucuda engel süzgeci yok.
     getHiddenUids(viewerUid),
   ]);

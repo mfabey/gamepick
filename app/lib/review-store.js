@@ -125,6 +125,19 @@ export async function listUserReviews(uid, { limit = 20, offset = 0 } = {}) {
 }
 
 /**
+ * Kullanıcının inceleme sayısı — profil sekmesinin bağlam satırı
+ * ("İNCELEME · 12") için.
+ *
+ * LİSTE ÇEKİLİP SAYILMIYOR: sayaç profil açılışında dört sekme için birden
+ * okunuyor ve hepsinde listeyi hydrate etmek dört ayrı çok turlu okuma
+ * demekti. ZCARD tek komut, veri boyutundan bağımsız.
+ */
+export async function countUserReviews(uid) {
+  if (!uid) return 0;
+  return Number(await redisCmd(['ZCARD', userKey(uid)])) || 0;
+}
+
+/**
  * İncelemeyi siler.
  * Yalnızca sahibi çağırabilir — kontrol çağıranda, burada uid zaten anahtarın
  * parçası olduğu için başkasının incelemesine erişmek mümkün değil.

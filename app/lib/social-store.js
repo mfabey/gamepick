@@ -30,6 +30,10 @@ const USERNAME_INDEX = 'username_index';   // ön ek aramasi icin ZSET (ZRANGEBY
 
 export const MAX_FRIENDS = 500;
 export const ACTIVITY_KEEP = 30;           // kullanıcı başına saklanan aktivite
+// Biyografi kimlik bloğunda EN ÇOK İKİ SATIR çiziliyor (numberOfLines={2}).
+// 390pt genişlikte 15/400 ile iki satır ~150 karakter tutuyor; sınır ekranda
+// kesilen metnin sunucuya hiç yazılmaması için burada.
+export const MAX_BIO = 150;
 
 // ── Profil ──────────────────────────────────────────────────────────────────
 
@@ -108,6 +112,10 @@ export async function claimUsername(uid, username, extra = {}) {
     // KORUNMAK ZORUNDA: bu nesne sıfırdan kuruluyor, taşınmayan her alan
     // kullanıcı adı değiştirildiğinde sessizce siliniyor.
     avatar: existing?.avatar ?? null,
+    // AYNI GEREKÇE (bkz. avatar): kütüphane senkronunda yazılan oyun sayısı
+    // burada taşınmazsa kullanıcı adını değiştiren herkesin profilinde sayaç
+    // sıfırlanır ve bir sonraki senkrona kadar öyle kalırdı.
+    gameCount: existing?.gameCount ?? 0,
     createdAt: existing?.createdAt || now,
     updatedAt: now,
   };
@@ -176,7 +184,18 @@ export async function searchUsers(query, viewerUid, limit = 20) {
 
 // showPresence: cevrimici durumum ve son gorulmem arkadaslarima gorunsun mu.
 // Varsayilan ACIK — mesajlasmanin dogal parcasi; kapatmak kullanicinin secimi.
-const DEFAULT_PRIVACY = { shareActivity: true, discoverable: true, showPresence: true };
+//
+// privateProfile: KOLEKSİYON/İNCELEME/GÖNDERİ içeriğimi yalnız arkadaşlarım
+// görsün mü. Mevcut üç anahtarın hiçbiri içerik kilitlemiyordu: shareActivity
+// yalnız aktivite kaydını, discoverable yalnız BULUNABİLİRLİĞİ, showPresence
+// yalnız çevrimiçi durumunu kapatıyor. Profil bir içerik sayfasına dönüşünce
+// (dört sekme) kilitleyecek bir anahtar gerekti.
+//
+// Varsayılan KAPALI: profil sayfasının varlık sebebi görülmek. Açık gelseydi
+// yeni kullanıcı, kimsenin göremediği bir sayfa kurmuş olurdu.
+const DEFAULT_PRIVACY = {
+  shareActivity: true, discoverable: true, showPresence: true, privateProfile: false,
+};
 
 export async function getPrivacy(uid) {
   const p = await redisGetJSON(privacyKey(uid)).catch(() => null);
@@ -189,6 +208,7 @@ export async function setPrivacy(uid, patch = {}) {
     shareActivity: patch.shareActivity != null ? !!patch.shareActivity : cur.shareActivity,
     discoverable: patch.discoverable != null ? !!patch.discoverable : cur.discoverable,
     showPresence: patch.showPresence != null ? !!patch.showPresence : cur.showPresence,
+    privateProfile: patch.privateProfile != null ? !!patch.privateProfile : cur.privateProfile,
     updatedAt: Date.now(),
   };
   await redisSetJSONStrict(privacyKey(uid), next);
@@ -216,6 +236,20 @@ export async function getFriendState(uid) {
 export async function getFriends(uid) {
   const r = await redisCmd(['SMEMBERS', friendsKey(uid)]);
   return Array.isArray(r) ? r : [];
+}
+
+/**
+ * İki kullanıcının ortak arkadaş sayısı — başkasının profilindeki
+ * "8 ortak arkadaş" çipi.
+ *
+ * SINTERCARD DEĞİL SINTER: SINTERCARD Redis 7.0 komutu ve bu depo Upstash'in
+ * REST arayüzünden konuşuyor, sürüm garantisi yok. Kümeler MAX_FRIENDS ile
+ * 500'de sınırlı; kesişimi çekip saymak ölçülebilir bir maliyet değil.
+ */
+export async function mutualFriendCount(a, b) {
+  if (!a || !b || a === b) return 0;
+  const r = await redisCmd(['SINTER', friendsKey(a), friendsKey(b)]).catch(() => null);
+  return Array.isArray(r) ? r.length : 0;
 }
 
 /**

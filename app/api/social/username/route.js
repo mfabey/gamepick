@@ -1,15 +1,19 @@
 import { NextResponse } from 'next/server';
 import { verifyMobileToken } from '../../../lib/mobile-auth';
-import { validateUsername } from '../../../lib/content-filter';
+import { validateUsername, validateFreeText } from '../../../lib/content-filter';
 import { rateLimit, tooManyRequests } from '../../../lib/rate-limit';
-import { getProfile, uidForUsername, claimUsername } from '../../../lib/social-store';
+import { getProfile, uidForUsername, claimUsername, MAX_BIO } from '../../../lib/social-store';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Kullanıcı adı — sosyal özelliklerin kimlik temeli.
 //
 // GET  ?check=<ad>  → uygunluk kontrolü (yazarken canlı geri bildirim)
 // GET               → kendi profilim
-// POST { username } → sahiplen / değiştir
+// POST { username, displayName?, bio? } → sahiplen / değiştir
+//
+// BİO BURADA, ayrı bir "profil düzenle" ucunda değil: claimUsername profil
+// nesnesini sıfırdan kuruyor, yani ikinci bir uç aynı anahtara yazsaydı iki
+// yazar arasında kayıp güncelleme yarışı doğardı. Tek yazar, tek yol.
 // ─────────────────────────────────────────────────────────────────────────────
 
 function unauthorized() {
@@ -62,7 +66,25 @@ export async function POST(request) {
     ? String(body.displayName).trim().slice(0, 40)
     : undefined;
 
-  const res = await claimUsername(user.uid, username, { displayName });
+  // ── Biyografi ──
+  // Kullanıcı üretimi metin, yani içerik süzgecinden GEÇMEK ZORUNDA
+  // (Guideline 1.2 — uygulama küfür/nefret içeriğini filtrelemekle yükümlü).
+  // displayName gibi sessizce kırpılmıyor: bio profilin en görünür serbest
+  // metni ve reddedilme sebebini kullanıcı görmeli.
+  //
+  // `undefined` bırakılırsa claimUsername mevcut bio'yu koruyor; boş dize
+  // GÖNDERİLİRSE siliyor. Bu ayrım "alanı boşalt" eylemini mümkün kılıyor.
+  let bio;
+  if (body.bio != null) {
+    const raw = String(body.bio).trim();
+    if (raw) {
+      const v = validateFreeText(raw, { maxLength: MAX_BIO });
+      if (!v.ok) return NextResponse.json({ error: v.error }, { status: 400 });
+    }
+    bio = raw.slice(0, MAX_BIO);
+  }
+
+  const res = await claimUsername(user.uid, username, { displayName, bio });
   if (!res.ok) {
     const status = res.error === 'TAKEN' ? 409 : 500;
     return NextResponse.json({ error: res.error }, { status });

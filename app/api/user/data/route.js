@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { verifyMobileToken } from '../../../lib/mobile-auth';
 import { redisGetJSON, redisSetJSON, redisPipeline, parseJSON } from '../../../lib/redis';
+import { mergeProfile } from '../../../lib/social-store';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Hesaba bağlı kullanıcı verisi (zevk profili + takip listesi + koleksiyonlar).
@@ -135,11 +136,28 @@ export async function PUT(request) {
     srvCols, body.collections, srvTombs, body.deleted
   );
 
+  // ── Oyun sayısı: profile YAZILIYOR ────────────────────────────────────────
+  // BAŞKASININ profilindeki "oyun" sayacının tek kaynağı bu. Kütüphane
+  // sunucuda önbelleklenmiyor (`/api/steam-library` `cache: 'no-store'`),
+  // yani bir ziyaretçi için o sayıyı hesaplamanın yolu Steam'e gitmekti —
+  // profil açılışı başına bir dış çağrı ve kota.
+  //
+  // Sayı ZATEN cihazda duruyor (bağlı kütüphane) ve bu uç zaten her senkronda
+  // çağrılıyor; tek bir alan eklemek yeni tur açmıyor.
+  //
+  // İSTEĞE BAĞLI: alan gelmezse mevcut değer korunuyor. Eski sürümdeki bir
+  // istemcinin senkronu, kullanıcının sayacını sıfırlamamalı.
+  const gameCount = Number(body.gameCount);
+  const writeGameCount = Number.isFinite(gameCount) && gameCount >= 0
+    ? mergeProfile(user.uid, { gameCount: Math.min(Math.round(gameCount), 100000) }).catch(() => {})
+    : Promise.resolve();
+
   await Promise.all([
     redisSetJSON(tasteKey(user.uid), taste).catch(() => {}),
     redisSetJSON(wishKey(user.uid), wishlist).catch(() => {}),
     redisSetJSON(colKey(user.uid), collections).catch(() => {}),
     redisSetJSON(tombKey(user.uid), deleted).catch(() => {}),
+    writeGameCount,
   ]);
 
   // Birleşmiş hâli geri döndür → cihaz kendini buna göre günceller

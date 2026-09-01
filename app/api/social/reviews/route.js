@@ -4,6 +4,7 @@ import { rateLimit, tooManyRequests } from '../../../lib/rate-limit';
 import { validateFreeText } from '../../../lib/content-filter';
 import { redisGetJSON } from '../../../lib/redis';
 import { getProfiles, getHiddenUids } from '../../../lib/social-store';
+import { countReplies, reviewRef } from '../../../lib/post-store';
 import { libraries } from '../../../lib/steam-graph';
 import {
   saveReview, getReview, listReviews, deleteReview, reviewSummary,
@@ -56,32 +57,62 @@ async function verifiedGame(uid, appid) {
 }
 
 export async function GET(request) {
+  // ── OTURUM ARTIK ŞART DEĞİL ──
+  // Bu uç 401 dönüyordu ve gerekçesi "oturumsuz istekte kimin kimi
+  // engellediği bilinemez"di. Ölçüldü: `getHiddenUids(null)` zaten boş küme
+  // döndürüyor (social-store), yani anonim okuyucuda süzgeç kendiliğinden
+  // devre dışı — akış ve gönderi uçları tam olarak böyle çalışıyor.
+  //
+  // Kapıyı kapalı tutmanın bedeli ise büyüdü: incelemeler artık OYUN
+  // SAYFASINDA gösteriliyor ve hesapsız bir ziyaretçi oyun sayfasını
+  // açabiliyor. Okumayı kayıt arkasına almak Guideline 5.1.1(v) itirazına
+  // açık kapı (bkz. reviews/feed'in aynı kararı).
   const user = await verifyMobileToken(request);
-  if (!user) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
+  const viewerUid = user?.uid || null;
 
   const { searchParams } = new URL(request.url);
   const appid = searchParams.get('appid');
   if (!appid) return NextResponse.json({ error: 'APPID_REQUIRED' }, { status: 400 });
 
-  const [rows, summary, mine] = await Promise.all([
+  const rlKey = viewerUid
+    ? `rl:gamerev:${viewerUid}`
+    : `rl:gamerev:ip:${(request.headers.get('x-forwarded-for') || 'unknown').split(',')[0].trim()}`;
+  const rl = await rateLimit(rlKey, 240, 3600);
+  if (!rl.ok) return NextResponse.json(tooManyRequests(), { status: 429 });
+
+  const [rows, summary, mine, eligible] = await Promise.all([
     listReviews(appid, { limit: 20 }),
     reviewSummary(appid),
-    getReview(appid, user.uid),
+    viewerUid ? getReview(appid, viewerUid) : Promise.resolve(null),
+    // DAVET BLOĞUNUN KOŞULU. Oyun sayfasında hiç inceleme yoksa bölüm ya bir
+    // davete dönüşüyor ya da HİÇ ÇİZİLMİYOR; kararı veren şey kullanıcının o
+    // oyunda doğrulanmış saati olup olmadığı. İstemci bunu kendisi
+    // hesaplayamıyor (saat sunucunun Steam okumasından geliyor).
+    viewerUid ? verifiedGame(viewerUid, appid).catch(() => null) : Promise.resolve(null),
   ]);
 
   // Engellenenlerin incelemeleri elenir — sohbet ve listelerdeki kuralla aynı.
-  const hidden = await getHiddenUids(user.uid);
+  const hidden = await getHiddenUids(viewerUid);
   const visible = rows.filter((r) => !hidden.has(r.uid));
 
-  const profiles = await getProfiles(visible.map((r) => r.uid));
+  // Yanıt sayıları TEK TURDA. Her incelemenin altında "n yanıt" duruyor ve
+  // dokunulunca topluluk konusu açılıyor; sayı sıfırsa satır hiç çizilmiyor.
+  const [profiles, yanit] = await Promise.all([
+    getProfiles(visible.map((r) => r.uid)),
+    countReplies(visible.map((r) => reviewRef(r.appid, r.uid))),
+  ]);
 
   return NextResponse.json({
     summary,
     mine,
+    // İstemci yalnız SAATE bakıyor: "bu oyunu oynadın, ilk incelemeyi sen
+    // yaz". Kütüphanenin geri kalanı dışarı verilmiyor.
+    eligible: eligible ? { hours: eligible.hours, name: eligible.name } : null,
     reviews: visible.map((r) => {
       const p = profiles[r.uid];
       return {
         ...r,
+        replyCount: yanit[reviewRef(r.appid, r.uid)] || 0,
         author: {
           uid: r.uid,
           username: p?.username || null,
