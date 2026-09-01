@@ -1,6 +1,6 @@
 {
   "name": "gamerisen-mobile",
-  "version": "2.5.0",
+  "version": "2.6.0",
   "main": "expo-router/entry",
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",
@@ -49,7 +49,7 @@
     "web": "expo start --web",
     "check:theme": "node scripts/check-theme-colors.mjs",
     "check:spacing": "node scripts/check-spacing.mjs",
-    "check": "npm run check:theme && npm run check:spacing && npm run check:contrast && npm run check:i18n && npm run check:reactive && npm run check:imports && npm run check:accent && npm run check:edge && npm run check:gonderim && npm run check:kimlik && npm run check:images",
+    "check": "npm run check:theme && npm run check:spacing && npm run check:contrast && npm run check:i18n && npm run check:reactive && npm run check:imports && npm run check:accent && npm run check:edge && npm run check:gonderim && npm run check:images",
     "check:reactive": "node scripts/check-theme-reactive.mjs",
     "check:i18n": "node --no-warnings scripts/check-i18n.mjs",
     "check:contrast": "node scripts/check-contrast.mjs",
@@ -57,8 +57,7 @@
     "check:accent": "node scripts/check-accent.mjs",
     "check:images": "node scripts/check-image-urls.mjs",
     "check:edge": "node scripts/check-edge-to-edge.mjs",
-    "check:gonderim": "node scripts/check-gonderim.mjs",
-    "check:kimlik": "node scripts/check-kimlik.mjs"
+    "check:gonderim": "node scripts/check-gonderim.mjs"
   },
   "private": true,
   "devDependencies": {
