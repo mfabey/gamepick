@@ -531,12 +531,12 @@ const VideoItem = memo(function VideoItem({
   const { isWatched, toggle } = useWishlist();
   const { account } = useAuth();
   const collections = useCollections();
-  const inCollections = useCollectionsContaining(item.id);
+  const inCollections = useCollectionsContaining(item);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [ready, setReady] = useState(false);
 
-  const watched = isWatched(item.id);
+  const watched = isWatched(item);
 
   // Aktiflik değişince poster durumunu sıfırla — geri dönüldüğünde
   // hazır olmayan videoda siyah ekran görünmesin

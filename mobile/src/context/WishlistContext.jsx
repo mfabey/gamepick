@@ -6,6 +6,7 @@ import { registerPush, unregisterPush } from '../api/push';
 import { subscribeSession } from '../services/session';
 import { syncAccountData } from '../services/sync';
 import { scopedKey, ownerReady, subscribeOwner, registerScopedStore } from '../services/owner';
+import { ayniOyun } from '../services/oyunKimlik';
 
 // Taban adlar — gerçek anahtarlar sahibe göre türetilir (owner.js).
 const WISH_KEY  = 'gr_wishlist';
@@ -182,8 +183,13 @@ export function WishlistProvider({ children }) {
     syncBackend(list);
   }, [syncBackend]);
 
+  // ── KİMLİK EŞLEŞTİRMESİ BİREBİR DEĞİL ──
+  // Aynı oyun, hangi uçtan geldiğine göre iki farklı `rawg_` kimliği taşıyabiliyor
+  // (RAWG id ↔ Steam appid; ölçüm ve gerekçe: services/oyunKimlik.js). Birebir
+  // karşılaştırma yüzünden trend'den eklenen oyun aramada "listede değil"
+  // görünüyor, ikinci kez eklenebiliyordu.
   const add = useCallback(async (game) => {
-    if (items.some(i => i.id === game.id)) return;
+    if (items.some(i => ayniOyun(i, game))) return;
     const g = {
       id: game.id,
       name: game.name,
@@ -195,16 +201,22 @@ export function WishlistProvider({ children }) {
     await persist([...items, g]);
   }, [items, persist]);
 
-  const remove = useCallback(async (id) => {
-    await persist(items.filter(i => i.id !== id));
+  // Çıplak kimlikle de çağrılabiliyor (eski çağrı yerleri); nesne geçmek daha
+  // güçlü çünkü appid/slug kademeleri ancak nesnede var.
+  const remove = useCallback(async (gameOrId) => {
+    const oyun = gameOrId && typeof gameOrId === 'object' ? gameOrId : { id: gameOrId };
+    await persist(items.filter(i => !ayniOyun(i, oyun)));
   }, [items, persist]);
 
   const toggle = useCallback(async (game) => {
-    if (items.some(i => i.id === game.id)) await remove(game.id);
+    if (items.some(i => ayniOyun(i, game))) await remove(game);
     else await add(game);
   }, [items, add, remove]);
 
-  const isWatched = useCallback((id) => items.some(i => i.id === id), [items]);
+  const isWatched = useCallback((gameOrId) => {
+    const oyun = gameOrId && typeof gameOrId === 'object' ? gameOrId : { id: gameOrId };
+    return items.some(i => ayniOyun(i, oyun));
+  }, [items]);
 
   const enableNotifications = useCallback(async () => {
     const r = await registerForPushToken();

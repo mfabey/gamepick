@@ -2,6 +2,10 @@
 // Öneri motoru — SAF (ağdan bağımsız), test edilebilir.
 // Bir oyunu zevk profiline (tür ağırlıkları) göre puanlar ve adayları sıralar.
 // ─────────────────────────────────────────────────────────────────────────────
+// Görüldü/elendi karşılaştırması BİREBİR KİMLİKLE DEĞİL: aynı oyun listeye
+// hangi uçtan geldiğine göre iki farklı `rawg_` kimliği taşıyabiliyor, o yüzden
+// elenen oyun öteki uzaydan geri geliyordu. Gerekçe ve ölçüm: oyunKimlik.js.
+import { kumedeVar } from './oyunKimlik';
 
 // Tür adı → RAWG genre slug (aday üretiminde /api/games?genres=<slug> için)
 export const GENRE_SLUG = {
@@ -101,7 +105,7 @@ export function scoreGame(game, genreWeights = {}, { ownedNames, seenIds } = {})
 
   // Zaten sahip olunan → ceza; yakında gösterilmiş → çeşitlilik cezası
   if (ownedNames?.has?.(normalizeName(game.name))) score -= 0.6;
-  if (seenIds?.has?.(String(game.id))) score -= 0.25;
+  if (kumedeVar(seenIds, game)) score -= 0.25;
 
   // Görsel yoksa veya boşsa puanı ciddi şekilde düşürerek listenin en arkasına itilmesini sağla
   const hasImage = !!(game && game.image && typeof game.image === 'string' && game.image.trim() !== '');
@@ -123,7 +127,7 @@ export function rankCandidates(candidates, { genreWeights = {}, ownedNames, seen
   const map = new Map();
   for (const g of candidates || []) {
     if (!g || g.id == null || map.has(g.id)) continue;
-    if (dismissedIds?.has?.(String(g.id))) continue; // "İlgilenmiyorum" → sert eleme
+    if (kumedeVar(dismissedIds, g)) continue;   // "İlgilenmiyorum" → sert eleme
     map.set(g.id, g);
   }
 

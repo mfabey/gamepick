@@ -11,6 +11,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { scopedKey, ownerReady, registerScopedStore } from './owner';
+import { ayniOyun } from './oyunKimlik';
 
 // Taban adlar — gerçek anahtarlar sahibe göre türetilir (owner.js).
 const STORAGE_KEY = 'gr_collections';
@@ -116,12 +117,26 @@ export function getCollection(id) {
   return collections.find((c) => c.id === id) || null;
 }
 
-/** Bu oyunu içeren koleksiyon id'lerinin Set'i (ekle/çıkar durumunu göstermek için). */
-export function collectionsContaining(gameId) {
-  const gid = String(gameId);
+// Çağrı yerleri hem oyun nesnesi hem çıplak kimlik veriyor (koleksiyon ekranı
+// elindeki `g.id`'yi yolluyor). İkisini de kabul ediyoruz; çıplak kimlik yalnız
+// `id:` kademesini üretir, yani eski davranışın aynısı.
+function oyunlastir(gameOrId) {
+  if (gameOrId && typeof gameOrId === 'object') return gameOrId;
+  return { id: gameOrId };
+}
+
+/**
+ * Bu oyunu içeren koleksiyon id'lerinin Set'i (ekle/çıkar durumunu göstermek için).
+ *
+ * KİMLİK KARŞILAŞTIRMASI ARTIK BİREBİR DEĞİL: aynı oyun listeye hangi uçtan
+ * geldiğine göre iki farklı `rawg_` kimliğiyle gelebiliyor (bkz. oyunKimlik.js).
+ * Birebir karşılaştırma yüzünden aynı oyun koleksiyona iki kez girebiliyordu.
+ */
+export function collectionsContaining(gameOrId) {
+  const oyun = oyunlastir(gameOrId);
   const set = new Set();
   for (const c of collections) {
-    if (c.games?.some((g) => String(g.id) === gid)) set.add(c.id);
+    if (c.games?.some((g) => ayniOyun(g, oyun))) set.add(c.id);
   }
   return set;
 }
@@ -170,31 +185,32 @@ export async function deleteCollection(id) {
 export async function addGameToCollection(collectionId, game) {
   if (!loaded) await loadCollections();
   if (!game?.id) return;
-  const gid = String(game.id);
 
   commit(collections.map((c) => {
     if (c.id !== collectionId) return c;
-    if (c.games?.some((g) => String(g.id) === gid)) return c;          // zaten var
+    if (c.games?.some((g) => ayniOyun(g, game))) return c;            // zaten var
     if ((c.games?.length || 0) >= MAX_GAMES_PER_COL) return c;         // sınır
     return { ...c, games: [slimGame(game), ...(c.games || [])], updatedAt: nextTs() };
   }));
 }
 
-export async function removeGameFromCollection(collectionId, gameId) {
+export async function removeGameFromCollection(collectionId, gameOrId) {
   if (!loaded) await loadCollections();
-  const gid = String(gameId);
+  const oyun = oyunlastir(gameOrId);
 
   commit(collections.map((c) => (
     c.id === collectionId
-      ? { ...c, games: (c.games || []).filter((g) => String(g.id) !== gid), updatedAt: nextTs() }
+      ? { ...c, games: (c.games || []).filter((g) => !ayniOyun(g, oyun)), updatedAt: nextTs() }
       : c
   )));
 }
 
 /** Oyunu bir koleksiyonda aç/kapat — detay ekranındaki seçim listesi için. */
 export async function toggleGameInCollection(collectionId, game) {
-  const has = collectionsContaining(game.id).has(collectionId);
-  if (has) await removeGameFromCollection(collectionId, game.id);
+  // NESNENİN KENDİSİ geçiliyor, `game.id` değil: kimlik eşleştirmesi appid ve
+  // slug kademelerine de bakıyor, çıplak kimlik onları görmez.
+  const has = collectionsContaining(game).has(collectionId);
+  if (has) await removeGameFromCollection(collectionId, game);
   else await addGameToCollection(collectionId, game);
   return !has;
 }

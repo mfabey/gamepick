@@ -169,16 +169,22 @@ export default function GameDetail() {
     else trailerPlayer.pause();
   }, [fragmanAcik, focused, activeShotIndex, trailerUrl, trailerPlayer]);
 
-  const watched = isWatched(id);
   // appid ŞART: istek listesi widget'ı fiyatları Steam appid'iyle çekiyor.
   // Buradan appid'siz eklenen oyunlar widget'ta hiç görünmüyordu — detay
   // zaten steamAppId'i taşıyordu, sadece iletilmiyordu.
   const gameObj = {
     id, name, slug, image,
+    // `rawgSlug` de yazılıyor: kimlik eşleştirmesinin slug kademesi bu adı
+    // arıyor (services/oyunKimlik.js) ve rota parametresi `slug` adıyla geliyor.
+    rawgSlug: slug,
     appid: detail?.steamAppId || appid || null,
     hasSteam: hasSteam === 'true' || hasSteam === '1',
   };
-  const inCollections = useCollectionsContaining(id);
+  // ÇIPLAK KİMLİK DEĞİL, NESNE: aynı oyun listeye hangi uçtan geldiğine göre
+  // iki farklı `rawg_` kimliği taşıyabiliyor. Nesne appid ve slug'ı da taşıdığı
+  // için eşleştirme uzaylar arasında tutuyor.
+  const watched = isWatched(gameObj);
+  const inCollections = useCollectionsContaining(gameObj);
   const inAnyCollection = inCollections.size > 0;
 
   useEffect(() => {
@@ -191,7 +197,9 @@ export default function GameDetail() {
   }, [slug, name]);
 
   // Tazelik: bu oyunu "görüldü" işaretle (id anında hazır, detay beklemez)
-  useEffect(() => { if (id) recordSeen(id); }, [id]);
+  // Nesne geçiliyor: anahtar addan türetiliyor, böylece aynı oyun öteki
+  // kimlik uzayından gelince de "görüldü" sayılıyor (bkz. oyunKimlik.js).
+  useEffect(() => { if (id) recordSeen({ id, name, rawgSlug: slug }); }, [id, name, slug]);
 
   // Zevk sinyali: detay (türler) yüklendiğinde bir kez kaydet
   const viewRecorded = useRef(false);

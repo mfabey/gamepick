@@ -5,6 +5,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { scopedKey, ownerReady, registerScopedStore } from './owner';
+import { depoAnahtari, eskiAnahtariCevir } from './oyunKimlik';
 
 const STORAGE_KEY = 'gr_seen';   // taban ad — gerçek anahtar sahibe göre türetilir
 const EXPIRY_DAYS = 45;    // bu süre sonra oyun tekrar yüzeye çıkabilir
@@ -27,7 +28,13 @@ export function loadSeen() {
       await ownerReady();   // sahip çözülmeden okuma yanlış kovaya bakar
       try {
         const raw = await AsyncStorage.getItem(scopedKey(STORAGE_KEY));
-        if (raw) seen = JSON.parse(raw) || {};
+        if (raw) {
+          // Eski kayıtlar çıplak kimlikti (`rawg_28`); anahtar biçimine
+          // çevriliyor ki kimlik düzeltmesi geçmişi sıfırlamasın.
+          const ham = JSON.parse(raw) || {};
+          seen = {};
+          for (const k in ham) seen[eskiAnahtariCevir(k)] = ham[k];
+        }
       } catch { /* boş depoyla devam */ }
       loaded = true;
       emit();
@@ -58,12 +65,16 @@ registerScopedStore({
   },
 });
 
-// Bir oyunu "görüldü" olarak işaretle (detay açılışında)
-export async function recordSeen(id) {
-  if (id == null) return;
+// Bir oyunu "görüldü" olarak işaretle (detay açılışında).
+// OYUN NESNESİ tercih edilir: aynı oyun iki farklı `rawg_` kimliğiyle
+// gelebiliyor, anahtar nesneden türetiliyor (bkz. oyunKimlik.js → depoAnahtari).
+export async function recordSeen(gameOrId) {
+  if (gameOrId == null) return;
   if (!loaded) await loadSeen();
 
-  seen = { ...seen, [String(id)]: Date.now() };
+  const anahtar = depoAnahtari(gameOrId);
+  if (!anahtar) return;
+  seen = { ...seen, [anahtar]: Date.now() };
 
   // cap aşıldıysa en eskileri at
   const keys = Object.keys(seen);

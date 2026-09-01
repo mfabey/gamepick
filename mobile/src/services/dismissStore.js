@@ -5,6 +5,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { scopedKey, ownerReady, registerScopedStore } from './owner';
+import { depoAnahtari, eskiAnahtariCevir } from './oyunKimlik';
 
 const STORAGE_KEY = 'gr_dismissed';   // taban ad — gerçek anahtar sahibe göre türetilir
 const EXPIRY_DAYS = 180;   // "İlgilenmiyorum" güçlü ama sonsuz değil
@@ -27,7 +28,13 @@ export function loadDismissed() {
       await ownerReady();   // sahip çözülmeden okuma yanlış kovaya bakar
       try {
         const raw = await AsyncStorage.getItem(scopedKey(STORAGE_KEY));
-        if (raw) dismissed = JSON.parse(raw) || {};
+        if (raw) {
+          // Eski kayıtlar çıplak kimlikti; anahtar biçimine çevriliyor ki
+          // elenen oyunlar kimlik düzeltmesiyle birlikte geri gelmesin.
+          const ham = JSON.parse(raw) || {};
+          dismissed = {};
+          for (const k in ham) dismissed[eskiAnahtariCevir(k)] = ham[k];
+        }
       } catch { /* boş depoyla devam */ }
       loaded = true;
       emit();
@@ -58,12 +65,16 @@ registerScopedStore({
   },
 });
 
-// Bir oyunu "İlgilenmiyorum" olarak işaretle
-export async function recordDismiss(id) {
-  if (id == null) return;
+// Bir oyunu "İlgilenmiyorum" olarak işaretle.
+// OYUN NESNESİ tercih edilir: çıplak kimlikle yazıldığında elenen oyun, öteki
+// kimlik uzayından geri geliyordu (bkz. oyunKimlik.js).
+export async function recordDismiss(gameOrId) {
+  if (gameOrId == null) return;
   if (!loaded) await loadDismissed();
 
-  dismissed = { ...dismissed, [String(id)]: Date.now() };
+  const anahtar = depoAnahtari(gameOrId);
+  if (!anahtar) return;
+  dismissed = { ...dismissed, [anahtar]: Date.now() };
 
   // cap aşıldıysa en eskileri at
   const keys = Object.keys(dismissed);

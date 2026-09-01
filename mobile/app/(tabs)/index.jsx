@@ -376,7 +376,7 @@ export default function HomeScreen() {
   const handleDismiss = useCallback((game) => {
     Alert.alert(game.name, t('home.dismissPrompt'), [
       { text: t('common.cancel'), style: 'cancel' },
-      { text: t('home.notInterested'), style: 'destructive', onPress: () => recordDismiss(game.id) },
+      { text: t('home.notInterested'), style: 'destructive', onPress: () => recordDismiss(game) },
     ]);
   }, [t]);
 
