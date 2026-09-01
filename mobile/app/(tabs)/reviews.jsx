@@ -565,14 +565,19 @@ const makeStyles = (colors) => StyleSheet.create({
   // ara 4) ve secili sekme kabin ICINDE r8'lik dolu bir kutu. Bizde uc ayri
   // kutu yan yanaydi ve her birinin kendi kenarligi vardi; kap olmayinca
   // "bunlar birbirinin alternatifi" bilgisi bicimden okunmuyordu.
+  // ── SEKMELER: DOLU HAP DEĞİL ALT ÇİZGİ ──
+  // Üç sekmeliyken seçili sekme `colors.text` dolgulu bir hapti. Profil dört
+  // ikonlu şeride geçince uygulamada AYNI İŞİN İKİ DİLİ oldu: bir ekranda
+  // dolu hap, ötekinde 2pt alt çizgi. Akış sekmeleri profil şeridiyle
+  // hizalandı — seçim bir DURUM, dolu dikdörtgen ise eylem diliydi.
   tabs: {
-    flexDirection: 'row', gap: spacing.s4,
-    marginHorizontal: spacing.s20, marginBottom: spacing.md,
-    backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.s4,
+    flexDirection: 'row', gap: spacing.s24,
+    paddingHorizontal: spacing.s20, marginBottom: spacing.s12,
   },
   tab: {
-    flex: 1, minHeight: 32, borderRadius: radius.sm,
-    alignItems: 'center', justifyContent: 'center',
+    minHeight: TOUCH_MIN, justifyContent: 'center',
+    // Alt çizgi metnin altına oturuyor; dolgu yok, kutu yok.
+    paddingBottom: spacing.s8,
   },
   // Aktif dolgu surface4 (maket: rgb(42,44,51)) — kabin bir tik ustu.
   // FAZ 5 — SEÇİMİN ÜÇÜNCÜ LEHÇESİ KALKTI. Burada seçili sekme
@@ -591,9 +596,11 @@ const makeStyles = (colors) => StyleSheet.create({
   bozukEylem: { minHeight: TOUCH_MIN, justifyContent: 'center', alignSelf: 'flex-start' },
   bozukEylemText: { color: colors.accentText, fontSize: type.subhead, fontWeight: '700' },
 
-  tabOn:      { backgroundColor: colors.text },
-  tabText:    { color: colors.text3, fontSize: type.footnote, fontWeight: '500' },
-  tabTextOn:  { color: colors.bg, fontWeight: '700' },
+  // Profil şeridiyle aynı işaret: 2pt çizgi (ProfileTabs.underline).
+  // accent-serbest: AKTİF DURUM İŞARETİ — çizgi metin taşımıyor, kontrast eşiği geçerli değil
+  tabOn:      { borderBottomWidth: 2, borderBottomColor: colors.accent },
+  tabText:    { color: colors.text3, fontSize: type.subhead, fontWeight: '500' },
+  tabTextOn:  { color: colors.text, fontWeight: '600' },
 
 
 });

@@ -1,5 +1,6 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { radius, spacing, type, PRESSED_CARD, motion } from '../theme';
 import { useStyles } from '../context/ThemeContext';
@@ -66,8 +67,18 @@ export default function CoverCell({ item, width, badge, onPress }) {
 
       {/* Ad HER ZAMAN görünür: kapak görselleri birbirine benziyor ve
           ızgarada 9 kapak yan yanayken ad tek ayırt edici bilgi. Okunabilirlik
-          için altta koyu bir perde var. */}
-      <View style={styles.scrim} />
+          için altta koyu bir perde var.
+
+          PERDE GRADYAN, DÜZ DOLGU DEĞİL. Emülatörde görüldü: %55'ten başlayan
+          düz dolgu kapağın ortasında GÖRÜNÜR BİR KENAR bırakıyordu — kapak
+          ikiye bölünmüş gibi duruyordu. Gradyan aynı okunabilirliği kenar
+          çizmeden veriyor. */}
+      <LinearGradient
+        // tema-bagimsiz: perde kapak GÖRSELİNİN üstünde; görsel iki temada da aynı
+        colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.78)']}
+        style={styles.scrim}
+        pointerEvents="none"
+      />
       <Text style={styles.name} numberOfLines={2}>{item?.name}</Text>
 
       {badge ? (
@@ -88,12 +99,8 @@ const makeStyles = (colors) => StyleSheet.create({
     position: 'absolute', top: spacing.s8, left: spacing.s8,
     fontSize: type.title3, fontWeight: '700', color: colors.text3,
   },
-  scrim: {
-    ...StyleSheet.absoluteFillObject, top: '55%',
-    // Perde kapak GÖRSELİNİN üstünde duruyor; görsel iki temada da aynı.
-    // tema-bagimsiz: tema rengine bağlansaydı açık temada beyaz metin beyaz zeminde kalırdı
-    backgroundColor: 'rgba(0,0,0,0.55)',
-  },
+  // Gradyan %45'ten başlıyor: adın iki satırı ve altındaki dolgu bu aralıkta.
+  scrim: { ...StyleSheet.absoluteFillObject, top: '45%' },
   // tema-bagimsiz: perdenin üstünde duruyor (yukarıdaki gerekçe).
   name: { fontSize: type.caption2, fontWeight: '600', color: '#fff', lineHeight: 13 },
   badge: {
