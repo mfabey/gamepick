@@ -21,16 +21,6 @@ Faz 1 anasayfada, Faz 3 oyun detayında istiyor. İki sebeple yok:
    ekleme, iddiayı verinin olduğu yere taşı" diyor — taşındı: saat yalnızca
    Topluluk'taki davet şeridinde.
 
-## Android sekme çubuğu — ŞİMDİLİK YAZILMIYOR
-
-Faz 2 Android için ayrı bir çubuk tarif ediyor (r20, opak yüzey + elevation
-18, 72×48 köşeli vurgu, ikon 22, basınca şekil morfu). Projede `android/`
-dizini ve `google-services.json` yok; kod yazılsa **doğrulanamaz**.
-
-Bu deponun kuralı: doğrulayamadığın işi tamamlanmış gibi raporlama.
-Ölçüler Faz 2 belgesinde duruyor — Android hedefi derlenince tek oturumda
-uygulanabilir.
-
 ## Ölçek dışı boşluk borcu (328) — TOPLU DÜZELTİLMİYOR
 
 `npm run check:spacing` bunu taban olarak tutuyor: büyüyemez, sekiz fazda
@@ -66,3 +56,56 @@ ile eklemek hata düzeltmek değil, ÖZELLİK EKLEMEK:
 
 Yani log zararsız, açmanın bedeli değil. PiP gerçekten istenirse ayrı bir
 özellik işi olarak planlanmalı, log susturmak için değil.
+
+---
+
+# Android sekme çubuğu — YAZILDI (Faz 2)
+
+Bu madde bir zamanlar "kapatılan kararlar" altındaydı: Faz 2 Android için
+ayrı bir çubuk tarif ediyordu ama projede `android/` dizini yoktu, yani
+**doğrulanamıyordu**. Artık var (yerel Android zinciri + Android 16
+emülatörü); çubuk `src/components/FloatingTabBar.jsx` içinde
+`Platform.OS === 'android'` dallanmasıyla yazıldı.
+
+|                | iOS            | Android                       |
+| -------------- | -------------- | ----------------------------- |
+| çubuk yarıçapı | 29 (tam hap)   | 20 (`radius.xl`)              |
+| yüzey          | cam / düz dolgu| düz dolgu + **elevation 18**  |
+| vurgu          | 52×42, r21     | 72×48, r16 → basılıyken r24   |
+| ikon           | 25             | 22                            |
+
+Yükseklik (58), kenar payı (20) ve alt boşluk (24) İKİ PLATFORMDA DA aynı:
+Faz 2 Android için ayrı bir yükseklik vermiyor ve 58, `TAB_SPACE` /
+`useTabBosluk` aritmetiğinin girdisi — orayı oynatmak sekiz ekranın liste
+dolgusunu sessizce kaydırırdı.
+
+Faz 2 belgesinde olmayan iki sayı koda gerekçesiyle yazıldı: vurgunun köşe
+yarıçapı ölçekten seçildi (`radius.lg` = 16) ve elevation açık temada da 18
+(`shadows.floating` orada 10 veriyor; Android'de yüzeyi ayıran tek kanal
+gölge).
+
+**Doğrulandı** (Android 16 emülatör, Pixel 8 = 411dp, release APK, ekran
+görüntüsü üstünde piksel ölçümü):
+
+- vurgu 189×126 px = **72.0 × 48.0 dp** — Faz 2'nin sayısı birebir.
+- basılıyken sol kenar girintisi üst kenardan +2/+12/+30 px'te 46/26/9 px;
+  r=24dp'nin (63px) beklediği 47.3/26.0/9.3. Bırakınca +2 px'te 28 px, yani
+  r=16dp (42px → 29.2). **Şekil morfu çalışıyor.**
+- gölge açık temada çubuğun 20 px solunda 239 → 242, 34 px solunda 254 → 251:
+  kenarda yumuşuyor, dışarı daha uzağa taşıyor. elevation 10 → 18'in beklenen
+  davranışı.
+
+## Bu işin düzelttiği İKİ YANLIŞ BEKLENTİ
+
+1. **`src/design/tokens.json → blur.$fallback`** hâlâ "Android'de
+   glassFallback düz dolgu + aynı gölge, **geometri asla değişmez**" diyor.
+   O not cam YOKKEN yedeğe düşmeyi anlatıyordu; Faz 2 Android'i yedek
+   olmaktan çıkarıp kendi ölçüsünü veriyor. Çelişki bilerek bırakıldı:
+   tokens.json tasarım paketinin kendisi, ondaki satırı kod değiştirmez.
+   Geometri sorusunda **Faz 2 geçerli**.
+2. "Zemini olmayan bir görünümde `elevation` gölge çizmez" — bu ağaçta
+   **yanlış**. Gölgeyi taşıyan sarmalayıcının rengi yok ama `borderRadius`ı
+   var; RN o görünüme zaten bir arka plan çizimi (dolayısıyla outline)
+   takıyor ve gölge zeminsiz de çiziliyor. İki release APK yan yana ölçülerek
+   görüldü — önce "Android'de gölge hiç çizilmiyordu" diye yazılmıştı,
+   ölçüm bunu çürüttü. Dolguyu katman değiştirmek GEREKMİYOR.

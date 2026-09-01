@@ -13,7 +13,7 @@ import { useReducedMotion } from '../hooks/useReducedMotion';
 import { usePop } from '../hooks/usePop';
 import { useTabBarCompact, useTabBarHidden } from '../context/TabBarContext';
 import { useUnread, refreshUnread } from '../services/unread';
-import { type, NUMERIC, spacing, shadows, TAB_BAR, motion } from '../theme';
+import { type, NUMERIC, spacing, shadows, radius, TAB_BAR, motion } from '../theme';
 import { useStyles, useTheme } from '../context/ThemeContext';
 
 // Sekme olmayan rotalar da burada (games, news, library): harita üst küme
@@ -34,20 +34,58 @@ const ICONS = {
 const BADGED = { messages: true };
 
 const PAD = 6;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ANDROID'İN KENDİ ÇUBUĞU (Faz 2)
+//
+// Faz 2 Android için AYRI bir çubuk tarif ediyor; ölçüleri: r20 · opak yüzey
+// + elevation 18 · 72×48 köşeli vurgu · ikon 22 · basınca şekil morfu.
+// Gerekçe platform dili: iOS'ta çubuk bir CAM HAP (tam yuvarlak, arkası
+// bulanık, kenarlıkla sınırlanan), Android'de OPAK BİR YÜZEY — Material'da
+// yüzeyi içerikten ayıran şey bulanıklık değil YÜKSEKLİK (elevation), ve
+// yüzeyler tam hap değil köşeli.
+//
+// Bu, tasarım paketindeki `src/design/tokens.json → blur.$fallback` notunu
+// ("Android'de glassFallback düz dolgu + aynı gölge, geometri asla değişmez")
+// BİLEREK eziyor. O not cam YOKKEN düz dolguya düşmeyi anlatıyordu; Faz 2
+// Android'i bir yedek olmaktan çıkarıp kendi ölçüsünü veriyor.
+//
+// UYGULANMAMA GEREKÇESİ DÜŞTÜ. AGENTS.md bunu "doğrulanamaz" diye park
+// etmişti (projede `android/` dizini yoktu). Artık var: Android 16
+// emülatöründe release APK ile ölçülüyor.
+// ─────────────────────────────────────────────────────────────────────────────
+const ANDROID = Platform.OS === 'android';
+
 // TEK KAYNAK theme.js. Öncesinde burada ve videos.jsx'te ayrı ayrı 58 yazıyordu.
+// YÜKSEKLİK İKİ PLATFORMDA DA 58: Faz 2 Android için ayrı bir yükseklik
+// vermiyor ve 58, `TAB_SPACE`/`useTabBosluk` aritmetiğinin girdisi — burada
+// oynatmak 8 ekranın liste dolgusunu sessizce kaydırırdı.
 const BAR_H = TAB_BAR.height;   // Faz 2: 58
-const RADIUS = BAR_H / 2;       // tam hap — maket: r 29
+// iOS tam hap (r29), Android köşeli yüzey (r20 = radius.xl).
+const RADIUS = ANDROID ? radius.xl : BAR_H / 2;
 // FAZ 2: 22 → 25. Etiket kalkınca ikon tek taşıyıcı; 58pt çubukta 25pt ikon
-// dikeyde 16.5pt nefes bırakıyor.
-const ICON = 25;
+// dikeyde 16.5pt nefes bırakıyor. Android'de 22: vurgu 42 değil 48 yüksekliğinde
+// ve 72 genişliğinde — daha büyük bir kabın içinde 25pt ikon kabı dolduruyordu.
+const ICON = ANDROID ? 22 : 25;
 
 // ── KAYAN VURGU (Faz 2) ──
-// Maket ölçüsü: 52×42, r 21, rgba(232,36,43,0.16).
+// Maket ölçüsü: iOS 52×42, r 21 · Android 72×48, köşeli. Renk iki platformda
+// da aynı: rgba(232,36,43,0.16) (açık temada .22).
 // Etiketsiz çubukta seçili sekmeyi anlatan tek şey ikonun rengi kalıyordu ve
 // renk TEK kanal — renk körlüğünde ayırt edilemez. Vurgu ikinci kanal:
 // konum. Ayrıca "nereye gittim" bilgisini kayarak taşıyor.
-const HAP_W = 52;
-const HAP_H = 42;
+const HAP_W = ANDROID ? 72 : 52;
+const HAP_H = ANDROID ? 48 : 42;
+// "Köşeli" tek başına bir sayı değil; ölçekten seçildi: radius.lg (16). 48'lik
+// bir kapta 16, tam yuvarlağın (24) üçte ikisi — köşe okunuyor ama sertlemiyor.
+const HAP_R = ANDROID ? radius.lg : HAP_H / 2;
+// ŞEKİL MORFUNUN VARIŞ ŞEKLİ: tam yuvarlak (48/2). Basılıyken köşe açılıyor,
+// bırakınca köşeli hâline dönüyor — Faz 2'nin "basınca şekil morfu" satırı.
+const HAP_R_BASILI = HAP_H / 2;
+// Faz 2: elevation 18. `shadows.floating` koyu temada zaten 18 veriyor, AÇIK
+// temada 10'a düşüyor — Android çubuğunda yüzeyi ayıran tek kanal gölge
+// olduğu için iki temada da 18 sabit.
+const ANDROID_ELEVATION = 18;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Liquid Glass kullanılabilirliği — MODÜL DÜZEYİNDE bir kez hesaplanır.
@@ -88,16 +126,41 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
   // Öğeler `flex: 1` olduğu için beşi eşit; hücre genişliği tek bölme.
   const [barW, setBarW] = useState(0);
   const hucre = barW > 0 ? (barW - PAD * 2) / state.routes.length : 0;
+  // VURGU HÜCREDEN TAŞAMAZ. Android'in 72pt'lik vurgusu geniş cihazda sığıyor
+  // (411dp Pixel 8: hücre 71.9) ama 360dp'lik bir telefonda hücre 61.6'ya
+  // iniyor; sabit 72 orada komşu sekmenin altına 5pt giriyor ve o ikon "yarı
+  // seçili" görünüyor. Sınır ÖLÇÜLEN genişlikten türetiliyor, pencereden değil.
+  const hapW = hucre > 0 ? Math.min(HAP_W, hucre) : HAP_W;
   const pos = useSharedValue(0);
   useEffect(() => {
     if (hucre <= 0) return;
-    const hedef = PAD + state.index * hucre + (hucre - HAP_W) / 2;
+    const hedef = PAD + state.index * hucre + (hucre - hapW) / 2;
     // firm (ζ=1, aşmasız): "nereye gittim" bilgisi aşarsa bozukluk gibi
     // okunuyor — ikonun pop'u aşmalı, vurgunun kayması değil.
     pos.value = reducedMotion ? hedef : withSpring(hedef, motion.firm);
-  }, [state.index, hucre, pos, reducedMotion, state.routes.length]);
+  }, [state.index, hucre, hapW, pos, reducedMotion, state.routes.length]);
 
-  const hapStyle = useAnimatedStyle(() => ({ transform: [{ translateX: pos.value }] }), []);
+  // ── ŞEKİL MORFU — YALNIZ ANDROID (Faz 2) ──
+  // Parmak çubuğa değdiği sürece vurgunun köşesi açılıyor (16 → 24, yani tam
+  // yuvarlak), bırakınca köşeli hâline dönüyor. iOS'ta yok ve olamaz da:
+  // oradaki vurgu zaten tam yuvarlak, morfacak bir köşesi yok.
+  //
+  // TEK PAYLAŞILAN DEĞER, sekme başına bir tane değil: ekranda tek bir vurgu
+  // var. Basılan sekme vurgunun durduğu sekme olmasa bile morf doğru okunuyor
+  // — dokunuş vurguyu zaten o hücreye taşıyor, morf o kaymanın başlangıcı.
+  const basili = useSharedValue(0);
+
+  const hapStyle = useAnimatedStyle(() => {
+    if (!ANDROID) return { transform: [{ translateX: pos.value }] };
+    return {
+      transform: [{ translateX: pos.value }],
+      // borderRadius transform DEĞİL, ama yerleşim de tetiklemiyor: yalnız
+      // yeniden boyama. Tek ve küçük bir görünümde bedeli ölçülebilir değil.
+      borderRadius: interpolate(
+        basili.value, [0, 1], [HAP_R, HAP_R_BASILI], Extrapolation.CLAMP,
+      ),
+    };
+  }, []);
 
   // ── Çubuk sekmesi ──
   // Sekme degisiminde tum cubuk kisa bir "otur" hareketi yapiyor: once
@@ -177,9 +240,22 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
           AYNI katmandaki gölgeyi tamamen kırpıyor. Gölge kırpılmayan bir
           sarmalayıcıya alındı — hem düz hem cam yolda görünüyor.
           (Kontrol listesi: "Cam desteklenmeyen ortamda düz dolgu, AYNI
-          geometri VE GÖLGE".) */}
+          geometri VE GÖLGE".)
+
+          ANDROID'DE GÖLGEYİ `elevation` ÇİZİYOR ve bu katmanda çalışıyor:
+          ölçüldü (Android 16 emülatör, release APK, iki derleme yan yana).
+          "Zemini olmayan görünümde elevation gölge çizmez" beklentisi bu
+          ağaçta YANLIŞ — `borderRadius` verilen görünüme RN zaten bir arka
+          plan çizimi (dolayısıyla outline) takıyor, gölge zeminsiz de
+          çiziliyordu. Android'e özgü tek fark yüksekliğin kendisi
+          (golgeAndroid). */}
       <Animated.View
-        style={[styles.golge, isLandscape && styles.barLandscape, barStyle]}
+        style={[
+          styles.golge,
+          ANDROID && styles.golgeAndroid,
+          isLandscape && styles.barLandscape,
+          barStyle,
+        ]}
       >
       <View
         style={[styles.bar, GLASS_OK ? styles.barGlass : styles.barSolid]}
@@ -199,7 +275,7 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
             altına girerse blur onu yutuyor, öğelerin üstüne çıkarsa ikonu
             örtüyor. */}
         {hucre > 0 ? (
-          <Animated.View pointerEvents="none" style={[styles.hap, hapStyle]} />
+          <Animated.View pointerEvents="none" style={[styles.hap, { width: hapW }, hapStyle]} />
         ) : null}
 
         {state.routes.map((route, index) => {
@@ -217,6 +293,12 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
           };
           const onLongPress = () => navigation.emit({ type: 'tabLongPress', target: route.key });
 
+          // Şekil morfu yalnız Android'de ve hareket kısıtlı değilken.
+          // `withTiming(110)`: basma tepkisi bu dosyada zaten 110 (çubuğun
+          // "otur" hareketi ve ikonun pop'u) — üçüncü bir süre üretilmiyor.
+          const onPressIn  = () => { if (ANDROID && !reducedMotion) basili.value = withTiming(1, { duration: 110 }); };
+          const onPressOut = () => { if (ANDROID && !reducedMotion) basili.value = withSpring(0, motion.firm); };
+
           return (
             <Pressable
               key={route.key}
@@ -227,6 +309,8 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
               accessibilityState={focused ? { selected: true } : {}}
               onPress={onPress}
               onLongPress={onLongPress}
+              onPressIn={onPressIn}
+              onPressOut={onPressOut}
               style={({ pressed }) => [styles.item, pressed && { opacity: 0.55 }]}
               hitSlop={8}
             >
@@ -307,6 +391,16 @@ const makeStyles = (colors) => StyleSheet.create({
     borderRadius: RADIUS,
     ...shadows.floating,
   },
+  // ANDROID: Faz 2'nin elevation 18'i. `shadows.floating` koyu temada zaten 18
+  // veriyor, AÇIK temada 10'a düşüyordu — Android'de yüzeyi içerikten ayıran
+  // tek kanal gölge olduğu için iki temada da 18.
+  //
+  // Ölçüldü (aynı ekran, iki release APK): gölge açık temada çubuğun 20px
+  // solunda 239 → 242, 34px solunda 254 → 251. Yani kenarda yumuşuyor, dışarı
+  // daha uzağa taşıyor: 18'in beklenen davranışı.
+  golgeAndroid: {
+    elevation: ANDROID_ELEVATION,
+  },
   bar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -325,7 +419,9 @@ const makeStyles = (colors) => StyleSheet.create({
   // Cam yolda da KENARLIK var — öncesinde yalnız saydam zemin vardı ve
   // çubuğun sınırı belirsizdi. Gölge ortak sarmalayıcıda.
   barGlass: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.glassBorder },
-  // iOS 26 öncesi ve Android: eski görünüm
+  // iOS 26 öncesi ve Android: düz dolgu. `glassFallback` zaten OPAK bir hex
+  // (koyu #16171B, açık #F7F7F9), yani Faz 2'nin Android'den istediği "opak
+  // yüzey" ayrı bir renk gerektirmiyor — değişen yalnız geometri ve gölge.
   barSolid: {
     backgroundColor: colors.barSolid,
     borderWidth: 1,
@@ -334,14 +430,16 @@ const makeStyles = (colors) => StyleSheet.create({
     borderColor: colors.glassBorder,
   },
   glassLayer: { borderRadius: RADIUS },
-  // Maket: 52×42, r 21, accent %16 tint.
+  // Maket: iOS 52×42 r21 · Android 72×48 köşeli (r16, basılıyken 24).
+  // Genişlik JSX'te ölçülen hücreden geliyor; buradaki değer yalnız ilk
+  // çizimin (barW=0) yedeği.
   hap: {
     position: 'absolute',
     left: 0,
     top: (BAR_H - HAP_H) / 2,
     width: HAP_W,
     height: HAP_H,
-    borderRadius: HAP_H / 2,
+    borderRadius: HAP_R,
     backgroundColor: colors.tabVurgu,
   },
   item: {
