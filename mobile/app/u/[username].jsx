@@ -45,10 +45,6 @@ import ReportSheet from '../../src/components/ReportSheet';
 
 const PAGE = 20;
 
-// Sabitlenen öğenin indeksi (bkz. satirlar). Modül düzeyinde: her render'da
-// yeni dizi üretmek FlashList'e "sabitleme değişti" dedirtirdi.
-const SERIT = [0];
-
 function bol(list, n) {
   const out = [];
   for (let i = 0; i < list.length; i += n) out.push(list.slice(i, i + n));
@@ -175,10 +171,9 @@ export default function UserProfileScreen() {
   const canView = sunucu?.canView !== false;
   const izgara = tab === 'collection' || tab === 'wishlist';
   const kapakEn = coverWidth(width);
-  // ŞERİT LİSTENİN İLK ÖĞESİ — kendi profilimle aynı gerekçe: FlashList
-  // sabitlemeyi yalnız veri öğeleri için yapıyor, `ListHeaderComponent`
-  // sabitlenemiyor. İki ekran ikiz; biri yapışıp öteki yapışmasaydı aynı
-  // sayfanın iki farklı davranışı olurdu.
+  // ŞERİT LİSTENİN İLK ÖĞESİ — kendi profilimle aynı yapı ve aynı gerekçe
+  // (bkz. (tabs)/profile.jsx: sabitleme denendi, emülatörde şerit iki kez
+  // çizilip kimlik bloğunu örttüğü için geri alındı).
   const satirlar = useMemo(() => {
     if (!canView) return [{ __serit: true }, { __kilit: true }];
     const govde = izgara ? bol(items, GRID_COLS) : items;
@@ -297,7 +292,6 @@ export default function UserProfileScreen() {
               />
             </View>
           )}
-          stickyHeaderIndices={SERIT}
           ListFooterComponent={(
             <View style={{ height: insets.bottom + spacing.s40, alignItems: 'center', paddingTop: spacing.s12 }}>
               {dahaYukleniyor ? <ActivityIndicator color={colors.accent} /> : null}

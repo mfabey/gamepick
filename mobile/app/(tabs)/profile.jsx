@@ -60,10 +60,6 @@ import EmptyState from '../../src/components/EmptyState';
 // bu sayıya bakıyor, o yüzden sunucuyla AYNI kalmak zorunda.
 const PAGE = 20;
 
-// Sabitlenen öğenin indeksi. Modül düzeyinde: her render'da yeni dizi
-// üretmek FlashList'e 'sabitleme değişti' dedirtirdi.
-const SERIT = [0];
-
 /** Uzak sekmeler ağdan, yerel sekmeler cihazdan besleniyor. */
 const UZAK = new Set(['reviews', 'posts']);
 
@@ -275,11 +271,19 @@ export default function ProfileScreen() {
   const kapakEn = coverWidth(width);
 
   // ── SEKME ŞERİDİ LİSTENİN İLK ÖĞESİ ──
-  // Maket şeridi kaydırma boyunca sabit istiyor. FlashList (v2) sabitlemeyi
-  // yalnız VERİ öğeleri için yapıyor — `ListHeaderComponent` sabitlenemiyor.
-  // Bu yüzden şerit başlıktan çıkarılıp listenin 0. öğesi oldu ve
-  // `stickyHeaderIndices={[0]}` ile tepeye yapışıyor. Kimlik bloğu başlıkta
-  // kaldı, yani kayıp gidiyor — maketin istediği tam olarak bu.
+  //
+  // ── SABİTLEME DENENDİ VE GERİ ALINDI (emülatörde görüldü) ──
+  // Maket şeridin kaydırma boyunca sabit kalmasını istiyor. FlashList (v2)
+  // `stickyHeaderIndices`i destekliyor ama yalnız VERİ öğeleri için, bu yüzden
+  // şerit başlıktan çıkarılıp 0. öğe yapılmıştı. Android 16 emülatöründe
+  // ölçüldü: sabitleme `ListHeaderComponent` ile BİLEŞMİYOR — şerit daha
+  // ekranın ortasındayken tepeye yapışıyor ve İKİ KEZ çiziliyor; yapışan
+  // kopya kimlik bloğunun üstünü örtüyor, avatar ve üç sayaç görünmüyordu.
+  //
+  // Şerit veri öğesi olarak KALDI (boş durumu da öğe yapan yapı bundan
+  // besleniyor) ama artık sabitlenmiyor: içerikle birlikte kayıyor.
+  // Gerçek sabitleme, kaydırma değerine bağlı ayrı bir bindirme katmanı
+  // ister; cihazda doğrulanmadan yazılmayacak.
   //
   // BOŞ DURUM DA ÖĞE: liste artık hiçbir zaman boş değil (şerit hep var), o
   // yüzden `ListEmptyComponent` hiç çalışmazdı.
@@ -410,7 +414,6 @@ export default function ProfileScreen() {
             />
           </View>
         )}
-        stickyHeaderIndices={SERIT}
         ListFooterComponent={(
           <View style={{ height: tabBosluk, alignItems: 'center', paddingTop: spacing.s12 }}>
             {dahaYukleniyor || (yukleniyor && veri.length > 0)
