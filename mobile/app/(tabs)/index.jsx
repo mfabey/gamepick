@@ -317,7 +317,7 @@ export default function HomeScreen() {
       });
       return;
     }
-    if (hedef === 'friends') { router.push('/social'); return; }
+    if (hedef === 'friends') { router.push('/friends'); return; }
     // "Senin için" motorunun kendi ekranı deste — aynı useForYouFeed'i
     // kullanıyor, dolayısıyla cümledeki sayı orada birebir karşılanıyor.
     if (hedef === 'foryou')  { router.push('/swipe'); return; }

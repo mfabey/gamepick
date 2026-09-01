@@ -134,7 +134,7 @@ export default function MessagesScreen() {
       actionLabel={t('sf.retry')} onAction={refetch} />;
   } else if (!rows?.length) {
     body = <EmptyState icon="chatbubbles-outline" title={t('msg.empty')} text={t('msg.emptyText')}
-      actionLabel={t('msg.goFriends')} onAction={() => router.push('/social')} />;
+      actionLabel={t('msg.goFriends')} onAction={() => router.push('/friends')} />;
   }
 
   return (

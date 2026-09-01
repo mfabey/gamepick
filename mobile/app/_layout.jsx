@@ -70,7 +70,16 @@ function TemaliYigin() {
                 <Stack.Screen name="collections" />
                 <Stack.Screen name="collection/[id]" />
                 <Stack.Screen name="stats" />
-                <Stack.Screen name="social" />
+                {/* "social" KALKTI — üç sekmeli o ekran (akış · arkadaşlar ·
+                    istekler) dağıtıldı. Burada bırakılsaydı expo-router var
+                    olmayan bir rota için uyarı verirdi (aynı kırılma
+                    "messages" taşınırken de yaşandı, aşağıdaki nota bakın).
+                    Yerine geçenler: */}
+                <Stack.Screen name="friends" />
+                <Stack.Screen name="friend-requests" />
+                <Stack.Screen name="u/[username]" />
+                <Stack.Screen name="profile-edit" />
+                <Stack.Screen name="username-setup" />
                 {/* Oyunlar BURAYA GELDİ: alt navigasyondaki yerini Topluluk
                     (reviews) aldı. Rota yolu DEĞİŞMEDİ — (tabs) yol taşımayan
                     bir grup olduğu için /games hâlâ /games, mevcut yedi

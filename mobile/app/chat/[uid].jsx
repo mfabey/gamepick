@@ -1009,7 +1009,7 @@ export default function ChatScreen() {
     body = <View style={styles.center}><ActivityIndicator color={colors.accent} /></View>;
   } else if (error === 'NOT_FRIENDS') {
     body = <EmptyState icon="people-outline" title={t('msg.notFriends')} text={t('msg.notFriendsText')}
-      actionLabel={t('msg.goFriends')} onAction={() => router.push('/social')} />;
+      actionLabel={t('msg.goFriends')} onAction={() => router.push('/friends')} />;
   } else if (error === 'BLOCKED') {
     body = <EmptyState icon="ban-outline" title={t('msg.blocked')} text={t('msg.blockedText')} />;
   } else if (error) {

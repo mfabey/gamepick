@@ -39,12 +39,18 @@ export default function PersonMenu({ visible, person, arkadas = false, onClose, 
   const { t } = useLanguage();
   if (!person) return null;
 
-  // "PROFİLİNE GİT" YOK — bilerek. Faz 7'nin maketi bunu ilk seçenek olarak
-  // çiziyor ama uygulamada BAŞKA BİR KULLANICININ PROFİL EKRANI YOK: tek
-  // kişiye özel hedef `/chat/[uid]`. Gidecek yeri olmayan bir menü satırı
-  // koymak, kullanıcıyı hiçbir yere götüren bir söz vermek olurdu.
-  // (Bu deponun kuralı: hesaplanamayan basamak tasarlanmaz.)
+  // "PROFİLİNE GİT" ARTIK VAR — ve ilk sıradaki seçenek.
+  //
+  // Uzun süre BİLEREK yoktu: uygulamada başka bir kullanıcının profil ekranı
+  // bulunmuyordu, kişiye özel tek hedef `/chat/[uid]` idi ve gidecek yeri
+  // olmayan bir menü satırı, kullanıcıyı hiçbir yere götüren bir söz olurdu.
+  // `/u/[username]` ekranıyla o boşluk kapandı, söz tutulabilir hâle geldi.
+  //
+  // ARKADAŞ OLMAYANDA DA GÖRÜNÜYOR: profil herkese açık bir yüzey (gizlilik
+  // kapıları sunucuda), yani tanımadığın birinin profiline bakmak sohbet
+  // açmaktan daha DÜŞÜK maliyetli bir ilk adım.
   const secenekler = [
+    person.username && { anahtar: 'profile', etiket: t('soc.menu.profile'), ikon: 'person-outline' },
     arkadas && { anahtar: 'message', etiket: t('soc.menu.message'), ikon: 'chatbubble-outline' },
     arkadas && { anahtar: 'remove', etiket: t('soc.menu.remove'), ikon: 'person-remove-outline', yikici: true, ayirici: true },
     { anahtar: 'block', etiket: t('soc.menu.block'), ikon: 'ban-outline', yikici: true, ayirici: !arkadas },
