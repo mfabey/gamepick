@@ -84,7 +84,8 @@ export async function GET() {
           }
         }
       }
-      if (connections.xbox && connections.xbox.gamertag) {
+      // Simülasyon oturumu indekslenmez — gerekçe login/route.js'te.
+      if (connections.xbox && connections.xbox.gamertag && !connections.xbox.isMock) {
         await redisCmd(['SET', `xbox_to_uid:${connections.xbox.gamertag}`, user.uid]);
       }
     } catch {}

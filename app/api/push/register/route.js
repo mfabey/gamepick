@@ -1,11 +1,34 @@
 import { NextResponse } from 'next/server';
 import { hasRedis, redisCmd, redisGetJSON, redisSetJSON } from '../../../lib/redis.js';
+import { rateLimit, tooManyRequests } from '../../../lib/rate-limit';
 
 const TOKENS_SET = 'push:tokens';
 const tokenKey = (t) => `push:token:${t}`;
 
+// ─────────────────────────────────────────────────────────────────────────────
+// BU UÇ BİLEREK KİMLİKSİZ. Fiyat alarmı istek listesi giriş yapmadan da
+// çalışıyor (mobile/src/context/WishlistContext.jsx yerel listeyle sürüyor),
+// dolayısıyla `verifyMobileToken` zorunlu kılmak özelliği çıkıştaki
+// kullanıcılar için tümden kırardı. Kimlik yerine iki sınır konuldu:
+//
+//  1. TOKEN BİÇİMİ. Eski desen `\[[^\]]+\]` idi — köşeli parantez içinde ne
+//     olursa geçiyordu, yani `ExpoPushToken[x]` gibi sonsuz sayıda sahte kayıt
+//     üretilebiliyordu. Karakter kümesi ve uzunluk sınırlandı.
+//  2. IP BAŞINA HIZ SINIRI. Kimlik olmadığı için sayaç uid'e değil IP'ye
+//     bağlanıyor (social/profile ile aynı kalıp). Öncesinde route düzeyinde
+//     hiç sınır yoktu; geriye yalnız middleware'in 60/dk sınırı kalıyordu ve
+//     bu, günde on binlerce çöp kaydı yazmaya yetiyordu.
+//
+// Kayıt hâlâ TOKEN'a anahtarlanıyor, uid'e değil: çıkışta uid yok. Token'ı
+// ele geçiren biri o cihazın alarmlarını kapatabilir — kimliksiz çalışma
+// şartının kabul edilen bedeli, etkisi "bildirim gelmez" ile sınırlı.
+// ─────────────────────────────────────────────────────────────────────────────
 function isValidExpoToken(t) {
-  return typeof t === 'string' && /^Expo(nent)?PushToken\[[^\]]+\]$/.test(t);
+  return typeof t === 'string' && /^Expo(nent)?PushToken\[[A-Za-z0-9_-]{16,64}\]$/.test(t);
+}
+
+function clientIp(request) {
+  return (request.headers.get('x-forwarded-for') || 'unknown').split(',')[0].trim();
 }
 
 // POST /api/push/register
@@ -14,6 +37,12 @@ export async function POST(request) {
   if (!hasRedis()) {
     return NextResponse.json({ error: 'Depolama yapılandırılmamış' }, { status: 503 });
   }
+
+  // 60/saat: meşru istemci uygulama açılışında ve listede değişiklik oldukça
+  // yazıyor, o da saatte birkaç kez. Sınır bol tutuldu ama toplu kayıt
+  // üretmeye yetmiyor.
+  const rl = await rateLimit(`rl:pushreg:${clientIp(request)}`, 60, 3600);
+  if (!rl.ok) return NextResponse.json(tooManyRequests(), { status: 429 });
 
   let body;
   try { body = await request.json(); } catch { return NextResponse.json({ error: 'Geçersiz istek' }, { status: 400 }); }
@@ -62,6 +91,12 @@ export async function POST(request) {
 // DELETE — bildirimleri kapatınca token'ı kaldır
 export async function DELETE(request) {
   if (!hasRedis()) return NextResponse.json({ ok: true });
+
+  // Silme de sınırlı: aksi hâlde geçerli biçimli token uzayı taranarak
+  // toplu abonelik iptali denenebilirdi.
+  const rl = await rateLimit(`rl:pushdel:${clientIp(request)}`, 60, 3600);
+  if (!rl.ok) return NextResponse.json(tooManyRequests(), { status: 429 });
+
   let body;
   try { body = await request.json(); } catch { body = {}; }
   const token = body?.token;

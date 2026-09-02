@@ -47,14 +47,21 @@ async function sendExpoPush(messages) {
 }
 
 export async function GET(request) {
-  // Güvenlik: CRON_SECRET tanımlıysa doğrula (Vercel Cron Authorization header'ı gönderir)
+  // Güvenlik: CRON_SECRET ZORUNLU (Vercel Cron Authorization header'ı gönderir).
+  //
+  // KAPALI BAŞARISIZ OL: eskiden kontrol `if (secret)` ile sarılıydı, yani
+  // değişken tanımlı değilse doğrulama tümden atlanıyordu ve uç herkese
+  // açılıyordu. Bu uç `exp.host`'a TOPLU BİLDİRİM gönderiyor (satır 31) —
+  // açık bırakıldığında herkes tüm kayıtlı cihazlara bildirim yağdırabilirdi.
+  // Güvenlik kapısı, varlığı opsiyonel bir ortam değişkenine bağlanamaz.
   const secret = process.env.CRON_SECRET;
-  if (secret) {
-    const auth = request.headers.get('authorization');
-    const qs = request.nextUrl.searchParams.get('secret');
-    if (auth !== `Bearer ${secret}` && qs !== secret) {
-      return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
-    }
+  if (!secret) {
+    return NextResponse.json({ error: 'CRON_SECRET tanımlı değil' }, { status: 503 });
+  }
+  const auth = request.headers.get('authorization');
+  const qs = request.nextUrl.searchParams.get('secret');
+  if (auth !== `Bearer ${secret}` && qs !== secret) {
+    return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 });
   }
 
   if (!hasRedis()) {

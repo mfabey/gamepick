@@ -105,7 +105,11 @@ export async function POST(request) {
             await redisCmd(['SET', `steam_to_uid:${acc.steamId}`, localId]);
           }
         }
-        if (connections.xbox && connections.xbox.gamertag) {
+        // SİMÜLASYON OTURUMU İNDEKSLENMEZ. Gamertag, mock-login'de kullanıcının
+        // serbestçe yazdığı bir alan; simüle bir kimliği gerçek eşleme
+        // tablosuna yazmak hem sınırsız anahtar üretiyor hem de ileride bu
+        // tabloyu okuyan biri çıkarsa doğrudan taklit yoluna dönüşürdü.
+        if (connections.xbox && connections.xbox.gamertag && !connections.xbox.isMock) {
           await redisCmd(['SET', `xbox_to_uid:${connections.xbox.gamertag}`, localId]);
         }
       }
