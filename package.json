@@ -4,11 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "prebuild": "node scripts/check-access-policy.mjs",
+    "prebuild": "node scripts/check-access-policy.mjs && node scripts/check-cors-policy.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "check:access": "node scripts/check-access-policy.mjs"
+    "check:access": "node scripts/check-access-policy.mjs",
+    "check:cors": "node scripts/check-cors-policy.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.28.0",
