@@ -96,10 +96,33 @@ app/
 
 ## Geliştirme Komutları
 ```bash
-npm run dev    # localhost:3000
-npm run build  # production build
-npm run lint   # ESLint
+npm run dev           # localhost:3000
+npm run build         # production build (önce erişim politikasını denetler)
+npm run lint          # ESLint
+npm run check:access  # erişim politikası denetimi (tek başına)
 ```
+
+## Erişim Politikası — varsayılan REDDET
+
+Bu projede Firestore rules / Supabase RLS gibi **bildirimsel bir kural katmanı
+yok**. Veri Upstash Redis'te, Redis jetonu yalnızca sunucuda, her erişim
+`app/api/**` route handler'ından geçiyor. Yani *kural* = route'un içindeki
+yetki kontrolü. Bunun zayıflığı: kontrolü eklemeyi unutan yeni bir route
+sessizce herkese açık doğuyor — 2026-09-02 denetiminde bulunan dört açığın
+dördü de böyle oluşmuştu.
+
+`app/lib/access-policy.js` her ucu altı kategoriden birine yazıyor (PUBLIC,
+AUTH_ENTRY, SESSION, AUTH, CRON, DEV_ONLY). `scripts/check-access-policy.mjs`
+`prebuild` olarak koşuyor: **sınıflandırılmamış bir route varsa build düşer.**
+
+Yeni route eklerken build "SINIFLANDIRILMAMIŞ" diyerek duracak — ucu manifeste
+ekle. Hangi kategori olduğundan emin değilsen doğru cevap PUBLIC değildir.
+
+Denetleyici auth'u kaynaktan **çıkarsamıyor**, yalnızca beyan eksikliğine
+bakıyor. Sebebi ölçüldü: çıkarsama denendi ve iki kez yanıldı — bir route'un
+yorumunda geçen `verifyMobileToken` onu korunuyor gösterdi, ve kaynaktaki
+`.replace(/\/+$/, '')` gibi ifadeler blok-yorum ayıklamasını şaşırtıp
+`cron/price-alerts` ile OAuth callback'lerini "kimliksiz" gösterdi.
 
 ## Bilinen Sorunlar / Dikkat Edilecekler
 - Xbox OAuth `?xbox_error=cancelled` hatası — `prompt=select_account` fix denendi, Vercel'de test edilmedi

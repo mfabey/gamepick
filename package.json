@@ -4,9 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node scripts/check-access-policy.mjs",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "check:access": "node scripts/check-access-policy.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.28.0",
