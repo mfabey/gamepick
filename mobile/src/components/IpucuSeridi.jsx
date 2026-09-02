@@ -12,6 +12,7 @@ import { getCollections, subscribeCollections } from '../services/collectionsSto
 import {
   loadIpuclari, ipucuVerilebilir, gorulduMu,
   ipucuGosterildi, ipucuKapatildi, ipucuDokunuldu,
+  ziyaretEdildiMi, ziyaretiYaz,
 } from '../services/ipuclari';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -19,15 +20,17 @@ import {
 //
 // ── TETİKLEYİCİ ZAMANLAYICI DEĞİL, BİRİKİM ──
 // Robot hissini veren şey ipucunun kendisi değil, ZAMANLANMIŞ olması: "30
-// saniye geçti, bir şey söyleyeyim". Buradaki üç ipucu da kullanıcının kendi
-// birikimini okuyor — kaç oyuna baktı, kaç oyun kaydetti. Yani şerit, o
-// eylemi yapmış birine çıkıyor; yapmamış birine hiç çıkmıyor.
+// saniye geçti, bir şey söyleyeyim". Buradaki dört ipucu da kullanıcının
+// kendi birikimini okuyor — kaç oyuna baktı, kaç oyun kaydetti, hangi
+// sekmeye hiç girmedi. Yani şerit, o eylemi yapmış (ya da yapmamış) birine
+// çıkıyor; ötekine hiç çıkmıyor.
 //
 // ── HİÇBİR EKRANA ÖLÇÜM KODU GİRMEDİ ──
-// Üç sayacın üçü de ZATEN VAR: seenStore (görülen oyunlar) ve
-// collectionsStore (kaydedilenler) abone edilebilir depolar. Ekranlara
-// "ipucu için say" diye kanca takmak, yönlendirme mantığını on dosyaya
-// dağıtmak olurdu.
+// Sayaçların hepsi ZATEN VAR ya da burada toplanıyor: seenStore (görülen
+// oyunlar) ve collectionsStore (kaydedilenler) abone edilebilir depolar;
+// ziyaret edilen sekmeleri ise bu bileşen kendi `usePathname()`inden
+// kaydediyor. Ekranlara "ipucu için say" diye kanca takmak, yönlendirme
+// mantığını on dosyaya dağıtmak olurdu.
 //
 // ── SESSİZ KALDIĞI YERLER ──
 // Video ve mesaj sekmeleri. Biri medya oynatıyor, diğeri bir konuşma;
@@ -60,6 +63,16 @@ const SESSIZ_ROTALAR = ['/videos', '/messages'];
 // görüyor, katalogdan okunan anahtar "kullanılmıyor" sayılırdı. Karşılıkları
 // bileşenin içinde düz yazılıyor.
 const KATALOG = [
+  // YÖNELME ÖNCE, KISAYOL SONRA. Bu ilk sırada çünkü ötekiler "şunu daha
+  // hızlı yapabilirsin" diyor; bu ise "böyle bir yer var" diyor.
+  //
+  // Alt çubuktaki beş simgeden DÖRDÜ kendini anlatıyor (ev, oynat, konuşma
+  // balonu, kişi). Anlatmayan tek sekme Topluluk'tu: simgesi `people` idi ve
+  // o glif bu uygulamada zaten ARKADAŞLAR'a atanmış (bkz. FloatingTabBar
+  // ICONS notu). Simge düzeltildi; bu ipucu da adını bir kez söylüyor.
+  // Beş sekmenin hepsi için ipucu YAZILMADI — anlaşılan sekmeyi anlatmak
+  // gürültüdür.
+  { id: 'topluluk', hedef: '/reviews',  uygun: ({ gorulen, toplulukGorulmedi }) => toplulukGorulmedi && gorulen >= 3 },
   // Kaydırarak keşif TÜM uygulamada tek bağlantıya sahipti (anasayfadaki
   // selamlama cümlesi). Beş oyuna bakmış biri katalogda geziniyor demektir.
   { id: 'kaydir',   hedef: '/swipe',    uygun: ({ gorulen }) => gorulen >= 5 },
@@ -83,6 +96,7 @@ export default function IpucuSeridi() {
   // Anahtarlar DÜZ YAZILIYOR — katalogdan okunsalardı dil denetimi üçünü de
   // "tanımlı ama kullanılmıyor" diye raporlardı.
   const METIN = {
+    topluluk: t('ipucu.topluluk'),
     kaydir:   t('ipucu.kaydir'),
     listeler: t('ipucu.listeler'),
     kesfet:   t('ipucu.kesfet'),
@@ -104,6 +118,16 @@ export default function IpucuSeridi() {
     loadIpuclari().then(() => setYuklendi(true)).catch(() => {});
     return () => clearTimeout(zt);
   }, []);
+
+  // ── ZİYARET KAYDI ──
+  // Şerit beş sekmenin hepsinde tek örnek olarak mount ve rotayı zaten
+  // izliyor; "bu sekmeye hiç girdi mi" sorusunun cevabını EKRANLARA dokunmadan
+  // burada topluyor. Depo yalnızca YENİ bir rota eklerken yazıyor.
+  //
+  // Bu bir analitik değil: tek tüketicisi katalogdaki `toplulukGorulmedi`.
+  useEffect(() => {
+    if (yuklendi && pathname) ziyaretiYaz(pathname);
+  }, [yuklendi, pathname]);
 
   // Kaydedilen oyun sayısı: koleksiyonlar İSTEK LİSTESİNİN kendisi, ayrı bir
   // istek listesi yok (aynı not app/(tabs)/index.jsx'te de duruyor).
@@ -131,7 +155,11 @@ export default function IpucuSeridi() {
     if (SESSIZ_ROTALAR.includes(pathname)) return;
     if (!ipucuVerilebilir()) return;
 
-    const olcum = { gorulen: gorulenler.size, kayitli: kayitliSayi };
+    const olcum = {
+      gorulen: gorulenler.size,
+      kayitli: kayitliSayi,
+      toplulukGorulmedi: !ziyaretEdildiMi('/reviews'),
+    };
     const bulunan = KATALOG.find((i) => !gorulduMu(i.id) && i.uygun(olcum));
     if (!bulunan) return;
 

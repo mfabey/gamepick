@@ -166,6 +166,7 @@ export default {
   'perde.alarm': 'We tell you when a game you saved gets cheaper.',
   'perde.arkadas': 'You can see what your friends are playing.',
   'perde.gec': 'Skip',
+  'ipucu.topluluk': 'See what players are writing in Community.',
   'ipucu.kaydir': 'You can swipe to discover, too.',
   'ipucu.listeler': 'You can sort what you saved into lists.',
   'ipucu.kesfet': 'You can just describe what you are looking for.',

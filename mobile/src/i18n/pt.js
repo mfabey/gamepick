@@ -173,6 +173,7 @@ export default {
   'perde.alarm': 'Avisamos quando um jogo que você salvou fica mais barato.',
   'perde.arkadas': 'Você vê o que seus amigos estão jogando.',
   'perde.gec': 'Pular',
+  'ipucu.topluluk': 'Veja o que os jogadores escrevem na Comunidade.',
   'ipucu.kaydir': 'Você também pode descobrir deslizando.',
   'ipucu.listeler': 'Você pode organizar em listas o que salvou.',
   'ipucu.kesfet': 'Você pode descrever o que procura.',

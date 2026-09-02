@@ -175,6 +175,7 @@ export default {
   'perde.alarm': 'Wir melden uns, wenn ein gespeichertes Spiel günstiger wird.',
   'perde.arkadas': 'Du siehst, was deine Freunde spielen.',
   'perde.gec': 'Überspringen',
+  'ipucu.topluluk': 'Sieh in der Community, was Spieler schreiben.',
   'ipucu.kaydir': 'Du kannst auch durch Wischen entdecken.',
   'ipucu.listeler': 'Du kannst Gespeichertes in Listen sortieren.',
   'ipucu.kesfet': 'Du kannst einfach beschreiben, was du suchst.',

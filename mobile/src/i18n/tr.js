@@ -168,6 +168,7 @@ export default {
   'perde.alarm': 'Kaydettiğin oyun ucuzlayınca haber gelir.',
   'perde.arkadas': 'Arkadaşların ne oynuyor, görünür.',
   'perde.gec': 'Geç',
+  'ipucu.topluluk': 'Topluluk’ta oyuncular ne yazmış, bakabilirsin.',
   'ipucu.kaydir': 'Kaydırarak da keşfedebilirsin.',
   'ipucu.listeler': 'Kaydettiklerini listelere ayırabilirsin.',
   'ipucu.kesfet': 'Ne aradığını cümleyle yazabilirsin.',

@@ -52,11 +52,33 @@ export async function loadIpuclari() {
     durum = {
       gorulen: Array.isArray(c?.gorulen) ? c.gorulen : [],
       kapatma: Number.isFinite(c?.kapatma) ? c.kapatma : 0,
+      ziyaret: Array.isArray(c?.ziyaret) ? c.ziyaret : [],
     };
   } catch {
-    durum = { gorulen: [], kapatma: 0 };   // okunamadıysa temiz say
+    durum = { gorulen: [], kapatma: 0, ziyaret: [] };   // okunamadıysa temiz say
   }
   return durum;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ZİYARET EDİLEN SEKMELER — ipucu tetikleyicisi, analitik DEĞİL.
+//
+// Aynı dosyada duruyor çünkü tek tüketicisi ipucu kataloğu ve aynı anahtarı
+// paylaşınca ikinci bir depo okuması gerekmiyor.
+//
+// EKRANLARA HİÇBİR ŞEY EKLENMEDİ: şerit zaten `usePathname()` ile rotayı
+// izliyor ve beş sekmenin hepsinde tek örnek olarak mount. Kaydı o yapıyor.
+// Yalnızca YENİ bir rota eklenirken yazılıyor; sekme değiştirmek her
+// seferinde diske yazmıyor.
+// ─────────────────────────────────────────────────────────────────────────────
+export function ziyaretEdildiMi(rota) {
+  return !!durum && durum.ziyaret.includes(rota);
+}
+
+export async function ziyaretiYaz(rota) {
+  if (!durum || !rota || durum.ziyaret.includes(rota)) return;
+  durum.ziyaret.push(rota);
+  await yaz();
 }
 
 /** Bugün, bu açılışta, herhangi bir ipucu gösterilebilir mi? */

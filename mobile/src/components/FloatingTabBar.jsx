@@ -20,7 +20,21 @@ import { useStyles, useTheme } from '../context/ThemeContext';
 // olarak tutuluyor ki bir rota sekmeye girip çıkınca simgesi kaybolmasın.
 const ICONS = {
   index:    'home',
-  reviews:  'people',
+  // ── `people` DEĞİL ──
+  // Bu glif bu uygulamada ZATEN ARKADAŞLAR'a atanmış: Topluluk ekranının
+  // kendi başlığındaki arkadaş satırı `people` + soc.title kullanıyor
+  // (reviews.jsx). Yani aynı simge bir seviye altta "arkadaşlar", çubukta
+  // "topluluk" demek oluyordu — belirsizlik değil, doğrudan çakışma. Üstelik
+  // uygulamada ayrı bir /friends ekranı var, yani simge yanlış yeri
+  // işaret ediyordu.
+  //
+  // `chatbubbles` (ÇOĞUL, noktasız) forum/tartışma yerleşik karşılığı ve bu
+  // depoda başka bir anlama atanmamış. Mesajlar'ın `chatbubble-ellipses`i
+  // ile karışmıyor: o TEKİL ve yazıyor-noktalı, ayrıca ikisinin arasında
+  // Videolar oturuyor (2. ve 4. sıra).
+  //
+  // Dolgu biçimi korundu — çubuktaki beş simgenin hepsi dolu.
+  reviews:  'chatbubbles',
   games:    'game-controller',
   videos:   'play-circle',
   messages: 'chatbubble-ellipses',
