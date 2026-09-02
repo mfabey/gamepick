@@ -273,7 +273,11 @@ function getApiKey(name) {
 }
 
 async function callGenerativeLLM(query, ragContext, userProfile, history = []) {
-  const geminiKey = getApiKey('GEMINI_API_KEY') || getApiKey('NEXT_PUBLIC_GEMINI_API_KEY');
+  // `NEXT_PUBLIC_GEMINI_API_KEY` yedeği BİLEREK kaldırıldı: bu önek değeri
+  // tarayıcı paketine gömer. Burası sunucu route'u olduğu için sızıntı henüz
+  // oluşmamıştı, ama aynı adı bir istemci bileşeni referans verdiği anda
+  // faturalı anahtar herkese açılırdı. Anahtar yalnızca `GEMINI_API_KEY`.
+  const geminiKey = getApiKey('GEMINI_API_KEY');
   const groqKey = getApiKey('GROQ_API_KEY');
   const openaiKey = getApiKey('OPENAI_API_KEY');
 
