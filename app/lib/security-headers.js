@@ -118,6 +118,24 @@ export const SECURITY_HEADERS = [
   { key: 'X-Frame-Options', value: 'DENY' },
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'Referrer-Policy', value: 'origin-when-cross-origin' },
+  // HSTS — 1 yıl, alt alan adları dahil.
+  //
+  // `preload` DİREKTİFİ BUGÜN İŞLEVSİZ: 2026-09-03'te hstspreload.org'a
+  // soruldu, `gamerisen.com` için status "unknown" döndü — alan adı listede
+  // DEĞİL. Direktifi yazmak tek başına hiçbir şey yapmıyor; listeye girmek
+  // ayrıca başvuru gerektiriyor.
+  //
+  // BAŞVURU BUGÜN REDDEDİLİR. Preload, alt alan adını değil KÖK alan adını
+  // (gamerisen.com) esas alıyor ve kökün HTTPS yanıtında
+  // `includeSubDomains; preload` görmek istiyor. Ölçüldü: apex yanıtı
+  // Vercel'in kenar katmanından geliyor ve `max-age=63072000` (2 yıl)
+  // taşıyor, ama `includeSubDomains` de `preload` de YOK — bu başlık
+  // uygulamanın değil, Vercel'in. Apex `www`ye 308 ile yönlendirdiği için
+  // buradaki liste apex yanıtına hiç uygulanmıyor.
+  //
+  // Yani preload istenirse iş barındırma katmanında: apex'in tam HSTS
+  // başlığını göndermesi gerekiyor. Preload'ın geri alınması AYLAR sürüyor
+  // ve tarayıcı sürümleriyle yayılıyor — acele edilecek bir adım değil.
   { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains; preload' },
   { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
 ];
