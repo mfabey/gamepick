@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { guard } from '../../lib/rate-guard';
+import { parseBody, smartSearchBody } from '../../lib/schemas';
 import { isAdultContent } from '../../lib/adult-filter.js';
 
 const RAWG_KEY = process.env.RAWG_API_KEY;
@@ -269,12 +270,13 @@ export async function POST(request) {
   const kapi = await guard(request, 'aiSearch');
   if (kapi) return kapi;
 
-  let body = {};
-  try { body = await request.json(); } catch { /* boş gövde */ }
-  const query = (body.query || '').toString().trim().slice(0, 500);
-  const lang = body.lang === 'en' ? 'en' : 'tr';
-
-  if (!query) return NextResponse.json({ error: 'query gerekli' }, { status: 400 });
+  // Bu uç zaten 500'e kırpıyordu; şemaya alınması davranışı DEĞİŞTİRMİYOR,
+  // sınırı diğer LLM uçlarıyla aynı yerde toplayıp karşılaştırılabilir kılıyor.
+  // Fark: kırpmak yerine reddediyor — sessizce kesilen sorgu, kullanıcının
+  // yazdığından başka bir arama yapıyordu.
+  const ayrist = await parseBody(request, smartSearchBody);
+  if (!ayrist.ok) return ayrist.response;
+  const { query, lang, debug } = ayrist.data;
   if (!GROQ_KEY) return NextResponse.json({ error: 'AI yapılandırılmamış', results: [] }, { status: 503 });
   if (!RAWG_KEY) return NextResponse.json({ error: 'RAWG yapılandırılmamış', results: [] }, { status: 503 });
 
@@ -344,6 +346,6 @@ export async function POST(request) {
     filters,
     results,
     count: results.length,
-    ...(body.debug ? { debug: { lastError, tiers: lists.map(l => l.length) } } : {}),
+    ...(debug ? { debug: { lastError, tiers: lists.map(l => l.length) } } : {}),
   });
 }

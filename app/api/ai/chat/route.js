@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { guard } from '../../../lib/rate-guard';
+import { parseBody, aiChatBody } from '../../../lib/schemas';
 import fs from 'fs';
 import path from 'path';
 import { getSteamDetailsCached } from '../../../lib/steam-cache';
@@ -853,15 +854,22 @@ export async function POST(req) {
     const kapi = await guard(req, 'aiChat');
     if (kapi) return kapi;
 
-    const body = await req.json();
-    const userQuery = (body.message || '').trim();
+    // ŞEMA DOĞRULAMASI — bkz. app/lib/schemas.js
+    //
+    // Hız sınırı istek SAYISINI kesiyordu ama BOYUTUNU kesmiyordu: `message`
+    // sınırsızdı ve doğrudan LLM istemine giriyordu, yani saatte 30 istek ×
+    // istenen büyüklükte metin hâlâ istenen büyüklükte jeton faturası
+    // demekti. `profile` serbest bir nesneydi (`hardware.gpu` isteme gömülü),
+    // `history` kayıtlarının metni de sınırsızdı — yalnız asistan yanıtları
+    // 350'ye kesiliyordu, kullanıcı mesajları kesilmiyordu.
+    const ayrist = await parseBody(req, aiChatBody);
+    if (!ayrist.ok) return ayrist.response;
+    const body = ayrist.data;
+
+    const userQuery = body.message;
     const userProfile = body.profile || {};
     const sessionId = body.session_id || `sess_${Date.now()}`;
-    const history = Array.isArray(body.history) ? body.history : [];
-
-    if (!userQuery) {
-      return NextResponse.json({ error: 'Mesaj boş olamaz' }, { status: 400 });
-    }
+    const history = body.history || [];
 
     const normQ = normalizeText(userQuery);
     const gamesDb = loadDatabase();

@@ -4,6 +4,7 @@ import { isAdultContent, isAdultTitleOrSlug, isSteamDataAdult } from '../../lib/
 import { FALLBACK_GAMES } from '../../lib/fallback-games.js';
 import { rawgJson } from '../../lib/rawg-fetch.js';
 import { getUsdToTry, amountToTRY } from '../../lib/exchange.js';
+import { parseQuery, listeQuery } from '../../lib/schemas.js';
 import { getSteamDetailsCached } from '../../lib/steam-cache.js';
 
 const RAWG_KEY = process.env.RAWG_API_KEY;
@@ -662,8 +663,13 @@ export async function GET(request) {
   const section = searchParams.get('section') || '';
   const q       = searchParams.get('q')       || '';
   const genres  = searchParams.get('genres')  || '';
-  const page    = parseInt(searchParams.get('page') || '1');
-  const num     = parseInt(searchParams.get('num')  || '24');
+  // SAYFALAMA ŞEMADAN. Eskiden çıplak `parseInt` idi ve hiç kırpılmıyordu:
+  // `num=100000` yukarı akıştan devasa bir sayfa istiyor, `page=-5` RAWG'a
+  // geçersiz sorgu gönderiyordu. Sınırlar app/lib/schemas.js'te.
+  const sayfalama = parseQuery(request, listeQuery);
+  if (!sayfalama.ok) return sayfalama.response;
+  const { page, num } = sayfalama.data;
+
   const rotate  = searchParams.get('rotate')  === 'true';
   const mode    = searchParams.get('mode')    || '';   // singleplayer | multiplayer | coop
   const store   = searchParams.get('store')   || '';   // steam | epic
