@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { resolveOwnedSteamId } from '../../lib/steam-owner';
 
 const STEAM_API_KEY = process.env.STEAM_API_KEY;
 const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL;
@@ -48,37 +48,21 @@ async function setCachedData(key, value, expireSeconds = 3600) {
 }
 
 export async function GET(request) {
-  const cookieStore = await cookies();
   const { searchParams } = new URL(request.url);
-  const requestedSteamId = searchParams.get('steamId');
 
-  let steamId = requestedSteamId;
-
-  if (!steamId) {
-    // steamId belirtilmemişse cookie'den al
-    // Önce yeni çoklu hesap cookie'sine bak
-    const accountsCookie = cookieStore.get('gp_steam_accounts');
-    if (accountsCookie?.value) {
-      try {
-        const accounts = JSON.parse(accountsCookie.value);
-        steamId = accounts[0]?.steamId;
-      } catch {}
-    }
-    // Geriye uyumluluk: eski tek hesap cookie'si
-    if (!steamId) {
-      const session = cookieStore.get('gp_steam_session');
-      if (!session?.value) {
-        return NextResponse.json({ error: 'Giriş yapılmamış', games: [] }, { status: 401 });
-      }
-      try {
-        steamId = JSON.parse(session.value).steamId;
-      } catch {}
-    }
+  // SAHİPLİK KONTROLÜ — bkz. app/lib/steam-owner.js
+  //
+  // Eskiden `?steamId=` verildiğinde çerez kontrolü TÜMDEN atlanıyordu:
+  // `let steamId = requestedSteamId` ile başlanıp 401 dalına yalnızca
+  // steamId YOKSA giriliyordu. Yani herhangi biri `?steamId=<başkası>` ile
+  // o hesabın kütüphanesini bu sunucunun STEAM_API_KEY'i üzerinden
+  // çekebiliyordu. Kısıt yalnızca istemcideydi — web ve mobil her zaman
+  // kendi kimliğini yolluyor, sunucu ise ayrım yapmıyordu.
+  const owner = await resolveOwnedSteamId(request, searchParams.get('steamId'));
+  if (!owner.ok) {
+    return NextResponse.json({ error: owner.error, games: [] }, { status: owner.status });
   }
-
-  if (!steamId) {
-    return NextResponse.json({ error: 'Steam ID bulunamadı', games: [] }, { status: 401 });
-  }
+  const steamId = owner.steamId;
 
   if (!STEAM_API_KEY) {
     return NextResponse.json({ error: 'STEAM_API_KEY tanımlı değil', games: [] }, { status: 500 });

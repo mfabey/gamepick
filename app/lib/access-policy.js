@@ -44,9 +44,6 @@ export const PUBLIC_ROUTES = new Set([
   'steam', 'steam-genres', 'steam-price', 'steam-prices', 'steam-reviews',
   'usd-rate', 'video-feed', 'ai-game', 'ai/chat', 'recommend', 'smart-search',
 
-  // ── Oyun detayı: çerez VARSA zenginleşiyor, yoksa da çalışıyor ──
-  'oyun', 'oyun-merged',
-
   // KART GÖRSELİ: kimlik doğrulamasız olmak ZORUNDA — paylaşılan bağlantıyı
   // karşı taraf açıyor. Parametreler CARD_SECRET ile HMAC imzalı, yani uç
   // serbest bir görsel üretecine dönüşmüyor (bkz. app/lib/card-sign.js).
@@ -93,6 +90,12 @@ export const SESSION_ROUTES = new Set([
   'auth/me', 'auth/user-me', 'auth/xbox/me',
   'auth/change-password', 'auth/delete-account', 'auth/steam-remove',
   'steam-library', 'xbox-library',
+  // KÜTÜPHANE UÇLARI. Önce yanlışlıkla PUBLIC yazılmıştı ("çerez varsa
+  // zenginleşir") — yanlış: kimlik yoksa 401 dönüyorlar. `oyun` ayrıca
+  // `?steamId=` ile çağrılabiliyor, o yüzden kimliğin YANINDA sahiplik de
+  // doğrulanıyor (app/lib/steam-owner.js). Mobil çerez değil Bearer jetonu
+  // kullandığı için ikisi de kabul ediliyor.
+  'oyun', 'oyun-merged',
 ]);
 
 /**
