@@ -57,6 +57,12 @@ export const PUBLIC_ROUTES = new Set([
   // KULLANICI ADI MÜSAİTLİK: kayıt formunda giriş öncesi çağrılıyor.
   // Ad numaralandırmaya açık; karşılığında kendi hız sınırı var.
   'auth/username-available',
+
+  // CSP İHLAL RAPORU: raporu TARAYICI gönderiyor, oturumdan bağımsız olarak
+  // ve çıkış yapmış kullanıcıda da. Kimlik şartı raporların çoğunu
+  // kaybettirirdi. Yazma yok (yalnız konsola log), IP başına sınırlı.
+  // Sıkı CSP yürürlüğe girince bu uç kaldırılacak.
+  'csp-report',
 ]);
 
 /**

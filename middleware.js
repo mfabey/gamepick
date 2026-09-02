@@ -7,15 +7,13 @@ const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
 const LIMIT = 60;
 const WINDOW_SIZE = 60;
 
-const cspHeader = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ https://appleid.cdn-apple.com https://accounts.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' blob: data: https:; connect-src 'self' https://api.rawg.io https://*.steampowered.com https://discord.gg https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ https://accounts.google.com; frame-src 'self' https://www.google.com/recaptcha/ https://recaptcha.google.com/recaptcha/ https://appleid.apple.com https://accounts.google.com; frame-ancestors 'none'; form-action 'self'; base-uri 'self'; object-src 'none';";
+// Başlıklar TEK KAYNAKTAN — next.config.mjs da aynı listeyi okuyor.
+// Eskiden CSP burada ve next.config'te ayrı ayrı yazılıydı; ikisi ayrıştığında
+// isteğin hangi katmandan geçtiğine göre farklı politika uygulanırdı.
+import { SECURITY_HEADERS } from './app/lib/security-headers.js';
 
 function addSecurityHeaders(headers) {
-  headers.set('Content-Security-Policy', cspHeader);
-  headers.set('X-Frame-Options', 'DENY');
-  headers.set('X-Content-Type-Options', 'nosniff');
-  headers.set('Referrer-Policy', 'origin-when-cross-origin');
-  headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
-  headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  for (const { key, value } of SECURITY_HEADERS) headers.set(key, value);
   headers.delete('x-powered-by');
 }
 
