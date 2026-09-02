@@ -9,7 +9,9 @@
     "start": "next start",
     "lint": "next lint",
     "check:access": "node scripts/check-access-policy.mjs",
-    "check:cors": "node scripts/check-cors-policy.mjs"
+    "check:cors": "node scripts/check-cors-policy.mjs",
+    "backup:redis": "node scripts/redis-backup.mjs",
+    "restore:redis": "node scripts/redis-restore.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.28.0",
