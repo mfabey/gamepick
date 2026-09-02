@@ -3,7 +3,7 @@
 //
 // NEDEN VAR. Ölçüldü: aynı görsel iş için DÖRT ayrı karartma reçetesi vardı.
 //
-//   transparent → 0.92              onboarding, collection, list, GamePostCard
+//   transparent → 0.92              collection, list, GamePostCard
 //   transparent → 0.55 → 0.97       swipe
 //   transparent → 0.55 → 0.96       GameCard
 //   transparent → 0.96 / → 0.94     library / index

@@ -242,11 +242,10 @@ export default function SettingsScreen() {
             value={LANGUAGES.find((l) => l.code === lang)?.name || lang}
             onPress={showLanguagePicker}
           />
-          <SettingsRow
-            icon="sparkles-outline"
-            label={t('onb.retake')}
-            onPress={() => router.push('/onboarding')}
-          />
+          {/* "Zevkini yeniden seç" KALKTI — hedefi olan "Hangilerini
+              sevdin?" ekranı tümden silindi. Zevk profili artık yalnızca
+              gerçek kullanımdan besleniyor (görüntüleme, kaydetme,
+              kütüphane); ayrıca bildirilmesi gerekmiyor. */}
         </SettingsGroup>
 
         <SettingsGroup title={t('set.grpPrivacy')}>

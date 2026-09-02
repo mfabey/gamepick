@@ -33,7 +33,7 @@ const KAPATMA_SINIR = 2;
 let durum = null;              // null = henüz okunmadı
 let buOturumda = false;        // OTURUM kapsamı — kalıcı değil (bkz. sınır 1)
 
-// ABONELİK YOK, bilerek. Öteki depolar (onboarding, seen, collections) dinleyici
+// ABONELİK YOK, bilerek. Öteki depolar (perde, seen, collections) dinleyici
 // tutuyor çünkü birden çok ekran onlara bakıyor. Buranın tek okuyucusu
 // IpucuSeridi ve o da yalnız mount'ta bir kez okuyor: kullanılmayan bir
 // subscribe yüzeyi, ilerde yanlışlıkla bağlanacak ölü bir kanca olurdu.

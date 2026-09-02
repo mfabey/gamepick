@@ -1,49 +1,58 @@
+import { useState, useEffect, useCallback } from 'react';
 import { View } from 'react-native';
-import { Tabs, Redirect } from 'expo-router';
+import { Tabs } from 'expo-router';
 import { useLanguage } from '../../src/context/LanguageContext';
-import { useOnboarding } from '../../src/hooks/useOnboarding';
 import { TabBarProvider } from '../../src/context/TabBarContext';
+import { loadPerde, perdeGorulduMu, perdeyiGorulduYaz } from '../../src/services/perde';
 import FloatingTabBar from '../../src/components/FloatingTabBar';
 import IpucuSeridi from '../../src/components/IpucuSeridi';
+import AcilisPerdesi from '../../src/components/AcilisPerdesi';
 
 export default function TabLayout() {
   const { t } = useLanguage();
 
-  // ── İLK AÇILIŞ KAPISI — BURADA, KÖK DÜZENDE DEĞİL ────────────────────────
+  // ── İLK AÇILIŞ KAPISI KALKTI ─────────────────────────────────────────────
   //
-  // Önceden kök düzen (_layout.jsx) `loadOnboarding().then(...)` içinde
-  // emirle `router.replace('/onboarding')` çağırıyordu. Sorun: o okuma
-  // asenkron, ilk rota ise `(tabs)/index`. Yani KEŞİF EKRANINA GİDECEK
-  // kullanıcıda anasayfa önce mount oluyor, efektlerini çalıştırıyor ve
-  // ancak ondan sonra ekrandan atılıyordu.
+  // Burada bir `<Redirect href="/onboarding">` duruyordu ve işi şuydu:
+  // keşif ekranına GİDECEK kullanıcıda anasayfanın hiç mount olmaması
+  // (ölçülmüştü: taze kurulumda boşa giden altı ağ isteği).
   //
-  // SAYILDI (kod okumasıyla, ağ izi alınarak değil) — taze kurulumda o bir
-  // mount'un attığı istek ALTI:
-  //   home:trending · home:new · home:sale        (useQuery ×3)
-  //   useForYouFeed'in ilk sayfası                (FALLBACK_SLUGS ile)
-  //   getReviewFeed · fetchPosts                  (ikisi de hesapsız okunuyor)
-  // Hepsi, kullanıcının göremeyeceği bir ekran için.
+  // "Hangilerini sevdin?" ekranı silinince o kapının konusu kalmadı —
+  // yönlendirilecek bir yer yok, anasayfa artık ilk ve tek ekran, istekleri
+  // de İSTENEN istekler. Kapıyla birlikte `useOnboarding` kancası ve
+  // `gr_onboarded` deposu da gitti.
   //
-  // İki çağrı listede YOK, çünkü taze kurulumda kendi koşulları tutmuyor:
-  // `foryou-cand:*` (enabled: !isCold — profil boşken kapalı) ve
-  // getFriendActivity (oturum yoksa erken dönüyor). Oturumu olup
-  // onboarding'i sıfırlanmış kullanıcıda üst sınır sekiz.
+  // ── TANITIM PERDESİ BURAYA TAŞINDI ──
+  // Perde eskiden onboarding ekranının üstüne seriliyordu ve gerekçesi
+  // "o ekranın ölü spinner penceresini kapla, süre EKLEME"ydi. Ekran gidince
+  // gerekçe kaybolmadı, adres değişti: anasayfanın kendi ilk yükleme
+  // penceresini kaplıyor. Hâlâ ayrı bir rota değil, hâlâ süre eklemiyor.
   //
-  // Kapı düzene taşınınca hiçbiri mount olmuyor — altı istek de atılmıyor.
-  // Ekran ekran `enabled` bayrağı dağıtmaya göre de üstün: anasayfaya yarın
-  // eklenecek dokuzuncu çağrı bu kapıyı kendiliğinden buluyor.
-  const onboarded = useOnboarding();
+  // ── BAYRAK İKİ AŞAMALI OKUNUYOR ──
+  // Başlatıcı YETMİYOR. Eskiden bu düzen, kapı çözülene kadar `null`
+  // döndürüyordu; kapı kalkınca ilk render AÇILIŞLA BİRLİKTE oluyor ve o an
+  // depo okuması henüz bitmemiş oluyor. Başlatıcı `null` yakalayınca
+  // `null === false` yanlış çıkıyor ve TANITIM HİÇ GÖSTERİLMİYORDU —
+  // ölçüldü: ekran görüntüsü dizisinde perde tek karede bile durmuyordu.
+  //
+  // Efekt, okuma bitince açıyor. Çakma olmuyor çünkü yerel açılış perdesi
+  // aynı okumaya bağlı ve iki kare SONRA iniyor (bkz. _layout.jsx): tanıtım
+  // perde kalkmadan önce boyanmış oluyor.
+  const [perdeAcik, setPerdeAcik] = useState(() => perdeGorulduMu() === false);
 
-  // Depo okunana kadar HİÇBİR ŞEY çizilmiyor. Boş kare görünmüyor: açılış
-  // perdesi hâlâ yukarıda ve kök düzen onu ancak durum çözülünce indiriyor
-  // (bkz. _layout.jsx). expo-splash-screen'in kendi resmi örneği de bu
-  // aşamada `return null` diyor.
-  if (onboarded === null) return null;
+  useEffect(() => {
+    let alive = true;
+    loadPerde().then((gorulduMu) => {
+      if (alive && !gorulduMu) setPerdeAcik(true);
+    }).catch(() => {});
+    return () => { alive = false; };
+  }, []);
 
-  // Emirle yönlendirme yerine BİLDİRİMSEL: <Redirect> navigasyonun hazır
-  // olmasını kendisi bekliyor, "navigate before mounting the Root Layout"
-  // yarışı ortadan kalkıyor.
-  if (!onboarded) return <Redirect href="/onboarding" />;
+  const perdeBitti = useCallback(() => {
+    setPerdeAcik(false);
+    // "Geç"e basan da görmüş sayılıyor: tanıtımı istemediğini söylemiştir.
+    perdeyiGorulduYaz();
+  }, []);
 
   return (
     // Sağlayıcı Tabs'ı SARMALIYOR: hem ekranlar (yazan taraf) hem de
@@ -91,6 +100,10 @@ export default function TabLayout() {
       </Tabs>
 
       <IpucuSeridi />
+
+      {/* PERDE EN SONA: sekme çubuğunun ve şeridin de ÜSTÜNDE durmalı.
+          İlk açılışta ekranın tamamını o sahipleniyor. */}
+      {perdeAcik && <AcilisPerdesi onDone={perdeBitti} />}
      </View>
     </TabBarProvider>
   );

@@ -11,16 +11,21 @@ import { useAltBosluk } from '../hooks/useAltBosluk';
 // AÇILIŞ PERDESİ — uygulamanın kendini tanıttığı ~4 saniye.
 //
 // ── AYRI BİR ROTA DEĞİL, ÖRTÜ ──
-// Perde kendi ekranı olsaydı açılışa 4 saniye EKLERDİ. Oysa onboarding'in
-// ilk açılışında zaten bir bekleme var: 40 oyunluk havuz çekilirken ekranın
-// tamamı bir ActivityIndicator'a ayrılıyordu (onboarding.jsx). O pencere ölü
-// zamandı — perde onu KAPLIYOR, uzatmıyor. Izgara altta yüklenmeye devam
-// ediyor; perde sönerken ortaya çıkan şey gerçek kapaklar oluyor.
+// Perde kendi ekranı olsaydı açılışa 4 saniye EKLERDİ. Oysa uygulama ilk
+// açılışta zaten bekliyor: anasayfa trend/yeni/indirim şeritlerini ve sosyal
+// akışı çekerken ekran iskelet hâlinde duruyor. O pencere ölü zamandı —
+// perde onu KAPLIYOR, uzatmıyor. Anasayfa altta yüklenmeye devam ediyor;
+// perde sönerken ortaya çıkan şey gerçek içerik oluyor.
+//
+// EV DEĞİŞTİ. Perde ilk yazıldığında "Hangilerini sevdin?" ekranının üstüne
+// seriliyordu ve ölü pencere onun oyun havuzu isteğiydi. O ekran tümden
+// silinince gerekçe kaybolmadı, yalnızca adres değişti: aynı örtü şimdi
+// (tabs) düzeninde, anasayfanın üstünde.
 //
 // Örtü OPAK; "perde kalkması" hissini sönme yaratıyor, saydamlık değil.
 // (Saydam bir sürüm denendi ve ölçümle geri alındı — gerekçe `zemin`
 // stilinin başında.) Paylaşılan öğe geçişi yazmadan aynı hissi veren ucuz
-// yol: örtü sönerken altında zaten yüklenmiş gerçek ızgara duruyor.
+// yol: örtü sönerken altında zaten yüklenmiş gerçek ekran duruyor.
 //
 // ── ÜÇ CÜMLE DE DOĞRULANABİLİR ──
 // Hiçbiri vaat ya da sıfat değil; üçü de var olan özelliği anlatıyor:
@@ -59,11 +64,14 @@ export default function AcilisPerdesi({ onDone }) {
   // ÖLÇÜLDÜ (Android 16 emülatör, taze açılış ekran görüntüsü): marka yazısı
   // saatin, "Geç" ise wifi simgesinin ÜSTÜNE biniyordu.
   //
-  // Perde onboarding'in SafeAreaView'ının (edges={['top']}) çocuğu, yani üst
-  // inset zaten uygulanmış olmalıydı. Değil: SafeAreaView inset'i DOLGU
-  // olarak veriyor ve mutlak konumlu çocuk dolgu kutusunu atlayıp görünümün
-  // en üst kenarına yapışıyor. absoluteFill kullanan her örtünün kendi
-  // inset'ini alması gerekiyor.
+  // O sırada perde bir SafeAreaView'ın (edges={['top']}) çocuğuydu ve üst
+  // inset uygulanmış olmalıydı. Değildi: SafeAreaView inset'i DOLGU olarak
+  // veriyor, mutlak konumlu çocuk ise dolgu kutusunu atlayıp görünümün en
+  // üst kenarına yapışıyor.
+  //
+  // Perde (tabs) düzenine taşınınca üstünde SafeAreaView HİÇ KALMADI, yani
+  // bu satır artık tek koruma. absoluteFill kullanan her örtü kendi inset'ini
+  // almak zorunda.
   const insets = useSafeAreaInsets();
 
   // ANAHTARLAR DÜZ YAZILIYOR, bir diziden okunarak değil. check:i18n yalnızca
@@ -181,7 +189,19 @@ export default function AcilisPerdesi({ onDone }) {
 }
 
 const makeStyles = (colors) => StyleSheet.create({
-  perde: { justifyContent: 'space-between', zIndex: 10 },
+  perde: {
+    justifyContent: 'space-between',
+    // ── KATMAN SIRASI ──
+    // Perde artık (tabs) düzeninde ve altında YÜZEN yüzeyler var: sekme
+    // çubuğu (FloatingTabBar, elevation 18) ve ipucu şeridi (24). Android
+    // kardeş sıralamasını elevation'a göre yapıyor — bu ölçülerek öğrenildi,
+    // şerit tam bu yüzden hiç çizilmemişti (bkz. IpucuSeridi → sarmal).
+    //
+    // 32 seçildi: ikisinin de üstünde. Perde ilk açılışta ekranın TAMAMINI
+    // sahiplenmeli, altından çubuk sızmamalı. zIndex iOS tarafı için.
+    zIndex: 30,
+    elevation: 32,
+  },
 
   // ── ÖRTÜ OPAK ──
   // Önce %92 saydamdı: "altta yüklenen ızgara doku olarak sezilsin" diye.

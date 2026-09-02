@@ -16,7 +16,7 @@ import { loadSeen } from '../src/services/seenStore';
 import { loadDismissed } from '../src/services/dismissStore';
 import { loadLiked } from '../src/services/likeStore';
 import { loadCollections } from '../src/services/collectionsStore';
-import { loadOnboarding, loadPerde } from '../src/services/onboarding';
+import { loadPerde } from '../src/services/perde';
 import { initQueryCache } from '../src/services/queryCache';
 import { startSharedLinkWatcher } from '../src/services/sharedLink';
 import { startDmPushSync } from '../src/services/dmPush';
@@ -116,7 +116,12 @@ function TemaliYigin() {
                 <Stack.Screen name="social-settings" />
                 <Stack.Screen name="lists" />
                 <Stack.Screen name="list/[id]" />
-                <Stack.Screen name="onboarding" options={{ animation: 'fade', gestureEnabled: false }} />
+                {/* "onboarding" KALKTI — "Hangilerini sevdin?" ekranı tümden
+                    silindi. Rota burada bırakılsaydı expo-router var olmayan
+                    bir rota için uyarı verirdi; aynı kırılma "social" ve
+                    "messages" taşınırken iki kez yaşandı (yukarıdaki notlar).
+                    Tanıtım perdesi kaybolmadı: artık (tabs) düzeninde,
+                    anasayfanın üstüne seriliyor. */}
                 <Stack.Screen name="account" />
                 <Stack.Screen name="delete-account" />
       </Stack>
@@ -141,28 +146,27 @@ export default function RootLayout() {
     });
   }, []);
 
-  // ── PERDE, DOĞRU EKRANIN ÜSTÜNE KALKIYOR ─────────────────────────────────
+  // ── PERDE, TANITIM ÇİZİLDİKTEN SONRA İNİYOR ──────────────────────────────
   //
-  // Buradaki iş artık YÖNLENDİRME DEĞİL, yalnızca okuma + perdeyi indirme.
-  // Hangi ekranın açılacağına (tabs)/_layout.jsx bildirimsel olarak karar
-  // veriyor; oradaki <Redirect> kapısı, anasayfanın hiç mount olmamasını da
-  // sağlıyor (taze kurulumda 8 boşa ağ isteği → 0).
+  // Yerel açılış perdesi, ilk kare çizilir çizilmez kendiliğinden kalkıyordu.
+  // Tanıtım perdesinin gösterilip gösterilmeyeceği ise asenkron bir depo
+  // okumasına bağlı: elde tutulmasaydı önce anasayfa boyanır, tanıtım ancak
+  // ondan SONRA üstüne kapanırdı — görünür bir çakma.
+  //
+  // Bayrak BURADA okunuyor, (tabs) düzeninde değil: orada okunsaydı aynı
+  // asenkron pencere bu kez perdenin altında değil, ÜSTÜNDE açılırdı.
   useEffect(() => {
     let alive = true;
 
-    // Perde bayrağı BURADA okunuyor, onboarding ekranında değil. Orada
-    // okunsaydı asenkron cevap gelene kadar ızgara bir kare görünür, perde
-    // ancak ondan sonra üstüne kapanırdı — tam da bu işin kaçındığı çakma.
-    Promise.all([loadOnboarding(), loadPerde()]).then(() => {
+    loadPerde().then(() => {
       if (!alive) return;
-      // İKİ KARE BEKLENİYOR. Durumun çözüldüğü commit'te (tabs) düzeni
-      // <Redirect>'i çiziyor ama yönlendirme BİR SONRAKİ commit'te
-      // gerçekleşiyor. Perde aynı karede kalksaydı arada tek karelik boş
-      // zemin görünürdü. İki rAF, o commit'in de boyanmasını garantiliyor.
+      // İKİ KARE BEKLENİYOR. Bayrağın çözüldüğü commit'te (tabs) düzeni
+      // tanıtımı çiziyor, ama boyanması bir sonraki karede oluyor. Perde
+      // aynı karede kalksaydı arada tek karelik çıplak anasayfa görünürdü.
       requestAnimationFrame(() => requestAnimationFrame(() => {
         SplashScreen.hideAsync().catch(() => {});
       }));
-    // Depo okuması `services/onboarding.js` içinde zaten try/catch'li, yani
+    // Depo okuması `services/perde.js` içinde zaten try/catch'li, yani
     // reddetmiyor. Yine de catch şart: burada patlarsa perde SONSUZA DEK
     // yukarıda kalır ve uygulama açılmaz.
     }).catch(() => { SplashScreen.hideAsync().catch(() => {}); });
