@@ -138,7 +138,7 @@ export default function Home() {
 
   const handleSugClick = game => {
     setShowSug(false);
-    router.push(game.rawgSlug ? `/game/rawg/${game.rawgSlug}` : `/game/rawg/${game.id}`);
+    router.push(game.rawgSlug ? `/game/${game.rawgSlug}` : `/game/${game.id}`);
   };
 
   // Hero arka plan: trending + popular karışık, her açılışta farklı sıra (tekilleştirilmiş)
@@ -206,7 +206,7 @@ export default function Home() {
       <div style={{ marginTop: 54, WebkitMaskImage: 'linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent)', maskImage: 'linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent)' }}>
         <div className="hero-strip" style={{ display: 'flex', gap: 16, width: 'max-content', padding: '6px 0 12px' }}>
           {[...heroTiles, ...heroTiles].map((g, i) => (
-            <Link key={i} href={g.rawgSlug ? `/game/rawg/${g.rawgSlug}` : `/game/rawg/${g.id}`}
+            <Link key={i} href={g.rawgSlug ? `/game/${g.rawgSlug}` : `/game/${g.id}`}
               style={{ width: 280, aspectRatio: '16 / 9', borderRadius: 16, position: 'relative', overflow: 'hidden', flexShrink: 0, background: 'var(--bg-input)', boxShadow: '0 10px 28px rgba(74,52,28,0.16)' }}>
               <GameImage game={g} alt="" fill style={{ objectFit: 'cover' }} isVertical={false} />
               <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'flex-end', padding: 13, background: 'linear-gradient(to top, rgba(8,8,16,0.62), transparent 58%)' }}>
@@ -675,7 +675,7 @@ function CinematicShowcase({ games }) {
   }
 
   const g = list[active] || list[0];
-  const href = g.isPromo ? g.promoUrl : (g.rawgSlug ? `/game/rawg/${g.rawgSlug}` : `/game/rawg/${g.id}`);
+  const href = g.isPromo ? g.promoUrl : (g.rawgSlug ? `/game/${g.rawgSlug}` : `/game/${g.id}`);
   const mcColor = g.metacritic >= 80 ? '#4ade80' : g.metacritic >= 60 ? '#fbbf24' : '#f87171';
 
   return (

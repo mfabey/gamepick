@@ -322,7 +322,7 @@ function WishlistItem({ game, onRemove, lang }) {
         <GameImage game={game} fill sizes="52px" />
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <Link href={game.rawgSlug ? `/game/rawg/${game.rawgSlug}` : `/game/rawg/${game.id}`}>
+        <Link href={game.rawgSlug ? `/game/${game.rawgSlug}` : `/game/${game.id}`}>
           <p
             onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
             style={{
@@ -930,7 +930,7 @@ export default function ProfilePage() {
               <div style={{ background: 'linear-gradient(135deg, rgba(201,133,10,0.07), rgba(201,133,10,0.02))', border: '1px solid rgba(201,133,10,0.2)', borderRadius: 16, padding: '18px 20px' }}>
                 <p style={{ fontSize: 15, fontWeight: 800, color: 'var(--text)', marginBottom: 6, fontFamily: 'var(--font-heading)' }}>{recommended.name}</p>
                 <p style={{ fontSize: 12.5, color: 'var(--text-2)', lineHeight: 1.6, marginBottom: 14 }}>{lang === 'tr' ? recommended.descTr : recommended.descEn}</p>
-                <Link href={`/game/rawg/${recommended.slug}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 9, background: 'var(--accent)', color: '#fff', fontSize: 12.5, fontWeight: 700, boxShadow: '0 4px 12px var(--accent-glow)', textDecoration: 'none', transition: 'all 0.18s' }}
+                <Link href={`/game/${recommended.slug}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 9, background: 'var(--accent)', color: '#fff', fontSize: 12.5, fontWeight: 700, boxShadow: '0 4px 12px var(--accent-glow)', textDecoration: 'none', transition: 'all 0.18s' }}
                   onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 18px var(--accent-glow)'; }}
                   onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 4px 12px var(--accent-glow)'; }}
                 >

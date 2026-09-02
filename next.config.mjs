@@ -12,6 +12,20 @@ const nextConfig = {
       algorithm: 'sha256',
     },
   },
+  async redirects() {
+    return [
+      {
+        source: '/game/rawg/:slug',
+        destination: '/game/:slug',
+        permanent: true,
+      },
+      {
+        source: '/game/epic/:slug',
+        destination: '/game/:slug',
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {
