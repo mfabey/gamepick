@@ -38,12 +38,6 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Depolama yapılandırılmamış' }, { status: 503 });
   }
 
-  // 60/saat: meşru istemci uygulama açılışında ve listede değişiklik oldukça
-  // yazıyor, o da saatte birkaç kez. Sınır bol tutuldu ama toplu kayıt
-  // üretmeye yetmiyor.
-  const rl = await rateLimit(`rl:pushreg:${clientIp(request)}`, 60, 3600);
-  if (!rl.ok) return NextResponse.json(tooManyRequests(), { status: 429 });
-
   let body;
   try { body = await request.json(); } catch { return NextResponse.json({ error: 'Geçersiz istek' }, { status: 400 }); }
 
@@ -57,6 +51,25 @@ export async function POST(request) {
 
   // Mevcut kaydı oku (baseline lastDiscount değerlerini koru)
   const existing = await redisGetJSON(tokenKey(token));
+
+  // ── HIZ SINIRI: EKSEN "YENİ KAYIT", "İSTEK" DEĞİL ───────────────────────
+  // Büyümeyi üreten tek şey YENİ token yaratmak; var olan kaydın üzerine
+  // yazmak anahtar sayısını artırmıyor. Sınırı isteğe koymak yanlış eksendi:
+  // `syncBackend` istek listesindeki HER değişiklikte çağrılıyor
+  // (WishlistContext.jsx:177), yani 20 oyun ekleyen kullanıcı 20 istek atıyor.
+  // Üstelik mobilde IP kişi başına düşmüyor — operatörler CGNAT ardında
+  // binlerce aboneyi tek public IP'de topluyor, IP başına dar bir sınır
+  // meşru kullanıcıları toplu hâlde kilitlerdi.
+  if (!existing) {
+    const rl = await rateLimit(`rl:pushnew:${clientIp(request)}`, 60, 3600);
+    if (!rl.ok) return NextResponse.json(tooManyRequests(), { status: 429 });
+  } else {
+    // Var olan kaydın güncellenmesi serbest ama sonsuz değil: tek anahtara
+    // sınırsız yazımı engelleyen bol bir tavan.
+    const rl = await rateLimit(`rl:pushupd:${token}`, 240, 3600);
+    if (!rl.ok) return NextResponse.json(tooManyRequests(), { status: 429 });
+  }
+
   const prevByKey = {};
   (existing?.watch || []).forEach(w => { prevByKey[w.key] = w; });
 
