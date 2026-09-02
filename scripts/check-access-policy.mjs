@@ -17,7 +17,7 @@
 // bir ucun sessizce canlıya çıkması artık mümkün değil.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { readdirSync, statSync, existsSync } from 'node:fs';
+import { readdirSync, statSync, existsSync, readFileSync } from 'node:fs';
 import { join, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -52,7 +52,7 @@ if (!existsSync(POLICY)) {
   fail(['  app/lib/access-policy.js bulunamadı — manifest silinmiş olabilir.']);
 }
 
-const { ALL_CLASSIFIED } = await import(pathToFileURL(POLICY).href);
+const { ALL_CLASSIFIED, DEV_ONLY_ROUTES } = await import(pathToFileURL(POLICY).href);
 
 const onDisk = findRoutes(API_DIR).map((r) => r.split(sep).join('/')).sort();
 const classified = new Set(ALL_CLASSIFIED.keys());
@@ -71,6 +71,37 @@ if (unclassified.length) {
     '  app/lib/access-policy.js içindeki kümelerden birine ekle.',
     '  Hangisi olduğundan emin değilsen doğru cevap PUBLIC DEĞİL —',
     '  önce hangi verinin kime açıldığını sor.',
+    '',
+  );
+}
+
+// ── DEV_ONLY: BEYAN YETMEZ, KAPI DA OLMALI ──────────────────────────────────
+// Manifeste "DEV_ONLY" yazmak tek başına hiçbir şey yapmıyor; ucu üretimde
+// kapatan asıl şey route içindeki `NODE_ENV === 'production'` kontrolü.
+// Beyan ile gerçeğin ayrışması tam olarak bu denetleyicinin var olma sebebi:
+// biri kapıyı silse ya da hiç eklemeden sınıflandırsa, uç sessizce üretimde
+// açık kalırdı.
+//
+// Bu bir ÇIKARSAMA DEĞİL, sözleşme kontrolü: aranan şey düz metin. Farklı
+// yazan biri açık bir hata mesajı alıyor.
+const GUARD = "NODE_ENV === 'production'";
+const kapisiz = [...(DEV_ONLY_ROUTES || [])].filter((r) => {
+  const f = join(API_DIR, ...r.split('/'), 'route.js');
+  if (!existsSync(f)) return false; // stale kontrolü zaten yakalıyor
+  return !readFileSync(f, 'utf8').includes(GUARD);
+});
+
+if (kapisiz.length) {
+  problems.push(
+    `  \x1b[1mDEV_ONLY AMA ÜRETİM KAPISI YOK (${kapisiz.length}):\x1b[0m`,
+    ...kapisiz.map((r) => `    • app/api/${r}/route.js`),
+    '',
+    `  Manifestte DEV_ONLY yazıyor ama route içinde "${GUARD}" yok.`,
+    '  Beyan tek başına ucu kapatmıyor — üretimde 404 dönmesi için',
+    '  route\'un başına şu kontrolü ekle:',
+    "    if (process.env.NODE_ENV === 'production') {",
+    '      return new NextResponse(null, { status: 404 });',
+    '    }',
     '',
   );
 }
