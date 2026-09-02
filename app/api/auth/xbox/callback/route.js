@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { sunucuHatasi } from '../../../../lib/api-error';
+import { consumeState } from '../../../../lib/oauth-state';
 import { cookies } from 'next/headers';
 
 const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL;
@@ -9,13 +10,6 @@ const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
 function isAllowedAppRedirect(url) {
   if (!url) return false;
   return /^(gamerisen:\/\/|exp(\+[\w-]+)?:\/\/|https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/)/i.test(url);
-}
-function parseMobileState(stateRaw) {
-  if (!stateRaw) return null;
-  try {
-    const obj = JSON.parse(Buffer.from(stateRaw, 'base64url').toString('utf8'));
-    return obj?.mobile ? obj : null;
-  } catch { return null; }
 }
 function mobileRedirect(appRedirect, obj) {
   const sep = appRedirect.includes('?') ? '&' : '?';
@@ -122,8 +116,21 @@ export async function GET(request) {
   const error = searchParams.get('error');
   const errorDesc = searchParams.get('error_description');
 
-  // Mobil bağlamı (varsa) state'ten çöz
-  const mobileState = parseMobileState(searchParams.get('state'));
+  // ── STATE: CSRF + TEKRAR KORUMASI ────────────────────────────────────────
+  // Öncesinde `state` yalnızca mobil bağlamı taşıyordu (imzasız base64 JSON)
+  // ve WEB AKIŞINDA HİÇ ÜRETİLMİYORDU — yani bu ucu tetikleyen isteğin bizim
+  // başlattığımız akıştan geldiğinin hiçbir kanıtı yoktu. Saldırgan kendi
+  // Microsoft hesabıyla akışı başlatıp dönüş `code`'unu yakalayabilir, sonra
+  // oturumu açık bir kurbanı bu adrese düşürüp KENDİ Xbox hesabını kurbanın
+  // hesabına bağlatabilirdi.
+  //
+  // Artık state sunucuda üretiliyor, TEK KULLANIMLIK ve 10 dk ömürlü
+  // (app/lib/oauth-state.js). Tüketilemezse akış burada durur.
+  const statePayload = await consumeState(searchParams.get('state'));
+  if (!statePayload) {
+    return NextResponse.redirect(`${origin}/library?xbox_error=STATE_INVALID`);
+  }
+  const mobileState = statePayload.mobile ? statePayload : null;
   const mobileRedirectOk = mobileState && isAllowedAppRedirect(mobileState.appRedirect);
 
   if (error || !code) {

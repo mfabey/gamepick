@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { consumeState } from '../../../../lib/oauth-state';
 import { cookies } from 'next/headers';
 import { redisCmd, redisGetJSON, redisSetJSON } from '../../../../lib/redis';
 import { mergeProfile } from '../../../../lib/social-store';
@@ -84,6 +85,19 @@ export async function GET(request) {
 
   if (!verified) {
     return NextResponse.redirect(`${baseUrl}/?steam_error=dogrulanamadi`);
+  }
+
+  // ── STATE: CSRF + TEKRAR KORUMASI ────────────────────────────────────────
+  // İmza doğrulaması yukarıda BİTTİ ve geçti — ama o yalnızca "bu Steam
+  // kullanıcısı gerçek mi" sorusunu yanıtlıyor. Saldırgan kendi geçerli
+  // assertion'ını yakalayıp oturumu açık bir kurbanı bu adrese düşürebilir;
+  // sunucu da saldırganın Steam hesabını KURBANIN uid'ine bağlardı
+  // (aşağıdaki saveUserConnection / steam_to_uid yazımları).
+  //
+  // State tek kullanımlık: aynı dönüş ikinci kez oynatılamıyor.
+  const statePayload = await consumeState(searchParams.get('state'));
+  if (!statePayload) {
+    return NextResponse.redirect(`${baseUrl}/?steam_error=state_gecersiz`);
   }
 
   // ── 2. Steam ID'yi çıkar ─────────────────────────────────────────────────
