@@ -16,7 +16,7 @@ import { loadSeen } from '../src/services/seenStore';
 import { loadDismissed } from '../src/services/dismissStore';
 import { loadLiked } from '../src/services/likeStore';
 import { loadCollections } from '../src/services/collectionsStore';
-import { loadOnboarding } from '../src/services/onboarding';
+import { loadOnboarding, loadPerde } from '../src/services/onboarding';
 import { initQueryCache } from '../src/services/queryCache';
 import { startSharedLinkWatcher } from '../src/services/sharedLink';
 import { startDmPushSync } from '../src/services/dmPush';
@@ -150,7 +150,10 @@ export default function RootLayout() {
   useEffect(() => {
     let alive = true;
 
-    loadOnboarding().then(() => {
+    // Perde bayrağı BURADA okunuyor, onboarding ekranında değil. Orada
+    // okunsaydı asenkron cevap gelene kadar ızgara bir kare görünür, perde
+    // ancak ondan sonra üstüne kapanırdı — tam da bu işin kaçındığı çakma.
+    Promise.all([loadOnboarding(), loadPerde()]).then(() => {
       if (!alive) return;
       // İKİ KARE BEKLENİYOR. Durumun çözüldüğü commit'te (tabs) düzeni
       // <Redirect>'i çiziyor ama yönlendirme BİR SONRAKİ commit'te

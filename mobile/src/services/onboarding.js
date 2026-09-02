@@ -37,3 +37,44 @@ export async function resetOnboarding() {
 
 export function isOnboarded() { return done; }
 export function subscribeOnboarding(cb) { listeners.add(cb); return () => listeners.delete(cb); }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AÇILIŞ PERDESİ — AYRI BAYRAK, `gr_onboarded`'a YASLANMIYOR.
+//
+// Perde ilk yazıldığında kendi anahtarı yoktu: "bu ekran ömürde bir kez
+// açılıyor, perde de onunla bir kez oynar" diye düşünülmüştü. YANLIŞTI.
+// Ayarlar'daki "Zevkini yeniden seç" satırı `/onboarding`'e push ediyor
+// (settings.jsx) ve `gr_onboarded`'a hiç dokunmuyor — yani ekran tekrar
+// tekrar açılabiliyor. Sonuç: uygulamayı zaten bilen kullanıcı, ayarlardan
+// her giriş yaptığında 4 saniyelik tanıtımı yeniden izliyordu.
+//
+// İki kavram gerçekten ayrı:
+//   gr_onboarded → zevk seçimi YAPILDI mı (tekrarlanabilir bir eylem)
+//   gr_perde     → tanıtım GÖSTERİLDİ mi (ömürde bir kez)
+//
+// Bayrağın kendi anahtarı olması, ileride eklenecek her giriş noktasını da
+// kendiliğinden doğru kılıyor: çağıranın "perdeyi kapat" demeyi hatırlaması
+// gerekmiyor.
+// ─────────────────────────────────────────────────────────────────────────────
+const PERDE_KEY = 'gr_perde';
+
+let perde = null;             // null = henüz okunmadı
+
+export async function loadPerde() {
+  if (perde !== null) return perde;
+  try {
+    perde = (await AsyncStorage.getItem(PERDE_KEY)) === '1';
+  } catch {
+    perde = true;             // okunamadıysa GÖSTERME — tanıtımı tekrarlamak,
+                              // hiç göstermemekten daha rahatsız edici.
+  }
+  return perde;
+}
+
+/** `null` = henüz okunmadı · `true` = gösterildi · `false` = hiç gösterilmedi */
+export function perdeGorulduMu() { return perde; }
+
+export async function perdeyiGorulduYaz() {
+  perde = true;
+  try { await AsyncStorage.setItem(PERDE_KEY, '1'); } catch { /* bu oturumda geçildi say */ }
+}

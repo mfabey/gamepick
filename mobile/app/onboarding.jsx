@@ -11,7 +11,7 @@ import { fetchGames } from '../src/api/games';
 import { useQuery } from '../src/hooks/useQuery';
 import { useAltBosluk } from '../src/hooks/useAltBosluk';
 import { recordSignal } from '../src/services/tasteProfile';
-import { completeOnboarding } from '../src/services/onboarding';
+import { completeOnboarding, perdeGorulduMu, perdeyiGorulduYaz } from '../src/services/onboarding';
 import { radius, spacing, PRESSED, type } from '../src/theme';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
@@ -38,15 +38,22 @@ export default function OnboardingScreen() {
   const [saving, setSaving] = useState(false);
 
   // ── AÇILIŞ PERDESİ ──
-  // Perdenin AYRI BİR DEPOLAMA ANAHTARI YOK ve olmasına gerek de yok: bu
-  // ekran ömürde bir kez açılıyor (gr_onboarded), perde de onunla birlikte
-  // bir kez oynuyor. İkinci bir bayrak, aynı bilgiyi iki yerde tutmak olurdu.
+  // Bu ekran ÖMÜRDE BİR KEZ AÇILMIYOR: Ayarlar'daki "Zevkini yeniden seç"
+  // buraya push ediyor (settings.jsx) ve gr_onboarded'a dokunmuyor. Perde
+  // ekranın açılmasına bağlansaydı — ilk sürümde öyleydi — uygulamayı zaten
+  // bilen kullanıcı her ayar ziyaretinde tanıtımı yeniden izlerdi.
   //
-  // BİLİNEN YAN ETKİ: resetOnboarding() çağrılırsa perde de tekrar oynar.
-  // Şu an o işlevin hiçbir çağıranı yok; bağlandığında (Ayarlar → "zevkini
-  // yeniden seç") perdenin atlanması istenirse buraya ayrı bir bayrak girer.
-  const [perdeAcik, setPerdeAcik] = useState(true);
-  const perdeBitti = useCallback(() => setPerdeAcik(false), []);
+  // Bayrak KÖK DÜZENDE okunuyor (açılış perdesi inmeden önce), bu yüzden
+  // burada senkron: `false` ise hiç gösterilmemiş demektir. `null` (okunamamış)
+  // durumunda da GÖSTERİLMİYOR — tanıtımı tekrarlamak, atlamaktan kötü.
+  const [perdeAcik, setPerdeAcik] = useState(() => perdeGorulduMu() === false);
+
+  const perdeBitti = useCallback(() => {
+    setPerdeAcik(false);
+    // Perde bir kez OYNADIĞI an işaretleniyor, atlanınca da: "Geç"e basan
+    // kullanıcı tanıtımı istemediğini söylemiştir, tekrar sunmak yanlış olur.
+    perdeyiGorulduYaz();
+  }, []);
 
   const games = useMemo(
     () => (data?.results || []).filter(g => g?.image && g?.genres?.length),
