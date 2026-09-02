@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { maskeliJSON } from './log-mask';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HATA YANITLARI — kullanıcıya sade mesaj, loga tam detay, ikisi arasında
@@ -48,10 +49,16 @@ export function referansKodu() {
  * @param context  logda görünecek yer bilgisi (ör. 'auth/login')
  * @param message  kullanıcıya gösterilecek metin
  */
-export function sunucuHatasi(err, context, message = 'Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.') {
+export function sunucuHatasi(err, context, message = 'Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.', data) {
   const ref = referansKodu();
   // console.error Vercel loglarına düşüyor. Yığın izi BURADA, yanıtta değil.
-  console.error(`[${ref}] ${context}:`, err?.message || err, '\n', err?.stack || '(yığın izi yok)');
+  //
+  // `data` teşhis bağlamı için (hangi appid, hangi sayfa…). MASKEDEN
+  // GEÇİYOR: buraya bir gün istek gövdesi verilirse şifre/jeton düz metin
+  // olarak loga düşmesin. Bugün hiçbir çağıran `data` göndermiyor;
+  // maskeleme o günü bekliyor.
+  const ek = data === undefined ? '' : ` | bağlam=${maskeliJSON(data)}`;
+  console.error(`[${ref}] ${context}:`, err?.message || err, ek, '\n', err?.stack || '(yığın izi yok)');
   return NextResponse.json({ error: 'INTERNAL_ERROR', ref, message }, { status: 500 });
 }
 
