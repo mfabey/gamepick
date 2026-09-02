@@ -90,6 +90,30 @@ export const listeQuery = z.object({
   num: adet,
 });
 
+// ── Redis anahtarına giren kimlikler ────────────────────────────────────────
+//
+// `social/report`, `report_dupe:{uid}:{targetType}:{targetId}` anahtarını
+// SET NX ile YAZIYOR ve `targetId` istekten geliyordu — uzunluk sınırı yoktu.
+// Enjeksiyon değil (Upstash REST komutları JSON dizisi olarak gönderiyor,
+// araya sıkıştırılacak bir sorgu metni yok) ama gerçek bir kaynak sorunu:
+// megabaytlık anahtar adları yaratılabiliyordu.
+//
+// Karakter kümesi de daraltıldı: bu kimlikler ya sunucunun ürettiği
+// `l_…`/`p_…` biçiminde ya da bir uid. Glob metakarakterleri (`*`, `?`, `[`)
+// bu değerlerde hiç görünmemeli — bugün desenler sabit olduğu için sömürü
+// yolu yok, ama anahtar malzemesini dar tutmak ileriye dönük ucuz sigorta.
+export const kaynakKimligi = z.string().trim().min(1).max(128).regex(
+  /^[A-Za-z0-9_:.-]+$/,
+  'Geçersiz kimlik biçimi',
+);
+
+export const reportBody = z.object({
+  targetType: z.string().trim().max(32),
+  targetId: kaynakKimligi,
+  reason: z.string().trim().max(64),
+  note: z.string().max(500).default(''),
+});
+
 // ── Doğrulama yardımcıları ──────────────────────────────────────────────────
 
 /** Zod hatasını "alan: mesaj" biçiminde okunur listeye çevirir. */

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { verifyMobileToken } from '../../../lib/mobile-auth';
 import { rateLimit, tooManyRequests } from '../../../lib/rate-limit';
 import { redisCmd, redisSetJSONStrict } from '../../../lib/redis';
+import { parseBody, reportBody } from '../../../lib/schemas';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // İçerik/kullanıcı raporlama — App Store Guideline 1.2'nin ikinci şartı
@@ -42,19 +43,18 @@ export async function POST(request) {
   const rl = await rateLimit(`rl:report:${user.uid}`, 20, 3600);
   if (!rl.ok) return NextResponse.json(tooManyRequests(), { status: 429 });
 
-  let body = {};
-  try { body = await request.json(); } catch { /* boş gövde */ }
+  // `targetId` REDIS ANAHTARINA GİRİYOR (`report_dupe:{uid}:{tip}:{id}`,
+  // SET NX ile YAZILIYOR) ve daha önce uzunluk sınırı yoktu — megabaytlık
+  // anahtar adları yaratılabiliyordu. Şema hem uzunluğu hem karakter
+  // kümesini bağlıyor; bkz. app/lib/schemas.js `kaynakKimligi`.
+  const ayrist = await parseBody(request, reportBody);
+  if (!ayrist.ok) return ayrist.response;
+  const { targetType, targetId, reason, note } = ayrist.data;
 
-  const targetType = String(body.targetType || '').trim();
-  const targetId = String(body.targetId || '').trim();
-  const reason = String(body.reason || '').trim();
-  const note = String(body.note || '').trim().slice(0, 500);
-
+  // İzin listeleri şemanın ÜSTÜNDE duruyor: şema biçimi, bunlar anlamı
+  // doğruluyor. İkisi ayrı sorular.
   if (!VALID_TARGETS.includes(targetType)) {
     return NextResponse.json({ error: 'INVALID_TARGET_TYPE' }, { status: 400 });
-  }
-  if (!targetId) {
-    return NextResponse.json({ error: 'TARGET_REQUIRED' }, { status: 400 });
   }
   if (!VALID_REASONS.includes(reason)) {
     return NextResponse.json({ error: 'INVALID_REASON' }, { status: 400 });
