@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { View, Text, Pressable, StyleSheet, Animated, Easing } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { spacing, radius, type, PRESSED } from '../theme';
 import { useStyles } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -16,9 +17,10 @@ import { useAltBosluk } from '../hooks/useAltBosluk';
 // zamandı — perde onu KAPLIYOR, uzatmıyor. Izgara altta yüklenmeye devam
 // ediyor; perde sönerken ortaya çıkan şey gerçek kapaklar oluyor.
 //
-// Örtünün zemini bu yüzden TAM OPAK DEĞİL (%92): altta yüklenen ızgara bir
-// doku olarak seziliyor, sönme bir "perde kalkması" gibi okunuyor. Bu,
-// paylaşılan öğe geçişi yazmadan aynı hissi veren ucuz yol.
+// Örtü OPAK; "perde kalkması" hissini sönme yaratıyor, saydamlık değil.
+// (Saydam bir sürüm denendi ve ölçümle geri alındı — gerekçe `zemin`
+// stilinin başında.) Paylaşılan öğe geçişi yazmadan aynı hissi veren ucuz
+// yol: örtü sönerken altında zaten yüklenmiş gerçek ızgara duruyor.
 //
 // ── ÜÇ CÜMLE DE DOĞRULANABİLİR ──
 // Hiçbiri vaat ya da sıfat değil; üçü de var olan özelliği anlatıyor:
@@ -52,6 +54,17 @@ export default function AcilisPerdesi({ onDone }) {
   // kendi alt çubuğunda aynı hata bir kez yaşandı: iOS'ta ana ekran
   // göstergesi, Android'de üç düğmeli gezinme çubuğu (48dp) üstüne biniyor.
   const altBosluk = useAltBosluk(spacing.s32);
+
+  // ── ÜST INSET ELLE EKLENİYOR ──
+  // ÖLÇÜLDÜ (Android 16 emülatör, taze açılış ekran görüntüsü): marka yazısı
+  // saatin, "Geç" ise wifi simgesinin ÜSTÜNE biniyordu.
+  //
+  // Perde onboarding'in SafeAreaView'ının (edges={['top']}) çocuğu, yani üst
+  // inset zaten uygulanmış olmalıydı. Değil: SafeAreaView inset'i DOLGU
+  // olarak veriyor ve mutlak konumlu çocuk dolgu kutusunu atlayıp görünümün
+  // en üst kenarına yapışıyor. absoluteFill kullanan her örtünün kendi
+  // inset'ini alması gerekiyor.
+  const insets = useSafeAreaInsets();
 
   // ANAHTARLAR DÜZ YAZILIYOR, bir diziden okunarak değil. check:i18n yalnızca
   // anahtarı düz yazılmış çağrıları görüyor; anahtar bir dizi değişkeninden
@@ -130,7 +143,7 @@ export default function AcilisPerdesi({ onDone }) {
           yazıya değil. Tek katman olsaydı %92'lik örtüde metin de solardı. */}
       <View style={[StyleSheet.absoluteFill, styles.zemin]} />
 
-      <View style={styles.ust}>
+      <View style={[styles.ust, { paddingTop: insets.top + spacing.md }]}>
         <Text style={styles.marka} maxFontSizeMultiplier={1.4} numberOfLines={1}>
           GAMERISEN
         </Text>
@@ -170,13 +183,25 @@ export default function AcilisPerdesi({ onDone }) {
 const makeStyles = (colors) => StyleSheet.create({
   perde: { justifyContent: 'space-between', zIndex: 10 },
 
-  // Örtünün kendisi. %92 BİLEREK: altta yüklenen ızgara bir doku olarak
-  // seziliyor ama okunmuyor.
-  zemin: { backgroundColor: colors.bg, opacity: 0.92 },
+  // ── ÖRTÜ OPAK ──
+  // Önce %92 saydamdı: "altta yüklenen ızgara doku olarak sezilsin" diye.
+  // ÖLÇÜM BUNU ÇÜRÜTTÜ (Android 16 emülatör, açık tema, taze açılış):
+  // ızgaranın kendi başlığı — "Hangilerini sevdin?" ve "İstediğin oyunu
+  // tarif et" — perdenin arkasından OKUNABİLİYORDU. Aynı ekranda iki başlık
+  // yarışıyordu; doku değil, gürültü çıktı.
+  //
+  // Açık temada beklenenden kötü davranmasının sebebi kontrast: alttaki yazı
+  // koyu ve keskin, %8'lik sızıntı bile net okunuyor. Koyu temada daha
+  // yumuşaktı ama iki temada da doğru olmayan bir değer ayarlanamaz.
+  //
+  // "PERDE KALKIYOR" HİSSİ KAYBOLMADI: asıl etkiyi yaratan şey saydamlık
+  // değil, örtünün SÖNMESİ — altındaki gerçek ızgara o an ortaya çıkıyor.
+  zemin: { backgroundColor: colors.bg },
 
   ust: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg, paddingTop: spacing.md,
+    paddingHorizontal: spacing.lg,
+    // paddingTop ÇALIŞMA ZAMANINDA veriliyor (güvenli alan) — bkz. yukarısı.
   },
   marka: {
     fontSize: type.footnote, fontWeight: '900', color: colors.text3,

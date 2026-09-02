@@ -219,6 +219,23 @@ const makeStyles = (colors) => StyleSheet.create({
     // dikey eksende hizalanmazsa şerit çubuğa ait değilmiş gibi durur.
     left: TAB_BAR.side,
     right: TAB_BAR.side,
+
+    // ── KATMAN SIRASI — İKİ PLATFORM İÇİN AYRI ──
+    // ÖLÇÜLDÜ (Android 16 emülatör, uiautomator dökümü): şerit görünüm
+    // ağacındaydı ve KONUMU DA DOĞRUYDU — sınırlar [98,2077][983,2130],
+    // sekme çubuğu 2188'de başlıyor, yani tam hesaplanan yerde. Buna rağmen
+    // ekran görüntüsünde yoktu.
+    //
+    // Sebep: <Tabs> yığınının kendisi. Şerit ondan SONRA gelen bir kardeş
+    // olduğu halde Android sıralamayı elevation'a göre yapıyor ve
+    // elevation'ı olmayan kardeş, sekme yüzeyinin (FloatingTabBar,
+    // elevation 18) altında kalıyor.
+    //
+    // 24 seçildi: 18'in üstünde. İkisi uzamsal olarak çakışmıyor, bu yüzden
+    // sıralama yalnızca ÇİZİM sırasını değiştiriyor, görünümü değil.
+    // zIndex iOS tarafı için: orada elevation yok, sıralamayı o veriyor.
+    zIndex: 20,
+    elevation: 24,
   },
   serit: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.s12,
