@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { guard } from '../../lib/rate-guard';
 
 const GROQ_KEY = process.env.GROQ_API_KEY;
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
@@ -95,6 +96,10 @@ async function getFallbackAiData(name, description, lang = 'tr') {
 
 // GET /api/ai-game?appid=271590&name=GTA+V&description=...&lang=tr
 export async function GET(request) {
+  // Groq çağrısı yapıyor, kimliksiz — bkz. ai/chat.
+  const kapi = await guard(request, 'aiSearch');
+  if (kapi) return kapi;
+
   const { searchParams } = new URL(request.url);
   const appid       = searchParams.get('appid');
   const name        = searchParams.get('name')        || '';

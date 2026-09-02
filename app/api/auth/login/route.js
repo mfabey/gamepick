@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { redisCmd, redisSetJSON } from '../../../lib/redis';
 import { mergeProfile } from '../../../lib/social-store';
+import { guard, penalize } from '../../../lib/rate-guard';
 
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
 
@@ -11,6 +12,12 @@ export async function POST(request) {
     if (!email || !password) {
       return NextResponse.json({ error: 'E-posta ve şifre zorunludur.' }, { status: 400 });
     }
+
+    // Hesap ekseni YALNIZ başarısız denemede artıyor (bkz. rate-guard.js):
+    // her denemede artsaydı, saldırgan kurbanın adresiyle 5 kez yanlış parola
+    // göndererek meşru kullanıcıyı 15 dakika kilitleyebilirdi.
+    const kapi = await guard(request, 'login', { account: email });
+    if (kapi) return kapi;
 
     // Local development fallback if Firebase Key is not set
     if (!FIREBASE_API_KEY) {
@@ -44,6 +51,8 @@ export async function POST(request) {
     if (!signInRes.ok) {
       const errMsg = signInData?.error?.message;
       if (errMsg === 'INVALID_LOGIN_CREDENTIALS' || errMsg === 'INVALID_PASSWORD' || errMsg === 'EMAIL_NOT_FOUND') {
+        // Başarısız deneme hesap sayacına yazılıyor — parola deneme burada durur.
+        await penalize(request, 'login', { account: email });
         return NextResponse.json({ error: 'E-posta veya şifre hatalı.' }, { status: 400 });
       }
       return NextResponse.json({ error: signInData?.error?.message || 'Giriş başarısız.' }, { status: signInRes.status });

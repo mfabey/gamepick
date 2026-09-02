@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { guard } from '../../../lib/rate-guard';
 
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
 
@@ -9,6 +10,11 @@ export async function POST(request) {
     if (!email || !password) {
       return NextResponse.json({ error: 'E-posta ve şifre zorunludur.' }, { status: 400 });
     }
+
+    // Doğrulama postası tetikliyor. Parola da istiyor, ama yanlış parolayla
+    // gelen istek bile Firebase'e bir tur attırıyor; sınır yine gerekli.
+    const kapi = await guard(request, 'verifyResend', { account: email });
+    if (kapi) return kapi;
 
     // Local development mock fallback
     if (!FIREBASE_API_KEY) {

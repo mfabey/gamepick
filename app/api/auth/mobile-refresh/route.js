@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { guard } from '../../../lib/rate-guard';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Token yenileme. idToken ~1 saatte dolar; mobil, refreshToken ile sessizce
@@ -14,6 +15,11 @@ export async function POST(request) {
   if (!refreshToken) {
     return NextResponse.json({ error: 'refreshToken zorunludur.' }, { status: 400 });
   }
+
+  // Meşru istemci oturum boyunca düzenli çağırıyor — sınır bol tutuldu,
+  // amaç yalnızca jeton deneme yoluyla taramayı engellemek.
+  const kapi = await guard(request, 'tokenRefresh');
+  if (kapi) return kapi;
   if (!FIREBASE_API_KEY) {
     return NextResponse.json({ error: 'Kimlik doğrulama yapılandırılmamış.' }, { status: 503 });
   }

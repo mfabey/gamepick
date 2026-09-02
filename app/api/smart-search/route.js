@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { guard } from '../../lib/rate-guard';
 import { isAdultContent } from '../../lib/adult-filter.js';
 
 const RAWG_KEY = process.env.RAWG_API_KEY;
@@ -264,6 +265,10 @@ let lastError = null;
 
 // POST /api/smart-search   body: { query, lang }
 export async function POST(request) {
+  // Groq çağrısı yapıyor, kimliksiz — bkz. ai/chat.
+  const kapi = await guard(request, 'aiSearch');
+  if (kapi) return kapi;
+
   let body = {};
   try { body = await request.json(); } catch { /* boş gövde */ }
   const query = (body.query || '').toString().trim().slice(0, 500);

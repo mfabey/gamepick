@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { guard, penalize } from '../../../lib/rate-guard';
 import { cookies } from 'next/headers';
 
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
@@ -6,6 +7,9 @@ const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
 export async function POST(request) {
   try {
     const { currentPassword, newPassword } = await request.json();
+
+    const kapiIp = await guard(request, 'passwordChange');
+    if (kapiIp) return kapiIp;
 
     if (!currentPassword || !newPassword) {
       return NextResponse.json(
@@ -42,6 +46,11 @@ export async function POST(request) {
       );
     }
 
+    // Hesap ekseni burada: e-posta oturumdan yeni çıktı. Çalınmış bir çerezle
+    // mevcut parolayı deneme yoluyla bulmaya çalışmayı sınırlıyor.
+    const kapiHesap = await guard(request, 'passwordChange', { account: email });
+    if (kapiHesap) return kapiHesap;
+
     // Local development mock fallback
     if (!FIREBASE_API_KEY) {
       console.warn('FIREBASE_API_KEY is not defined. Simulating password change.');
@@ -63,6 +72,7 @@ export async function POST(request) {
     if (!signInRes.ok) {
       const errMsg = signInData?.error?.message;
       if (errMsg === 'INVALID_LOGIN_CREDENTIALS' || errMsg === 'INVALID_PASSWORD' || errMsg === 'EMAIL_NOT_FOUND') {
+        await penalize(request, 'passwordChange', { account: email });
         return NextResponse.json({ error: 'Mevcut şifreniz hatalı.' }, { status: 400 });
       }
       return NextResponse.json(

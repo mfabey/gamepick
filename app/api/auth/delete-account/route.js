@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { guard, penalize } from '../../../lib/rate-guard';
 import { cookies } from 'next/headers';
 
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
@@ -40,6 +41,11 @@ export async function POST(request) {
     const user = JSON.parse(session.value);
     const { email, uid } = user;
 
+    // Hesap silme parola doğruluyor — yani çalınmış bir çerezle parola
+    // deneme yüzeyi. Sayaç yalnız başarısız denemede artıyor.
+    const kapi = await guard(request, 'accountDelete', { account: email });
+    if (kapi) return kapi;
+
     // Local development fallback if Firebase Key is not set
     if (!FIREBASE_API_KEY) {
       console.warn('FIREBASE_API_KEY is not defined. Simulating mock account deletion.');
@@ -80,6 +86,7 @@ export async function POST(request) {
     if (!signInRes.ok) {
       const errMsg = signInData?.error?.message;
       if (errMsg === 'INVALID_LOGIN_CREDENTIALS' || errMsg === 'INVALID_PASSWORD') {
+        await penalize(request, 'accountDelete', { account: email });
         return NextResponse.json({ error: 'Girdiğiniz şifre hatalı.' }, { status: 400 });
       }
       return NextResponse.json({ error: signInData?.error?.message || 'Kimlik doğrulama başarısız.' }, { status: signInRes.status });

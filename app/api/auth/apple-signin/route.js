@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { guard } from '../../../lib/rate-guard';
 import { redisSetJSON } from '../../../lib/redis';
 import { mergeProfile } from '../../../lib/social-store';
 
@@ -25,6 +26,10 @@ export async function POST(request) {
   if (!identityToken) {
     return NextResponse.json({ error: 'identityToken zorunludur.' }, { status: 400 });
   }
+
+  // google-signin ile aynı gerekçe ve aynı kova.
+  const kapi = await guard(request, 'oauthSignin');
+  if (kapi) return kapi;
   if (!FIREBASE_API_KEY) {
     return NextResponse.json({ error: 'Kimlik doğrulama yapılandırılmamış.' }, { status: 503 });
   }

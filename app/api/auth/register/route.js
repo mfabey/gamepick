@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { guard } from '../../../lib/rate-guard';
 import { validateUsername } from '../../../lib/content-filter';
 import { claimUsername, uidForUsername } from '../../../lib/social-store';
 
@@ -11,6 +12,12 @@ export async function POST(request) {
     if (!email || !password || !name) {
       return NextResponse.json({ error: 'E-posta, şifre ve isim zorunludur.' }, { status: 400 });
     }
+
+    // Toplu sahte hesap üretimi + her kayıt bir doğrulama postası tetikliyor.
+    // Hesap ekseni YOK: e-posta saldırganın her seferinde değiştirdiği alan,
+    // orada sayaç tutmak hiçbir şeyi durdurmaz — IP tek anlamlı eksen.
+    const kapi = await guard(request, 'register');
+    if (kapi) return kapi;
 
     // ── Kullanıcı adı: sosyal özelliklerin kimlik temeli ────────────────────
     // Kullanıcıyı YARATMADAN ÖNCE doğrula; aksi hâlde geçersiz addan dolayı

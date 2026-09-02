@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { guard } from '../../../lib/rate-guard';
 import fs from 'fs';
 import path from 'path';
 import { getSteamDetailsCached } from '../../../lib/steam-cache';
@@ -846,6 +847,12 @@ const STOP_WORDS = new Set([
 // --- Next.js Route POST Handler ---
 export async function POST(req) {
   try {
+    // FATURA KAPISI. Bu uç Gemini / Groq / OpenAI'ye gidiyor ve KİMLİKSİZ —
+    // sınırsız bırakıldığında LLM sağlayıcı faturası saldırganın elinde olur.
+    // Eksen IP: hesap yok, sayacı bağlayacak başka bir kimlik de yok.
+    const kapi = await guard(req, 'aiChat');
+    if (kapi) return kapi;
+
     const body = await req.json();
     const userQuery = (body.message || '').trim();
     const userProfile = body.profile || {};

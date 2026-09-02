@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { guard } from '../../lib/rate-guard';
 
 const GROQ_KEY = process.env.GROQ_API_KEY;
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
@@ -35,6 +36,10 @@ async function groq(messages, maxTokens = 300) {
 // Body: { moods, budget }                                  → ruh hali bazlı arama önerisi
 // Body: { mode:'summary', gameTitle, genres, description } → oyun özeti + gizli etiketler
 export async function POST(request) {
+  // Groq çağrısı yapıyor, kimliksiz — bkz. ai/chat.
+  const kapi = await guard(request, 'aiSearch');
+  if (kapi) return kapi;
+
   const body = await request.json();
 
   if (!GROQ_KEY) {
