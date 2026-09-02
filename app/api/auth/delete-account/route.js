@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { canUseAuthMock, authNotConfigured } from '../../../lib/auth-config';
 import { guard, penalize } from '../../../lib/rate-guard';
 import { cookies } from 'next/headers';
 
@@ -47,6 +48,7 @@ export async function POST(request) {
     if (kapi) return kapi;
 
     // Local development fallback if Firebase Key is not set
+    if (!FIREBASE_API_KEY && !canUseAuthMock()) return authNotConfigured();
     if (!FIREBASE_API_KEY) {
       console.warn('FIREBASE_API_KEY is not defined. Simulating mock account deletion.');
       

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { canUseAuthMock, authNotConfigured } from '../../../lib/auth-config';
 import { guard } from '../../../lib/rate-guard';
 import { validateUsername } from '../../../lib/content-filter';
 import { claimUsername, uidForUsername } from '../../../lib/social-store';
@@ -32,6 +33,7 @@ export async function POST(request) {
     }
 
     // Local development fallback if Firebase Key is not set
+    if (!FIREBASE_API_KEY && !canUseAuthMock()) return authNotConfigured();
     if (!FIREBASE_API_KEY) {
       console.warn('FIREBASE_API_KEY is not defined. Falling back to mock registration.');
       return NextResponse.json({

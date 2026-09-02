@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { canUseAuthMock, authNotConfigured } from '../../../lib/auth-config';
 import { redisCmd, redisSetJSON } from '../../../lib/redis';
 import { mergeProfile } from '../../../lib/social-store';
 import { guard, penalize } from '../../../lib/rate-guard';
@@ -20,6 +21,7 @@ export async function POST(request) {
     if (kapi) return kapi;
 
     // Local development fallback if Firebase Key is not set
+    if (!FIREBASE_API_KEY && !canUseAuthMock()) return authNotConfigured();
     if (!FIREBASE_API_KEY) {
       console.warn('FIREBASE_API_KEY is not defined. Falling back to mock login.');
       const userObj = { uid: 'mock_user', name: email.split('@')[0], email };

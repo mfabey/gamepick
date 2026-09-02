@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { canUseAuthMock, authNotConfigured } from '../../../lib/auth-config';
 import { guard } from '../../../lib/rate-guard';
 
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
@@ -17,6 +18,7 @@ export async function POST(request) {
     if (kapi) return kapi;
 
     // Local development mock fallback
+    if (!FIREBASE_API_KEY && !canUseAuthMock()) return authNotConfigured();
     if (!FIREBASE_API_KEY) {
       console.warn('FIREBASE_API_KEY is not defined. Simulating resending verification email.');
       return NextResponse.json({ ok: true, mock: true });
