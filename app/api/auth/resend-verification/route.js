@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { sunucuHatasi, yukariAkisHatasi } from '../../../lib/api-error';
 import { canUseAuthMock, authNotConfigured } from '../../../lib/auth-config';
 import { guard } from '../../../lib/rate-guard';
 
@@ -41,7 +42,8 @@ export async function POST(request) {
       if (errMsg === 'INVALID_LOGIN_CREDENTIALS' || errMsg === 'INVALID_PASSWORD' || errMsg === 'EMAIL_NOT_FOUND') {
         return NextResponse.json({ error: 'E-posta veya şifre hatalı.' }, { status: 400 });
       }
-      return NextResponse.json({ error: signInData?.error?.message || 'Giriş başarısız.' }, { status: signInRes.status });
+      return yukariAkisHatasi(signInData?.error?.message, 'auth/resend-verification',
+        'İşlem tamamlanamadı. Lütfen tekrar deneyin.', 400);
     }
 
     const { idToken } = signInData;
@@ -62,13 +64,14 @@ export async function POST(request) {
     const sendMailData = await sendMailRes.json();
 
     if (!sendMailRes.ok) {
-      return NextResponse.json({ error: sendMailData?.error?.message || 'E-posta gönderimi başarısız.' }, { status: sendMailRes.status });
+      return yukariAkisHatasi(sendMailData?.error?.message, 'auth/resend-verification',
+        'Doğrulama e-postası gönderilemedi. Lütfen tekrar deneyin.', 502);
     }
 
     return NextResponse.json({ ok: true, mock: false });
 
   } catch (err) {
     console.error('Resend Verification API Error:', err.message);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return sunucuHatasi(err, 'auth/resend-verification');
   }
 }

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { sunucuHatasi, yukariAkisHatasi } from '../../../lib/api-error';
 import { canUseAuthMock, authNotConfigured } from '../../../lib/auth-config';
 import { guard, penalize } from '../../../lib/rate-guard';
 import { cookies } from 'next/headers';
@@ -91,7 +92,8 @@ export async function POST(request) {
         await penalize(request, 'accountDelete', { account: email });
         return NextResponse.json({ error: 'Girdiğiniz şifre hatalı.' }, { status: 400 });
       }
-      return NextResponse.json({ error: signInData?.error?.message || 'Kimlik doğrulama başarısız.' }, { status: signInRes.status });
+      return yukariAkisHatasi(signInData?.error?.message, 'auth/delete-account',
+        'Kimlik doğrulanamadı. Lütfen tekrar deneyin.', 400);
     }
 
     const { idToken } = signInData;
@@ -110,7 +112,9 @@ export async function POST(request) {
 
     if (!deleteRes.ok) {
       return NextResponse.json(
-        { error: deleteData?.error?.message || 'Firebase hesap silme işlemi başarısız.' },
+        // "Firebase" adı da çıkarıldı: kullanıcıya hangi sağlayıcıyı
+        // kullandığımızı söylemenin bir faydası yok.
+        { error: 'DELETE_FAILED', message: 'Hesap silme işlemi tamamlanamadı. Lütfen tekrar deneyin.' },
         { status: deleteRes.status }
       );
     }
@@ -136,6 +140,6 @@ export async function POST(request) {
 
   } catch (err) {
     console.error('Delete Account API Error:', err.message);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return sunucuHatasi(err, 'auth/delete-account');
   }
 }

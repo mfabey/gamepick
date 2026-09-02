@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { sunucuHatasi } from '../../lib/api-error';
 import { getSteamAppIdBySlug, fetchLowestPriceFromITAD, fetchPriceByAppId } from '../card-price/route.js';
 import { isAdultContent, isAdultTitleOrSlug, isSteamDataAdult } from '../../lib/adult-filter.js';
 import { FALLBACK_GAMES } from '../../lib/fallback-games.js';
@@ -1219,7 +1220,7 @@ export async function GET(request) {
 
   } catch (err) {
     console.error('RAWG/Steam API hatasi:', err.message);
-    return NextResponse.json({ error: err.message, results: [] }, { status: 500 });
+    return sunucuHatasi(err, 'games');
   }
 }
 

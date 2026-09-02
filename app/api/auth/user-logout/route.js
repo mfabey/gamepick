@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { sunucuHatasi } from '../../../lib/api-error';
 
 export async function POST() {
   try {
@@ -20,6 +21,6 @@ export async function POST() {
     return response;
   } catch (err) {
     console.error('user-logout API Error:', err.message);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return sunucuHatasi(err, 'auth/user-logout');
   }
 }

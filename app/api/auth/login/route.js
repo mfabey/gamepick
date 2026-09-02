@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { sunucuHatasi, yukariAkisHatasi } from '../../../lib/api-error';
 import { canUseAuthMock, authNotConfigured } from '../../../lib/auth-config';
 import { redisCmd, redisSetJSON } from '../../../lib/redis';
 import { mergeProfile } from '../../../lib/social-store';
@@ -57,7 +58,11 @@ export async function POST(request) {
         await penalize(request, 'login', { account: email });
         return NextResponse.json({ error: 'E-posta veya şifre hatalı.' }, { status: 400 });
       }
-      return NextResponse.json({ error: signInData?.error?.message || 'Giriş başarısız.' }, { status: signInRes.status });
+      // Firebase'in ham kodu (TOO_MANY_ATTEMPTS_TRY_LATER, USER_DISABLED…)
+      // loga gidiyor, kullanıcıya değil: Google'ın iç kodları kullanıcı için
+      // anlamsız, dışarıdan bakan için bilgi.
+      return yukariAkisHatasi(signInData?.error?.message, 'auth/login',
+        'Giriş yapılamadı. Lütfen tekrar deneyin.', 400);
     }
 
     const { localId, displayName, idToken } = signInData;
@@ -132,6 +137,6 @@ export async function POST(request) {
 
   } catch (err) {
     console.error('Login API Error:', err.message);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return sunucuHatasi(err, 'auth/login');
   }
 }

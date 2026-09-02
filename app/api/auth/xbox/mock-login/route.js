@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { sunucuHatasi } from '../../../../lib/api-error';
 import { cookies } from 'next/headers';
 
 export async function POST(request) {
@@ -37,6 +38,6 @@ export async function POST(request) {
       } 
     });
   } catch (err) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return sunucuHatasi(err, 'auth/xbox/mock-login');
   }
 }

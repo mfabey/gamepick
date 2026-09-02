@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { sunucuHatasi } from '../../lib/api-error';
 import { cookies } from 'next/headers';
 
 const STEAM_API_KEY = process.env.STEAM_API_KEY;
@@ -84,6 +85,6 @@ export async function GET() {
       }, { status: 403 });
     }
     
-    return NextResponse.json({ error: err.message, games: [] }, { status: 500 });
+    return sunucuHatasi(err, 'steam-library');
   }
 }

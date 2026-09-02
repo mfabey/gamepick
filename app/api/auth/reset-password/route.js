@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { sunucuHatasi, yukariAkisHatasi } from '../../../lib/api-error';
 import { canUseAuthMock, authNotConfigured } from '../../../lib/auth-config';
 import { guard } from '../../../lib/rate-guard';
 
@@ -39,18 +40,30 @@ export async function POST(request) {
 
     const resetData = await resetRes.json();
 
+    // HESAP SAYIMINA KAPALI. Eskiden EMAIL_NOT_FOUND için 404 ve "Bu e-posta
+    // adresine kayıtlı bir hesap bulunamadı." dönüyordu — yani herkes,
+    // istediği adresin bu sitede kayıtlı olup olmadığını tek istekle
+    // öğrenebiliyordu. Uç artık adresin varlığından BAĞIMSIZ olarak aynı
+    // yanıtı veriyor; posta yalnızca hesap gerçekten varsa gidiyor.
+    //
+    // `auth/login` bu ayrımı zaten doğru yapıyordu (üç Firebase hatasını tek
+    // mesaja indiriyor); tutarsızlık buradaydı.
     if (!resetRes.ok) {
       const errMsg = resetData?.error?.message;
-      if (errMsg === 'EMAIL_NOT_FOUND') {
-        return NextResponse.json({ error: 'Bu e-posta adresine kayıtlı bir hesap bulunamadı.' }, { status: 404 });
+      if (errMsg !== 'EMAIL_NOT_FOUND') {
+        // Gerçek bir arıza — ham kod loga, kullanıcıya sade mesaj.
+        return yukariAkisHatasi(errMsg, 'auth/reset-password',
+          'Şifre sıfırlama isteği şu an işlenemedi. Lütfen tekrar deneyin.', 502);
       }
-      return NextResponse.json({ error: resetData?.error?.message || 'Şifre sıfırlama işlemi başarısız.' }, { status: resetRes.status });
     }
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({
+      ok: true,
+      message: 'Bu adrese kayıtlı bir hesap varsa, sıfırlama bağlantısı gönderildi.',
+    });
 
   } catch (err) {
     console.error('Reset Password API Error:', err.message);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return sunucuHatasi(err, 'auth/reset-password');
   }
 }

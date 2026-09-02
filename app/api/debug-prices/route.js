@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { sunucuHatasi } from '../../lib/api-error';
 
 const ITAD_KEY = process.env.ITAD_API_KEY;
 const ITAD     = 'https://api.isthereanydeal.com';
@@ -46,6 +47,6 @@ export async function GET(request) {
       total:  deals.length,
     });
   } catch (err) {
-    return NextResponse.json({ error: err.message });
+    return sunucuHatasi(err, 'debug-prices');
   }
 }

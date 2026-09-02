@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { sunucuHatasi, yukariAkisHatasi } from '../../../lib/api-error';
 
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
 
@@ -30,7 +31,7 @@ export async function POST(request) {
 
       if (!res.ok) {
         return NextResponse.json(
-          { error: data?.error?.message || 'E-posta doğrulama başarısız oldu.' },
+          { error: 'VERIFY_FAILED', message: 'E-posta doğrulama tamamlanamadı. Bağlantının süresi dolmuş olabilir.' },
           { status: res.status }
         );
       }
@@ -75,6 +76,6 @@ export async function POST(request) {
 
   } catch (err) {
     console.error('Auth Action API Error:', err.message);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return sunucuHatasi(err, 'auth/action');
   }
 }

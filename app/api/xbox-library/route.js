@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { sunucuHatasi } from '../../lib/api-error';
 import { cookies } from 'next/headers';
 
 // ── Token zinciri: refresh token → access token → XBL → XSTS ───────────────
@@ -242,6 +243,6 @@ export async function GET(request) {
     });
   } catch (err) {
     console.error('Xbox library error:', err.message);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return sunucuHatasi(err, 'xbox-library');
   }
 }

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { sunucuHatasi } from '../../lib/api-error';
 import { resolveOwnedSteamId } from '../../lib/steam-owner';
 
 const STEAM_API_KEY = process.env.STEAM_API_KEY;
@@ -141,6 +142,6 @@ export async function GET(request) {
       }, { status: 403 });
     }
 
-    return NextResponse.json({ error: err.message, games: [] }, { status: 500 });
+    return sunucuHatasi(err, 'oyun');
   }
 }

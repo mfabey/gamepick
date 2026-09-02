@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { sunucuHatasi, yukariAkisHatasi } from '../../../lib/api-error';
 import { canUseAuthMock, authNotConfigured } from '../../../lib/auth-config';
 import { guard, penalize } from '../../../lib/rate-guard';
 import { cookies } from 'next/headers';
@@ -77,10 +78,8 @@ export async function POST(request) {
         await penalize(request, 'passwordChange', { account: email });
         return NextResponse.json({ error: 'Mevcut şifreniz hatalı.' }, { status: 400 });
       }
-      return NextResponse.json(
-        { error: signInData?.error?.message || 'Kimlik doğrulama başarısız.' },
-        { status: signInRes.status }
-      );
+      return yukariAkisHatasi(signInData?.error?.message, 'auth/change-password',
+        'Kimlik doğrulanamadı. Lütfen tekrar deneyin.', 400);
     }
 
     const { idToken } = signInData;
@@ -106,7 +105,7 @@ export async function POST(request) {
         );
       }
       return NextResponse.json(
-        { error: updateData?.error?.message || 'Şifre değiştirilemedi.' },
+        { error: 'PASSWORD_UPDATE_FAILED', message: 'Şifre değiştirilemedi. Lütfen tekrar deneyin.' },
         { status: updateRes.status }
       );
     }
@@ -115,6 +114,6 @@ export async function POST(request) {
 
   } catch (err) {
     console.error('Change Password API Error:', err.message);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return sunucuHatasi(err, 'auth/change-password');
   }
 }

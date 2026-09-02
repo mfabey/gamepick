@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { sunucuHatasi } from '../../../../lib/api-error';
 import { cookies } from 'next/headers';
 
 const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL;
@@ -126,7 +127,14 @@ export async function GET(request) {
   const mobileRedirectOk = mobileState && isAllowedAppRedirect(mobileState.appRedirect);
 
   if (error || !code) {
-    const errorMsg = errorDesc || error || 'cancelled';
+    // YALNIZCA KISA OAUTH KODU YANSITILIYOR, `error_description` DEĞİL.
+    // Açıklama serbest metin ve dışarıdan kontrol edilebilir (bu uca
+    // istenen `error_description` ile gelinebilir); adres çubuğuna
+    // yansıtmak saldırgan metnini kullanıcının ekranına taşırdı.
+    // Kod kümesi daraltıldı ve uzunluk sınırlandı; `cancelled` varsayılanı
+    // mevcut arayüz davranışını koruyor.
+    const errorMsg = String(error || 'cancelled').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40) || 'cancelled';
+    if (errorDesc) console.warn('Xbox OAuth error_description:', String(errorDesc).slice(0, 200));
     if (mobileRedirectOk) return mobileRedirect(mobileState.appRedirect, { platform: 'xbox', error: errorMsg });
     return NextResponse.redirect(`${origin}/library?xbox_error=${encodeURIComponent(errorMsg)}`);
   }
@@ -209,8 +217,13 @@ export async function GET(request) {
 
     return NextResponse.redirect(`${origin}/library`);
   } catch (err) {
-    console.error('Xbox auth error:', err.message);
-    if (mobileRedirectOk) return mobileRedirect(mobileState.appRedirect, { platform: 'xbox', error: err.message });
-    return NextResponse.redirect(`${origin}/library?xbox_error=${encodeURIComponent(err.message)}`);
+    // İÇ HATA METNİ YÖNLENDİRMEYE KONMUYOR. Web dalında adres çubuğuna
+    // yazılıyordu — oradan tarayıcı geçmişine ve dış sitelere giden
+    // Referer başlığına düşer. Yerine referans kodu: kullanıcı kodu
+    // söylüyor, tam detay logda duruyor.
+    const ref = referansKodu();
+    console.error(`[${ref}] auth/xbox/callback:`, err?.message || err, '\n', err?.stack || '');
+    if (mobileRedirectOk) return mobileRedirect(mobileState.appRedirect, { platform: 'xbox', error: 'AUTH_FAILED', ref });
+    return NextResponse.redirect(`${origin}/library?xbox_error=AUTH_FAILED&ref=${encodeURIComponent(ref)}`);
   }
 }

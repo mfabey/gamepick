@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { sunucuHatasi, yukariAkisHatasi } from '../../../lib/api-error';
 import { canUseAuthMock, authNotConfigured } from '../../../lib/auth-config';
 import { guard } from '../../../lib/rate-guard';
 import { validateUsername } from '../../../lib/content-filter';
@@ -67,7 +68,8 @@ export async function POST(request) {
       if (errMsg === 'WEAK_PASSWORD : Password should be at least 6 characters') {
         return NextResponse.json({ error: 'Şifre en az 6 karakter olmalıdır.' }, { status: 400 });
       }
-      return NextResponse.json({ error: signUpData?.error?.message || 'Kayıt başarısız.' }, { status: signUpRes.status });
+      return yukariAkisHatasi(signUpData?.error?.message, 'auth/register',
+        'Kayıt tamamlanamadı. Lütfen tekrar deneyin.', 400);
     }
 
     const { localId, idToken } = signUpData;
@@ -127,6 +129,6 @@ export async function POST(request) {
 
   } catch (err) {
     console.error('Register API Error:', err.message);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return sunucuHatasi(err, 'auth/register');
   }
 }

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { sunucuHatasi } from '../../lib/api-error';
 import { isAdultContent, isAdultTitleOrSlug } from '../../lib/adult-filter.js';
 import { parseQuery, listeQuery } from '../../lib/schemas.js';
 
@@ -304,6 +305,6 @@ export async function GET(request) {
 
   } catch (err) {
     console.error('DLC API genel hatası:', err.message);
-    return NextResponse.json({ error: err.message, results: [] }, { status: 500 });
+    return sunucuHatasi(err, 'dlc');
   }
 }
