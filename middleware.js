@@ -11,6 +11,9 @@ const WINDOW_SIZE = 60;
 // Eskiden CSP burada ve next.config'te ayrı ayrı yazılıydı; ikisi ayrıştığında
 // isteğin hangi katmandan geçtiğine göre farklı politika uygulanırdı.
 import { SECURITY_HEADERS } from './app/lib/security-headers.js';
+// IP çıkarma tek kaynaktan: IPv6 /64'e kırpılıyor, aksi hâlde IPv6
+// istemcide bu sınır fiilen yoktu (2^64 ayrı kova).
+import { clientIp } from './app/lib/client-ip.js';
 
 function addSecurityHeaders(headers) {
   for (const { key, value } of SECURITY_HEADERS) headers.set(key, value);
@@ -21,8 +24,7 @@ export async function middleware(request) {
   // Sadece /api/ altındaki API uç noktalarını hız sınırına tabi tut
   if (request.nextUrl.pathname.startsWith('/api/')) {
     if (REDIS_URL && REDIS_TOKEN) {
-      const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
-      const cleanIp = ip.split(',')[0].trim();
+      const cleanIp = clientIp(request);
       const currentTimestamp = Math.floor(Date.now() / 1000);
       const windowKey = Math.floor(currentTimestamp / WINDOW_SIZE);
       const redisKey = `ratelimit:${cleanIp}:${windowKey}`;

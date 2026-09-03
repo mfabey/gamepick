@@ -9,6 +9,17 @@
 //
 // Redis yapılandırılmamışsa (yerel geliştirme) sınırlama UYGULANMAZ — geliştirme
 // akışını kilitlemek yerine açık geçer.
+//
+// AMA AÇIK GEÇTİĞİNİ ARTIK SÖYLÜYOR: dönen nesnede `unavailable: true` var.
+// Öncesinde "sınır içinde" ile "sınırlayıcı çalışmıyor" çağırana AYNI
+// görünüyordu (`{ok:true}`), yani bir Upstash kesintisi 13 eylemin sınırını
+// birden sessizce kaldırıyordu — posta gönderen ve LLM faturası doğuran
+// uçlar dahil.
+//
+// KARAR BURADA DEĞİL: bu katman yalnızca DURUMU bildiriyor. Kapalı mı
+// başarısız olunacağı uca göre değişen bir POLİTİKA ve `rate-guard.js`'te
+// (`failClosed`) veriliyor. Ölçüm ile politikayı ayırmak, ucuz okuma
+// uçlarının açık geçmeye devam etmesini sağlıyor.
 // ─────────────────────────────────────────────────────────────────────────────
 import { redisCmd, hasRedis } from './redis';
 import { bekleMetni } from './rate-limit-config';
@@ -20,12 +31,12 @@ import { bekleMetni } from './rate-limit-config';
  * @returns {Promise<{ok: boolean, remaining: number, limit: number}>}
  */
 export async function rateLimit(key, limit, windowSec) {
-  if (!hasRedis()) return { ok: true, remaining: limit, limit };
+  if (!hasRedis()) return { ok: true, remaining: limit, limit, unavailable: true };
 
   try {
     const raw = await redisCmd(['INCR', key]);
-    // Redis erişilemezse kullanıcıyı engelleme — açık geç
-    if (raw === null) return { ok: true, remaining: limit, limit };
+    // Redis erişilemezse kullanıcıyı engelleme — açık geç, ama bildir.
+    if (raw === null) return { ok: true, remaining: limit, limit, unavailable: true };
 
     const count = Number(raw) || 0;
 
@@ -45,7 +56,7 @@ export async function rateLimit(key, limit, windowSec) {
     const retryAfter = ok ? 0 : await ttlOf(key, windowSec);
     return { ok, remaining: Math.max(0, limit - count), limit, retryAfter };
   } catch {
-    return { ok: true, remaining: limit, limit, retryAfter: 0 };
+    return { ok: true, remaining: limit, limit, retryAfter: 0, unavailable: true };
   }
 }
 
@@ -67,14 +78,20 @@ async function ttlOf(key, windowSec) {
  * doğru parolayla girişi sayacı tüketmemeli.
  */
 export async function rateLimitPeek(key, limit, windowSec) {
-  if (!hasRedis()) return { ok: true, retryAfter: 0 };
+  if (!hasRedis()) return { ok: true, retryAfter: 0, unavailable: true };
   try {
     const raw = await redisCmd(['GET', key]);
+    // `null` burada İKİ ANLAMA GELİYOR: anahtar yok (sayaç 0, meşru) ya da
+    // Redis erişilemedi. `redisCmd` ikisini ayırmıyor; `INCR` yolundan farklı
+    // olarak burada ayırt edemiyoruz ve sayacı 0 kabul ediyoruz. Bu eksen
+    // zaten yalnız `*OnFailureOnly` sayaçlarında kullanılıyor — en kötü hâl,
+    // kesinti sırasında birkaç fazla denemeye izin vermek. Kesintinin asıl
+    // maliyeti IP ekseninde yakalanıyor (orada INCR null'ı gerçekten hata).
     const count = Number(raw) || 0;
     const ok = count < limit;
     return { ok, retryAfter: ok ? 0 : await ttlOf(key, windowSec) };
   } catch {
-    return { ok: true, retryAfter: 0 };
+    return { ok: true, retryAfter: 0, unavailable: true };
   }
 }
 

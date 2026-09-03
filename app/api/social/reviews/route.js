@@ -6,6 +6,7 @@ import { redisGetJSON } from '../../../lib/redis';
 import { getProfiles, getHiddenUids } from '../../../lib/social-store';
 import { countReplies, reviewRef } from '../../../lib/post-store';
 import { libraries } from '../../../lib/steam-graph';
+import { clientIp } from '../../../lib/client-ip';
 import {
   saveReview, getReview, listReviews, deleteReview, reviewSummary,
   MAX_REVIEW_TEXT, MIN_HOURS,
@@ -76,7 +77,7 @@ export async function GET(request) {
 
   const rlKey = viewerUid
     ? `rl:gamerev:${viewerUid}`
-    : `rl:gamerev:ip:${(request.headers.get('x-forwarded-for') || 'unknown').split(',')[0].trim()}`;
+    : `rl:gamerev:ip:${clientIp(request)}`;
   const rl = await rateLimit(rlKey, 240, 3600);
   if (!rl.ok) return NextResponse.json(tooManyRequests(), { status: 429 });
 

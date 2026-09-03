@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { hasRedis, redisCmd, redisGetJSON, redisSetJSON } from '../../../lib/redis.js';
 import { rateLimit, tooManyRequests } from '../../../lib/rate-limit';
+import { clientIp } from '../../../lib/client-ip';
 
 const TOKENS_SET = 'push:tokens';
 const tokenKey = (t) => `push:token:${t}`;
@@ -25,10 +26,6 @@ const tokenKey = (t) => `push:token:${t}`;
 // ─────────────────────────────────────────────────────────────────────────────
 function isValidExpoToken(t) {
   return typeof t === 'string' && /^Expo(nent)?PushToken\[[A-Za-z0-9_-]{16,64}\]$/.test(t);
-}
-
-function clientIp(request) {
-  return (request.headers.get('x-forwarded-for') || 'unknown').split(',')[0].trim();
 }
 
 // POST /api/push/register

@@ -21,6 +21,27 @@
 // Bu değerler BAŞLANGIÇ noktası; gerçek trafiğe göre ayarlanmalı. Middleware
 // zaten IP başına 60 istek/dakika uyguluyor (middleware.js) — buradakiler
 // onun ÜSTÜNE, uca özel ikinci kat.
+//
+// ── `failClosed`: REDİS ERİŞİLEMEZKEN NE OLACAK ─────────────────────────────
+// Sınırlayıcı varsayılan olarak AÇIK GEÇİYOR (bkz. rate-limit.js). Bu ucuz
+// okuma uçlarında doğru, ama bir Upstash kesintisi posta gönderen ve LLM
+// faturası doğuran uçların da tavanını kaldırıyordu — kesinti boyunca
+// SINIRSIZ.
+//
+// KURAL: isteği yerine getirmek PARA HARCIYOR ya da POSTA GÖNDERİYORSA
+// kapalı başarısız ol; engellemek KULLANICIYI HESABINDAN KİLİTLİYORSA açık
+// kal.
+//
+// O yüzden `login`, `oauthSignin` ve `tokenRefresh` BİLİNÇLİ OLARAK açık:
+// Redis kesintisinde giriş 503 dönerse ya da jeton tazelenemezse tüm
+// kullanıcılar dışarıda kalır — engellenen kötüye kullanımdan çok daha
+// pahalı bir sonuç. `passwordChange`/`accountDelete` de açık: ikisi de
+// zaten parola doğruluyor.
+//
+// GELİŞTİRMEDE HİÇ TETİKLENMİYOR: `rate-guard.js` bayrağı yalnız
+// `NODE_ENV === 'production'` iken uyguluyor. `session-cookie.js`'teki
+// DEV_FALLBACK ve `auth-config.js`'teki `canUseAuthMock` ile aynı kalıp —
+// yerelde Redis'siz çalışmaya devam.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const DK = 60;
@@ -39,8 +60,25 @@ export const LIMITS = {
 
   // Kayıt: toplu sahte hesap üretimi + her kayıt bir doğrulama e-postası
   // tetiklediği için aynı zamanda e-posta maliyeti.
+  // HESAP EKSENİ SONRADAN EKLENDİ. Eskiden yoktu ve gerekçesi şuydu:
+  // "e-posta saldırganın her seferinde değiştirdiği alan, orada sayaç tutmak
+  // hiçbir şeyi durdurmaz". Bu, TOPLU SAHTE HESAP saldırısı için hâlâ doğru.
+  //
+  // Ama uç artık, adres zaten kayıtlıysa o adrese sıfırlama postası
+  // gönderiyor (hesap sayımına kapatmak için — bkz. register/route.js). Bu
+  // yeni bir saldırı biçimi doğuruyor: saldırgan adresi DEĞİŞTİRMEK
+  // istemiyor, tam tersi TEK KURBAN adresine yükleniyor. Eski gerekçe o
+  // saldırıyı kapsamıyor.
+  //
+  // YALNIZ BAŞARISIZLIKTA ARTIYOR: sayaç sadece "var olan adrese posta
+  // gönderdik" dalında `penalize` ile artıyor. Meşru ilk kayıt sayacı hiç
+  // tüketmiyor — aksi hâlde formu üç kez yanlış dolduran kullanıcı bir saat
+  // kayıt olamazdı.
   register: {
     ip: [5, SAAT],
+    account: [3, SAAT],
+    accountOnFailureOnly: true,
+    failClosed: true,          // hesap yaratıyor + doğrulama postası gönderiyor
   },
 
   // ── E-posta tetikleyen uçlar ──────────────────────────────────────────────
@@ -49,10 +87,43 @@ export const LIMITS = {
   passwordReset: {
     ip: [10, SAAT],
     account: [3, SAAT],
+    failClosed: true,          // adresi saldırgan seçiyor → bombardıman vektörü
   },
   verifyResend: {
     ip: [10, SAAT],
     account: [3, SAAT],
+    failClosed: true,
+  },
+
+  // ── Doğrulama kodunu TÜKETEN uç ───────────────────────────────────────────
+  // `auth/action` HİÇ SINIRSIZDI: oobCode'u harcayan tek uç, bu listede
+  // yoktu. `guard()` tanımsız eylemde patlıyor — ama HİÇ ÇAĞRILMAYAN guard'ı
+  // ne o ne de access-policy denetleyicisi yakalıyor (denetleyici yalnız
+  // sınıflandırma eksikliğine bakıyor, hız sınırına değil).
+  //
+  // GEREKÇE KABA KUVVET DEĞİL, FATURA: Firebase oobCode'u yüksek entropili,
+  // tahminle bulunması gerçekçi değil. Sınırın sebebi her denemenin Identity
+  // Toolkit'e bir yukarı akış çağrısı olması ve bunun sınırsız oluşuydu —
+  // middleware'in 60/dk'sı dışında tavan yoktu: IP başına 86.400 deneme/gün.
+  //
+  // EKSEN NEDEN `code`: istekte hesap YOK, elimizdeki tek kimlik kodun
+  // kendisi. `account` eksenine sıkıştırmak anahtarı yanlış adlandırırdı.
+  //
+  // KOD EKSENİ YALNIZ BAŞARISIZLIKTA ARTIYOR: doğru kodu getiren meşru
+  // kullanıcı sayacı tüketmemeli — `login`'deki `accountOnFailureOnly` ile
+  // aynı gerekçe.
+  //
+  // IP SAYISI NEDEN BOL: meşru kullanıcı bu ucu doğrulama başına 1–2 kez
+  // çağırıyor, ama ortak NAT (okul, kurum, mobil operatör) arkasında birden
+  // çok kullanıcı aynı IP'den gelir. 20/15dk o başlığa yer bırakırken günlük
+  // tavanı 86.400'den 100'e indiriyor. Dosyanın başındaki not burada da
+  // geçerli: başlangıç değeri, gerçek trafiğe göre ayarlanacak.
+  codeVerify: {
+    ip: [20, 15 * DK],
+    ipDaily: [100, GUN],
+    code: [5, SAAT],
+    codeOnFailureOnly: true,
+    failClosed: true,          // her deneme bir Identity Toolkit çağrısı
   },
 
   // ── Parola doğrulayan diğer akışlar ───────────────────────────────────────
@@ -91,10 +162,12 @@ export const LIMITS = {
   aiChat: {
     ip: [30, SAAT],
     ipDaily: [120, GUN],
+    failClosed: true,          // doğrudan LLM faturası
   },
   aiSearch: {
     ip: [60, SAAT],
     ipDaily: [300, GUN],
+    failClosed: true,
   },
 
   // ── Kimlikli pahalı işlemler — burada KULLANICI başına tavan mümkün ───────
@@ -102,9 +175,11 @@ export const LIMITS = {
   // istek başına 100'e kadar yukarı akış çağrısı yayıyor.
   visionModeration: {
     accountDaily: [60, GUN],
+    failClosed: true,          // Google Vision: görüntü başına ücretli
   },
   steamGraph: {
     accountDaily: [40, GUN],
+    failClosed: true,          // istek başına 100'e kadar yukarı akış çağrısı
   },
 };
 

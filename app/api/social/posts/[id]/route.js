@@ -5,6 +5,7 @@ import { getProfiles, getHiddenUids } from '../../../../lib/social-store';
 import { getPostWithCounts, listReplies, parseReviewRef, countReplies } from '../../../../lib/post-store';
 import { getReview } from '../../../../lib/review-store';
 import { getSteamDetailsCached } from '../../../../lib/steam-cache.js';
+import { clientIp } from '../../../../lib/client-ip';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tek gönderi + yanıtları (konuşma görünümü).
@@ -33,7 +34,7 @@ export async function GET(request, { params }) {
 
   const key = viewerUid
     ? `rl:postview:${viewerUid}`
-    : `rl:postview:ip:${(request.headers.get('x-forwarded-for') || 'unknown').split(',')[0].trim()}`;
+    : `rl:postview:ip:${clientIp(request)}`;
   const rl = await rateLimit(key, 240, 3600);
   if (!rl.ok) return NextResponse.json(tooManyRequests(), { status: 429 });
 

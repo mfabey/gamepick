@@ -9,6 +9,7 @@ import { listUserReviews, countUserReviews } from '../../../lib/review-store';
 import { listUserPosts, countUserPosts, countReplies, reviewRef } from '../../../lib/post-store';
 import { redisCmd, redisGetJSON } from '../../../lib/redis';
 import { getSteamDetailsCached } from '../../../lib/steam-cache.js';
+import { clientIp } from '../../../lib/client-ip';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Herkese açık profil — kimlik + kullanıcının ürettiği içerik.
@@ -118,7 +119,7 @@ export async function GET(request) {
   // dört sekmeyi gezen bir kullanıcı tek profilde 5 istek yapabiliyor.
   const rlKey = viewerUid
     ? `rl:profile:${viewerUid}`
-    : `rl:profile:ip:${(request.headers.get('x-forwarded-for') || 'unknown').split(',')[0].trim()}`;
+    : `rl:profile:ip:${clientIp(request)}`;
   const rl = await rateLimit(rlKey, 300, 3600);
   if (!rl.ok) return NextResponse.json(tooManyRequests(), { status: 429 });
 

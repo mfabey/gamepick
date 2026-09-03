@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { validateUsername } from '../../../lib/content-filter';
 import { rateLimit, tooManyRequests } from '../../../lib/rate-limit';
 import { uidForUsername } from '../../../lib/social-store';
+import { clientIp } from '../../../lib/client-ip';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Kullanıcı adı uygunluk kontrolü — KAYIT SIRASINDA, oturum açılmadan önce.
@@ -13,11 +14,6 @@ import { uidForUsername } from '../../../lib/social-store';
 // bunu pratikte kullanışsız hâle getiriyor; ayrıca zaten alınmış adları
 // öğrenmek büyük bir bilgi değil (adlar profillerde görünür).
 // ─────────────────────────────────────────────────────────────────────────────
-
-function clientIp(request) {
-  const fwd = request.headers.get('x-forwarded-for') || '';
-  return fwd.split(',')[0].trim() || request.headers.get('x-real-ip') || 'unknown';
-}
 
 export async function GET(request) {
   const rl = await rateLimit(`rl:uname_pub:${clientIp(request)}`, 60, 60);
