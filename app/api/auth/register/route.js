@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
 import { sunucuHatasi, yukariAkisHatasi } from '../../../lib/api-error';
 import { canUseAuthMock, authNotConfigured } from '../../../lib/auth-config';
-import { guard } from '../../../lib/rate-guard';
+import { guard, penalize } from '../../../lib/rate-guard';
+import { sabitSureyeTamamla } from '../../../lib/constant-time';
 import { validateUsername } from '../../../lib/content-filter';
 import { claimUsername, uidForUsername } from '../../../lib/social-store';
+import { kaydetPostaGonderimi } from '../../../lib/mail-metrics';
 
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
 
@@ -16,10 +18,22 @@ export async function POST(request) {
     }
 
     // Toplu sahte hesap üretimi + her kayıt bir doğrulama postası tetikliyor.
-    // Hesap ekseni YOK: e-posta saldırganın her seferinde değiştirdiği alan,
-    // orada sayaç tutmak hiçbir şeyi durdurmaz — IP tek anlamlı eksen.
-    const kapi = await guard(request, 'register');
+    // HESAP EKSENİ DE VAR ama yalnız başarısızlıkta artıyor: uç artık, adres
+    // zaten kayıtlıysa o adrese sıfırlama postası gönderiyor ve bu tek kurban
+    // adresine bombardıman yolu açıyor (bkz. rate-limit-config.js).
+    const kapi = await guard(request, 'register', { account: email });
     if (kapi) return kapi;
+
+    // PAROLA UZUNLUĞU FIREBASE'DEN ÖNCE, BİZDE.
+    //
+    // Aksi hâlde ayrı bir hesap sayımı kanalı açık kalıyordu: zayıf parola +
+    // KAYITLI adres → Firebase EMAIL_EXISTS, zayıf parola + YENİ adres →
+    // WEAK_PASSWORD. Yani mesajı nötrleştirmek yetmiyordu; saldırgan 3
+    // karakterlik bir parola göndererek iki durumu yine ayırabiliyordu.
+    // Kontrolü öne almak bu ayrımı Firebase'in eline bırakmıyor.
+    if (String(password).length < 6) {
+      return NextResponse.json({ error: 'Şifre en az 6 karakter olmalıdır.' }, { status: 400 });
+    }
 
     // ── Kullanıcı adı: sosyal özelliklerin kimlik temeli ────────────────────
     // Kullanıcıyı YARATMADAN ÖNCE doğrula; aksi hâlde geçersiz addan dolayı
@@ -44,6 +58,12 @@ export async function POST(request) {
       });
     }
 
+    // SABİT SÜRE TABANI BURADAN BAŞLIYOR (bkz. constant-time.js).
+    // Girdi doğrulaması, hız sınırı ve kullanıcı adı kontrolü DIŞARIDA:
+    // onların yanıtları (400/409/429) adresin kayıtlı olup olmadığından
+    // bağımsız, geciktirmenin faydası yok.
+    const sureBaslangic = Date.now();
+
     // 1. Sign Up User in Firebase Auth
     const signUpRes = await fetch(
       `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FIREBASE_API_KEY}`,
@@ -62,8 +82,50 @@ export async function POST(request) {
 
     if (!signUpRes.ok) {
       const errMsg = signUpData?.error?.message;
+
+      // ── HESAP SAYIMINA KAPALI ────────────────────────────────────────────
+      // Eskiden burada 'Bu e-posta adresi zaten kayıtlı.' dönüyordu — yani
+      // herkes, istediği adresin bu sitede kayıtlı olup olmadığını TEK
+      // İSTEKLE öğrenebiliyordu. `auth/reset-password` bu ayrımı zaten doğru
+      // yapıyordu; tutarsızlık buradaydı.
+      //
+      // ARTIK: hiçbir şey oluşturulmuyor, BAŞARIYLA BİREBİR AYNI gövde
+      // dönüyor, ve adrese Firebase'in PASSWORD_RESET postası gidiyor.
+      //
+      // KULLANICI YİNE DOĞRU YÖNLENDİRİLİYOR: adresin gerçek sahibi postayı
+      // alıyor ve "zaten hesabım varmış, parolamı sıfırlayıp gireyim" diyor.
+      // Saldırgan ise hiçbir şey öğrenmiyor — ne gövdeden, ne süreden.
+      //
+      // NEDEN PAROLA SIFIRLAMA POSTASI: Firebase yalnızca kendi hazır
+      // şablonlarını gönderebiliyor. "Bu adresle kayıt denendi" diye özel bir
+      // şablon göndermek ayrı bir posta altyapısı gerektirirdi. Sıfırlama
+      // postası, bu durumda alınması anlamlı olan tek hazır şablon.
+      //
+      // AÇTIĞI VEKTÖR AYNI YERDE KAPATILDI: bu, kayıt ucunu tek kurban
+      // adresine bombardıman aracına çevirebilirdi. `register` artık hesap
+      // eksenine sahip ve sayaç TAM BURADA artıyor (`penalize`).
       if (errMsg === 'EMAIL_EXISTS') {
-        return NextResponse.json({ error: 'Bu e-posta adresi zaten kayıtlı.' }, { status: 400 });
+        await penalize(request, 'register', { account: email });
+
+        // Gönderim başarısız olsa bile yanıt DEĞİŞMİYOR: hata dönmek,
+        // kapatılan ayrımı geri açardı.
+        try {
+          const sifirlamaRes = await fetch(
+            `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${FIREBASE_API_KEY}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ requestType: 'PASSWORD_RESET', email }),
+            },
+          );
+          if (sifirlamaRes.ok) await kaydetPostaGonderimi('registerExisting');
+          else console.error('register: mevcut adrese sıfırlama postası gönderilemedi');
+        } catch (e) {
+          console.error('register: sıfırlama postası hatası:', e?.message || e);
+        }
+
+        await sabitSureyeTamamla(sureBaslangic, 'auth/register');
+        return NextResponse.json({ ok: true, mock: false });
       }
       if (errMsg === 'WEAK_PASSWORD : Password should be at least 6 characters') {
         return NextResponse.json({ error: 'Şifre en az 6 karakter olmalıdır.' }, { status: 400 });
@@ -101,9 +163,10 @@ export async function POST(request) {
       const sendMailData = await sendMailRes.json();
       console.error('Firebase sendOobCode Error:', sendMailData?.error?.message);
       // We still registered the user successfully, so we can proceed but warn
+    } else {
+      // Yalnızca gerçekten giden posta ölçülüyor (bkz. mail-metrics.js).
+      await kaydetPostaGonderimi('register');
     }
-
-    const userObj = { uid: localId, name, email };
 
     // ── Sosyal profili kur ──────────────────────────────────────────────────
     // DİKKAT: Burada eskiden doğrudan `user_profile:{uid}` anahtarına
@@ -112,10 +175,11 @@ export async function POST(request) {
     // bir profil oluşuyor, Arkadaşlar ekranındaki kurulum kapısı "profil var"
     // sanıp atlanıyor ve kullanıcı kalıcı olarak adsız kalıyordu.
     // Artık profil yalnızca claimUsername üzerinden, doğru şemayla yazılıyor.
-    let usernameClaimed = false;
+    // Sonuç YANITA YANSIMIYOR (eskiden `usernameClaimed` olarak dönüyordu):
+    // adres zaten kayıtlıysa kullanıcı adı hiç talep edilmiyor, dolayısıyla o
+    // alan iki dalı ayırt etmeye yarardı. Başarısızlık loga düşüyor.
     if (wantsUsername) {
       const res = await claimUsername(localId, username.trim(), { displayName: name });
-      usernameClaimed = !!res.ok;
       if (!res.ok) {
         // Kontrol ile talep arasında biri adı kapmış olabilir. Hesap zaten
         // oluştu; kullanıcıyı hata ile geri çevirmek yerine adsız bırakıyoruz,
@@ -125,7 +189,14 @@ export async function POST(request) {
     }
 
     // 4. Return success response WITHOUT issuing session cookies
-    return NextResponse.json({ ok: true, user: userObj, usernameClaimed, mock: false });
+    //
+    // GÖVDE, EMAIL_EXISTS DALIYLA BİREBİR AYNI OLMAK ZORUNDA. Eskiden burada
+    // `user: { uid, name, email }` ve `usernameClaimed` da dönüyordu; ikisi de
+    // adresin yeni olduğunu ele verirdi (var olan hesap için gerçek bir uid
+    // üretilemez). İkisini de HİÇBİR İSTEMCİ OKUMUYORDU: web yalnız
+    // `ok`/`mock`'a bakıyor, mobil yanıt gövdesini hiç açmıyor.
+    await sabitSureyeTamamla(sureBaslangic, 'auth/register');
+    return NextResponse.json({ ok: true, mock: false });
 
   } catch (err) {
     console.error('Register API Error:', err.message);

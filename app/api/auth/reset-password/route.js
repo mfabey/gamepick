@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { sunucuHatasi, yukariAkisHatasi } from '../../../lib/api-error';
 import { canUseAuthMock, authNotConfigured } from '../../../lib/auth-config';
 import { guard } from '../../../lib/rate-guard';
+import { kaydetPostaGonderimi } from '../../../lib/mail-metrics';
+import { sabitSureyeTamamla } from '../../../lib/constant-time';
 
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
 
@@ -27,6 +29,13 @@ export async function POST(request) {
       console.warn('FIREBASE_API_KEY is not defined. Falling back to mock password reset.');
       return NextResponse.json({ ok: true, mock: true });
     }
+
+    // SABİT SÜRE TABANI BURADAN BAŞLIYOR (bkz. constant-time.js).
+    // Hız sınırı ve girdi doğrulaması DIŞARIDA bırakıldı bilerek: onların
+    // yanıtları (400/429) zaten hesap varlığından bağımsız, geciktirmenin
+    // faydası yok. Taban, yalnızca "kayıtlıysa gönderildi" yanıtına giden
+    // yolu kapsıyor — ayrımın okunabileceği tek yer orası.
+    const sureBaslangic = Date.now();
 
     // Call Firebase Auth REST API to send password reset email
     const resetRes = await fetch(
@@ -55,7 +64,16 @@ export async function POST(request) {
         return yukariAkisHatasi(errMsg, 'auth/reset-password',
           'Şifre sıfırlama isteği şu an işlenemedi. Lütfen tekrar deneyin.', 502);
       }
+      // EMAIL_NOT_FOUND → posta GİTMEDİ, sayma.
+    } else {
+      // Yalnızca gerçekten giden posta ölçülüyor (bkz. mail-metrics.js).
+      await kaydetPostaGonderimi('passwordReset');
     }
+
+    // İki dal da buraya geliyor ve aynı yanıtı alıyor. Taban, aralarındaki
+    // İŞ farkının (Firebase posta kuyruğu + Redis ölçüm turu) süreye
+    // yansımasını örtüyor.
+    await sabitSureyeTamamla(sureBaslangic, 'auth/reset-password');
 
     return NextResponse.json({
       ok: true,
