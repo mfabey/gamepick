@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { readValue } from '../../lib/session-cookie';
 import { sunucuHatasi } from '../../lib/api-error';
 import { cookies } from 'next/headers';
 
@@ -15,7 +16,7 @@ export async function GET() {
   }
 
   let steamId;
-  try { steamId = JSON.parse(session.value).steamId; } catch {}
+  steamId = (await readValue(session.value))?.steamId;
   if (!steamId) {
     return NextResponse.json({ error: 'Steam ID bulunamadı', games: [] }, { status: 401 });
   }

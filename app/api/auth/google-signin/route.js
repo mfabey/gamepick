@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { signValue, SESSION_TTL_SEC } from '../../../lib/session-cookie';
 import { guard } from '../../../lib/rate-guard';
 import { mergeProfile } from '../../../lib/social-store';
 
@@ -84,13 +85,13 @@ export async function POST(request) {
 
     // Web httpOnly çerez bekliyor, mobil yanıttaki token'ları saklıyor.
     if (body.web === true) {
-      response.cookies.set('gp_user_session', JSON.stringify({
+      response.cookies.set('gp_user_session', await signValue({
         uid: user.uid, name: user.name, email: user.email,
-      }), {
+      }, SESSION_TTL_SEC), {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 7,
+        maxAge: SESSION_TTL_SEC,
       });
     }
 

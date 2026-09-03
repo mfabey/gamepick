@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers';
+import { readValue } from './session-cookie';
 import { verifyMobileToken } from './mobile-auth';
 import { redisGetJSON } from './redis.js';
 
@@ -45,7 +46,7 @@ async function idsFromCookies() {
   const multi = jar.get('gp_steam_accounts');
   if (multi?.value) {
     try {
-      const list = JSON.parse(multi.value);
+      const list = await readValue(multi.value);
       if (Array.isArray(list)) {
         for (const a of list) if (a?.steamId) out.push(String(a.steamId));
       }
@@ -56,7 +57,7 @@ async function idsFromCookies() {
   const single = jar.get('gp_steam_session');
   if (single?.value) {
     try {
-      const s = JSON.parse(single.value);
+      const s = await readValue(single.value);
       if (s?.steamId) out.push(String(s.steamId));
     } catch { /* bozuk çerez = hesap yok */ }
   }

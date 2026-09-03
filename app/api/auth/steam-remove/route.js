@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { signValue, readValue, LINK_TTL_SEC } from '../../../lib/session-cookie';
 import { cookies } from 'next/headers';
 
 const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL;
@@ -48,7 +49,7 @@ export async function DELETE(request) {
 
   try {
     const c = cookieStore.get('gp_steam_accounts');
-    if (c?.value) accounts = JSON.parse(c.value);
+    if (c?.value) accounts = (await readValue(c.value)) || [];
   } catch {}
 
   // Bu hesabı çıkar
@@ -72,20 +73,22 @@ export async function DELETE(request) {
     const userSession = cookieStore.get('gp_user_session');
     if (userSession?.value) {
       try {
-        const user = JSON.parse(userSession.value);
+        const user = await readValue(userSession.value);
+        if (!user) throw new Error("gecersiz oturum");
         await saveUserConnection(user.uid, 'steam', null);
         await saveUserConnection(user.uid, 'steamAccounts', null);
       } catch {}
     }
   } else {
-    response.cookies.set('gp_steam_accounts', JSON.stringify(updated), cookieOpts);
-    response.cookies.set('gp_steam_session',  JSON.stringify(updated[0]), cookieOpts);
+    response.cookies.set('gp_steam_accounts', await signValue(updated, LINK_TTL_SEC), cookieOpts);
+    response.cookies.set('gp_steam_session',  await signValue(updated[0], LINK_TTL_SEC), cookieOpts);
 
     // Redis güncelle
     const userSession = cookieStore.get('gp_user_session');
     if (userSession?.value) {
       try {
-        const user = JSON.parse(userSession.value);
+        const user = await readValue(userSession.value);
+        if (!user) throw new Error("gecersiz oturum");
         await saveUserConnection(user.uid, 'steamAccounts', updated);
         await saveUserConnection(user.uid, 'steam', updated[0]);
       } catch {}

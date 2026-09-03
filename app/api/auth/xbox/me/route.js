@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { readValue } from '../../../../lib/session-cookie';
 import { cookies } from 'next/headers';
 
 export async function GET() {
@@ -7,7 +8,7 @@ export async function GET() {
   if (!session?.value) return NextResponse.json({ user: null });
 
   try {
-    const { xuid, gamertag, avatar, isMock, gamepassType } = JSON.parse(session.value);
+    const { xuid, gamertag, avatar, isMock, gamepassType } = (await readValue(session.value)) || {};
     return NextResponse.json({ user: { xuid, gamertag, avatar, isMock, gamepassType } });
   } catch {
     return NextResponse.json({ user: null });

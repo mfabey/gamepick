@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { readValue, signValue, LINK_TTL_SEC } from '../../../../lib/session-cookie';
 import { sunucuHatasi } from '../../../../lib/api-error';
 import { consumeState } from '../../../../lib/oauth-state';
 import { cookies } from 'next/headers';
@@ -207,14 +208,14 @@ export async function GET(request) {
     const userSession = cookieStore.get('gp_user_session');
     if (userSession && userSession.value) {
       try {
-        const user = JSON.parse(userSession.value);
+        const user = await readValue(userSession.value); if (!user) throw new Error("gecersiz");
         await saveUserConnection(user.uid, 'xbox', session);
       } catch (err) {
         console.error('Failed to save Xbox connection to Redis:', err.message);
       }
     }
 
-    cookieStore.set('gp_xbox_session', JSON.stringify(session), {
+    cookieStore.set('gp_xbox_session', await signValue(session, LINK_TTL_SEC), {
       httpOnly: true,
       secure:   process.env.NODE_ENV === 'production',
       maxAge:   60 * 60 * 24 * 30,

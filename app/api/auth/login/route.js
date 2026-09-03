@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { signValue, SESSION_TTL_SEC } from '../../../lib/session-cookie';
 import { sunucuHatasi, yukariAkisHatasi } from '../../../lib/api-error';
 import { canUseAuthMock, authNotConfigured } from '../../../lib/auth-config';
 import { redisCmd, redisSetJSON } from '../../../lib/redis';
@@ -27,11 +28,11 @@ export async function POST(request) {
       console.warn('FIREBASE_API_KEY is not defined. Falling back to mock login.');
       const userObj = { uid: 'mock_user', name: email.split('@')[0], email };
       const response = NextResponse.json({ ok: true, user: userObj });
-      response.cookies.set('gp_user_session', JSON.stringify(userObj), {
+      response.cookies.set('gp_user_session', await signValue(userObj, SESSION_TTL_SEC), {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 7, // 7 days
+        maxAge: SESSION_TTL_SEC,
       });
       try {
         await mergeProfile('mock_user', userObj);
@@ -101,11 +102,11 @@ export async function POST(request) {
 
     // 4. Set HttpOnly Cookie for successful verified login
     const response = NextResponse.json({ ok: true, user: userObj });
-    response.cookies.set('gp_user_session', JSON.stringify(userObj), {
+    response.cookies.set('gp_user_session', await signValue(userObj, SESSION_TTL_SEC), {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
+      maxAge: SESSION_TTL_SEC,
     });
 
     // Cache profile and map connections in Redis

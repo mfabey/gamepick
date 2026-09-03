@@ -41,9 +41,21 @@
 
 const SIG_LEN = 32; // ~192 bit — çerezi şişirmeden fazlasıyla yeterli
 
+// GELİŞTİRMEDE FALLBACK, ÜRETİMDE ZORUNLU. `auth-config.js`'teki
+// `canUseAuthMock` ile aynı kalıp: SESSION_SECRET olmadan yerel geliştirme
+// çalışmaya devam etsin diye sabit bir dev sırrı var, ama ÜRETİMDE fallback
+// YOK — orada gerçek sır tanımlı değilse imzalama da doğrulama da yapılmıyor
+// ve oturum kurulamıyor (imzasız çereze geri düşmek açığı geri açardı).
+//
+// Dev sırrı GİZLİ DEĞİL, olması da gerekmiyor: yerelde çerez bir güvenlik
+// sınırı değil. Kaynağa yazılı olması bilinçli.
+const DEV_FALLBACK = 'gamerisen-dev-only-insecure-session-key';
+
 function secretOrNull() {
   const s = process.env.SESSION_SECRET;
-  return s && s.length >= 16 ? s : null;
+  if (s && s.length >= 16) return s;
+  if (process.env.NODE_ENV !== 'production') return DEV_FALLBACK;
+  return null;
 }
 
 /** Sır tanımlı mı? Uçlar buna göre KAPALI hâlde başarısız oluyor. */
@@ -79,28 +91,31 @@ function sabitZamanEsit(a, b) {
 }
 
 /**
- * Oturum gövdesini imzalar.
- * @param payload   çereze konacak nesne (uid, name, email…)
- * @param ttlSec    oturum ömrü (saniye)
- * @returns imzalı çerez değeri, ya da sır yoksa null
+ * HERHANGİ bir JSON değerini (nesne VEYA dizi) imzalar.
+ *
+ * Değer `{ v, exp }` zarfının İÇİNE konuyor, spread EDİLMİYOR: `gp_steam_accounts`
+ * bir DİZİ ve `{...dizi, exp}` diziyi bozardı. Zarf her tipi taşıyor.
+ *
+ * @returns imzalı çerez değeri, ya da sır yoksa null (üretimde yapılandırma
+ *          eksikliği; çağıran bunu 503'e çevirmeli)
  */
-export async function signSession(payload, ttlSec) {
+export async function signValue(value, ttlSec) {
   if (!canSignSessions()) return null;
-  const gövde = { ...payload, exp: Math.floor(Date.now() / 1000) + ttlSec };
-  const veri = b64urlEncode(JSON.stringify(gövde));
+  const zarf = { v: value, exp: Math.floor(Date.now() / 1000) + ttlSec };
+  const veri = b64urlEncode(JSON.stringify(zarf));
   return `${veri}.${await hmac(veri)}`;
 }
 
 /**
  * İmzalı çerezi okur ve DOĞRULAR.
  *
- * @returns gövde nesnesi, ya da imza/süre geçersizse null.
+ * @returns içteki değer (nesne/dizi), ya da imza/süre geçersizse null.
  *
- * İMZASIZ ESKİ ÇEREZLER REDDEDİLİR. Bu, mevcut oturumları düşürüyor —
- * kullanıcılar bir kez yeniden giriş yapacak. Bilinçli: imzasız çerezi
- * geçiş süresince kabul etmek, açığı o süre boyunca açık tutmak demekti.
+ * İMZASIZ ESKİ ÇEREZLER REDDEDİLİR → mevcut oturumlar bir kez düşer,
+ * kullanıcılar yeniden giriş yapar. Bilinçli: imzasız çerezi geçiş süresince
+ * kabul etmek, açığı o süre boyunca açık tutmak demekti.
  */
-export async function readSession(raw) {
+export async function readValue(raw) {
   if (!raw || !canSignSessions()) return null;
   const nokta = raw.lastIndexOf('.');
   if (nokta < 1) return null; // imzasız (eski biçim) → reddet
@@ -117,11 +132,11 @@ export async function readSession(raw) {
   if (!sabitZamanEsit(imza, beklenen)) return null;
 
   try {
-    const gövde = JSON.parse(b64urlDecode(veri));
-    if (!gövde || typeof gövde !== 'object') return null;
+    const zarf = JSON.parse(b64urlDecode(veri));
+    if (!zarf || typeof zarf !== 'object') return null;
     // SÜRE SUNUCUDA UYGULANIYOR — çerezin maxAge'ı tek başına yeterli değil.
-    if (typeof gövde.exp !== 'number' || gövde.exp * 1000 < Date.now()) return null;
-    return gövde;
+    if (typeof zarf.exp !== 'number' || zarf.exp * 1000 < Date.now()) return null;
+    return zarf.v ?? null;
   } catch {
     return null;
   }

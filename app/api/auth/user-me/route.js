@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { signValue, readValue, SESSION_TTL_SEC, LINK_TTL_SEC } from '../../../lib/session-cookie';
 import { cookies } from 'next/headers';
 import { redisCmd, redisGetJSON, redisSetJSON } from '../../../lib/redis';
 import { mergeProfile } from '../../../lib/social-store';
@@ -22,9 +23,7 @@ export async function GET() {
     let user = null;
 
     if (session?.value) {
-      try {
-        user = JSON.parse(session.value);
-      } catch {}
+      user = await readValue(session.value);
     }
 
     let userWasRestored = false;
@@ -34,8 +33,9 @@ export async function GET() {
       const steamSession = cookieStore.get('gp_steam_session');
       if (steamSession?.value) {
         try {
-          const steamUser = JSON.parse(steamSession.value);
-          const steamId = steamUser.steamId;
+          const steamUser = await readValue(steamSession.value);
+          const steamId = steamUser?.steamId;
+          if (!steamId) throw new Error('gecersiz steam oturumu');
           
           let uid = await redisCmd(['GET', `steam_to_uid:${steamId}`]);
           if (!uid) {
@@ -97,7 +97,7 @@ export async function GET() {
     });
 
     if (userWasRestored) {
-      response.cookies.set('gp_user_session', JSON.stringify(user), {
+      response.cookies.set('gp_user_session', await signValue(user, SESSION_TTL_SEC), {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
@@ -108,7 +108,7 @@ export async function GET() {
 
     // Synchronize cookies to this device if they are in Redis but missing locally
     if (connections.steam && !cookieStore.get('gp_steam_session')) {
-      response.cookies.set('gp_steam_session', JSON.stringify(connections.steam), {
+      response.cookies.set('gp_steam_session', await signValue(connections.steam, LINK_TTL_SEC), {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         maxAge: 60 * 60 * 24 * 30, // 30 days
@@ -118,7 +118,7 @@ export async function GET() {
     }
 
     if (connections.xbox && !cookieStore.get('gp_xbox_session')) {
-      response.cookies.set('gp_xbox_session', JSON.stringify(connections.xbox), {
+      response.cookies.set('gp_xbox_session', await signValue(connections.xbox, LINK_TTL_SEC), {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         maxAge: 60 * 60 * 24 * 30, // 30 days

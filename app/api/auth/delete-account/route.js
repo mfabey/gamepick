@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { readValue } from '../../../lib/session-cookie';
 import { sunucuHatasi, yukariAkisHatasi } from '../../../lib/api-error';
 import { canUseAuthMock, authNotConfigured } from '../../../lib/auth-config';
 import { guard, penalize } from '../../../lib/rate-guard';
@@ -40,7 +41,10 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Şifrenizi girmeniz zorunludur.' }, { status: 400 });
     }
 
-    const user = JSON.parse(session.value);
+    const user = await readValue(session.value);
+    if (!user) {
+      return NextResponse.json({ error: 'Oturum bulunamadı. Lütfen tekrar giriş yapın.' }, { status: 401 });
+    }
     const { email, uid } = user;
 
     // Hesap silme parola doğruluyor — yani çalınmış bir çerezle parola

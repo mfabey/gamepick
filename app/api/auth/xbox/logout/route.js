@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { readValue } from '../../../../lib/session-cookie';
 import { cookies } from 'next/headers';
 
 const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL;
@@ -54,7 +55,7 @@ export async function GET(request) {
   const userSession = cookieStore.get('gp_user_session');
   if (userSession && userSession.value) {
     try {
-      const user = JSON.parse(userSession.value);
+      const user = await readValue(userSession.value); if (!user) throw new Error("gecersiz");
       await removeUserConnection(user.uid, 'xbox');
     } catch (err) {
       console.error('Failed to remove Xbox connection from Redis:', err.message);

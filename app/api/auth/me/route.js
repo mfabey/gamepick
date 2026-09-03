@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { readValue } from '../../../lib/session-cookie';
 import { cookies } from 'next/headers';
 
 // GET /api/auth/me  →  Tüm Steam hesaplarını döndür (çoklu hesap desteği)
@@ -9,7 +10,7 @@ export async function GET() {
   const accountsCookie = cookieStore.get('gp_steam_accounts');
   if (accountsCookie?.value) {
     try {
-      const accounts = JSON.parse(accountsCookie.value);
+      const accounts = await readValue(accountsCookie.value);
       if (Array.isArray(accounts) && accounts.length > 0) {
         return NextResponse.json({
           user:    accounts[0],     // Geriye uyumluluk
@@ -23,7 +24,7 @@ export async function GET() {
   const session = cookieStore.get('gp_steam_session');
   if (session?.value) {
     try {
-      const user = JSON.parse(session.value);
+      const user = await readValue(session.value);
       return NextResponse.json({ user, accounts: [user] });
     } catch {}
   }

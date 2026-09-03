@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { readValue } from '../../lib/session-cookie';
 import { sunucuHatasi } from '../../lib/api-error';
 import { cookies } from 'next/headers';
 
@@ -110,25 +111,23 @@ function formatTitle(t) {
 // ── Ana handler ──────────────────────────────────────────────────────────────
 export async function GET(request) {
   const cookieStore = await cookies();
-  let sessionRaw = cookieStore.get('gp_xbox_session')?.value || null;
 
-  // Mobil: httpOnly cookie olmadığından session'ı header ile kabul et (base64 JSON)
-  if (!sessionRaw) {
+  // WEB: imzalı çerez (readValue doğruluyor). MOBİL: httpOnly çerez olmadığı
+  // için session'ı X-Xbox-Session header'ıyla taşıyor (base64 JSON). İki yol
+  // ayrı: çerez artık imzalı formatta, JSON.parse ondan geçmez.
+  let session = null;
+  const cookieVal = cookieStore.get('gp_xbox_session')?.value;
+  if (cookieVal) session = await readValue(cookieVal);
+
+  if (!session) {
     const hdr = request?.headers?.get('x-xbox-session');
     if (hdr) {
-      try { sessionRaw = Buffer.from(hdr, 'base64').toString('utf8'); } catch { /* geçersiz */ }
+      try { session = JSON.parse(Buffer.from(hdr, 'base64').toString('utf8')); } catch { /* geçersiz */ }
     }
   }
 
-  if (!sessionRaw) {
+  if (!session) {
     return NextResponse.json({ error: 'Oturum yok' }, { status: 401 });
-  }
-
-  let session;
-  try {
-    session = JSON.parse(sessionRaw);
-  } catch {
-    return NextResponse.json({ error: 'Geçersiz oturum' }, { status: 401 });
   }
 
   if (session.isMock) {
