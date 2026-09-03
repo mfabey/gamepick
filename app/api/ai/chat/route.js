@@ -203,6 +203,134 @@ function estimateHardware(game, userGpu) {
   }
 }
 
+// --- Curated Gaming Categories & Thematic AppIDs ---
+const GAMING_CATEGORIES = {
+  coop: {
+    regex: /(?:cift\s*kisilik|2\s*kisilik|iki\s*kisilik|beraber|arkadas(?:im)?la|birlikte|coop|co-op|kooperatif|split\s*screen|yerel\s*cok\s*oyunculu|multiplayer)/i,
+    name: 'Çift Kişilik & Co-op Oyunlar',
+    curatedAppIds: [1426210, 448510, 1222700, 620, 413150, 1225570, 550, 105600, 322330, 892970, 1966720]
+  },
+  story: {
+    regex: /(?:hikaye(?:li)?|senaryo(?:lu)?|story\s*rich|derin\s*hikaye|etkileyici\s*hikaye|sinematik)/i,
+    name: 'Hikayeli Oyunlar',
+    curatedAppIds: [292030, 1174180, 1091500, 1593500, 1888930, 1222140, 1307550]
+  },
+  openworld: {
+    regex: /(?:acik\s*dunya|open\s*world|serbest\s*dolas)/i,
+    name: 'Açık Dünya Oyunları',
+    curatedAppIds: [271590, 1174180, 1245620, 292030, 1091500, 1551360, 489830]
+  },
+  horror: {
+    regex: /(?:korku|gerilim|horror|scary|zombi|hayatta\s*kalma\s*korku)/i,
+    name: 'Korku & Gerilim Oyunları',
+    curatedAppIds: [2050650, 1693980, 238320, 2124490, 242760, 739630, 1326470]
+  },
+  survival: {
+    regex: /(?:hayatta\s*kalma|survival|crafting|base\s*building)/i,
+    name: 'Hayatta Kalma Oyunları',
+    curatedAppIds: [242760, 1326470, 252490, 346110, 648800, 264710, 108600]
+  },
+  racing: {
+    regex: /(?:yaris|araba|racing|surus|drift|simulasyon\s*yaris)/i,
+    name: 'Yarış & Araba Oyunları',
+    curatedAppIds: [1551360, 1293830, 1846380, 244210, 2108330]
+  },
+  fps: {
+    regex: /(?:fps|nisanci|shooter|first\s*person|silahli)/i,
+    name: 'FPS & Nişancı Oyunları',
+    curatedAppIds: [782330, 730, 359550, 1091500, 1238840, 1172470]
+  },
+  roguelike: {
+    regex: /(?:roguelike|rogue-like|roguelite|rogue-lite)/i,
+    name: 'Rogue-like Oyunlar',
+    curatedAppIds: [1145360, 588650, 250900, 1794680, 632360]
+  },
+  strategy: {
+    regex: /(?:strateji|taktik|strategy|taktiksel|sira\s*tabanli)/i,
+    name: 'Strateji Oyunları',
+    curatedAppIds: [289070, 394360, 1466860, 1158310, 1142710]
+  },
+  f2p: {
+    regex: /(?:ucretsiz|bedava|free\s*to\s*play|f2p|parasiz)/i,
+    name: 'Ücretsiz / Bedava Oyunlar',
+    curatedAppIds: [730, 1172470, 578080, 570, 230410, 1085660, 440]
+  }
+};
+
+// Helper: Resolve a Steam AppID to a fully structured Game Object with live pricing
+async function resolveAppIdToGameCard(appId, userGpu) {
+  try {
+    const steamData = await getSteamDetailsCached(appId, 'tr');
+    if (!steamData) return null;
+
+    let currentPrice = steamData.is_free ? 'Ücretsiz' : 'Ücretsiz';
+    let originalPrice = steamData.is_free ? 'Ücretsiz' : 'Ücretsiz';
+    let discount = 0;
+    let currency = 'USD';
+
+    if (steamData.price_overview) {
+      currency = steamData.price_overview.currency || 'USD';
+      currentPrice = steamData.price_overview.final_formatted || `$${(steamData.price_overview.final / 100).toFixed(2)}`;
+      originalPrice = steamData.price_overview.initial_formatted || `$${(steamData.price_overview.initial / 100).toFixed(2)}`;
+      discount = steamData.price_overview.discount_percent || 0;
+    }
+
+    const gameObj = {
+      id: appId,
+      slug: `rawg_${appId}`,
+      rawgSlug: `rawg_${appId}`,
+      steamAppId: String(appId),
+      title: steamData.name,
+      genres: (steamData.genres || []).map(g => g.description),
+      description: steamData.short_description || `${steamData.name} — Güncel mağaza fiyatı ve donanım uyumluluğu.`,
+      rating: steamData.metacritic?.score || 88,
+      image_url: steamData.header_image || `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appId}/header.jpg`,
+      store_url: `https://store.steampowered.com/app/${appId}`,
+      deals: [{
+        platform: 'Steam',
+        current_price: currentPrice,
+        original_price: originalPrice,
+        discount
+      }],
+      best_deal: {
+        platform: 'Steam',
+        current_price: currentPrice,
+        original_price: originalPrice,
+        discount
+      },
+      currency
+    };
+
+    gameObj.hardware_compatibility = estimateHardware(gameObj, userGpu);
+    return gameObj;
+  } catch (err) {
+    return null;
+  }
+}
+
+// Helper: Sanitize AI output to strip hallucinated markdown links, fake store URLs, or card promises when no cards exist
+function cleanAiResponse(rawText, hasStructuredGames = true) {
+  if (!rawText) return '';
+  let text = rawText;
+
+  // 1. Strip fake markdown links [Mağazaya Git](...) or [Steam](https://store.steampowered.com...)
+  text = text.replace(/\[(?:Mağazaya Git|Oyuna Git|Steam|Epic|Mağazada Gör|Store|Link).*?\]\(https?:\/\/[^\s)]+\)/gi, '');
+  text = text.replace(/\[.*?\]\(https?:\/\/store\.steampowered\.com\/app\/[^\s)]+\)/gi, '');
+  text = text.replace(/https?:\/\/store\.steampowered\.com\/app\/[A-Za-z0-9_]+/gi, '');
+  text = text.replace(/\(butona tıklayarak doğrudan.*?\)/gi, '');
+  text = text.replace(/\(butona basarak doğrudan.*?\)/gi, '');
+  text = text.replace(/•\s*--+/g, '');
+
+  // 2. If no structured games exist, remove promises of "aşağıdaki kartlardan..."
+  if (!hasStructuredGames) {
+    text = text.replace(/(?:aşağıdaki|hemen aşağıdaki|alttaki)\s*(?:interaktif\s*)?kartlardan.*?(?:\n|$)/gi, '');
+    text = text.replace(/kartlardaki\s*(?:mağaza\s*)?link(?:ler)?ine.*?(?:\n|$)/gi, '');
+    text = text.replace(/kartlardaki\s*butonlara.*?(?:\n|$)/gi, '');
+  }
+
+  return text.trim();
+}
+
 // --- Generative AI Inference Engine ---
 const GAMERISEN_SYSTEM_PROMPT = `Sen **Gamerisen AI** (gamerisen.com)'ın resmi, son derece zeki, esprili, samimi, özlü ve bilgili yapay zeka oyun danışmanısın.
 
@@ -217,37 +345,37 @@ const GAMERISEN_SYSTEM_PROMPT = `Sen **Gamerisen AI** (gamerisen.com)'ın resmi,
 2. **ESNEME PAYI (İSTİSNA):**
    - Yalnızca kullanıcının sorduğu soru veya konu evrensel/felsefi, derinlemesine teknik donanım/FPS analizi veya çok kapsamlı bir oyun evreni/kıyaslama detayı gerektiriyorsa mesajını uzatabilir, esneme payı bırakabilirsin. Ancak bu durumlarda dahi gereksiz laf kalabalığından kaçın.
 
-### 🏷️ FİYAT, İNDİRİM VE HİKAYE BİLGİSİ SUNMA KURALI (ÇOK ÖNEMLİ):
-1. **METİN İÇİNDE ASLA DEVASA FİYAT TABLOLARI VEYA LİSTELERİ ÇİZME:**
-   - Kullanıcı "İndirimde neler var?", "En iyi fırsatlar", "Hangi oyunlar indirimde?", fiyat veya oyun sorduğunda metin içinde ASLA Markdown tabloları (| Oyun | Platform | Fiyat |) veya uzun fiyat listeleri yazma.
-   - Çünkü oyunların indirimli fiyatları, indirim oranları, platformları, donanım uyumlulukları ve **sitedeki oyun detay sayfasına yönlendiren butonlar ("Mağazaya Git 🚀")** mesajının hemen altında şık interaktif kartlar olarak gösterilmektedir.
-2. **KARTLARA YÖNLENDİREN ŞIK VE DİNAMİK BİR GİRİŞ YAP:**
-   - Bilgiyi sunarken doğrudan, net ve dinamik bir giriş cümlesi kur. 2-4 samimi ve özlü cümleyle özetle, ardından doğrudan kartlardaki butonlara yönlendir.
-   - Örneğin:
-     - *"Tabii, işte sistemine ve zevkine uygun en sıcak indirim fırsatları ve mağaza bilgileri aşağıdaki kartlarda listelenmiştir:"*
-     - *"Aşağıdaki interaktif kartlardan güncel indirimleri inceleyebilir ve 'Mağazaya Git' butonuyla oyunun platform ve mağaza detaylarına ulaşabilirsin: 🚀"*
-     - *"[Oyun Adı] için en son fırsatları ve detayları çıkardım, hemen aşağıdaki karttan oyun sayfasına ve mağazalara ulaşabilirsin:"*
-     - *"Aradığın oyunun güncel mağaza fiyatları ve detayları şöyle:"*
-   - **ASLA HEP AYNI CÜMLEYİ KULLANMA:** Yukarıdaki kalıpları ve benzerlerini her seferinde doğal bir şekilde türet, çeşitlendir ve dinamik bir giriş cümlesiyle bilgiyi aktar.
-   - Kullanıcı hikaye istediyse 2-4 cümlelik vurucu bir hikaye özeti ver; fiyatlar zaten altındaki kartlarda detaylı listelendiği için gereksiz tekrarlardan kaçın.
+### 🛑 KESİN LİNK VE FİYAT YAZMAMA KURALLARI (ÇOK ÖNEMLİ):
+1. **METİN İÇİNE ASLA LİNK, URL VEYA "[Mağazaya Git](...)" YAZMA:**
+   - Mesajının içinde ASLA \`[Mağazaya Git 🚀](...)\`, \`[Steam](...)\`, \`http://...\`, \`https://...\` veya \`XXXXX\` gibi markdown köprüleri yazma.
+   - Sitede butonlar ve kartlar zaten arayüz tarafından mesajının hemen altında otomatik olarak render edilmektedir.
+2. **METİN İÇİNDE ASLA TAHMİNİ / UYDURMA FİYAT LİSTESİ YAZMA:**
+   - Veritabanı kartlarında yer almayan eski veya kafadan uydurma TL/Dolar fiyatlarını ("30 TL - 50 TL", "yaklaşık 40 TL" vb.) metin içinde yazma.
+   - Fiyatlar kartlarda güncel olarak yer aldığı için metinde sadece oyunların neden iyi olduğunu ve deneyimini anlat.
+3. **KART VERİSİ YOKSA "AŞAĞIDAKİ KARTLARDAN..." DEME:**
+   - Eğer sana verilen veritabanı boşsa veya kart yoksa, "aşağıdaki kartlardan inceleyebilirsin" gibi ifadeler kullanma.
+
+### 🏷️ KARTLARA YÖNLENDİREN ŞIK VE DİNAMİK BİR GİRİŞ YAP:
+- Kart verisi mevcutsa doğrudan, net ve dinamik bir giriş cümlesi kur (2-4 samimi ve özlü cümle).
+- Örneğin:
+  - *"Tabii, işte sistemine ve zevkine uygun en sıcak indirim fırsatları aşağıdaki kartlarda listelenmiştir:"*
+  - *"Aşağıdaki interaktif kartlardan güncel indirimleri inceleyebilir ve 'Mağazaya Git' butonuyla oyunun detay sayfasına ulaşabilirsin: 🚀"*
+  - *"[Oyun Adı] için en son fırsatları ve detayları çıkardım, hemen aşağıdaki karttan oyun sayfasına ve mağazalara ulaşabilirsin:"*
+- **ASLA HEP AYNI CÜMLEYİ KULLANMA:** Yukarıdaki kalıpları ve benzerlerini her seferinde doğal bir şekilde türet ve çeşitlendir.
 
 ### 🛑 KESİN VE TAVİZSİZ GÜVENLİK KURALLARI:
 1. **KİŞİSEL İSİMLER VE GERÇEK ŞAHISLAR HAKKINDA BİLGİ VERMEK KESİNLİKLE YASAKTIR**:
-   - Gerçek kişiler, şahıslar, yayıncılar (streamer), YouTuber'lar, sosyal medya fenomenleri, içerik üreticileri, ünlüler, politikacılar, geliştiriciler veya herhangi bir bireysel/kişisel isim hakkında (örneğin "Batuhan Dündar kimdir?", "Ahmet kimdir?", "X kim?", "Y hakkında bilgi ver" vb.) ASLA BİLGİ, BİYOGRAFİ VEYA YORUM VERME.
-   - Böyle bir soru geldiğinde kesin ve net bir dille reddet: Gamerisen AI olarak yalnızca video oyunları, donanım/FPS ve oyun indirimleri konusunda hizmet verdiğini, kişisel isimler ve gerçek şahıslarla ilgili bilgi hizmeti vermediğini belirt ve kullanıcıyı oyun dünyasına (indirimler, oyun önerileri veya donanım testi) davet et.
+   - Gerçek kişiler, şahıslar, yayıncılar (streamer), YouTuber'lar, sosyal medya fenomenleri, içerik üreticileri, ünlüler, politikacılar, geliştiriciler veya herhangi bir bireysel/kişisel isim hakkında ASLA BİLGİ, BİYOGRAFİ VEYA YORUM VERME.
+   - Böyle bir soru geldiğinde kesin ve net bir dille reddet.
    - Yalnızca kurgusal video oyunu karakterlerinin (Geralt, Kratos, Arthur Morgan vb.) oyun dünyasındaki rolünü ve hikayesini oyun bağlamında anlatabilirsin.
 
 2. **AMACI DIŞINA ÇIKILMAMALIDIR (STRICT GAMING FOCUS)**:
-   - Gamerisen AI genel kültür, magazin, siyaset, tıp, aşk/ilişki, genel ansiklopedi veya konu dışı görev botu DEĞİLDİR.
-   - Oyun dünyasıyla tamamen alakasız sorularda konu dışına sapma; kibar ve esprili bir dille bir oyun asistanı olduğunu hatırlatarak konuyu oyunlara, oyun fiyatlarına veya donanım tavsiyelerine bağla.
+   - Gamerisen AI genel kültür, magazin, siyaset, tıp, aşk/ilişki botu DEĞİLDİR. Konuyu oyunlara bağla.
 
 3. **ASLA EZBERLENMİŞ / ROBOTİK CEVAP VERME**:
-   - Selamlaşma, hal-hatır sorma veya oyun sorularında canlı, enerjik, samimi ve doğal Türkçe cümleler kur. Gamer jargonu (clutch, carry, boss fight, fps drop, loot, meta, gg wp) yerinde ve ölçülü olsun.
+   - Selamlaşma, hal-hatır sorma veya oyun sorularında canlı, enerjik, samimi ve doğal Türkçe cümleler kur. Gamer jargonu yerinde ve ölçülü olsun.
 
-4. **VERİTABANI VE FİYAT BİLGİSİ (RAG)**:
-   - Sana verilen veritabanı oyun ve mağaza verilerini temel alarak doğru, güncel ve net bilgiler sun.
-
-5. **DİL VE TON**:
+4. **DİL VE TON**:
    - Samimi, zeki, yardımsever, özlü ve oyuncu dostu bir üslup. Markdown biçimlendirmesi (kalın yazılar, listeler, emojiler) kullan.`;
 
 function isValidKey(key) {
@@ -723,6 +851,47 @@ function extractLastGameFromHistory(history, gamesDb) {
   return null;
 }
 
+// --- Extract Multiple Recent Games from History for Contextual Continuity ---
+function extractRecentGamesFromHistory(history, gamesDb) {
+  if (!Array.isArray(history) || history.length === 0) return [];
+  const foundTitles = new Set();
+  const results = [];
+
+  for (let i = history.length - 1; i >= 0; i--) {
+    const item = history[i];
+    if (Array.isArray(item?.games) && item.games.length > 0) {
+      for (const g of item.games) {
+        if (g && g.title && !foundTitles.has(g.title)) {
+          foundTitles.add(g.title);
+          results.push(g);
+        }
+      }
+    }
+    const text = item?.text || item?.content || '';
+    if (!text) continue;
+
+    const boldMatches = [...text.matchAll(/\*\*([A-Za-z0-9\s:_\-–]{3,35})\*\*/g)];
+    for (const match of boldMatches) {
+      const title = match[1].trim();
+      if (!/Gamerisen|BETA|Steam|Epic|GOG|FPS|TL|USD/i.test(title) && !foundTitles.has(title)) {
+        foundTitles.add(title);
+        const matchGame = gamesDb.find(dbG => normalizeText(dbG.title) === normalizeText(title));
+        if (matchGame) {
+          results.push({
+            id: matchGame.id,
+            slug: matchGame.slug || `rawg_${matchGame.id}`,
+            title: matchGame.title,
+            rating: matchGame.rating || 88,
+            image_url: matchGame.image_url || '',
+            best_deal: matchGame.deals?.[0]
+          });
+        }
+      }
+    }
+  }
+  return results;
+}
+
 // --- Live Steam Store Search Engine (Zero Hallucination for ANY Game) ---
 async function searchSteamLive(query, userGpu) {
   try {
@@ -747,21 +916,21 @@ async function searchSteamLive(query, userGpu) {
     const cleanNorm = normalizeText(cleanTerm);
     const cleanTokens = cleanNorm.split(/\s+/).filter(Boolean);
 
-    // Precise filtering on Steam results
+    // Precise filtering on Steam results — reject random games
     let validItems = items.filter(item => {
       const itemTitleNorm = normalizeText(item.name);
       if (itemTitleNorm === cleanNorm) return true;
       if (itemTitleNorm.startsWith(cleanNorm + ' ') || cleanNorm.startsWith(itemTitleNorm + ' ')) return true;
       const itemTokens = new Set(itemTitleNorm.split(/\s+/).filter(Boolean));
       if (cleanTokens.every(ct => itemTokens.has(ct))) return true;
+      if (cleanTokens.length > 1 && cleanTokens.filter(ct => itemTokens.has(ct)).length >= Math.ceil(cleanTokens.length * 0.7)) return true;
       return false;
     });
 
     if (validItems.length === 0) {
-      validItems = items.slice(0, 2);
-    } else {
-      validItems = validItems.slice(0, 2);
+      return [];
     }
+    validItems = validItems.slice(0, 2);
 
     const results = [];
     for (const item of validItems) {
@@ -904,6 +1073,17 @@ export async function POST(req) {
     const isIdentityQuery = /^(sen kimsin|kimsin sen|nesin sen|sen nesin|ne ise yararsin|gorevin ne|amacin ne|gamerisen nedir|gamerisen ai nedir)$/i.test(normQ);
     const isCreatorQuery = /(?:seni kim yapti|seni kim kodladi|seni kim gelistirdi|kodlarin kime ait|kaynak kod|github)/i.test(normQ);
 
+    // Meta / Follow-up / "Nerede?" Query Interception
+    const isMetaWhereQuery = /^(?:nerede|nerde|hani|kart(?:lar)?\s*nerede|link(?:ler)?\s*nerede|goremiyorum|bulamadim|acilmadi|nereden\s*gorebilirim|nerede\s*linkler|link\s*hani)\??$/i.test(normQ.trim());
+    if (isMetaWhereQuery) {
+      const recentHistoryGames = extractRecentGamesFromHistory(history, gamesDb);
+      return NextResponse.json({
+        response: "Önerdiğim oyunların detay kartları mesajımın hemen altında yer alıyor dostum! 🎮 Kartlardaki **'Mağazaya Git 🚀'** butonuna basarak doğrudan sitemizdeki oyun sayfasına gidebilir ve mağaza fiyatlarını inceleyebilirsin. Eğer belirli bir oyunun fiyatını veya sistem gereksinimlerini öğrenmek istersen oyunun adını yazman yeterli! ⚡",
+        session_id: sessionId,
+        games: recentHistoryGames.slice(0, 3)
+      });
+    }
+
     // 4. Follow-up / Anaphoric Query Context Resolution
     const isFollowUpQuery = /^(fiyat|fiyati|fiyatlar|fiyat bilgisi|kac tl|kac para|ne kadar|nerede ucuz|sistemim kaldirir mi|kaldirir mi|acar mi|kac fps|kac fps verir|hikayesi ne|hikaye|konusu ne|oynanis suresi|kac saat surer|nereden indirebilirim|nasil indirilir|almak mantikli mi|alinir mi|indirime girer mi)\??$/i.test(normQ) ||
       (/^(fiyat|ne kadar|kac tl|fps|hikayesi|sistemim|donanim)\b/i.test(normQ) && normQ.split(/\s+/).length <= 3);
@@ -927,12 +1107,20 @@ export async function POST(req) {
       }
     }
 
-    // 6. Parse Price Constraints
+    // 6. Detect Curated Categories & Parse Price Constraints
+    let matchedCategory = null;
+    for (const [catKey, catData] of Object.entries(GAMING_CATEGORIES)) {
+      if (catData.regex.test(normQ)) {
+        matchedCategory = { key: catKey, ...catData };
+        break;
+      }
+    }
+
     let maxPrice = null;
     let minPrice = null;
     let aroundPrice = null;
     const isFree = /ucretsiz|bedava|free to play|f2p|parasiz|sifir tl/.test(normQ) || /\b0\s*(?:tl|lira)\b/.test(normQ);
-    const isCheapest = /en ucuz|en ucuzu|en ucuzlar|en ucuz oyun|en ucuz oyunlar|en kelepir|en hesapli/.test(normQ) && !isFree;
+    const isCheapest = /en ucuz|en ucuzu|en ucuzlar|en ucuz oyun|en ucuz oyunlar|en kelepir|en hesapli|uygun fiyat|butce dostu/.test(normQ) && !isFree;
 
     const aroundMatch = normQ.match(/(\d+)\s*(?:tl|lira|liralik|dolar|\$)?\s*(?:ye|ya|e|a)?\s*(?:yakin|yakini|civari|civarinda|civarindaki|bandi|bandinda|bandindaki|dolaylarinda|yaklasik)/);
     const rangeMatch = normQ.match(/(\d+)\s*(?:-|ile|ve|ila)\s*(\d+)\s*(?:tl|lira|liralik|dolar|\$)?\s*(?:arasi|arasinda|arasindaki)?/);
@@ -952,7 +1140,7 @@ export async function POST(req) {
     }
 
     const isConstraint = (maxPrice !== null) || (minPrice !== null) || (aroundPrice !== null) || isFree || isCheapest;
-    const isRecommendationQuery = /(?:ne oynasam|oyun oner|oyun tavsiyesi|hangi oyunu oynasam|sıkıldım|sikildim|ne oynayayim|en iyi oyunlar|onerin var mi)/i.test(normQ);
+    const isRecommendationQuery = /(?:ne oynasam|oyun oner|oyun tavsiyesi|hangi oyunu oynasam|sıkıldım|sikildim|ne oynayayim|en iyi oyunlar|onerin var mi|neler var|neler onerebilirsin|ne var|tavsiye et|onerin|listele|oneriler|bütçe dostu|uygun fiyat)/i.test(normQ) || Boolean(matchedCategory);
     const isDealsQuery = /(?:indirim|indirimde|indirimler|indirimdeki|firsat|firsatlar|kampanya|kampanyalar|kelepir|fiyati dusen|fiyatlari dusen|en iyi indirimler|cazip|ucuzluk)/i.test(normQ);
     const isHardwareSpecificQuery = Boolean(queryGpu) || /(?:sistemim|donanim|ekran kartim|kaldirir mi|fps|akici)/i.test(normQ);
 
@@ -1066,8 +1254,34 @@ export async function POST(req) {
 
     let structuredGames = [];
 
-    // 8. If database has high-confidence exact/token match (score >= 35.0) or recommendation/constraint/deals results, use them
-    if (scoredGames.length > 0 && (isConstraint || isRecommendationQuery || isDealsQuery || isHardwareSpecificQuery || scoredGames[0].score >= 35.0)) {
+    // 8. If Matched Category (e.g. Co-op, Story, Horror, Racing), resolve real curated game cards with live Steam prices
+    if (matchedCategory && matchedCategory.curatedAppIds && matchedCategory.curatedAppIds.length > 0) {
+      try {
+        const catPromises = matchedCategory.curatedAppIds.slice(0, 6).map(appId => resolveAppIdToGameCard(appId, userGpu));
+        const resolvedCatGames = (await Promise.all(catPromises)).filter(Boolean);
+
+        if (resolvedCatGames.length > 0) {
+          if (isFree) {
+            const freeOnly = resolvedCatGames.filter(g => g.best_deal?.current_price === 'Ücretsiz' || g.best_deal?.current_price === '$0.00' || g.best_deal?.current_price === 0);
+            structuredGames = freeOnly.length > 0 ? freeOnly.slice(0, 4) : resolvedCatGames.slice(0, 4);
+          } else if (isCheapest) {
+            resolvedCatGames.sort((a, b) => {
+              const discA = a.best_deal?.discount || 0;
+              const discB = b.best_deal?.discount || 0;
+              return discB - discA;
+            });
+            structuredGames = resolvedCatGames.slice(0, 4);
+          } else {
+            structuredGames = resolvedCatGames.slice(0, 4);
+          }
+        }
+      } catch (e) {
+        console.error('Error resolving category cards:', e);
+      }
+    }
+
+    // 9. If database has high-confidence exact/token match or recommendation results
+    if (structuredGames.length === 0 && scoredGames.length > 0 && (isConstraint || isRecommendationQuery || isDealsQuery || isHardwareSpecificQuery || scoredGames[0].score >= 35.0)) {
       structuredGames = scoredGames.slice(0, isDealsQuery ? 4 : 3).map(r => {
         const storeMatch = (r.game.store_url || '').match(/\/app\/(\d+)/);
         const imgMatch = (r.game.image_url || '').match(/\/apps\/(\d+)/);
@@ -1091,8 +1305,8 @@ export async function POST(req) {
           hardware_compatibility: r.hw_compat
         };
       });
-    } else if (!isSmalltalk && !isIdentityQuery && !isCreatorQuery && (queryTokens.length > 0 || effectiveSearchTerm)) {
-      // 9. If NO database match found (or specific game like "Ark", "Palworld", "The Forest" asked), call Live Steam Search!
+    } else if (structuredGames.length === 0 && !isSmalltalk && !isIdentityQuery && !isCreatorQuery && !isMetaWhereQuery && (queryTokens.length > 0 || effectiveSearchTerm)) {
+      // 10. Live Steam Search for specific game query
       const steamSearchTarget = effectiveSearchTerm || userQuery;
       const steamLiveGames = await searchSteamLive(steamSearchTarget, userGpu);
       if (steamLiveGames.length > 0) {
@@ -1100,7 +1314,7 @@ export async function POST(req) {
       }
     }
 
-    // 10. Build RAG Context for Generative LLM
+    // 11. Build RAG Context for Generative LLM
     let ragContext = '';
     if (structuredGames.length > 0) {
       ragContext = JSON.stringify(structuredGames.map(g => ({
@@ -1114,8 +1328,9 @@ export async function POST(req) {
       })), null, 2);
     }
 
-    // 11. Generate Response via LLM Engine with full conversation history
-    const aiResponse = await callGenerativeLLM(userQuery, ragContext, userProfile, history);
+    // 12. Generate Response via LLM Engine with full conversation history
+    const rawAiResponse = await callGenerativeLLM(userQuery, ragContext, userProfile, history);
+    const aiResponse = cleanAiResponse(rawAiResponse, structuredGames.length > 0);
 
     return NextResponse.json({
       response: aiResponse,
