@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { guard } from '../../../lib/rate-guard';
 import { verifyMobileToken } from '../../../lib/mobile-auth';
 import { rateLimit, tooManyRequests } from '../../../lib/rate-limit';
 import { redisGetJSON } from '../../../lib/redis';
@@ -23,6 +24,8 @@ import { getProfile } from '../../../lib/social-store';
 // kendi içinde çözümleyip yalnızca şehir adını gönderiyor.
 // ─────────────────────────────────────────────────────────────────────────────
 
+// steam-friends ile AYNI deger: iki uc de ayni yayilma tavanini kullanmali.
+const MAX_FRIENDS = 100;
 const connKey = (uid) => `user_connections:${uid}`;
 
 function steamListOf(conn) {
@@ -54,6 +57,12 @@ export async function POST(request) {
   const rl = await rateLimit(`rl:cardurl:${user.uid}`, 60, 3600);
   if (!rl.ok) return NextResponse.json(tooManyRequests(), { status: 429 });
 
+  // GÜNLÜK TAVAN — istek başına 100 arkadaş kütüphanesi yayıyor.
+  // Saatlik sınır anlık patlamayı keser ama gün boyu sürdürülen bir akışı
+  // bağlamaz; günlük sayaç ayrı anahtarda tutuluyor (rate-limit-config.js).
+  const gunluk = await guard(request, 'steamGraph', { account: user.uid });
+  if (gunluk) return gunluk;
+
   let body = {};
   try { body = await request.json(); } catch { /* boş gövde */ }
 
@@ -69,7 +78,17 @@ export async function POST(request) {
   if (!accounts.length) return NextResponse.json({ error: 'STEAM_REQUIRED' }, { status: 409 });
 
   const mySteamId = accounts[0].steamId;
-  const ids = await friendIds(mySteamId);
+
+  // ARKADAŞ SAYISI KIRPILIYOR. Öncesinde `friendIds()`in döndürdüğü liste
+  // olduğu gibi `libraries()`e veriliyordu ve ikisinin de üst sınırı yoktu:
+  // Steam'in arkadaş tavanı 2000, yani önbellek soğukken TEK istek ~2000
+  // Steam çağrısı + 2000 Redis okuması yayabiliyordu. Saatte 60 istek
+  // hakkıyla bu, tek kullanıcıdan 120 bin yukarı akış çağrısı demekti.
+  //
+  // `social/steam-friends` aynı çağrıyı zaten 100'e kırpıyordu (MAX_FRIENDS);
+  // tutarsızlık buradaydı. Kart için 100 arkadaş fazlasıyla yeterli —
+  // "kaç arkadaşında var" sayacı bu örneklemle de anlamlı.
+  const ids = (await friendIds(mySteamId)).slice(0, MAX_FRIENDS);
   const libs = await libraries([mySteamId, ...ids]);
 
   const mine = libs.get(mySteamId)?.games;

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { guard } from '../../../../lib/rate-guard';
 import { put } from '@vercel/blob';
 import { verifyMobileToken } from '../../../../lib/mobile-auth';
 import { rateLimit, tooManyRequests } from '../../../../lib/rate-limit';
@@ -52,6 +53,12 @@ export async function POST(request) {
   // Yükleme pahalı: hem bant genişliği hem moderasyon çağrısı maliyetli.
   const rl = await rateLimit(`rl:dmmedia:${user.uid}`, 20, 3600);
   if (!rl.ok) return NextResponse.json(tooManyRequests(), { status: 429 });
+
+  // GÜNLÜK TAVAN — Google Vision görüntü başına ücretli.
+  // Saatlik sınır anlık patlamayı keser ama gün boyu sürdürülen bir akışı
+  // bağlamaz; günlük sayaç ayrı anahtarda tutuluyor (rate-limit-config.js).
+  const gunluk = await guard(request, 'visionModeration', { account: user.uid });
+  if (gunluk) return gunluk;
 
   let form;
   try { form = await request.formData(); }

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { guard } from '../../../../lib/rate-guard';
 import { put } from '@vercel/blob';
 import { verifyMobileToken } from '../../../../lib/mobile-auth';
 import { rateLimit, tooManyRequests } from '../../../../lib/rate-limit';
@@ -57,6 +58,12 @@ export async function POST(request) {
   // Avatar değiştirmek nadir bir iş; sınır dar.
   const rl = await rateLimit(`rl:avatarup:${user.uid}`, 10, 3600);
   if (!rl.ok) return NextResponse.json(tooManyRequests(), { status: 429 });
+
+  // GÜNLÜK TAVAN — Google Vision görüntü başına ücretli.
+  // Saatlik sınır anlık patlamayı keser ama gün boyu sürdürülen bir akışı
+  // bağlamaz; günlük sayaç ayrı anahtarda tutuluyor (rate-limit-config.js).
+  const gunluk = await guard(request, 'visionModeration', { account: user.uid });
+  if (gunluk) return gunluk;
 
   // Ön ayar ucundaki KURALIN AYNISI: kullanıcı adı yoksa profil kaydı da yok,
   // avatar yazmanın anlamı kalmıyor. Fotoğraf yolu bu kuralı atlamamalı —

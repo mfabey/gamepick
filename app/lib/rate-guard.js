@@ -70,6 +70,16 @@ export async function guard(request, action, { account } = {}) {
     if (!r.ok) return reddet(r.retryAfter);
   }
 
+  // GÜNLÜK TAVAN — saatlik sınırın ÜSTÜNE. Saatlik sınır anlık patlamayı
+  // keser ama gün boyu sürdürülen bir akışı bağlamaz: 30/saat × 24 = 720.
+  // Günlük sayaç ayrı bir anahtarda tutuluyor ki iki pencere birbirini
+  // sıfırlamasın.
+  if (cfg.ipDaily) {
+    const [limit, win] = cfg.ipDaily;
+    const r = await rateLimit(`rl:${action}:ipgun:${clientIp(request)}`, limit, win);
+    if (!r.ok) return reddet(r.retryAfter);
+  }
+
   if (cfg.account && account) {
     const id = await hashId(account);
     if (id) {
@@ -79,6 +89,16 @@ export async function guard(request, action, { account } = {}) {
       const r = cfg.accountOnFailureOnly
         ? await rateLimitPeek(key, limit, win)
         : await rateLimit(key, limit, win);
+      if (!r.ok) return reddet(r.retryAfter);
+    }
+  }
+
+  // Kullanıcı başına günlük tavan — yalnızca kimlikli uçlarda mümkün.
+  if (cfg.accountDaily && account) {
+    const id = await hashId(account);
+    if (id) {
+      const [limit, win] = cfg.accountDaily;
+      const r = await rateLimit(`rl:${action}:accgun:${id}`, limit, win);
       if (!r.ok) return reddet(r.retryAfter);
     }
   }

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { guard } from '../../../lib/rate-guard';
 import { verifyMobileToken } from '../../../lib/mobile-auth';
 import { rateLimit, tooManyRequests } from '../../../lib/rate-limit';
 import { redisGetJSON, redisPipeline } from '../../../lib/redis';
@@ -46,6 +47,12 @@ export async function GET(request) {
   // gevşek kalır.
   const rl = await rateLimit(`rl:steamfriends:${user.uid}`, 20, 3600);
   if (!rl.ok) return NextResponse.json(tooManyRequests(), { status: 429 });
+
+  // GÜNLÜK TAVAN — istek başına 100 arkadaş kütüphanesi yayıyor.
+  // Saatlik sınır anlık patlamayı keser ama gün boyu sürdürülen bir akışı
+  // bağlamaz; günlük sayaç ayrı anahtarda tutuluyor (rate-limit-config.js).
+  const gunluk = await guard(request, 'steamGraph', { account: user.uid });
+  if (gunluk) return gunluk;
 
   const conn = await redisGetJSON(connKey(user.uid)).catch(() => null);
   const accounts = steamListOf(conn);

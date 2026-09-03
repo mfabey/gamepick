@@ -25,6 +25,7 @@
 
 const DK = 60;
 const SAAT = 3600;
+const GUN = 86400;
 
 export const LIMITS = {
   // ── Kimlik doğrulama ──────────────────────────────────────────────────────
@@ -79,11 +80,31 @@ export const LIMITS = {
   // ── Pahalı işlemler (doğrudan FATURA) ─────────────────────────────────────
   // Dördü de kimliksiz. Sınırsız bırakılırsa LLM sağlayıcı faturası
   // saldırganın elinde.
+  //
+  // GÜNLÜK TAVAN NEDEN AYRICA GEREKLİ: saatlik sınır tek başına günlük
+  // maliyeti bağlamıyor. 30/saat, 24 saat boyunca sürdürülürse 720 çağrı
+  // eder — tek IP'den, tek günde. Günlük tavan bu sürüklenmeyi kesiyor.
+  //
+  // EKSEN NEDEN IP: bu dört uç KİMLİKSİZ, ortada kullanıcı yok. "Kullanıcı
+  // başına günlük tavan" ancak uçlar kimlik isterse mümkün olur — bu bir
+  // ürün kararı (şu an giriş yapmayan da AI'yı kullanabiliyor).
   aiChat: {
     ip: [30, SAAT],
+    ipDaily: [120, GUN],
   },
   aiSearch: {
     ip: [60, SAAT],
+    ipDaily: [300, GUN],
+  },
+
+  // ── Kimlikli pahalı işlemler — burada KULLANICI başına tavan mümkün ───────
+  // Görüntü denetimi (Google Vision) görüntü başına ücretli; Steam grafiği
+  // istek başına 100'e kadar yukarı akış çağrısı yayıyor.
+  visionModeration: {
+    accountDaily: [60, GUN],
+  },
+  steamGraph: {
+    accountDaily: [40, GUN],
   },
 };
 
