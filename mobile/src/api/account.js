@@ -59,11 +59,12 @@ export async function fetchUserData(idToken) {
  * tamamlanmalı. Kullanıcıyı "çıkamıyorum" durumunda bırakmak, iptali
  * kaçırmaktan daha kötü.
  */
-export async function logoutAccount(idToken) {
+export async function logoutAccount(idToken, refreshToken) {
   try {
     await fetch(`${API_BASE}/api/auth/mobile-logout`, {
       method: 'POST',
-      headers: { Accept: 'application/json', Authorization: `Bearer ${idToken}` },
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+      body: JSON.stringify({ refreshToken }),
     });
   } catch { /* çıkış yerelde her hâlükârda tamamlanıyor */ }
 }

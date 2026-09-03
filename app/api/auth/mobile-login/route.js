@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { guard, penalize } from '../../../lib/rate-guard';
+import { mintFamily } from '../../../lib/refresh-token';
 import { redisSetJSON } from '../../../lib/redis';
 import { mergeProfile } from '../../../lib/social-store';
 
@@ -80,7 +81,10 @@ export async function POST(request) {
       ok: true,
       user,
       idToken,
-      refreshToken,
+      // DÖNDÜRMELİ JETON: Firebase yenileme jetonu sunucuda saklanıyor,
+      // istemciye bizim opak jetonumuz gidiyor. mintFamily null dönerse
+      // (Redis yok) eski davranışa düşülüyor.
+      refreshToken: (await mintFamily(localId, refreshToken)) || refreshToken,
       expiresIn: Number(expiresIn) || 3600,
     });
   } catch (err) {

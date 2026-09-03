@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { signValue, SESSION_TTL_SEC } from '../../../lib/session-cookie';
+import { mintFamily } from '../../../lib/refresh-token';
 import { guard } from '../../../lib/rate-guard';
 import { mergeProfile } from '../../../lib/social-store';
 
@@ -79,7 +80,8 @@ export async function POST(request) {
       ok: true,
       user,
       idToken,
-      refreshToken,
+      // Döndürmeli jeton — bkz. mobile-login. Firebase jetonu sunucuda kalıyor.
+      refreshToken: (await mintFamily(localId, refreshToken)) || refreshToken,
       expiresIn: Number(expiresIn) || 3600,
     });
 

@@ -122,7 +122,7 @@ export async function signOut(wishlist) {
   //
   // `logoutAccount` kendi içinde sessizce başarısız oluyor: ağ yoksa çıkış
   // yine de tamamlanmalı.
-  if (session?.idToken) await logoutAccount(session.idToken);
+  if (session?.idToken) await logoutAccount(session.idToken, session.refreshToken);
 
   await persist(null);
   if (owner) await wipeOwnerData(owner);
