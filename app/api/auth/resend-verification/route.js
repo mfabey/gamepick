@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { sunucuHatasi, yukariAkisHatasi } from '../../../lib/api-error';
 import { canUseAuthMock, authNotConfigured } from '../../../lib/auth-config';
 import { guard } from '../../../lib/rate-guard';
+import { kaydetPostaGonderimi } from '../../../lib/mail-metrics';
 
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
 
@@ -67,6 +68,9 @@ export async function POST(request) {
       return yukariAkisHatasi(sendMailData?.error?.message, 'auth/resend-verification',
         'Doğrulama e-postası gönderilemedi. Lütfen tekrar deneyin.', 502);
     }
+
+    // Yalnızca gerçekten giden posta ölçülüyor (bkz. mail-metrics.js).
+    await kaydetPostaGonderimi('verifyResend');
 
     return NextResponse.json({ ok: true, mock: false });
 

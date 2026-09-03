@@ -10,6 +10,7 @@
     "lint": "next lint",
     "check:access": "node scripts/check-access-policy.mjs",
     "check:cors": "node scripts/check-cors-policy.mjs",
+    "metrics:mail": "node scripts/mail-volume.mjs",
     "backup:redis": "node scripts/redis-backup.mjs",
     "restore:redis": "node scripts/redis-restore.mjs"
   },
