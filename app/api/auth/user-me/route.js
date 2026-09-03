@@ -28,7 +28,11 @@ export async function GET() {
 
     let userWasRestored = false;
 
-    // Auto-login fallback if user session cookie has expired but they are still logged into Steam
+    // OTOMATİK GİRİŞ YEDEĞİ — 7 günlük oturum çerezi düşse bile, imzalı
+    // gp_steam_session (30 gün) varsa kullanıcıyı geri yüklüyor. Bu, etkin web
+    // oturumunu 30 güne çıkarıyor ve BİLİNÇLİ (bkz. session-cookie.js ömür
+    // notu; 7 güne hizalama değerlendirilip reddedildi). gp_steam_session
+    // imzalı, yani sahte çerezle bu yol tetiklenemiyor.
     if (!user) {
       const steamSession = cookieStore.get('gp_steam_session');
       if (steamSession?.value) {

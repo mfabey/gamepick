@@ -144,11 +144,22 @@ export async function readValue(raw) {
 
 // ── Oturum ömürleri ─────────────────────────────────────────────────────────
 //
-// Web oturumu 7 GÜN: mevcut davranış korundu. Oyun keşif sitesi için makul —
-// bankacılık değil, ama süresiz de değil. Çerezin `maxAge`ı ile gövdedeki
-// `exp` AYNI değeri kullanıyor ki tarayıcı ve sunucu aynı anda unutsun.
+// `gp_user_session` çerezi 7 GÜN. Çerezin `maxAge`ı ile gövdedeki `exp` AYNI
+// değeri kullanıyor ki tarayıcı ve sunucu aynı anda unutsun.
 //
-// Bağlantı çerezleri (Steam/Xbox) 30 GÜN: bunlar kimlik değil, "hangi
-// hesabı bağladın" bilgisi; daha uzun yaşamaları kabul edilebilir.
+// AMA ETKİN WEB OTURUMU 30 GÜNE KADAR — BİLİNÇLİ KARAR (2026-09-03).
+// `gp_steam_session` 30 gün yaşıyor ve `auth/user-me`'deki otomatik giriş
+// yedeği onu `steam_to_uid` ile çözüp TAM OTURUMU geri yüklüyor. Yani Steam
+// bağlamış bir kullanıcı, 7 günlük oturum çerezi düşse bile 30 güne kadar
+// giriş yapmış kalıyor. Bu bir gözden kaçma DEĞİL: kalıcılık istendi,
+// alternatifi (7 güne hizalamak) değerlendirildi ve REDDEDİLDİ.
+//
+// Güvenlik dayanağı: `gp_steam_session` İMZALI (readValue) ve httpOnly —
+// sahtelenemiyor, XSS ile çalınamıyor. Yani 30 günlük kimlik penceresi
+// yalnızca çerezin fiziksel kopyalanmasıyla sömürülebilir, uzaktan değil.
+//
+// "Bağlantı çerezleri kimlik değil" DİYE OKUMAYIN: otomatik giriş yedeği
+// yüzünden pratikte kimlik geri yükleyiciler. Kısaltmak istenirse iş iki
+// yerde: bu sabit VE user-me'deki yedeği kaldırmak/kısıtlamak.
 export const SESSION_TTL_SEC = 60 * 60 * 24 * 7;
 export const LINK_TTL_SEC = 60 * 60 * 24 * 30;
