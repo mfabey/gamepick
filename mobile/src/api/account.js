@@ -49,6 +49,25 @@ export async function fetchUserData(idToken) {
 
 // reauth: { password } veya { appleIdentityToken } — hesabın oturum açma
 // yöntemine göre biri gönderilir (Apple kullanıcılarının şifresi yoktur).
+/**
+ * Çıkışı SUNUCUYA da bildirir: Firebase yenileme jetonunu iptal ettirir.
+ *
+ * Öncesinde çıkış tamamen yereldi — SecureStore'dan silinen jeton başka bir
+ * yerde hâlâ geçerliydi (Firebase yenileme jetonu süresiz ve döndürülmüyor).
+ *
+ * SESSİZCE BAŞARISIZ OLUR: ağ yoksa ya da sunucu hata verirse çıkış yine de
+ * tamamlanmalı. Kullanıcıyı "çıkamıyorum" durumunda bırakmak, iptali
+ * kaçırmaktan daha kötü.
+ */
+export async function logoutAccount(idToken) {
+  try {
+    await fetch(`${API_BASE}/api/auth/mobile-logout`, {
+      method: 'POST',
+      headers: { Accept: 'application/json', Authorization: `Bearer ${idToken}` },
+    });
+  } catch { /* çıkış yerelde her hâlükârda tamamlanıyor */ }
+}
+
 export async function deleteAccount(idToken, reauth) {
   const res = await fetch(`${API_BASE}/api/auth/mobile-delete`, {
     method: 'POST',

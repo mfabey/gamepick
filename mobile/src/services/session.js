@@ -5,7 +5,7 @@
 // sessizce yeniler; kullanıcı tekrar giriş yapmak zorunda kalmaz.
 // ─────────────────────────────────────────────────────────────────────────────
 import * as SecureStore from 'expo-secure-store';
-import { loginAccount, refreshSession, appleSignIn } from '../api/account';
+import { loginAccount, refreshSession, appleSignIn, logoutAccount } from '../api/account';
 import { bindOwner, ownerKeyFor, wipeOwnerData } from './owner';
 
 const KEY = 'gr_account_session';
@@ -114,6 +114,15 @@ export async function signOut(wishlist) {
       await syncAccountData(wishlist);
     } catch { /* ağ yoksa çıkış yine de tamamlanmalı */ }
   }
+
+  // SUNUCUDA İPTAL — persist(null)'DAN ÖNCE, çünkü sonrasında elimizde
+  // gönderecek jeton kalmıyor. Firebase yenileme jetonu süresiz ve
+  // döndürülmüyor; yalnızca yerel kopyayı silmek, jetonu başka bir yere
+  // çıkarılmışsa hiçbir şey yapmıyordu.
+  //
+  // `logoutAccount` kendi içinde sessizce başarısız oluyor: ağ yoksa çıkış
+  // yine de tamamlanmalı.
+  if (session?.idToken) await logoutAccount(session.idToken);
 
   await persist(null);
   if (owner) await wipeOwnerData(owner);

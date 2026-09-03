@@ -111,6 +111,9 @@ export const SESSION_ROUTES = new Set([
  */
 export const AUTH_ROUTES = new Set([
   'user/data', 'auth/connections', 'auth/mobile-delete',
+  // ÇIKIŞ AMA KİMLİK ŞART: iptal edilecek uid jetondan alınıyor. Kimliksiz
+  // olsaydı, herkes istediği kullanıcının oturumunu düşürebilirdi.
+  'auth/mobile-logout',
   'social/activity', 'social/avatar', 'social/avatar/photo', 'social/block',
   'social/card-url', 'social/chat', 'social/chat/auth', 'social/chat/config',
   'social/chat/like', 'social/chat/list', 'social/chat/media',
