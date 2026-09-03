@@ -67,7 +67,17 @@ const GAMING_ACRONYMS = {
   'ac mirage': ["assassin's creed mirage", 'assassins creed mirage'],
   'ac odyssey': ["assassin's creed odyssey", 'assassins creed odyssey'],
   'ac': ["assassin's creed", 'assassins creed'],
-  'cod': ['call of duty', 'call of duty: modern warfare', 'call of duty: warzone'],
+  'cod': ['call of duty', 'call of duty: modern warfare', 'call of duty: warzone', 'call of duty: black ops'],
+  'cold war': ['call of duty: black ops cold war', 'black ops cold war', 'cold war'],
+  'black ops cold war': ['call of duty: black ops cold war', 'black ops cold war'],
+  'black ops': ['call of duty: black ops', 'call of duty: black ops 6', 'call of duty: black ops cold war', 'black ops 6', 'black ops 3'],
+  'bo6': ['call of duty: black ops 6', 'black ops 6'],
+  'bo3': ['call of duty: black ops iii', 'black ops 3'],
+  'bo2': ['call of duty: black ops ii', 'black ops 2'],
+  'bo1': ['call of duty: black ops', 'black ops 1'],
+  'mw3': ['call of duty: modern warfare iii', 'modern warfare 3'],
+  'mw2': ['call of duty: modern warfare ii', 'modern warfare 2'],
+  'mw': ['call of duty: modern warfare', 'modern warfare'],
   'warzone': ['call of duty: warzone', 'call of duty warzone'],
   'bf 2042': ['battlefield 2042'],
   'bf 5': ['battlefield v', 'battlefield 5'],
@@ -167,36 +177,71 @@ function estimateHardware(game, userGpu) {
   const gpuNorm = normalizeText(userGpu);
   let tier = 2;
   
-  if (/rtx\s*40\d\d|rtx\s*3080|rtx\s*3090|rx\s*7\d00|rx\s*6800|rx\s*6900/.test(gpuNorm)) tier = 4;
-  else if (/rtx\s*30\d\d|rtx\s*20\d\d|rx\s*6600|rx\s*6700|gtx\s*1080/.test(gpuNorm)) tier = 3;
-  else if (/gtx\s*16\d\d|gtx\s*1060|rx\s*580|rx\s*570|gtx\s*1050\s*ti/.test(gpuNorm)) tier = 2;
-  else if (/gtx\s*750|gtx\s*950|intel\s*iris|intel\s*uhd|vega/.test(gpuNorm)) tier = 1;
-  else if (/gt\s*710|gt\s*730|hd\s*graphics/.test(gpuNorm)) tier = 0;
+  // Tier 5: Ultra Enthusiast Flagship (RTX 5090/5080, 4090/4080, RX 7900 XTX/XT, Apple M3/M4 Max/Ultra)
+  if (/rtx\s*(?:5090|5080|4090|4080)|rx\s*7900\s*(?:xtx|xt)|m[34]\s*(?:max|ultra)/.test(gpuNorm)) {
+    tier = 5;
+  }
+  // Tier 4: High-End 1440p / 4K Ready (RTX 5070 Ti/5070/5060 Ti/5060, RTX 4070 Ti/4070/4060 Ti, RTX 3090/3080, RX 8800/8700, RX 7900 GRE/7800/7700, RX 6900/6800, Arc B580)
+  else if (/rtx\s*(?:5070|5060|4070|4060\s*ti|3090|3080)|rx\s*(?:8\d00|7900\s*gre|7800|7700|6950|6900|6800)|arc\s*b580/.test(gpuNorm)) {
+    tier = 4;
+  }
+  // Tier 3: Mid-Range 1080p High (RTX 4060, 3070, 3060 Ti/3060, RTX 2080/2070, RX 7600, RX 6700/6600, Arc A770/A750)
+  else if (/rtx\s*(?:4060|3070|3060|2080|2070|5050)|rx\s*(?:7600|6750|6700|6650|6600|5700)|arc\s*a7\d\d|gtx\s*1080/.test(gpuNorm)) {
+    tier = 3;
+  }
+  // Tier 2: Entry-Mid 1080p (GTX 1660 Ti/Super/1660, 1650 Super/1650, 1070/1060, RTX 3050, 2060, RX 590/580/570)
+  else if (/gtx\s*(?:16\d\d|1070|1060)|rtx\s*(?:3050|2060)|rx\s*(?:590|580|570|5500|6500)|arc\s*a380/.test(gpuNorm)) {
+    tier = 2;
+  }
+  // Tier 1: Light / Older / Integrated (GTX 1050 Ti/1050/960/750, Intel Iris Xe, Arc A310, Vega)
+  else if (/gtx\s*(?:1050|970|960|950|750)|intel\s*iris|iris\s*xe|arc\s*a310|vega|mx\d\d\d/.test(gpuNorm)) {
+    tier = 1;
+  }
+  // Tier 0: Very low-end / Legacy (GT 710/730, Intel UHD/HD Graphics)
+  else if (/gt\s*710|gt\s*730|hd\s*graphics|uhd\s*graphics/.test(gpuNorm)) {
+    tier = 0;
+  } else if (/rtx/.test(gpuNorm)) {
+    tier = 4;
+  } else if (/gtx|radeon|rx/.test(gpuNorm)) {
+    tier = 2;
+  }
 
   const reqGpu = normalizeText(game.req_gpu || game.title);
-  const isDemanding = /cyberpunk|red dead|alan wake 2|starfield|black myth|hogwarts|last of us/.test(reqGpu);
+  const isDemanding = /cyberpunk|red dead|alan wake 2|starfield|black myth|hogwarts|last of us|dragons dogma|stalker 2/.test(reqGpu);
 
-  if (tier >= 3) {
+  if (tier >= 5) {
+    return {
+      status: '🟢 Canavar Performans',
+      fps_estimate: isDemanding ? '100 - 144+ FPS (4K/1440p)' : '165 - 240+ FPS (Ultra)',
+      preset: '4K / 1440p Ultra Grafikler'
+    };
+  } else if (tier === 4) {
     return {
       status: '🟢 Mükemmel & Akıcı',
-      fps_estimate: '60 - 90+ FPS',
-      preset: 'Ultra / Yüksek Grafikler'
+      fps_estimate: isDemanding ? '80 - 110+ FPS (1440p DLSS)' : '120 - 180+ FPS (Ultra)',
+      preset: '1080p / 1440p Ultra Grafikler'
+    };
+  } else if (tier === 3) {
+    return {
+      status: '🟢 Akıcı & Yüksek',
+      fps_estimate: isDemanding ? '60 - 80+ FPS' : '90 - 130+ FPS',
+      preset: '1080p Yüksek Grafikler'
     };
   } else if (tier === 2) {
     return {
       status: isDemanding ? '🟡 Oynanabilir (FSR/DLSS ile)' : '🟢 Akıcı 60 FPS',
-      fps_estimate: isDemanding ? '45 - 60 FPS' : '60+ FPS',
-      preset: isDemanding ? 'Orta Grafikler' : 'Yüksek Grafikler'
+      fps_estimate: isDemanding ? '45 - 60 FPS' : '60 - 75 FPS',
+      preset: isDemanding ? '1080p Orta Grafikler' : '1080p Yüksek Grafikler'
     };
   } else if (tier === 1) {
     return {
-      status: isDemanding ? '🟠 Düşük FPS / Zorlanabilir' : '🟡 30 - 45 FPS',
-      fps_estimate: isDemanding ? '25 - 35 FPS' : '45 - 60 FPS',
+      status: isDemanding ? '🟠 Düşük FPS / Zorlanabilir' : '🟡 35 - 50 FPS',
+      fps_estimate: isDemanding ? '25 - 35 FPS' : '35 - 50 FPS',
       preset: 'Düşük Grafikler (720p / 1080p FSR)'
     };
   } else {
     return {
-      status: '⚪ Tanınmayan / Giriş Seviyesi',
+      status: '⚪ Giriş Seviyesi',
       fps_estimate: 'Test Edilmeli',
       preset: 'En Düşük Ayarlar'
     };
@@ -206,52 +251,52 @@ function estimateHardware(game, userGpu) {
 // --- Curated Gaming Categories & Thematic AppIDs ---
 const GAMING_CATEGORIES = {
   coop: {
-    regex: /(?:cift\s*kisilik|2\s*kisilik|iki\s*kisilik|beraber|arkadas(?:im)?la|birlikte|coop|co-op|kooperatif|split\s*screen|yerel\s*cok\s*oyunculu|multiplayer)/i,
+    regex: /(?:cift\s*kisilik\s*oyun|2\s*kisilik\s*oyun|iki\s*kisilik\s*oyun|arkadas(?:im)?la\s*oynanacak|birlikte\s*oynanan\s*oyun|coop\s*oyun|co-op\s*oyun|kooperatif\s*oyun|split\s*screen\s*oyun|yerel\s*cok\s*oyunculu)/i,
     name: 'Çift Kişilik & Co-op Oyunlar',
     curatedAppIds: [1426210, 448510, 1222700, 620, 413150, 1225570, 550, 105600, 322330, 892970, 1966720]
   },
   story: {
-    regex: /(?:hikaye(?:li)?|senaryo(?:lu)?|story\s*rich|derin\s*hikaye|etkileyici\s*hikaye|sinematik)/i,
+    regex: /(?:hikaye(?:li)?\s*oyun|senaryo(?:lu)?\s*oyun|story\s*rich\s*oyun|derin\s*hikaye(?:li)?\s*oyun|etkileyici\s*hikaye\s*oyun|sinematik\s*oyun)/i,
     name: 'Hikayeli Oyunlar',
     curatedAppIds: [292030, 1174180, 1091500, 1593500, 1888930, 1222140, 1307550]
   },
   openworld: {
-    regex: /(?:acik\s*dunya|open\s*world|serbest\s*dolas)/i,
+    regex: /(?:acik\s*dunya\s*oyun|open\s*world\s*oyun|serbest\s*dolas(?:im)?\s*oyun)/i,
     name: 'Açık Dünya Oyunları',
     curatedAppIds: [271590, 1174180, 1245620, 292030, 1091500, 1551360, 489830]
   },
   horror: {
-    regex: /(?:korku|gerilim|horror|scary|zombi|hayatta\s*kalma\s*korku)/i,
+    regex: /(?:korku\s*oyun|gerilim\s*oyun|horror\s*oyun|zombi\s*oyun|hayatta\s*kalma\s*korku)/i,
     name: 'Korku & Gerilim Oyunları',
     curatedAppIds: [2050650, 1693980, 238320, 2124490, 242760, 739630, 1326470]
   },
   survival: {
-    regex: /(?:hayatta\s*kalma|survival|crafting|base\s*building)/i,
+    regex: /(?:hayatta\s*kalma\s*oyun|survival\s*oyun|crafting\s*oyun|base\s*building\s*oyun)/i,
     name: 'Hayatta Kalma Oyunları',
     curatedAppIds: [242760, 1326470, 252490, 346110, 648800, 264710, 108600]
   },
   racing: {
-    regex: /(?:yaris|araba|racing|surus|drift|simulasyon\s*yaris)/i,
+    regex: /(?:yaris\s*oyun|araba\s*oyun|racing\s*oyun|surus\s*oyun|drift\s*oyun|simulasyon\s*yaris)/i,
     name: 'Yarış & Araba Oyunları',
     curatedAppIds: [1551360, 1293830, 1846380, 244210, 2108330]
   },
   fps: {
-    regex: /(?:fps|nisanci|shooter|first\s*person|silahli)/i,
+    regex: /(?:fps\s*oyun(?:u|lari)?|nisanci\s*oyun(?:u|lari)?|shooter\s*oyun(?:u|lari)?|first\s*person\s*shooter|silahli\s*oyun(?:lar)?)/i,
     name: 'FPS & Nişancı Oyunları',
     curatedAppIds: [782330, 730, 359550, 1091500, 1238840, 1172470]
   },
   roguelike: {
-    regex: /(?:roguelike|rogue-like|roguelite|rogue-lite)/i,
+    regex: /(?:roguelike\s*oyun|rogue-like\s*oyun|roguelite\s*oyun|rogue-lite\s*oyun)/i,
     name: 'Rogue-like Oyunlar',
     curatedAppIds: [1145360, 588650, 250900, 1794680, 632360]
   },
   strategy: {
-    regex: /(?:strateji|taktik|strategy|taktiksel|sira\s*tabanli)/i,
+    regex: /(?:strateji\s*oyun|taktik\s*oyun|strategy\s*oyun|sira\s*tabanli\s*oyun)/i,
     name: 'Strateji Oyunları',
     curatedAppIds: [289070, 394360, 1466860, 1158310, 1142710]
   },
   f2p: {
-    regex: /(?:ucretsiz|bedava|free\s*to\s*play|f2p|parasiz)/i,
+    regex: /(?:ucretsiz\s*oyun|bedava\s*oyun|free\s*to\s*play\s*oyun|f2p\s*oyun|parasiz\s*oyun)/i,
     name: 'Ücretsiz / Bedava Oyunlar',
     curatedAppIds: [730, 1172470, 578080, 570, 230410, 1085660, 440]
   }
@@ -344,6 +389,13 @@ const GAMERISEN_SYSTEM_PROMPT = `Sen **Gamerisen AI** (gamerisen.com)'ın resmi,
    - Yanıtların maksimum **4-6 cümle** olacak şekilde samimi, özlü, net ve doğrudan konuya odaklı olsun.
 2. **ESNEME PAYI (İSTİSNA):**
    - Yalnızca kullanıcının sorduğu soru veya konu evrensel/felsefi, derinlemesine teknik donanım/FPS analizi veya çok kapsamlı bir oyun evreni/kıyaslama detayı gerektiriyorsa mesajını uzatabilir, esneme payı bırakabilirsin. Ancak bu durumlarda dahi gereksiz laf kalabalığından kaçın.
+
+### 🖥️ DONANIM VE FPS ANALİZLERİ (ÇOK ÖNEMLİ):
+1. **GÜNCEL VE DOĞRU PERFORMANS TAHMİNİ:**
+   - Yeni nesil güçlü ekran kartlarını (örneğin RTX 5060, RTX 5070, RTX 4060, RTX 4070 vb.) eski giriş seviyesi kartlar gibi düşünüp gereksiz yere düşük FPS (örn. 50-60 FPS) verme.
+   - Örneğin RTX 5060 / 4060 gibi modern kartlar 1080p/1440p çözünürlükte rekabetçi oyunlarda ve Call of Duty gibi yapımlarda Ultra/Yüksek ayarlarda 120-180+ FPS'leri rahatça görür.
+2. **SPESİFİK OYUNA ODAKLANMA:**
+   - Kullanıcı belirli bir oyunun performansı hakkında soru sorduğunda yalnızca o oyuna ve donanıma odaklan; alakasız başka oyunları cevaba dahil etme.
 
 ### 🛑 KESİN LİNK VE FİYAT YAZMAMA KURALLARI (ÇOK ÖNEMLİ):
 1. **METİN İÇİNE ASLA LİNK, URL VEYA "[Mağazaya Git](...)" YAZMA:**
@@ -781,24 +833,24 @@ function extractGpuFromQuery(query) {
   if (!query) return null;
   const q = normalizeText(query);
   
-  // NVIDIA RTX 40/30/20 series
-  const rtxMatch = q.match(/\b(rtx\s*(?:4090|4080\s*ti|4080|4070\s*ti|4070|4060\s*ti|4060|4050|3090\s*ti|3090|3080\s*ti|3080|3070\s*ti|3070|3060\s*ti|3060|3050|2080\s*ti|2080|2070|2060))\b/i);
+  // NVIDIA RTX 50/40/30/20 series
+  const rtxMatch = q.match(/\b(rtx\s*(?:5090(?:\s*d)?|5080|5070\s*ti|5070|5060\s*ti|5060|5050|4090(?:\s*d)?|4080\s*super|4080\s*ti|4080|4070\s*ti\s*super|4070\s*ti|4070\s*super|4070|4060\s*ti|4060|4050|3090\s*ti|3090|3080\s*ti|3080|3070\s*ti|3070|3060\s*ti|3060|3050|2080\s*ti|2080\s*super|2080|2070\s*super|2070|2060\s*super|2060))\b/i);
   if (rtxMatch) return rtxMatch[1].toUpperCase().replace(/\s+/g, ' ');
 
   // NVIDIA GTX series
-  const gtxMatch = q.match(/\b(gtx\s*(?:1660\s*ti|1660\s*super|1660|1650\s*super|1650|1080\s*ti|1080|1070\s*ti|1070|1060|1050\s*ti|1050|970|960|750\s*ti|750))\b/i);
+  const gtxMatch = q.match(/\b(gtx\s*(?:1660\s*ti|1660\s*super|1660|1650\s*super|1650|1080\s*ti|1080|1070\s*ti|1070|1060|1050\s*ti|1050|980\s*ti|980|970|960|750\s*ti|750))\b/i);
   if (gtxMatch) return gtxMatch[1].toUpperCase().replace(/\s+/g, ' ');
 
   // AMD Radeon RX series
-  const rxMatch = q.match(/\b(rx\s*(?:7900\s*xtx|7900\s*xt|7800\s*xt|7700\s*xt|7600|6950\s*xt|6900\s*xt|6800\s*xt|6800|6750\s*xt|6700\s*xt|6700|6650\s*xt|6600\s*xt|6600|5700\s*xt|5700|5600\s*xt|580|570|560|550))\b/i);
+  const rxMatch = q.match(/\b(rx\s*(?:8800\s*xt|8700\s*xt|8600\s*xt|8600|7900\s*xtx|7900\s*xt|7900\s*gre|7800\s*xt|7700\s*xt|7600\s*xt|7600|6950\s*xt|6900\s*xt|6800\s*xt|6800|6750\s*xt|6700\s*xt|6700|6650\s*xt|6600\s*xt|6600|5700\s*xt|5700|5600\s*xt|5500\s*xt|590|580|570|560|550))\b/i);
   if (rxMatch) return rxMatch[1].toUpperCase().replace(/\s+/g, ' ');
 
   // Intel Iris / UHD / Arc
-  const intelMatch = q.match(/\b(intel\s*arc\s*a\d\d\d|intel\s*iris\s*xe|intel\s*uhd\s*\d+|iris\s*xe)\b/i);
+  const intelMatch = q.match(/\b(intel\s*arc\s*(?:b580|b570|a770|a750|a580|a380|a310)|arc\s*(?:b580|b570|a770|a750|a580|a380|a310)|intel\s*iris\s*xe|iris\s*xe|intel\s*uhd\s*\d+)\b/i);
   if (intelMatch) return intelMatch[1].toUpperCase().replace(/\s+/g, ' ');
 
   // Apple Silicon
-  const appleMatch = q.match(/\b(apple\s*m[1234](?:\s*pro|\s*max|\s*ultra)?|m[1234]\s*(?:pro|max|ultra)?)\b/i);
+  const appleMatch = q.match(/\b(apple\s*m[12345](?:\s*(?:pro|max|ultra))?|m[12345]\s*(?:pro|max|ultra)?)\b/i);
   if (appleMatch) return appleMatch[1].toUpperCase().replace(/\s+/g, ' ');
 
   return null;
@@ -807,10 +859,21 @@ function extractGpuFromQuery(query) {
 // --- Core Game Name Extraction Helper ---
 function extractCoreGameName(query) {
   if (!query) return '';
-  return query
-    .replace(/fiyat[ıi]?|ne\s*kadar|kaç\s*tl|kaç\s*para|nerede\s*ucuz|hikaye(?:si)?|konusu|sistem(?:im)?\s*kaldırır\s*mı|oyunu?|indirim(?:de)?|tavsiye|öneri?|kaç\s*fps|fps|nasıl\s*bir\s*oyun|hakkında\s*bilgi/gi, '')
-    .replace(/[?!.,;:'"()[\]{}]/g, ' ')
-    .trim();
+  let clean = query;
+  
+  // Strip hardware terms (GPU, CPU, RAM, resolutions, upscalers)
+  clean = clean.replace(/\b(?:rtx|gtx|rx|geforce|radeon|intel\s*arc|iris\s*xe|uhd\s*graphics)\s*\d+[a-z0-9\s-]*/gi, ' ');
+  clean = clean.replace(/\b(?:i[3579](?:-\d+[a-z0-9]*)?|ryzen\s*[3579](?:\s*\d+[a-z0-9]*)?|core\s*ultra\s*\d+)\b/gi, ' ');
+  clean = clean.replace(/\b\d+\s*(?:gb|mb|tb)\s*(?:ram|vram|ddr\d?)?\b/gi, ' ');
+  clean = clean.replace(/\b(?:1080p|1440p|2k|4k|720p|fhd|qhd|uhd)\b/gi, ' ');
+  clean = clean.replace(/\b(?:dlss|fsr|xess|reflex|ray\s*tracing|frame\s*generation)\b/gi, ' ');
+
+  // Strip question, filler and performance keywords
+  clean = clean.replace(/\b(?:fiyat[ıi]?|ne\s*kadar|kaç\s*tl|kaç\s*para|nerede\s*ucuz|hikaye(?:si)?|konusu|sistem(?:im)?|kaldırır\s*mı|açar\s*mı|oynatır\s*mı|oyunu?|indirim(?:de)?|tavsiye|öneri?|kaç\s*fps|fps|nasıl\s*bir\s*oyun|hakkında\s*bilgi|kombinasyon(?:u|unda)?|ayarlar(?:da)?|grafikler(?:de)?|çözünürlük(?:te)?|genellikle|akıcı|deneyim|alır\s*mıyım|alırım|verir\s*mi|verir|performans(?:ı)?|test(?:i)?|değerleri|yüksek|orta|düşük|ultra|için|civarı|elde\s*edersin|mümkün|sunar|etkinleştirildiğinde|yakın|peşindeysen|özellikleri|açman|önerilir|kontrol\s*edebilirsin)\b/gi, ' ');
+  
+  // Strip punctuation and special characters
+  clean = clean.replace(/[?!.,;:'"()[\]{}+=~#$%\^&*|\\]/g, ' ');
+  return clean.replace(/\s+/g, ' ').trim();
 }
 
 // --- Extract Last Discussed Game Entity from Multi-Turn History ---
@@ -1254,8 +1317,47 @@ export async function POST(req) {
 
     let structuredGames = [];
 
-    // 8. If Matched Category (e.g. Co-op, Story, Horror, Racing), resolve real curated game cards with live Steam prices
-    if (matchedCategory && matchedCategory.curatedAppIds && matchedCategory.curatedAppIds.length > 0) {
+    const hasSpecificDbMatch = scoredGames.length > 0 && scoredGames[0].score >= 35.0;
+    const cleanSearchTarget = extractCoreGameName(effectiveSearchTerm || userQuery);
+    const hasSearchTarget = cleanSearchTarget && cleanSearchTarget.length >= 2;
+
+    // 8. Priority 1: High-Confidence Specific Match from Local Database
+    if (hasSpecificDbMatch) {
+      structuredGames = scoredGames.slice(0, 3).map(r => {
+        const storeMatch = (r.game.store_url || '').match(/\/app\/(\d+)/);
+        const imgMatch = (r.game.image_url || '').match(/\/apps\/(\d+)/);
+        const steamId = storeMatch ? storeMatch[1] : (imgMatch ? imgMatch[1] : null);
+        const gameSlug = r.game.rawgSlug || r.game.slug || (steamId ? `rawg_${steamId}` : (r.game.title ? r.game.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') : String(r.game.id)));
+
+        return {
+          id: r.game.id,
+          slug: gameSlug,
+          rawgSlug: r.game.rawgSlug || (steamId ? `rawg_${steamId}` : undefined),
+          steamAppId: steamId || undefined,
+          title: r.game.title,
+          genres: r.game.genres || ['Aksiyon'],
+          description: r.game.description || '',
+          rating: r.game.rating || 88,
+          image_url: r.game.image_url || '',
+          store_url: r.game.store_url || `https://store.steampowered.com/search/?term=${encodeURIComponent(r.game.title)}`,
+          best_deal: r.best_deal,
+          deals: r.game.deals || [],
+          currency: 'TL',
+          hardware_compatibility: r.hw_compat
+        };
+      });
+    }
+
+    // 9. Priority 2: Live Steam Search for specific game (e.g. Call of Duty: Cold War, Black Ops 6, etc.)
+    if (structuredGames.length === 0 && hasSearchTarget && !isSmalltalk && !isIdentityQuery && !isCreatorQuery && !isMetaWhereQuery) {
+      const steamLiveGames = await searchSteamLive(cleanSearchTarget, userGpu);
+      if (steamLiveGames.length > 0) {
+        structuredGames = steamLiveGames;
+      }
+    }
+
+    // 10. Priority 3: Curated Category Recommendations (Only when no specific game was queried/found)
+    if (structuredGames.length === 0 && matchedCategory && matchedCategory.curatedAppIds && matchedCategory.curatedAppIds.length > 0) {
       try {
         const catPromises = matchedCategory.curatedAppIds.slice(0, 6).map(appId => resolveAppIdToGameCard(appId, userGpu));
         const resolvedCatGames = (await Promise.all(catPromises)).filter(Boolean);
@@ -1280,8 +1382,8 @@ export async function POST(req) {
       }
     }
 
-    // 9. If database has high-confidence exact/token match or recommendation results
-    if (structuredGames.length === 0 && scoredGames.length > 0 && (isConstraint || isRecommendationQuery || isDealsQuery || isHardwareSpecificQuery || scoredGames[0].score >= 35.0)) {
+    // 11. Priority 4: Scored Database Results for Recommendation / Deals Queries
+    if (structuredGames.length === 0 && scoredGames.length > 0 && (isConstraint || isRecommendationQuery || isDealsQuery || isHardwareSpecificQuery)) {
       structuredGames = scoredGames.slice(0, isDealsQuery ? 4 : 3).map(r => {
         const storeMatch = (r.game.store_url || '').match(/\/app\/(\d+)/);
         const imgMatch = (r.game.image_url || '').match(/\/apps\/(\d+)/);
@@ -1305,13 +1407,6 @@ export async function POST(req) {
           hardware_compatibility: r.hw_compat
         };
       });
-    } else if (structuredGames.length === 0 && !isSmalltalk && !isIdentityQuery && !isCreatorQuery && !isMetaWhereQuery && (queryTokens.length > 0 || effectiveSearchTerm)) {
-      // 10. Live Steam Search for specific game query
-      const steamSearchTarget = effectiveSearchTerm || userQuery;
-      const steamLiveGames = await searchSteamLive(steamSearchTarget, userGpu);
-      if (steamLiveGames.length > 0) {
-        structuredGames = steamLiveGames;
-      }
     }
 
     // 11. Build RAG Context for Generative LLM
