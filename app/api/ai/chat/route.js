@@ -220,13 +220,13 @@ const GAMERISEN_SYSTEM_PROMPT = `Sen **Gamerisen AI** (gamerisen.com)'ın resmi,
 ### 🏷️ FİYAT, İNDİRİM VE HİKAYE BİLGİSİ SUNMA KURALI (ÇOK ÖNEMLİ):
 1. **METİN İÇİNDE ASLA DEVASA FİYAT TABLOLARI VEYA LİSTELERİ ÇİZME:**
    - Kullanıcı "İndirimde neler var?", "En iyi fırsatlar", "Hangi oyunlar indirimde?", fiyat veya oyun sorduğunda metin içinde ASLA Markdown tabloları (| Oyun | Platform | Fiyat |) veya uzun fiyat listeleri yazma.
-   - Çünkü oyunların indirimli fiyatları, indirim oranları, platformları, donanım uyumlulukları ve **doğrudan mağaza yönlendirme linkleri ("Mağazaya Git 🚀")** mesajının hemen altında şık interaktif kartlar olarak gösterilmektedir.
+   - Çünkü oyunların indirimli fiyatları, indirim oranları, platformları, donanım uyumlulukları ve **sitedeki oyun detay sayfasına yönlendiren butonlar ("Mağazaya Git 🚀")** mesajının hemen altında şık interaktif kartlar olarak gösterilmektedir.
 2. **KARTLARA YÖNLENDİREN ŞIK VE DİNAMİK BİR GİRİŞ YAP:**
-   - Bilgiyi sunarken doğrudan, net ve dinamik bir giriş cümlesi kur. 2-4 samimi ve özlü cümleyle özetle, ardından doğrudan kartlardaki mağaza linklerine yönlendir.
+   - Bilgiyi sunarken doğrudan, net ve dinamik bir giriş cümlesi kur. 2-4 samimi ve özlü cümleyle özetle, ardından doğrudan kartlardaki butonlara yönlendir.
    - Örneğin:
      - *"Tabii, işte sistemine ve zevkine uygun en sıcak indirim fırsatları ve mağaza bilgileri aşağıdaki kartlarda listelenmiştir:"*
-     - *"Aşağıdaki interaktif kartlardan güncel indirimleri inceleyebilir ve 'Mağazaya Git' butonuyla doğrudan indirimli sayfaya ulaşabilirsin: 🚀"*
-     - *"[Oyun Adı] için en son fırsatları ve detayları çıkardım, hemen aşağıdaki karttan mağaza linkine ulaşabilirsin:"*
+     - *"Aşağıdaki interaktif kartlardan güncel indirimleri inceleyebilir ve 'Mağazaya Git' butonuyla oyunun platform ve mağaza detaylarına ulaşabilirsin: 🚀"*
+     - *"[Oyun Adı] için en son fırsatları ve detayları çıkardım, hemen aşağıdaki karttan oyun sayfasına ve mağazalara ulaşabilirsin:"*
      - *"Aradığın oyunun güncel mağaza fiyatları ve detayları şöyle:"*
    - **ASLA HEP AYNI CÜMLEYİ KULLANMA:** Yukarıdaki kalıpları ve benzerlerini her seferinde doğal bir şekilde türet, çeşitlendir ve dinamik bir giriş cümlesiyle bilgiyi aktar.
    - Kullanıcı hikaye istediyse 2-4 cümlelik vurucu bir hikaye özeti ver; fiyatlar zaten altındaki kartlarda detaylı listelendiği için gereksiz tekrarlardan kaçın.
@@ -623,18 +623,18 @@ function generateDynamicFallback(query, ragContext) {
 
     if (/(?:indirim|indirimde|indirimler|firsat|firsatlar|kampanya|kelepir|ucuz)/i.test(norm)) {
       const dealsLeadIns = [
-        "Şu anki en sıcak indirimleri ve mağaza fırsatlarını senin için listeledim! Aşağıdaki kartlardan güncel indirim oranlarını inceleyebilir ve 'Mağazaya Git' butonlarıyla doğrudan indirimli sayfaya ulaşabilirsin: 🚀",
-        "Piyasadaki en avantajlı oyun indirimlerini derledim! Detayları ve doğrudan mağaza yönlendirme linklerini hemen aşağıdaki kartlarda bulabilirsin: 🎮",
-        "Kütüphaneni genişletmen için en kelepir indirim fırsatları aşağıda listelendi. 'Mağazaya Git' butonuna basarak doğrudan mağaza sayfasına gidebilirsin: ⚡"
+        "Şu anki en sıcak indirimleri ve mağaza fırsatlarını senin için listeledim! Aşağıdaki kartlardan güncel indirim oranlarını inceleyebilir ve 'Mağazaya Git' butonlarıyla oyunun detay sayfasına ve mağazalara ulaşabilirsin: 🚀",
+        "Piyasadaki en avantajlı oyun indirimlerini derledim! Detayları ve mağaza yönlendirmelerini hemen aşağıdaki kartlarda bulabilirsin: 🎮",
+        "Kütüphaneni genişletmen için en kelepir indirim fırsatları aşağıda listelendi. 'Mağazaya Git' butonuna basarak oyunun platform sayfasına gidebilirsin: ⚡"
       ];
       return pick(dealsLeadIns);
     }
 
     const genericLeadIns = [
       "Tabii, işte aradığın kriterlere uygun en avantajlı oyunlar ve mağaza bilgileri aşağıdaki kartlarda listelenmiştir:",
-      "İstediğin oyunlar için en avantajlı mağaza fiyatlarını ve detayları derledim, aşağıdaki kartlardan doğrudan mağazaya gidebilirsin: 🚀",
+      "İstediğin oyunlar için en avantajlı mağaza fiyatlarını ve detayları derledim, aşağıdaki kartlardan oyun sayfasına ve mağazalara gidebilirsin: 🚀",
       "Veritabanımızdaki en sıcak fırsatları ve mağaza bilgilerini senin için çıkardım, detaylar hemen aşağıdaki kartlarda:",
-      "Aradığın oyunlarla ilgili güncel fiyat seçenekleri ve mağaza linkleri aşağıdaki kartlarda yer alıyor:"
+      "Aradığın oyunlarla ilgili güncel fiyat seçenekleri ve platform detayları aşağıdaki kartlarda yer alıyor:"
     ];
     return pick(genericLeadIns);
   }
@@ -798,6 +798,9 @@ async function searchSteamLive(query, userGpu) {
 
       const gameObj = {
         id: item.id,
+        slug: item.id ? `rawg_${item.id}` : (item.name ? item.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') : ''),
+        rawgSlug: item.id ? `rawg_${item.id}` : undefined,
+        steamAppId: item.id ? String(item.id) : undefined,
         title: item.name,
         genres: ['Aksiyon', 'Macera'],
         description: `${item.name} — Steam platformundaki güncel mağaza fiyatı ve donanım uyumluluğu.`,
@@ -1065,19 +1068,29 @@ export async function POST(req) {
 
     // 8. If database has high-confidence exact/token match (score >= 35.0) or recommendation/constraint/deals results, use them
     if (scoredGames.length > 0 && (isConstraint || isRecommendationQuery || isDealsQuery || isHardwareSpecificQuery || scoredGames[0].score >= 35.0)) {
-      structuredGames = scoredGames.slice(0, isDealsQuery ? 4 : 3).map(r => ({
-        id: r.game.id,
-        title: r.game.title,
-        genres: r.game.genres || ['Aksiyon'],
-        description: r.game.description || '',
-        rating: r.game.rating || 88,
-        image_url: r.game.image_url || '',
-        store_url: r.game.store_url || `https://store.steampowered.com/search/?term=${encodeURIComponent(r.game.title)}`,
-        best_deal: r.best_deal,
-        deals: r.game.deals || [],
-        currency: 'TL',
-        hardware_compatibility: r.hw_compat
-      }));
+      structuredGames = scoredGames.slice(0, isDealsQuery ? 4 : 3).map(r => {
+        const storeMatch = (r.game.store_url || '').match(/\/app\/(\d+)/);
+        const imgMatch = (r.game.image_url || '').match(/\/apps\/(\d+)/);
+        const steamId = storeMatch ? storeMatch[1] : (imgMatch ? imgMatch[1] : null);
+        const gameSlug = r.game.rawgSlug || r.game.slug || (steamId ? `rawg_${steamId}` : (r.game.title ? r.game.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') : String(r.game.id)));
+
+        return {
+          id: r.game.id,
+          slug: gameSlug,
+          rawgSlug: r.game.rawgSlug || (steamId ? `rawg_${steamId}` : undefined),
+          steamAppId: steamId || undefined,
+          title: r.game.title,
+          genres: r.game.genres || ['Aksiyon'],
+          description: r.game.description || '',
+          rating: r.game.rating || 88,
+          image_url: r.game.image_url || '',
+          store_url: r.game.store_url || `https://store.steampowered.com/search/?term=${encodeURIComponent(r.game.title)}`,
+          best_deal: r.best_deal,
+          deals: r.game.deals || [],
+          currency: 'TL',
+          hardware_compatibility: r.hw_compat
+        };
+      });
     } else if (!isSmalltalk && !isIdentityQuery && !isCreatorQuery && (queryTokens.length > 0 || effectiveSearchTerm)) {
       // 9. If NO database match found (or specific game like "Ark", "Palworld", "The Forest" asked), call Live Steam Search!
       const steamSearchTarget = effectiveSearchTerm || userQuery;

@@ -29,6 +29,33 @@ function formatStreamingMarkdown(rawText) {
   return formatMarkdown(text);
 }
 
+function getGameDetailUrl(g) {
+  if (!g) return '/games';
+  if (g.rawgSlug) return `/game/${g.rawgSlug}`;
+  if (g.slug) return `/game/${g.slug}`;
+  if (g.steamAppId) return `/game/rawg_${g.steamAppId}`;
+
+  // Extract steam appid from store_url or image_url if available
+  const storeMatch = (g.store_url || '').match(/\/app\/(\d+)/);
+  if (storeMatch) return `/game/rawg_${storeMatch[1]}`;
+
+  const imgMatch = (g.image_url || '').match(/\/apps\/(\d+)/);
+  if (imgMatch) return `/game/rawg_${imgMatch[1]}`;
+
+  // If numeric id
+  if (typeof g.id === 'number' && g.id > 1000) return `/game/rawg_${g.id}`;
+  if (typeof g.id === 'string' && /^\d+$/.test(g.id)) return `/game/rawg_${g.id}`;
+  if (typeof g.id === 'string' && g.id.startsWith('rawg_')) return `/game/${g.id}`;
+
+  // If title exists, use normalized title slug
+  if (g.title) {
+    const slug = g.title.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    if (slug) return `/game/${slug}`;
+  }
+
+  return '/games';
+}
+
 export default function GamerisenAiWidget() {
   const pathname = usePathname();
   const { user, steamUser, xboxUser, ready } = useAuth();
@@ -905,89 +932,124 @@ export default function GamerisenAiWidget() {
                     {/* Render Rich Game Cards */}
                     {m.games && m.games.length > 0 && (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', marginTop: '6px' }}>
-                        {m.games.map((g, gIdx) => (
-                          <div
-                            key={gIdx}
-                            style={{
-                              background: 'rgba(25, 25, 32, 0.92)',
-                              border: '1px solid rgba(255, 255, 255, 0.12)',
-                              borderRadius: '14px',
-                              padding: '12px',
-                              display: 'flex',
-                              flexDirection: 'column',
-                              gap: '8px',
-                              boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
-                            }}
-                          >
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
-                              <div style={{ fontWeight: 750, fontSize: '14px', color: '#fff' }}>{g.title}</div>
-                              <div style={{ background: '#00ff8820', color: '#00ff88', border: '1px solid #00ff8840', padding: '2px 8px', borderRadius: '8px', fontSize: '11px', fontWeight: 800, whiteSpace: 'nowrap' }}>
-                                ⭐ {g.rating}/100
-                              </div>
-                            </div>
-
-                            {/* Hardware & FPS Compatibility Badge */}
-                            {g.hardware_compatibility && (
-                              <div
-                                style={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'space-between',
-                                  background: 'rgba(0, 255, 136, 0.07)',
-                                  border: '1px solid rgba(0, 255, 136, 0.22)',
-                                  borderRadius: '8px',
-                                  padding: '6px 10px',
-                                  fontSize: '11.5px',
-                                  gap: '6px'
-                                }}
-                              >
-                                <span style={{ color: '#00ff88', fontWeight: 700 }}>
-                                  {g.hardware_compatibility.status}
-                                </span>
-                                <span style={{ color: '#c0c0d0', fontSize: '11px', fontWeight: 600 }}>
-                                  {g.hardware_compatibility.fps_estimate}
-                                </span>
-                              </div>
-                            )}
-
-                            {g.best_deal && (
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.04)', padding: '8px 10px', borderRadius: '8px' }}>
-                                <div style={{ fontSize: '12px', color: '#aaa', fontWeight: 600 }}>{g.best_deal.platform}</div>
-                                <div style={{ fontWeight: 800, color: '#00ff88', fontSize: '13px' }}>
-                                  {typeof g.best_deal.current_price === 'string' && (g.best_deal.current_price.startsWith('$') || g.best_deal.current_price.includes('TL') || g.best_deal.current_price === 'Ücretsiz')
-                                    ? g.best_deal.current_price
-                                    : `${g.best_deal.current_price} ${g.currency || 'TL'}`}
-                                  {g.best_deal.discount > 0 && (
-                                    <span style={{ marginLeft: '6px', color: '#ff4444', fontSize: '11px' }}>
-                                      (-%{g.best_deal.discount})
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-
-                            <a
-                              href={g.store_url || `https://store.steampowered.com/search/?term=${encodeURIComponent(g.title)}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                        {m.games.map((g, gIdx) => {
+                          const gameUrl = getGameDetailUrl(g);
+                          return (
+                            <div
+                              key={gIdx}
                               style={{
-                                display: 'block',
-                                textAlign: 'center',
-                                background: 'linear-gradient(135deg, #e50914 0%, #b81d24 100%)',
-                                color: '#fff',
-                                textDecoration: 'none',
-                                padding: '8px',
-                                borderRadius: '8px',
-                                fontWeight: 700,
-                                fontSize: '12px',
-                                marginTop: '2px',
-                                boxShadow: '0 3px 12px rgba(229, 9, 20, 0.35)'
+                                background: 'rgba(25, 25, 32, 0.92)',
+                                border: '1px solid rgba(255, 255, 255, 0.12)',
+                                borderRadius: '14px',
+                                padding: '12px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '8px',
+                                boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+                                transition: 'border-color 0.2s, box-shadow 0.2s'
                               }}
                             >
-                              Mağazaya Git 🚀
-                            </a>
-                          </div>
-                        ))}
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                                <Link
+                                  href={gameUrl}
+                                  onClick={() => {
+                                    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                                      setIsOpen(false);
+                                    }
+                                  }}
+                                  style={{
+                                    fontWeight: 750,
+                                    fontSize: '14px',
+                                    color: '#fff',
+                                    textDecoration: 'none',
+                                    transition: 'color 0.15s ease'
+                                  }}
+                                  onMouseEnter={(e) => (e.currentTarget.style.color = '#ff4444')}
+                                  onMouseLeave={(e) => (e.currentTarget.style.color = '#fff')}
+                                  title={`${g.title} oyununu sitemizde aç`}
+                                >
+                                  {g.title}
+                                </Link>
+                                <div style={{ background: '#00ff8820', color: '#00ff88', border: '1px solid #00ff8840', padding: '2px 8px', borderRadius: '8px', fontSize: '11px', fontWeight: 800, whiteSpace: 'nowrap' }}>
+                                  ⭐ {g.rating}/100
+                                </div>
+                              </div>
+
+                              {/* Hardware & FPS Compatibility Badge */}
+                              {g.hardware_compatibility && (
+                                <div
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    background: 'rgba(0, 255, 136, 0.07)',
+                                    border: '1px solid rgba(0, 255, 136, 0.22)',
+                                    borderRadius: '8px',
+                                    padding: '6px 10px',
+                                    fontSize: '11.5px',
+                                    gap: '6px'
+                                  }}
+                                >
+                                  <span style={{ color: '#00ff88', fontWeight: 700 }}>
+                                    {g.hardware_compatibility.status}
+                                  </span>
+                                  <span style={{ color: '#c0c0d0', fontSize: '11px', fontWeight: 600 }}>
+                                    {g.hardware_compatibility.fps_estimate}
+                                  </span>
+                                </div>
+                              )}
+
+                              {g.best_deal && (
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.04)', padding: '8px 10px', borderRadius: '8px' }}>
+                                  <div style={{ fontSize: '12px', color: '#aaa', fontWeight: 600 }}>{g.best_deal.platform}</div>
+                                  <div style={{ fontWeight: 800, color: '#00ff88', fontSize: '13px' }}>
+                                    {typeof g.best_deal.current_price === 'string' && (g.best_deal.current_price.startsWith('$') || g.best_deal.current_price.includes('TL') || g.best_deal.current_price === 'Ücretsiz')
+                                      ? g.best_deal.current_price
+                                      : `${g.best_deal.current_price} ${g.currency || 'TL'}`}
+                                    {g.best_deal.discount > 0 && (
+                                      <span style={{ marginLeft: '6px', color: '#ff4444', fontSize: '11px' }}>
+                                        (-%{g.best_deal.discount})
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+
+                              <Link
+                                href={gameUrl}
+                                onClick={() => {
+                                  if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                                    setIsOpen(false);
+                                  }
+                                }}
+                                style={{
+                                  display: 'block',
+                                  textAlign: 'center',
+                                  background: 'linear-gradient(135deg, #e50914 0%, #b81d24 100%)',
+                                  color: '#fff',
+                                  textDecoration: 'none',
+                                  padding: '8px',
+                                  borderRadius: '8px',
+                                  fontWeight: 700,
+                                  fontSize: '12px',
+                                  marginTop: '2px',
+                                  boxShadow: '0 3px 12px rgba(229, 9, 20, 0.35)',
+                                  transition: 'all 0.18s ease'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.transform = 'translateY(-1px)';
+                                  e.currentTarget.style.boxShadow = '0 5px 16px rgba(229, 9, 20, 0.55)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.transform = 'none';
+                                  e.currentTarget.style.boxShadow = '0 3px 12px rgba(229, 9, 20, 0.35)';
+                                }}
+                              >
+                                Mağazaya Git 🚀
+                              </Link>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
