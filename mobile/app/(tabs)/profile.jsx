@@ -86,7 +86,7 @@ export default function ProfileScreen() {
   const { account } = useAuth();
   const { items: wishlist } = useWishlist();
   const collections = useCollections();
-  const { steamGames, xboxGames, totalGamesCount: gameCount } = useConnectedLibrary();
+  const { steamGames, xboxGames, totalGamesCount: gameCount, refetch: refetchLib } = useConnectedLibrary();
 
   const [sunucu, setSunucu] = useState(null);      // { profile, friendship, canView }
   const [yok, setYok] = useState(false);           // kullanıcı adı kurulmamış
@@ -153,6 +153,13 @@ export default function ProfileScreen() {
       setTazeleniyor(false);
     }
   }, []);
+
+  const onTazele = useCallback(async () => {
+    await Promise.all([
+      yukle(tab, { tazele: true }),
+      refetchLib ? refetchLib() : Promise.resolve(),
+    ]);
+  }, [tab, yukle, refetchLib]);
 
   useEffect(() => {
     if (!account) { setSunucu(null); basligiAldik.current = false; setYukleniyor(false); return; }
@@ -427,7 +434,7 @@ export default function ProfileScreen() {
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
         refreshControl={(
-          <RefreshControl refreshing={tazeleniyor} onRefresh={() => yukle(tab, { tazele: true })}
+          <RefreshControl refreshing={tazeleniyor} onRefresh={onTazele}
                           tintColor={colors.text2} />
         )}
       />

@@ -43,14 +43,28 @@ export function useConnectedLibrary(enabled = true) {
   const hasAny = !!(steamKey || xbox);
   const key = hasAny ? `connlib:${steamKey}:${xbox?.xuid || ''}` : null;
 
-  const { data, loading } = useQuery(
+  const { data, loading, refetch } = useQuery(
     key,
     () => fetchConnectedLibraryRaw(steamAccounts, xbox),
-    { ttl: 30 * 60 * 1000, enabled: enabled && hasAny }
+    { ttl: 15 * 60 * 1000, enabled: enabled && hasAny }
   );
 
   const raw = data || EMPTY;
-  const steamGames = useMemo(() => Object.values(raw.steam).flatMap((l) => l?.games || []), [raw]);
+  const steamGames = useMemo(() => {
+    const map = new Map();
+    Object.values(raw.steam || {}).forEach((lib) => {
+      (lib?.games || []).forEach((g) => {
+        const id = g.appid || g.id;
+        if (id && !map.has(id)) {
+          map.set(id, g);
+        } else if (!id && g.name) {
+          map.set(g.name, g);
+        }
+      });
+    });
+    return [...map.values()];
+  }, [raw]);
+
   const xboxGames = useMemo(() => raw.xbox?.games || [], [raw]);
 
   const uniqueXboxGames = useMemo(() => {
@@ -74,5 +88,6 @@ export function useConnectedLibrary(enabled = true) {
     uniqueXboxGames,
     totalGamesCount,
     loading: !!loading,
+    refetch,
   };
 }

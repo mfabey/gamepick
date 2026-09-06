@@ -1,7 +1,7 @@
 import { memo, useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View, Text, TextInput, Pressable, ScrollView,
-  StyleSheet, Alert,
+  StyleSheet, Alert, RefreshControl,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
@@ -37,7 +37,8 @@ export default function LibraryScreen() {
   const router = useRouter();
 
   // Paylaşımlı kütüphane fetch'i (Home önericisi ile aynı cache → çift fetch yok, anlık açılış)
-  const { steam: steamLibs, xbox: xboxRaw, steamGames, xboxGames, loading: libLoading } = useConnectedLibrary();
+  const { steam: steamLibs, xbox: xboxRaw, steamGames, xboxGames, loading: libLoading, refetch: refetchLib } = useConnectedLibrary();
+  const [refreshing, setRefreshing] = useState(false);
   const xboxErr = xboxRaw?.error || null;
   const xboxLib = xboxErr ? null : xboxRaw;
 
@@ -307,6 +308,20 @@ export default function LibraryScreen() {
             />
           ) : null}
           ListFooterComponent={<View style={{ height: TAB_SPACE }} />}
+          refreshControl={(
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={async () => {
+                setRefreshing(true);
+                try {
+                  if (refetchLib) await refetchLib();
+                } finally {
+                  setRefreshing(false);
+                }
+              }}
+              tintColor={colors.text2}
+            />
+          )}
         />
         </Reveal>
       )}
