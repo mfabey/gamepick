@@ -41,7 +41,7 @@ export function useConnectedLibrary(enabled = true) {
   const hasAny = !!(steamKey || xbox);
   const key = hasAny ? `connlib:${steamKey}:${xbox?.xuid || ''}` : null;
 
-  const { data, loading } = useQuery(
+  const { data, loading, ts, refetch } = useQuery(
     key,
     () => fetchConnectedLibraryRaw(steamAccounts, xbox),
     { ttl: 30 * 60 * 1000, enabled: enabled && hasAny }
@@ -51,5 +51,9 @@ export function useConnectedLibrary(enabled = true) {
   const steamGames = useMemo(() => Object.values(raw.steam).flatMap((l) => l?.games || []), [raw]);
   const xboxGames = useMemo(() => raw.xbox?.games || [], [raw]);
 
-  return { steam: raw.steam, xbox: raw.xbox, steamGames, xboxGames, loading: !!loading };
+  // `ts`/`refetch` DIŞARI VERİLİYOR: kütüphane ekranı çevrimdışıyken
+  // diskteki listeyi gösteriyor ve "ne zaman güncellendi" cümlesini
+  // kurabilmesi için damgaya erişmesi gerekiyor. Önericiyi ilgilendirmiyor,
+  // o alanları okumuyor.
+  return { steam: raw.steam, xbox: raw.xbox, steamGames, xboxGames, loading: !!loading, ts, refetch };
 }

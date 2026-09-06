@@ -24,6 +24,7 @@ import { useDismissed } from '../../src/hooks/useDismissed';
 import { useForYouFeed } from '../../src/hooks/useForYouFeed';
 import { recordDismiss } from '../../src/services/dismissStore';
 import GamePostCard from '../../src/components/GamePostCard';
+import CevrimdisiBant from '../../src/components/CevrimdisiBant';
 import ReviewCard from '../../src/components/ReviewCard';
 import PostCard from '../../src/components/PostCard';
 import FriendActivity, { hasFriendSignal } from '../../src/components/FriendActivity';
@@ -68,9 +69,23 @@ export default function HomeScreen() {
   const { t, lang, formatPrice } = useLanguage();
   const router = useRouter();
 
-  const { data: trendData } = useQuery('home:trending', fetchTrending, { ttl: 3 * 60 * 1000 });
-  const { data: newData }   = useQuery('home:new', fetchNewGames, { ttl: 5 * 60 * 1000 });
-  const { data: saleData }  = useQuery('home:sale', fetchSaleGames, { ttl: 5 * 60 * 1000 });
+  const { data: trendData, ts: trendTs, refetch: trendTazele } = useQuery('home:trending', fetchTrending, { ttl: 3 * 60 * 1000 });
+  const { data: newData, ts: newTs, refetch: newTazele }       = useQuery('home:new', fetchNewGames, { ttl: 5 * 60 * 1000 });
+  const { data: saleData, ts: saleTs, refetch: saleTazele }    = useQuery('home:sale', fetchSaleGames, { ttl: 5 * 60 * 1000 });
+
+  // ── BANDIN OKUDUĞU DAMGA: ÜÇÜNÜN EN ESKİSİ ──
+  // Anasayfa üç ayrı sorgudan besleniyor ve üçü ayrı anlarda tazeleniyor.
+  // En YENİSİ yazılsaydı bant, ekrandaki en bayat şeridi gizleyerek
+  // olduğundan taze gösterirdi. En eskisi "içerik EN AZ bu kadar eski"
+  // diyor — eksik tarafta yanılmak, fazla tarafta yanılmaktan iyidir.
+  const enEskiTs = useMemo(() => {
+    const hepsi = [trendTs, newTs, saleTs].filter(Boolean);
+    return hepsi.length ? Math.min(...hepsi) : 0;
+  }, [trendTs, newTs, saleTs]);
+
+  const hepsiniTazele = useCallback(() => {
+    trendTazele(); newTazele(); saleTazele();
+  }, [trendTazele, newTazele, saleTazele]);
 
   // ── ŞERİT HAZIRLIĞI ──
   // Boş `image` alanı SÜZÜLÜYOR (aşağıdaki `kapakVar`) — ama ölçüldü: alan
@@ -517,6 +532,16 @@ export default function HomeScreen() {
             </Pressable>
           </View>
         </View>
+
+        {/* Bant marka satırının ALTINDA: bu ekranda listenin tepesinde
+            sabit bant için yer yok (yukarıdaki nota bkz.), ama başlıkla
+            selamlama arasındaki boşluk onu taşıyor ve kaydırmayla
+            gidiyor — kalıcı bir kabuk olmuyor. */}
+        <CevrimdisiBant
+          ts={enEskiTs}
+          onRetry={hepsiniTazele}
+          style={{ marginHorizontal: spacing.s20, marginBottom: spacing.s12 }}
+        />
 
         {/* ── Selamlama (Faz 1) ──
             Marka satırının ALTINDA, aramanın ÜSTÜNDE; kaydırmada gider

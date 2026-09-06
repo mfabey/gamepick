@@ -10,7 +10,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { fetchGames } from '../src/api/games';
 import IconButton from '../src/components/IconButton';
-import { fetchQuery, getEntry, isFresh } from '../src/services/queryCache';
+import { fetchQuery, getEntry, isFresh, cacheTs } from '../src/services/queryCache';
+import CevrimdisiBant from '../src/components/CevrimdisiBant';
+import { useCevrimdisi } from '../src/hooks/useCevrimdisi';
 import GameCard from '../src/components/GameCard';
 import { GamesGridSkeleton, Reveal } from '../src/components/Skeleton';
 import { TopFade, BottomFade } from '../src/components/EdgeFade';
@@ -94,6 +96,7 @@ export default function GamesScreen() {
   const filtreKaldir = useCallback((sifirla) => setFilters((f) => ({ ...f, ...sifirla })), []);
   // Ağ bozuk mu — 'sonuç yok'tan AYRI bir durum (Faz 4).
   const [bozuk, setBozuk] = useState(false);
+  const cevrimdisi = useCevrimdisi();
 
   const ref = useRef({ page: 1, canMore: true, fetching: false, seen: new Set(), section: '', query: '', filters: null });
 
@@ -129,6 +132,14 @@ export default function GamesScreen() {
   // `fetchQuery` onu 5 dk boyunca (PAGE1_TTL) önbellekte tutar; `load()` aynı
   // anahtarı okuduğu için düğme aynı sınırlı listeyi geri koyuyordu. Kullanıcı
   // basıyor, ekran değişmiyor, hatayı kendinde arıyordu.
+  // ANAHTAR load() İÇİNDEN ÇIKTI. Çevrimdışı bandı da aynı anahtarın
+  // zaman damgasını okuyor; iki yerde ayrı kurulsalardı biri değişip
+  // öteki unutulduğunda bant yanlış tarihi söylerdi.
+  const anahtar = useMemo(
+    () => `games:${section}|${searchTerm}|${Object.values(apiFilters).join('|')}`,
+    [section, searchTerm, apiFilters]
+  );
+
   const load = useCallback(async (zorla = false) => {
     const r = ref.current;
     r.page = 1; r.canMore = true; r.fetching = true; r.seen = new Set();
@@ -137,7 +148,7 @@ export default function GamesScreen() {
     // 1. sayfa filtre bazında önbellekli → aynı filtreye dönünce ağ isteği yok.
     // ANAHTAR TÜM FİLTRELERİ TAŞIMALI: taşımasaydı tür değiştirince önbellekten
     // eski listenin 1. sayfası dönerdi ve filtre çalışmıyor görünürdü.
-    const key = `games:${section}|${searchTerm}|${Object.values(apiFilters).join('|')}`;
+    const key = anahtar;
     const cacheHit = !zorla && isFresh(getEntry(key), PAGE1_TTL);
     if (!cacheHit) setLoading(true);   // önbellekten geliyorsa skeleton yanıp sönmesin
     try {
@@ -176,7 +187,7 @@ export default function GamesScreen() {
       r.fetching = false;
       setLoading(false);
     }
-  }, [section, searchTerm, apiFilters]);
+  }, [section, searchTerm, apiFilters, anahtar]);
 
   // Yalnızca METİN aramasını geciktir (çip ve ilk açılış anında tetiklensin)
   useEffect(() => {
@@ -368,14 +379,23 @@ export default function GamesScreen() {
           <View style={{ paddingTop: headerH }}>
             <GamesGridSkeleton />
           </View>
-        ) : bozuk ? (
+        ) : bozuk && !(cevrimdisi && games.length > 0) ? (
           // BOZUK DURUM — "sonuç yok"tan AYRI. Üç şey söylüyor: ne oldu,
           // ne çalışmıyor, ne yapabilirsin. Kırmızı YOK: durum bir eylem
           // değil; tek eylem "Yeniden dene" ve o da metin.
+          //
+          // ── ÇEVRİMDIŞI + ELDE LİSTE VARSA BU DAL ATLANIYOR ──
+          // Aşağıdaki hayalet liste %55 opaklıkta ve pointerEvents="none":
+          // sunucu çöktüğünde doğru (veri güvenilmez), uçak modunda YANLIŞ.
+          // Çevrimdışı kullanıcının elindeki liste GERÇEK, sadece bayat —
+          // dokunulabilir kalmalı. Bayatlığı listenin tepesindeki bant
+          // söylüyor. Bu dala yalnızca elde HİÇBİR ŞEY yokken düşülüyor.
           <View style={{ flex: 1, paddingTop: headerH }}>
             <View style={styles.bozukBant}>
-              <Text style={styles.bozukBaslik}>{t('games.degraded')}</Text>
-              <Text style={styles.bozukMetin}>{t('games.degradedDesc')}</Text>
+              {/* Uçak modunda "oyun servisi yanıt vermiyor" demek yanlış:
+                  servis ayakta olabilir, telefon bağlı değil. */}
+              <Text style={styles.bozukBaslik}>{t(cevrimdisi ? 'offline.title' : 'games.degraded')}</Text>
+              <Text style={styles.bozukMetin}>{t(cevrimdisi ? 'offline.noCache' : 'games.degradedDesc')}</Text>
               <Pressable onPress={() => load(true)} hitSlop={8} style={({ pressed }) => [styles.bozukEylem, pressed && PRESSED]}>
                 <Text style={styles.bozukEylemText}>{t('common.retry')}</Text>
               </Pressable>
@@ -429,7 +449,16 @@ export default function GamesScreen() {
           <Reveal style={{ flex: 1 }}>
           <FlashList
             ListHeaderComponent={
-              limited && !limitedGizli ? (
+              // ÇEVRİMDIŞI BANDI LimitedMode'DAN AYRI ve İKİSİ BİRDEN
+              // çıkabilir: biri "sunucu kısıtlı liste döndü", öteki "bu
+              // liste ağdan DEĞİL diskten geliyor" diyor.
+              <View>
+              <CevrimdisiBant
+                ts={cacheTs(anahtar)}
+                onRetry={() => load(true)}
+                style={{ marginHorizontal: spacing.s20, marginBottom: spacing.s12 }}
+              />
+              {limited && !limitedGizli ? (
                 <View style={{ paddingHorizontal: spacing.s20, paddingBottom: spacing.s16 }}>
                   <LimitedMode
                     unavailable={limited.unavailable}
@@ -438,7 +467,8 @@ export default function GamesScreen() {
                     onDismiss={() => setLimitedGizli(true)}
                   />
                 </View>
-              ) : null
+              ) : null}
+              </View>
             }
             onScroll={onTabScroll}
             scrollEventThrottle={16}

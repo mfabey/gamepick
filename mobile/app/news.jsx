@@ -21,6 +21,7 @@ import { fetchNews } from '../src/api/news';
 import { NewsListSkeleton, Reveal } from '../src/components/Skeleton';
 import NewsImage from '../src/components/NewsImage';
 import EmptyState from '../src/components/EmptyState';
+import CevrimdisiBant from '../src/components/CevrimdisiBant';
 import { radius, spacing, PRESSED, type, CHIP, CHIP_TEXT } from '../src/theme';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
@@ -40,7 +41,7 @@ export default function NewsScreen() {
   const [cat, setCat] = useState('all');
 
   // Cache-first: yeniden açılışta anında; arka planda tazelenir
-  const { data, loading, error, refetch } = useQuery(
+  const { data, loading, error, ts, refetch } = useQuery(
     `news:${lang}`,
     () => fetchNews(lang),
     { ttl: 10 * 60 * 1000 }
@@ -94,7 +95,11 @@ export default function NewsScreen() {
     );
   }
 
-  if (error) {
+  // HATA EKRANI YALNIZ ELDE HİÇBİR ŞEY YOKKEN. Önceden koşul sadece
+  // `error` idi: uçak modunda diskteki haberler hazır dururken bile
+  // kullanıcı bulut ikonlu boş ekranı görüyordu. Veri varsa okunur,
+  // bayat olduğunu listenin tepesindeki bant söyler.
+  if (error && !data) {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
         {head()}
@@ -118,6 +123,14 @@ export default function NewsScreen() {
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <View>
+            {/* Pay bandın KENDİSİNDE: sarmalayıcı bir dolgu View'i
+                bant görünmezken de listenin tepesinde şerit bırakırdı. */}
+            <CevrimdisiBant
+              ts={ts}
+              hata={!!error}
+              onRetry={refetch}
+              style={{ marginHorizontal: spacing.lg, marginTop: spacing.sm, marginBottom: spacing.xs }}
+            />
             {/* Öne çıkan */}
             {cat === 'all' && featured && (
               <Pressable

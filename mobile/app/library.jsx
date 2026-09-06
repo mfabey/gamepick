@@ -10,6 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { GamesGridSkeleton, Reveal } from '../src/components/Skeleton';
 import EmptyState from '../src/components/EmptyState';
+import CevrimdisiBant from '../src/components/CevrimdisiBant';
 import GameCover from '../src/components/GameCover';
 import { prefetchImages } from '../src/utils/prefetch';
 import { radius, spacing, TAB_SPACE, type, CHIP, CHIP_TEXT } from '../src/theme';
@@ -37,7 +38,7 @@ export default function LibraryScreen() {
   const router = useRouter();
 
   // Paylaşımlı kütüphane fetch'i (Home önericisi ile aynı cache → çift fetch yok, anlık açılış)
-  const { steam: steamLibs, xbox: xboxRaw, steamGames, xboxGames, loading: libLoading } = useConnectedLibrary();
+  const { steam: steamLibs, xbox: xboxRaw, steamGames, xboxGames, loading: libLoading, ts: libTs, refetch: libTazele } = useConnectedLibrary();
   const xboxErr = xboxRaw?.error || null;
   const xboxLib = xboxErr ? null : xboxRaw;
 
@@ -266,6 +267,11 @@ export default function LibraryScreen() {
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             <View style={{ paddingHorizontal: 6 }}>
+              <CevrimdisiBant
+                ts={libTs}
+                onRetry={libTazele}
+                style={{ marginBottom: spacing.s12 }}
+              />
               <LibraryHeaderCard header={header} formatPrice={formatPrice} pricesLoading={pricesLoading} t={t} lang={lang} locale={locale} />
               {/* Arama + sıralama */}
               <View style={styles.searchBox}>

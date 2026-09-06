@@ -93,7 +93,7 @@
     ],
     "extra": {
       "router": {},
-      "apiBase": "https://www.gamerisen.com",
+      "apiBase": "http://localhost:3000",
       "eas": {
         "projectId": "bb9d1812-5eeb-45ba-bd98-f07998f7fa7a",
         "build": {

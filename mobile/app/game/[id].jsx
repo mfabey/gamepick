@@ -14,7 +14,7 @@ import Animated, {
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
-import { fetchCardPrice, fetchGameDetail, fetchGameByAppid, fetchPrices, fetchSteamReviews } from '../../src/api/games';
+import { fetchGameDetail, fetchGameByAppid, fetchPrices, fetchSteamReviews } from '../../src/api/games';
 import { radius, spacing, PRESSED, type, scale, metacriticColor, motion, TOUCH_MIN, SECTION_TITLE } from '../../src/theme';
 import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { stripHtml } from '../../src/utils/text';
@@ -25,6 +25,9 @@ import { useCollections, useCollectionsContaining } from '../../src/hooks/useCol
 import { toggleGameInCollection, createCollection } from '../../src/services/collectionsStore';
 import { turAdi } from '../../src/services/genreName';
 import OwnershipBand from '../../src/components/OwnershipBand';
+import CevrimdisiBant from '../../src/components/CevrimdisiBant';
+import { oyunuOnbellektenBul } from '../../src/services/queryCache';
+import { requestPrice } from '../../src/services/priceService';
 import CollectionPicker from '../../src/components/CollectionPicker';
 import ShareToFriendSheet from '../../src/components/ShareToFriendSheet';
 import { reportActivity } from '../../src/api/social';
@@ -79,12 +82,27 @@ export default function GameDetail() {
   // appid varsa (Share Extension'dan gelindiyse) doğrudan Steam appdetails'e
   // gider — RAWG slug tahmini yapılmaz, rastgele bir Steam linkinin her zaman
   // doğru oyuna çözülmesini garanti eder.
-  const { data: detail } = useQuery(
+  const { data: detail, ts: detayTs, refetch: detayTazele } = useQuery(
     appid ? `game-detail:appid:${appid}:${lang}` : `game-detail:${slug || id}:${lang}`,
     () => (appid ? fetchGameByAppid(appid, lang) : fetchGameDetail(slug || id, lang))
       .then((d) => (d && !d.error ? d : null)),
     { ttl: 30 * 60 * 1000 }
   );
+
+  // ── DETAY YOKSA LİSTE KAYDINA DÜŞ ──
+  // Çevrimdışıyken bu ekran kapak + addan ibaretti; oysa listeden gelen
+  // kayıt tür, metacritic, çıkış tarihi ve mağaza bağlantılarını ZATEN
+  // taşıyor ve diskte duruyor (ölçüldü: kayıt başına ~530 B). Sıfır ek
+  // istekle kazanılan alanlar bunlar.
+  //
+  // AÇIKLAMA ve EKRAN GÖRÜNTÜLERİ listede YOK — onlar `detail`e bağlı
+  // kalıyor ve çevrimdışında boş görünüyor. Uydurulacak bir yerleri yok.
+  const yedek = useMemo(
+    () => (detail ? null : oyunuOnbellektenBul(id, slug)),
+    [detail, id, slug]
+  );
+  const g = detail || yedek;
+
   const [price, setPrice]     = useState(null);
   const [loadingPrice, setLoadingPrice] = useState(true);
   const [expanded, setExpanded] = useState(false);
@@ -187,9 +205,18 @@ export default function GameDetail() {
   const inCollections = useCollectionsContaining(gameObj);
   const inAnyCollection = inCollections.size > 0;
 
+  // ── FİYAT SERVİSİNDEN, DOĞRUDAN UÇTAN DEĞİL ──
+  // Burada `fetchCardPrice` doğrudan çağrılıyordu ve bu üç şeyi kaybettiriyordu:
+  //   • DİSK ÖNBELLEĞİ — priceService kayıtları kalıcı; doğrudan çağrı her
+  //     açılışta yeniden istek atıyordu.
+  //   • TEKİLLEŞTİRME — listedeki kart aynı fiyatı zaten çekmişti. Anahtar
+  //     ikisinde de slug/ad'dan türediği için artık aynı kaydı paylaşıyorlar:
+  //     karttan detaya geçişte SIFIR istek.
+  //   • ÇEVRİMDIŞI KISA DEVRE — uçak modunda mahkûm bir istek atılmıyor,
+  //     onun yerine diskteki kayıt gösteriliyor.
   useEffect(() => {
     let alive = true;
-    fetchCardPrice({ slug: slug || '', name: name || '', hasSteam: true })
+    requestPrice({ slug, name, hasSteam: true })
       .then(d => { if (alive) setPrice(d); })
       .catch(() => {})
       .finally(() => { if (alive) setLoadingPrice(false); });
@@ -323,7 +350,7 @@ export default function GameDetail() {
   // alıyor ve bağımlılık dizisi RENDER SIRASINDA değerlendiriliyor. Aşağıda
   // kalsaydı const'ın geçici ölü bölgesine (TDZ) düşer, ekran açılır açılmaz
   // ReferenceError verirdi.
-  const cover = detail?.image || image;
+  const cover = g?.image || image;
 
   const cikiliyor = useRef(false);
 
@@ -374,18 +401,18 @@ export default function GameDetail() {
     []
   );
 
-  const title = detail?.name || name;
+  const title = g?.name || name;
   const isFree = price?.isFree;
   const onSale = price?.discount > 0 && !isFree;
   const desc = stripHtml(detail?.description);
-  const genres = detail?.genres || [];
+  const genres = g?.genres || [];
   const shots = detail?.screenshots || [];
-  const mc = detail?.metacritic;
+  const mc = g?.metacritic;
   const mcColor = metacriticColor(mc, colors);
 
   const stores = [];
-  if (detail?.steamUrl || gameObj.hasSteam) stores.push({ key: 'steam', label: 'Steam', icon: 'logo-steam', color: '#1a9fff', url: detail?.steamUrl });
-  if (detail?.epicUrl) stores.push({ key: 'epic', label: 'Epic', icon: 'globe-outline', color: '#fff', url: detail.epicUrl });
+  if (g?.steamUrl || gameObj.hasSteam) stores.push({ key: 'steam', label: 'Steam', icon: 'logo-steam', color: '#1a9fff', url: g?.steamUrl });
+  if (g?.epicUrl) stores.push({ key: 'epic', label: 'Epic', icon: 'globe-outline', color: '#fff', url: g.epicUrl });
   if (detail?.officialUrl) stores.push({ key: 'official', label: t('detail.official'), icon: 'link-outline', color: colors.text2, url: detail.officialUrl });
 
   const open = (url) => { if (url) WebBrowser.openBrowserAsync(url); };
@@ -500,6 +527,16 @@ export default function GameDetail() {
           </Pressable>
         ) : null}
 
+        {/* Çevrimdışı bandı ADIN ÜSTÜNDE: sayfanın tamamı için geçerli bir
+            durum, tek bir alan için değil. Fragman düğmesinin ÜSTÜNE
+            konulamazdı — o düğme negatif kenar boşluğuyla kapağın üstüne
+            taşıyor, araya giren her öğe onu yerinden ederdi. */}
+        <CevrimdisiBant
+          ts={detayTs}
+          onRetry={detayTazele}
+          style={{ marginBottom: spacing.s12 }}
+        />
+
         <Text style={styles.name}>{title}</Text>
 
         {/* FAZ 3 — SAHİPLİK BANDI. Adın HEMEN ALTINDA, meta çiplerinin
@@ -532,9 +569,9 @@ export default function GameDetail() {
               <Text style={styles.metaChipLabel}>{t('detail.rating')}</Text>
             </View>
           ) : null}
-          {detail?.released ? (
+          {g?.released ? (
             <View style={styles.metaChip}>
-              <Text style={styles.metaChipText2}>{detail.released}</Text>
+              <Text style={styles.metaChipText2}>{g.released}</Text>
               <Text style={styles.metaChipLabel}>{t('detail.released')}</Text>
             </View>
           ) : null}

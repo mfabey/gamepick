@@ -35,6 +35,12 @@ export default {
   'time.hoursAgo': '{n} sa önce',
   'time.yesterday': 'dün',
   'time.daysAgo': '{n} gün önce',
+  // ÇEVRİMDIŞI BANDI. İki ayrı cümle: birinde kullanıcı bir şey yapabilir
+  // (uçak modu), ötekinde yapamaz. bkz. CevrimdisiBant.
+  'offline.title': 'Çevrimdışısın',
+  'offline.failed': 'Bağlanılamadı',
+  'offline.updated': '{n} güncellendi',
+  'offline.noCache': 'Bu liste henüz indirilmedi; bağlanınca yüklenecek.',
   'news.all': 'Tümü',
   'news.empty': 'Haber bulunamadı',
   'news.featured': 'ÖNE ÇIKAN',

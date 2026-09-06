@@ -102,6 +102,40 @@ const HAP_R_BASILI = HAP_H / 2;
 const ANDROID_ELEVATION = 18;
 
 // ─────────────────────────────────────────────────────────────────────────────
+// VİDEO ÜSTÜ KABUK — Reels sekmesinde çubuk KABUĞUNU bırakıyor
+//
+// Videolar sekmesi tam ekran bir oynatıcı; oranın tek içeriği görüntünün
+// kendisi. Çubuğun dolgusu, kenarlığı ve gölgesi orada bilgi taşımıyor,
+// yalnızca görüntünün alt şeridini kaplıyor — açık temada #F7F7F9'luk opak
+// bir bant, videonun üstünde en dikkat çeken şey oluyor.
+//
+// KABUK GİDİYOR, İKONLAR KALIYOR: yüzey soluyor, ikonlar video üstü
+// karşılıklarına geçiyor. Çubuk hâlâ tam boy, dokunma hedefleri hiç
+// değişmiyor — kaybolan yalnızca zemin.
+//
+// RENKLER TEMA BAĞIMSIZ ve bu bir sızıntı değil: zemin artık tema yüzeyi
+// değil VİDEO. Aynı ekrandaki eylem düğmeleri de (`videos.jsx → ActionBtn`)
+// iki temada da beyaz çiziyor; çubuk onlarla aynı dili konuşuyor.
+//
+// ÖLÇÜM — beyaz ikon neden okunuyor: videos.jsx öğesinin alt karartması
+// (`rgba(0,0,0,0.88)`, locations .55→1) çubuğun oturduğu banda %67–80 siyah
+// düşürüyor (852pt ekran, insets.bottom 34 → f=0.892…0.960). En kötü hâlde
+// (bembeyaz kare) zemin #545454 oluyor:
+//   • seçili ikon  #fff                  → 7.6:1
+//   • pasif ikon   rgba(255,255,255,.55) → 3.6:1  (grafik öğe eşiği 3:1)
+// Temalı ikonlar aynı zeminde 1.6:1'de kalıyordu — bu yüzden renk DEĞİŞMEK
+// zorunda, yalnızca yüzeyi soldurmak yetmiyor.
+const REELS_ROTA = 'videos';
+// tema-bagimsiz: zemin video karesi, tema yuzeyi degil (bkz. yukarıdaki ölçüm)
+const VIDEO_IKON = '#fff';
+// tema-bagimsiz: ayni gerekce
+const VIDEO_IKON_PASIF = 'rgba(255,255,255,0.55)';
+// Gölgenin başlangıç değeri: animasyon bunu 0'a indiriyor. `shadows.floating`
+// açılışta donuyor (tema modül seviyesinde okunuyor) — statik stille AYNI
+// kaynaktan okunması şart, yoksa geçiş bittiğinde farklı bir değere oturur.
+const GOLGE_OPAKLIK = shadows.floating.shadowOpacity;
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Liquid Glass kullanılabilirliği — MODÜL DÜZEYİNDE bir kez hesaplanır.
 // İki kontrol birden şart: bazı iOS 26 beta sürümlerinde API yok ve yalnızca
 // isLiquidGlassAvailable'a güvenilirse uygulama çöküyor.
@@ -131,6 +165,49 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
   const reducedMotion = useReducedMotion();
   const compact = useTabBarCompact();
   const hidden = useTabBarHidden();
+
+  // ── Video üstü kabuk ────────────────────────────────────────────────────
+  // Kaynak NAVİGATÖRÜN KENDİ DURUMU, ekrandan gelen bir köprü değil.
+  // `hidden`/`compact` için paylaşılan değer şart çünkü onları KAYDIRMA ve
+  // BASILI TUTMA sürüyor — çubuğun göremediği jestler. Burada tetikleyici
+  // "hangi sekmedeyiz" ve o bilgi zaten burada. Köprü kurulsaydı videos.jsx
+  // bayrağı sıfırlamayı unuttuğunda (odak kaybı, bildirime dokunma) çubuk
+  // uygulamanın tamamında saydam kalırdı — `tabHidden` için videos.jsx'te
+  // yazılan "kurtarılamaz durum" notunun aynısı.
+  const reels = state.routes[state.index]?.name === REELS_ROTA;
+  // 0 = normal kabuk, 1 = video üstü. Açılış değeri `reels`: uygulama derin
+  // bağlantıyla doğrudan Videolar sekmesinde açılırsa ilk kare de saydam olsun.
+  const solgun = useSharedValue(reels ? 1 : 0);
+  useEffect(() => {
+    const hedef = reels ? 1 : 0;
+    // SÜRELER ASİMETRİK ve jetonların kendi tanımı bu: kabuğun ÇEKİLMESİ bir
+    // çıkış (exit 160), geri gelmesi bir giriş (base 240). Videoya geçerken
+    // hızlı çekiliyor — kullanıcı oraya izlemeye gidiyor; dönerken arayüz
+    // aceleyle çarpmıyor.
+    solgun.value = reducedMotion
+      ? hedef
+      : withTiming(hedef, { duration: reels ? motion.exit : motion.base });
+  }, [reels, reducedMotion, solgun]);
+
+  // ── CAM GEÇİŞTE KAPALI ──
+  // Cam ne soldurulabiliyor ne de solduran bir ebeveynin altında durabiliyor
+  // (expo-glass-effect: GlassView'da ya da EBEVEYNİNDE opacity<1 kullanma).
+  // Yani saydamlaşan yüzey cam OLAMAZ; Reels'te düz dolguya geçip onu
+  // soldurmak tek yol. Yan kazanç ölçülebilir: canlı bulanıklık her karede
+  // arkasındaki oynayan videoyu örnekliyordu, Reels'te o iş tamamen kalkıyor.
+  //
+  // GERİ AÇILIŞ GECİKMELİ. Sekmeden çıkarken cam anında geri gelseydi, düz
+  // dolgu daha %0 opaklıktayken camla takas edilirdi — göze çarpan bir sıçrama.
+  // Geçiş bitince takas ediliyor: o an iki yüzey de tam opak, fark yalnızca
+  // camın kendi dokusu.
+  const [camKapali, setCamKapali] = useState(reels);
+  useEffect(() => {
+    if (reels) { setCamKapali(true); return; }
+    if (reducedMotion) { setCamKapali(false); return; }
+    const zamanlayici = setTimeout(() => setCamKapali(false), motion.base);
+    return () => clearTimeout(zamanlayici);
+  }, [reels, reducedMotion]);
+  const camAcik = GLASS_OK && !camKapali;
 
   // ── Kayan vurgunun konumu ──
   // Çubuk genişliği ÖLÇÜLÜYOR, hesaplanmıyor: `wrap` yatayda kenar
@@ -164,9 +241,15 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
   // — dokunuş vurguyu zaten o hücreye taşıyor, morf o kaymanın başlangıcı.
   const basili = useSharedValue(0);
 
+  // VURGU DA KABUĞUN PARÇASI: Reels'te yüzeyle birlikte soluyor. Kalsaydı
+  // dayanacağı bir zemin olmazdı — %16'lık kırmızı tint videonun üstünde ya
+  // kirli bir leke olurdu ya da hiç görünmezdi. Seçili sekmeyi orada iki
+  // kanal anlatıyor: glifin dolu/çizgi hâli ve parlaklık (1.0 ↔ 0.55).
   const hapStyle = useAnimatedStyle(() => {
-    if (!ANDROID) return { transform: [{ translateX: pos.value }] };
+    const gorunur = 1 - solgun.value;
+    if (!ANDROID) return { opacity: gorunur, transform: [{ translateX: pos.value }] };
     return {
+      opacity: gorunur,
       transform: [{ translateX: pos.value }],
       // borderRadius transform DEĞİL, ama yerleşim de tetiklemiyor: yalnız
       // yeniden boyama. Tek ve küçük bir görünümde bedeli ölçülebilir değil.
@@ -242,6 +325,25 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
     };
   }, [reducedMotion, compact, hidden, bounce]);
 
+  // Gölge AYRI stilde, `barStyle`ın içinde değil: orada üç erken dönüş var ve
+  // gölge üçüne birden yazılsaydı aynı satır üç kez kopyalanırdı.
+  //
+  // Gölge yüzeyin bir parçası ve onunla birlikte gidiyor — dolgusu olmayan
+  // bir hapın altında duran gölge "havada asılı kenar" gibi okunuyor.
+  // İki platform tek stilde: `elevation` iOS'ta, `shadowOpacity` Android'de
+  // sessizce yok sayılıyor.
+  const golgeStyle = useAnimatedStyle(() => {
+    const gorunur = 1 - solgun.value;
+    return {
+      shadowOpacity: GOLGE_OPAKLIK * gorunur,
+      elevation: ANDROID_ELEVATION * gorunur,
+    };
+  }, [solgun]);
+
+  // Yüzey (dolgu + kenarlık) KAPTAN AYRI bir katmana taşındı. Kapta kalsaydı
+  // soldurmak ikonları da soldururdu; ikonların kendi kanalı var (TabIcon).
+  const yuzeyStyle = useAnimatedStyle(() => ({ opacity: 1 - solgun.value }), [solgun]);
+
   return (
     <View pointerEvents="box-none" style={[styles.wrap, {
       // Handoff: alt kenardan 24. Güvenli alanı AŞMAMASI için ikisinin
@@ -269,19 +371,28 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
           ANDROID && styles.golgeAndroid,
           isLandscape && styles.barLandscape,
           barStyle,
+          golgeStyle,
         ]}
       >
       <View
-        style={[styles.bar, GLASS_OK ? styles.barGlass : styles.barSolid]}
+        style={[styles.bar, camAcik && styles.barGlass]}
         onLayout={(e) => setBarW(e.nativeEvent.layout.width)}
       >
         {/* Cam katmanı içeriği SARMALAMAZ, arkasında durur — sekme öğeleri
             basılınca opacity uyguluyor ve bu camı bozardı. */}
-        {GLASS_OK && (
+        {camAcik ? (
           <GlassView
             style={[StyleSheet.absoluteFill, styles.glassLayer]}
             glassEffectStyle="regular"
             pointerEvents="none"
+          />
+        ) : (
+          /* Düz yüzey — cam yokken (Android, iOS 26 öncesi) ya da Reels'te.
+             Geometri camla BİREBİR aynı: aynı yarıçap, aynı kenarlık, aynı
+             sınırlar. Değişen tek şey soldurulabilir olması. */
+          <Animated.View
+            pointerEvents="none"
+            style={[StyleSheet.absoluteFill, styles.yuzey, yuzeyStyle]}
           />
         )}
 
@@ -331,6 +442,7 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
               <TabIcon
                 base={base}
                 focused={focused}
+                solgun={solgun}
                 // Odaktaki sekmede rozet YOK: kullanıcı zaten oradaysa
                 // "bekleyen bir şey var" demenin anlamı kalmıyor.
                 badge={BADGED[route.name] && !focused ? unread : 0}
@@ -354,7 +466,7 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
  * OPACITY YOK — bu bilesen cam katmaninin kardesi ve GlassView'in
  * ebeveyninde opacity<1 cami bozuyor (bkz. dosya basi). Yalnizca transform.
  */
-function TabIcon({ base, focused, badge = 0 }) {
+function TabIcon({ base, focused, badge = 0, solgun }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   // Mantik usePop'a tasindi: ayni hareket begeni ve istek listesinde de
@@ -368,14 +480,38 @@ function TabIcon({ base, focused, badge = 0 }) {
   // Bir ara kaldirilip geri konuldu; karar maketin kendisine dayaniyor.
   const style = usePop(focused, 1.12);   // handoff: 1.0 → 1.12
 
+  // ── İKİ KOPYA, ÇAPRAZ SOLMA ──
+  // Renk anında değiştirilseydi kabuk daha soluyorken ikonlar çoktan beyaz
+  // olurdu: AÇIK temada bu, beyaz çubuğun üstünde beyaz ikon demek — 160 ms
+  // boyunca hiçbir şey görünmezdi. Ionicons rengi bir PROP (stil değil), yani
+  // tek görünümde renk animasyonu yok; iki katmanı karşılıklı soldurmak
+  // renk geçişinin RN'deki karşılığı.
+  //
+  // Aynı glif, aynı boyut, aynı kutu → üst üste birebir oturuyorlar; geçişin
+  // ortasında görülen şey iki rengin karışımı, yer değiştiren bir ikon değil.
+  const ad = focused ? base : `${base}-outline`;
+  const temaStyle  = useAnimatedStyle(() => ({ opacity: 1 - solgun.value }), [solgun]);
+  const videoStyle = useAnimatedStyle(() => ({ opacity: solgun.value }), [solgun]);
+
   return (
     <Animated.View style={[style, styles.item]}>
       <View>
-        <Ionicons
-          name={focused ? base : `${base}-outline`}
-          size={ICON}
-          color={focused ? colors.accent : colors.text3}
-        />
+        <Animated.View style={temaStyle}>
+          <Ionicons
+            name={ad}
+            size={ICON}
+            color={focused ? colors.accent : colors.text3}
+          />
+        </Animated.View>
+        {/* Video üstü kopya — kutuyu BÜYÜTMESİN diye mutlak konumlu; ölçüyü
+            temalı kopya veriyor. */}
+        <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, videoStyle]}>
+          <Ionicons
+            name={ad}
+            size={ICON}
+            color={focused ? VIDEO_IKON : VIDEO_IKON_PASIF}
+          />
+        </Animated.View>
         {/* Rozet simgenin İÇİNDE, animasyonlu görünümün altında: sekme
             seçilirken birlikte büyüyor. Dışarıda dursaydı simge büyürken
             rozet yerinde kalır, ikisi ayrışmış görünürdü.
@@ -436,7 +572,14 @@ const makeStyles = (colors) => StyleSheet.create({
   // iOS 26 öncesi ve Android: düz dolgu. `glassFallback` zaten OPAK bir hex
   // (koyu #16171B, açık #F7F7F9), yani Faz 2'nin Android'den istediği "opak
   // yüzey" ayrı bir renk gerektirmiyor — değişen yalnız geometri ve gölge.
-  barSolid: {
+  //
+  // KAPTA DEĞİL AYRI KATMANDA (eski adı `barSolid`): Reels'te yalnız bu
+  // katman soluyor. Kapta kalsaydı opaklık ikonlara da inerdi. `borderRadius`
+  // burada tekrar yazılıyor çünkü katman artık kabın kendisi değil — kap
+  // `overflow:'hidden'` ile zaten kırpıyor ama kenarlık kırpılan köşeye
+  // değil, bu görünümün kendi köşesine çiziliyor.
+  yuzey: {
+    borderRadius: RADIUS,
     backgroundColor: colors.barSolid,
     borderWidth: 1,
     // tokens.json → glassBorder (.10). Kart kenarlığından (.07) ayrı, çünkü

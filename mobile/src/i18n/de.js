@@ -44,6 +44,12 @@ export default {
   'time.hoursAgo': 'vor {n} Std.',
   'time.yesterday': 'gestern',
   'time.daysAgo': 'vor {n} Tagen',
+  // ÇEVRİMDIŞI BANDI. İki ayrı cümle: birinde kullanıcı bir şey yapabilir
+  // (uçak modu), ötekinde yapamaz. bkz. CevrimdisiBant.
+  'offline.title': 'Du bist offline',
+  'offline.failed': 'Keine Verbindung',
+  'offline.updated': 'aktualisiert {n}',
+  'offline.noCache': 'Diese Liste wurde noch nicht geladen; sie kommt, sobald du wieder online bist.',
   'news.all': 'Alle',
   'news.empty': 'Keine News gefunden',
   'news.featured': 'TOPTHEMA',
