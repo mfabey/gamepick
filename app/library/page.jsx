@@ -136,8 +136,14 @@ export default function LibraryPage() {
   // Genel toplam (tüm platformlar)
   const grand = useMemo(() => {
     const steamVal = steamCombined.value?.sum || 0;
+    const normalize = (n) => (n || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const steamNames = new Set(steamCombined.games.map(g => normalize(g.name)));
+    const uniqueXboxGames = (xboxLib?.games || []).filter(g => {
+      const n = normalize(g.name);
+      return n && !steamNames.has(n);
+    });
     return {
-      games: steamCombined.totalGames + (xboxLib?.total || 0),
+      games: steamCombined.totalGames + uniqueXboxGames.length,
       hours: steamCombined.totalHours,
       value: steamVal,
       hasValue: steamCombined.value != null,
