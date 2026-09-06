@@ -2,7 +2,7 @@
   "expo": {
     "name": "Gamerisen",
     "slug": "gamerisen",
-    "version": "2.6.0",
+    "version": "2.6.1",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "scheme": "gamerisen",
@@ -93,7 +93,7 @@
     ],
     "extra": {
       "router": {},
-      "apiBase": "http://localhost:3000",
+      "apiBase": "https://www.gamerisen.com",
       "eas": {
         "projectId": "bb9d1812-5eeb-45ba-bd98-f07998f7fa7a",
         "build": {
