@@ -109,3 +109,47 @@ görüntüsü üstünde piksel ölçümü):
    takıyor ve gölge zeminsiz de çiziliyor. İki release APK yan yana ölçülerek
    görüldü — önce "Android'de gölge hiç çizilmiyordu" diye yazılmıştı,
    ölçüm bunu çürüttü. Dolguyu katman değiştirmek GEREKMİYOR.
+
+---
+
+# İzin metinleri — KAMERA, MİKROFON, FACE ID, "ALWAYS" KONUM KAPALI
+
+`app.json`'da bu dört alan bilerek `false`. JSON yorum kabul etmediği için
+gerekçe burada.
+
+Üç Expo eklentisi, prop verilmezse İNGİLİZCE VARSAYILAN bir kullanım metni
+yazıyor — `applyPermissions` (@expo/config-plugins/ios/Permissions.js):
+
+    infoPlist[permission] = permissions[permission] || infoPlist[permission] || description;
+
+`false` verilince anahtar SİLİNİYOR; tek kapatma yolu bu.
+
+Ölçüldü (2026-09-05, `expo config --type introspect`). ÖNCE altı kullanım
+metni vardı, dördü uygulamanın YAPMADIĞI bir şeyi anlatıyordu:
+
+| anahtar | değer | neden yanlıştı |
+| --- | --- | --- |
+| `NSMicrophoneUsageDescription` | "Allow $(PRODUCT_NAME) to access your microphone" | ses kaydı YOK; metin İngilizce |
+| `NSFaceIDUsageDescription` | "Allow $(PRODUCT_NAME) to access your Face ID…" | `requireAuthentication` hiç kullanılmıyor |
+| `NSLocationAlwaysUsageDescription` | "Allow $(PRODUCT_NAME) to access your location" | kod yalnız when-in-use istiyor |
+| `NSCameraUsageDescription` | "…sohbette fotoğraf çekip gönderebilmeniz için…" | `launchCameraAsync` hiçbir yerde YOK |
+
+SONRA iki metin kaldı (`NSPhotoLibraryUsageDescription`,
+`NSLocationWhenInUseUsageDescription`) — ikisi de Türkçe ve ikisinin de
+karşılığı kodda var.
+
+Android tarafı aynı düğmelerden geliyor: `microphonePermission: false`
+`RECORD_AUDIO`'yu, `cameraPermission: false` `CAMERA`'yı manifest birleşmesinde
+`tools:node="remove"` ile eliyor. İkisi de introspect çıktısında doğrulandı.
+
+## `locationAlwaysAndWhenInUsePermission` YETMİYOR
+
+Bu alan zaten `false`'tu ama `NSLocationAlwaysUsageDescription` yine
+yazılıyordu: `expo-location` eklentisinde bunlar İKİ AYRI prop
+(`plugin/src/withLocation.ts`). İkisi de kapatılmalı.
+
+## KAMERA GERİ İSTENİRSE
+
+`cameraPermission`'ı geri açmak tek başına yanlış olur — metin "sohbette
+fotoğraf çekip gönderebilmeniz için" diyor, o özellik yok. Önce
+`launchCameraAsync` yolu yazılsın, izin metni ONDAN SONRA geri gelsin.

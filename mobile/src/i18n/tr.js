@@ -637,6 +637,10 @@ export default {
   'lib.empty': 'Bu filtreyle oyun yok',
   'common.loading': 'Yükleniyor…',
   'common.retry': 'Tekrar dene',
+  // sf.* Steam ekranlarina ozel. DM listesinde/sohbette 'Steam yanit
+  // vermiyor olabilir' YANLISTI: o ekranlarin Steam ile isi yok.
+  'common.error': 'Bağlanamadık',
+  'common.errorText': 'Sunucuya ulaşamadık. Birazdan tekrar dene.',
   'common.back': 'Geri',
   'notif.title': 'İndirim Uyarıları',
   'notif.desc': 'Takip ettiğin oyunlar indirime girince bildirim al.',
@@ -659,6 +663,7 @@ export default {
   'detail.stores': 'Mağazalar',
   'detail.developer': 'Geliştirici',
   'detail.released': 'Çıkış',
+  'detail.rating': 'Puan',
   'detail.more': 'Devamını oku',
   'detail.less': 'Daha az',
   'detail.official': 'Resmi Site',

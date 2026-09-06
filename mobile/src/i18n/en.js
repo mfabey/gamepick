@@ -635,6 +635,10 @@ export default {
   'lib.empty': 'No games with this filter',
   'common.loading': 'Loading…',
   'common.retry': 'Retry',
+  // sf.* Steam ekranlarina ozel. DM listesinde/sohbette 'Steam yanit
+  // vermiyor olabilir' YANLISTI: o ekranlarin Steam ile isi yok.
+  'common.error': 'Could not connect',
+  'common.errorText': "We couldn't reach the server. Try again shortly.",
   'common.back': 'Back',
   'notif.title': 'Discount Alerts',
   'notif.desc': 'Get notified when games you follow go on sale.',
@@ -657,6 +661,7 @@ export default {
   'detail.stores': 'Stores',
   'detail.developer': 'Developer',
   'detail.released': 'Released',
+  'detail.rating': 'Rating',
   'detail.more': 'Read more',
   'detail.less': 'Show less',
   'detail.official': 'Official Site',

@@ -18,7 +18,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   View, Text, Pressable, StyleSheet, TextInput, ScrollView, Modal,
-  ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
+  ActivityIndicator, Alert, KeyboardAvoidingView,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -172,7 +172,12 @@ export default function ProfileEditScreen() {
         </Pressable>
       </View>
 
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      {/* ANDROID'DE DE 'padding' — `undefined` DEĞİL. `undefined` iken
+          KeyboardAvoidingView Android'de HİÇBİR ŞEY yapmıyor: RN 0.81
+          kaynağında switch(behavior) default dalı düz bir <View> döndürüyor.
+          Edge-to-edge zorlamasıyla pencere de klavye için küçülmediğinden
+          alan hiç yukarı kaymıyordu (bkz. chat/[uid].jsx aynı not). */}
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
         <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.s40 }]}
                     keyboardShouldPersistTaps="handled">
           {/* Avatar — dokunuş seçiciyi açıyor. Kalem rozeti değişebilirliği

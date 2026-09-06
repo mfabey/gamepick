@@ -32,7 +32,7 @@ function computeValue(games, prices) {
 export default function LibraryScreen() {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
-  const { t, lang, formatPrice } = useLanguage();
+  const { t, lang, locale, formatPrice } = useLanguage();
   const { steamAccounts, xbox, busy, loginSteam, loginXbox, account } = useAuth();
   const router = useRouter();
 
@@ -266,7 +266,7 @@ export default function LibraryScreen() {
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             <View style={{ paddingHorizontal: 6 }}>
-              <LibraryHeaderCard header={header} formatPrice={formatPrice} pricesLoading={pricesLoading} t={t} lang={lang} />
+              <LibraryHeaderCard header={header} formatPrice={formatPrice} pricesLoading={pricesLoading} t={t} lang={lang} locale={locale} />
               {/* Arama + sıralama */}
               <View style={styles.searchBox}>
                 <Ionicons name="search" size={16} color={colors.text3} />
@@ -316,7 +316,7 @@ export default function LibraryScreen() {
 }
 
 // ── Başlık kartı (profil + istatistik + değer) ──
-function LibraryHeaderCard({ header, formatPrice, pricesLoading, t, lang }) {
+function LibraryHeaderCard({ header, formatPrice, pricesLoading, t, lang, locale }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   if (!header) return null;
@@ -403,7 +403,7 @@ function LibraryHeaderCard({ header, formatPrice, pricesLoading, t, lang }) {
       <View style={styles.statsRow}>
         <StatCell value={header.stats.games} label={t('lib.games')} />
         <StatCell value={header.stats.gamePass} label="Game Pass" color={colors.xbox} />
-        <StatCell value={header.stats.gamerscore?.toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US')} label={t('lib.gamerscore')} />
+        <StatCell value={header.stats.gamerscore?.toLocaleString(locale)} label={t('lib.gamerscore')} />
       </View>
     </View>
   );

@@ -381,7 +381,7 @@ export default function GameDetail() {
   const genres = detail?.genres || [];
   const shots = detail?.screenshots || [];
   const mc = detail?.metacritic;
-  const mcColor = metacriticColor(mc);
+  const mcColor = metacriticColor(mc, colors);
 
   const stores = [];
   if (detail?.steamUrl || gameObj.hasSteam) stores.push({ key: 'steam', label: 'Steam', icon: 'logo-steam', color: '#1a9fff', url: detail?.steamUrl });
@@ -529,7 +529,7 @@ export default function GameDetail() {
                   üstelik kırmızı olumsuz okunduğu için 4.5/5 kötü görünüyordu.
                   Kural: renk değere bağlıysa kalır, değilse nötrleşir. */}
               <Text style={[styles.metaChipText, { color: colors.text }]}>★ {detail.rating.toFixed(1)}</Text>
-              <Text style={styles.metaChipLabel}>Puan</Text>
+              <Text style={styles.metaChipLabel}>{t('detail.rating')}</Text>
             </View>
           ) : null}
           {detail?.released ? (

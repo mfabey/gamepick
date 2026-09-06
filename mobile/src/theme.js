@@ -178,12 +178,53 @@ export const scale = {
 // oyun detayı ve GameCard. Eşik değişirse üçünü birden değiştirmek
 // gerekiyordu — tek kaynak.
 //
-// 80+ için scale.best değil colors.green kullanılıyor: mevcut davranış buydu
-// ve değiştirmek görsel bir karar olurdu. İki yeşilin ayrışması ayrı bir iş.
-export function metacriticColor(n) {
-  if (n >= 80) return colors.green;
-  if (n >= 60) return scale.mid;
-  return scale.bad;
+// 80+ EŞİĞİ İKİ FARKLI ZEMİNE ÇİZİLİYOR — tek renk ikisini karşılamıyor.
+// (Buradaki eski not "iki yeşilin ayrışması ayrı bir iş" diyordu; o iş bu.)
+//
+// ÖLÇÜLDÜ (2026-09-05, Android 16 emülatörü, ham kare tamponundan piksel
+// sayımı — rozetin gövdesi 336 SAF piksel, kenar karışımı değil):
+//
+//   • kart rozeti — GameCard.mcBadge perdesi rgba(8,10,14,0.75), ölçülen
+//     rgb(7,8,11). Bu perde TEMA BAĞIMSIZ (stilin kendi notu: "zemin
+//     gorsel"); AÇIK temada da koyu ölçüldü.
+//         açık palet  #00794a →  3.66:1  ✗ AA (gövde metni için 4.5 gerek)
+//         koyu palet  #00d26e →  9.96:1
+//         scale.best  #4ade80 → 11.49:1  ✓ (SEÇİLEN — ölçüldü: açık
+//                                 soğuk açılış, koyu soğuk açılış ve
+//                                 çalışırken tema değişimi, ÜÇÜ DE 11.49)
+//   • detay meta çipi ve GamePostCard.mc — TEMALI yüzey. Orada kural tersine
+//     dönüyor: #4ade80 açık zeminde okunmuyor, paletin yeşili gerekiyor.
+//
+// Tek renk ikisini birden karşılayamadığı için İKİ çözücü var; eşik mantığı
+// yine TEK yerde (metacriticTier).
+//
+// `colors` ARTIK PARAMETRE. Modül seviyesindeki `colors` açılışta donuyor
+// (satır 134: Appearance.getColorScheme() bir kez okunuyor), yani uygulama
+// içi tema tercihi OS'tan farklıysa ya da tema çalışırken değişirse yanlış
+// paleti veriyordu — yukarıdaki 3.66 satırı tam olarak bu.
+function metacriticTier(n) {
+  if (n >= 80) return 'best';
+  if (n >= 60) return 'mid';
+  return 'bad';
+}
+
+// TEMALI yüzeyler için. `colors` useTheme()'den gelmeli.
+export function metacriticColor(n, colors) {
+  const tier = metacriticTier(n);
+  if (tier !== 'best') return scale[tier];
+  // SESSİZ YEDEK YOK: bu hata tam da sessiz kaldığı için fark edilmedi.
+  if (__DEV__ && !colors) {
+    throw new Error(
+      "metacriticColor: 'colors' ZORUNLU — useTheme()'den geçir. "
+      + 'Koyu perde üstünde çiziyorsan metacriticColorOnDark kullan.',
+    );
+  }
+  return colors.green;
+}
+
+// TEMA BAĞIMSIZ koyu perde üstü (oyun kapağındaki rozet).
+export function metacriticColorOnDark(n) {
+  return scale[metacriticTier(n)];
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

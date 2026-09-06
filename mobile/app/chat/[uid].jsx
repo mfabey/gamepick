@@ -1013,7 +1013,7 @@ export default function ChatScreen() {
   } else if (error === 'BLOCKED') {
     body = <EmptyState icon="ban-outline" title={t('msg.blocked')} text={t('msg.blockedText')} />;
   } else if (error) {
-    body = <EmptyState icon="cloud-offline-outline" title={t('sf.error')} text={t('sf.errorText')} />;
+    body = <EmptyState icon="cloud-offline-outline" title={t('common.error')} text={t('common.errorText')} />;
   }
 
   return (

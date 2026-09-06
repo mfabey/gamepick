@@ -34,7 +34,7 @@ export default function GameCardsScreen() {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const router = useRouter();
-  const { t, lang } = useLanguage();
+  const { t, lang, locale } = useLanguage();
 
   // Oturum REAKTİF okunmalı — modül değişkeni başlangıçta null ve asenkron
   // doluyor. Tek seferlik okuma ekranı kalıcı "giriş yap" durumunda bırakır.
@@ -106,8 +106,8 @@ export default function GameCardsScreen() {
   // `onShare={() => share(item)}` her render'da her satir icin yeni bir
   // closure uretiyordu. `share` zaten karti arguman aliyor.
   const satirCiz = useCallback(
-    ({ item, index }) => <CardRow card={item} place={index + 1} onShare={share} t={t} />,
-    [share, t],
+    ({ item, index }) => <CardRow card={item} place={index + 1} onShare={share} t={t} locale={locale} />,
+    [share, t, locale],
   );
 
   let body = null;
@@ -152,7 +152,7 @@ export default function GameCardsScreen() {
           keyExtractor={anahtar}
           contentContainerStyle={{ paddingBottom: TAB_SPACE }}
           ListHeaderComponent={
-            <Summary s={data.summary} t={t} city={city} busy={cityBusy} onToggleCity={toggleCity} />
+            <Summary s={data.summary} t={t} locale={locale} city={city} busy={cityBusy} onToggleCity={toggleCity} />
           }
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.text2} />
@@ -166,14 +166,14 @@ export default function GameCardsScreen() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-function Summary({ s, t, city, busy, onToggleCity }) {
+function Summary({ s, t, locale, city, busy, onToggleCity }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   if (!s) return null;
   return (
     <View>
       <View style={styles.hero}>
-        <Text style={[styles.heroNum, NUMERIC]}>{s.totalHours.toLocaleString()}</Text>
+        <Text style={[styles.heroNum, NUMERIC]}>{s.totalHours.toLocaleString(locale)}</Text>
         <Text style={styles.heroLabel}>{t('gc.totalHours')}</Text>
 
         <View style={styles.heroRow}>
@@ -221,7 +221,7 @@ function Cell({ n, label, tint }) {
   );
 }
 
-const CardRow = memo(function CardRow({ card, place, onShare, t }) {
+const CardRow = memo(function CardRow({ card, place, onShare, t, locale }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const hasRank = Number.isFinite(card.rank) && card.owners > 1;
@@ -235,7 +235,7 @@ const CardRow = memo(function CardRow({ card, place, onShare, t }) {
         <Text style={styles.name} numberOfLines={1}>{card.name}</Text>
         <View style={styles.metaLine}>
           <Text style={[styles.hours, NUMERIC]}>
-            {Math.round(card.hours).toLocaleString()}{t('gc.hoursShort')}
+            {Math.round(card.hours).toLocaleString(locale)}{t('gc.hoursShort')}
           </Text>
           {hasRank && (
             <View style={styles.rankChip}>

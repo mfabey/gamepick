@@ -644,6 +644,10 @@ export default {
   'lib.empty': 'Keine Spiele mit diesem Filter',
   'common.loading': 'Lädt…',
   'common.retry': 'Erneut versuchen',
+  // sf.* Steam ekranlarina ozel. DM listesinde/sohbette 'Steam yanit
+  // vermiyor olabilir' YANLISTI: o ekranlarin Steam ile isi yok.
+  'common.error': 'Verbindung fehlgeschlagen',
+  'common.errorText': 'Der Server war nicht erreichbar. Versuch es gleich noch mal.',
   'common.back': 'Zurück',
   'notif.title': 'Rabatt-Hinweise',
   'notif.desc': 'Wir sagen dir Bescheid, wenn gemerkte Spiele im Angebot sind.',
@@ -666,6 +670,7 @@ export default {
   'detail.stores': 'Stores',
   'detail.developer': 'Entwickler',
   'detail.released': 'Erschienen',
+  'detail.rating': 'Bewertung',
   'detail.more': 'Mehr lesen',
   'detail.less': 'Weniger anzeigen',
   'detail.official': 'Offizielle Seite',
