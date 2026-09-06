@@ -51,13 +51,8 @@ export async function POST(request) {
   const rl = await rateLimit(`rl:avatarup:${user.uid}`, 30, 3600);
   if (!rl.ok) return NextResponse.json(tooManyRequests(), { status: 429 });
 
-  // Ön ayar ucundaki KURALIN AYNISI: kullanıcı adı yoksa profil kaydı da yok,
-  // avatar yazmanın anlamı kalmıyor. Fotoğraf yolu bu kuralı atlamamalı —
-  // yoksa yükleme yapılır, sonra hiçbir yerde görünmez.
-  const existing = await getProfile(user.uid);
-  if (!existing?.username) {
-    return NextResponse.json({ error: 'NO_USERNAME' }, { status: 409 });
-  }
+  const existing = (await getProfile(user.uid)) || {};
+  const fallbackUsername = existing.username || (user.email ? user.email.split('@')[0] : `user_${user.uid.slice(0, 6)}`);
 
   let bytes = null;
   let type = 'image/jpeg';
@@ -130,10 +125,12 @@ export async function POST(request) {
       avatarUrl = `data:${type};base64,${bytes.toString('base64')}`;
     }
 
-    // Yükleme başarılıysa profili DE güncelliyoruz: istemcinin ikinci bir
-    // çağrı yapması gerekseydi, arada düşen bir istekte kullanıcı yüklediği
-    // ama profiline geçmeyen bir fotoğrafla kalırdı.
-    await mergeProfile(user.uid, { avatar: avatarUrl, updatedAt: Date.now() });
+    await mergeProfile(user.uid, {
+      avatar: avatarUrl,
+      username: existing.username || fallbackUsername,
+      displayName: existing.displayName || user.name || fallbackUsername,
+      updatedAt: Date.now(),
+    });
 
     return NextResponse.json({ ok: true, avatar: avatarUrl });
   } catch (err) {
