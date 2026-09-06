@@ -789,8 +789,8 @@ export default function ProfilePage() {
                 <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 700 }}>
                   @{user.username}
                 </span>
-                <Link href={`/u/${user.username}`} target="_blank" style={{ fontSize: 11.5, color: 'var(--text-3)', textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 3, padding: '2px 8px', borderRadius: 6, background: 'var(--bg-input)' }}>
-                  {lang === 'tr' ? 'Herkese Açık Profil ↗' : 'Public Profile ↗'}
+                <Link href={`/u/${user.username}`} style={{ fontSize: 11.5, color: 'var(--text-3)', textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 9px', borderRadius: 6, background: 'var(--bg-input)' }}>
+                  {lang === 'tr' ? 'Herkese Açık Profil →' : 'Public Profile →'}
                 </Link>
               </div>
             )}

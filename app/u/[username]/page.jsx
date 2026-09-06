@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
   uidForUsername, getProfile, getPrivacy,
@@ -21,11 +22,8 @@ import { isAvatarPhoto } from '../../lib/avatar-presets';
 //   2. Veri zaten sunucuda: depo fonksiyonları doğrudan çağrılıyor, kendi
 //      API'mize HTTP turu atılmıyor.
 //
-// GİZLİLİK KAPILARI MOBİLDEKİYLE AYNI ve aynı sırada (bkz.
-// app/api/social/profile/route.js). Burada `viewerUid` HER ZAMAN null —
-// web ziyaretçisi anonim — yani "arkadaşsa görür" muafiyeti hiç işlemiyor:
-//   · discoverable kapalı → sayfa YOK (404)
-//   · privateProfile açık → kimlik görünür, içerik görünmez
+// GİZLİLİK KAPILARI:
+//   · discoverable kapalı veya privateProfile açık → kimlik görünür, içerik gizli
 // ─────────────────────────────────────────────────────────────────────────────
 
 const SITE = 'https://www.gamerisen.com';
@@ -38,9 +36,7 @@ async function profilOku(username) {
   if (!profile?.username) return null;
 
   const privacy = await getPrivacy(uid).catch(() => null);
-  if (privacy?.discoverable === false) return null;
-
-  const gizli = !!privacy?.privateProfile;
+  const gizli = !!privacy?.privateProfile || privacy?.discoverable === false;
 
   const [arkadas, gonderi, inceleme, koleksiyonlar, incelemeler] = await Promise.all([
     redisCmd(['SCARD', `friends:${uid}`]).then((n) => Number(n) || 0).catch(() => 0),
@@ -99,6 +95,15 @@ export default async function UserProfilePage({ params }) {
 
   return (
     <main style={S.sayfa}>
+      <div style={{ marginBottom: 24 }}>
+        <Link href="/profile" style={S.geriLink}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 12H5M12 19l-7-7 7-7" />
+          </svg>
+          Profil Merkezine Dön
+        </Link>
+      </div>
+
       <section style={S.kimlik}>
         <div style={S.avatar}>
           {isAvatarPhoto(profile.avatar)
@@ -192,6 +197,21 @@ function Sayac({ n, etiket }) {
 // Web tarafının kalıbı: satır içi stiller + globals.css değişkenleri.
 const S = {
   sayfa: { maxWidth: 720, margin: '0 auto', padding: '40px 20px 64px' },
+
+  geriLink: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    fontSize: 12.5,
+    fontWeight: 600,
+    color: 'var(--text-2)',
+    textDecoration: 'none',
+    padding: '6px 12px',
+    borderRadius: 8,
+    background: 'var(--bg-input)',
+    border: '1px solid var(--border)',
+    transition: 'all 0.15s ease',
+  },
 
   kimlik: { display: 'flex', alignItems: 'center', gap: 20 },
   avatar: {
