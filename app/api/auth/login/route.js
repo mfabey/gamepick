@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { redisCmd, redisSetJSON } from '../../../lib/redis';
-import { mergeProfile } from '../../../lib/social-store';
+import { mergeProfile, getProfile } from '../../../lib/social-store';
 
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
 
@@ -77,9 +77,17 @@ export async function POST(request) {
       );
     }
 
+    let profile = null;
+    try {
+      profile = await getProfile(localId);
+    } catch {}
+
     const userObj = {
       uid: localId,
-      name: displayName || email.split('@')[0],
+      name: profile?.displayName || displayName || email.split('@')[0],
+      username: profile?.username || null,
+      avatar: profile?.avatar || null,
+      bio: profile?.bio || null,
       email
     };
 

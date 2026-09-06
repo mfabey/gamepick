@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { redisCmd, redisGetJSON, redisSetJSON } from '../../../lib/redis';
-import { mergeProfile } from '../../../lib/social-store';
+import { mergeProfile, getProfile } from '../../../lib/social-store';
 
 export const dynamic = 'force-dynamic';
 
@@ -69,11 +69,26 @@ export async function GET() {
       return NextResponse.json({ user: null });
     }
 
+    // Mobil veya sitedeki en güncel profil bilgilerini Redis'ten çekip birleştir
+    let profile = null;
+    try {
+      profile = await getProfile(user.uid);
+    } catch {}
+
+    const enrichedUser = {
+      ...user,
+      ...(profile || {}),
+      username: profile?.username || user.username || null,
+      displayName: profile?.displayName || user.displayName || user.name || null,
+      avatar: profile?.avatar || user.avatar || user.photoURL || null,
+      bio: profile?.bio || user.bio || null,
+    };
+
     const connections = await getUserConnections(user.uid);
 
     // Auto-cache profile and links to Redis
     try {
-      await mergeProfile(user.uid, user);
+      await mergeProfile(user.uid, enrichedUser);
       if (connections.steam && connections.steam.steamId) {
         await redisCmd(['SET', `steam_to_uid:${connections.steam.steamId}`, user.uid]);
       }
@@ -90,7 +105,7 @@ export async function GET() {
     } catch {}
 
     const response = NextResponse.json({
-      user,
+      user: enrichedUser,
       steamUser: connections.steam || null,
       xboxUser: connections.xbox || null,
     });

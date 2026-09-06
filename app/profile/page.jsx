@@ -767,7 +767,9 @@ export default function ProfilePage() {
               boxShadow: '0 8px 32px rgba(0,0,0,0.45)',
             }}>
               <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden', background: 'var(--bg-card)', border: '3px solid var(--bg-body)' }}>
-                {steamUser?.avatar
+                {user?.avatar
+                  ? <img src={user.avatar} alt={displayName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : steamUser?.avatar
                   ? <img src={steamUser.avatar} alt={displayName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, rgba(201,133,10,0.25), rgba(201,133,10,0.05))', fontSize: 34, fontWeight: 900, color: 'var(--accent)' }}>{initials}</div>
                 }
@@ -779,9 +781,24 @@ export default function ProfilePage() {
 
           {/* Name + badges */}
           <div style={{ paddingBottom: 8, flex: 1, minWidth: 0 }}>
-            <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: 26, fontWeight: 900, color: 'var(--text)', letterSpacing: '-0.6px', marginBottom: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: 26, fontWeight: 900, color: 'var(--text)', letterSpacing: '-0.6px', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {displayName}
             </h1>
+            {user?.username && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 700 }}>
+                  @{user.username}
+                </span>
+                <Link href={`/u/${user.username}`} target="_blank" style={{ fontSize: 11.5, color: 'var(--text-3)', textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 3, padding: '2px 8px', borderRadius: 6, background: 'var(--bg-input)' }}>
+                  {lang === 'tr' ? 'Herkese Açık Profil ↗' : 'Public Profile ↗'}
+                </Link>
+              </div>
+            )}
+            {user?.bio && (
+              <p style={{ fontSize: 12.5, color: 'var(--text-2)', maxWidth: 520, marginBottom: 8, lineHeight: 1.5 }}>
+                {user.bio}
+              </p>
+            )}
             {/* Platform chips */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               <span style={{ padding: '4px 10px', borderRadius: 999, background: 'rgba(201,133,10,0.12)', border: '1px solid rgba(201,133,10,0.25)', fontSize: 11.5, color: 'var(--accent)', fontWeight: 700 }}>

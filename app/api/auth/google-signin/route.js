@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { mergeProfile } from '../../../lib/social-store';
+import { mergeProfile, getProfile } from '../../../lib/social-store';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Google ile giriş. Google Identity Services'ten (web) veya expo-auth-session'dan
@@ -60,9 +60,17 @@ export async function POST(request) {
 
     const { localId, idToken, refreshToken, expiresIn, email, displayName } = idp;
 
+    let profile = null;
+    try {
+      profile = await getProfile(localId);
+    } catch {}
+
     const user = {
       uid: localId,
-      name: displayName || (email ? email.split('@')[0] : 'Google Kullanıcısı'),
+      name: profile?.displayName || displayName || (email ? email.split('@')[0] : 'Google Kullanıcısı'),
+      username: profile?.username || null,
+      avatar: profile?.avatar || null,
+      bio: profile?.bio || null,
       email: email || '',
       provider: 'google',
     };
@@ -78,9 +86,7 @@ export async function POST(request) {
 
     // Web httpOnly çerez bekliyor, mobil yanıttaki token'ları saklıyor.
     if (body.web === true) {
-      response.cookies.set('gp_user_session', JSON.stringify({
-        uid: user.uid, name: user.name, email: user.email,
-      }), {
+      response.cookies.set('gp_user_session', JSON.stringify(user), {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
