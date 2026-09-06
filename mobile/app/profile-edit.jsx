@@ -134,9 +134,9 @@ export default function ProfileEditScreen() {
       const out = await Manipulator.manipulateAsync(
         res.assets[0].uri,
         [{ resize: { width: 256, height: 256 } }],
-        { compress: 0.85, format: Manipulator.SaveFormat.JPEG }
+        { compress: 0.8, format: Manipulator.SaveFormat.JPEG, base64: true }
       );
-      const r = await uploadAvatarPhoto(out.uri, 'image/jpeg');
+      const r = await uploadAvatarPhoto(out.uri, 'image/jpeg', out.base64);
       setAvatarState(r?.avatar || prev);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     } catch (e) {

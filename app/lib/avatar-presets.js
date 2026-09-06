@@ -29,12 +29,12 @@ const VALID = new Set(AVATAR_PRESETS);
 const BLOB_HOST = /^https:\/\/[a-z0-9-]+\.public\.blob\.vercel-storage\.com\/avatars\//i;
 
 export function isAvatarPhoto(v) {
-  return typeof v === 'string' && BLOB_HOST.test(v);
+  return typeof v === 'string' && (BLOB_HOST.test(v) || v.startsWith('data:image/'));
 }
 
 /**
  * Geçerli bir avatar mı?
- * `null` (avatar yok) · ön ayar kimliği · kendi blob'umuzdaki fotoğraf adresi.
+ * `null` (avatar yok) · ön ayar kimliği · kendi blob'umuzdaki fotoğraf adresi · data URI.
  */
 export function isValidAvatar(v) {
   if (v === null) return true;

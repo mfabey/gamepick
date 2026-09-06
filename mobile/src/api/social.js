@@ -111,18 +111,32 @@ export const setAvatar = (presetId) =>
 // Content-Type ELLE VERİLMİYOR: fetch, FormData için boundary'yi kendisi
 // üretmek zorunda. Elle 'multipart/form-data' yazmak boundary'yi düşürüyor ve
 // sunucu gövdeyi çözemiyor.
-export async function uploadAvatarPhoto(uri, mime = 'image/jpeg') {
+export async function uploadAvatarPhoto(uri, mime = 'image/jpeg', base64 = null) {
   const token = await getValidToken();
   if (!token) throw Object.assign(new Error('NO_SESSION'), { code: 'NO_SESSION' });
 
-  const form = new FormData();
-  form.append('file', { uri, name: `avatar.${mime === 'image/png' ? 'png' : 'jpg'}`, type: mime });
+  let res;
+  if (base64) {
+    res = await fetch(`${API_BASE}/api/social/avatar/photo`, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ base64, mime }),
+    });
+  } else {
+    const form = new FormData();
+    form.append('file', { uri, name: `avatar.${mime === 'image/png' ? 'png' : 'jpg'}`, type: mime });
 
-  const res = await fetch(`${API_BASE}/api/social/avatar/photo`, {
-    method: 'POST',
-    headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
-    body: form,
-  });
+    res = await fetch(`${API_BASE}/api/social/avatar/photo`, {
+      method: 'POST',
+      headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+      body: form,
+    });
+  }
+
   let data = null;
   try { data = await res.json(); } catch { /* gövdesiz yanıt */ }
   if (!res.ok) {

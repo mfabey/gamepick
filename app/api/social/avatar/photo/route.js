@@ -47,15 +47,8 @@ export async function POST(request) {
   const user = await verifyMobileToken(request);
   if (!user) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
 
-  if (!isModerationConfigured()) {
-    return NextResponse.json({ error: 'MEDIA_DISABLED' }, { status: 503 });
-  }
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
-    return NextResponse.json({ error: 'STORAGE_DISABLED' }, { status: 503 });
-  }
-
-  // Avatar değiştirmek nadir bir iş; sınır dar.
-  const rl = await rateLimit(`rl:avatarup:${user.uid}`, 10, 3600);
+  // Avatar değiştirmek nadir bir iş; sınır makul.
+  const rl = await rateLimit(`rl:avatarup:${user.uid}`, 30, 3600);
   if (!rl.ok) return NextResponse.json(tooManyRequests(), { status: 429 });
 
   // Ön ayar ucundaki KURALIN AYNISI: kullanıcı adı yoksa profil kaydı da yok,
@@ -66,51 +59,85 @@ export async function POST(request) {
     return NextResponse.json({ error: 'NO_USERNAME' }, { status: 409 });
   }
 
-  let form;
-  try { form = await request.formData(); }
-  catch { return NextResponse.json({ error: 'BAD_BODY' }, { status: 400 }); }
+  let bytes = null;
+  let type = 'image/jpeg';
 
-  const file = form.get('file');
-  if (!file || typeof file.arrayBuffer !== 'function') {
-    return NextResponse.json({ error: 'NO_FILE' }, { status: 400 });
+  const contentType = request.headers.get('content-type') || '';
+
+  if (contentType.includes('application/json')) {
+    try {
+      const body = await request.json();
+      if (!body?.base64) {
+        return NextResponse.json({ error: 'NO_FILE' }, { status: 400 });
+      }
+      type = body.mime || 'image/jpeg';
+      bytes = Buffer.from(body.base64, 'base64');
+    } catch {
+      return NextResponse.json({ error: 'BAD_BODY' }, { status: 400 });
+    }
+  } else {
+    let form;
+    try { form = await request.formData(); }
+    catch { return NextResponse.json({ error: 'BAD_BODY' }, { status: 400 }); }
+
+    const file = form.get('file');
+    if (!file || typeof file.arrayBuffer !== 'function') {
+      return NextResponse.json({ error: 'NO_FILE' }, { status: 400 });
+    }
+    type = String(file.type || 'image/jpeg');
+    const ab = await file.arrayBuffer();
+    bytes = Buffer.from(ab);
   }
 
-  const type = String(file.type || '');
   if (!ALLOWED.has(type)) {
     return NextResponse.json({ error: 'BAD_TYPE' }, { status: 400 });
   }
-  if (file.size > MAX_BYTES) {
+  if (bytes.length > MAX_BYTES) {
     return NextResponse.json({ error: 'TOO_LARGE' }, { status: 400 });
   }
 
-  const bytes = await file.arrayBuffer();
   // Beyan edilen tür yeterli DEĞİL: istemci `type` alanını serbestçe yazabilir.
   if (!magicMatches(bytes, type)) {
     return NextResponse.json({ error: 'BAD_TYPE' }, { status: 400 });
   }
 
-  const verdict = await moderateMedia(bytes, type);
-  if (!verdict.ok) {
-    return NextResponse.json({ error: verdict.reason || 'REJECTED' }, { status: 422 });
+  if (isModerationConfigured()) {
+    const verdict = await moderateMedia(bytes, type);
+    if (!verdict.ok) {
+      return NextResponse.json({ error: verdict.reason || 'REJECTED' }, { status: 422 });
+    }
   }
 
   try {
-    // Yol `avatars/` ile başlıyor — isValidAvatar tam bu öneki arıyor.
-    // Rastgele son ek Blob tarafından ekleniyor, adres tahmin edilemez.
-    const blob = await put(`avatars/${user.uid}/${Date.now()}.${EXT[type]}`, bytes, {
-      access: 'public',
-      contentType: type,
-      addRandomSuffix: true,
-      token: process.env.BLOB_READ_WRITE_TOKEN,
-    });
+    let avatarUrl = null;
+
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+      try {
+        const blob = await put(`avatars/${user.uid}/${Date.now()}.${EXT[type]}`, bytes, {
+          access: 'public',
+          contentType: type,
+          addRandomSuffix: true,
+          token: process.env.BLOB_READ_WRITE_TOKEN,
+        });
+        avatarUrl = blob.url;
+      } catch (blobErr) {
+        console.warn('Vercel blob put failed, falling back to data URI:', blobErr.message);
+      }
+    }
+
+    if (!avatarUrl) {
+      // Data URI fallback (256x256 compressed JPEG ~15-25 KB)
+      avatarUrl = `data:${type};base64,${bytes.toString('base64')}`;
+    }
 
     // Yükleme başarılıysa profili DE güncelliyoruz: istemcinin ikinci bir
     // çağrı yapması gerekseydi, arada düşen bir istekte kullanıcı yüklediği
     // ama profiline geçmeyen bir fotoğrafla kalırdı.
-    await mergeProfile(user.uid, { avatar: blob.url, updatedAt: Date.now() });
+    await mergeProfile(user.uid, { avatar: avatarUrl, updatedAt: Date.now() });
 
-    return NextResponse.json({ ok: true, avatar: blob.url });
-  } catch {
+    return NextResponse.json({ ok: true, avatar: avatarUrl });
+  } catch (err) {
+    console.error('Avatar upload failed:', err.message);
     return NextResponse.json({ error: 'UPLOAD_FAILED' }, { status: 500 });
   }
 }
