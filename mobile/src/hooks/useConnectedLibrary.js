@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useQuery } from './useQuery';
 import { fetchSteamLibrary, fetchXboxLibrary } from '../api/library';
+import { normalizeName } from '../services/recommend';
 
 const EMPTY = { steam: {}, xbox: null };
 
@@ -34,6 +35,7 @@ async function fetchConnectedLibraryRaw(steamAccounts, xbox) {
  * Bağlı kütüphaneler (Steam+Xbox), 30 dk cache'li paylaşımlı fetch.
  * - Önerici için: `steamGames`, `xboxGames` (düz oyun listeleri).
  * - Library ekranı için: `steam` (per-hesap ham), `xbox` (ham), `loading`.
+ * - Steam önceliklidir; aynı oyun Xbox'ta da varsa toplam sayıya mükerrer eklenmez.
  */
 export function useConnectedLibrary(enabled = true) {
   const { steamAccounts = [], xbox } = useAuth();
@@ -51,5 +53,26 @@ export function useConnectedLibrary(enabled = true) {
   const steamGames = useMemo(() => Object.values(raw.steam).flatMap((l) => l?.games || []), [raw]);
   const xboxGames = useMemo(() => raw.xbox?.games || [], [raw]);
 
-  return { steam: raw.steam, xbox: raw.xbox, steamGames, xboxGames, loading: !!loading };
+  const uniqueXboxGames = useMemo(() => {
+    if (steamGames.length === 0) return xboxGames;
+    const steamNames = new Set(steamGames.map((g) => normalizeName(g.name || '')));
+    return xboxGames.filter((g) => {
+      const n = normalizeName(g.name || '');
+      return n && !steamNames.has(n);
+    });
+  }, [steamGames, xboxGames]);
+
+  const totalGamesCount = useMemo(() => {
+    return steamGames.length + uniqueXboxGames.length;
+  }, [steamGames.length, uniqueXboxGames.length]);
+
+  return {
+    steam: raw.steam,
+    xbox: raw.xbox,
+    steamGames,
+    xboxGames,
+    uniqueXboxGames,
+    totalGamesCount,
+    loading: !!loading,
+  };
 }

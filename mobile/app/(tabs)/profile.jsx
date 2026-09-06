@@ -86,8 +86,7 @@ export default function ProfileScreen() {
   const { account } = useAuth();
   const { items: wishlist } = useWishlist();
   const collections = useCollections();
-  const { steamGames, xboxGames } = useConnectedLibrary();
-  const gameCount = steamGames.length + xboxGames.length;
+  const { steamGames, xboxGames, totalGamesCount: gameCount } = useConnectedLibrary();
 
   const [sunucu, setSunucu] = useState(null);      // { profile, friendship, canView }
   const [yok, setYok] = useState(false);           // kullanıcı adı kurulmamış

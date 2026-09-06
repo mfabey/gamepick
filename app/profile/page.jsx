@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import GameImage from '../components/GameImage';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, normalizeName } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import ActivityHeatmap from '../components/ActivityHeatmap';
 
@@ -654,9 +654,23 @@ export default function ProfilePage() {
     ? nameParts.map(n => n[0]).join('').toUpperCase().slice(0, 2)
     : 'US';
 
-  const steamGamesCount = steamUser ? (steamLib?.games?.length || ownedGames?.size || 0) : 0;
-  const xboxGamesCount = xboxUser ? (xboxLib?.games?.length || (xboxOwnedGames?.size || 0) + (gamePassGames?.size || 0)) : 0;
-  const totalConnectedGames = steamGamesCount + xboxGamesCount;
+  const steamGamesList = steamLib?.games || [];
+  const xboxGamesList = xboxLib?.games || [];
+  const steamNames = new Set(steamGamesList.map(g => normalizeName(g.name || '')));
+  if (steamNames.size === 0 && ownedGames?.size > 0) {
+    ownedGames.forEach(n => steamNames.add(n));
+  }
+
+  // Steam öncelikli: Xbox'taki oyun Steam'de varsa mükerrer sayılmaz
+  const uniqueXboxGamesList = xboxGamesList.filter(g => {
+    const n = normalizeName(g.name || '');
+    return n && !steamNames.has(n);
+  });
+
+  const steamGamesCount = steamUser ? (steamGamesList.length || ownedGames?.size || 0) : 0;
+  const rawXboxCount = xboxUser ? (xboxGamesList.length || (xboxOwnedGames?.size || 0) + (gamePassGames?.size || 0)) : 0;
+  const uniqueXboxCount = steamUser ? uniqueXboxGamesList.length : rawXboxCount;
+  const totalConnectedGames = steamUser ? (steamGamesCount + uniqueXboxCount) : rawXboxCount;
 
   const getPlaytimeStat = () => {
     if (!steamUser) return '0';
@@ -873,7 +887,7 @@ export default function ProfilePage() {
             value={libsLoading && (steamUser || xboxUser) ? '...' : totalConnectedGames.toString()}
             label={lang === 'tr' ? 'Toplam Oyun' : 'Total Games'}
             color="var(--accent)"
-            sub={steamGamesCount > 0 && xboxGamesCount > 0 ? `${steamGamesCount} Steam · ${xboxGamesCount} Xbox` : undefined}
+            sub={steamGamesCount > 0 && rawXboxCount > 0 ? (uniqueXboxCount > 0 ? `${steamGamesCount} Steam · +${uniqueXboxCount} Xbox` : `${steamGamesCount} Steam`) : undefined}
             icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>}
           />
           <BigStatCard
@@ -945,7 +959,7 @@ export default function ProfilePage() {
 
                 <AccountCard
                   name="Xbox / Game Pass"
-                  status={xboxUser ? (xboxUser.isMock ? (lang === 'tr' ? `Simülasyon — ${xboxGamesCount} oyun` : `Simulation — ${xboxGamesCount} games`) : (lang === 'tr' ? `Bağlı — ${xboxGamesCount} oyun` : `Connected — ${xboxGamesCount} games`)) : (lang === 'tr' ? 'Bağlı değil' : 'Not connected')}
+                  status={xboxUser ? (xboxUser.isMock ? (lang === 'tr' ? `Simülasyon — ${rawXboxCount} oyun` : `Simulation — ${rawXboxCount} games`) : (lang === 'tr' ? `Bağlı — ${rawXboxCount} oyun` : `Connected — ${rawXboxCount} games`)) : (lang === 'tr' ? 'Bağlı değil' : 'Not connected')}
                   connected={!!xboxUser} color="#16a34a" initials="XBX" avatar={xboxUser?.avatar}
                   profileUrl={xboxUser?.gamertag ? `https://live.xbox.com/Profile?Gamertag=${encodeURIComponent(xboxUser.gamertag)}` : null}
                   onToggle={() => { if (xboxUser) xboxLogout(); else window.location.href = '/api/auth/xbox'; }}
