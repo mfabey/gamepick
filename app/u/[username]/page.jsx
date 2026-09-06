@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { cookies } from 'next/headers';
 import {
   uidForUsername, getProfile, getPrivacy,
 } from '../../lib/social-store';
@@ -86,6 +87,11 @@ export async function generateMetadata({ params }) {
 
 export default async function UserProfilePage({ params }) {
   const { username } = await params;
+  const cookieStore = await cookies().catch(() => null);
+  const userSession = cookieStore?.get('gp_user_session')?.value;
+  const steamSession = cookieStore?.get('gp_steam_session')?.value;
+  const isLoggedIn = !!(userSession || steamSession);
+
   const veri = await profilOku(username);
   if (!veri) notFound();
 
@@ -95,14 +101,16 @@ export default async function UserProfilePage({ params }) {
 
   return (
     <main style={S.sayfa}>
-      <div style={{ marginBottom: 24 }}>
-        <Link href="/profile" style={S.geriLink}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M19 12H5M12 19l-7-7 7-7" />
-          </svg>
-          Profil Merkezine Dön
-        </Link>
-      </div>
+      {isLoggedIn ? (
+        <div style={{ marginBottom: 24 }}>
+          <Link href="/profile" style={S.geriLink}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+            Profil Merkezine Dön
+          </Link>
+        </div>
+      ) : null}
 
       <section style={S.kimlik}>
         <div style={S.avatar}>
