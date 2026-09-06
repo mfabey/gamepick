@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { redisCmd, redisGetJSON, redisSetJSON } from '../../../lib/redis';
 import { verifyMobileToken } from '../../../lib/mobile-auth';
+import { mergeProfile } from '../../../lib/social-store';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Bağlı mağazalar — MOBİL için.
@@ -152,9 +153,15 @@ export async function DELETE(request) {
 
   await redisSetJSON(connKey(user.uid), conn).catch(() => {});
 
+  // Eğer hiçbir bağlantı kalmadıysa profil oyun sayacını da 0 yap
+  const remainingSteam = steamListOf(conn);
+  if (remainingSteam.length === 0 && !conn.xbox) {
+    await mergeProfile(user.uid, { gameCount: 0 }).catch(() => {});
+  }
+
   return NextResponse.json({
     ok: true,
-    steamAccounts: steamListOf(conn),
+    steamAccounts: remainingSteam,
     xbox: conn.xbox || null,
   });
 }

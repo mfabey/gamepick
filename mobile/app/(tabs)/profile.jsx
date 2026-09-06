@@ -83,7 +83,7 @@ export default function ProfileScreen() {
   useTabPressAction(useCallback(() => scrollRefToTop(listRef), []));
   const onTabScroll = useTabBarScroll();
 
-  const { account } = useAuth();
+  const { account, steamAccounts = [], xbox } = useAuth();
   const { items: wishlist } = useWishlist();
   const collections = useCollections();
   const { steamGames, xboxGames, totalGamesCount: gameCount, refetch: refetchLib } = useConnectedLibrary();
@@ -204,16 +204,17 @@ export default function ProfileScreen() {
   }, []);
 
   // ── Sayaçlar ──
-  // Oyun sayısı YERELDEN: sunucudaki değer yalnız senkronda tazeleniyor
-  // (bkz. /api/user/data) ve kendi profilimde beklemesi için sebep yok.
+  // Oyun sayısı: Kullanıcının bağlı Steam veya Xbox hesabı varsa kütüphane toplamından,
+  // hiçbir bağlantısı yoksa 0 (eski sunucu sayacı yerine 0).
+  const hasConnections = (steamAccounts && steamAccounts.length > 0) || !!xbox;
   const sayaclar = useMemo(() => ({
     posts: sunucu?.profile?.counts?.posts || 0,
     friends: sunucu?.profile?.counts?.friends || 0,
-    games: gameCount || sunucu?.profile?.counts?.games || 0,
+    games: hasConnections ? gameCount : 0,
     collection: yerelKoleksiyon.length,
     wishlist: yerelIstek.length,
     reviews: sunucu?.profile?.counts?.reviews || 0,
-  }), [sunucu, gameCount, yerelKoleksiyon.length, yerelIstek.length]);
+  }), [sunucu, gameCount, yerelKoleksiyon.length, yerelIstek.length, hasConnections]);
 
   const profil = useMemo(
     () => (sunucu?.profile ? { ...sunucu.profile, counts: sayaclar } : null),
@@ -229,14 +230,16 @@ export default function ProfileScreen() {
   // değişmemişken tur başına bir yazma isteği demekti.
   const yazilanSayi = useRef(null);
   useEffect(() => {
+    if (!account || !sunucu?.profile) return;
+    const targetCount = hasConnections ? gameCount : 0;
     const sunucudaki = sunucu?.profile?.counts?.games;
-    if (!account || !sunucu?.profile || gameCount <= 0) return;
-    if (gameCount === sunucudaki || gameCount === yazilanSayi.current) return;
-    yazilanSayi.current = gameCount;
+    if (targetCount === sunucudaki && targetCount === yazilanSayi.current) return;
+    if (targetCount === yazilanSayi.current) return;
+    yazilanSayi.current = targetCount;
     getValidToken()
-      .then((tok) => (tok ? pushGameCount(tok, gameCount) : null))
+      .then((tok) => (tok ? pushGameCount(tok, targetCount) : null))
       .catch(() => { yazilanSayi.current = null; });   // sonraki açılışta yeniden dene
-  }, [account, sunucu, gameCount]);
+  }, [account, sunucu, gameCount, hasConnections]);
 
   // ── Oturum yok ──
   if (!account) {
