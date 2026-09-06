@@ -67,8 +67,8 @@ async function profilOku(username) {
 }
 
 export async function generateMetadata({ params }) {
-  const { username } = await params;
-  const veri = await profilOku(username).catch(() => null);
+  const username = params?.username;
+  const veri = username ? await profilOku(username).catch(() => null) : null;
   if (!veri) return { title: 'Gamerisen' };
 
   const ad = veri.profile.displayName || veri.profile.username;
@@ -86,11 +86,16 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function UserProfilePage({ params }) {
-  const { username } = await params;
-  const cookieStore = await cookies().catch(() => null);
-  const userSession = cookieStore?.get('gp_user_session')?.value;
-  const steamSession = cookieStore?.get('gp_steam_session')?.value;
-  const isLoggedIn = !!(userSession || steamSession);
+  const username = params?.username;
+  if (!username) notFound();
+
+  let isLoggedIn = false;
+  try {
+    const cookieStore = cookies();
+    const userSession = cookieStore?.get?.('gp_user_session')?.value;
+    const steamSession = cookieStore?.get?.('gp_steam_session')?.value;
+    isLoggedIn = !!(userSession || steamSession);
+  } catch {}
 
   const veri = await profilOku(username);
   if (!veri) notFound();
