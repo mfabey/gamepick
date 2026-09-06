@@ -222,14 +222,16 @@ export default function NavBar() {
                   display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 9,
                   background: 'var(--accent-bg)', border: '1px solid var(--accent-border)', fontSize: 13, fontWeight: 600, color: 'var(--accent)',
                 }}>
-                  {steamUser?.avatar ? (
+                  {user.avatar ? (
+                    <img src={user.avatar} className="nav-user-avatar" alt="" style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover' }} />
+                  ) : steamUser?.avatar ? (
                     <img src={steamUser.avatar} className="nav-user-avatar" alt="" style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover' }} />
                   ) : (
                     <span className="nav-user-avatar" style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700 }}>
-                      {(user.name || user.email || 'U').slice(0, 1).toUpperCase()}
+                      {(user.username || user.displayName || user.name || user.email || 'U').slice(0, 1).toUpperCase()}
                     </span>
                   )}
-                  <span className="nav-user-text">{(user.name || user.email || 'User').split(' ')[0]}</span>
+                  <span className="nav-user-text">{user.username ? `@${user.username}` : (user.displayName || user.name || user.email || 'User').split(' ')[0]}</span>
                   {/* Small Steam/Xbox status dots inside the badge */}
                   <div style={{ display: 'flex', gap: 4, marginLeft: 2 }}>
                     {steamUser && (

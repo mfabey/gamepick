@@ -141,7 +141,11 @@ export async function DELETE(request) {
     // Ters dizin de temizlenmeli, yoksa kopan hesap hâlâ bu uid'ye işaret eder
     await redisCmd(['DEL', steamIndexKey(steamId)]).catch(() => {});
   } else if (platform === 'xbox') {
+    const gamertag = conn.xbox?.gamertag;
     delete conn.xbox;
+    if (gamertag) {
+      await redisCmd(['DEL', `xbox_to_uid:${gamertag}`]).catch(() => {});
+    }
   } else {
     return NextResponse.json({ error: 'platform gerekli' }, { status: 400 });
   }

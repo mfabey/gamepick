@@ -193,13 +193,20 @@ export function AuthProvider({ children }) {
   }, [busy, persistXbox]);
 
   const logoutSteam = useCallback(async (steamId) => {
-    await persistSteam(steamAccounts.filter(a => a.steamId !== steamId));
-    removeSteamConnection(steamId).catch(() => {});
+    const nextList = steamAccounts.filter(a => a.steamId !== steamId);
+    setSteamAccounts(nextList);
+    try {
+      await removeSteamConnection(steamId);
+    } catch {}
+    await persistSteam(nextList);
   }, [steamAccounts, persistSteam]);
 
   const logoutXbox = useCallback(async () => {
+    setXbox(null);
+    try {
+      await removeXboxConnection();
+    } catch {}
     await persistXbox(null);
-    removeXboxConnection().catch(() => {});
   }, [persistXbox]);
 
   // ── Hesap oturumu (e-posta/şifre) ──────────────────────────────────────────
@@ -253,6 +260,8 @@ export function AuthProvider({ children }) {
             refreshToken: r.xbox.refreshToken || localSession?.refreshToken || null,
           };
           persistXbox(mergedXbox);
+        } else if (r && r.xbox === null) {
+          persistXbox(null);
         }
       } catch { /* ağ yoksa yereldekiyle devam */ }
     })();
