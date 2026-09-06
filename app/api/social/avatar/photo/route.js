@@ -23,24 +23,22 @@ import { getProfile, mergeProfile } from '../../../../lib/social-store';
 // engellemek için var, normal akışı değil.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const MAX_BYTES = 1.5 * 1024 * 1024;
-const ALLOWED = new Set(['image/jpeg', 'image/png', 'image/webp']);
-const EXT = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
+const MAX_BYTES = 3 * 1024 * 1024;
+const EXT = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' };
 
-function magicMatches(buf, type) {
+function detectImageType(buf) {
+  if (!buf || buf.length < 12) return null;
   const b = new Uint8Array(buf);
-  if (b.length < 12) return false;
-  switch (type) {
-    case 'image/jpeg':
-      return b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff;
-    case 'image/png':
-      return b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47;
-    case 'image/webp':
-      return b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46
-          && b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 && b[11] === 0x50;
-    default:
-      return false;
-  }
+  // JPEG: FF D8 FF
+  if (b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return 'image/jpeg';
+  // PNG: 89 50 4E 47
+  if (b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47) return 'image/png';
+  // WebP: RIFF ... WEBP
+  if (b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46
+      && b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 && b[11] === 0x50) return 'image/webp';
+  // GIF: GIF87a / GIF89a
+  if (b[0] === 0x47 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x38) return 'image/gif';
+  return null;
 }
 
 export async function POST(request) {
@@ -62,39 +60,53 @@ export async function POST(request) {
   if (contentType.includes('application/json')) {
     try {
       const body = await request.json();
-      if (!body?.base64) {
-        return NextResponse.json({ error: 'NO_FILE' }, { status: 400 });
+      if (body?.base64) {
+        bytes = Buffer.from(body.base64, 'base64');
       }
-      type = body.mime || 'image/jpeg';
-      bytes = Buffer.from(body.base64, 'base64');
     } catch {
       return NextResponse.json({ error: 'BAD_BODY' }, { status: 400 });
     }
   } else {
-    let form;
-    try { form = await request.formData(); }
-    catch { return NextResponse.json({ error: 'BAD_BODY' }, { status: 400 }); }
-
-    const file = form.get('file');
-    if (!file || typeof file.arrayBuffer !== 'function') {
-      return NextResponse.json({ error: 'NO_FILE' }, { status: 400 });
+    try {
+      const form = await request.formData();
+      let file = form.get('file') || form.get('avatar') || form.get('image') || form.get('photo');
+      if (!file) {
+        for (const [, val] of form.entries()) {
+          if (val && typeof val === 'object' && typeof val.arrayBuffer === 'function') {
+            file = val;
+            break;
+          }
+        }
+      }
+      if (file && typeof file.arrayBuffer === 'function') {
+        const ab = await file.arrayBuffer();
+        bytes = Buffer.from(ab);
+      } else if (typeof file === 'string') {
+        if (file.startsWith('data:image/')) {
+          bytes = Buffer.from(file.split(',')[1], 'base64');
+        } else {
+          bytes = Buffer.from(file, 'base64');
+        }
+      }
+    } catch (formErr) {
+      console.warn('formData parse error:', formErr.message);
     }
-    type = String(file.type || 'image/jpeg');
-    const ab = await file.arrayBuffer();
-    bytes = Buffer.from(ab);
   }
 
-  if (!ALLOWED.has(type)) {
-    return NextResponse.json({ error: 'BAD_TYPE' }, { status: 400 });
+  if (!bytes || bytes.length === 0) {
+    return NextResponse.json({ error: 'NO_FILE' }, { status: 400 });
   }
+
   if (bytes.length > MAX_BYTES) {
     return NextResponse.json({ error: 'TOO_LARGE' }, { status: 400 });
   }
 
-  // Beyan edilen tür yeterli DEĞİL: istemci `type` alanını serbestçe yazabilir.
-  if (!magicMatches(bytes, type)) {
+  // Gerçek görsel tipini dosya başlığından (magic bytes) tespit et
+  const detected = detectImageType(bytes);
+  if (!detected) {
     return NextResponse.json({ error: 'BAD_TYPE' }, { status: 400 });
   }
+  type = detected;
 
   if (isModerationConfigured()) {
     const verdict = await moderateMedia(bytes, type);
