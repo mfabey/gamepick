@@ -72,7 +72,7 @@ export async function deleteAccount(idToken, reauth) {
  * applyMergedCollections yereldeki koleksiyonları siler — kullanıcı
  * oluşturduğu koleksiyonların kaybolduğunu görür.
  */
-export async function pushUserData(idToken, { taste, wishlist, collections, deleted, gameCount }) {
+export async function pushUserData(idToken, { taste, wishlist, collections, deleted, gameCount, overwriteWishlist }) {
   const res = await fetch(`${API_BASE}/api/user/data`, {
     method: 'PUT',
     headers: {
@@ -84,7 +84,7 @@ export async function pushUserData(idToken, { taste, wishlist, collections, dele
     // Bu sayının tek okuyucusu BAŞKASININ profilindeki "oyun" sayacı —
     // kütüphane sunucuda önbelleklenmiyor, yani ziyaretçi onu başka türlü
     // hesaplayamıyor.
-    body: JSON.stringify({ taste, wishlist, collections, deleted, gameCount }),
+    body: JSON.stringify({ taste, wishlist, collections, deleted, gameCount, overwriteWishlist }),
   });
   if (!res.ok) throw Object.assign(new Error(`HTTP ${res.status}`), { status: res.status });
   return res.json();

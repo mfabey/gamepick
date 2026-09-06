@@ -20,8 +20,9 @@ export function resetSyncThrottle() { lastRun = 0; }
 /**
  * @param wishlist  cihazdaki takip listesi
  * @param applyWishlist  birleşmiş listeyi yerele yazan geri çağrı
+ * @param force  süre sınırına takılmadan zorla senkronize et
  */
-export async function syncAccountData(wishlist = [], applyWishlist) {
+export async function syncAccountData(wishlist = [], applyWishlist, force = false) {
   // Sahibi bilinmeyen veri senkron EDİLMEZ. Eski hâlde bu kontrol yoktu:
   // jeton kimindiyse cihazdaki veri onun hesabına yazılıyordu.
   const uid = getAccount()?.uid || null;
@@ -29,9 +30,9 @@ export async function syncAccountData(wishlist = [], applyWishlist) {
 
   // Hesap değiştiyse kısıtlayıcı sıfırlanır — yoksa B'nin ilk senkronu,
   // A'nın 30 sn içindeki senkronu yüzünden atlanırdı.
-  if (uid !== lastOwner) { lastRun = 0; lastOwner = uid; }
+  if (uid !== lastOwner || force) { lastRun = 0; lastOwner = uid; }
 
-  if (running || Date.now() - lastRun < MIN_GAP) return false;
+  if (running || (Date.now() - lastRun < MIN_GAP && !force)) return false;
   const token = await getValidToken();
   if (!token) return false;            // oturum yok → sessizce geç
   // getValidToken yenileme yapabilir; yenileme başarısızsa oturum kapanır.

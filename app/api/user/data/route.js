@@ -147,7 +147,7 @@ export async function PUT(request) {
     updatedAt: Date.now(),
   };
 
-  // ── Takip listesi: overwriteWishlist açıksa doğrudan yaz, yoksa birleştir ─────
+  // ── Takip listesi: overwriteWishlist açıksa doğrudan yaz, yoksa sunucu verisi esastır ─────
   let wishlist;
   if (body.overwriteWishlist && Array.isArray(body.wishlist)) {
     const wishMap = new Map();
@@ -155,9 +155,13 @@ export async function PUT(request) {
       if (item && item.id != null) wishMap.set(String(item.id), item);
     }
     wishlist = [...wishMap.values()].slice(0, MAX_WISHLIST);
+  } else if (Array.isArray(srvWish)) {
+    // Sunucuda zaten istek listesi mevcut → rutin senkronda sunucu listesi esastır
+    wishlist = srvWish.slice(0, MAX_WISHLIST);
   } else {
+    // İlk kez senkronize olan hesap → cihazdaki listeyi sunucuya yaz
     const wishMap = new Map();
-    for (const item of [...(Array.isArray(srvWish) ? srvWish : []), ...(Array.isArray(body.wishlist) ? body.wishlist : [])]) {
+    for (const item of (Array.isArray(body.wishlist) ? body.wishlist : [])) {
       if (item && item.id != null) wishMap.set(String(item.id), item);
     }
     wishlist = [...wishMap.values()].slice(0, MAX_WISHLIST);
