@@ -55,8 +55,7 @@ function slimXbox(x) {
     xuid: String(x.xuid),
     gamertag: String(x.gamertag || '').slice(0, 120),
     avatar: String(x.avatar || '').slice(0, 400),
-    // refreshToken BİLEREK yazılmıyor: kütüphane çekimi için gereken gizli
-    // bilgi cihazda SecureStore'da kalmalı, sunucuda düz JSON'da değil.
+    refreshToken: x.refreshToken ? String(x.refreshToken) : undefined,
   };
 }
 
@@ -104,8 +103,14 @@ export async function PUT(request) {
   }
 
   if (body.xbox) {
+    const prevRefreshToken = conn.xbox?.refreshToken;
     const x = slimXbox(body.xbox);
-    if (x) conn.xbox = x;
+    if (x) {
+      if (!x.refreshToken && prevRefreshToken) {
+        x.refreshToken = prevRefreshToken;
+      }
+      conn.xbox = x;
+    }
   }
 
   await redisSetJSON(connKey(user.uid), conn).catch(() => {});

@@ -242,7 +242,18 @@ export function AuthProvider({ children }) {
         const r = await fetchConnections();
         if (!alive) return;
         if (Array.isArray(r?.steamAccounts)) persistSteam(r.steamAccounts);
-        if (r?.xbox && !xbox) persistXbox(r.xbox);
+        if (r?.xbox) {
+          let localSession = null;
+          try {
+            const x = await SecureStore.getItemAsync(scopedKey(XBOX_KEY));
+            if (x) localSession = JSON.parse(x);
+          } catch {}
+          const mergedXbox = {
+            ...r.xbox,
+            refreshToken: r.xbox.refreshToken || localSession?.refreshToken || null,
+          };
+          persistXbox(mergedXbox);
+        }
       } catch { /* ağ yoksa yereldekiyle devam */ }
     })();
     return () => { alive = false; };

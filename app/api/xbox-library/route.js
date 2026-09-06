@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { redisGetJSON } from '../../lib/redis';
+import { verifyMobileToken } from '../../lib/mobile-auth';
 
 // ── Token zinciri: refresh token → access token → XBL → XSTS ───────────────
 async function refreshAccessToken(refreshToken) {
@@ -207,8 +209,43 @@ export async function GET(request) {
   }
 
   try {
+    let tokenToRefresh = session.refreshToken;
+
+    if (!tokenToRefresh) {
+      // Mobilden gelen Bearer token ile Redis'teki kayıtlı refreshToken'ı ara
+      try {
+        const user = await verifyMobileToken(request);
+        if (user?.uid) {
+          const conn = await redisGetJSON(`user_connections:${user.uid}`);
+          if (conn?.xbox?.refreshToken) {
+            tokenToRefresh = conn.xbox.refreshToken;
+          }
+        }
+      } catch {}
+
+      // Web oturum çerezinden ara
+      if (!tokenToRefresh) {
+        try {
+          const userCookie = cookieStore.get('gp_user_session')?.value;
+          if (userCookie) {
+            const u = JSON.parse(userCookie);
+            if (u?.uid) {
+              const conn = await redisGetJSON(`user_connections:${u.uid}`);
+              if (conn?.xbox?.refreshToken) {
+                tokenToRefresh = conn.xbox.refreshToken;
+              }
+            }
+          }
+        } catch {}
+      }
+    }
+
+    if (!tokenToRefresh) {
+      return NextResponse.json({ error: 'Oturum süresi doldu, lütfen Xbox hesabınızı tekrar bağlayın.', expired: true }, { status: 401 });
+    }
+
     // Refresh token ile yeni access token al
-    const msTokens = await refreshAccessToken(session.refreshToken);
+    const msTokens = await refreshAccessToken(tokenToRefresh);
     if (msTokens.error) {
       return NextResponse.json({ error: 'Oturum süresi doldu, tekrar giriş yapın', expired: true }, { status: 401 });
     }
