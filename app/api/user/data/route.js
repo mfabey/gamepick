@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { verifyMobileToken } from '../../../lib/mobile-auth';
 import { redisGetJSON, redisSetJSON, redisPipeline, parseJSON } from '../../../lib/redis';
 import { mergeProfile } from '../../../lib/social-store';
@@ -64,12 +65,34 @@ function mergeCollections(serverCols, clientCols, serverTombs, clientTombs) {
   return { collections: merged.slice(0, MAX_COLLECTIONS), deleted: prunedTombs };
 }
 
+async function getAuthUser(request) {
+  const mobileUser = await verifyMobileToken(request);
+  if (mobileUser) return mobileUser;
+
+  try {
+    const cookieStore = cookies();
+    const session = cookieStore?.get?.('gp_user_session')?.value;
+    if (session) {
+      const u = JSON.parse(session);
+      if (u?.uid) {
+        return {
+          uid: u.uid,
+          email: u.email || '',
+          name: u.name || u.displayName || '',
+        };
+      }
+    }
+  } catch {}
+
+  return null;
+}
+
 async function unauthorized() {
   return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
 }
 
 export async function GET(request) {
-  const user = await verifyMobileToken(request);
+  const user = await getAuthUser(request);
   if (!user) return unauthorized();
 
   // Tek HTTP turunda dört anahtar (dört ayrı gidiş-dönüş yerine)
@@ -91,7 +114,7 @@ export async function GET(request) {
 }
 
 export async function PUT(request) {
-  const user = await verifyMobileToken(request);
+  const user = await getAuthUser(request);
   if (!user) return unauthorized();
 
   let body = {};
@@ -124,12 +147,21 @@ export async function PUT(request) {
     updatedAt: Date.now(),
   };
 
-  // ── Takip listesi: id bazında birleştir (tekilleştirilmiş) ─────────────────
-  const wishMap = new Map();
-  for (const item of [...(Array.isArray(srvWish) ? srvWish : []), ...(Array.isArray(body.wishlist) ? body.wishlist : [])]) {
-    if (item && item.id != null) wishMap.set(String(item.id), item);
+  // ── Takip listesi: overwriteWishlist açıksa doğrudan yaz, yoksa birleştir ─────
+  let wishlist;
+  if (body.overwriteWishlist && Array.isArray(body.wishlist)) {
+    const wishMap = new Map();
+    for (const item of body.wishlist) {
+      if (item && item.id != null) wishMap.set(String(item.id), item);
+    }
+    wishlist = [...wishMap.values()].slice(0, MAX_WISHLIST);
+  } else {
+    const wishMap = new Map();
+    for (const item of [...(Array.isArray(srvWish) ? srvWish : []), ...(Array.isArray(body.wishlist) ? body.wishlist : [])]) {
+      if (item && item.id != null) wishMap.set(String(item.id), item);
+    }
+    wishlist = [...wishMap.values()].slice(0, MAX_WISHLIST);
   }
-  const wishlist = [...wishMap.values()].slice(0, MAX_WISHLIST);
 
   // ── Koleksiyonlar: id bazında, updatedAt'i yeni olan kazanır + mezar taşları ─
   const { collections, deleted } = mergeCollections(
@@ -137,16 +169,6 @@ export async function PUT(request) {
   );
 
   // ── Oyun sayısı: profile YAZILIYOR ────────────────────────────────────────
-  // BAŞKASININ profilindeki "oyun" sayacının tek kaynağı bu. Kütüphane
-  // sunucuda önbelleklenmiyor (`/api/steam-library` `cache: 'no-store'`),
-  // yani bir ziyaretçi için o sayıyı hesaplamanın yolu Steam'e gitmekti —
-  // profil açılışı başına bir dış çağrı ve kota.
-  //
-  // Sayı ZATEN cihazda duruyor (bağlı kütüphane) ve bu uç zaten her senkronda
-  // çağrılıyor; tek bir alan eklemek yeni tur açmıyor.
-  //
-  // İSTEĞE BAĞLI: alan gelmezse mevcut değer korunuyor. Eski sürümdeki bir
-  // istemcinin senkronu, kullanıcının sayacını sıfırlamamalı.
   const gameCount = Number(body.gameCount);
   const writeGameCount = Number.isFinite(gameCount) && gameCount >= 0
     ? mergeProfile(user.uid, { gameCount: Math.min(Math.round(gameCount), 100000) }).catch(() => {})

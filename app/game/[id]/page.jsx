@@ -8,7 +8,7 @@ import { useLanguage } from '../../context/LanguageContext';
 
 export default function GameDetailPage({ params }) {
   const slug = params.id || params.slug;
-  const { ownedGames, xboxOwnedGames = new Set(), gamePassGames = new Set() } = useAuth();
+  const { user, ownedGames, xboxOwnedGames = new Set(), gamePassGames = new Set() } = useAuth();
   const { lang, t, formatPrice } = useLanguage();
 
   const [game,         setGame]         = useState(null);
@@ -27,6 +27,7 @@ export default function GameDetailPage({ params }) {
   const [loading,      setLoading]      = useState(true);
   const [error,        setError]        = useState(null);
   const [imgIdx,       setImgIdx]       = useState(0);
+  const [inWishlist,   setInWishlist]   = useState(false);
 
   const formatReleaseDate = (dateStr) => {
     if (!dateStr) return '';
@@ -59,6 +60,57 @@ export default function GameDetailPage({ params }) {
     }
     return () => { window.dispatchEvent(new CustomEvent('gamepick:viewing', { detail: null })); };
   }, [game]);
+
+  useEffect(() => {
+    if (!game) return;
+    try {
+      const stored = JSON.parse(localStorage.getItem('gamerisen_wishlist') || localStorage.getItem('gamepick_wishlist') || '[]');
+      const isWished = (stored || []).some(w => 
+        (game.id && String(w.id) === String(game.id)) ||
+        (game.steamAppId && String(w.appid) === String(game.steamAppId)) ||
+        (game.slug && w.slug === game.slug)
+      );
+      setInWishlist(isWished);
+    } catch {}
+  }, [game]);
+
+  const toggleWishlist = async () => {
+    if (!game) return;
+    try {
+      const stored = JSON.parse(localStorage.getItem('gamerisen_wishlist') || localStorage.getItem('gamepick_wishlist') || '[]');
+      let updated;
+      if (inWishlist) {
+        updated = (stored || []).filter(w => 
+          !(game.id && String(w.id) === String(game.id)) &&
+          !(game.steamAppId && String(w.appid) === String(game.steamAppId)) &&
+          !(game.slug && w.slug === game.slug)
+        );
+        setInWishlist(false);
+      } else {
+        const item = {
+          id: game.id || game.steamAppId || slug,
+          name: game.name,
+          slug: game.slug || slug || '',
+          appid: game.steamAppId ? String(game.steamAppId) : null,
+          hasSteam: !!(game.hasSteam || game.steamAppId),
+          image: game.image || '',
+        };
+        updated = [...(stored || []).filter(w => String(w.id) !== String(item.id)), item];
+        setInWishlist(true);
+      }
+      try {
+        localStorage.setItem('gamerisen_wishlist', JSON.stringify(updated));
+      } catch {}
+
+      if (user?.uid) {
+        await fetch('/api/user/data', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ wishlist: updated, overwriteWishlist: true }),
+        }).catch(() => {});
+      }
+    } catch {}
+  };
 
   useEffect(() => {
     if (!slug) return;
@@ -318,6 +370,28 @@ export default function GameDetailPage({ params }) {
                 ⭐ {game.rating.toFixed(1)} / 5
               </div>
             )}
+            <button
+              onClick={toggleWishlist}
+              style={{
+                padding: '6px 14px',
+                borderRadius: 8,
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                border: inWishlist ? '1px solid rgba(239,68,68,0.35)' : '1px solid var(--border)',
+                background: inWishlist ? 'rgba(239,68,68,0.12)' : 'var(--bg-input)',
+                color: inWishlist ? '#ef4444' : 'var(--text-2)',
+                transition: 'all 0.2s',
+              }}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill={inWishlist ? '#ef4444' : 'none'} stroke={inWishlist ? '#ef4444' : 'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+              </svg>
+              {inWishlist ? (lang === 'tr' ? 'İstek Listesinde' : 'In Wishlist') : (lang === 'tr' ? 'İstek Listesine Ekle' : 'Add to Wishlist')}
+            </button>
           </div>
         </div>
 

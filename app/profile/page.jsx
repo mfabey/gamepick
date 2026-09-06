@@ -308,6 +308,8 @@ function AccountCard({ name, status, connected, color, initials, onToggle, lang,
 ───────────────────────────────────────────── */
 function WishlistItem({ game, onRemove, lang }) {
   const [hovered, setHovered] = useState(false);
+  const href = game.slug ? `/game/${game.slug}` : (game.rawgSlug ? `/game/${game.rawgSlug}` : (game.appid ? `/game/${game.appid}` : `/game/${game.id}`));
+
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 14,
@@ -319,10 +321,15 @@ function WishlistItem({ game, onRemove, lang }) {
         flexShrink: 0, overflow: 'hidden', position: 'relative',
         border: '1px solid var(--border)', boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
       }}>
-        <GameImage game={game} fill sizes="52px" />
+        {game.image ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img src={game.image} alt={game.name || ''} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        ) : (
+          <GameImage game={game} fill sizes="52px" />
+        )}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <Link href={game.rawgSlug ? `/game/${game.rawgSlug}` : `/game/${game.id}`}>
+        <Link href={href} style={{ textDecoration: 'none' }}>
           <p
             onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
             style={{
@@ -582,9 +589,27 @@ export default function ProfilePage() {
   useEffect(() => { if (ready && !hasSession) router.push('/login'); }, [ready, hasSession, router]);
 
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem('gamerisen_wishlist') || localStorage.getItem('gamepick_wishlist') || '[]');
-    setWishlist(stored);
-  }, []);
+    try {
+      const stored = JSON.parse(localStorage.getItem('gamerisen_wishlist') || localStorage.getItem('gamepick_wishlist') || '[]');
+      if (Array.isArray(stored) && stored.length > 0) {
+        setWishlist(stored);
+      }
+    } catch {}
+
+    if (user?.uid) {
+      fetch('/api/user/data')
+        .then(r => r.ok ? r.json() : null)
+        .then(d => {
+          if (d && Array.isArray(d.wishlist)) {
+            setWishlist(d.wishlist);
+            try {
+              localStorage.setItem('gamerisen_wishlist', JSON.stringify(d.wishlist));
+            } catch {}
+          }
+        })
+        .catch(() => {});
+    }
+  }, [user?.uid]);
 
   useEffect(() => {
     if (!ready || !hasSession) return;
@@ -598,9 +623,19 @@ export default function ProfilePage() {
   }, [ready, hasSession, steamUser, xboxUser]);
 
   const removeFromWishlist = (id) => {
-    const updated = wishlist.filter(w => w.id !== id);
-    localStorage.setItem('gamerisen_wishlist', JSON.stringify(updated));
+    const updated = wishlist.filter(w => String(w.id) !== String(id) && (!w.appid || String(w.appid) !== String(id)));
+    try {
+      localStorage.setItem('gamerisen_wishlist', JSON.stringify(updated));
+    } catch {}
     setWishlist(updated);
+
+    if (user?.uid) {
+      fetch('/api/user/data', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wishlist: updated, overwriteWishlist: true }),
+      }).catch(() => {});
+    }
   };
 
   /* ── Loading guard ── */
