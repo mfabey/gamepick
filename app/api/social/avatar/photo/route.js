@@ -41,12 +41,45 @@ function detectImageType(buf) {
   return null;
 }
 
+function extractImageFromMultipart(rawBytes) {
+  if (!rawBytes || rawBytes.length < 12) return null;
+  const b = Buffer.from(rawBytes);
+
+  // Search for JPEG (FF D8 FF)
+  const jpegIdx = b.indexOf(Buffer.from([0xff, 0xd8, 0xff]));
+  if (jpegIdx !== -1) {
+    const endIdx = b.lastIndexOf(Buffer.from([0xff, 0xd9]));
+    if (endIdx !== -1 && endIdx > jpegIdx) {
+      return b.subarray(jpegIdx, endIdx + 2);
+    }
+    return b.subarray(jpegIdx);
+  }
+
+  // Search for PNG (89 50 4E 47)
+  const pngIdx = b.indexOf(Buffer.from([0x89, 0x50, 0x4e, 0x47]));
+  if (pngIdx !== -1) {
+    const endIdx = b.lastIndexOf(Buffer.from([0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82]));
+    if (endIdx !== -1 && endIdx > pngIdx) {
+      return b.subarray(pngIdx, endIdx + 8);
+    }
+    return b.subarray(pngIdx);
+  }
+
+  // Search for WebP (RIFF .... WEBP)
+  const riffIdx = b.indexOf(Buffer.from('RIFF'));
+  if (riffIdx !== -1 && b.indexOf(Buffer.from('WEBP'), riffIdx) === riffIdx + 8) {
+    return b.subarray(riffIdx);
+  }
+
+  return null;
+}
+
 export async function POST(request) {
   const user = await verifyMobileToken(request);
   if (!user) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
 
-  // Avatar değiştirmek nadir bir iş; sınır makul.
-  const rl = await rateLimit(`rl:avatarup:${user.uid}`, 30, 3600);
+  // Avatar sınırı geniş tutuldu
+  const rl = await rateLimit(`rl:avatarup:${user.uid}`, 200, 3600);
   if (!rl.ok) return NextResponse.json(tooManyRequests(), { status: 429 });
 
   const existing = (await getProfile(user.uid)) || {};
@@ -67,8 +100,9 @@ export async function POST(request) {
       return NextResponse.json({ error: 'BAD_BODY' }, { status: 400 });
     }
   } else {
+    // 1. Try formData
     try {
-      const form = await request.formData();
+      const form = await request.clone().formData();
       let file = form.get('file') || form.get('avatar') || form.get('image') || form.get('photo');
       if (!file) {
         for (const [, val] of form.entries()) {
@@ -89,7 +123,20 @@ export async function POST(request) {
         }
       }
     } catch (formErr) {
-      console.warn('formData parse error:', formErr.message);
+      console.warn('formData parse error, falling back to raw stream:', formErr.message);
+    }
+
+    // 2. Fallback to raw binary buffer if formData failed to extract bytes
+    if (!bytes || bytes.length === 0) {
+      try {
+        const rawBuf = Buffer.from(await request.arrayBuffer());
+        const extracted = extractImageFromMultipart(rawBuf);
+        if (extracted) {
+          bytes = extracted;
+        }
+      } catch (rawErr) {
+        console.warn('raw buffer parse error:', rawErr.message);
+      }
     }
   }
 
