@@ -1,6 +1,6 @@
 {
   "name": "gamerisen-mobile",
-  "version": "2.6.0",
+  "version": "2.6.1",
   "main": "expo-router/entry",
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",
