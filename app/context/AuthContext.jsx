@@ -33,30 +33,20 @@ export function AuthProvider({ children }) {
 
       if (userData.user) {
         setUser(userData.user);
+        // Giriş yapmış kullanıcı için Redis (userData) tek yetkili kaynaktır:
+        const accounts = Array.isArray(userData.steamAccounts)
+          ? userData.steamAccounts
+          : (userData.steamUser ? [userData.steamUser] : []);
+        setSteamAccounts(accounts);
+        setSteamUser(accounts[0] || null);
+        setXboxUser(userData.xboxUser || null);
       } else {
         setUser(null);
-      }
-
-      // Çoklu Steam hesapları
-      const accounts = steamData.accounts || (steamData.user ? [steamData.user] : []);
-      if (userData.steamUser && accounts.length === 0) {
-        // Redis'ten gelen tek hesap (eski sistem)
-        setSteamAccounts([userData.steamUser]);
-        setSteamUser(userData.steamUser);
-      } else if (accounts.length > 0) {
+        // Hesapsız / misafir web oturumu (yalnızca Steam/Xbox cookie ile bağlanmış):
+        const accounts = steamData.accounts || (steamData.user ? [steamData.user] : []);
         setSteamAccounts(accounts);
-        setSteamUser(accounts[0]);
-      } else {
-        setSteamAccounts([]);
-        setSteamUser(null);
-      }
-
-      if (userData.xboxUser) {
-        setXboxUser(userData.xboxUser);
-      } else if (xboxData.user) {
-        setXboxUser(xboxData.user);
-      } else {
-        setXboxUser(null);
+        setSteamUser(accounts[0] || null);
+        setXboxUser(xboxData.user || null);
       }
     } catch (err) {
       console.error('refreshAuth error:', err);

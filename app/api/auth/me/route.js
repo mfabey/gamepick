@@ -1,11 +1,32 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { redisGetJSON } from '../../../lib/redis';
 
 // GET /api/auth/me  →  Tüm Steam hesaplarını döndür (çoklu hesap desteği)
 export async function GET() {
   const cookieStore = await cookies();
 
-  // Önce yeni çoklu hesap cookie'sine bak
+  // Giriş yapılmış Gamerisen hesabı varsa tek gerçek kaynak Redis'tir
+  const userSession = cookieStore.get('gp_user_session');
+  if (userSession?.value) {
+    try {
+      const user = JSON.parse(userSession.value);
+      if (user?.uid) {
+        const conn = await redisGetJSON(`user_connections:${user.uid}`).catch(() => null);
+        if (conn) {
+          const accounts = Array.isArray(conn.steamAccounts)
+            ? conn.steamAccounts
+            : (conn.steam?.steamId ? [conn.steam] : []);
+          return NextResponse.json({
+            user: accounts[0] || null,
+            accounts,
+          });
+        }
+      }
+    } catch {}
+  }
+
+  // Hesapsız / misafir web oturumu için cookie'den oku
   const accountsCookie = cookieStore.get('gp_steam_accounts');
   if (accountsCookie?.value) {
     try {

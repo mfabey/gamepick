@@ -111,6 +111,21 @@ function formatTitle(t) {
 // ── Ana handler ──────────────────────────────────────────────────────────────
 export async function GET(request) {
   const cookieStore = await cookies();
+  const userSession = cookieStore.get('gp_user_session');
+
+  // Giriş yapılmış Gamerisen hesabı varsa Redis durumunu kontrol et
+  if (userSession?.value && !request?.headers?.get('x-xbox-session')) {
+    try {
+      const user = JSON.parse(userSession.value);
+      if (user?.uid) {
+        const conn = await redisGetJSON(`user_connections:${user.uid}`).catch(() => null);
+        if (conn && !conn.xbox) {
+          return NextResponse.json({ error: 'Oturum yok', games: [] }, { status: 401 });
+        }
+      }
+    } catch {}
+  }
+
   let sessionRaw = cookieStore.get('gp_xbox_session')?.value || null;
 
   // Mobil: httpOnly cookie olmadığından session'ı header ile kabul et (base64 JSON)
@@ -122,14 +137,14 @@ export async function GET(request) {
   }
 
   if (!sessionRaw) {
-    return NextResponse.json({ error: 'Oturum yok' }, { status: 401 });
+    return NextResponse.json({ error: 'Oturum yok', games: [] }, { status: 401 });
   }
 
   let session;
   try {
     session = JSON.parse(sessionRaw);
   } catch {
-    return NextResponse.json({ error: 'Geçersiz oturum' }, { status: 401 });
+    return NextResponse.json({ error: 'Geçersiz oturum', games: [] }, { status: 401 });
   }
 
   if (session.isMock) {

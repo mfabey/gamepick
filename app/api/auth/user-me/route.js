@@ -85,29 +85,32 @@ export async function GET() {
     };
 
     const connections = await getUserConnections(user.uid);
+    const steamAccounts = Array.isArray(connections.steamAccounts)
+      ? connections.steamAccounts
+      : (connections.steam?.steamId ? [connections.steam] : []);
+    const steamUser = steamAccounts[0] || null;
+    const xboxUser = connections.xbox || null;
 
     // Auto-cache profile and links to Redis
     try {
       await mergeProfile(user.uid, enrichedUser);
-      if (connections.steam && connections.steam.steamId) {
-        await redisCmd(['SET', `steam_to_uid:${connections.steam.steamId}`, user.uid]);
-      }
-      if (connections.steamAccounts && Array.isArray(connections.steamAccounts)) {
-        for (const acc of connections.steamAccounts) {
+      if (steamAccounts.length > 0) {
+        for (const acc of steamAccounts) {
           if (acc.steamId) {
             await redisCmd(['SET', `steam_to_uid:${acc.steamId}`, user.uid]);
           }
         }
       }
-      if (connections.xbox && connections.xbox.gamertag) {
-        await redisCmd(['SET', `xbox_to_uid:${connections.xbox.gamertag}`, user.uid]);
+      if (xboxUser && xboxUser.gamertag) {
+        await redisCmd(['SET', `xbox_to_uid:${xboxUser.gamertag}`, user.uid]);
       }
     } catch {}
 
     const response = NextResponse.json({
       user: enrichedUser,
-      steamUser: connections.steam || null,
-      xboxUser: connections.xbox || null,
+      steamUser,
+      steamAccounts,
+      xboxUser,
     });
 
     if (userWasRestored) {
@@ -120,25 +123,35 @@ export async function GET() {
       });
     }
 
-    // Synchronize cookies to this device if they are in Redis but missing locally
-    if (connections.steam && !cookieStore.get('gp_steam_session')) {
-      response.cookies.set('gp_steam_session', JSON.stringify(connections.steam), {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 60 * 60 * 24 * 30, // 30 days
-        path: '/',
-        sameSite: 'lax',
-      });
+    const cookieOpts = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 30, // 30 days
+    };
+
+    // Synchronize cookies to this device according to Redis authoritative state
+    if (steamAccounts.length > 0) {
+      response.cookies.set('gp_steam_accounts', JSON.stringify(steamAccounts), cookieOpts);
+      response.cookies.set('gp_steam_session', JSON.stringify(steamAccounts[0]), cookieOpts);
+    } else {
+      // Clear stale Steam cookies if disconnected in Redis
+      if (cookieStore.get('gp_steam_session')) {
+        response.cookies.set('gp_steam_session', '', { ...cookieOpts, maxAge: 0 });
+      }
+      if (cookieStore.get('gp_steam_accounts')) {
+        response.cookies.set('gp_steam_accounts', '', { ...cookieOpts, maxAge: 0 });
+      }
     }
 
-    if (connections.xbox && !cookieStore.get('gp_xbox_session')) {
-      response.cookies.set('gp_xbox_session', JSON.stringify(connections.xbox), {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 60 * 60 * 24 * 30, // 30 days
-        path: '/',
-        sameSite: 'lax',
-      });
+    if (xboxUser) {
+      response.cookies.set('gp_xbox_session', JSON.stringify(xboxUser), cookieOpts);
+    } else {
+      // Clear stale Xbox cookie if disconnected in Redis
+      if (cookieStore.get('gp_xbox_session')) {
+        response.cookies.set('gp_xbox_session', '', { ...cookieOpts, maxAge: 0 });
+      }
     }
 
     return response;
