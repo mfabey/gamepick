@@ -51,101 +51,63 @@ senkronu + ortak oyun hesabı) ekranda boş görünür.
 
 ## 3. Notes — App Store Connect'e yapıştırılacak metin
 
+Alan sınırı **4000 karakter**. Aşağıdaki metin **2642** — ilk taslak 4226 idi
+ve sığmıyordu. İncelemeci dakikalarla çalışıyor: her madde bir yer tarif
+ediyor, açıklama değil.
+
 ```
-Hello,
+Gamerisen is a PC game discovery app with a social layer. Build 2.6.1 is a
+substantial rewrite of 1.0 (build 8), which was rejected under 4.2.2 on 30 July
+2026.
 
-Gamerisen is a PC game discovery app with a social layer. This build (2.6.1) is
-a substantial rewrite of version 1.0 (build 8), which was rejected under
-Guideline 4.2.2 on 30 July 2026.
-
-DEMO ACCOUNT
-The account we provided already has a friend, an active conversation, a
-published review, a post, a collection and a linked Steam library, so every
-social feature is populated the moment you sign in.
-
-Signing in is NOT required to use the app. Discovery, game details, price
-comparison, news, and reading reviews and posts all work without an account. An
-account is required only to post, message or add friends.
+SIGN-IN IS OPTIONAL
+Discovery, game details, price comparison, news and reading reviews and posts
+all work without an account. The demo account is needed only for the social
+features. It already has a friend, an open conversation, a review, a post, a
+collection and a linked Steam library, so nothing is empty.
 
 NO WEBVIEW
-No screen in the app renders web content. Every view is built with native iOS
-components. Store links open in the system browser only when the user
-explicitly taps one.
+Every screen is native. Store links open in the system browser only when the
+user taps one.
 
-WHERE THE NATIVE FUNCTIONALITY IS (Guideline 4.2.2)
+NATIVE FUNCTIONALITY (4.2.2) - WHERE TO FIND IT
+1. Home Screen widget (WidgetKit): price drop, library stats, wishlist. Add it
+   from the iOS widget gallery.
+2. Share Extension: share a game link from Safari into the app via App Group.
+3. On-device recommendation engine: time-decayed genre weights, works offline.
+4. Swipe deck: Home tab > "For You". Native gestures on the UI thread, haptics.
+5. Vertical trailer feed: Videos tab, three-player pool for gapless paging.
+6. Steam library and friend graph: Profile tab > gear icon > connect Steam.
+   Computes which games you and each friend can play together. Friends do not
+   need to use Gamerisen.
+7. Game cards: Settings > "Cards". Signed images showing your hours in a game
+   and your rank among your friends.
+8. Push notifications, Sign in with Apple, native photo picker with on-device
+   resizing, and on-device reverse geocoding (only a city name is sent).
 
-1. Home Screen widget (WidgetKit). Three widget types: a price drop for a game
-   you follow, your library stats (value, number of games, hours, last played),
-   and your wishlist. Add it from the iOS widget gallery on the Home Screen.
+The "pick the games you like" first-launch screen from 1.0 has been removed;
+personalisation now starts from the first interaction.
 
-2. Share Extension. Share a game link from Safari or any other app; our
-   extension captures it and hands it to the app through a shared App Group
-   container.
-
-3. On-device recommendation engine. Genre interest is stored with time-decayed
-   weights on the device and recomputed locally on every interaction. It keeps
-   working with no network connection.
-
-4. Swipe discovery. Home tab > "For You" opens a card deck driven by native
-   gestures (Gesture Handler + Reanimated) running on the UI thread, with
-   haptic feedback on each decision.
-
-5. Vertical video feed. Videos tab. A native player with a three-player pool so
-   paging between trailers is gapless.
-
-6. Steam library and friend graph. Profile tab > gear icon > connect Steam. The
-   app reads your library and your Steam friends' libraries and computes which
-   games you can play together. Your friends do not need to use Gamerisen.
-
-7. Shareable game cards. Settings > "Cards". Server-generated, HMAC-signed
-   images showing your hours in a game and your rank among your friends — a
-   number Steam itself does not show.
-
-8. Push notifications for price drops and new messages.
-
-9. Sign in with Apple, native photo picker with on-device image resizing, and
-   on-device reverse geocoding for the optional city tag (coordinates never
-   leave the device; only a city name is sent).
-
-Please note: version 1.0 had a "pick the games you like" first-launch screen.
-It has been removed. Personalisation now begins from the first interaction.
-
-USER-GENERATED CONTENT (Guideline 1.2)
-
-- Filtering. Text is checked against a prohibited-terms filter. Every uploaded
-  image passes Google Cloud Vision SafeSearch before it is published. Video
-  upload is deliberately disabled because we cannot moderate video yet.
-
-- Reporting. A report option is available on users, posts, reviews, lists and
-  individual messages — tap the "..." button on a person, or long-press a piece
-  of content. Reports are reviewed within 24 hours.
-
-- Blocking. The same "..." menu on any person row or profile. Blocking is
-  mutual: a blocked user cannot message you, and your content is hidden from
-  each other in both directions.
-
-- Published contact information. https://www.gamerisen.com/support and
-  support@gamerisen.com
-
-- Community rules. Section 4 of https://www.gamerisen.com/terms sets out a
-  zero-tolerance policy for objectionable content and abusive behaviour, the
-  enforcement steps, and the 24-hour review commitment. Users agree to it on the
-  sign-up screen, where the Terms and the Privacy Policy are both linked
-  directly under the button.
-
-- Only friends can message each other. There is no random or anonymous chat.
+USER-GENERATED CONTENT (1.2)
+- Filtering: prohibited-terms filter on text, Google Cloud Vision SafeSearch on
+  every uploaded image. Video upload is disabled: we cannot moderate it yet.
+- Reporting: "..." on any person, or long-press a post, review, list or message.
+  Reports are reviewed within 24 hours.
+- Blocking: same "..." menu. Mutual - no messages, content hidden both ways.
+- Contact: https://www.gamerisen.com/support and support@gamerisen.com
+- Community rules: section 4 of https://www.gamerisen.com/terms. Users agree on
+  the sign-up screen, where both links sit directly under the button.
+- Only friends can message each other. No random or anonymous chat.
 
 ACCOUNT DELETION
-Profile tab > gear icon (top right) > Delete Account. The password is
-re-verified, then the Firebase account and all server-side data are permanently
-deleted.
+Profile tab > gear icon > Delete Account. Password is re-verified, then the
+account and all server-side data are permanently deleted.
 
 NO DIGITAL SALES
-Gamerisen does not sell anything. Prices are shown for information only and
-there is no purchase flow of any kind inside the app.
+Prices are shown for information only. There is no purchase flow in the app.
 
-Thank you for your time. If anything is hard to find, please write to
-support@gamerisen.com and we will reply the same day.
+If anything is hard to find, write to support@gamerisen.com and we will reply
+the same day.
 ```
 
 ---
