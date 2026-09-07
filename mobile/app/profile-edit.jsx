@@ -34,6 +34,7 @@ import {
   getMyProfile, setUsername as apiSetUsername,
   setAvatar as apiSetAvatar, uploadAvatarPhoto,
 } from '../src/api/social';
+import { chatCapabilities } from '../src/services/realtime';
 
 // Sunucudaki MAX_BIO ile AYNI SAYI olmak zorunda (app/lib/social-store.js).
 // Ayrışırlarsa kullanıcı ekranda yazabildiği bir metni kaydedemez.
@@ -54,6 +55,20 @@ export default function ProfileEditScreen() {
   const [saving, setSaving] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
+
+  // FOTOĞRAF SEÇENEĞİ SUNUCUYA SORULUYOR. Kullanıcı görsel yüklemesi şu an
+  // kapalı (sunucuda `USER_UPLOADS_ENABLED`); kapalıyken düğmeyi çizip
+  // basınca "şu an kapalı" demek, sohbet kompozitöründe bilerek kaçınılan
+  // şeyin aynısı olurdu — Guideline 2.2 açısından tamamlanmamış uygulama
+  // sinyali.
+  //
+  // BAŞLANGIÇ KAPALI: yanıt gelene kadar düğme göstermek, bir an görünüp
+  // kaybolan düğme demek. `chatCapabilities` hata durumunda da kapalı
+  // dönüyor ve yanıtı önbelleğe alıyor — ek ağ trafiği yok.
+  const [fotoAcik, setFotoAcik] = useState(false);
+  useEffect(() => {
+    chatCapabilities().then((c) => setFotoAcik(!!c.photos)).catch(() => {});
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -223,6 +238,7 @@ export default function ProfileEditScreen() {
         onSelect={pickAvatar}
         onClose={() => setPickerOpen(false)}
         onPickPhoto={pickPhoto}
+        photoEnabled={fotoAcik}
         uploading={uploading}
       />
     </SafeAreaView>
@@ -232,7 +248,7 @@ export default function ProfileEditScreen() {
 // ─── Avatar seçici ──────────────────────────────────────────────────────────
 // RN Modal kullanılıyor — native kütüphane EKLENMEZ, OTA güvenli.
 // Profil sekmesinden BURAYA TAŞINDI: düzenleme tek ekranda toplandı.
-function AvatarPicker({ visible, current, onSelect, onClose, onPickPhoto, uploading }) {
+function AvatarPicker({ visible, current, onSelect, onClose, onPickPhoto, photoEnabled, uploading }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const { t } = useLanguage();
@@ -251,21 +267,26 @@ function AvatarPicker({ visible, current, onSelect, onClose, onPickPhoto, upload
           </View>
 
           {/* FOTOĞRAF EN ÜSTTE. Ön ayarlar bir yedek; kişinin kendi fotoğrafı
-              "bu hesap benim" hissini veren asıl şey. */}
-          <Pressable
-            onPress={onPickPhoto}
-            disabled={uploading}
-            style={({ pressed }) => [styles.pickerPhoto, pressed && PRESSED, uploading && { opacity: 0.6 }]}
-          >
-            {uploading
-              ? <ActivityIndicator size="small" color="#fff" />
-              : <Ionicons name="image-outline" size={19} color="#fff" />}
-            <Text style={styles.pickerPhotoText}>
-              {uploading ? t('prof.photoUploading') : t('prof.photoPick')}
-            </Text>
-          </Pressable>
+              "bu hesap benim" hissini veren asıl şey. Yükleme kapalıyken bu
+              blok HİÇ çizilmiyor; ön ayarlar tek yol olarak kalıyor. */}
+          {photoEnabled && (
+            <>
+              <Pressable
+                onPress={onPickPhoto}
+                disabled={uploading}
+                style={({ pressed }) => [styles.pickerPhoto, pressed && PRESSED, uploading && { opacity: 0.6 }]}
+              >
+                {uploading
+                  ? <ActivityIndicator size="small" color="#fff" />
+                  : <Ionicons name="image-outline" size={19} color="#fff" />}
+                <Text style={styles.pickerPhotoText}>
+                  {uploading ? t('prof.photoUploading') : t('prof.photoPick')}
+                </Text>
+              </Pressable>
 
-          <Text style={styles.pickerNote}>{t('prof.photoNote')}</Text>
+              <Text style={styles.pickerNote}>{t('prof.photoNote')}</Text>
+            </>
+          )}
 
           <View style={styles.pickerGrid}>
             {AVATAR_PRESET_IDS.map((id) => {

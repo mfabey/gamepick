@@ -148,6 +148,24 @@ Bu alan zaten `false`'tu ama `NSLocationAlwaysUsageDescription` yine
 yazılıyordu: `expo-location` eklentisinde bunlar İKİ AYRI prop
 (`plugin/src/withLocation.ts`). İkisi de kapatılmalı.
 
+## FOTOĞRAF İZNİ DE KAPANDI (2026-09-08)
+
+`photosPermission` artık `false`. Sebep: kullanıcı görsel yüklemesinin
+tamamı — sohbet fotoğrafı VE profil fotoğrafı — sunucuda kapatıldı
+(`app/lib/media-moderation.js` → `USER_UPLOADS_ENABLED = false`). İzin
+metni açık kalsaydı yine "uygulamanın YAPMADIĞI bir şeyi anlatan metin"
+olurdu; yukarıdaki dört metnin silinme gerekçesiyle aynı.
+
+`expo-image-picker` paketi KALDIRILMADI: iki çağrı yeri de bayrağa bağlı
+ve bayrak sunucudan geliyor, yani özellik geri açıldığında kod hazır.
+
+⚠️ **GERİ AÇARKEN İKİSİ BİRLİKTE.** Yalnızca sunucudaki bayrağı `true`
+yapmak YETMEZ: izin metni olmadan `launchImageLibraryAsync` çağrıldığında
+iOS uygulamayı SONLANDIRIR. Bayrağı açan, `photosPermission` metnini de
+geri koymalı ve YENİ BUILD almalıdır — bu adım OTA ile gitmez.
+
+---
+
 ## KAMERA GERİ İSTENİRSE
 
 `cameraPermission`'ı geri açmak tek başına yanlış olur — metin "sohbette
