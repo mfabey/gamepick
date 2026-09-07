@@ -8,6 +8,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as AppleAuthentication from 'expo-apple-authentication';
+import * as WebBrowser from 'expo-web-browser';
 import { signIn, signInWithApple } from '../src/services/session';
 import { anonDataSummary, transferAnonData } from '../src/services/owner';
 import { resetSyncThrottle } from '../src/services/sync';
@@ -21,12 +22,18 @@ import { useLanguage } from '../src/context/LanguageContext';
 // da duruyor — yetkili doğrulama her zaman sunucuda.
 const USERNAME_RE = /^[a-zA-Z0-9_]{3,20}$/;
 
+// Sozlesme ve gizlilik politikasi web sitesinde tutuluyor; uygulama icinde
+// kopyasi YOK — iki yerde tutulan metin kacinilmaz olarak ayrisiyor.
+const SITE = 'https://www.gamerisen.com';
+
 export default function AccountScreen() {
   const styles = useStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const router = useRouter();
   const { t, lang } = useLanguage();
+
+  const openPage = (path) => { WebBrowser.openBrowserAsync(`${SITE}${path}`).catch(() => {}); };
 
   const [mode, setMode] = useState('signin');   // 'signin' | 'signup' | 'forgot'
   const [name, setName]         = useState('');
@@ -336,6 +343,31 @@ export default function AccountScreen() {
                   : <Text style={styles.ctaText}>{isForgot ? t('acc.sendResetLink') : (isSignup ? t('acc.signUp') : t('acc.signIn'))}</Text>}
           </Pressable>
 
+          {/* Guideline 1.2: kurallarin baglandigi onay noktasi. `forgot` disinda
+              her modda duruyor — Apple ile giris de hesap ACIYOR, yalnizca kayit
+              moduna konsa o yol kapsam disi kalirdi. */}
+          {!isForgot && (
+            <Text style={styles.legal}>
+              {t('acc.legalPre')}
+              <Text
+                style={styles.legalLink}
+                accessibilityRole="link"
+                onPress={() => openPage('/terms')}
+              >
+                {t('set.terms')}
+              </Text>
+              {t('acc.legalAnd')}
+              <Text
+                style={styles.legalLink}
+                accessibilityRole="link"
+                onPress={() => openPage('/privacy')}
+              >
+                {t('set.privacyPolicy')}
+              </Text>
+              {t('acc.legalPost')}
+            </Text>
+          )}
+
           {isForgot ? (
             <Pressable onPress={() => { setMode('signin'); setError(''); setInfo(''); }} hitSlop={8}>
               <Text style={styles.link}>{t('acc.backToSignIn')}</Text>
@@ -414,4 +446,6 @@ const makeStyles = (colors) => StyleSheet.create({
 
   link:      { color: colors.accentText, fontSize: type.subhead, fontWeight: '700', textAlign: 'center', marginTop: 20 },
   linkMuted: { color: colors.text3,  fontSize: type.footnote, textAlign: 'center', marginTop: 14 },
+  legal:     { color: colors.text3, fontSize: type.footnote, textAlign: 'center', marginTop: spacing.lg, lineHeight: 18 },
+  legalLink: { color: colors.accentText, fontWeight: '700' },
 });
