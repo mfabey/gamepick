@@ -7,10 +7,11 @@ App Store Connect'e **kopyala-yapıştır** için hazır. Karakter limitleri
 > **harekete geçirici** ifade yok. Mağaza fiyatları yalnızca *bilgi* olarak
 > anlatılıyor. Bunu bozacak cümle eklemeyin — metadata da bu kurala tabidir.
 
-> ⚠️ **Sohbet videosu metinde YOK.** Sunucu video yüklemesini reddediyor
-> (`app/api/social/chat/media/route.js` → `VIDEO_DISABLED`; medya denetimi
-> yalnızca görsel destekliyor). Video açılana kadar metne eklemeyin —
-> çalışmayan özelliği yazmak ret sebebi.
+> ⚠️ **Görsel yükleme metinde YOK.** Bu sürümde kullanıcı görsel yüklemesinin
+> tamamı kapalı (`app/lib/media-moderation.js` → `USER_UPLOADS_ENABLED`):
+> sohbet fotoğrafı, sohbet videosu ve profil fotoğrafı. Sohbet metin +
+> oyun kartı, profil avatarı hazır setten. Özellik geri açılmadan metne
+> eklemeyin — çalışmayan özelliği yazmak ret sebebi.
 
 **Sürüm 2.6.x için yenilendi.** Uygulama v1'deki fiyat karşılaştırma
 uygulamasından çıkıp sosyal katmanlı bir keşif uygulamasına döndü; metinler
@@ -43,8 +44,9 @@ indirim,fiyat,steam,epic,gog,pc,kütüphane,sohbet,inceleme,liste,fragman,oyuncu
 ```
 *Ad ve alt başlıktaki kelimeler (oyun, arkadaş, keşfet, paylaş) bilerek
 tekrarlanmadı — Apple onları zaten indeksliyor.*
-*`steam,epic,gog` üçüncü taraf markası; Apple bazen çıkartıyor. Çıkarmak
-gerekirse yedek: `oyun keşfi,ortak oyun,indirim takibi`.*
+*`steam,epic,gog` üçüncü taraf markası; Apple bazen çıkartıyor.
+**KARAR (2026-09-08): kalıyor.** Apple çıkartırsa yedek:
+`oyun keşfi,ortak oyun,indirim takibi`.*
 
 ### Açıklama (limit 4000) — 2898
 ```
@@ -54,7 +56,7 @@ ARKADAŞLARINLA BİRLİKTE
 Kullanıcı adınla bir profil oluştur, arkadaş ekle, kimin ne oynadığını gör. Steam hesabını bağlarsan Steam arkadaşların otomatik bulunur — onların Gamerisen kullanıyor olması gerekmez. Kütüphaneleriniz karşılaştırılır ve birlikte oynayabileceğiniz oyunlar öne çıkarılır.
 
 MESAJLAŞ
-Arkadaşlarınla birebir sohbet et: anlık mesajlaşma, fotoğraf paylaşımı ve bildirim. Yalnızca arkadaşların sana yazabilir; yabancıdan mesaj gelmez. Her mesaj ve profil raporlanabilir, dilediğin kullanıcıyı engelleyebilirsin.
+Arkadaşlarınla birebir sohbet et: anlık mesajlaşma ve bildirim. Yalnızca arkadaşların sana yazabilir; yabancıdan mesaj gelmez. Her mesaj ve profil raporlanabilir, dilediğin kullanıcıyı engelleyebilirsin.
 
 TOPLULUK
 Oynadığın oyunlar hakkında inceleme yaz, başkalarının incelemelerine yanıt ver, tartışma akışında düşünceni paylaş. Okumak için hesaba gerek yok.
@@ -126,7 +128,7 @@ WITH YOUR FRIENDS
 Create a profile with a username, add friends, and see what everyone is playing. Connect Steam and your Steam friends are found automatically — they do not need to use Gamerisen. Your libraries are compared and the games you can play together are surfaced first.
 
 MESSAGES
-One-to-one chat with your friends: instant messaging, photo sharing and push notifications. Only friends can message you, so nothing arrives from strangers. Every message and profile can be reported, and you can block any user.
+One-to-one chat with your friends: instant messaging and push notifications. Only friends can message you, so nothing arrives from strangers. Every message and profile can be reported, and you can block any user.
 
 COMMUNITY
 Write reviews of the games you play, reply to other people's reviews, and post your take in the discussion feed. No account needed to read.

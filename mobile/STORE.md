@@ -13,9 +13,8 @@ tümüyle geçersiz kaldı.
 |---|---|---|
 | **Ad + e-posta (hesap)** | **Sunucuya** (Firebase Auth) | Hesap oluşturma/giriş, cihazlar arası senkron |
 | **Kullanıcı adı, bio, avatar** | **Sunucuya** (`user_profile:{uid}`) | Herkese açık profil |
-| **Profil fotoğrafı** | **Sunucuya** (Vercel Blob, önce Vision denetimi) | Avatar |
+| **Profil avatarı** | **Sunucuya** (yalnızca ön ayar kimliği) | Avatar |
 | **Sohbet mesajları** | **Sunucuya** (`dm_msgs:{cid}`, Redis, son 500 mesaj) | Mesajlaşma |
-| **Sohbet fotoğrafları** | **Sunucuya** (Vercel Blob, önce Vision denetimi) | Mesajlaşma |
 | **İnceleme / gönderi / liste** | **Sunucuya** | Topluluk içeriği |
 | **Arkadaş grafiği, Steam arkadaşları** | **Sunucuya** | Arkadaşlık, ortak kütüphane |
 | **Çevrimiçi durumu (presence)** | **Sunucuya** (45 sn nabız, yalnızca arkadaşa açık) | Sohbet |
@@ -41,16 +40,16 @@ token'ı görür.
 |---|---|
 | Firebase Auth (Google) | E-posta, şifre doğrulaması |
 | Upstash Redis | Profil, mesaj, liste, arkadaş verisi |
-| Vercel Blob | Sohbet ve profil fotoğrafları |
 | Pusher | Anlık mesaj teslimi |
-| **Google Cloud Vision** | Yüklenen her görsel (SafeSearch denetimi) |
 | **Groq** | Doğal dil arama cümlesi (anlık) |
 | Steam / Xbox / RAWG / ITAD | Oyun ve kütüphane verisi |
 | Expo Push | Bildirim token'ı |
 
-> ⚠️ **Gizlilik politikasında eksik:** `app/privacy/page.jsx` Pusher ve Blob'u
-> anlatıyor ama **Vision** ile **Groq** geçmiyor. Gönderimden önce eklenmeli —
-> Apple veri alan üçüncü tarafların politikada yazmasını bekliyor.
+> ✅ **Politikada hepsi yazılı.** Veri alan tek yapay zekâ servisi Groq
+> (`app/privacy/page.jsx` madde 6). Kullanıcı görsel yüklemesi 2026-09-08
+> itibarıyla tamamen kapalı olduğu için **Google Cloud Vision ve Vercel Blob
+> artık hiçbir veri almıyor** — ikisi de listeden çıkarıldı; Blob'u yalnızca
+> kapatılan üç uç kullanıyordu.
 
 ## App Store Connect — Gizlilik etiketleri (App Privacy)
 
@@ -62,7 +61,6 @@ yok; `mobile/package.json` içinde hiçbir analytics/crash SDK'sı yok →
 |---|---|---|---|
 | **Contact Info** | E-posta, Ad | App Functionality | Evet |
 | **User Content → Emails or Text Messages** | Sohbet mesajları (gönderen, alıcı, içerik) | App Functionality | Evet |
-| **User Content → Photos or Videos** | Sohbet fotoğrafı + profil fotoğrafı | App Functionality | Evet |
 | **User Content → Other User Content** | İncelemeler, gönderiler, listeler, kullanıcı adı, bio, takip listesi | App Functionality | Evet |
 | **Identifiers** | Kullanıcı ID (UID, kullanıcı adı, Steam ID, Xbox), Cihaz ID (push token) | App Functionality | Evet |
 | **Location** | **Coarse Location** — yalnızca şehir adı, isteğe bağlı | App Functionality | Evet |
@@ -94,8 +92,8 @@ Medical **Yok** · Simulated Gambling / Contests / Loot Boxes **Hepsi Hayır**
 
 **Beklenen sonuç: 13+.**
 
-> Realistic Violence "Frequent/Intense" işaretlenirse sonuç **18+** olur.
-> Infrequent seçildi; gerekçe: uygulamanın kendi içeriği katalog verisi, şiddet
+> **KARAR (2026-09-08): Infrequent — hedef 13+.**
+> "Frequent/Intense" işaretlenseydi sonuç 18+ olurdu. Gerekçe: uygulamanın kendi içeriği katalog verisi, şiddet
 > kısa üçüncü taraf fragmanlarında. **Risk:** incelemeci Videolar sekmesinde
 > kanlı bir fragmana denk gelirse Apple derecelendirmeyi kendisi yükseltebilir.
 
@@ -125,7 +123,7 @@ Medical **Yok** · Simulated Gambling / Contests / Loot Boxes **Hepsi Hayır**
 
 | Apple'ın şartı | Durum |
 |---|---|
-| Uygunsuz içeriği süzme | ✅ `content-filter` (metin) + Vision SafeSearch (görsel); video **kapalı** çünkü denetlenemiyor |
+| Uygunsuz içeriği süzme | ✅ `content-filter` (metin). Kullanıcı **görsel yükleyemiyor** — sohbet metin + oyun kartı, avatar hazır setten (`USER_UPLOADS_ENABLED = false`); denetlenemeyen içerik türü uygulamaya hiç girmiyor |
 | Raporlama | ✅ `app/api/social/report` — kullanıcı, mesaj, inceleme, gönderi, liste |
 | Engelleme | ✅ `app/api/social/block` — engelleme her durumda kazanır |
 | Yayınlanmış iletişim bilgisi | ✅ destek sayfası |

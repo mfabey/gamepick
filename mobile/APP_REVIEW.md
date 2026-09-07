@@ -35,7 +35,7 @@ arkadaşı olmayan bir hesapla girerse Mesajlar sekmesi boş açılır ve
 
 - [ ] **A hesabı** (incelemeciye verilecek) ve **B hesabı** (karşı taraf) oluştur
 - [ ] B'den A'ya arkadaşlık isteği gönder, A'dan kabul et
-- [ ] B'den A'ya **3-5 mesaj** yaz — sohbet dolu açılsın, bir de fotoğraf gönder
+- [ ] B'den A'ya **3-5 mesaj** yaz — sohbet dolu açılsın
 - [ ] A ile bir **inceleme** yaz, bir **gönderi** paylaş, bir **koleksiyon/liste** oluştur
 - [ ] A'nın takip listesine birkaç oyun ekle (fiyat karşılaştırma ve widget dolsun)
 - [ ] A'ya bir **Steam hesabı bağla** — kütüphane, Steam arkadaşları, oyun
@@ -82,15 +82,17 @@ NATIVE FUNCTIONALITY (4.2.2) - WHERE TO FIND IT
    need to use Gamerisen.
 7. Game cards: Settings > "Cards". Signed images showing your hours in a game
    and your rank among your friends.
-8. Push notifications, Sign in with Apple, native photo picker with on-device
-   resizing, and on-device reverse geocoding (only a city name is sent).
+8. Push notifications, Sign in with Apple, and on-device reverse geocoding
+   for the optional city tag (only a city name is sent).
 
 The "pick the games you like" first-launch screen from 1.0 has been removed;
 personalisation now starts from the first interaction.
 
 USER-GENERATED CONTENT (1.2)
-- Filtering: prohibited-terms filter on text, Google Cloud Vision SafeSearch on
-  every uploaded image. Video upload is disabled: we cannot moderate it yet.
+- Filtering: users cannot upload images in this version. Chat carries text and
+  app-generated game cards only, and profile avatars come from a fixed preset
+  set, so no user-supplied image enters the app. Text is checked against a
+  prohibited-terms filter.
 - Reporting: "..." on any person, or long-press a post, review, list or message.
   Reports are reviewed within 24 hours.
 - Blocking: same "..." menu. Mutual - no messages, content hidden both ways.
@@ -124,18 +126,18 @@ the same day.
 | Rapor yüzeyi | `ReportSheet` altı ekranda: ana sayfa, topluluk, sohbet, arkadaşlar, liste detayı, kullanıcı profili |
 | Engelleme menüsü | `src/components/PersonMenu.jsx` — "⋯", uzun basma kısayolu da duruyor |
 | Hesap silme yolu | `app/(tabs)/profile.jsx:383` → `/settings` → `app/settings.jsx:291` → `/delete-account` |
-| Video yükleme kapalı | `app/api/social/chat/media/route.js:106` → `VIDEO_DISABLED` |
+| Görsel/video yükleme kapalı | `app/lib/media-moderation.js` → `USER_UPLOADS_ENABLED = false`; sohbet medyası, profil fotoğrafı ve `chat/config` üçü de ondan okuyor |
 | Zevk seçici kaldırıldı | commit `8d48ec3` |
 
 ---
 
 ## 5. Gönderimden önce son kontrol
 
-- [ ] Demo hesap hazır ve **giriş yapılabildiği test edildi**
-- [ ] `MODERATION_PROVIDER` + `GOOGLE_VISION_API_KEY` Vercel'de tanımlı —
-      tanımsızsa fotoğraf gönderimi tamamen kapalı olur ve incelemeci
-      "medya çalışmıyor" der
-- [ ] `CARD_SECRET`, `PUSHER_*`, `BLOB_READ_WRITE_TOKEN`, `STEAM_API_KEY` tanımlı
-- [ ] Gizlilik politikasına Google Vision ve Groq eklendi (bkz. `STORE.md`)
+- [x] Demo hesap hazır ve **giriş yapılabildiği test edildi**
+- [ ] `CARD_SECRET`, `PUSHER_*`, `STEAM_API_KEY` Vercel'de tanımlı
+- [x] Gizlilik politikasına Groq eklendi (madde 6)
+- [x] Görsel yükleme kapalı — `MODERATION_PROVIDER`, `GOOGLE_VISION_API_KEY`
+      ve `BLOB_READ_WRITE_TOKEN` artık **gerekmiyor**
+- [ ] App Privacy formunda **"Photos or Videos" etiketi İŞARETLENMEDİ**
 - [ ] App Privacy formu yayınlandı (**Publish** basıldı)
-- [ ] Yaş sınırı anketi 13+ çıktı
+- [ ] Yaş sınırı anketi 13+ çıktı (Realistic Violence = Infrequent)
