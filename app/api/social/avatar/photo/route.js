@@ -3,7 +3,7 @@ import { guard } from '../../../../lib/rate-guard';
 import { put } from '@vercel/blob';
 import { verifyMobileToken } from '../../../../lib/mobile-auth';
 import { rateLimit, tooManyRequests } from '../../../../lib/rate-limit';
-import { isModerationConfigured, moderateMedia } from '../../../../lib/media-moderation';
+import { isModerationConfigured, moderateMedia, USER_UPLOADS_ENABLED } from '../../../../lib/media-moderation';
 import { getProfile, mergeProfile } from '../../../../lib/social-store';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -47,6 +47,13 @@ function magicMatches(buf, type) {
 export async function POST(request) {
   const user = await verifyMobileToken(request);
   if (!user) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
+
+  // Kullanıcı görsel yüklemesi bu sürümde kapalı (media-moderation.js).
+  // Profil fotoğrafı sohbet fotoğrafıyla AYNI karara tabi: avatar herkese
+  // açık olduğu için denetim yükümlülüğü orada daha da ağır.
+  if (!USER_UPLOADS_ENABLED) {
+    return NextResponse.json({ error: 'MEDIA_DISABLED' }, { status: 503 });
+  }
 
   if (!isModerationConfigured()) {
     return NextResponse.json({ error: 'MEDIA_DISABLED' }, { status: 503 });

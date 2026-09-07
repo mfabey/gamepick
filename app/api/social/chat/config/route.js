@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { verifyMobileToken } from '../../../../lib/mobile-auth';
 import { pusherPublicConfig } from '../../../../lib/pusher-server';
-import { isModerationConfigured } from '../../../../lib/media-moderation';
+import { isModerationConfigured, USER_UPLOADS_ENABLED } from '../../../../lib/media-moderation';
 import { isGifConfigured } from '../../../../lib/gif-provider';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -30,9 +30,15 @@ export async function GET(request) {
 
   const cfg = pusherPublicConfig();
 
-  // Fotoğraf İKİ kapıya birden bağlı: denetim sağlayıcısı VE depolama.
-  // Biri eksikse yükleme ucu 503 dönüyor, o yüzden ikisi de sorulmalı.
-  const photos = isModerationConfigured() && !!process.env.BLOB_READ_WRITE_TOKEN;
+  // FOTOĞRAF DA KAPALI (2026-09-08). Kullanıcı görsel yüklemesi bu sürümde
+  // bilerek devre dışı — gerekçe media-moderation.js içinde.
+  //
+  // Diğer iki kapı (denetim sağlayıcısı VE depolama) kaldırılmadı: bayrak
+  // geri açıldığında ikisi de gerekmeye devam edecek, yeniden yazmak yerine
+  // yerinde duruyorlar.
+  const photos = USER_UPLOADS_ENABLED
+    && isModerationConfigured()
+    && !!process.env.BLOB_READ_WRITE_TOKEN;
 
   return NextResponse.json(
     {
