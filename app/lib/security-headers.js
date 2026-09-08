@@ -37,7 +37,20 @@ const IMG_HOSTS = [
   'https://*.googleusercontent.com',    // Google hesabı avatarı
 ];
 
-/** Steam fragman/video barındırma — `media-src` CSP'de HİÇ YOKTU. */
+/**
+ * Steam fragman/video barındırma — `media-src` CSP'de HİÇ YOKTU.
+ *
+ * ÖLÇÜLDÜ: Steam `appdetails` yanıtındaki `movies[].hls_h264` alanı
+ * `https://video.akamai.steamstatic.com/store_trailers/.../hls_264_master.m3u8`
+ * adresini veriyor; `thumbnail` ise `shared.akamai.steamstatic.com`'da.
+ *
+ * BU LİSTE İKİ DİREKTİFTE BİRDEN GEÇİYOR ve sebebi ayrı:
+ *   · `media-src` — <video> öğesinin oynatabileceği kaynaklar.
+ *   · `connect-src` — hls.js oynatma listesini ve .ts parçalarını XHR ile
+ *     çekiyor; `media-src` bu isteklere BAKMIYOR, onları `connect-src`
+ *     yönetiyor. Yalnızca `media-src` eklenseydi Safari çalışır, Chrome
+ *     ve Firefox sessizce boş ekran verirdi.
+ */
 const MEDIA_HOSTS = [
   'https://video.akamai.steamstatic.com',
   'https://shared.akamai.steamstatic.com',
@@ -55,14 +68,26 @@ const MEDIA_HOSTS = [
  */
 const INLINE_THEME_SCRIPT_HASH = "'sha256-958TBA1B/ltmL6QJtO8/3OxGvdyXrTKdkQOmury9+w8='";
 
-// ── YÜRÜRLÜKTEKİ POLİTİKA — dokunulmadı ─────────────────────────────────────
+// ── YÜRÜRLÜKTEKİ POLİTİKA ───────────────────────────────────────────────────
+//
+// `/videos` (Reels tarzı fragman akışı) için İKİ direktif genişletildi.
+// Başka hiçbir şeye dokunulmadı:
+//
+//  • `media-src` EKLENDİ. Daha önce direktif HİÇ YOKTU, yani `default-src
+//    'self'`e düşüyordu ve Steam'de barınan her <video> kaynağı bloklanırdı.
+//    `blob:` de şart: hls.js MediaSource'u `URL.createObjectURL()` ile
+//    bağlıyor, video öğesinin src'si bir blob adresi oluyor.
+//
+//  • `connect-src`'e Steam video host'ları eklendi — hls.js m3u8 ve .ts
+//    isteklerini XHR ile atıyor (bkz. MEDIA_HOSTS notu).
 export const ENFORCED_CSP =
   "default-src 'self'; " +
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ https://appleid.cdn-apple.com https://accounts.google.com; " +
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
   "font-src 'self' https://fonts.gstatic.com data:; " +
   "img-src 'self' blob: data: https:; " +
-  "connect-src 'self' https://api.rawg.io https://*.steampowered.com https://discord.gg https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ https://accounts.google.com; " +
+  `media-src 'self' blob: ${MEDIA_HOSTS.join(' ')}; ` +
+  `connect-src 'self' https://api.rawg.io https://*.steampowered.com ${MEDIA_HOSTS.join(' ')} https://discord.gg https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ https://accounts.google.com; ` +
   "frame-src 'self' https://www.google.com/recaptcha/ https://recaptcha.google.com/recaptcha/ https://appleid.apple.com https://accounts.google.com; " +
   "frame-ancestors 'none'; form-action 'self'; base-uri 'self'; object-src 'none';";
 
@@ -84,11 +109,13 @@ export const ENFORCED_CSP =
 //    sabitleri — çalışma zamanı isteği değil. Rapor bunu kesinleştirecek.
 //  • connect-src'den api.rawg.io ve *.steampowered.com ÇIKARILDI: bu
 //    çağrılar SUNUCUDAN yapılıyor, tarayıcıdan değil. CSP yalnızca
-//    tarayıcıyı bağlar, dolayısıyla ölü izin.
+//    tarayıcıyı bağlar, dolayısıyla ölü izin. Steam VİDEO host'ları ise
+//    çıkarılamıyor — onlar gerçekten tarayıcıdan isteniyor (`/videos`
+//    sayfasında hls.js m3u8 ve .ts parçalarını XHR ile çekiyor).
 //  • img-src `https:` (her HTTPS host) yerine ADLANDIRILMIŞ liste.
 //  • media-src EKLENDİ — daha önce hiç yoktu, `default-src 'self'`e
-//    düşüyordu. Web'de bugün <video> yok ama trailer alanı sunuluyor;
-//    eklenmesi ileride sessiz bir kırılmayı önler.
+//    düşüyordu. Artık varsayımsal değil: `/videos` sayfası Steam
+//    fragmanlarını oynatıyor. `blob:` hls.js'in MediaSource adresi için.
 //  • style-src'de `'unsafe-inline'` KALDI: proje baştan sona React inline
 //    style kullanıyor (`style={{...}}`), bunlar style attribute üretiyor ve
 //    hash'lenemez. Kaldırmak arayüzü tümden çıplak bırakırdı.
@@ -98,8 +125,8 @@ export const REPORT_ONLY_CSP =
   "style-src 'self' 'unsafe-inline'; " +
   "font-src 'self' data:; " +
   `img-src 'self' blob: data: ${IMG_HOSTS.join(' ')}; ` +
-  "connect-src 'self' https://accounts.google.com; " +
-  `media-src 'self' ${MEDIA_HOSTS.join(' ')}; ` +
+  `connect-src 'self' ${MEDIA_HOSTS.join(' ')} https://accounts.google.com; ` +
+  `media-src 'self' blob: ${MEDIA_HOSTS.join(' ')}; ` +
   "frame-src 'self' https://appleid.apple.com https://accounts.google.com; " +
   "frame-ancestors 'none'; form-action 'self'; base-uri 'self'; object-src 'none'; " +
   'report-uri /api/csp-report;';

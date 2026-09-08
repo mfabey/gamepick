@@ -20,6 +20,7 @@ export default function NavBar() {
   const NAV_LINKS = [
     { href: '/',        label: t('nav.home') },
     { href: '/games',   label: t('nav.games') },
+    { href: '/videos',  label: t('nav.videos') },
     { href: '/news',    label: t('nav.news') },
     { href: '/library', label: t('nav.library') },
   ];

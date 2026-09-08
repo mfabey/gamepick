@@ -9,6 +9,7 @@ const TRANSLATIONS = {
     // Nav links
     'nav.home': 'Anasayfa',
     'nav.games': 'Oyunlar',
+    'nav.videos': 'Videolar',
     'nav.news': 'Haberler',
     'nav.dlc': 'DLC',
     'nav.library': 'Kütüphane',
@@ -173,6 +174,7 @@ const TRANSLATIONS = {
     // Nav links
     'nav.home': 'Home',
     'nav.games': 'Games',
+    'nav.videos': 'Videos',
     'nav.news': 'News',
     'nav.dlc': 'DLC',
     'nav.library': 'Library',
