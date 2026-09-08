@@ -5,6 +5,7 @@
 const ADULT_REGEX_PATTERNS = [
   /\b(?:18\+|\+18|18plus|18-plus|18_plus|r-?18\+?|r-?18g|r-?18x|21\+|adults?\s*only|mature\s*18\+?)\b/i,
   /(?:^|\s|\W)(?:18\s*\+|\+\s*18)(?:$|\s|\W)/i,
+  /\b(?:being\s+a\s+dik|dik|freshwomen|college\s+kings|milfy\s+city|acting\s+lessons|treasure\s+of\s+nadia|genesis\s+order|summertime\s+saga)\b/i,
   /\b(?:xxx|x-rated|hentai|eroge|ecchi|nsfw|uncensored|ahegao|futanari|bukkake|creampie|doujinshi)\b/i,
   /\b(?:succubus|stripper|peeping|voyeur|futa|oppai|waifu|milf|femdom|pegging|dildo|masturbat\w*)\b/i,
   /\b(?:boobs?|tits?|titties|titty|pussy|vagina|penis|clitoris|orgasm|cuckold|camgirl|striptease)\b/i,
@@ -12,7 +13,9 @@ const ADULT_REGEX_PATTERNS = [
   /\b(?:yuri|yaoi|harem|lewd|panty|panties|ejaculat\w*|intercourse|sensual|sexual)\b/i,
   /\b(?:sexy\s*(?:girl|anime|waifu|babe|beach|puzzle|match|cards?|simulator)|hot\s*(?:girl|anime|babe|waifu)s?)\b/i,
   /\b(?:hentai\s*\w+|anime\s*girls?\s*18\+|erotic\s*\w+|adult\s*game|adult\s*novel|nude\s*\w+)\b/i,
-  /\b(?:toys\s*18\+?|toy\s*18\+?)\b/i,
+  /\b(?:toys\s*18\+?|toy\s*18\+?|naughty\s*\w+|horny\s*\w+|smut|smutty|busty\s*\w+)\b/i,
+  /\b(?:stepmom|stepsister|stepdaughter|stepmother|step-mom|step-sister|step-daughter|step-mother)\b/i,
+  /\b(?:blowjob|handjob|footjob|cumshot|deepthroat|facial|gangbang|thicc\s*\w+)\b/i,
 ];
 
 const FORBIDDEN_SUBSTRINGS = [
@@ -25,16 +28,22 @@ const FORBIDDEN_SUBSTRINGS = [
   'r18', 'r-18', '18+', '+18', '18plus', '18-plus', '18_plus', 'adultsonly', 'adult-only',
   'erocart', 'doujin', 'doujinshi', 'nudity', 'naked', 'submissive', 'dominatrix',
   'deepthroat', 'femdom', 'footfetish', 'foot-fetish', 'pegging', 'incest',
+  'being a dik', 'being-a-dik', 'freshwomen', 'fresh-women', 'college kings', 'college-kings',
+  'milfy city', 'milfy-city', 'acting lessons', 'acting-lessons', 'treasure of nadia',
+  'genesis order', 'summertime saga', 'stepmom', 'stepsister', 'stepdaughter', 'stepmother',
+  'naughty', 'horny', 'kinky', 'smut', 'smutty', 'pervert', 'perverted', 'busty',
+  'blowjob', 'handjob', 'footjob', 'cumshot', 'gangbang',
 ];
 
 const STANDALONE_FORBIDDEN = new Set([
   'sex', 'adult', 'adults', 'nude', 'nudity', 'naked', 'lust', 'xxx', 'rape', 'raping',
   'sadism', 'masochism', 'condom', 'babe', 'babes', 'slut', 'sluts', 'whore', 'whores',
-  'pussy', 'dick', 'cock', 'cum', 'anal', 'eroge', 'oppai', 'porno', 'lewd', 'waifu',
+  'pussy', 'dick', 'dik', 'cock', 'cum', 'anal', 'eroge', 'oppai', 'porno', 'lewd', 'waifu',
   'harem', 'milf', 'stripper', 'bdsm', 'yuri', 'yaoi', 'hentai', 'erotic', 'erotica',
   'ecchi', 'nsfw', 'uncensored', 'boob', 'boobs', 'tits', 'tit', 'titties', 'titty',
   'dildo', 'vagina', 'penis', 'masturbation', 'masturbate', 'clitoris', 'orgasm',
-  'panties', 'panty', 'fetish', 'toys18', 'r18', '18plus', '18+',
+  'panties', 'panty', 'fetish', 'toys18', 'r18', '18plus', '18+', 'naughty', 'horny',
+  'kinky', 'smut', 'busty', 'thicc', 'blowjob', 'handjob', 'cumshot', 'freshwomen',
 ]);
 
 const FORBIDDEN_TAGS = new Set([
