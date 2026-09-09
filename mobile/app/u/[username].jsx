@@ -72,6 +72,27 @@ export default function UserProfileScreen() {
   const [bulunamadi, setBulunamadi] = useState(false);
   const [islemde, setIslemde] = useState(false);
   const [menuAcik, setMenuAcik] = useState(false);
+  // ⋯ AYNI MENÜYÜ AÇIYOR, İKİNCİSİNİ DEĞİL. Bu ekrandaki bütün içerik TEK
+  // kişiye ait, yani menü de aynı kişinin menüsü. Ayrı bir PersonMenu
+  // koymak, engelleme davranışını da ikiye ayırırdı (buradaki sürüm
+  // engelledikten sonra ekrandan çıkıyor — engellenen kişinin profilinde
+  // kalmak anlamsız).
+  //
+  // Değişen tek şey ŞİKÂYETİN HEDEFİ: başlıktaki ⋯ kişiyi, içerik
+  // satırındaki ⋯ o içeriği hedefliyor.
+  const [icerikHedef, setIcerikHedef] = useState(null);
+  const acIcerikMenu = useCallback((_kisi, hedef) => {
+    setIcerikHedef(hedef);
+    setMenuAcik(true);
+  }, []);
+
+  // Başlıktaki ⋯ HEDEFİ SIFIRLIYOR. Bir kez içerik menüsü açıldıktan sonra
+  // `icerikHedef` dolu kalırdı ve başlıktan açılan şikâyet o içeriği
+  // hedeflerdi — sessiz ve yanlış bir kayıt.
+  const acBaslikMenu = useCallback(() => {
+    setIcerikHedef(null);
+    setMenuAcik(true);
+  }, []);
   const [sikayet, setSikayet] = useState(false);
 
   const yukle = useCallback(async (hedefTab, { tazele = false } = {}) => {
@@ -244,6 +265,8 @@ export default function UserProfileScreen() {
       return (
         <ProfileReviewRow
           review={item}
+          onMenu={(k) => acIcerikMenu(k, { targetType: 'review', targetId: `${item.appid}:${item.uid}` })}
+          onLongPress={() => acIcerikMenu(item.author, { targetType: 'review', targetId: `${item.appid}:${item.uid}` })}
           onReplies={() => router.push('/post/' + encodeURIComponent('r:' + item.appid + ':' + item.uid))}
           onPress={() => router.push({
             pathname: '/game/[id]',
@@ -252,7 +275,13 @@ export default function UserProfileScreen() {
         />
       );
     }
-    return <PostCard post={item} compact />;
+    return (
+      <PostCard
+        post={item}
+        compact
+        onMenu={(k) => acIcerikMenu(k, { targetType: 'post', targetId: String(item.id) })}
+      />
+    );
   };
 
   return (
@@ -260,7 +289,7 @@ export default function UserProfileScreen() {
       <Ust
         onBack={() => router.back()}
         title={profil?.username ? `@${profil.username}` : `@${username}`}
-        onMore={profil ? () => setMenuAcik(true) : undefined}
+        onMore={profil ? acBaslikMenu : undefined}
         colors={colors} styles={styles} t={t}
       />
 
@@ -319,11 +348,13 @@ export default function UserProfileScreen() {
         onSec={menuSec}
       />
 
+      {/* HEDEF `icerikHedef`E GÖRE DEĞİŞİYOR: içerik satırından gelindiyse
+          o gönderi/inceleme, başlıktan gelindiyse kişinin kendisi. */}
       <ReportSheet
         visible={sikayet}
-        onClose={() => setSikayet(false)}
-        targetType="user"
-        targetId={profil?.uid}
+        onClose={() => { setSikayet(false); setIcerikHedef(null); }}
+        targetType={icerikHedef?.targetType || 'user'}
+        targetId={icerikHedef?.targetId || profil?.uid}
         targetLabel={profil ? `@${profil.username}` : ''}
       />
     </SafeAreaView>

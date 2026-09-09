@@ -9,6 +9,10 @@ import { radius, spacing, type, PRESSED, NUMERIC, TOUCH_MIN, avatar as avatarSiz
 import { useStyles, useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useQuery } from '../hooks/useQuery';
+import { useModerasyon } from '../hooks/useModerasyon';
+import { useEngelliler } from '../hooks/useEngelliler';
+import { suz } from '../services/engel';
+import ModerasyonKatmani from './ModerasyonKatmani';
 import { getGameReviews } from '../api/social';
 import { getSession } from '../services/session';
 
@@ -37,7 +41,7 @@ import { getSession } from '../services/session';
 const GOSTERILEN = 3;
 
 /** Tek inceleme satırı — oyun sayfasında oyun adı YOK, zaten o sayfadayız. */
-function Row({ review, onOpenThread, onAuthor }) {
+function Row({ review, onOpenThread, onAuthor, onMenu }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const { t, lang } = useLanguage();
@@ -47,6 +51,7 @@ function Row({ review, onOpenThread, onAuthor }) {
 
   return (
     <View style={styles.row}>
+      <View style={styles.rowHeadWrap}>
       <Pressable style={styles.rowHead} onPress={onAuthor}>
         <Avatar avatar={review.author?.avatar} name={ad} size={avatarSize.md} />
         <Text style={styles.name} numberOfLines={1}>{ad}</Text>
@@ -62,6 +67,24 @@ function Row({ review, onOpenThread, onAuthor }) {
           color={review.recommended ? colors.green : colors.text3}
         />
       </Pressable>
+
+      {/* ⋯ BAŞLIK PRESSABLE'ININ DIŞINDA. İçine konsaydı menüye basmak
+          aynı anda 'yazarın profiline git' basmasını da tetiklerdi —
+          iç içe Pressable'da dış olan da ateşliyor.
+          Guideline 1.2: oyun sayfasındaki incelemeler de kullanıcı içeriği
+          ve burada hiçbir şikâyet yolu yoktu. */}
+      {onMenu ? (
+        <Pressable
+          onPress={() => onMenu(review.author)}
+          hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel={t('a11y.more')}
+          style={({ pressed }) => [pressed && PRESSED]}
+        >
+          <Ionicons name="ellipsis-horizontal" size={16} color={colors.text3} />
+        </Pressable>
+      ) : null}
+      </View>
 
       <Text style={styles.text} numberOfLines={3}>{review.text}</Text>
 
@@ -95,6 +118,11 @@ export default function GameReviews({ appid, gameName }) {
   const { t } = useLanguage();
   const router = useRouter();
   const [yazma, setYazma] = useState(false);
+  // MODERASYON KATMANI BURADA, ÇAĞIRANDA DEĞİL. Oyun detayı ekranı zaten
+  // uzun; incelemeler bu bileşenin işi, moderasyonları da öyle. Prop zinciri
+  // kurmak çağıranı bu bileşenin iç yapısına bağlardı.
+  const mod = useModerasyon();
+  const engelSurumu = useEngelliler();
 
   const { data, refetch } = useQuery(
     appid ? `gamerev:${appid}` : null,
@@ -109,8 +137,11 @@ export default function GameReviews({ appid, gameName }) {
     const benimUid = data?.mine?.uid;
     const digerleri = benimUid ? hepsi.filter((r) => r.uid !== benimUid) : hepsi;
     const benim = benimUid ? hepsi.find((r) => r.uid === benimUid) : null;
-    return benim ? [benim, ...digerleri] : digerleri;
-  }, [data]);
+    // Engellenen kişinin incelemesi ANINDA düşüyor; sunucu bir sonraki
+    // çekimde zaten süzüyor (bkz. services/engel.js).
+    const sonuc = benim ? [benim, ...digerleri] : digerleri;
+    return suz(sonuc, (r) => r?.author?.uid || r?.uid);
+  }, [data, engelSurumu]);
 
   const [hepsiAcik, setHepsiAcik] = useState(false);
   const gorunen = hepsiAcik ? liste : liste.slice(0, GOSTERILEN);
@@ -192,6 +223,7 @@ export default function GameReviews({ appid, gameName }) {
           review={r}
           onOpenThread={() => konuAc(r)}
           onAuthor={() => r.author?.username && router.push(`/u/${r.author.username}`)}
+          onMenu={(k) => mod.acMenu(k, { targetType: 'review', targetId: `${r.appid}:${r.uid}` })}
         />
       ))}
 
@@ -224,6 +256,8 @@ export default function GameReviews({ appid, gameName }) {
         existing={data?.mine || null}
         onSaved={() => { setYazma(false); refetch(); }}
       />
+      <ModerasyonKatmani mod={mod} />
+
     </View>
   );
 }
@@ -245,7 +279,10 @@ const makeStyles = (colors) => StyleSheet.create({
     paddingVertical: spacing.s16,
     borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.cardBorder,
   },
-  rowHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.s8 },
+  // Sarmalayıcı YATAY: başlık satırı ile ⋯ yan yana. rowHead flex:1
+  // alıyor, yani ad ve rozetler yeri doldurup düğmeyi sağa itiyor.
+  rowHeadWrap: { flexDirection: 'row', alignItems: 'center', gap: spacing.s8 },
+  rowHead: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: spacing.s8 },
   name: { flex: 1, minWidth: 0, fontSize: type.subhead, fontWeight: '600', color: colors.text },
   verified: {
     alignSelf: 'flex-start', height: 24, flexDirection: 'row', alignItems: 'center',
