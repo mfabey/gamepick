@@ -189,7 +189,7 @@ function GameCard({ game, compact = false, cardWidth, onPriceUpdate }) {
     ? livePrice.isFree
     : !!game.isFree;
   const isOnSale = (livePrice?.discount > 0) && !isFree;
-  const href     = game.rawgSlug ? `/game/rawg/${game.rawgSlug}` : `/game/rawg/${game.id}`;
+  const href     = game.rawgSlug ? `/game/${game.rawgSlug}` : `/game/${game.id}`;
   const mcColor  = game.metacritic >= 80 ? '#4ade80' : game.metacritic >= 60 ? '#fbbf24' : '#f87171';
   const genres   = (game.genres || []).slice(0, 2).join(' · ');
 

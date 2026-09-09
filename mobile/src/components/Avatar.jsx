@@ -25,7 +25,7 @@ import { getAvatarPreset } from '../utils/avatar';
 // ─────────────────────────────────────────────────────────────────────────────
 
 function isPhoto(v) {
-  return typeof v === 'string' && /^https?:\/\//.test(v);
+  return typeof v === 'string' && (/^https?:\/\//.test(v) || /^data:image\//.test(v));
 }
 
 /**

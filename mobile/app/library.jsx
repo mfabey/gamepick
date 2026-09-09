@@ -1,7 +1,7 @@
 import { memo, useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View, Text, TextInput, Pressable, ScrollView,
-  StyleSheet, Alert,
+  StyleSheet, Alert, RefreshControl,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
@@ -38,7 +38,11 @@ export default function LibraryScreen() {
   const router = useRouter();
 
   // Paylaşımlı kütüphane fetch'i (Home önericisi ile aynı cache → çift fetch yok, anlık açılış)
+  // TEK AD: iki dal aynı fonksiyonu `libTazele` ve `refetchLib` diye
+  // adlandırmıştı. İkisini de tutmak aynı şeyin iki takma adı olurdu;
+  // çevrimdışı bandı da aşağı çekme de artık `libTazele` çağırıyor.
   const { steam: steamLibs, xbox: xboxRaw, steamGames, xboxGames, loading: libLoading, ts: libTs, refetch: libTazele } = useConnectedLibrary();
+  const [refreshing, setRefreshing] = useState(false);
   const xboxErr = xboxRaw?.error || null;
   const xboxLib = xboxErr ? null : xboxRaw;
 
@@ -313,6 +317,20 @@ export default function LibraryScreen() {
             />
           ) : null}
           ListFooterComponent={<View style={{ height: TAB_SPACE }} />}
+          refreshControl={(
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={async () => {
+                setRefreshing(true);
+                try {
+                  if (libTazele) await libTazele();
+                } finally {
+                  setRefreshing(false);
+                }
+              }}
+              tintColor={colors.text2}
+            />
+          )}
         />
         </Reveal>
       )}

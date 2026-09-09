@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { signValue, readValue, SESSION_TTL_SEC, LINK_TTL_SEC } from '../../../lib/session-cookie';
 import { cookies } from 'next/headers';
 import { redisCmd, redisGetJSON, redisSetJSON } from '../../../lib/redis';
-import { mergeProfile } from '../../../lib/social-store';
+import { mergeProfile, getProfile } from '../../../lib/social-store';
 
 export const dynamic = 'force-dynamic';
 
@@ -73,31 +73,49 @@ export async function GET() {
       return NextResponse.json({ user: null });
     }
 
+    // Mobil veya sitedeki en güncel profil bilgilerini Redis'ten çekip birleştir
+    let profile = null;
+    try {
+      profile = await getProfile(user.uid);
+    } catch {}
+
+    const enrichedUser = {
+      ...user,
+      ...(profile || {}),
+      username: profile?.username || user.username || null,
+      displayName: profile?.displayName || user.displayName || user.name || null,
+      avatar: profile?.avatar || user.avatar || user.photoURL || null,
+      bio: profile?.bio || user.bio || null,
+    };
+
     const connections = await getUserConnections(user.uid);
+    const steamAccounts = Array.isArray(connections.steamAccounts)
+      ? connections.steamAccounts
+      : (connections.steam?.steamId ? [connections.steam] : []);
+    const steamUser = steamAccounts[0] || null;
+    const xboxUser = connections.xbox || null;
 
     // Auto-cache profile and links to Redis
     try {
-      await mergeProfile(user.uid, user);
-      if (connections.steam && connections.steam.steamId) {
-        await redisCmd(['SET', `steam_to_uid:${connections.steam.steamId}`, user.uid]);
-      }
-      if (connections.steamAccounts && Array.isArray(connections.steamAccounts)) {
-        for (const acc of connections.steamAccounts) {
+      await mergeProfile(user.uid, enrichedUser);
+      if (steamAccounts.length > 0) {
+        for (const acc of steamAccounts) {
           if (acc.steamId) {
             await redisCmd(['SET', `steam_to_uid:${acc.steamId}`, user.uid]);
           }
         }
       }
       // Simülasyon oturumu indekslenmez — gerekçe login/route.js'te.
-      if (connections.xbox && connections.xbox.gamertag && !connections.xbox.isMock) {
-        await redisCmd(['SET', `xbox_to_uid:${connections.xbox.gamertag}`, user.uid]);
+      if (xboxUser && xboxUser.gamertag && !xboxUser.isMock) {
+        await redisCmd(['SET', `xbox_to_uid:${xboxUser.gamertag}`, user.uid]);
       }
     } catch {}
 
     const response = NextResponse.json({
-      user,
-      steamUser: connections.steam || null,
-      xboxUser: connections.xbox || null,
+      user: enrichedUser,
+      steamUser,
+      steamAccounts,
+      xboxUser,
     });
 
     if (userWasRestored) {
@@ -110,25 +128,40 @@ export async function GET() {
       });
     }
 
-    // Synchronize cookies to this device if they are in Redis but missing locally
-    if (connections.steam && !cookieStore.get('gp_steam_session')) {
-      response.cookies.set('gp_steam_session', await signValue(connections.steam, LINK_TTL_SEC), {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 60 * 60 * 24 * 30, // 30 days
-        path: '/',
-        sameSite: 'lax',
-      });
+    const cookieOpts = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: LINK_TTL_SEC,
+    };
+
+    // ÇEREZLER REDIS'E GÖRE YAZILIYOR VE SİLİNİYOR (main'in yapısı).
+    // Öncesi "yoksa yaz" idi; hesap ayrıldığında eski çerez cihazda kalıyor
+    // ve bağlantı kopmuş görünmüyordu. Artık tek doğruluk kaynağı Redis.
+    //
+    // DEĞERLER İMZALI (bu dalın kuralı). Main düz JSON yazıyordu; bu ağaçta
+    // aynı çerezleri okuyan her yer `readValue` kullanıyor (steam-owner.js,
+    // auth/me, oyun-merged, xbox-library) ve imzasız değeri REDDEDER. Düz
+    // JSON birleştirilseydi Steam ve Xbox bağlantısı web'de sessizce ölürdü.
+    if (steamAccounts.length > 0) {
+      response.cookies.set('gp_steam_accounts', await signValue(steamAccounts, LINK_TTL_SEC), cookieOpts);
+      response.cookies.set('gp_steam_session', await signValue(steamAccounts[0], LINK_TTL_SEC), cookieOpts);
+    } else {
+      if (cookieStore.get('gp_steam_session')) {
+        response.cookies.set('gp_steam_session', '', { ...cookieOpts, maxAge: 0 });
+      }
+      if (cookieStore.get('gp_steam_accounts')) {
+        response.cookies.set('gp_steam_accounts', '', { ...cookieOpts, maxAge: 0 });
+      }
     }
 
-    if (connections.xbox && !cookieStore.get('gp_xbox_session')) {
-      response.cookies.set('gp_xbox_session', await signValue(connections.xbox, LINK_TTL_SEC), {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 60 * 60 * 24 * 30, // 30 days
-        path: '/',
-        sameSite: 'lax',
-      });
+    if (xboxUser) {
+      response.cookies.set('gp_xbox_session', await signValue(xboxUser, LINK_TTL_SEC), cookieOpts);
+    } else {
+      if (cookieStore.get('gp_xbox_session')) {
+        response.cookies.set('gp_xbox_session', '', { ...cookieOpts, maxAge: 0 });
+      }
     }
 
     return response;

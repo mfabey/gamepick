@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import GameImage from '../components/GameImage';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, normalizeName } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import ActivityHeatmap from '../components/ActivityHeatmap';
 
@@ -308,6 +308,8 @@ function AccountCard({ name, status, connected, color, initials, onToggle, lang,
 ───────────────────────────────────────────── */
 function WishlistItem({ game, onRemove, lang }) {
   const [hovered, setHovered] = useState(false);
+  const href = game.slug ? `/game/${game.slug}` : (game.rawgSlug ? `/game/${game.rawgSlug}` : (game.appid ? `/game/${game.appid}` : `/game/${game.id}`));
+
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 14,
@@ -319,10 +321,15 @@ function WishlistItem({ game, onRemove, lang }) {
         flexShrink: 0, overflow: 'hidden', position: 'relative',
         border: '1px solid var(--border)', boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
       }}>
-        <GameImage game={game} fill sizes="52px" />
+        {game.image ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img src={game.image} alt={game.name || ''} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        ) : (
+          <GameImage game={game} fill sizes="52px" />
+        )}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <Link href={game.rawgSlug ? `/game/rawg/${game.rawgSlug}` : `/game/rawg/${game.id}`}>
+        <Link href={href} style={{ textDecoration: 'none' }}>
           <p
             onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
             style={{
@@ -582,9 +589,27 @@ export default function ProfilePage() {
   useEffect(() => { if (ready && !hasSession) router.push('/login'); }, [ready, hasSession, router]);
 
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem('gamerisen_wishlist') || localStorage.getItem('gamepick_wishlist') || '[]');
-    setWishlist(stored);
-  }, []);
+    try {
+      const stored = JSON.parse(localStorage.getItem('gamerisen_wishlist') || localStorage.getItem('gamepick_wishlist') || '[]');
+      if (Array.isArray(stored) && stored.length > 0) {
+        setWishlist(stored);
+      }
+    } catch {}
+
+    if (user?.uid) {
+      fetch('/api/user/data')
+        .then(r => r.ok ? r.json() : null)
+        .then(d => {
+          if (d && Array.isArray(d.wishlist)) {
+            setWishlist(d.wishlist);
+            try {
+              localStorage.setItem('gamerisen_wishlist', JSON.stringify(d.wishlist));
+            } catch {}
+          }
+        })
+        .catch(() => {});
+    }
+  }, [user?.uid]);
 
   useEffect(() => {
     if (!ready || !hasSession) return;
@@ -598,9 +623,19 @@ export default function ProfilePage() {
   }, [ready, hasSession, steamUser, xboxUser]);
 
   const removeFromWishlist = (id) => {
-    const updated = wishlist.filter(w => w.id !== id);
-    localStorage.setItem('gamerisen_wishlist', JSON.stringify(updated));
+    const updated = wishlist.filter(w => String(w.id) !== String(id) && (!w.appid || String(w.appid) !== String(id)));
+    try {
+      localStorage.setItem('gamerisen_wishlist', JSON.stringify(updated));
+    } catch {}
     setWishlist(updated);
+
+    if (user?.uid) {
+      fetch('/api/user/data', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wishlist: updated, overwriteWishlist: true }),
+      }).catch(() => {});
+    }
   };
 
   /* ── Loading guard ── */
@@ -619,9 +654,23 @@ export default function ProfilePage() {
     ? nameParts.map(n => n[0]).join('').toUpperCase().slice(0, 2)
     : 'US';
 
-  const steamGamesCount = steamUser ? (steamLib?.games?.length || ownedGames?.size || 0) : 0;
-  const xboxGamesCount = xboxUser ? (xboxLib?.games?.length || (xboxOwnedGames?.size || 0) + (gamePassGames?.size || 0)) : 0;
-  const totalConnectedGames = steamGamesCount + xboxGamesCount;
+  const steamGamesList = steamLib?.games || [];
+  const xboxGamesList = xboxLib?.games || [];
+  const steamNames = new Set(steamGamesList.map(g => normalizeName(g.name || '')));
+  if (steamNames.size === 0 && ownedGames?.size > 0) {
+    ownedGames.forEach(n => steamNames.add(n));
+  }
+
+  // Steam öncelikli: Xbox'taki oyun Steam'de varsa mükerrer sayılmaz
+  const uniqueXboxGamesList = xboxGamesList.filter(g => {
+    const n = normalizeName(g.name || '');
+    return n && !steamNames.has(n);
+  });
+
+  const steamGamesCount = steamUser ? (steamGamesList.length || ownedGames?.size || 0) : 0;
+  const rawXboxCount = xboxUser ? (xboxGamesList.length || (xboxOwnedGames?.size || 0) + (gamePassGames?.size || 0)) : 0;
+  const uniqueXboxCount = steamUser ? uniqueXboxGamesList.length : rawXboxCount;
+  const totalConnectedGames = steamUser ? (steamGamesCount + uniqueXboxCount) : rawXboxCount;
 
   const getPlaytimeStat = () => {
     if (!steamUser) return '0';
@@ -767,7 +816,9 @@ export default function ProfilePage() {
               boxShadow: '0 8px 32px rgba(0,0,0,0.45)',
             }}>
               <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden', background: 'var(--bg-card)', border: '3px solid var(--bg-body)' }}>
-                {steamUser?.avatar
+                {user?.avatar
+                  ? <img src={user.avatar} alt={displayName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : steamUser?.avatar
                   ? <img src={steamUser.avatar} alt={displayName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, rgba(201,133,10,0.25), rgba(201,133,10,0.05))', fontSize: 34, fontWeight: 900, color: 'var(--accent)' }}>{initials}</div>
                 }
@@ -779,9 +830,24 @@ export default function ProfilePage() {
 
           {/* Name + badges */}
           <div style={{ paddingBottom: 8, flex: 1, minWidth: 0 }}>
-            <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: 26, fontWeight: 900, color: 'var(--text)', letterSpacing: '-0.6px', marginBottom: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: 26, fontWeight: 900, color: 'var(--text)', letterSpacing: '-0.6px', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {displayName}
             </h1>
+            {user?.username && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 700 }}>
+                  @{user.username}
+                </span>
+                <Link href={`/u/${user.username}`} style={{ fontSize: 11.5, color: 'var(--text-3)', textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 9px', borderRadius: 6, background: 'var(--bg-input)' }}>
+                  {lang === 'tr' ? 'Herkese Açık Profil →' : 'Public Profile →'}
+                </Link>
+              </div>
+            )}
+            {user?.bio && (
+              <p style={{ fontSize: 12.5, color: 'var(--text-2)', maxWidth: 520, marginBottom: 8, lineHeight: 1.5 }}>
+                {user.bio}
+              </p>
+            )}
             {/* Platform chips */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               <span style={{ padding: '4px 10px', borderRadius: 999, background: 'rgba(201,133,10,0.12)', border: '1px solid rgba(201,133,10,0.25)', fontSize: 11.5, color: 'var(--accent)', fontWeight: 700 }}>
@@ -821,7 +887,7 @@ export default function ProfilePage() {
             value={libsLoading && (steamUser || xboxUser) ? '...' : totalConnectedGames.toString()}
             label={lang === 'tr' ? 'Toplam Oyun' : 'Total Games'}
             color="var(--accent)"
-            sub={steamGamesCount > 0 && xboxGamesCount > 0 ? `${steamGamesCount} Steam · ${xboxGamesCount} Xbox` : undefined}
+            sub={steamGamesCount > 0 && rawXboxCount > 0 ? (uniqueXboxCount > 0 ? `${steamGamesCount} Steam · +${uniqueXboxCount} Xbox` : `${steamGamesCount} Steam`) : undefined}
             icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>}
           />
           <BigStatCard
@@ -893,7 +959,7 @@ export default function ProfilePage() {
 
                 <AccountCard
                   name="Xbox / Game Pass"
-                  status={xboxUser ? (xboxUser.isMock ? (lang === 'tr' ? `Simülasyon — ${xboxGamesCount} oyun` : `Simulation — ${xboxGamesCount} games`) : (lang === 'tr' ? `Bağlı — ${xboxGamesCount} oyun` : `Connected — ${xboxGamesCount} games`)) : (lang === 'tr' ? 'Bağlı değil' : 'Not connected')}
+                  status={xboxUser ? (xboxUser.isMock ? (lang === 'tr' ? `Simülasyon — ${rawXboxCount} oyun` : `Simulation — ${rawXboxCount} games`) : (lang === 'tr' ? `Bağlı — ${rawXboxCount} oyun` : `Connected — ${rawXboxCount} games`)) : (lang === 'tr' ? 'Bağlı değil' : 'Not connected')}
                   connected={!!xboxUser} color="#16a34a" initials="XBX" avatar={xboxUser?.avatar}
                   profileUrl={xboxUser?.gamertag ? `https://live.xbox.com/Profile?Gamertag=${encodeURIComponent(xboxUser.gamertag)}` : null}
                   onToggle={() => { if (xboxUser) xboxLogout(); else window.location.href = '/api/auth/xbox'; }}
@@ -930,7 +996,7 @@ export default function ProfilePage() {
               <div style={{ background: 'linear-gradient(135deg, rgba(201,133,10,0.07), rgba(201,133,10,0.02))', border: '1px solid rgba(201,133,10,0.2)', borderRadius: 16, padding: '18px 20px' }}>
                 <p style={{ fontSize: 15, fontWeight: 800, color: 'var(--text)', marginBottom: 6, fontFamily: 'var(--font-heading)' }}>{recommended.name}</p>
                 <p style={{ fontSize: 12.5, color: 'var(--text-2)', lineHeight: 1.6, marginBottom: 14 }}>{lang === 'tr' ? recommended.descTr : recommended.descEn}</p>
-                <Link href={`/game/rawg/${recommended.slug}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 9, background: 'var(--accent)', color: '#fff', fontSize: 12.5, fontWeight: 700, boxShadow: '0 4px 12px var(--accent-glow)', textDecoration: 'none', transition: 'all 0.18s' }}
+                <Link href={`/game/${recommended.slug}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 9, background: 'var(--accent)', color: '#fff', fontSize: 12.5, fontWeight: 700, boxShadow: '0 4px 12px var(--accent-glow)', textDecoration: 'none', transition: 'all 0.18s' }}
                   onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 18px var(--accent-glow)'; }}
                   onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 4px 12px var(--accent-glow)'; }}
                 >

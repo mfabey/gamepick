@@ -3,7 +3,7 @@ import { signValue, SESSION_TTL_SEC } from '../../../lib/session-cookie';
 import { mintFamily } from '../../../lib/refresh-token';
 import { guard } from '../../../lib/rate-guard';
 import { redisSetJSON } from '../../../lib/redis';
-import { mergeProfile } from '../../../lib/social-store';
+import { mergeProfile, getProfile } from '../../../lib/social-store';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Sign in with Apple — Guideline 4.8 uyumu (e-posta/şifre girişi sunduğumuz için
@@ -85,9 +85,17 @@ export async function POST(request) {
       } catch { /* profil adı güncellenemedi, girişi engellemez */ }
     }
 
+    let profile = null;
+    try {
+      profile = await getProfile(localId);
+    } catch {}
+
     const user = {
       uid: localId,
-      name: displayName || (email ? email.split('@')[0] : 'Apple Kullanıcısı'),
+      name: profile?.displayName || displayName || (email ? email.split('@')[0] : 'Apple Kullanıcısı'),
+      username: profile?.username || null,
+      avatar: profile?.avatar || null,
+      bio: profile?.bio || null,
       email: email || '',
       provider: 'apple',
     };
@@ -107,6 +115,7 @@ export async function POST(request) {
     // `web: true` geldiğinde çerez de kuruluyor — mobil bu başlığı yok sayar,
     // bu yüzden mevcut mobil akış etkilenmiyor.
     if (body.web === true) {
+      // ÇEREZ İMZALI VE DAR — gerekçe google-signin ile birebir aynı.
       response.cookies.set('gp_user_session', await signValue({
         uid: user.uid, name: user.name, email: user.email,
       }, SESSION_TTL_SEC), {

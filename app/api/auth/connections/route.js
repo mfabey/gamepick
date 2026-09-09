@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { redisCmd, redisGetJSON, redisSetJSON } from '../../../lib/redis';
 import { verifyMobileToken } from '../../../lib/mobile-auth';
+import { mergeProfile } from '../../../lib/social-store';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Bağlı mağazalar — MOBİL için.
@@ -55,8 +56,7 @@ function slimXbox(x) {
     xuid: String(x.xuid),
     gamertag: String(x.gamertag || '').slice(0, 120),
     avatar: String(x.avatar || '').slice(0, 400),
-    // refreshToken BİLEREK yazılmıyor: kütüphane çekimi için gereken gizli
-    // bilgi cihazda SecureStore'da kalmalı, sunucuda düz JSON'da değil.
+    refreshToken: x.refreshToken ? String(x.refreshToken) : undefined,
   };
 }
 
@@ -104,8 +104,14 @@ export async function PUT(request) {
   }
 
   if (body.xbox) {
+    const prevRefreshToken = conn.xbox?.refreshToken;
     const x = slimXbox(body.xbox);
-    if (x) conn.xbox = x;
+    if (x) {
+      if (!x.refreshToken && prevRefreshToken) {
+        x.refreshToken = prevRefreshToken;
+      }
+      conn.xbox = x;
+    }
   }
 
   await redisSetJSON(connKey(user.uid), conn).catch(() => {});
@@ -136,16 +142,26 @@ export async function DELETE(request) {
     // Ters dizin de temizlenmeli, yoksa kopan hesap hâlâ bu uid'ye işaret eder
     await redisCmd(['DEL', steamIndexKey(steamId)]).catch(() => {});
   } else if (platform === 'xbox') {
+    const gamertag = conn.xbox?.gamertag;
     delete conn.xbox;
+    if (gamertag) {
+      await redisCmd(['DEL', `xbox_to_uid:${gamertag}`]).catch(() => {});
+    }
   } else {
     return NextResponse.json({ error: 'platform gerekli' }, { status: 400 });
   }
 
   await redisSetJSON(connKey(user.uid), conn).catch(() => {});
 
+  // Eğer hiçbir bağlantı kalmadıysa profil oyun sayacını da 0 yap
+  const remainingSteam = steamListOf(conn);
+  if (remainingSteam.length === 0 && !conn.xbox) {
+    await mergeProfile(user.uid, { gameCount: 0 }).catch(() => {});
+  }
+
   return NextResponse.json({
     ok: true,
-    steamAccounts: steamListOf(conn),
+    steamAccounts: remainingSteam,
     xbox: conn.xbox || null,
   });
 }

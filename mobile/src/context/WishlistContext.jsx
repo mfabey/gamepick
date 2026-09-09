@@ -1,10 +1,11 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Platform } from 'react-native';
+import { Platform, AppState } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { registerForPushToken } from '../notifications';
 import { registerPush, unregisterPush } from '../api/push';
-import { subscribeSession } from '../services/session';
+import { subscribeSession, getValidToken } from '../services/session';
 import { syncAccountData } from '../services/sync';
+import { pushUserData } from '../api/account';
 import { scopedKey, ownerReady, subscribeOwner, registerScopedStore } from '../services/owner';
 import { ayniOyun } from '../services/oyunKimlik';
 
@@ -162,12 +163,26 @@ export function WishlistProvider({ children }) {
   useEffect(() => {
     if (!ready) return;
     let alive = true;
-    syncAccountData(items, async (merged) => {
-      if (!alive || !Array.isArray(merged)) return;
-      setItems(merged);
-      try { await AsyncStorage.setItem(scopedKey(WISH_KEY), JSON.stringify(merged)); } catch {}
+    const doSync = (force = false) => {
+      syncAccountData(items, async (merged) => {
+        if (!alive || !Array.isArray(merged)) return;
+        setItems(merged);
+        try { await AsyncStorage.setItem(scopedKey(WISH_KEY), JSON.stringify(merged)); } catch {}
+      }, force);
+    };
+
+    doSync(false);
+
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        doSync(true);
+      }
     });
-    return () => { alive = false; };
+
+    return () => {
+      alive = false;
+      sub.remove();
+    };
     // Oturum ya da sahip değişince (giriş/çıkış/devir) tekrar dene
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, sessionTick, ownerTick]);
@@ -181,6 +196,13 @@ export function WishlistProvider({ children }) {
     setItems(list);
     try { await AsyncStorage.setItem(scopedKey(WISH_KEY), JSON.stringify(list)); } catch {}
     syncBackend(list);
+
+    try {
+      const token = await getValidToken();
+      if (token) {
+        pushUserData(token, { wishlist: list, overwriteWishlist: true }).catch(() => {});
+      }
+    } catch {}
   }, [syncBackend]);
 
   // ── KİMLİK EŞLEŞTİRMESİ BİREBİR DEĞİL ──
