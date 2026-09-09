@@ -17,6 +17,7 @@ import { Pusher } from 'pusher-js/react-native';
 import { API_BASE } from '../api/client';
 import { getValidToken } from './session';
 import { getChatConfig } from '../api/social';
+import { GALERI_IZNI_VAR } from './medya';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Anlık mesaj teslimi — Pusher istemcisi.
@@ -139,7 +140,11 @@ export async function subscribeDM(cid, onMessage, onDelete, onRead, onTyping, on
 export async function chatCapabilities() {
   const cfg = await loadConfig();
   return {
-    photos: !!cfg?.photos,
+    // GALERİ İZNİ BINARY'DEN OKUNUYOR, SUNUCUDAN DEĞİL. İzin metni pakette
+    // yoksa sunucu `photos: true` dese bile fotoğraf yolu kapalı kalmalı:
+    // izinsiz `launchImageLibraryAsync` çağrısında iOS uygulamayı
+    // sonlandırıyor. 2.6.1 (42) tam olarak böyle reddedildi (bkz. medya.js).
+    photos: GALERI_IZNI_VAR && !!cfg?.photos,
     videos: !!cfg?.videos,
     gifs:   !!cfg?.gifs,
     // GIF sağlayıcı anahtarı — istemci doğrudan çağrı yapıyor (bkz. klipy.js).

@@ -28,6 +28,7 @@ import {
   likeChatMessage, pinChatMessage,
 } from '../../src/api/social';
 import { subscribeDM, chatCapabilities } from '../../src/services/realtime';
+import { GALERI_IZNI_VAR } from '../../src/services/medya';
 import { setActiveChat, dismissChatNotifications } from '../../src/notifications';
 import { getSession, subscribeSession } from '../../src/services/session';
 import EmptyState from '../../src/components/EmptyState';
@@ -854,6 +855,10 @@ export default function ChatScreen() {
    * 1600 piksel genişlik + 0,7 kalite tipik olarak 300-600 KB veriyor.
    */
   const pickAndSend = useCallback(async () => {
+    // İKİNCİ KAPI. `caps.photos` zaten bu sabiti içeriyor (realtime.js);
+    // buradaki satır, bayrağı atlayan YENİ bir çağrı yolu eklendiğinde
+    // sonucun çökme değil sessiz geri dönüş olmasını garanti ediyor.
+    if (!GALERI_IZNI_VAR) return;
     if (sending) return;
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) { Alert.alert(t('msg.needPhotoPerm')); return; }

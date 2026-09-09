@@ -35,6 +35,7 @@ import {
   setAvatar as apiSetAvatar, uploadAvatarPhoto,
 } from '../src/api/social';
 import { chatCapabilities } from '../src/services/realtime';
+import { GALERI_IZNI_VAR } from '../src/services/medya';
 
 // Sunucudaki MAX_BIO ile AYNI SAYI olmak zorunda (app/lib/social-store.js).
 // Ayrışırlarsa kullanıcı ekranda yazabildiği bir metni kaydedemez.
@@ -127,6 +128,8 @@ export default function ProfileEditScreen() {
   // bir fotoğrafı olduğu gibi yüklemek hem kullanıcının verisini hem sunucu
   // kotasını boşa harcar. 256px kenar 3x ekranda bile yeterli, dosya ~30–60 KB.
   const pickPhoto = useCallback(async () => {
+    // İKİNCİ KAPI — gerekçesi chat/[uid].jsx'teki eşiyle aynı (bkz. medya.js).
+    if (!GALERI_IZNI_VAR) return;
     if (uploading) return;
     const ImagePicker = await import('expo-image-picker');
 

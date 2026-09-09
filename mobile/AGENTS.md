@@ -159,10 +159,33 @@ olurdu; yukarıdaki dört metnin silinme gerekçesiyle aynı.
 `expo-image-picker` paketi KALDIRILMADI: iki çağrı yeri de bayrağa bağlı
 ve bayrak sunucudan geliyor, yani özellik geri açıldığında kod hazır.
 
-⚠️ **GERİ AÇARKEN İKİSİ BİRLİKTE.** Yalnızca sunucudaki bayrağı `true`
+## BU UYARI YETMEDİ — 2.1(a) REDDİ (2026-09-09)
+
+Aşağıdaki ⚠️ satırı 2026-09-08'de yazıldı ve **ertesi gün tam olarak
+tarif ettiği şey oldu**. 2.6.1 (42) App Store'da reddedildi: *"the app
+crashed upon tapping the Photo button"*, iPad Air 11" (M3), iPadOS 26.6.1.
+
+Kaçırılan şey şuydu: bayrağı kapatan `USER_UPLOADS_ENABLED` sabiti yalnızca
+uygulama dalındaydı. Yayındaki sunucu (`main`) o sabiti tanımıyor, `photos`
+değerini `isModerationConfigured() && BLOB_READ_WRITE_TOKEN` üzerinden
+hesaplıyordu — yani **bayrak `true` dönüyordu**. İzin metni olmayan binary
+düğmeyi çizdi, incelemeci bastı, iOS uygulamayı sonlandırdı.
+
+Ders: çökmeyi engelleyen karar UZAKTA duramaz. Karar artık binary'nin
+içinde, `src/services/medya.js` → `GALERI_IZNI_VAR`. Sunucu bayrağı
+`chatCapabilities()` içinde onunla AND'leniyor, iki çağrı yerinde de ikinci
+bir kapı var, ve `npm run check:galeri` üç şeyi birden zorluyor:
+
+- sabit ile `photosPermission` uyuşmazsa **düşer**,
+- galeriye/kameraya giden bir çağrı sabiti okumuyorsa **düşer**,
+- `npm run check` zincirinde koşuyor.
+
+⚠️ **GERİ AÇARKEN ÜÇÜ BİRLİKTE.** Yalnızca sunucudaki bayrağı `true`
 yapmak YETMEZ: izin metni olmadan `launchImageLibraryAsync` çağrıldığında
-iOS uygulamayı SONLANDIRIR. Bayrağı açan, `photosPermission` metnini de
-geri koymalı ve YENİ BUILD almalıdır — bu adım OTA ile gitmez.
+iOS uygulamayı SONLANDIRIR. Sırasıyla: `GALERI_IZNI_VAR = true`,
+`photosPermission` metni geri, ve sunucudaki `USER_UPLOADS_ENABLED = true`
+**yayına** çıksın (dalda kalması reddin sebebiydi). İlk iki adım OTA ile
+gitmez, YENİ BUILD gerektirir.
 
 ---
 
