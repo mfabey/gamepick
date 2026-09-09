@@ -10,6 +10,7 @@ const TRANSLATIONS = {
     'nav.home': 'Anasayfa',
     'nav.games': 'Oyunlar',
     'nav.videos': 'Videolar',
+    'nav.community': 'Topluluk',
     'nav.news': 'Haberler',
     'nav.dlc': 'DLC',
     'nav.library': 'Kütüphane',
@@ -31,6 +32,7 @@ const TRANSLATIONS = {
     'hero.quick.sale': '🏷️ İndirimde',
     'hero.quick.new': '🗓️ Yeni Çıkan',
     'hero.quick.best': '⭐ En İyi',
+    'hero.quick.discover': '✨ Ne istediğini anlat',
 
     // Sections
     'section.trending.title': '🔥 Bu Hafta Trend',
@@ -175,6 +177,7 @@ const TRANSLATIONS = {
     'nav.home': 'Home',
     'nav.games': 'Games',
     'nav.videos': 'Videos',
+    'nav.community': 'Community',
     'nav.news': 'News',
     'nav.dlc': 'DLC',
     'nav.library': 'Library',
@@ -196,6 +199,7 @@ const TRANSLATIONS = {
     'hero.quick.sale': '🏷️ On Sale',
     'hero.quick.new': '🗓️ New',
     'hero.quick.best': '⭐ Best',
+    'hero.quick.discover': '✨ Describe what you want',
 
     // Sections
     'section.trending.title': '🔥 Trending This Week',

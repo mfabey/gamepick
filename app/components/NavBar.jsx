@@ -21,6 +21,7 @@ export default function NavBar() {
     { href: '/',        label: t('nav.home') },
     { href: '/games',   label: t('nav.games') },
     { href: '/videos',  label: t('nav.videos') },
+    { href: '/reviews', label: t('nav.community') },
     { href: '/news',    label: t('nav.news') },
     { href: '/library', label: t('nav.library') },
   ];
