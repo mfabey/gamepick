@@ -37,7 +37,15 @@ function timeAgo(ts, lang) {
   return `${d}${tr ? ' g' : 'd'}`;
 }
 
-function PostCard({ post, onOpen, onRequireAccount, compact = false, kok = false }) {
+// ── ⋯ = MODERASYON YOLU (App Store Guideline 1.2) ──
+// Bu kartta ÖNCEDEN HİÇBİR yol yoktu: ne şikâyet ne engelleme. İnceleme
+// kartında bari uzun basma vardı, burada o da yoktu ve kart yazar profiline
+// de bağlanmıyordu — yani akışta bir gönderi gören kullanıcının yazarı
+// engellemesi imkânsızdı. 2.6.1 (42) tam olarak bu yüzden 1.2'den reddedildi.
+//
+// GİZLİ JEST TEK YOL OLAMAZ: aynı karar PersonMenu'nün başında yazılı.
+// Uzun basma kısayol olarak duruyor, ⋯ ise görünür kapı.
+function PostCard({ post, onOpen, onMenu, onRequireAccount, compact = false, kok = false }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const { t, lang } = useLanguage();
@@ -70,6 +78,8 @@ function PostCard({ post, onOpen, onRequireAccount, compact = false, kok = false
   return (
     <Pressable
       onPress={() => (onOpen ? onOpen(post) : router.push(`/post/${post.id}`))}
+      onLongPress={onMenu ? () => onMenu(post.author) : undefined}
+      delayLongPress={400}
       style={({ pressed }) => [styles.row, pressed && PRESSED]}
     >
       <Avatar avatar={post.author?.avatar} name={name} size={AV} />
@@ -127,6 +137,23 @@ function PostCard({ post, onOpen, onRequireAccount, compact = false, kok = false
           </Pressable>
         </View>
       </View>
+
+      {/* ⋯ BAŞLIK SATIRININ İÇİNDE DEĞİL, SATIRIN SAĞ ÜSTÜNDE.
+          Başlık satırı `flexWrap: 'wrap'` ve uzun bir adda alt satıra
+          taşıyor; düğme oraya konsaydı kimi kartta tek başına ikinci satıra
+          düşerdi. Dışarıda konumu her kartta aynı.
+          hitSlop 10 — ikon 16pt, dokunma hedefi 36pt oluyor. */}
+      {onMenu ? (
+        <Pressable
+          onPress={() => onMenu(post.author)}
+          hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel={t('a11y.more')}
+          style={({ pressed }) => [styles.menuBtn, pressed && PRESSED]}
+        >
+          <Ionicons name="ellipsis-horizontal" size={16} color={colors.text3} />
+        </Pressable>
+      ) : null}
     </Pressable>
   );
 }
@@ -154,6 +181,11 @@ const makeStyles = (colors) => StyleSheet.create({
   },
   main: { flex: 1, minWidth: 0 },
   head: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.s4, flexWrap: 'wrap' },
+  // alignSelf flex-start: satır yüksekliği gövdeye göre değişiyor, düğme
+  // ortalanırsa uzun gönderide kartın ortasında asılı kalırdı. Ek dolgu YOK —
+  // ölçek dışı bir değer olurdu (check:spacing) ve başlık satırı zaten
+  // ikonun üst hizasına denk geliyor.
+  menuBtn: { alignSelf: 'flex-start' },
   // Maket: ad 15/600, kullanıcı adı ve zaman 13/text3.
   name: { color: colors.text, fontSize: type.subhead, fontWeight: '600', flexShrink: 1 },
   handle: { color: colors.text3, fontSize: type.footnote, flexShrink: 1 },

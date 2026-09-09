@@ -29,10 +29,13 @@ import ReviewCard from '../../src/components/ReviewCard';
 import PostCard from '../../src/components/PostCard';
 import FriendActivity, { hasFriendSignal } from '../../src/components/FriendActivity';
 import ReportSheet from '../../src/components/ReportSheet';
+import PersonMenu from '../../src/components/PersonMenu';
+import { engelle, suz } from '../../src/services/engel';
+import { useEngelliler } from '../../src/hooks/useEngelliler';
 import CardExpand from '../../src/components/CardExpand';
 import { kaynakYaz, kucultmeAl } from '../../src/services/gecisKaynak';
 import { fetchForYouCandidates } from '../../src/api/recommend';
-import { getReviewFeed, getFriendActivity, fetchPosts } from '../../src/api/social';
+import { getReviewFeed, getFriendActivity, fetchPosts, blockUser } from '../../src/api/social';
 import { getSession, subscribeSession } from '../../src/services/session';
 import { getCollections, subscribeCollections } from '../../src/services/collectionsStore';
 import { genreSlugsFor, rankCandidates } from '../../src/services/recommend';
@@ -256,6 +259,7 @@ export default function HomeScreen() {
   const [posts, setPosts] = useState([]);
   const [friendGames, setFriendGames] = useState([]);
   const [reportTarget, setReportTarget] = useState(null);
+  const [menuKisi, setMenuKisi] = useState(null);
   // Dev-only ölçüm: iskelet gerekli mi kararını sayıya bağlamak için.
   useTimeToData('Home', trend.length > 0);
 
@@ -362,6 +366,40 @@ export default function HomeScreen() {
     trend: lead === 'trend' ? [] : trend,
   }), [lead, trend]);
 
+  // Engel kümesi değişince akış yeniden süzülüyor — bkz. services/engel.js.
+  const engelSurumu = useEngelliler();
+
+  // ⋯ menüsü: kart KİŞİYİ veriyor, ekran İÇERİĞİ biliyor. Şikâyet içeriğe,
+  // engelleme kişiye gidiyor.
+  const acMenu = useCallback((kisi, hedef) => {
+    if (!kisi?.uid) return;
+    setMenuKisi({ ...kisi, hedef });
+  }, []);
+
+  const menuSec = useCallback((anahtar) => {
+    const kisi = menuKisi;
+    if (!kisi) return;
+    if (anahtar === 'profile') {
+      if (kisi.username) router.push(`/u/${kisi.username}`);
+      return;
+    }
+    if (anahtar === 'report') { setReportTarget(kisi.hedef); return; }
+    if (anahtar === 'block') {
+      Alert.alert(kisi.displayName || kisi.username || '', t('soc.blockConfirm'), [
+        { text: t('soc.cancel'), style: 'cancel' },
+        {
+          text: t('soc.block'),
+          style: 'destructive',
+          onPress: async () => {
+            // ÖNCE SUNUCU, SONRA YEREL — gerekçe (tabs)/reviews.jsx'te.
+            try { await blockUser(kisi.uid); } catch { Alert.alert(t('soc.err.generic')); return; }
+            engelle(kisi.uid);
+          },
+        },
+      ]);
+    }
+  }, [menuKisi, router, t]);
+
   const feed = useMemo(() => {
     const hlIds = highlightIds(highlights);
     const games = feedItems.filter(
@@ -377,9 +415,16 @@ export default function HomeScreen() {
     });
     // İnceleme ve gönderiler TEK sosyal akışta birleşiyor (en yeni önce),
     // sonra oyunların arasına serpiştiriliyor.
-    const social = mergeSocial(reviews, posts);
+    // ENGEL SÜZGECİ KAYNAKTA: harmanlamadan ÖNCE. Sonra süzseydik
+    // araya serpiştirme aralıkları kayar ve oyun kartlarının sırası
+    // engellenen kişiye göre değişirdi (aynı gerekçe 'İlgilenmiyorum'
+    // elemesinde de yazılı).
+    const social = mergeSocial(
+      suz(reviews, (r) => r?.author?.uid || r?.uid),
+      suz(posts, (x) => x?.author?.uid || x?.uid),
+    );
     return mergeHighlights(interleaveReviews(sortedGames, social), highlights);
-  }, [feedItems, dismissedIds, reviews, posts, highlights]);
+  }, [feedItems, dismissedIds, reviews, posts, highlights, engelSurumu]);
 
   // ── Paylaşım BU EKRANDA DEĞİL ──
   // Şerit kartlarının kapağında bir "arkadaşa gönder" dairesi vardı; dört
@@ -474,18 +519,24 @@ export default function HomeScreen() {
 
   const renderFeedItem = useCallback(({ item }) => (
     item.kind === 'post' ? (
-      <PostCard post={item.post} onRequireAccount={requireAccount} compact />
+      <PostCard
+        post={item.post}
+        onRequireAccount={requireAccount}
+        onMenu={(k) => acMenu(k, { targetType: 'post', targetId: String(item.post.id) })}
+        compact
+      />
     ) : item.kind === 'review' ? (
       <ReviewCard
         review={item.review}
         onExpand={kartAc}
-        onLongPress={() => setReportTarget(item.review)}
+        onMenu={(k) => acMenu(k, { targetType: 'review', targetId: `${item.review.appid}:${item.review.uid}` })}
+        onLongPress={() => acMenu(item.review.author, { targetType: 'review', targetId: `${item.review.appid}:${item.review.uid}` })}
         style={styles.feedReview}
       />
     ) : (
       <GamePostCard game={item.game} tag={item.tag} onDismiss={handleDismiss} onExpand={kartAc} />
     )
-  ), [handleDismiss, kartAc, requireAccount, styles]);
+  ), [handleDismiss, kartAc, requireAccount, styles, acMenu]);
 
   // Mevcut bölümlerin tamamı listenin başlığı olur → tek kaydırma, tek liste.
   const header = (
@@ -648,11 +699,19 @@ export default function HomeScreen() {
         onVar={kucultmeBitti}
       />
 
+      {/* HEDEF TÜRÜ SABİT DEĞİL: gönderi de şikâyet edilebiliyor. */}
       <ReportSheet
         visible={!!reportTarget}
         onClose={() => setReportTarget(null)}
-        targetType="review"
-        targetId={reportTarget ? `${reportTarget.appid}:${reportTarget.uid}` : ''}
+        targetType={reportTarget?.targetType || 'review'}
+        targetId={reportTarget?.targetId || ''}
+      />
+
+      <PersonMenu
+        visible={!!menuKisi}
+        person={menuKisi}
+        onClose={() => setMenuKisi(null)}
+        onSec={menuSec}
       />
     </View>
   );

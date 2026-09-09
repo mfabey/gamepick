@@ -93,9 +93,11 @@ USER-GENERATED CONTENT (1.2)
   app-generated game cards only, and profile avatars come from a fixed preset
   set, so no user-supplied image enters the app. Text is checked against a
   prohibited-terms filter.
-- Reporting: "..." on any person, or long-press a post, review, list or message.
+- Reporting: tap "..." on any post, review or person. Long-press works too.
   Reports are reviewed within 24 hours.
-- Blocking: same "..." menu. Mutual - no messages, content hidden both ways.
+- Blocking: same "..." menu, on the content itself. Blocking is mutual, the
+  person's content leaves your feed immediately, and every block is recorded
+  for our moderation review.
 - Contact: https://www.gamerisen.com/support and support@gamerisen.com
 - Community rules: section 4 of https://www.gamerisen.com/terms. Users agree on
   the sign-up screen, where both links sit directly under the button.
@@ -124,7 +126,10 @@ the same day.
 | "For You" → deste | `app/(tabs)/index.jsx:338` → `/swipe` |
 | Kartlar / Rapor | `app/settings.jsx:204,206` — etiketler `prof.gCards` / `prof.gStats` |
 | Rapor yüzeyi | `ReportSheet` altı ekranda: ana sayfa, topluluk, sohbet, arkadaşlar, liste detayı, kullanıcı profili |
+| İçerik kartında "⋯" | `src/components/PostCard.jsx` ve `ReviewCard.jsx` — `onMenu` propu `PersonMenu`'yü açıyor |
 | Engelleme menüsü | `src/components/PersonMenu.jsx` — "⋯", uzun basma kısayolu da duruyor |
+| Engel akıştan anında düşüyor | `src/services/engel.js` + `useEngelliler` — iki akış da süzülüyor |
+| Engel geliştiriciye bildiriliyor | `app/api/social/block/route.js` — `report_queue`'ya `reason: 'block'` kaydı |
 | Hesap silme yolu | `app/(tabs)/profile.jsx:383` → `/settings` → `app/settings.jsx:291` → `/delete-account` |
 | Görsel/video yükleme kapalı | `app/lib/media-moderation.js` → `USER_UPLOADS_ENABLED = false`; sohbet medyası, profil fotoğrafı ve `chat/config` üçü de ondan okuyor |
 | Zevk seçici kaldırıldı | commit `8d48ec3` |

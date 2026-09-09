@@ -18,7 +18,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
-  View, Text, Pressable, StyleSheet, ScrollView, ActivityIndicator, RefreshControl,
+  View, Text, Pressable, StyleSheet, ScrollView, ActivityIndicator, RefreshControl, Alert,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
@@ -27,7 +27,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
-import { getReviewFeed, getEligibleGames, fetchPosts, getFriends } from '../../src/api/social';
+import { getReviewFeed, getEligibleGames, fetchPosts, getFriends, blockUser } from '../../src/api/social';
 import { getSession, subscribeSession } from '../../src/services/session';
 import ReviewComposer from '../../src/components/ReviewComposer';
 import ReviewCard from '../../src/components/ReviewCard';
@@ -35,6 +35,9 @@ import EmptyState from '../../src/components/EmptyState';
 import PostCard from '../../src/components/PostCard';
 import PostComposer from '../../src/components/PostComposer';
 import ReportSheet from '../../src/components/ReportSheet';
+import PersonMenu from '../../src/components/PersonMenu';
+import { engelle, suz } from '../../src/services/engel';
+import { useEngelliler } from '../../src/hooks/useEngelliler';
 import { FeedSkeleton, Reveal } from '../../src/components/Skeleton';
 import { radius, spacing, type, PRESSED, NUMERIC, TOUCH_MIN, motion, SECTION_TITLE, CHIP_TEXT_ON } from '../../src/theme';
 import { useTabBosluk } from '../../src/hooks/useAltBosluk';
@@ -77,6 +80,9 @@ export default function ReviewsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [composer, setComposer] = useState(null); // { appid, name, existing }
   const [reportTarget, setReportTarget] = useState(null);
+  // ⋯ menüsünün hedefi. Gönderi de inceleme de aynı menüyü açıyor;
+  // menü KİŞİYE ait, şikâyet ise İÇERİĞE — bkz. menuSec.
+  const [menuKisi, setMenuKisi] = useState(null);
   // Bekleyen arkadaşlık isteği sayısı — başlıktaki rozet için.
   // OTURUM YOKSA İSTEK ATILMIYOR: /api/social/friend jetonlu, hesapsız
   // kullanıcıda 401 döner ve boşuna bir ağ turu olurdu.
@@ -266,6 +272,54 @@ export default function ReviewsScreen() {
     };
   }, [tab, session, t, requireAccount, router]);
 
+  // ── ENGEL: EKRANDAKİ LİSTEDEN ANINDA DÜŞÜR ──
+  // Sunucu bir sonraki çekimde zaten süzüyor (getHiddenUids). Buradaki
+  // süzgeç o çekim gelene kadarki boşluğu kapatıyor; Apple 1.2 engellemenin
+  // içeriği akıştan ANINDA kaldırmasını istiyor.
+  const engelSurumu = useEngelliler();
+  const gorunen = useMemo(
+    () => suz(items || [], (x) => x?.author?.uid || x?.uid),
+    [items, engelSurumu],
+  );
+
+  // ⋯ menüsünü açan tek kapı. Kart KİŞİYİ veriyor, ekran İÇERİĞİ biliyor;
+  // şikâyet içeriğe, engelleme kişiye gidiyor.
+  const acMenu = useCallback((kisi, icerik) => {
+    if (!kisi?.uid) return;
+    setMenuKisi({
+      ...kisi,
+      hedef: icerik.id != null
+        ? { targetType: 'post', targetId: String(icerik.id) }
+        : { targetType: 'review', targetId: `${icerik.appid}:${icerik.uid}` },
+    });
+  }, []);
+
+  const menuSec = useCallback((anahtar) => {
+    const kisi = menuKisi;
+    if (!kisi) return;
+    if (anahtar === 'profile') {
+      if (kisi.username) router.push(`/u/${kisi.username}`);
+      return;
+    }
+    if (anahtar === 'report') { setReportTarget(kisi.hedef); return; }
+    if (anahtar === 'block') {
+      Alert.alert(kisi.displayName || kisi.username || '', t('soc.blockConfirm'), [
+        { text: t('soc.cancel'), style: 'cancel' },
+        {
+          text: t('soc.block'),
+          style: 'destructive',
+          onPress: async () => {
+            // ÖNCE SUNUCU, SONRA YEREL. Ters sırada olsaydı istek
+            // başarısızken içerik ekrandan kaybolur, kullanıcı engellediğini
+            // sanır ve bir sonraki açılışta geri gelirdi.
+            try { await blockUser(kisi.uid); } catch { Alert.alert(t('soc.err.generic')); return; }
+            engelle(kisi.uid);
+          },
+        },
+      ]);
+    }
+  }, [menuKisi, router, t]);
+
   const keyExtractor = useCallback((item) => itemKey(item), []);
 
   // TÜR SEKMEDEN DEĞİL ÖĞEDEN OKUNUYOR: "Keşfet" tek listede gönderi ve
@@ -274,7 +328,7 @@ export default function ReviewsScreen() {
   // bkz. load()'daki "başka sekmenin verisi çöp" notu).
   const renderItem = useCallback(({ item }) => (
     item.id != null ? (
-      <PostCard post={item} onRequireAccount={requireAccount} compact />
+      <PostCard post={item} onRequireAccount={requireAccount} onMenu={(k) => acMenu(k, item)} compact />
     ) : (
       <ReviewCard
         review={item}
@@ -282,10 +336,11 @@ export default function ReviewsScreen() {
           pathname: '/game/[id]',
           params: { id: `rawg_${item.appid}`, appid: item.appid, name: item.gameName || '', image: item.image },
         })}
-        onLongPress={() => setReportTarget(item)}
+        onMenu={(k) => acMenu(k, item)}
+        onLongPress={() => acMenu(item.author, item)}
       />
     )
-  ), [requireAccount, router]);
+  ), [requireAccount, router, acMenu]);
 
   // Başlık BİLEŞEN DEĞİL, ELEMENT olarak veriliyor. Yerel bir bileşen
   // tanımlansaydı her render'da yeni bir tip olurdu ve FlashList başlığı
@@ -394,7 +449,7 @@ export default function ReviewsScreen() {
         <Reveal style={{ flex: 1 }}>
         <FlashList
           ref={listRef}
-          data={items || []}
+          data={gorunen}
           keyExtractor={keyExtractor}
           renderItem={renderItem}
           // extraData: renderItem sekmeye göre FARKLI kart çiziyor. Sekme
@@ -443,11 +498,21 @@ export default function ReviewsScreen() {
         onSaved={() => { setComposer(null); load(); }}
       />
 
+      {/* HEDEF TÜRÜ ARTIK SABİT DEĞİL: gönderi de şikâyet edilebiliyor.
+          Önceden yalnız inceleme uzun basmayla raporlanıyordu ve tür
+          `review` diye gömülüydü. */}
       <ReportSheet
         visible={!!reportTarget}
         onClose={() => setReportTarget(null)}
-        targetType="review"
-        targetId={reportTarget ? `${reportTarget.appid}:${reportTarget.uid}` : ''}
+        targetType={reportTarget?.targetType || 'review'}
+        targetId={reportTarget?.targetId || ''}
+      />
+
+      <PersonMenu
+        visible={!!menuKisi}
+        person={menuKisi}
+        onClose={() => setMenuKisi(null)}
+        onSec={menuSec}
       />
     </SafeAreaView>
   );

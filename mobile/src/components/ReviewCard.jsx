@@ -20,12 +20,18 @@ import { useKapakOlcum } from '../hooks/useKapakOlcum';
 // Steam'den okuduğu kütüphaneden geliyor; "500 saatim var" diye
 // yazılabilseydi "doğrulanmış" kelimesi anlamsız olurdu.
 //
-// UZUN BASMA = RAPORLA. Kullanıcı içeriğinin gösterildiği HER yüzeyde
-// bulunmak zorunda (App Store Guideline 1.2); çağıran ekran bunu
-// `onLongPress` ile bağlamalı.
+// ⋯ = ŞİKÂYET VE ENGELLEME. Kullanıcı içeriğinin gösterildiği HER yüzeyde
+// bulunmak zorunda (App Store Guideline 1.2).
+//
+// ÖNCEDEN YALNIZ UZUN BASMA VARDI ve o da sadece şikâyet açıyordu; engellemeye
+// giden bir yol yoktu. Gizli bir jest, keşfedilebilir tek yol olamaz — aynı
+// karar PersonMenu'nün başında da yazılı ve orada kişiler için düzeltilmişti.
+// 2.6.1 (42) bu eksikle 1.2'den reddedildi.
+//
+// Uzun basma KALIYOR, artık aynı menüyü açıyor: kısayol bonus olabilir.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export default function ReviewCard({ review, onPress, onLongPress, onEdit, onExpand, style }) {
+export default function ReviewCard({ review, onPress, onLongPress, onMenu, onEdit, onExpand, style }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const { t, lang } = useLanguage();
@@ -76,6 +82,21 @@ export default function ReviewCard({ review, onPress, onLongPress, onEdit, onExp
           size={17}
           color={review.recommended ? colors.green : colors.text3}
         />
+
+        {/* Tavsiye rozetinin SAĞINDA. Rozet içeriğin ne dediğini, ⋯ onunla ne
+            yapabileceğini söylüyor; ikisi aynı hizada duruyor.
+            hitSlop 10 — ikon 16pt, dokunma hedefi 36pt oluyor. */}
+        {onMenu ? (
+          <Pressable
+            onPress={() => onMenu(review.author)}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel={t('a11y.more')}
+            style={({ pressed }) => [pressed && PRESSED]}
+          >
+            <Ionicons name="ellipsis-horizontal" size={16} color={colors.text3} />
+          </Pressable>
+        ) : null}
       </View>
 
       <Text style={styles.body} numberOfLines={6}>{review.text}</Text>
