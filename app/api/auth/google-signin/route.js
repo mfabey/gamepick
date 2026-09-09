@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { signValue, SESSION_TTL_SEC } from '../../../lib/session-cookie';
 import { mintFamily } from '../../../lib/refresh-token';
 import { guard } from '../../../lib/rate-guard';
-import { mergeProfile } from '../../../lib/social-store';
+import { mergeProfile, getProfile } from '../../../lib/social-store';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Google ile giriş. Google Identity Services'ten (web) veya expo-auth-session'dan
@@ -68,9 +68,17 @@ export async function POST(request) {
 
     const { localId, idToken, refreshToken, expiresIn, email, displayName } = idp;
 
+    let profile = null;
+    try {
+      profile = await getProfile(localId);
+    } catch {}
+
     const user = {
       uid: localId,
-      name: displayName || (email ? email.split('@')[0] : 'Google Kullanıcısı'),
+      name: profile?.displayName || displayName || (email ? email.split('@')[0] : 'Google Kullanıcısı'),
+      username: profile?.username || null,
+      avatar: profile?.avatar || null,
+      bio: profile?.bio || null,
       email: email || '',
       provider: 'google',
     };
@@ -87,6 +95,12 @@ export async function POST(request) {
 
     // Web httpOnly çerez bekliyor, mobil yanıttaki token'ları saklıyor.
     if (body.web === true) {
+      // ÇEREZ İMZALI VE DAR. Main burada `user` nesnesinin tamamını düz JSON
+      // olarak yazıyordu; kullanıcı adı, avatar ve bio başlıkta görünsün diye.
+      // İki sebeple alınmadı: bu ağaçtaki her okuyucu `readValue` bekliyor ve
+      // imzasız değeri reddediyor, üstelik o alanlar zaten yukarıda
+      // `mergeProfile` ile depoya yazılıyor ve `user-me` oradan zenginleştirip
+      // başlığa veriyor. Yani main'in kazanımı korunuyor, çerez şişmiyor.
       response.cookies.set('gp_user_session', await signValue({
         uid: user.uid, name: user.name, email: user.email,
       }, SESSION_TTL_SEC), {

@@ -56,8 +56,7 @@ export default function SettingsScreen() {
     account, steamAccounts, xbox, busy,
     loginSteam, loginXbox, logoutSteam, logoutXbox,
   } = useAuth();
-  const { steamGames, xboxGames } = useConnectedLibrary();
-  const gameCount = steamGames.length + xboxGames.length;
+  const { steamGames, xboxGames, totalGamesCount: gameCount } = useConnectedLibrary();
   const { items, enabled, enableNotifications, disableNotifications } = useWishlist();
 
   /**

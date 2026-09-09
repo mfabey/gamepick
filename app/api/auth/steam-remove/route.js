@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { signValue, readValue, LINK_TTL_SEC } from '../../../lib/session-cookie';
 import { cookies } from 'next/headers';
+import { mergeProfile } from '../../../lib/social-store';
 
 const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL;
 const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
@@ -77,6 +78,10 @@ export async function DELETE(request) {
         if (!user) throw new Error("gecersiz oturum");
         await saveUserConnection(user.uid, 'steam', null);
         await saveUserConnection(user.uid, 'steamAccounts', null);
+        const conn = await getUserConnections(user.uid);
+        if (!conn.xbox) {
+          await mergeProfile(user.uid, { gameCount: 0 }).catch(() => {});
+        }
       } catch {}
     }
   } else {

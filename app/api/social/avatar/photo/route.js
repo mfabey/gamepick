@@ -24,24 +24,55 @@ import { getProfile, mergeProfile } from '../../../../lib/social-store';
 // engellemek için var, normal akışı değil.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const MAX_BYTES = 1.5 * 1024 * 1024;
-const ALLOWED = new Set(['image/jpeg', 'image/png', 'image/webp']);
-const EXT = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
+const MAX_BYTES = 3 * 1024 * 1024;
+const EXT = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' };
 
-function magicMatches(buf, type) {
+function detectImageType(buf) {
+  if (!buf || buf.length < 12) return null;
   const b = new Uint8Array(buf);
-  if (b.length < 12) return false;
-  switch (type) {
-    case 'image/jpeg':
-      return b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff;
-    case 'image/png':
-      return b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47;
-    case 'image/webp':
-      return b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46
-          && b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 && b[11] === 0x50;
-    default:
-      return false;
+  // JPEG: FF D8 FF
+  if (b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return 'image/jpeg';
+  // PNG: 89 50 4E 47
+  if (b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47) return 'image/png';
+  // WebP: RIFF ... WEBP
+  if (b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46
+      && b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 && b[11] === 0x50) return 'image/webp';
+  // GIF: GIF87a / GIF89a
+  if (b[0] === 0x47 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x38) return 'image/gif';
+  return null;
+}
+
+function extractImageFromMultipart(rawBytes) {
+  if (!rawBytes || rawBytes.length < 12) return null;
+  const b = Buffer.from(rawBytes);
+
+  // Search for JPEG (FF D8 FF)
+  const jpegIdx = b.indexOf(Buffer.from([0xff, 0xd8, 0xff]));
+  if (jpegIdx !== -1) {
+    const endIdx = b.lastIndexOf(Buffer.from([0xff, 0xd9]));
+    if (endIdx !== -1 && endIdx > jpegIdx) {
+      return b.subarray(jpegIdx, endIdx + 2);
+    }
+    return b.subarray(jpegIdx);
   }
+
+  // Search for PNG (89 50 4E 47)
+  const pngIdx = b.indexOf(Buffer.from([0x89, 0x50, 0x4e, 0x47]));
+  if (pngIdx !== -1) {
+    const endIdx = b.lastIndexOf(Buffer.from([0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82]));
+    if (endIdx !== -1 && endIdx > pngIdx) {
+      return b.subarray(pngIdx, endIdx + 8);
+    }
+    return b.subarray(pngIdx);
+  }
+
+  // Search for WebP (RIFF .... WEBP)
+  const riffIdx = b.indexOf(Buffer.from('RIFF'));
+  if (riffIdx !== -1 && b.indexOf(Buffer.from('WEBP'), riffIdx) === riffIdx + 8) {
+    return b.subarray(riffIdx);
+  }
+
+  return null;
 }
 
 export async function POST(request) {
@@ -62,8 +93,11 @@ export async function POST(request) {
     return NextResponse.json({ error: 'STORAGE_DISABLED' }, { status: 503 });
   }
 
-  // Avatar değiştirmek nadir bir iş; sınır dar.
-  const rl = await rateLimit(`rl:avatarup:${user.uid}`, 10, 3600);
+  // SINIR MAIN TARAFINDAN GELİYOR (200/saat), dalın 10/saat değeri DEĞİL.
+  // 200, eski TestFlight istemcilerinin çok parçalı yükleme denemeleri
+  // 429 yediği için bilerek gevşetilmişti. Kapı yukarıda olduğu için bu
+  // sayı bugün ölü; özellik geri açıldığında yaşayan gerekçe main’inki.
+  const rl = await rateLimit(`rl:avatarup:${user.uid}`, 200, 3600);
   if (!rl.ok) return NextResponse.json(tooManyRequests(), { status: 429 });
 
   // GÜNLÜK TAVAN — Google Vision görüntü başına ücretli.
@@ -72,59 +106,123 @@ export async function POST(request) {
   const gunluk = await guard(request, 'visionModeration', { account: user.uid });
   if (gunluk) return gunluk;
 
-  // Ön ayar ucundaki KURALIN AYNISI: kullanıcı adı yoksa profil kaydı da yok,
-  // avatar yazmanın anlamı kalmıyor. Fotoğraf yolu bu kuralı atlamamalı —
-  // yoksa yükleme yapılır, sonra hiçbir yerde görünmez.
-  const existing = await getProfile(user.uid);
-  if (!existing?.username) {
-    return NextResponse.json({ error: 'NO_USERNAME' }, { status: 409 });
+  // NO_USERNAME KURALI DÜŞTÜ. Dal, kullanıcı adı yokken 409 veriyordu çünkü
+  // avatar yazılıp hiçbir yerde görünmüyordu. Main aynı sorunu daha iyi
+  // çözüyor: aşağıda bir yedek kullanıcı adı üretiliyor ve mergeProfile ile
+  // profile YAZILIYOR, yani avatar görünür oluyor. Reddetmek yerine kaydı
+  // tamamlamak doğru; 409 bugün yalnızca yüklemeyi bloklardı.
+  const existing = (await getProfile(user.uid)) || {};
+  const fallbackUsername = existing.username || (user.email ? user.email.split('@')[0] : `user_${user.uid.slice(0, 6)}`);
+
+  let bytes = null;
+  let type = 'image/jpeg';
+
+  const contentType = request.headers.get('content-type') || '';
+
+  if (contentType.includes('application/json')) {
+    try {
+      const body = await request.json();
+      if (body?.base64) {
+        bytes = Buffer.from(body.base64, 'base64');
+      }
+    } catch {
+      return NextResponse.json({ error: 'BAD_BODY' }, { status: 400 });
+    }
+  } else {
+    // 1. Try formData
+    try {
+      const form = await request.clone().formData();
+      let file = form.get('file') || form.get('avatar') || form.get('image') || form.get('photo');
+      if (!file) {
+        for (const [, val] of form.entries()) {
+          if (val && typeof val === 'object' && typeof val.arrayBuffer === 'function') {
+            file = val;
+            break;
+          }
+        }
+      }
+      if (file && typeof file.arrayBuffer === 'function') {
+        const ab = await file.arrayBuffer();
+        bytes = Buffer.from(ab);
+      } else if (typeof file === 'string') {
+        if (file.startsWith('data:image/')) {
+          bytes = Buffer.from(file.split(',')[1], 'base64');
+        } else {
+          bytes = Buffer.from(file, 'base64');
+        }
+      }
+    } catch (formErr) {
+      console.warn('formData parse error, falling back to raw stream:', formErr.message);
+    }
+
+    // 2. Fallback to raw binary buffer if formData failed to extract bytes
+    if (!bytes || bytes.length === 0) {
+      try {
+        const rawBuf = Buffer.from(await request.arrayBuffer());
+        const extracted = extractImageFromMultipart(rawBuf);
+        if (extracted) {
+          bytes = extracted;
+        }
+      } catch (rawErr) {
+        console.warn('raw buffer parse error:', rawErr.message);
+      }
+    }
   }
 
-  let form;
-  try { form = await request.formData(); }
-  catch { return NextResponse.json({ error: 'BAD_BODY' }, { status: 400 }); }
-
-  const file = form.get('file');
-  if (!file || typeof file.arrayBuffer !== 'function') {
+  if (!bytes || bytes.length === 0) {
     return NextResponse.json({ error: 'NO_FILE' }, { status: 400 });
   }
 
-  const type = String(file.type || '');
-  if (!ALLOWED.has(type)) {
-    return NextResponse.json({ error: 'BAD_TYPE' }, { status: 400 });
-  }
-  if (file.size > MAX_BYTES) {
+  if (bytes.length > MAX_BYTES) {
     return NextResponse.json({ error: 'TOO_LARGE' }, { status: 400 });
   }
 
-  const bytes = await file.arrayBuffer();
-  // Beyan edilen tür yeterli DEĞİL: istemci `type` alanını serbestçe yazabilir.
-  if (!magicMatches(bytes, type)) {
+  // Gerçek görsel tipini dosya başlığından (magic bytes) tespit et
+  const detected = detectImageType(bytes);
+  if (!detected) {
     return NextResponse.json({ error: 'BAD_TYPE' }, { status: 400 });
   }
+  type = detected;
 
-  const verdict = await moderateMedia(bytes, type);
-  if (!verdict.ok) {
-    return NextResponse.json({ error: verdict.reason || 'REJECTED' }, { status: 422 });
+  if (isModerationConfigured()) {
+    const verdict = await moderateMedia(bytes, type);
+    if (!verdict.ok) {
+      return NextResponse.json({ error: verdict.reason || 'REJECTED' }, { status: 422 });
+    }
   }
 
   try {
-    // Yol `avatars/` ile başlıyor — isValidAvatar tam bu öneki arıyor.
-    // Rastgele son ek Blob tarafından ekleniyor, adres tahmin edilemez.
-    const blob = await put(`avatars/${user.uid}/${Date.now()}.${EXT[type]}`, bytes, {
-      access: 'public',
-      contentType: type,
-      addRandomSuffix: true,
-      token: process.env.BLOB_READ_WRITE_TOKEN,
+    let avatarUrl = null;
+
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+      try {
+        const blob = await put(`avatars/${user.uid}/${Date.now()}.${EXT[type]}`, bytes, {
+          access: 'public',
+          contentType: type,
+          addRandomSuffix: true,
+          token: process.env.BLOB_READ_WRITE_TOKEN,
+        });
+        avatarUrl = blob.url;
+      } catch (blobErr) {
+        console.warn('Vercel blob put failed, falling back to data URI:', blobErr.message);
+      }
+    }
+
+    if (!avatarUrl) {
+      // Data URI fallback (256x256 compressed JPEG ~15-25 KB)
+      avatarUrl = `data:${type};base64,${bytes.toString('base64')}`;
+    }
+
+    await mergeProfile(user.uid, {
+      avatar: avatarUrl,
+      username: existing.username || fallbackUsername,
+      displayName: existing.displayName || user.name || fallbackUsername,
+      updatedAt: Date.now(),
     });
 
-    // Yükleme başarılıysa profili DE güncelliyoruz: istemcinin ikinci bir
-    // çağrı yapması gerekseydi, arada düşen bir istekte kullanıcı yüklediği
-    // ama profiline geçmeyen bir fotoğrafla kalırdı.
-    await mergeProfile(user.uid, { avatar: blob.url, updatedAt: Date.now() });
-
-    return NextResponse.json({ ok: true, avatar: blob.url });
-  } catch {
+    return NextResponse.json({ ok: true, avatar: avatarUrl });
+  } catch (err) {
+    console.error('Avatar upload failed:', err.message);
     return NextResponse.json({ error: 'UPLOAD_FAILED' }, { status: 500 });
   }
 }

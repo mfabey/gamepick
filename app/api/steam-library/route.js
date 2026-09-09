@@ -2,14 +2,38 @@ import { NextResponse } from 'next/server';
 import { readValue } from '../../lib/session-cookie';
 import { sunucuHatasi } from '../../lib/api-error';
 import { cookies } from 'next/headers';
+import { redisGetJSON } from '../../lib/redis';
 
 const STEAM_API_KEY = process.env.STEAM_API_KEY;
 
 // GET /api/steam-library  →  Kullanıcının Steam kütüphanesini döndür
 export async function GET() {
-  // Oturumdan steamId al
   const cookieStore = await cookies();
-  const session     = cookieStore.get('gp_steam_session');
+  const userSession = cookieStore.get('gp_user_session');
+
+  // Giriş yapılmış Gamerisen hesabı varsa Redis durumunu kontrol et
+  if (userSession?.value) {
+    try {
+      // İMZALI ÇEREZ: `readValue` doğruluyor. Main bunu `JSON.parse` ile
+      // okuyordu; bu ağaçta kimlik çerezleri imzalı olduğu icin parse her
+      // zaman hata verir ve blok sessizce hiç çalışmazdı.
+      const user = await readValue(userSession.value);
+      if (user?.uid) {
+        const conn = await redisGetJSON(`user_connections:${user.uid}`).catch(() => null);
+        if (conn) {
+          const accounts = Array.isArray(conn.steamAccounts)
+            ? conn.steamAccounts
+            : (conn.steam?.steamId ? [conn.steam] : []);
+          if (accounts.length === 0) {
+            return NextResponse.json({ error: 'Giriş yapılmamış', games: [] }, { status: 401 });
+          }
+        }
+      }
+    } catch {}
+  }
+
+  // Oturumdan steamId al
+  const session = cookieStore.get('gp_steam_session');
 
   if (!session?.value) {
     return NextResponse.json({ error: 'Giriş yapılmamış', games: [] }, { status: 401 });

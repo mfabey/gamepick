@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { readValue } from '../../lib/session-cookie';
 import { sunucuHatasi } from '../../lib/api-error';
 import { cookies } from 'next/headers';
+import { redisGetJSON } from '../../lib/redis';
+import { verifyMobileToken } from '../../lib/mobile-auth';
 
 // ── Token zinciri: refresh token → access token → XBL → XSTS ───────────────
 async function refreshAccessToken(refreshToken) {
@@ -111,6 +113,22 @@ function formatTitle(t) {
 // ── Ana handler ──────────────────────────────────────────────────────────────
 export async function GET(request) {
   const cookieStore = await cookies();
+  // BAĞLANTI DURUMU REDIS'TEN DOĞRULANIYOR. Kullanıcı Xbox'ı ayırdıktan
+  // sonra çerez tarayıcıda kalabiliyordu ve kütüphane hâlâ doluyordu.
+  //
+  // ÇEREZ `JSON.parse` İLE OKUNMUYOR: bu daldaki kimlik çerezlerinin hepsi
+  // imzalı (bkz. session-cookie.js). Main'den gelen `JSON.parse(...)` burada
+  // her zaman hata verirdi ve kontrol sessizce hiç çalışmazdı.
+  const oturumCerezi = cookieStore.get('gp_user_session')?.value;
+  if (oturumCerezi && !request?.headers?.get('x-xbox-session')) {
+    const user = await readValue(oturumCerezi);
+    if (user?.uid) {
+      const conn = await redisGetJSON(`user_connections:${user.uid}`).catch(() => null);
+      if (conn && !conn.xbox) {
+        return NextResponse.json({ error: 'Oturum yok', games: [] }, { status: 401 });
+      }
+    }
+  }
 
   // WEB: imzalı çerez (readValue doğruluyor). MOBİL: httpOnly çerez olmadığı
   // için session'ı X-Xbox-Session header'ıyla taşıyor (base64 JSON). İki yol
@@ -126,8 +144,10 @@ export async function GET(request) {
     }
   }
 
+  // `games: []` GÖVDEDE KALIYOR (main'den). İstemciler hata yanıtında da
+  // diziyi okuyor; alan yokken liste `undefined` üzerinden geziliyordu.
   if (!session) {
-    return NextResponse.json({ error: 'Oturum yok' }, { status: 401 });
+    return NextResponse.json({ error: 'Oturum yok', games: [] }, { status: 401 });
   }
 
   if (session.isMock) {
@@ -135,23 +155,23 @@ export async function GET(request) {
     const GAME_POOL = [
       { titleId: "2532454", name: "Halo Infinite", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1240440/header.jpg", baseAchievements: 60, gamerscore: 1000 },
       { titleId: "1858582", name: "Forza Horizon 5", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1551360/header.jpg", baseAchievements: 70, gamerscore: 1000 },
+      { titleId: "1293830", name: "Forza Horizon 4", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1293830/header.jpg", baseAchievements: 65, gamerscore: 1000 },
       { titleId: "1738234", name: "Starfield", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1716740/header.jpg", baseAchievements: 50, gamerscore: 1000 },
       { titleId: "2461850", name: "Senua's Saga: Hellblade II", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/2461850/header.jpg", baseAchievements: 11, gamerscore: 1000 },
       { titleId: "1932060", name: "Minecraft", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1932060/header.jpg", baseAchievements: 125, gamerscore: 2500 },
       { titleId: "1172620", name: "Sea of Thieves", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1172620/header.jpg", baseAchievements: 60, gamerscore: 1000 },
       { titleId: "1817230", name: "Hi-Fi RUSH", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1817230/header.jpg", baseAchievements: 61, gamerscore: 1000 },
-      { titleId: "1245620", name: "Elden Ring", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1245620/header.jpg", baseAchievements: 42, gamerscore: 1000 },
-      { titleId: "2933080", name: "Call of Duty: Black Ops 6", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/2933080/header.jpg", baseAchievements: 45, gamerscore: 1000 },
-      { titleId: "782330", name: "Doom Eternal", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/782330/header.jpg", baseAchievements: 34, gamerscore: 1000 },
       { titleId: "1097840", name: "Gears 5", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1097840/header.jpg", baseAchievements: 75, gamerscore: 1000 },
       { titleId: "1126810", name: "Grounded", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/962000/header.jpg", baseAchievements: 45, gamerscore: 1000 },
-      { titleId: "3612", name: "Hades", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1145360/header.jpg", baseAchievements: 49, gamerscore: 1000 },
-      { titleId: "1091500", name: "Cyberpunk 2077", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1091500/header.jpg", baseAchievements: 44, gamerscore: 1000 },
-      { titleId: "271590", name: "Grand Theft Auto V", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/271590/header.jpg", baseAchievements: 77, gamerscore: 1250 },
-      { titleId: "1190460", name: "Deathloop", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1252330/header.jpg", baseAchievements: 58, gamerscore: 1000 },
       { titleId: "501300", name: "Psychonauts 2", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/607080/header.jpg", baseAchievements: 57, gamerscore: 1000 },
       { titleId: "230410", name: "Gears Tactics", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1184050/header.jpg", baseAchievements: 46, gamerscore: 1000 },
-      { titleId: "582010", name: "Monster Hunter: World", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/582010/header.jpg", baseAchievements: 50, gamerscore: 1000 },
+      { titleId: "1250410", name: "Microsoft Flight Simulator", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1250410/header.jpg", baseAchievements: 40, gamerscore: 1000 },
+      { titleId: "495420", name: "State of Decay 2", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/495420/header.jpg", baseAchievements: 55, gamerscore: 1000 },
+      { titleId: "1205520", name: "Pentiment", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1205520/header.jpg", baseAchievements: 42, gamerscore: 1000 },
+      { titleId: "976730", name: "Halo: The Master Chief Collection", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/976730/header.jpg", baseAchievements: 700, gamerscore: 7000 },
+      { titleId: "1466860", name: "Age of Empires IV", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1466860/header.jpg", baseAchievements: 50, gamerscore: 1000 },
+      { titleId: "847370", name: "Sunset Overdrive", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/847370/header.jpg", baseAchievements: 64, gamerscore: 1000 },
+      { titleId: "474960", name: "Quantum Break", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/474960/header.jpg", baseAchievements: 42, gamerscore: 1000 },
       { titleId: "219540", name: "Ori and the Blind Forest", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/261570/header.jpg", baseAchievements: 50, gamerscore: 1000 },
       { titleId: "1057090", name: "Ori and the Will of the Wisps", image: "https://cdn.cloudflare.steamstatic.com/steam/apps/1057090/header.jpg", baseAchievements: 37, gamerscore: 1000 }
     ];
@@ -207,8 +227,43 @@ export async function GET(request) {
   }
 
   try {
+    let tokenToRefresh = session.refreshToken;
+
+    if (!tokenToRefresh) {
+      // Mobilden gelen Bearer token ile Redis'teki kayıtlı refreshToken'ı ara
+      try {
+        const user = await verifyMobileToken(request);
+        if (user?.uid) {
+          const conn = await redisGetJSON(`user_connections:${user.uid}`);
+          if (conn?.xbox?.refreshToken) {
+            tokenToRefresh = conn.xbox.refreshToken;
+          }
+        }
+      } catch {}
+
+      // Web oturum çerezinden ara
+      if (!tokenToRefresh) {
+        try {
+          const userCookie = cookieStore.get('gp_user_session')?.value;
+          if (userCookie) {
+            const u = JSON.parse(userCookie);
+            if (u?.uid) {
+              const conn = await redisGetJSON(`user_connections:${u.uid}`);
+              if (conn?.xbox?.refreshToken) {
+                tokenToRefresh = conn.xbox.refreshToken;
+              }
+            }
+          }
+        } catch {}
+      }
+    }
+
+    if (!tokenToRefresh) {
+      return NextResponse.json({ error: 'Oturum süresi doldu, lütfen Xbox hesabınızı tekrar bağlayın.', expired: true }, { status: 401 });
+    }
+
     // Refresh token ile yeni access token al
-    const msTokens = await refreshAccessToken(session.refreshToken);
+    const msTokens = await refreshAccessToken(tokenToRefresh);
     if (msTokens.error) {
       return NextResponse.json({ error: 'Oturum süresi doldu, tekrar giriş yapın', expired: true }, { status: 401 });
     }
@@ -226,9 +281,21 @@ export async function GET(request) {
     // Oyun listesini çek
     const rawTitles = await fetchAllTitles(authHeader, session.xuid);
 
-    // Sadece gerçek oyunları al (uygulama, medya vs. filtrele)
+    // Sadece gerçek oyunları al (uygulama, medya, Windows sistem/masaüstü wrapper vs. filtrele)
     const games = rawTitles
-      .filter(t => t.name && t.titleId)
+      .filter(t => {
+        if (!t.name || !t.titleId) return false;
+        if (t.type && t.type !== 'Game' && t.type !== 'GameTitle') return false;
+        const nameLower = t.name.toLowerCase();
+        if (
+          nameLower.includes('xbox app') ||
+          nameLower.includes('microsoft store') ||
+          nameLower.includes('game bar') ||
+          nameLower.includes('xbox accessories') ||
+          nameLower.includes('settings')
+        ) return false;
+        return true;
+      })
       .map(formatTitle)
       .sort((a, b) => b.lastPlayed - a.lastPlayed);
 

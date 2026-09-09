@@ -1210,6 +1210,9 @@ export async function GET(request) {
     // seçilmemişken taze bir Steam listesine "çevrimdışı" dememesi.
     const sinirli = limited || unavailable.length > 0;
 
+    // Nihai güvenlik filtresi: Hiçbir yetişkin / 18+ / NSFW oyun listeye sızamaz
+    results = results.filter(g => g && !isAdultTitleOrSlug(g.name, g.rawgSlug || g.slug) && !isAdultContent(g));
+
     return NextResponse.json({
       results, total,
       source: limited ? 'offline-db' : steamYedegi ? 'steam-fallback' : 'rawg-steam-merge',

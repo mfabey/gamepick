@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { readValue } from '../../../../lib/session-cookie';
 import { cookies } from 'next/headers';
+import { mergeProfile } from '../../../../lib/social-store';
 
 const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL;
 const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
@@ -57,6 +58,10 @@ export async function GET(request) {
     try {
       const user = await readValue(userSession.value); if (!user) throw new Error("gecersiz");
       await removeUserConnection(user.uid, 'xbox');
+      const conn = await getUserConnections(user.uid);
+      if (!conn.steam && (!conn.steamAccounts || conn.steamAccounts.length === 0)) {
+        await mergeProfile(user.uid, { gameCount: 0 }).catch(() => {});
+      }
     } catch (err) {
       console.error('Failed to remove Xbox connection from Redis:', err.message);
     }

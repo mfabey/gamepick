@@ -193,13 +193,20 @@ export function AuthProvider({ children }) {
   }, [busy, persistXbox]);
 
   const logoutSteam = useCallback(async (steamId) => {
-    await persistSteam(steamAccounts.filter(a => a.steamId !== steamId));
-    removeSteamConnection(steamId).catch(() => {});
+    const nextList = steamAccounts.filter(a => a.steamId !== steamId);
+    setSteamAccounts(nextList);
+    try {
+      await removeSteamConnection(steamId);
+    } catch {}
+    await persistSteam(nextList);
   }, [steamAccounts, persistSteam]);
 
   const logoutXbox = useCallback(async () => {
+    setXbox(null);
+    try {
+      await removeXboxConnection();
+    } catch {}
     await persistXbox(null);
-    removeXboxConnection().catch(() => {});
   }, [persistXbox]);
 
   // ── Hesap oturumu (e-posta/şifre) ──────────────────────────────────────────
@@ -242,7 +249,20 @@ export function AuthProvider({ children }) {
         const r = await fetchConnections();
         if (!alive) return;
         if (Array.isArray(r?.steamAccounts)) persistSteam(r.steamAccounts);
-        if (r?.xbox && !xbox) persistXbox(r.xbox);
+        if (r?.xbox) {
+          let localSession = null;
+          try {
+            const x = await SecureStore.getItemAsync(scopedKey(XBOX_KEY));
+            if (x) localSession = JSON.parse(x);
+          } catch {}
+          const mergedXbox = {
+            ...r.xbox,
+            refreshToken: r.xbox.refreshToken || localSession?.refreshToken || null,
+          };
+          persistXbox(mergedXbox);
+        } else if (r && r.xbox === null) {
+          persistXbox(null);
+        }
       } catch { /* ağ yoksa yereldekiyle devam */ }
     })();
     return () => { alive = false; };

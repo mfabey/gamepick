@@ -40,13 +40,14 @@ export async function POST(request) {
     return NextResponse.json({ error: 'INVALID_AVATAR' }, { status: 400 });
   }
 
-  // Kullanıcı adı olmadan profil kaydı olmayabilir; o durumda avatar
-  // yazmanın anlamı yok (arkadaş listesinde görünecek bir kimlik yok).
-  const existing = await getProfile(user.uid);
-  if (!existing?.username) {
-    return NextResponse.json({ error: 'NO_USERNAME' }, { status: 409 });
-  }
+  const existing = (await getProfile(user.uid)) || {};
+  const fallbackUsername = existing.username || (user.email ? user.email.split('@')[0] : `user_${user.uid.slice(0, 6)}`);
 
-  const profile = await mergeProfile(user.uid, { avatar, updatedAt: Date.now() });
+  const profile = await mergeProfile(user.uid, {
+    avatar,
+    username: existing.username || fallbackUsername,
+    displayName: existing.displayName || user.name || fallbackUsername,
+    updatedAt: Date.now(),
+  });
   return NextResponse.json({ ok: true, avatar: profile?.avatar ?? null });
 }

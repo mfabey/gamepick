@@ -1,19 +1,21 @@
 'use client';
+
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-import { useLanguage } from '../../../context/LanguageContext';
-
-export default function EpicGameDetail() {
+export default function EpicGameRedirect({ params }) {
   const router = useRouter();
-  const { lang } = useLanguage();
+
+  useEffect(() => {
+    if (params?.slug) {
+      router.replace(`/game/${encodeURIComponent(params.slug)}`);
+    }
+  }, [params, router]);
+
   return (
-    <div style={{ textAlign: 'center', padding: '80px 20px' }}>
-      <p style={{ fontSize: 18, color: '#999', marginBottom: 16 }}>
-        {lang === 'tr' ? 'Bu sayfa artık kullanılmıyor.' : 'This page is no longer used.'}
-      </p>
-      <button onClick={() => router.back()} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#DC2626', fontWeight: 600, fontSize: 16 }}>
-        {lang === 'tr' ? '← Geri Dön' : '← Go Back'}
-      </button>
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+      <div style={{ width: 40, height: 40, borderRadius: '50%', border: '3px solid var(--border)', borderTopColor: 'var(--accent)', animation: 'spin 0.8s linear infinite' }} />
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }

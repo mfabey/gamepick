@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useQuery } from './useQuery';
 import { fetchSteamLibrary, fetchXboxLibrary } from '../api/library';
+import { normalizeName } from '../services/recommend';
 
 const EMPTY = { steam: {}, xbox: null };
 
@@ -34,6 +35,7 @@ async function fetchConnectedLibraryRaw(steamAccounts, xbox) {
  * Bağlı kütüphaneler (Steam+Xbox), 30 dk cache'li paylaşımlı fetch.
  * - Önerici için: `steamGames`, `xboxGames` (düz oyun listeleri).
  * - Library ekranı için: `steam` (per-hesap ham), `xbox` (ham), `loading`.
+ * - Steam önceliklidir; aynı oyun Xbox'ta da varsa toplam sayıya mükerrer eklenmez.
  */
 export function useConnectedLibrary(enabled = true) {
   const { steamAccounts = [], xbox } = useAuth();
@@ -44,16 +46,55 @@ export function useConnectedLibrary(enabled = true) {
   const { data, loading, ts, refetch } = useQuery(
     key,
     () => fetchConnectedLibraryRaw(steamAccounts, xbox),
-    { ttl: 30 * 60 * 1000, enabled: enabled && hasAny }
+    { ttl: 15 * 60 * 1000, enabled: enabled && hasAny }
   );
 
   const raw = data || EMPTY;
-  const steamGames = useMemo(() => Object.values(raw.steam).flatMap((l) => l?.games || []), [raw]);
+  const steamGames = useMemo(() => {
+    const map = new Map();
+    Object.values(raw.steam || {}).forEach((lib) => {
+      (lib?.games || []).forEach((g) => {
+        const id = g.appid || g.id;
+        if (id && !map.has(id)) {
+          map.set(id, g);
+        } else if (!id && g.name) {
+          map.set(g.name, g);
+        }
+      });
+    });
+    return [...map.values()];
+  }, [raw]);
+
   const xboxGames = useMemo(() => raw.xbox?.games || [], [raw]);
 
-  // `ts`/`refetch` DIŞARI VERİLİYOR: kütüphane ekranı çevrimdışıyken
-  // diskteki listeyi gösteriyor ve "ne zaman güncellendi" cümlesini
-  // kurabilmesi için damgaya erişmesi gerekiyor. Önericiyi ilgilendirmiyor,
-  // o alanları okumuyor.
-  return { steam: raw.steam, xbox: raw.xbox, steamGames, xboxGames, loading: !!loading, ts, refetch };
+  // XBOX MÜKERRERİ STEAM'E GÖRE ELENİYOR. Aynı oyun iki mağazada da varsa
+  // toplam sayaç onu iki kez saymamalı. Steam öncelikli, çünkü oynama süresi
+  // yalnızca orada geliyor.
+  const uniqueXboxGames = useMemo(() => {
+    if (steamGames.length === 0) return xboxGames;
+    const steamNames = new Set(steamGames.map((g) => normalizeName(g.name || '')));
+    return xboxGames.filter((g) => {
+      const n = normalizeName(g.name || '');
+      return n && !steamNames.has(n);
+    });
+  }, [steamGames, xboxGames]);
+
+  const totalGamesCount = useMemo(() => {
+    return steamGames.length + uniqueXboxGames.length;
+  }, [steamGames.length, uniqueXboxGames.length]);
+
+  // `ts` DIŞARI VERİLİYOR: kütüphane ekranı çevrimdışıyken diskteki listeyi
+  // gösteriyor ve "ne zaman güncellendi" cümlesini kurabilmesi için damgaya
+  // erişmesi gerekiyor. Önericiyi ilgilendirmiyor, o alanı okumuyor.
+  return {
+    steam: raw.steam,
+    xbox: raw.xbox,
+    steamGames,
+    xboxGames,
+    uniqueXboxGames,
+    totalGamesCount,
+    loading: !!loading,
+    ts,
+    refetch,
+  };
 }
