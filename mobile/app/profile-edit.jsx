@@ -127,7 +127,13 @@ export default function ProfileEditScreen() {
         allowsEditing: true,
         aspect: [1, 1],
         quality: 1,          // kalite kaybı boyutlandırmadan SONRA veriliyor
-        // ── APP STORE 2.1(a) — TAM EKRAN AÇIKÇA VERİLİYOR ──
+        // ── TAM EKRAN AÇIKÇA VERİLİYOR ──
+        //
+        // DİKKAT: bu, 2.6.1'i reddettiren çökme DEĞİL. O çökmenin sebebi
+        // Apple'ın crash log'unda yazılı ve bambaşka: eksik
+        // `NSPhotoLibraryUsageDescription` yüzünden TCC'nin süreci
+        // öldürmesi (bkz. scripts/check-plist.mjs). Aşağıdaki gerekçe kendi
+        // başına geçerli, ama reddi kapatan şey bu satır değil.
         //
         // `allowsEditing` bu çağrıyı expo-image-picker içinde ESKİ yola
         // düşürüyor (ImagePickerModule.swift:94): PHPicker yerine
@@ -141,9 +147,9 @@ export default function ProfileEditScreen() {
         // Sunum biçimi AÇIKÇA verilince UIKit popover'a hiç çözmüyor ve
         // koşul ortadan kalkıyor. Kırpma arayüzü aynen duruyor.
         //
-        // NOT: bu çökme iPad Air 11" / iPadOS 26.5'te ÜRETİLEMEDİ (hem
-        // uyumluluk kipinde hem iPad hedefiyle denendi). Yani bu, kanıtlanmış
-        // bir düzeltme değil, KALAN TEK RİSKLİ YOLUN kapatılması.
+        // Bu yol iPad Air 11" / iPadOS 26.5'te hiç çökmedi (hem uyumluluk
+        // kipinde hem iPad hedefiyle denendi) — yani düzeltilen bir hata
+        // değil, kapatılan bir risk.
         presentationStyle: ImagePicker.UIImagePickerPresentationStyle.FULL_SCREEN,
       });
       if (res.canceled || !res.assets?.[0]?.uri) return;

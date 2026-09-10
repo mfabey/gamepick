@@ -20,7 +20,10 @@
         "tinted": "./assets/icon-tinted.png"
       },
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSPhotoLibraryUsageDescription": "Gamerisen, profil fotoğrafınızı seçebilmeniz ve arkadaşlarınıza sohbette fotoğraf gönderebilmeniz için galerinize erişir.",
+        "NSCameraUsageDescription": "Gamerisen, sohbette fotoğraf çekip gönderebilmeniz için kameranıza erişir.",
+        "NSLocationWhenInUseUsageDescription": "Gamerisen, paylaştığınız oyun kartına yalnızca şehir adını eklemek için konumunuzu kullanır. Konum bilginiz cihazınızdan çıkmaz."
       }
     },
     "android": {
