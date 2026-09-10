@@ -20,11 +20,13 @@ import { getSession, subscribeSession } from '../src/services/session';
 import EmptyState from '../src/components/EmptyState';
 import { posterImage } from '../src/utils/images';
 import { radius, spacing, type, PRESSED, motion } from '../src/theme';
+import { useYanBosluk } from '../src/hooks/useIcerikAlani';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 
 export default function ListsScreen() {
   const styles = useStyles(makeStyles);
+  const yan = useYanBosluk();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const router = useRouter();
@@ -155,7 +157,7 @@ export default function ListsScreen() {
           data={items}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
-          contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 30 }]}
+          contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 30, paddingHorizontal: yan }]}
           showsVerticalScrollIndicator={false}
           onEndReached={onEnd}
           onEndReachedThreshold={0.5}

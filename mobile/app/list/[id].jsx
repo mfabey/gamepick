@@ -15,6 +15,7 @@ import { fetchList, toggleListLike, deletePublicList } from '../../src/api/socia
 import ReportSheet from '../../src/components/ReportSheet';
 import EmptyState from '../../src/components/EmptyState';
 import { radius, spacing, PRESSED, type } from '../../src/theme';
+import { useYanBosluk } from '../../src/hooks/useIcerikAlani';
 import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { useLanguage } from '../../src/context/LanguageContext';
 import IconButton from '../../src/components/IconButton';
@@ -22,6 +23,7 @@ import GameRow, { SATIR_Y } from '../../src/components/GameRow';
 
 export default function PublicListScreen() {
   const styles = useStyles(makeStyles);
+  const yan = useYanBosluk();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const router = useRouter();
@@ -131,7 +133,7 @@ export default function PublicListScreen() {
         data={list.games || []}
         keyExtractor={(item, i) => `${item.id}_${i}`}
         renderItem={renderItem}
-        contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 30 }]}
+        contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 30, paddingHorizontal: yan }]}
         estimatedItemSize={SATIR_Y}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={

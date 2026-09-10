@@ -32,6 +32,7 @@ import EmptyState from '../src/components/EmptyState';
 import PersonMenu from '../src/components/PersonMenu';
 import ReportSheet from '../src/components/ReportSheet';
 import { radius, spacing, type, PRESSED, NUMERIC, SECTION_TITLE, TOUCH_MIN, avatar as avatarSize } from '../src/theme';
+import { useYanBosluk } from '../src/hooks/useIcerikAlani';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 import { getFriends, searchUsers, friendAction, blockUser } from '../src/api/social';
@@ -39,6 +40,7 @@ import { getSession } from '../src/services/session';
 
 export default function FriendsScreen() {
   const styles = useStyles(makeStyles);
+  const yan = useYanBosluk();
   const { colors } = useTheme();
   const { t } = useLanguage();
   const router = useRouter();
@@ -157,7 +159,7 @@ export default function FriendsScreen() {
         <View style={styles.center}><ActivityIndicator color={colors.accent} /></View>
       ) : (
         <ScrollView
-          contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.s40 }]}
+          contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.s40, paddingHorizontal: yan }]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           refreshControl={(

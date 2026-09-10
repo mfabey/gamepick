@@ -38,6 +38,7 @@ import ReportSheet from '../../src/components/ReportSheet';
 import { FeedSkeleton, Reveal } from '../../src/components/Skeleton';
 import { radius, spacing, type, PRESSED, NUMERIC, TOUCH_MIN, motion, SECTION_TITLE, CHIP_TEXT_ON } from '../../src/theme';
 import { useTabBosluk } from '../../src/hooks/useAltBosluk';
+import { useYanBosluk } from '../../src/hooks/useIcerikAlani';
 import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useTimeToData } from '../../src/dev/perf';
@@ -55,6 +56,7 @@ function itemKey(x) {
 export default function ReviewsScreen() {
   const styles = useStyles(makeStyles);
   const tabBosluk = useTabBosluk();
+  const yan = useYanBosluk();
   const { colors } = useTheme();
   const router = useRouter();
   const { t, lang } = useLanguage();
@@ -383,7 +385,7 @@ export default function ReviewsScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <Header t={t} router={router} incoming={incoming} />
+      <Header t={t} router={router} incoming={incoming} yan={yan} />
 
       {loading ? (
         // Dönen çark DEĞİL. Ölçüldü: bu ekran 645ms boyunca ortada tek bir
@@ -402,6 +404,10 @@ export default function ReviewsScreen() {
           // bunu veriye bağlı bırakmak sessiz bir varsayım olurdu.
           extraData={tab}
           ListHeaderComponent={header}
+          // GENİŞ EKRANDA KOLON ORTALANIYOR (bkz. theme → ICERIK_MAX).
+          // Dolgu listenin İÇİNDE: pencere koordinatlarına dokunmuyor, yani
+          // kart büyüme geçişi ve baloncuğa tutturulan menüler bozulmuyor.
+          contentContainerStyle={{ paddingHorizontal: yan }}
           // BOZUKSA "kimse yazmamış" DEMİYORUZ. Bant üç şey söylüyor: ne
           // oldu, ne çalışmıyor, ne yapabilirsin. Davet şeridi ve yazma
           // çubuğu YUKARIDA ayakta kalıyor — ikisi de yerel veriden geliyor,
@@ -465,11 +471,13 @@ export default function ReviewsScreen() {
 // ROZET BURADA OLMAK ZORUNDA: bekleyen arkadaşlık isteği yalnızca Profil'de
 // görünüyordu. Kullanıcı Topluluk'ta gezerken kendisine gelen isteği
 // göremiyordu — bildirimi, ilgili olduğu yerde göstermek gerekiyor.
-function Header({ t, router, incoming }) {
+function Header({ t, router, incoming, yan = 0 }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   return (
-    <View style={styles.head}>
+    // Başlık listenin DIŞINDA duruyor, dolayısıyla kolona kendi hizalanmak
+    // zorunda: `marginHorizontal`, `head`in kendi dolgusunu ezmesin diye.
+    <View style={[styles.head, { marginHorizontal: yan }]}>
       <Text style={styles.h1}>{t('rev.section')}</Text>
       <Pressable
         onPress={() => router.push('/friends')}

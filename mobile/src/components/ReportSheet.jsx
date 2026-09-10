@@ -19,7 +19,13 @@ const REASONS = [
   'spam', 'harassment', 'hate', 'sexual', 'violence', 'impersonation', 'illegal', 'other',
 ];
 
-export default function ReportSheet({ visible, onClose, targetType, targetId, targetLabel }) {
+/**
+ * @param {func} onSent  şikayet KABUL EDİLDİKTEN sonra çağrılıyor. Çağıran
+ *   içeriği ekrandan kaldırmak için kullanıyor: "bunu uygunsuz buldum" deyip
+ *   aynı içeriği okumaya devam etmek, şikayetin bir şey yaptığına dair hiçbir
+ *   kanıt vermiyordu. `onClose`tan ayrı, çünkü iptal de kapanış.
+ */
+export default function ReportSheet({ visible, onClose, onSent, targetType, targetId, targetLabel }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const { t } = useLanguage();
@@ -42,11 +48,12 @@ export default function ReportSheet({ visible, onClose, targetType, targetId, ta
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert(t('soc.reportSent'));
       close();
+      onSent?.();
     } catch (e) {
       Alert.alert(t(`soc.err.${e?.code}`) !== `soc.err.${e?.code}` ? t(`soc.err.${e.code}`) : t('soc.err.generic'));
       setSending(false);
     }
-  }, [reason, note, sending, targetType, targetId, close, t]);
+  }, [reason, note, sending, targetType, targetId, close, onSent, t]);
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={close}>

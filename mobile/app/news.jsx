@@ -22,6 +22,7 @@ import { NewsListSkeleton, Reveal } from '../src/components/Skeleton';
 import NewsImage from '../src/components/NewsImage';
 import EmptyState from '../src/components/EmptyState';
 import { radius, spacing, PRESSED, type, CHIP, CHIP_TEXT } from '../src/theme';
+import { useYanBosluk } from '../src/hooks/useIcerikAlani';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 import { bagilZaman } from '../src/utils/relativeTime';
@@ -29,6 +30,7 @@ import { useQuery } from '../src/hooks/useQuery';
 
 export default function NewsScreen() {
   const styles = useStyles(makeStyles);
+  const yan = useYanBosluk();
   const { colors } = useTheme();
   const { t, lang } = useLanguage();
   const router = useRouter();
@@ -114,7 +116,7 @@ export default function NewsScreen() {
         data={filtered}
         keyExtractor={keyExtractor}
         renderItem={renderNews}
-        contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xl }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xl, paddingHorizontal: yan }}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <View>

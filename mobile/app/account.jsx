@@ -8,11 +8,13 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as AppleAuthentication from 'expo-apple-authentication';
+import * as WebBrowser from 'expo-web-browser';
 import { signIn, signInWithApple } from '../src/services/session';
 import { anonDataSummary, transferAnonData } from '../src/services/owner';
 import { resetSyncThrottle } from '../src/services/sync';
 import { registerAccount, requestPasswordReset, checkUsernameAvailable } from '../src/api/account';
 import { radius, spacing, PRESSED, type } from '../src/theme';
+import { useYanBosluk } from '../src/hooks/useIcerikAlani';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 
@@ -21,8 +23,16 @@ import { useLanguage } from '../src/context/LanguageContext';
 // da duruyor — yetkili doğrulama her zaman sunucuda.
 const USERNAME_RE = /^[a-zA-Z0-9_]{3,20}$/;
 
+// Sözleşmeler UYGULAMA İÇİ tarayıcıda açılıyor, Safari'ye atılmıyor: kayıt
+// formunu yarıda bırakıp uygulamadan çıkan bir kullanıcı geri döndüğünde
+// yazdıklarını bulamazdı. Ayarlar ekranı da aynı adresleri aynı biçimde
+// açıyor (bkz. settings.jsx → openPage).
+const SITE = 'https://www.gamerisen.com';
+const openLegal = (path) => { WebBrowser.openBrowserAsync(`${SITE}${path}`).catch(() => {}); };
+
 export default function AccountScreen() {
   const styles = useStyles(makeStyles);
+  const yan = useYanBosluk();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const router = useRouter();
@@ -36,6 +46,12 @@ export default function AccountScreen() {
   const [busy, setBusy]   = useState(false);
   const [error, setError] = useState('');
   const [info, setInfo]   = useState('');
+  // App Store Guideline 1.2 — sözleşme KAYITTAN ÖNCE onaylanıyor.
+  //
+  // ONAY KUTUSU YALNIZCA KAYITTA. Girişte de sözleşme gösteriliyor ama kutu
+  // yok: geri dönen bir kullanıcı sözleşmeyi hesabı açarken zaten kabul etti,
+  // her girişte yeniden tıklatmak onay değil sürtünme üretirdi.
+  const [accepted, setAccepted] = useState(false);
 
   // Kullanıcı adı uygunluğu — yazarken canlı kontrol (400ms sönümleme).
   //
@@ -190,6 +206,15 @@ export default function AccountScreen() {
       return;
     }
 
+    // Sözleşme onayı EN SONDA denetleniyor: alan hataları önce çıksın, aksi
+    // hâlde kutuyu işaretleyen kullanıcı hemen ardından bir alan hatası daha
+    // yiyor ve iki adımda öğrenmesi gereken şeyi üç adımda öğreniyor.
+    if (isSignup && !accepted) {
+      setError(t('acc.legalRequired'));
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      return;
+    }
+
     setBusy(true);
     try {
       if (isSignup) {
@@ -212,7 +237,7 @@ export default function AccountScreen() {
     } finally {
       setBusy(false);
     }
-  }, [busy, mode, email, name, username, uname, unameMsg, password, t, router, lang, isForgot, isSignup, offerAnonTransfer]);
+  }, [busy, mode, email, name, username, uname, unameMsg, password, accepted, t, router, lang, isForgot, isSignup, offerAnonTransfer]);
 
   // Sign in with Apple — Apple yalnızca İLK onayda tam adı verir, o yüzden
   // credential.fullName'i hemen backend'e iletiyoruz (sonraki girişlerde gelmez).
@@ -247,12 +272,24 @@ export default function AccountScreen() {
       </View>
 
       <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.lg }]} keyboardShouldPersistTaps="handled">
+        <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.lg, paddingHorizontal: spacing.lg + yan }]} keyboardShouldPersistTaps="handled">
           <Text style={styles.lead}>
             {isForgot
               ? (lang === 'tr' ? 'Şifrenizi sıfırlamak için e-posta adresinizi girin.' : 'Enter your email address to reset your password.')
               : t('acc.why')}
           </Text>
+
+          {/* SÖZLEŞME HER İKİ GİRİŞ YOLUNUN DA ÜSTÜNDE.
+              Apple 1.2, sözleşmenin "kayıt veya girişten ÖNCE sunulmasını"
+              istiyor; formun altına konsaydı Apple ile giriş düğmesi ondan
+              önce gelirdi ve o yolu seçen kullanıcı sözleşmeyi hiç görmezdi. */}
+          {!isForgot && (
+            <LegalNotice
+              signup={isSignup}
+              accepted={accepted}
+              onToggle={() => { Haptics.selectionAsync().catch(() => {}); setAccepted((v) => !v); setError(''); }}
+            />
+          )}
 
           {!isForgot && Platform.OS === 'ios' && (
             <>
@@ -262,6 +299,14 @@ export default function AccountScreen() {
                 cornerRadius={radius.lg}
                 style={{ height: 52, marginBottom: 18 }}
                 onPress={async () => {
+                  // Apple ile KAYIT da bir kayıt: onay kutusu bu yolu da
+                  // bağlıyor, yoksa sözleşme yalnızca e-posta yolunda zorunlu
+                  // olurdu ve şart yarısı boş kalırdı.
+                  if (isSignup && !accepted) {
+                    setError(t('acc.legalRequired'));
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+                    return;
+                  }
                   try {
                     const credential = await AppleAuthentication.signInAsync({
                       requestedScopes: [
@@ -359,6 +404,69 @@ export default function AccountScreen() {
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// SÖZLEŞME BİLDİRİMİ — App Store Guideline 1.2
+//
+// Apple'ın 2.6.1 incelemesinde adını koyduğu eksik buydu: "kayıt veya girişten
+// ÖNCE sunulan EULA / kullanım koşulları". Sözleşmeler web'de ve ayarlarda
+// zaten vardı — hesap ekranında yoktu, yani şartın istediği ANDA yoktu.
+//
+// CÜMLE PARÇALARDAN KURULUYOR, tek bir çeviri dizesinden değil: bağlantı
+// metinleri (`set.terms`, `set.privacyPolicy`) ayarlar ekranıyla ORTAK ve
+// orada değişen bir çeviri burada da değişmeli. Türkçe gibi ekli dillerde
+// kesme işareti parçanın kendisine yazılı (`acc.legalMid` → "'nı ve ").
+//
+// KAYITTA KUTU, GİRİŞTE DÜZ METİN. Kutu bir ONAY; giriş yapan kullanıcı o
+// onayı hesabı açarken zaten verdi. Her girişte yeniden tıklatmak, kayıt
+// tarafındaki onayın anlamını da zayıflatırdı.
+// ─────────────────────────────────────────────────────────────────────────────
+function LegalNotice({ signup, accepted, onToggle }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
+  const { t } = useLanguage();
+
+  const cumle = (
+    <Text style={styles.legalText}>
+      {t(signup ? 'acc.legalAgreePre' : 'acc.legalContinuePre')}
+      <Text
+        style={styles.legalLink}
+        onPress={() => openLegal('/terms')}
+        accessibilityRole="link"
+      >
+        {t('set.terms')}
+      </Text>
+      {t('acc.legalMid')}
+      <Text
+        style={styles.legalLink}
+        onPress={() => openLegal('/privacy')}
+        accessibilityRole="link"
+      >
+        {t('set.privacyPolicy')}
+      </Text>
+      {t(signup ? 'acc.legalAgreePost' : 'acc.legalContinuePost')}
+    </Text>
+  );
+
+  if (!signup) return <View style={styles.legalPlain}>{cumle}</View>;
+
+  return (
+    <Pressable
+      onPress={onToggle}
+      style={({ pressed }) => [styles.legalRow, pressed && PRESSED]}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: accepted }}
+      // Kutu 22pt çiziliyor ama satırın tamamı dokunulabilir ve 44pt yüksek:
+      // HIG'in alt sınırı görsel boyutta değil DOKUNMA HEDEFİNDE geçerli.
+      hitSlop={6}
+    >
+      <View style={[styles.legalBox, accepted && styles.legalBoxOn]}>
+        {accepted ? <Ionicons name="checkmark" size={15} color="#fff" /> : null}
+      </View>
+      <View style={{ flex: 1 }}>{cumle}</View>
+    </Pressable>
+  );
+}
+
 function Field({ label, ...props }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
@@ -382,6 +490,23 @@ const makeStyles = (colors) => StyleSheet.create({
 
   body: { padding: spacing.lg, paddingTop: spacing.sm },
   lead: { fontSize: type.subhead, color: colors.text2, lineHeight: 21, marginBottom: 22 },
+
+  // Sözleşme bildirimi — bkz. LegalNotice.
+  legalPlain: { marginBottom: spacing.s20 },
+  legalRow: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.s12,
+    minHeight: 44, marginBottom: spacing.s20,
+  },
+  legalBox: {
+    width: 22, height: 22, borderRadius: 6,
+    borderWidth: 1.5, borderColor: colors.cardBorder,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  legalBoxOn: { backgroundColor: colors.accentFillStrong, borderColor: colors.accentFillStrong },
+  // 19pt satır yüksekliği: iki satıra taşan cümlede metin bloğu kutuyla aynı
+  // optik ağırlıkta kalsın diye `lead`in 21'inden bir tık sıkı.
+  legalText: { fontSize: type.footnote, color: colors.text3, lineHeight: 19 },
+  legalLink: { color: colors.accentText, fontWeight: '700' },
   dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 18 },
   dividerLine: { flex: 1, height: 1, backgroundColor: colors.cardBorder },
   dividerText: { color: colors.text3, fontSize: type.footnote, fontWeight: '600' },

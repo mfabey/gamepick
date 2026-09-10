@@ -19,14 +19,32 @@ import { useStyles } from '../context/ThemeContext';
 // 16'dan 20'ye çekilince ızgara 8pt taşmıştı.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const GRID_COLS = 3;
 export const GRID_GAP = spacing.s4;
 export const GRID_PAD = spacing.s20;
 
+// Maketin 390 pt'de verdiği hücre genişliği. IZGARANIN ÖLÇÜ BİRİMİ BU:
+// geniş ekranda sütun sayısı artıyor, hücre boyu sabit kalıyor.
+const HEDEF_HUCRE = 114;
+
+/**
+ * Sütun sayısı — PENCEREDEN TÜRÜYOR, sabit değil.
+ *
+ * Sabit 3 iken iPad'de (820 pt) her hücre 264 pt oluyordu: aynı sayıda kapak,
+ * iki buçuk katı büyüklükte. Izgaranın işi çok kapağı bir arada göstermek;
+ * geniş ekranda kazanılan yer HÜCREYE değil SÜTUNA gitmeli.
+ *
+ * Alt sınır 3: maketin sayısı ve dar telefonda (320 pt) hesap zaten 3 veriyor.
+ * Ölçüm: 390 → 3 (hücre 114) · 663 → 5 (121) · 820 → 6 (127).
+ */
+export function gridCols(width) {
+  const n = Math.floor((width - GRID_PAD * 2 + GRID_GAP) / (HEDEF_HUCRE + GRID_GAP));
+  return Math.max(3, n);
+}
+
 /** Tek hücrenin genişliği (pt). Yükseklik 3:4 oranından türüyor. */
-export function coverWidth(windowWidth) {
+export function coverWidth(windowWidth, cols = gridCols(windowWidth)) {
   const inner = windowWidth - GRID_PAD * 2;
-  return (inner - GRID_GAP * (GRID_COLS - 1)) / GRID_COLS;
+  return (inner - GRID_GAP * (cols - 1)) / cols;
 }
 
 /** Ad yoksa da bir şey çizilmeli: baş harf, boş kutudan iyidir. */

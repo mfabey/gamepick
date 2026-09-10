@@ -30,8 +30,11 @@ import {
 import { subscribeDM, chatCapabilities } from '../../src/services/realtime';
 import { setActiveChat, dismissChatNotifications } from '../../src/notifications';
 import { getSession, subscribeSession } from '../../src/services/session';
+import { engelle } from '../../src/services/moderation';
+import { useYanBosluk } from '../../src/hooks/useIcerikAlani';
 import EmptyState from '../../src/components/EmptyState';
 import ReportSheet from '../../src/components/ReportSheet';
+import PersonMenu from '../../src/components/PersonMenu';
 import MessageMenu from '../../src/components/MessageMenu';
 import GifPicker from '../../src/components/GifPicker';
 import BubbleTail from '../../src/components/BubbleTail';
@@ -312,6 +315,21 @@ export default function ChatScreen() {
   // KONUŞMAYI, mesaj menüsü ise TEK MESAJI raporluyor. İki ayrı state yerine
   // tek hedef, iki çağıran.
   const [reportTarget, setReportTarget] = useState(null);
+  // Başlıktaki "⋯" ARTIK DOĞRUDAN ŞİKAYET AÇMIYOR.
+  //
+  // App Store 1.2 engellemenin de bulunabilir olmasını istiyor ve sohbet
+  // tacizin ASIL kanalı — ama engelleme yalnızca arkadaş listesinde ve profil
+  // ekranındaydı. Konuşmanın içindeyken engellemek için kullanıcının çıkıp
+  // karşı tarafın profilini bulması gerekiyordu; en çok ihtiyaç duyulan yerde
+  // en uzak olan seçenekti.
+  //
+  // Üç nokta zaten "başka seçenekler" demek; tek bir eyleme kısayol olması
+  // hem sözü tutmuyordu hem de ikinci eylemin yerini kapatıyordu.
+  const [kisiMenu, setKisiMenu] = useState(false);
+  // Geniş ekranda sohbet kolonu ortalanıyor (bkz. theme → ICERIK_MAX):
+  // 820 pt'ye yayılan baloncuklar bir konuşma gibi değil, bir tabloya
+  // dağılmış cümleler gibi okunuyordu.
+  const yan = useYanBosluk();
   const [gifOpen, setGifOpen] = useState(false);
   // "+" ek menüsü. Mesaj menüsüyle AYNI bileşen kullanılıyor: ikisi de
   // bir düğmeye tutturulmuş kısa bir eylem listesi ve ikinci bir menü
@@ -942,6 +960,34 @@ export default function ChatScreen() {
     }] : []),
   ]), [caps.photos, caps.gifs, t, pickAndSend]);
 
+  /**
+   * Başlık menüsü — profil · engelle · şikayet.
+   *
+   * ENGELLEDİKTEN SONRA EKRANDAN ÇIKIYORUZ. Engellenen biriyle olan konuşma
+   * sunucuda zaten kapalı (canTalk); ekranda kalsaydı kullanıcı yazabilir
+   * sanıp her denemede hata alırdı.
+   */
+  const kisiSec = useCallback((anahtar) => {
+    if (anahtar === 'profile') {
+      if (peer?.username) router.push(`/u/${peer.username}`);
+      return;
+    }
+    if (anahtar === 'report') { setReportTarget(cid || other); return; }
+    if (anahtar === 'block') {
+      Alert.alert(peer?.displayName || peer?.username || '', t('soc.blockConfirm'), [
+        { text: t('soc.cancel'), style: 'cancel' },
+        {
+          text: t('soc.block'),
+          style: 'destructive',
+          onPress: async () => {
+            try { await engelle(other); router.back(); }
+            catch { Alert.alert(t('soc.err.generic')); }
+          },
+        },
+      ]);
+    }
+  }, [peer, cid, other, router, t]);
+
   // Goruldu isareti YALNIZCA EN YENI okunmus kendi mesajimda. Her okunmus
   // mesaja koymak sohbeti isaret cop luguna cevirir; kullanicinin bilmek
   // istedigi tek sey nereye kadar okundugu.
@@ -1030,7 +1076,7 @@ export default function ChatScreen() {
           Ad hapında ÇEVRON YOK. iOS'ta var ve kişi kartını açıyor; bizde
           başka bir kullanıcının profil ekranı yok. Hiçbir yere gitmeyen bir
           çevron, olmayan bir ekran vaat ederdi. */}
-      <View style={styles.header}>
+      <View style={[styles.header, { marginHorizontal: yan }]}>
         <View style={styles.kimlik}>
           {preset ? (
             <View style={[styles.avatar, { backgroundColor: preset.bg }]}>
@@ -1066,7 +1112,7 @@ export default function ChatScreen() {
 
         <GlassSurface style={[styles.yuvarlakBtn, styles.dahaBtn]} radius={TOUCH_MIN / 2}>
           <Pressable style={({ pressed }) => [styles.yuvarlakHit, pressed && PRESSED]}
-                     onPress={() => setReportTarget(cid || other)} accessibilityRole="button" accessibilityLabel={t('a11y.more')}>
+                     onPress={() => setKisiMenu(true)} accessibilityRole="button" accessibilityLabel={t('a11y.more')}>
             <Ionicons name="ellipsis-horizontal" size={19} color={colors.text2} />
           </Pressable>
         </GlassSurface>
@@ -1080,7 +1126,7 @@ export default function ChatScreen() {
           Dokununca mesaja gidiyor, X sabitlemeyi kaldırıyor. Sabit ortak bir
           işaret olduğu için kaldırma da iki tarafa açık. */}
       {body ? null : pinned ? (
-        <Animated.View entering={FadeIn.duration(160)} style={styles.pinBar}>
+        <Animated.View entering={FadeIn.duration(160)} style={[styles.pinBar, { marginHorizontal: yan }]}>
           <Pressable
             style={({ pressed }) => [styles.pinMain, pressed && PRESSED]}
             onPress={() => jumpTo(pinned.id)}
@@ -1132,7 +1178,7 @@ export default function ChatScreen() {
               data={veri}
               inverted
               keyExtractor={anahtar}
-              contentContainerStyle={styles.listPad}
+              contentContainerStyle={[styles.listPad, { paddingHorizontal: spacing.s16 + yan }]}
               keyboardDismissMode="interactive"
               // ── RENDER PENCERESİ ──
               // RN varsayılanı 21 (kaynak: VirtualizedListProps.js,
@@ -1201,6 +1247,9 @@ export default function ChatScreen() {
               (edges={['top']}) cunku liste tepeye kadar uzanmali. Alt kenar
               burada elle veriliyor — verilmezse gonderme dugmesi ana ekran
               cizgisinin altinda kaliyordu. */}
+          {/* Gönderim kutusu da kolonun içinde: liste ortalanıp kutu tam
+              genişlikte kalsaydı ikisi aynı konuşmaya ait görünmezdi. */}
+          <View style={{ marginHorizontal: yan }}>
           <Kompozitor
             ekSayisi={ekSayisi}
             ekAc={ekAc}
@@ -1210,8 +1259,22 @@ export default function ChatScreen() {
             onTyping={bildirYaziyor}
             altDolgu={kbVisible ? spacing.sm : Math.max(insets.bottom, spacing.sm)}
           />
+          </View>
         </KeyboardAvoidingView>
       )}
+
+      {/* Kişi menüsü — arkadaş listesi ve profil ekranıyla AYNI bileşen.
+          `arkadas={false}`: "arkadaşlıktan çıkar" burada yanlış bir söz
+          olurdu (sohbet arkadaş olmadan da açılabiliyor) ve "mesaj gönder"
+          zaten bulunduğun ekran. Geriye tam olarak gereken üç satır kalıyor:
+          profil · engelle · şikayet. */}
+      <PersonMenu
+        visible={kisiMenu}
+        person={peer?.uid ? peer : null}
+        arkadas={false}
+        onClose={() => setKisiMenu(false)}
+        onSec={kisiSec}
+      />
 
       {/* Mesaj raporlama — Apple Guideline 1.2 kullanıcı içeriğinin
           raporlanabilir olmasını istiyor, özel mesajlar dahil. */}

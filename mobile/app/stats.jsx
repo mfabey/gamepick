@@ -21,6 +21,7 @@ import { weeklyReport } from '../src/services/stats';
 import { fetchSteamPrices } from '../src/api/library';
 import EmptyState from '../src/components/EmptyState';
 import { radius, spacing, PRESSED, type } from '../src/theme';
+import { useYanBosluk } from '../src/hooks/useIcerikAlani';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 import IconButton from '../src/components/IconButton';
@@ -36,6 +37,7 @@ export default function StatsScreen() {
 
 function StatsScreenContent() {
   const styles = useStyles(makeStyles);
+  const yan = useYanBosluk();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const router = useRouter();
@@ -108,7 +110,7 @@ function StatsScreenContent() {
           onAction={() => router.replace('/games')}
         />
       ) : (
-        <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 40 }]} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 40, paddingHorizontal: yan }]} showsVerticalScrollIndicator={false}>
           {/* Kahraman sayı — haftanın ana metriği */}
           <View style={styles.hero}>
             <Text style={styles.heroNum}>{report.discovered}</Text>

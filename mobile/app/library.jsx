@@ -13,6 +13,7 @@ import EmptyState from '../src/components/EmptyState';
 import GameCover from '../src/components/GameCover';
 import { prefetchImages } from '../src/utils/prefetch';
 import { radius, spacing, TAB_SPACE, type, CHIP, CHIP_TEXT } from '../src/theme';
+import { useKartSutun } from '../src/hooks/useIcerikAlani';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 import { useAuth } from '../src/context/AuthContext';
@@ -31,6 +32,8 @@ function computeValue(games, prices) {
 
 export default function LibraryScreen() {
   const styles = useStyles(makeStyles);
+  // (390 − 2×10) / 2 = 185 — maketin hücre genişliği.
+  const sutun = useKartSutun(185, 2);
   const { colors } = useTheme();
   const { t, lang, formatPrice } = useLanguage();
   const { steamAccounts, xbox, busy, loginSteam, loginXbox, account } = useAuth();
@@ -261,7 +264,7 @@ export default function LibraryScreen() {
         <FlashList
           data={filtered}
           keyExtractor={keyExtractor}
-          numColumns={2}
+          numColumns={sutun}
           renderItem={renderTile}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}

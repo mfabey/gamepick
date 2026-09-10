@@ -13,6 +13,7 @@ import { useAltBosluk } from '../src/hooks/useAltBosluk';
 import { recordSignal } from '../src/services/tasteProfile';
 import { completeOnboarding } from '../src/services/onboarding';
 import { radius, spacing, PRESSED, type } from '../src/theme';
+import { useKartSutun } from '../src/hooks/useIcerikAlani';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 import GameCover from '../src/components/GameCover';
@@ -25,6 +26,8 @@ const fetchPool = () => fetchGames({ section: 'popular', num: 40 });
 
 export default function OnboardingScreen() {
   const styles = useStyles(makeStyles);
+  // Telefonda ölçülen hücre genişliği: 125 pt. Geniş ekranda sütun artar.
+  const sutun = useKartSutun(125, 3);
   const { colors } = useTheme();
   const router = useRouter();
   const { t } = useLanguage();
@@ -97,7 +100,7 @@ export default function OnboardingScreen() {
       ) : (
         <FlashList
           data={games}
-          numColumns={3}
+          numColumns={sutun}
           keyExtractor={keyExtractor}
           renderItem={renderItem}
           contentContainerStyle={styles.list}

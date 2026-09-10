@@ -31,7 +31,7 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { radius, spacing, type, PRESSED } from '../theme';
+import { radius, spacing, type, PRESSED, ICERIK_MAX } from '../theme';
 import { useStyles, useTheme } from '../context/ThemeContext';
 
 export default function EmptyState({
@@ -79,6 +79,12 @@ const makeStyles = (colors) => StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: spacing.xl,
     paddingVertical: 40,
+    // GENİŞ EKRANDA BOŞ DURUM DA TAVANA TABİ. iPad'de (820 pt) açıklama
+    // metni tek satırda ekranın ucundan ucuna uzuyor ve "boş" ekran, dolu
+    // bir ekrandan daha geniş bir satır uzunluğuyla okunuyordu.
+    width: '100%',
+    maxWidth: ICERIK_MAX,
+    alignSelf: 'center',
   },
   compact: { flex: 0, paddingVertical: 28 },
 

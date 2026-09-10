@@ -34,7 +34,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { useStyles, useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
-import { type, radius, spacing, PRESSED } from '../theme';
+import { type, radius, spacing, PRESSED, ICERIK_MAX } from '../theme';
 
 /**
  * @param {string[]} unavailable  çalışmayan filtre adları ('store'|'metacritic'|'tags'|'mode')
@@ -96,6 +96,10 @@ export default function LimitedMode({ unavailable = [], cevrimdisi = true, onRet
 const makeStyles = (colors) => StyleSheet.create({
   // Handoff: brandWash dolgu, brandWashBorder kenarlık, yarıçap 12, dolgu 16.
   kutu: {
+    // Geniş ekranda kutu da içerik tavanına tabi (bkz. theme → ICERIK_MAX).
+    width: '100%',
+    maxWidth: ICERIK_MAX,
+    alignSelf: 'center',
     backgroundColor: colors.accentBg,
     borderWidth: 1,
     borderColor: colors.accentBorder,

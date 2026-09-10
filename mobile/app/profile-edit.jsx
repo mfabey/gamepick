@@ -27,6 +27,7 @@ import * as Haptics from 'expo-haptics';
 
 import Avatar from '../src/components/Avatar';
 import { radius, spacing, type, avatar as avatarSize, PRESSED, NUMERIC, TOUCH_MIN } from '../src/theme';
+import { useYanBosluk } from '../src/hooks/useIcerikAlani';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 import { AVATAR_PRESET_IDS, getAvatarPreset } from '../src/utils/avatar';
@@ -42,6 +43,7 @@ const MAX_NAME = 40;
 
 export default function ProfileEditScreen() {
   const styles = useStyles(makeStyles);
+  const yan = useYanBosluk();
   const { colors } = useTheme();
   const { t } = useLanguage();
   const router = useRouter();
@@ -173,7 +175,7 @@ export default function ProfileEditScreen() {
       </View>
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.s40 }]}
+        <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.s40, paddingHorizontal: yan }]}
                     keyboardShouldPersistTaps="handled">
           {/* Avatar — dokunuş seçiciyi açıyor. Kalem rozeti değişebilirliği
               ima ediyor; jest artık gizli değil, ekranın işi bu. */}

@@ -15,6 +15,7 @@ import * as Haptics from 'expo-haptics';
 
 import { getPrivacy, setPrivacy, getBlocked, unblockUser } from '../src/api/social';
 import { radius, spacing, PRESSED, type, SECTION_TITLE, TOUCH_MIN } from '../src/theme';
+import { useYanBosluk } from '../src/hooks/useIcerikAlani';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 import Avatar from '../src/components/Avatar';
@@ -22,6 +23,7 @@ import { SettingsGroup, SettingsRow, AYIRICI_SOL } from '../src/components/Setti
 
 export default function SocialSettingsScreen() {
   const styles = useStyles(makeStyles);
+  const yan = useYanBosluk();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const router = useRouter();
@@ -107,7 +109,7 @@ export default function SocialSettingsScreen() {
       {privacy === null ? (
         <View style={styles.center}><ActivityIndicator color={colors.accent} /></View>
       ) : (
-        <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 40 }]} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 40, paddingHorizontal: yan }]} showsVerticalScrollIndicator={false}>
           {/* Anahtarlar kapalı ama bu bir DURUM değil bir BİLİNMEZLİK —
               bant tam olarak bunu söylüyor. Kırmızı yok. */}
           {bozuk ? (

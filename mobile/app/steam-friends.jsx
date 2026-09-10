@@ -28,6 +28,7 @@ import { getSession, subscribeSession } from '../src/services/session';
 import EmptyState from '../src/components/EmptyState';
 import { getAvatarPreset } from '../src/utils/avatar';
 import { radius, spacing, type, PRESSED, NUMERIC, TAB_SPACE, motion } from '../src/theme';
+import { useYanBosluk } from '../src/hooks/useIcerikAlani';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 
@@ -36,6 +37,7 @@ const anahtar = (f) => f.steamId;
 
 export default function SteamFriendsScreen() {
   const styles = useStyles(makeStyles);
+  const yan = useYanBosluk();
   const { colors } = useTheme();
   const router = useRouter();
   const { t } = useLanguage();
@@ -177,7 +179,7 @@ export default function SteamFriendsScreen() {
         <FlashList
           data={data.friends}
           keyExtractor={anahtar}
-          contentContainerStyle={{ paddingBottom: TAB_SPACE }}
+          contentContainerStyle={{ paddingBottom: TAB_SPACE, paddingHorizontal: yan }}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.text2} />
           }

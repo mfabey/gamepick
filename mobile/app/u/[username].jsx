@@ -36,7 +36,8 @@ import { getSession } from '../../src/services/session';
 
 import ProfileHeader from '../../src/components/ProfileHeader';
 import ProfileTabs from '../../src/components/ProfileTabs';
-import CoverCell, { coverWidth, GRID_COLS, GRID_GAP } from '../../src/components/CoverGrid';
+import CoverCell, { coverWidth, gridCols, GRID_GAP } from '../../src/components/CoverGrid';
+import { useYanBosluk } from '../../src/hooks/useIcerikAlani';
 import ProfileReviewRow from '../../src/components/ProfileReviewRow';
 import PostCard from '../../src/components/PostCard';
 import EmptyState from '../../src/components/EmptyState';
@@ -170,13 +171,20 @@ export default function UserProfileScreen() {
   const profil = sunucu?.profile || null;
   const canView = sunucu?.canView !== false;
   const izgara = tab === 'collection' || tab === 'wishlist';
-  const kapakEn = coverWidth(width);
+  // Sütun sayısı ve hücre genişliği AYNI genişlikten türüyor; ikisini
+  // ayrı yerden okumak ızgarayı taşırırdı.
+  // IZGARA GENİŞLİKTEN FAYDALANIR, GÖNDERİ AKIŞI OKUNABİLİRLİKTEN.
+  // İki sekme aynı listede yaşıyor ve aynı kuralı paylaşamazlar: kapaklar
+  // sütun kazanınca kazanıyor, metin ise satır uzayınca kaybediyor.
+  const yan = useYanBosluk();
+  const sutun = gridCols(width);
+  const kapakEn = coverWidth(width, sutun);
   // ŞERİT LİSTENİN İLK ÖĞESİ — kendi profilimle aynı yapı ve aynı gerekçe
   // (bkz. (tabs)/profile.jsx: sabitleme denendi, emülatörde şerit iki kez
   // çizilip kimlik bloğunu örttüğü için geri alındı).
   const satirlar = useMemo(() => {
     if (!canView) return [{ __serit: true }, { __kilit: true }];
-    const govde = izgara ? bol(items, GRID_COLS) : items;
+    const govde = izgara ? bol(items, sutun) : items;
     if (govde.length === 0) return [{ __serit: true }, { __bos: true }];
     return [{ __serit: true }, ...govde];
   }, [izgara, items, canView]);
@@ -273,6 +281,7 @@ export default function UserProfileScreen() {
           data={satirlar}
           keyExtractor={(item, i) => (item.__serit ? 'serit' : item.__kilit ? 'kilit' : item.__bos ? 'bos' : izgara ? `r${i}` : String(item.id ?? `${item.appid}:${item.uid}`))}
           renderItem={satirCiz}
+          contentContainerStyle={{ paddingHorizontal: izgara ? 0 : yan }}
           extraData={tab}
           estimatedItemSize={izgara ? Math.round((kapakEn * 4) / 3) + GRID_GAP : 140}
           ListHeaderComponent={(

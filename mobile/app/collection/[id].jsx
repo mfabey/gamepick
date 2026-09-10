@@ -20,6 +20,7 @@ import {
 } from '../../src/services/collectionsStore';
 import { posterImage } from '../../src/utils/images';
 import { radius, spacing, PRESSED, type } from '../../src/theme';
+import { useYanBosluk } from '../../src/hooks/useIcerikAlani';
 import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { useLanguage } from '../../src/context/LanguageContext';
 import IconButton from '../../src/components/IconButton';
@@ -27,6 +28,7 @@ import GameRow, { SATIR_Y } from '../../src/components/GameRow';
 
 export default function CollectionDetailScreen() {
   const styles = useStyles(makeStyles);
+  const yan = useYanBosluk();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const router = useRouter();
@@ -145,7 +147,7 @@ export default function CollectionDetailScreen() {
           data={games}
           keyExtractor={(item) => String(item.id)}
           renderItem={renderItem}
-          contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 30 }]}
+          contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 30, paddingHorizontal: yan }]}
           estimatedItemSize={SATIR_Y}
           showsVerticalScrollIndicator={false}
         />

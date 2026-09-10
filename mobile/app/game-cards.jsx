@@ -24,6 +24,7 @@ import { resolveCity } from '../src/services/location';
 import { getSession, subscribeSession } from '../src/services/session';
 import EmptyState from '../src/components/EmptyState';
 import { radius, spacing, type, PRESSED, NUMERIC, TAB_SPACE } from '../src/theme';
+import { useYanBosluk } from '../src/hooks/useIcerikAlani';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 
@@ -32,6 +33,7 @@ const anahtar = (c) => String(c.appid);
 
 export default function GameCardsScreen() {
   const styles = useStyles(makeStyles);
+  const yan = useYanBosluk();
   const { colors } = useTheme();
   const router = useRouter();
   const { t, lang } = useLanguage();
@@ -150,7 +152,7 @@ export default function GameCardsScreen() {
         <FlashList
           data={data.cards}
           keyExtractor={anahtar}
-          contentContainerStyle={{ paddingBottom: TAB_SPACE }}
+          contentContainerStyle={{ paddingBottom: TAB_SPACE, paddingHorizontal: yan }}
           ListHeaderComponent={
             <Summary s={data.summary} t={t} city={city} busy={cityBusy} onToggleCity={toggleCity} />
           }

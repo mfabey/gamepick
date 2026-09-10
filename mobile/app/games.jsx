@@ -24,11 +24,15 @@ import FilterSheet, { FilterButton, countFilters, EtkinFiltreler } from '../src/
 import LimitedMode from '../src/components/LimitedMode';
 import EmptyState from '../src/components/EmptyState';
 
+// Maketin sütun sayısı ve o sayının 390 pt'de verdiği hücre genişliği:
+// (390 − 2×10) / 2 = 185. Geniş ekranda sütun bu ölçüden türüyor.
 const COLS = 2;
+const HUCRE = 185;
 const NUM = 24;
 const PAGE1_TTL = 5 * 60 * 1000;   // 1. sayfa önbellek ömrü
 
 import { useReducedMotion } from '../src/hooks/useReducedMotion';
+import { useKartSutun } from '../src/hooks/useIcerikAlani';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // BU EKRAN ARTIK SEKME DEĞİL, YIĞIN EKRANI.
@@ -237,6 +241,7 @@ export default function GamesScreen() {
   }, [reducedMotion, compact, headerH]);
 
   // Liste başlığın ALTINDAN kayıyor; dolgu olmasa ilk satır gizli kalırdı.
+  const sutun = useKartSutun(HUCRE, COLS);
   const listPad = useMemo(
     () => ({ paddingHorizontal: 10, paddingTop: headerH + 6 }),
     [headerH]
@@ -387,7 +392,7 @@ export default function GamesScreen() {
               <View style={{ flex: 1, opacity: 0.55 }} pointerEvents="none">
                 <FlashList
                   data={games}
-                  numColumns={2}
+                  numColumns={sutun}
                   keyExtractor={keyExtractor}
                   renderItem={renderGame}
                   contentContainerStyle={styles.listContent}
@@ -444,7 +449,7 @@ export default function GamesScreen() {
             scrollEventThrottle={16}
             data={games}
             keyExtractor={keyExtractor}
-            numColumns={COLS}
+            numColumns={sutun}
             renderItem={renderGame}
             contentContainerStyle={listPad}
             showsVerticalScrollIndicator={false}

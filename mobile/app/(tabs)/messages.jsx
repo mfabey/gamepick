@@ -25,6 +25,7 @@ import EmptyState from '../../src/components/EmptyState';
 import { getAvatarPreset } from '../../src/utils/avatar';
 import { spacing, type, PRESSED } from '../../src/theme';
 import { useTabBosluk } from '../../src/hooks/useAltBosluk';
+import { useYanBosluk } from '../../src/hooks/useIcerikAlani';
 import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { useTabBarScroll } from '../../src/context/TabBarContext';
 import { useLanguage } from '../../src/context/LanguageContext';
@@ -57,6 +58,7 @@ function shortTime(ts, lang) {
 export default function MessagesScreen() {
   const styles = useStyles(makeStyles);
   const tabBosluk = useTabBosluk();
+  const yan = useYanBosluk();
   const { colors } = useTheme();
   const router = useRouter();
   const { t, lang } = useLanguage();
@@ -142,7 +144,8 @@ export default function MessagesScreen() {
       {/* Geri düğmesi YOK: burası artık bir sekme kökü, geri dönülecek bir
           yer yok. Başlık da sola hizalandı — diğer sekmelerin başlıklarıyla
           aynı hizada dursun. */}
-      <View style={styles.header}>
+      {/* Başlık listenin DIŞINDA: kolona kendi hizalanıyor. */}
+      <View style={[styles.header, { marginHorizontal: yan }]}>
         <Text style={styles.title}>{t('msg.title')}</Text>
       </View>
 
@@ -153,7 +156,7 @@ export default function MessagesScreen() {
           scrollEventThrottle={16}
           data={rows}
           keyExtractor={anahtar}
-          contentContainerStyle={{ paddingBottom: tabBosluk }}
+          contentContainerStyle={{ paddingBottom: tabBosluk, paddingHorizontal: yan }}
           ItemSeparatorComponent={Ayirici}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={cek} tintColor={colors.text2} />

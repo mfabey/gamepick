@@ -412,6 +412,39 @@ export const spacing = {
   xs: 4, sm: 8, md: 12, lg: 16, xl: 24,
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// GENİŞ EKRAN YERLEŞİMİ (iPad) — İKİ SAYI, İKİ AYRI GEREKÇE
+//
+// 2.6.1'e kadar `supportsTablet: false` idi ve iPad'de uygulama iPhone 8
+// kanvasında (375×667) çizilip 1,77× BÜYÜTÜLÜYORDU. Ölçüldü (iPad Air 11",
+// 820×1180 pt): pencere 663 pt, tasarımda 40 pt olan avatar ekranda 70,5 pt,
+// tasarımda 20 pt olan yan dolgu 35,5 pt. İki bağımsız landmark aynı katsayıyı
+// verdi. iPad hedefi açılınca ölçek 1,00× oldu — ama bu sefer içerik
+// GERİLDİ: 402 pt için tasarlanmış tek kolonlu bir akış 820 pt'ye yayılıyor.
+//
+// ── ICERIK_MAX = 640 — OKUNABİLİR SATIR UZUNLUĞU ──
+// Tipografide üst sınır ~75 karakter; ötesinde göz satır sonundan satır
+// başına dönerken yerini kaybediyor. Gövde metni `type.subhead` = 15 pt ve
+// sistem yazıtipinde ortalama karakter ilerlemesi ≈ 0,48 em → 7,2 pt.
+//   75 × 7,2 ≈ 540 pt metin kolonu
+// Gönderi satırının metin dışı payı: 20 (dolgu) + 40 (avatar) + 12 (boşluk)
+// + 20 (dolgu) = 92 pt.
+//   540 + 92 = 632 → 640
+//
+// ── SAYFA_MAX = 820 — DOĞRULANMIŞ EN GENİŞ TUVAL ──
+// iPad Air 11"in dikey genişliği. Izgara gibi genişlikten FAYDALANAN
+// yüzeyler buraya kadar büyüyor, ötesinde ortalanıyor. Sınır keyfi değil bir
+// SÖZ: yerleşim 320–820 pt arasında gözle doğrulanıyor; 13" yatayda (1366 pt)
+// uygulama büyümüyor, ortalanıyor. Doğrulanmadığımız bir genişlikte
+// "çalışıyor" numarası yapmaktansa durmak dürüst olan.
+//
+// iPadOS 26'da `UIRequiresFullScreen` yok sayılıyor — pencere her boyutta
+// olabilir. Bu yüzden iki sayı da SABİT GENİŞLİK değil TAVAN: altında kalan
+// her genişlikte yerleşim aynen akıyor.
+// ─────────────────────────────────────────────────────────────────────────────
+export const ICERIK_MAX = 640;
+export const SAYFA_MAX = 820;
+
 // Floating alt bar için ekran altına bırakılacak boşluk
 // ─────────────────────────────────────────────────────────────────────────────
 // YÜZEN SEKME ÇUBUĞU ÖLÇÜLERİ — tasarım handoff'undan.

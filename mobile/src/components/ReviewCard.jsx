@@ -20,9 +20,18 @@ import { useKapakOlcum } from '../hooks/useKapakOlcum';
 // Steam'den okuduğu kütüphaneden geliyor; "500 saatim var" diye
 // yazılabilseydi "doğrulanmış" kelimesi anlamsız olurdu.
 //
-// UZUN BASMA = RAPORLA. Kullanıcı içeriğinin gösterildiği HER yüzeyde
-// bulunmak zorunda (App Store Guideline 1.2); çağıran ekran bunu
-// `onLongPress` ile bağlamalı.
+// ŞİKAYET = GÖRÜNÜR "⋯" DÜĞMESİ (uzun basma da kalıyor). Kullanıcı
+// içeriğinin gösterildiği HER yüzeyde bulunmak zorunda (App Store Guideline
+// 1.2); çağıran ekran bunu `onLongPress` ile bağlıyor.
+//
+// DÜĞME 2.6.1 REDDİNDEN SONRA EKLENDİ. Şikayet yalnızca uzun basmaya
+// bağlıydı ve şartın istediği şey mekanizmanın VAR OLMASI değil,
+// BULUNABİLİR olması: varlığını kimsenin bilmediği bir jest, önlem sayılmaz.
+// `PersonMenu`nun başındaki not aynı hatayı kişi listelerinde çoktan
+// yazmıştı — inceleme kartında uygulanmamıştı.
+//
+// Düğme `onLongPress` VARSA çiziliyor: şikayet edilemeyen bir kartta (kendi
+// incelemem) hiçbir şey yapmayan bir düğme kalmasın diye tek koşul bu.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function ReviewCard({ review, onPress, onLongPress, onEdit, onExpand, style }) {
@@ -76,6 +85,18 @@ export default function ReviewCard({ review, onPress, onLongPress, onEdit, onExp
           size={17}
           color={review.recommended ? colors.green : colors.text3}
         />
+
+        {onLongPress ? (
+          <Pressable
+            onPress={onLongPress}
+            hitSlop={12}
+            style={({ pressed }) => [styles.moreBtn, pressed && PRESSED]}
+            accessibilityRole="button"
+            accessibilityLabel={t('a11y.more')}
+          >
+            <Ionicons name="ellipsis-horizontal" size={16} color={colors.text3} />
+          </Pressable>
+        ) : null}
       </View>
 
       <Text style={styles.body} numberOfLines={6}>{review.text}</Text>
@@ -98,6 +119,9 @@ const makeStyles = (colors) => StyleSheet.create({
     padding: spacing.md, gap: spacing.sm,
   },
   cardHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  // Görsel 24×22, dokunma alanı hitSlop ile 48×46: kart başlığını 44pt'ye
+  // çıkarmak kapak/isim hizasını bozardı.
+  moreBtn: { width: 24, height: 22, alignItems: 'center', justifyContent: 'center', marginRight: -spacing.xs },
   // overflow ŞART: görsel artık içeride mutlak konumlu, kırpılmazsa 4pt
   // yarıçap görünmez olurdu.
   cardImg:  { width: 56, height: 26, borderRadius: 4, overflow: 'hidden', backgroundColor: colors.bgInput },

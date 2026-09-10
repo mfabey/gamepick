@@ -19,12 +19,14 @@ import * as Haptics from 'expo-haptics';
 import Avatar from '../src/components/Avatar';
 import EmptyState from '../src/components/EmptyState';
 import { radius, spacing, type, PRESSED, NUMERIC, SECTION_TITLE, TOUCH_MIN, avatar as avatarSize } from '../src/theme';
+import { useYanBosluk } from '../src/hooks/useIcerikAlani';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 import { getFriends, friendAction } from '../src/api/social';
 
 export default function FriendRequestsScreen() {
   const styles = useStyles(makeStyles);
+  const yan = useYanBosluk();
   const { colors } = useTheme();
   const { t } = useLanguage();
   const router = useRouter();
@@ -71,7 +73,7 @@ export default function FriendRequestsScreen() {
         <EmptyState icon="mail-outline" title={t('soc.noRequests')} />
       ) : (
         <ScrollView
-          contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.s40 }]}
+          contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.s40, paddingHorizontal: yan }]}
           showsVerticalScrollIndicator={false}
         >
           {data.incoming.length > 0 ? (

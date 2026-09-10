@@ -31,9 +31,14 @@ import { radius, spacing, type, PRESSED } from '../theme';
 /**
  * @param {object}  person   { uid, username, displayName, avatar }
  * @param {bool}    arkadas  arkadaşsa "çıkar" ve "mesaj" görünür
+ * @param {string}  raporEtiketi  şikayet satırının ETİKETİ — neyin şikayet
+ *   edildiğini ÇAĞIRAN belirliyor. Kişi listesinde kişiyi, gönderi kartında
+ *   gönderiyi şikayet ediyoruz ve menü aynı; ayrı bir satır eklemek yerine
+ *   satırın adı değişiyor. Ayrı satır olsaydı gönderi kartında iki şikayet
+ *   satırı yan yana durur ve kullanıcı hangisinin ne yaptığını bilemezdi.
  * @param {func}    onSec    (anahtar) → 'profile'|'message'|'remove'|'block'|'report'
  */
-export default function PersonMenu({ visible, person, arkadas = false, onClose, onSec }) {
+export default function PersonMenu({ visible, person, arkadas = false, raporEtiketi, onClose, onSec }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const { t } = useLanguage();
@@ -54,7 +59,7 @@ export default function PersonMenu({ visible, person, arkadas = false, onClose, 
     arkadas && { anahtar: 'message', etiket: t('soc.menu.message'), ikon: 'chatbubble-outline' },
     arkadas && { anahtar: 'remove', etiket: t('soc.menu.remove'), ikon: 'person-remove-outline', yikici: true, ayirici: true },
     { anahtar: 'block', etiket: t('soc.menu.block'), ikon: 'ban-outline', yikici: true, ayirici: !arkadas },
-    { anahtar: 'report', etiket: t('soc.menu.report'), ikon: 'flag-outline', yikici: true },
+    { anahtar: 'report', etiket: raporEtiketi || t('soc.menu.report'), ikon: 'flag-outline', yikici: true },
   ].filter(Boolean);
 
   return (

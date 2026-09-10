@@ -18,6 +18,7 @@ import { createCollection, deleteCollection } from '../src/services/collectionsS
 import EmptyState from '../src/components/EmptyState';
 import { posterImage } from '../src/utils/images';
 import { radius, spacing, PRESSED, type, motion } from '../src/theme';
+import { useYanBosluk } from '../src/hooks/useIcerikAlani';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 import ProfileGate from '../src/components/ProfileGate';
@@ -34,6 +35,7 @@ export default function CollectionsScreen() {
 
 function CollectionsScreenContent() {
   const styles = useStyles(makeStyles);
+  const yan = useYanBosluk();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const router = useRouter();
@@ -123,7 +125,7 @@ function CollectionsScreenContent() {
           data={collections}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
-          contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 30 }]}
+          contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 30, paddingHorizontal: yan }]}
           showsVerticalScrollIndicator={false}
         />
       )}

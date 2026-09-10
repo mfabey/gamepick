@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 
 import { radius, spacing, type, PRESSED } from '../src/theme';
+import { useYanBosluk } from '../src/hooks/useIcerikAlani';
 import { useLanguage } from '../src/context/LanguageContext';
 import { useAuth } from '../src/context/AuthContext';
 import { useWishlist } from '../src/context/WishlistContext';
@@ -47,6 +48,7 @@ const SUPPORT_EMAIL = 'support@gamerisen.com';
 export default function SettingsScreen() {
   const { colors, pref, setPref } = useTheme();
   const styles = useStyles(makeStyles);
+  const yan = useYanBosluk();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { t, lang, setLang } = useLanguage();
@@ -134,7 +136,7 @@ export default function SettingsScreen() {
         <View style={styles.iconBtn} />
       </View>
 
-      <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 40 }]} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 40, paddingHorizontal: yan }]} showsVerticalScrollIndicator={false}>
         {/* ── BÖLÜM BAŞLIKLARI GERİ GELDİ ──
             Eski karar "başlık yok, boşluk yeter"di ve 9 satırda doğruydu.
             Profil sekmesi içerik sayfasına dönüşünce oradaki 10 kısayolun

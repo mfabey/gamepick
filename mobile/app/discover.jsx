@@ -10,6 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { smartSearch } from '../src/api/games';
 import GameCard from '../src/components/GameCard';
 import { radius, spacing, TAB_SPACE, PRESSED, type } from '../src/theme';
+import { useKartSutun } from '../src/hooks/useIcerikAlani';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 import { useOwnedGames } from '../src/hooks/useOwnedGames';
@@ -36,6 +37,8 @@ const EXAMPLES = {
 
 export default function DiscoverScreen() {
   const styles = useStyles(makeStyles);
+  // Telefonda ölçülen hücre genişliği: 185 pt. Geniş ekranda sütun artar.
+  const sutun = useKartSutun(185, 2);
   const { colors } = useTheme();
   const router = useRouter();
   const { t, lang } = useLanguage();
@@ -158,7 +161,7 @@ export default function DiscoverScreen() {
 
       <FlashList
         data={results}
-        numColumns={2}
+        numColumns={sutun}
         keyExtractor={keyExtractor}
         renderItem={renderItem}
         ListHeaderComponent={header}

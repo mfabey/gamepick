@@ -11,6 +11,7 @@ import {
 } from '../../src/theme';
 import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { useLanguage } from '../../src/context/LanguageContext';
+import { useYanBosluk } from '../../src/hooks/useIcerikAlani';
 import { fetchPost } from '../../src/api/social';
 import { getSession, subscribeSession } from '../../src/services/session';
 import { useAuth } from '../../src/context/AuthContext';
@@ -40,6 +41,7 @@ const ACMA_YOK = () => {};
 
 export default function PostThread() {
   const styles = useStyles(makeStyles);
+  const yan = useYanBosluk();
   const { colors } = useTheme();
   const { id } = useLocalSearchParams();
   const router = useRouter();
@@ -176,7 +178,7 @@ export default function PostThread() {
           }
           // Alt boşluk SEKME ÇUBUĞU İÇİN DEĞİL (bu ekranda çubuk yok), sabit
           // yanıt kutusu için: son yanıt kutunun altında kalmamalı.
-          contentContainerStyle={{ paddingBottom: TOUCH_MIN + spacing.s24 + (insets.bottom || spacing.s12) }}
+          contentContainerStyle={{ paddingBottom: TOUCH_MIN + spacing.s24 + (insets.bottom || spacing.s12), paddingHorizontal: yan }}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.text2} />
           }

@@ -144,6 +144,17 @@ export default {
   'acc.signOut': 'Çıkış yap',
   'acc.signedInAs': 'Giriş yapıldı',
   'acc.why': 'Hesabınla zevk profilin ve takip listen tüm cihazlarında aynı kalır.',
+  // ── APP STORE 1.2 — SÖZLEŞME KAYIT/GİRİŞTEN ÖNCE ──
+  // Apple'ın istediği "EULA kayıt veya girişten önce sunulur" şartı.
+  // Cümle PARÇA PARÇA tutuluyor çünkü bağlantı metinleri (`set.terms`,
+  // `set.privacyPolicy`) ayarlar ekranıyla ORTAK — orada değişen bir çeviri
+  // burada da değişmeli. Türkçede ek kesme işaretiyle parçaya yazılı.
+  'acc.legalMid': "'nı ve ",
+  'acc.legalAgreePre': '',
+  'acc.legalAgreePost': "'nı okudum, kabul ediyorum.",
+  'acc.legalContinuePre': 'Devam ederek ',
+  'acc.legalContinuePost': "'nı kabul etmiş olursun.",
+  'acc.legalRequired': 'Devam etmek için Kullanım Şartları ve Gizlilik Politikası\'nı kabul etmelisin.',
   // Misafirken biriken veri hesaba SESSİZCE aktarılmaz — ortak cihazda bu,
   // başkasının verisini senin hesabına yazmak demek olurdu.
   'acc.transferTitle': 'Cihazdaki veriler',
@@ -282,6 +293,7 @@ export default {
   'post.replyOrder': 'eskiden yeniye',
   'post.repliesCount': 'yanıt',
   'post.someone': 'Bir oyuncu',
+  'post.menuReport': 'Gönderiyi şikayet et',
   'post.feedEmpty': 'Henüz gönderi yok',
   'post.errLong': 'Gönderi çok uzun.',
   'post.errBlocked': 'Bu metin paylaşılamaz.',

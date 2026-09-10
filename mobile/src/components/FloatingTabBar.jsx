@@ -13,7 +13,7 @@ import { useReducedMotion } from '../hooks/useReducedMotion';
 import { usePop } from '../hooks/usePop';
 import { useTabBarCompact, useTabBarHidden } from '../context/TabBarContext';
 import { useUnread, refreshUnread } from '../services/unread';
-import { type, NUMERIC, spacing, shadows, radius, TAB_BAR, motion } from '../theme';
+import { type, NUMERIC, spacing, shadows, radius, TAB_BAR, motion, ICERIK_MAX } from '../theme';
 import { useStyles, useTheme } from '../context/ThemeContext';
 
 // Sekme olmayan rotalar da burada (games, news, library): harita üst küme
@@ -253,6 +253,12 @@ export default function FloatingTabBar({ state, descriptors, navigation }) {
         style={[
           styles.golge,
           ANDROID && styles.golgeAndroid,
+          // GENİŞ EKRANDA ÇUBUK DA İÇERİK KOLONUNA TABİ. Yatay yöndeki 420
+          // kuralı zaten vardı; iPad DİKEYDE de geniş (820 pt) ve orada kural
+          // yoktu — çubuk 780 pt'ye yayılıp beş ikonu ekranın iki ucuna
+          // dağıtıyordu. `wrap` alignItems:'center' taşıdığı için tavan
+          // koymak ortalamak için yetiyor.
+          styles.barGenis,
           isLandscape && styles.barLandscape,
           barStyle,
         ]}
@@ -414,6 +420,7 @@ const makeStyles = (colors) => StyleSheet.create({
   // 420: beş sekmenin asgarisi 5×56 + 2×PAD = 292pt, yani rahat sığıyor;
   // 874pt'lik yatay kenarın yarısından azını kaplıyor.
   // ölçüldüğü için hap konumu bu genişliğe kendiliğinden uyuyor.
+  barGenis: { maxWidth: ICERIK_MAX },
   barLandscape: { maxWidth: 420 },
   // iOS 26+: arka planı cam veriyor, altına düz renk KOYULMAZ
   // Cam yolda da KENARLIK var — öncesinde yalnız saydam zemin vardı ve

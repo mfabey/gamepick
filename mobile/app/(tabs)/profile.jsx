@@ -51,7 +51,8 @@ import { weeklyReport } from '../../src/services/stats';
 
 import ProfileHeader from '../../src/components/ProfileHeader';
 import ProfileTabs from '../../src/components/ProfileTabs';
-import CoverCell, { coverWidth, GRID_COLS, GRID_GAP } from '../../src/components/CoverGrid';
+import CoverCell, { coverWidth, gridCols, GRID_GAP } from '../../src/components/CoverGrid';
+import { useYanBosluk } from '../../src/hooks/useIcerikAlani';
 import ProfileReviewRow from '../../src/components/ProfileReviewRow';
 import PostCard from '../../src/components/PostCard';
 import EmptyState from '../../src/components/EmptyState';
@@ -277,7 +278,14 @@ export default function ProfileScreen() {
   // numColumns sütun genişliğini eşit bölüyor ve maketin 4pt boşluğu ile
   // 114pt kapağı aynı anda tutturulamıyor (kapak ya sütuna yayılıp boşluğu
   // yutuyor ya da sağ kenar tırtıklı kalıyor). Satır bir View, boşluk `gap`.
-  const kapakEn = coverWidth(width);
+  // Sütun sayısı ve hücre genişliği AYNI genişlikten türüyor; ikisini
+  // ayrı yerden okumak ızgarayı taşırırdı.
+  // IZGARA GENİŞLİKTEN FAYDALANIR, GÖNDERİ AKIŞI OKUNABİLİRLİKTEN.
+  // İki sekme aynı listede yaşıyor ve aynı kuralı paylaşamazlar: kapaklar
+  // sütun kazanınca kazanıyor, metin ise satır uzayınca kaybediyor.
+  const yan = useYanBosluk();
+  const sutun = gridCols(width);
+  const kapakEn = coverWidth(width, sutun);
 
   // ── SEKME ŞERİDİ LİSTENİN İLK ÖĞESİ ──
   //
@@ -297,7 +305,7 @@ export default function ProfileScreen() {
   // BOŞ DURUM DA ÖĞE: liste artık hiçbir zaman boş değil (şerit hep var), o
   // yüzden `ListEmptyComponent` hiç çalışmazdı.
   const izgaraSatirlari = useMemo(() => {
-    const govde = izgara ? bol(veri, GRID_COLS) : veri;
+    const govde = izgara ? bol(veri, sutun) : veri;
     if (govde.length === 0) return [{ __serit: true }, { __bos: true }];
     return [{ __serit: true }, ...govde];
   }, [izgara, veri]);
@@ -404,6 +412,7 @@ export default function ProfileScreen() {
         data={izgaraSatirlari}
         keyExtractor={(item, i) => (item.__serit ? 'serit' : item.__bos ? 'bos' : izgara ? `r${i}` : String(item.id ?? `${item.appid}:${item.uid}`))}
         renderItem={satirCiz}
+        contentContainerStyle={{ paddingHorizontal: izgara ? 0 : yan }}
         extraData={tab}
         estimatedItemSize={izgara ? Math.round((kapakEn * 4) / 3) + GRID_GAP : 140}
         ListHeaderComponent={(

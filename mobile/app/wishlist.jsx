@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { fetchCardPrice } from '../src/api/games';
 import EmptyState from '../src/components/EmptyState';
 import { radius, spacing, PRESSED, type } from '../src/theme';
+import { useYanBosluk } from '../src/hooks/useIcerikAlani';
 import GameRow, { SATIR_Y } from '../src/components/GameRow';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
@@ -24,6 +25,7 @@ export default function WishlistScreen() {
 
 function WishlistScreenContent() {
   const styles = useStyles(makeStyles);
+  const yan = useYanBosluk();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const router = useRouter();
@@ -78,7 +80,7 @@ function WishlistScreenContent() {
           renderItem={renderWish}
           // Yatay dolgu SATIRDA değil listede: ayırıcı çizgi kenardan
           // kenara gitmiyor, metin bloğuyla hizalanıyor.
-          contentContainerStyle={{ paddingBottom: insets.bottom + 32, paddingHorizontal: spacing.s20 }}
+          contentContainerStyle={{ paddingBottom: insets.bottom + 32, paddingHorizontal: spacing.s20 + yan }}
           // Sabit yükseklikli satır → tahmin değil ÖLÇÜ (Faz 2 sözleşmesi).
           estimatedItemSize={SATIR_Y}
           showsVerticalScrollIndicator={false}

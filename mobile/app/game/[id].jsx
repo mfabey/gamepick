@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import { fetchCardPrice, fetchGameDetail, fetchGameByAppid, fetchPrices, fetchSteamReviews } from '../../src/api/games';
 import { radius, spacing, PRESSED, type, scale, metacriticColor, motion, TOUCH_MIN, SECTION_TITLE } from '../../src/theme';
+import { useYanBosluk } from '../../src/hooks/useIcerikAlani';
 import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { stripHtml } from '../../src/utils/text';
 import { useLanguage } from '../../src/context/LanguageContext';
@@ -65,6 +66,7 @@ function groupNum(n, sep) {
 
 export default function GameDetail() {
   const styles = useStyles(makeStyles);
+  const yan = useYanBosluk();
   const { colors, isDark } = useTheme();
   const { id, name, image, slug, hasSteam, appid } = useLocalSearchParams();
   const router = useRouter();
@@ -475,7 +477,7 @@ export default function GameDetail() {
 
       <Animated.ScrollView
         style={styles.body}
-        contentContainerStyle={{ padding: spacing.lg, paddingTop: COVER_H - COVER_OVERLAP, paddingBottom: 48 }}
+        contentContainerStyle={{ padding: spacing.lg, paddingHorizontal: spacing.lg + yan, paddingTop: COVER_H - COVER_OVERLAP, paddingBottom: 48 }}
         showsVerticalScrollIndicator={false}
         onScroll={onScroll}
         scrollEventThrottle={16}

@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { fetchTrending, fetchGames } from '../../src/api/games';
 import { radius, spacing, PRESSED, type, SECTION_TITLE, TOUCH_MIN } from '../../src/theme';
 import { useTabBosluk } from '../../src/hooks/useAltBosluk';
+import { useYanBosluk } from '../../src/hooks/useIcerikAlani';
 import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { useTabBarScroll } from '../../src/context/TabBarContext';
 import { useLanguage } from '../../src/context/LanguageContext';
@@ -60,6 +61,7 @@ const FALLBACK_SLUGS = ['action', 'adventure', 'role-playing-games-rpg', 'indie'
 export default function HomeScreen() {
   const styles = useStyles(makeStyles);
   const tabBosluk = useTabBosluk();
+  const yan = useYanBosluk();
   const { colors } = useTheme();
   // Sekmeye tekrar basınca listeyi başa sar (iOS'ta beklenen davranış)
   const listRef = useRef(null);
@@ -600,7 +602,8 @@ export default function HomeScreen() {
         ListHeaderComponent={header}
         onEndReached={loadMore}
         onEndReachedThreshold={0.6}
-        contentContainerStyle={styles.listContent}
+        // Geniş ekranda kolon ortalanıyor (bkz. theme → ICERIK_MAX).
+        contentContainerStyle={[styles.listContent, { paddingHorizontal: yan }]}
         showsVerticalScrollIndicator={false}
         ListFooterComponent={
           <View style={{ height: tabBosluk, alignItems: 'center', justifyContent: 'center' }}>
