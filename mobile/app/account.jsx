@@ -263,7 +263,10 @@ export default function AccountScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.head}>
+      {/* Başlık listenin DIŞINDA: içerik kolonuyla aynı hizaya
+          getiriliyor — başlık tam genişlikte kalsaydı sayfanın adı ile
+          anlattığı şey iki ayrı sütunda dururdu. */}
+      <View style={[styles.head, { marginHorizontal: yan }]}>
         <Pressable style={({ pressed }) => [styles.back, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </Pressable>

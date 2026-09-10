@@ -140,7 +140,10 @@ export default function GameCardsScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.header}>
+      {/* Başlık listenin DIŞINDA: içerik kolonuyla aynı hizaya
+          getiriliyor — başlık tam genişlikte kalsaydı sayfanın adı ile
+          anlattığı şey iki ayrı sütunda dururdu. */}
+      <View style={[styles.header, { marginHorizontal: yan }]}>
         <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]}
                    onPress={() => router.back()} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
           <Ionicons name="chevron-back" size={24} color={colors.text} />

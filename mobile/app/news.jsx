@@ -77,7 +77,7 @@ export default function NewsScreen() {
   // bileşen olmasının sebebi bu: üç kez elle yazılsaydı biri unutulur ve o
   // durumda ekranda mahsur kalınırdı.
   const head = (onLayout) => (
-    <View style={styles.header} onLayout={onLayout}>
+    <View style={[styles.header, { marginHorizontal: yan }]} onLayout={onLayout}>
       <Pressable style={({ pressed }) => [styles.backBtn, pressed && PRESSED]}
                  onPress={() => router.back()} hitSlop={10}
                  accessibilityRole="button" accessibilityLabel={t('common.back')}>

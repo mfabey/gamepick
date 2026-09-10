@@ -159,7 +159,10 @@ export default function ProfileEditScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.head}>
+      {/* Başlık listenin DIŞINDA: içerik kolonuyla aynı hizaya
+          getiriliyor — başlık tam genişlikte kalsaydı sayfanın adı ile
+          anlattığı şey iki ayrı sütunda dururdu. */}
+      <View style={[styles.head, { marginHorizontal: yan }]}>
         <Pressable onPress={() => router.back()} hitSlop={10}
                    style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]}
                    accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
