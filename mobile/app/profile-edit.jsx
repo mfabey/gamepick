@@ -115,23 +115,42 @@ export default function ProfileEditScreen() {
   // kotasını boşa harcar. 256px kenar 3x ekranda bile yeterli, dosya ~30–60 KB.
   const pickPhoto = useCallback(async () => {
     if (uploading) return;
-    const ImagePicker = await import('expo-image-picker');
-
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) { Alert.alert(t('prof.photoPerm')); return; }
-
-    const res = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 1,          // kalite kaybı boyutlandırmadan SONRA veriliyor
-    });
-    if (res.canceled || !res.assets?.[0]?.uri) return;
-
-    setUploading(true);
-    setPickerOpen(false);
     const prev = avatar;
     try {
+      const ImagePicker = await import('expo-image-picker');
+
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) { Alert.alert(t('prof.photoPerm')); return; }
+
+      const res = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 1,          // kalite kaybı boyutlandırmadan SONRA veriliyor
+        // ── APP STORE 2.1(a) — TAM EKRAN AÇIKÇA VERİLİYOR ──
+        //
+        // `allowsEditing` bu çağrıyı expo-image-picker içinde ESKİ yola
+        // düşürüyor (ImagePickerModule.swift:94): PHPicker yerine
+        // `UIImagePickerController`. O denetleyicinin iPad'de belgelenmiş bir
+        // çökmesi var — özellik ortamı popover'a çözerse ve tutturma noktası
+        // verilmemişse NSGenericException atıyor ("you must provide location
+        // information for this popover"). Kütüphane tutturmayı yalnızca
+        // `UIDevice.userInterfaceIdiom == .pad` iken yapıyor; uyumluluk
+        // kipinde o değer `.phone` dönüyor, yani koruma devre dışı kalıyor.
+        //
+        // Sunum biçimi AÇIKÇA verilince UIKit popover'a hiç çözmüyor ve
+        // koşul ortadan kalkıyor. Kırpma arayüzü aynen duruyor.
+        //
+        // NOT: bu çökme iPad Air 11" / iPadOS 26.5'te ÜRETİLEMEDİ (hem
+        // uyumluluk kipinde hem iPad hedefiyle denendi). Yani bu, kanıtlanmış
+        // bir düzeltme değil, KALAN TEK RİSKLİ YOLUN kapatılması.
+        presentationStyle: ImagePicker.UIImagePickerPresentationStyle.FULL_SCREEN,
+      });
+      if (res.canceled || !res.assets?.[0]?.uri) return;
+
+      setUploading(true);
+      setPickerOpen(false);
+
       const Manipulator = await import('expo-image-manipulator');
       const out = await Manipulator.manipulateAsync(
         res.assets[0].uri,

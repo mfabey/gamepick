@@ -873,23 +873,38 @@ export default function ChatScreen() {
    */
   const pickAndSend = useCallback(async () => {
     if (sending) return;
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) { Alert.alert(t('msg.needPhotoPerm')); return; }
 
-    const picked = await ImagePicker.launchImageLibraryAsync({
-      // Video KAPALIYKEN SEÇİCİDE DE YOK. Gösterip sunucuda reddetmek,
-      // kullanıcıya sıkıştırmayı bekletip sonra hata vermek demekti —
-      // garantili bir başarısızlık yolu.
-      mediaTypes: caps.videos ? ['images', 'videos'] : ['images'],
-      quality: 1,          // fotoğraf sıkıştırmasını biz yapıyoruz
-      allowsMultipleSelection: false,
-      // Video 4,5 MB sunucu sınırının ALTINDA kalmak zorunda. 15 saniye + orta
-      // kalite tipik olarak 2-4 MB veriyor; sınır aşılırsa sunucu reddediyor ve
-      // kullanıcıya daha kısa bir klip seçmesi söyleniyor.
-      videoMaxDuration: 15,
-      videoQuality: ImagePicker.UIImagePickerControllerQualityType.Medium,
-    });
-    if (picked.canceled || !picked.assets?.[0]?.uri) return;
+    // ── APP STORE 2.1(a) — SEÇİCİ ÇAĞRISI ARTIK KORUNAKLI ──
+    //
+    // İzin isteği ve seçicinin AÇILIŞI `try`ın DIŞINDAYDI. Aşağıdaki
+    // try/catch yalnızca küçültme ve yükleme adımlarını kapsıyordu; seçiciyi
+    // açarken atılan bir hata hiçbir yere düşmüyor, yakalanmamış bir söz
+    // reddi olarak kalıyordu. Bu ayrım, Apple'ın "Photo düğmesine
+    // dokununca çöktü" raporuyla birebir aynı ana denk geliyor — o yüzden
+    // kapsam buraya kadar genişletildi.
+    let picked;
+    try {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) { Alert.alert(t('msg.needPhotoPerm')); return; }
+
+      picked = await ImagePicker.launchImageLibraryAsync({
+        // Video KAPALIYKEN SEÇİCİDE DE YOK. Gösterip sunucuda reddetmek,
+        // kullanıcıya sıkıştırmayı bekletip sonra hata vermek demekti —
+        // garantili bir başarısızlık yolu.
+        mediaTypes: caps.videos ? ['images', 'videos'] : ['images'],
+        quality: 1,          // fotoğraf sıkıştırmasını biz yapıyoruz
+        allowsMultipleSelection: false,
+        // Video 4,5 MB sunucu sınırının ALTINDA kalmak zorunda. 15 saniye + orta
+        // kalite tipik olarak 2-4 MB veriyor; sınır aşılırsa sunucu reddediyor ve
+        // kullanıcıya daha kısa bir klip seçmesi söyleniyor.
+        videoMaxDuration: 15,
+        videoQuality: ImagePicker.UIImagePickerControllerQualityType.Medium,
+      });
+    } catch (e) {
+      Alert.alert(t('msg.sendFailed'));
+      return;
+    }
+    if (!picked || picked.canceled || !picked.assets?.[0]?.uri) return;
 
     const asset = picked.assets[0];
     const isVideo = asset.type === 'video';
