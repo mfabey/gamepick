@@ -112,7 +112,7 @@ görüntüsü üstünde piksel ölçümü):
 
 ---
 
-# Fotoğraf yükleme — UYGULAMADAN ÇIKARILDI (2.6.2)
+# Fotoğraf yükleme — UYGULAMADAN ÇIKARILDI (2.7.0)
 
 Kullanıcıya görünen iki giriş kaldırıldı: sohbet kompozitöründeki
 "Fotoğraf" seçeneği ve profil düzenlemedeki "Fotoğraf yükle" bloğu. Avatar

@@ -343,7 +343,7 @@ export default function ChatScreen() {
   // sağlayıcı anahtarı ortam değişkeninde, istemcinin bunu bilmesinin
   // başka yolu yok.
   //
-  // FOTOĞRAF GÖNDERİMİ UYGULAMADAN ÇIKARILDI (2.6.2). Sunucunun `photos`
+  // FOTOĞRAF GÖNDERİMİ UYGULAMADAN ÇIKARILDI (2.7.0). Sunucunun `photos`
   // bayrağı burada okunmuyor: seçici paketi binary'de yok, izin metni de
   // yok. Gerekçe ve geri açma reçetesi mobile/AGENTS.md'de.
   //
@@ -863,7 +863,7 @@ export default function ChatScreen() {
   /**
    * "+" düğmesi — tek ek türü GIF, seçiciyi doğrudan açıyor.
    *
-   * Fotoğraf seçeneği ve onu taşıyan ek menüsü 2.6.2'de kaldırıldı. Tek
+   * Fotoğraf seçeneği ve onu taşıyan ek menüsü 2.7.0'da kaldırıldı. Tek
    * satırlık bir menü, kullanıcıya seçim sunmadan fazladan bir dokunuş
    * bindirirdi.
    */
