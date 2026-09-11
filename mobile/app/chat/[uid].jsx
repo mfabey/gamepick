@@ -20,11 +20,9 @@ import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import * as Haptics from 'expo-haptics';
 import * as WebBrowser from 'expo-web-browser';
-import * as ImagePicker from 'expo-image-picker';
-import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 
 import {
-  getChat, sendChat, uploadChatMedia, deleteChatMessage, pingPresence, sendTyping,
+  getChat, sendChat, deleteChatMessage, pingPresence, sendTyping,
   likeChatMessage, pinChatMessage,
 } from '../../src/api/social';
 import { subscribeDM, chatCapabilities } from '../../src/services/realtime';
@@ -331,11 +329,6 @@ export default function ChatScreen() {
   // dağılmış cümleler gibi okunuyordu.
   const yan = useYanBosluk();
   const [gifOpen, setGifOpen] = useState(false);
-  // "+" ek menüsü. Mesaj menüsüyle AYNI bileşen kullanılıyor: ikisi de
-  // bir düğmeye tutturulmuş kısa bir eylem listesi ve ikinci bir menü
-  // bileşeni yazmak aynı hizalama hatalarını bir kez daha yapmak olurdu.
-  const [ekMenu, setEkMenu] = useState(null);
-  const ekBtnRef = useRef(null);
   // Uzun basılan mesaj: { msg, mine, anchor }. `anchor` baloncuğun pencere
   // koordinatı — menü ona tutturuluyor.
   const [menu, setMenu] = useState(null);
@@ -346,15 +339,18 @@ export default function ChatScreen() {
   // Sabit mesaj — konuşma başına tek, iki taraf da değiştirebiliyor.
   // Sunucu her geçmiş yanıtında gönderiyor; sayfalamadan bağımsız.
   const [pinned, setPinned] = useState(null);
-  // Kompozitör yetenekleri sunucudan geliyor: fotoğraf ve GIF gönderimi
-  // ortam değişkenlerine bağlı ve istemcinin bunu bilmesinin başka yolu yok.
+  // Kompozitörün tek eki GIF ve o da sunucudaki yapılandırmaya bağlı:
+  // sağlayıcı anahtarı ortam değişkeninde, istemcinin bunu bilmesinin
+  // başka yolu yok.
   //
-  // BAŞLANGIÇ HEPSİ KAPALI — yanıt gelene kadar düğme göstermek, bir an
+  // FOTOĞRAF GÖNDERİMİ UYGULAMADAN ÇIKARILDI (2.6.2). Sunucunun `photos`
+  // bayrağı burada okunmuyor: seçici paketi binary'de yok, izin metni de
+  // yok. Gerekçe ve geri açma reçetesi mobile/AGENTS.md'de.
+  //
+  // BAŞLANGIÇ KAPALI — yanıt gelene kadar düğme göstermek, bir an
   // görünüp kaybolan düğme demek olurdu.
-  const [caps, setCaps] = useState({ photos: false, videos: false, gifs: false });
-  useEffect(() => { chatCapabilities().then(setCaps).catch(() => {}); }, []);
-  // Kaç ek türü açık? 0 → "+" hiç çizilmiyor, 1 → menü yok doğrudan eylem.
-  const ekSayisi = (caps.photos ? 1 : 0) + (caps.gifs ? 1 : 0);
+  const [gifAcik, setGifAcik] = useState(false);
+  useEffect(() => { chatCapabilities().then((c) => setGifAcik(!!c.gifs)).catch(() => {}); }, []);
   // Karşı tarafın en son okuma zamanı. Kendi mesajlarımdan `at`'i bundan
   // küçük veya eşit olanlar görülmüş sayılıyor.
   const [otherReadAt, setOtherReadAt] = useState(0);
@@ -865,115 +861,13 @@ export default function ChatScreen() {
   }, [other, myUid, addMessage, replyTo]);
 
   /**
-   * Galeriden görsel seç, KÜÇÜLT, yükle, mesaj olarak gönder.
+   * "+" düğmesi — tek ek türü GIF, seçiciyi doğrudan açıyor.
    *
-   * Küçültme şart, kozmetik değil: sunucusuz işlevlerde istek gövdesi 4,5 MB
-   * ile sınırlı ve modern telefonların ham fotoğrafı bunu rahatça aşıyor.
-   * 1600 piksel genişlik + 0,7 kalite tipik olarak 300-600 KB veriyor.
+   * Fotoğraf seçeneği ve onu taşıyan ek menüsü 2.6.2'de kaldırıldı. Tek
+   * satırlık bir menü, kullanıcıya seçim sunmadan fazladan bir dokunuş
+   * bindirirdi.
    */
-  const pickAndSend = useCallback(async () => {
-    if (sending) return;
-
-    // ── APP STORE 2.1(a) — SEÇİCİ ÇAĞRISI ARTIK KORUNAKLI ──
-    //
-    // İzin isteği ve seçicinin AÇILIŞI `try`ın DIŞINDAYDI. Aşağıdaki
-    // try/catch yalnızca küçültme ve yükleme adımlarını kapsıyordu; seçiciyi
-    // açarken atılan bir hata hiçbir yere düşmüyor, yakalanmamış bir söz
-    // reddi olarak kalıyordu. Bu ayrım, Apple'ın "Photo düğmesine
-    // dokununca çöktü" raporuyla birebir aynı ana denk geliyor — o yüzden
-    // kapsam buraya kadar genişletildi.
-    let picked;
-    try {
-      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!perm.granted) { Alert.alert(t('msg.needPhotoPerm')); return; }
-
-      picked = await ImagePicker.launchImageLibraryAsync({
-        // Video KAPALIYKEN SEÇİCİDE DE YOK. Gösterip sunucuda reddetmek,
-        // kullanıcıya sıkıştırmayı bekletip sonra hata vermek demekti —
-        // garantili bir başarısızlık yolu.
-        mediaTypes: caps.videos ? ['images', 'videos'] : ['images'],
-        quality: 1,          // fotoğraf sıkıştırmasını biz yapıyoruz
-        allowsMultipleSelection: false,
-        // Video 4,5 MB sunucu sınırının ALTINDA kalmak zorunda. 15 saniye + orta
-        // kalite tipik olarak 2-4 MB veriyor; sınır aşılırsa sunucu reddediyor ve
-        // kullanıcıya daha kısa bir klip seçmesi söyleniyor.
-        videoMaxDuration: 15,
-        videoQuality: ImagePicker.UIImagePickerControllerQualityType.Medium,
-      });
-    } catch (e) {
-      Alert.alert(t('msg.sendFailed'));
-      return;
-    }
-    if (!picked || picked.canceled || !picked.assets?.[0]?.uri) return;
-
-    const asset = picked.assets[0];
-    const isVideo = asset.type === 'video';
-
-    // Yanıt kipi YÜKLEMEDEN ÖNCE okunuyor: yükleme saniyeler sürüyor ve o
-    // sırada kullanıcı çubuğu kapatırsa gönderim yine doğru yanıta bağlanmalı.
-    const yanitFoto = replyTo;
-    setReplyTo(null);
-    setSending(true);
-    try {
-      let uri = asset.uri;
-      let mime = 'image/jpeg';
-
-      if (isVideo) {
-        // Video seçicide zaten yeniden kodlandı; burada dokunulmuyor.
-        // `mimeType` bazı cihazlarda boş geliyor, uzantıdan tamamlıyoruz.
-        mime = asset.mimeType
-          || (uri.toLowerCase().endsWith('.mov') ? 'video/quicktime' : 'video/mp4');
-      } else {
-        const ref = await ImageManipulator.manipulate(uri).resize({ width: 1600 }).renderAsync();
-        const small = await ref.saveAsync({ format: SaveFormat.JPEG, compress: 0.7 });
-        uri = small.uri;
-      }
-
-      const up = await uploadChatMedia(other, uri, mime);
-      const r = await sendChat(other, '', { url: up.url, type: up.contentType },
-                               undefined, undefined, yanitFoto?.id);
-      if (r?.message) addMessage(r.message);
-      Haptics.selectionAsync().catch(() => {});
-    } catch (e) {
-      const code = e?.code;
-      Alert.alert(
-        code === 'VIDEO_DISABLED' ? t('msg.videoOff')
-          : code === 'MEDIA_DISABLED' || code === 'STORAGE_DISABLED' ? t('msg.mediaOff')
-          : code === 'MEDIA_REJECTED'  ? t('msg.mediaRejected')
-          // Video sınırı aştığında genel "çok büyük" mesajı yardımcı olmuyor —
-          // kullanıcı ne yapacağını bilmeli: daha kısa klip.
-          : code === 'FILE_TOO_LARGE'  ? (isVideo ? t('msg.videoTooLong') : t('msg.mediaTooBig'))
-          : t('msg.sendFailed')
-      );
-    } finally {
-      setSending(false);
-    }
-  }, [sending, other, addMessage, replyTo, caps.videos, t]);
-
-  /**
-   * "+" düğmesi.
-   *
-   * TEK YETENEK VARSA MENÜ AÇMIYOR. Tek satırlık bir menü, kullanıcıya
-   * hiçbir seçim sunmadan fazladan bir dokunuş bindiriyor.
-   */
-  const ekAc = useCallback(() => {
-    if (ekSayisi === 1) {
-      if (caps.photos) pickAndSend(); else setGifOpen(true);
-      return;
-    }
-    const node = ekBtnRef.current;
-    if (!node?.measureInWindow) { setEkMenu({ x: 0, y: 0, width: 0, height: 0 }); return; }
-    node.measureInWindow((x, y, width, height) => setEkMenu({ x, y, width, height }));
-  }, [ekSayisi, caps.photos, pickAndSend]);
-
-  const ekActions = useCallback(() => ([
-    ...(caps.photos ? [{
-      key: 'photo', icon: 'image-outline', label: t('msg.photo'), onPress: pickAndSend,
-    }] : []),
-    ...(caps.gifs ? [{
-      key: 'gif', icon: 'happy-outline', label: t('msg.gif'), onPress: () => setGifOpen(true),
-    }] : []),
-  ]), [caps.photos, caps.gifs, t, pickAndSend]);
+  const ekAc = useCallback(() => setGifOpen(true), []);
 
   /**
    * Başlık menüsü — profil · engelle · şikayet.
@@ -1266,9 +1160,8 @@ export default function ChatScreen() {
               genişlikte kalsaydı ikisi aynı konuşmaya ait görünmezdi. */}
           <View style={{ marginHorizontal: yan }}>
           <Kompozitor
-            ekSayisi={ekSayisi}
+            ekVar={gifAcik}
             ekAc={ekAc}
-            ekBtnRef={ekBtnRef}
             sending={sending}
             onSend={send}
             onTyping={bildirYaziyor}
@@ -1301,16 +1194,6 @@ export default function ChatScreen() {
         actions={menu ? menuActions(menu) : []}
         onReact={(emoji) => react(menu.msg, emoji)}
         myReaction={menu ? myReactionOf(menu.msg, myUid) : null}
-      />
-
-      {/* Ek menüsü — "+" düğmesine tutturulu. `onReact` VERİLMİYOR: tepki
-          satırı yalnızca mesaj menüsüne ait. */}
-      <MessageMenu
-        visible={!!ekMenu}
-        onClose={() => setEkMenu(null)}
-        anchor={ekMenu}
-        mine={false}
-        actions={ekMenu ? ekActions() : []}
       />
 
       <GifPicker
@@ -1393,7 +1276,7 @@ function saatOf(ts, lang) {
 // baloncuğu listeye ekleyen ve hata durumunu yöneten taraf orası.
 // ─────────────────────────────────────────────────────────────────────────────
 const Kompozitor = memo(function Kompozitor({
-  ekSayisi, ekAc, ekBtnRef, sending, onSend, onTyping, altDolgu,
+  ekVar, ekAc, sending, onSend, onTyping, altDolgu,
 }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
@@ -1427,13 +1310,11 @@ const Kompozitor = memo(function Kompozitor({
 
           YETENEĞE BAĞLI kalıyor. Yapılandırma eksikken düğme hiç
           çizilmiyor — basınca "şu an kapalı" diyen bir düğme
-          uygulamayı yarım gösteriyor (Guideline 2.2). Tek yetenek
-          açıksa menü açmıyor, doğrudan onu çalıştırıyor: tek satırlık
-          bir menü, fazladan bir dokunuş demek. */}
-      {ekSayisi > 0 ? (
+          uygulamayı yarım gösteriyor (Guideline 2.2). Bugün tek ek
+          türü GIF; düğme menü açmadan doğrudan seçiciyi açıyor. */}
+      {ekVar ? (
         <GlassSurface style={styles.ekBtn} radius={EK_BTN / 2}>
           <Pressable
-            ref={ekBtnRef}
             style={({ pressed }) => [styles.ekHit, pressed && PRESSED]}
             onPress={ekAc}
             disabled={sending}

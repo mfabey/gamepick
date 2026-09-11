@@ -104,49 +104,6 @@ export const toggleListLike  = (id) =>
 export const setAvatar = (presetId) =>
   authed('/api/social/avatar', { method: 'POST', body: { avatar: presetId } });
 
-// ── Avatar fotoğrafı ────────────────────────────────────────────────────────
-// FormData ile gidiyor, JSON değil: dosya gövdesi base64'e çevrilseydi ~%33
-// şişerdi ve Vercel'in gövde sınırına daha erken çarpardık.
-//
-// Content-Type ELLE VERİLMİYOR: fetch, FormData için boundary'yi kendisi
-// üretmek zorunda. Elle 'multipart/form-data' yazmak boundary'yi düşürüyor ve
-// sunucu gövdeyi çözemiyor.
-export async function uploadAvatarPhoto(uri, mime = 'image/jpeg', base64 = null) {
-  const token = await getValidToken();
-  if (!token) throw Object.assign(new Error('NO_SESSION'), { code: 'NO_SESSION' });
-
-  let res;
-  if (base64) {
-    res = await fetch(`${API_BASE}/api/social/avatar/photo`, {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ base64, mime }),
-    });
-  } else {
-    const form = new FormData();
-    form.append('file', { uri, name: `avatar.${mime === 'image/png' ? 'png' : 'jpg'}`, type: mime });
-
-    res = await fetch(`${API_BASE}/api/social/avatar/photo`, {
-      method: 'POST',
-      headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
-      body: form,
-    });
-  }
-
-  let data = null;
-  try { data = await res.json(); } catch { /* gövdesiz yanıt */ }
-  if (!res.ok) {
-    throw Object.assign(new Error(data?.error || `HTTP ${res.status}`), {
-      status: res.status, code: data?.error || null,
-    });
-  }
-  return data;
-}
-
 // ── Gizlilik ────────────────────────────────────────────────────────────────
 export const getPrivacy        = ()      => authed('/api/social/privacy');
 export const setPrivacy        = (patch) => authed('/api/social/privacy', { method: 'POST', body: patch });
@@ -310,44 +267,3 @@ export const sendTyping = (to) =>
 export const pingPresence = (withUid) =>
   authed(`/api/social/presence${withUid ? `?with=${encodeURIComponent(withUid)}` : ''}`,
     { method: 'POST', body: {} });
-
-/**
- * Sohbet görseli yükler.
- *
- * `authed` KULLANILMIYOR: o yardımcı gövdeyi JSON'a çeviriyor, burada
- * multipart gerekiyor. Content-Type ELLE YAZILMAMALI — fetch, FormData için
- * sınır (boundary) değerini kendi üretiyor ve elle yazılan başlık onu bozar.
- *
- * @param {string} to    alıcı uid
- * @param {string} uri   yerel dosya adresi (küçültülmüş olmalı)
- * @param {string} type  image/jpeg gibi
- */
-export async function uploadChatMedia(to, uri, type = 'image/jpeg') {
-  const token = await getValidToken();
-  if (!token) throw Object.assign(new Error('NO_SESSION'), { code: 'NO_SESSION' });
-
-  const EXT = {
-    'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp',
-    'video/mp4': 'mp4', 'video/quicktime': 'mov',
-  };
-
-  const form = new FormData();
-  form.append('to', to);
-  form.append('file', { uri, name: `dm.${EXT[type] || 'jpg'}`, type });
-
-  const res = await fetch(`${API_BASE}/api/social/chat/media`, {
-    method: 'POST',
-    headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
-    body: form,
-  });
-
-  let data = null;
-  try { data = await res.json(); } catch { /* gövdesiz yanıt */ }
-
-  if (!res.ok) {
-    throw Object.assign(new Error(data?.error || `HTTP ${res.status}`), {
-      status: res.status, code: data?.error || null,
-    });
-  }
-  return data;
-}

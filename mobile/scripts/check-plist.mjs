@@ -13,16 +13,16 @@
 // TCC uygulamayı SIGABRT ile öldürüyor — yakalanabilir bir hata değil, süreç
 // anında bitiyor. İki ayrı olay kaydı, aynı build, aynı cihaz (iPad15,3).
 //
-// ANAHTAR app.json'DA VARDI. `expo-image-picker` eklentisi 2.4'ten beri
-// `photosPermission` ile duruyor ve o commit'te `expo prebuild` çalıştırılınca
-// anahtar ÜRETİLİYOR (yeniden denendi, çıktı doğrulandı). Buna rağmen
-// gönderilen binary'de yoktu. Neden uygulanmadığı tespit edilemedi.
+// SEBEP SONRADAN BULUNDU (bkz. mobile/AGENTS.md). Build 42 `giris-asamasi`
+// dalındaki `9f460ba`'dan alındı; iki commit önceki `a6989b1` orada
+// `photosPermission`'ı `false` yapmıştı. Bu dalın tabanında metin duruyordu,
+// yeniden üretim yanlış commit'te denendiği için anahtarı buldu.
 //
-// DENETİMİN İDDİASI BU YÜZDEN DAR VE SERT: uygulamanın çağırdığı her gizlilik
+// DENETİMİN İDDİASI YİNE DE DAR VE SERT: uygulamanın çağırdığı her gizlilik
 // API'si için açıklama, `ios.infoPlist` altında AÇIKÇA tanımlı olmalı. Oradaki
 // değerler Expo'nun çekirdek yapılandırmasından geliyor; üçüncü parti bir
-// eklentinin çalışmasına bağlı değil. Eklentiler kalabilir — ama tek başlarına
-// güvenilmez oldukları ölçüldü.
+// eklentinin çalışmasına bağlı değil. Tek bir eklenti satırının `false`
+// olması uygulamayı öldürmeye yetti; anahtar o satıra bağlı kalmamalı.
 //
 // KULLANILAN API'LER KODDA TARANIYOR, elle yazılmıyor: yeni bir gizlilik
 // çağrısı eklendiğinde denetim kendiliğinden onu da ister.

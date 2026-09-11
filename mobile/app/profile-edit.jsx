@@ -33,7 +33,7 @@ import { useLanguage } from '../src/context/LanguageContext';
 import { AVATAR_PRESET_IDS, getAvatarPreset } from '../src/utils/avatar';
 import {
   getMyProfile, setUsername as apiSetUsername,
-  setAvatar as apiSetAvatar, uploadAvatarPhoto,
+  setAvatar as apiSetAvatar,
 } from '../src/api/social';
 
 // Sunucudaki MAX_BIO ile AYNI SAYI olmak zorunda (app/lib/social-store.js).
@@ -55,7 +55,6 @@ export default function ProfileEditScreen() {
   const [avatar, setAvatarState] = useState(null);
   const [saving, setSaving] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -108,79 +107,6 @@ export default function ProfileEditScreen() {
       Alert.alert(t('soc.err.generic'));
     }
   }, [avatar, t]);
-
-  // ── Avatar: fotoğraf ──
-  // ÖNCE KÜÇÜLT, SONRA YÜKLE. Avatar ekranda en fazla 88pt çiziliyor; 4 MB'lık
-  // bir fotoğrafı olduğu gibi yüklemek hem kullanıcının verisini hem sunucu
-  // kotasını boşa harcar. 256px kenar 3x ekranda bile yeterli, dosya ~30–60 KB.
-  const pickPhoto = useCallback(async () => {
-    if (uploading) return;
-    const prev = avatar;
-    try {
-      const ImagePicker = await import('expo-image-picker');
-
-      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!perm.granted) { Alert.alert(t('prof.photoPerm')); return; }
-
-      const res = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 1,          // kalite kaybı boyutlandırmadan SONRA veriliyor
-        // ── TAM EKRAN AÇIKÇA VERİLİYOR ──
-        //
-        // DİKKAT: bu, 2.6.1'i reddettiren çökme DEĞİL. O çökmenin sebebi
-        // Apple'ın crash log'unda yazılı ve bambaşka: eksik
-        // `NSPhotoLibraryUsageDescription` yüzünden TCC'nin süreci
-        // öldürmesi (bkz. scripts/check-plist.mjs). Aşağıdaki gerekçe kendi
-        // başına geçerli, ama reddi kapatan şey bu satır değil.
-        //
-        // `allowsEditing` bu çağrıyı expo-image-picker içinde ESKİ yola
-        // düşürüyor (ImagePickerModule.swift:94): PHPicker yerine
-        // `UIImagePickerController`. O denetleyicinin iPad'de belgelenmiş bir
-        // çökmesi var — özellik ortamı popover'a çözerse ve tutturma noktası
-        // verilmemişse NSGenericException atıyor ("you must provide location
-        // information for this popover"). Kütüphane tutturmayı yalnızca
-        // `UIDevice.userInterfaceIdiom == .pad` iken yapıyor; uyumluluk
-        // kipinde o değer `.phone` dönüyor, yani koruma devre dışı kalıyor.
-        //
-        // Sunum biçimi AÇIKÇA verilince UIKit popover'a hiç çözmüyor ve
-        // koşul ortadan kalkıyor. Kırpma arayüzü aynen duruyor.
-        //
-        // Bu yol iPad Air 11" / iPadOS 26.5'te hiç çökmedi (hem uyumluluk
-        // kipinde hem iPad hedefiyle denendi) — yani düzeltilen bir hata
-        // değil, kapatılan bir risk.
-        presentationStyle: ImagePicker.UIImagePickerPresentationStyle.FULL_SCREEN,
-      });
-      if (res.canceled || !res.assets?.[0]?.uri) return;
-
-      setUploading(true);
-      setPickerOpen(false);
-
-      const Manipulator = await import('expo-image-manipulator');
-      const out = await Manipulator.manipulateAsync(
-        res.assets[0].uri,
-        [{ resize: { width: 256, height: 256 } }],
-        { compress: 0.8, format: Manipulator.SaveFormat.JPEG, base64: true }
-      );
-      const r = await uploadAvatarPhoto(out.uri, 'image/jpeg', out.base64);
-      setAvatarState(r?.avatar || prev);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-    } catch (e) {
-      setAvatarState(prev);
-      console.warn('[avatar-photo] upload failed:', e?.code || e?.status || e?.message || e);
-      const code = e?.code || '';
-      Alert.alert(
-        code === 'MEDIA_DISABLED' || code === 'STORAGE_DISABLED' ? t('prof.photoDisabled')
-        : code === 'REJECTED' || code.startsWith?.('BLOCKED_') ? t('prof.photoRejected')
-        : code === 'TOO_LARGE' ? t('prof.photoTooLarge')
-        : code === 'NO_USERNAME' ? t('prof.noUsername')
-        : t('soc.err.generic')
-      );
-    } finally {
-      setUploading(false);
-    }
-  }, [uploading, avatar, t]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -247,8 +173,6 @@ export default function ProfileEditScreen() {
         current={avatar}
         onSelect={pickAvatar}
         onClose={() => setPickerOpen(false)}
-        onPickPhoto={pickPhoto}
-        uploading={uploading}
       />
     </SafeAreaView>
   );
@@ -257,7 +181,7 @@ export default function ProfileEditScreen() {
 // ─── Avatar seçici ──────────────────────────────────────────────────────────
 // RN Modal kullanılıyor — native kütüphane EKLENMEZ, OTA güvenli.
 // Profil sekmesinden BURAYA TAŞINDI: düzenleme tek ekranda toplandı.
-function AvatarPicker({ visible, current, onSelect, onClose, onPickPhoto, uploading }) {
+function AvatarPicker({ visible, current, onSelect, onClose }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const { t } = useLanguage();
@@ -274,23 +198,6 @@ function AvatarPicker({ visible, current, onSelect, onClose, onPickPhoto, upload
             <Avatar avatar={current} name={t('nav.profile')} size={56} />
             <Text style={styles.pickerCurrentLabel}>{t('prof.currentAvatar')}</Text>
           </View>
-
-          {/* FOTOĞRAF EN ÜSTTE. Ön ayarlar bir yedek; kişinin kendi fotoğrafı
-              "bu hesap benim" hissini veren asıl şey. */}
-          <Pressable
-            onPress={onPickPhoto}
-            disabled={uploading}
-            style={({ pressed }) => [styles.pickerPhoto, pressed && PRESSED, uploading && { opacity: 0.6 }]}
-          >
-            {uploading
-              ? <ActivityIndicator size="small" color="#fff" />
-              : <Ionicons name="image-outline" size={19} color="#fff" />}
-            <Text style={styles.pickerPhotoText}>
-              {uploading ? t('prof.photoUploading') : t('prof.photoPick')}
-            </Text>
-          </Pressable>
-
-          <Text style={styles.pickerNote}>{t('prof.photoNote')}</Text>
 
           <View style={styles.pickerGrid}>
             {AVATAR_PRESET_IDS.map((id) => {
@@ -385,18 +292,6 @@ const makeStyles = (colors) => StyleSheet.create({
   },
   pickerCurrent: { alignItems: 'center', gap: spacing.s8, marginBottom: spacing.s16 },
   pickerCurrentLabel: { color: colors.text3, fontSize: type.caption },
-
-  pickerPhoto: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.s8,
-    marginTop: spacing.s16, height: TOUCH_MIN,
-    backgroundColor: colors.accentFillStrong, borderRadius: radius.md,
-  },
-  // tema-bagimsiz: dolu marka dugmesinin uzerinde
-  pickerPhotoText: { color: '#fff', fontSize: type.subhead, fontWeight: '600' },
-  pickerNote: {
-    color: colors.text3, fontSize: type.caption, textAlign: 'center',
-    marginTop: spacing.s8, marginBottom: spacing.s16,
-  },
 
   pickerGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: spacing.s12 },
   pickerItem: { padding: spacing.s4, borderRadius: 32, borderWidth: 2.5, borderColor: 'transparent' },

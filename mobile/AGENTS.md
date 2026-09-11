@@ -109,3 +109,57 @@ görüntüsü üstünde piksel ölçümü):
    takıyor ve gölge zeminsiz de çiziliyor. İki release APK yan yana ölçülerek
    görüldü — önce "Android'de gölge hiç çizilmiyordu" diye yazılmıştı,
    ölçüm bunu çürüttü. Dolguyu katman değiştirmek GEREKMİYOR.
+
+---
+
+# Fotoğraf yükleme — UYGULAMADAN ÇIKARILDI (2.6.2)
+
+Kullanıcıya görünen iki giriş kaldırıldı: sohbet kompozitöründeki
+"Fotoğraf" seçeneği ve profil düzenlemedeki "Fotoğraf yükle" bloğu. Avatar
+artık yalnızca ön ayarlardan seçiliyor; sohbetin tek eki GIF.
+
+**Önceden yüklenmiş içerik GÖSTERİLMEYE devam ediyor.** Fotoğraflı avatarlar
+ve eski sohbet görselleri kırılmasın diye `Avatar` bileşeni ve mesaj
+baloncuğunun medya dalı olduğu gibi duruyor.
+
+## Paket de kaldırıldı — eklenti satırını silmek YETMİYOR
+
+Ölçüldü: `@expo/prebuild-config/build/plugins/withDefaultPlugins.js`
+içindeki `legacyExpoPlugins` listesinde `expo-image-picker` var. Paket kurulu
+ve `plugins` dizisinde yazmıyorsa prebuild eklentiyi props'suz uygular ve
+Info.plist'e İNGİLİZCE VARSAYILAN izin metinleri yazar, kod hiç çağırmasa
+bile.
+
+Bu yüzden `expo-image-picker` ve yalnızca yükleme yolunun kullandığı
+`expo-image-manipulator` bağımlılıklardan çıkarıldı. Paket binary'de yokken
+PhotoKit'e giden bir çağrı derlenemez; 2.6.1 (42)'yi çökerten TCC
+sonlandırmasının koşulu ortadan kalkıyor.
+
+`ios.infoPlist`'ten `NSPhotoLibraryUsageDescription` ve
+`NSCameraUsageDescription` silindi. Galeri ya da kamera çağrısı geri gelirse
+`npm run check:plist` anahtarı ister ve zincir düşer.
+
+## 2.6.1 (42) neden anahtarsız çıktı — ÇÖZÜLDÜ
+
+`check-plist.mjs` başındaki not bir süre "tespit edilemedi" diyordu. Sebep
+`giris-asamasi` dalında: `a6989b1` orada `photosPermission`'ı `false` yaptı
+ve build 42 iki commit sonraki `9f460ba`'dan alındı. Yayındaki sunucu
+fotoğraf bayrağını açık döndürüyordu; düğme çizildi, basılınca TCC süreci
+öldürdü. Bu dalın tabanı olan `0cc1af2`'de metin duruyordu, buradaki yeniden
+üretim o yüzden anahtarı buldu.
+
+## Sunucu tarafı
+
+Yükleme uçları (`/api/social/avatar/photo`, `/api/social/chat/media`) bu
+dalda değil, `main`'de. 11 Eylül'de `main`'e gönderilen `4726cad` ikisini de
+`USER_UPLOADS_ENABLED = false` ile kapattı ve `chat/config` artık
+`photos: false` dönüyor. İstemci ve sunucu aynı kararı veriyor.
+
+## Geri açarken hepsi birlikte
+
+1. `npx expo install expo-image-picker expo-image-manipulator`
+2. `app.json` içinde `ios.infoPlist`'e `NSPhotoLibraryUsageDescription` ekle.
+3. İki giriş noktasını ve `src/api/social.js`'teki yükleme fonksiyonlarını geri yaz.
+4. Sunucuda `USER_UPLOADS_ENABLED`'ı aç, App Store Connect'teki gizlilik beyanına fotoğrafı ekle.
+
+Hepsi YENİ BUILD ister; OTA ile gitmez.
