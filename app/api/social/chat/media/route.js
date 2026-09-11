@@ -3,7 +3,7 @@ import { put } from '@vercel/blob';
 import { verifyMobileToken } from '../../../../lib/mobile-auth';
 import { rateLimit, tooManyRequests } from '../../../../lib/rate-limit';
 import { areFriends, getHiddenUids } from '../../../../lib/social-store';
-import { moderateMedia, isModerationConfigured } from '../../../../lib/media-moderation';
+import { moderateMedia, isModerationConfigured, USER_UPLOADS_ENABLED } from '../../../../lib/media-moderation';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Sohbet görseli yükleme.
@@ -39,6 +39,12 @@ const EXT = {
 export async function POST(request) {
   const user = await verifyMobileToken(request);
   if (!user) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
+
+  // Kullanıcı görsel yüklemesi bu sürümde kapalı (media-moderation.js).
+  // İstemci düğmeyi zaten çizmiyor; bu, ucun kendi kapısı.
+  if (!USER_UPLOADS_ENABLED) {
+    return NextResponse.json({ error: 'MEDIA_DISABLED' }, { status: 503 });
+  }
 
   // Moderasyon bağlı değilse yükleme YOK. Sebebi media-moderation.js başında.
   if (!isModerationConfigured()) {
