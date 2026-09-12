@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { guard } from '../../../lib/rate-guard';
-import { isOurToken, rotateFamily, mintFamily, dropFamily } from '../../../lib/refresh-token';
+import { jetonModulu } from '../../../lib/jeton-tembel';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Token yenileme. idToken ~1 saatte dolar; mobil, refreshToken ile sessizce
@@ -41,6 +41,22 @@ export async function POST(request) {
   }
 
   try {
+    // JETON MODÜLÜ BURADA YÜKLENİYOR, MODÜL DÜZEYİNDE DEĞİL.
+    //
+    // Bu uçta modül bir KATKI değil ASLİ İŞ — o yüzden yüklenemezse temiz bir
+    // 503 dönüyoruz. Eskiden içe aktarım modül düzeyindeydi ve yükleme
+    // düştüğünde uç Next'in genel 500 HTML sayfasını döndürüyordu: istemci
+    // JSON bekliyor, ayrıştıramıyor ve hatanın ne olduğunu anlayamıyordu.
+    // Temiz bir hata, istemcinin yeniden girişe düşmesini sağlıyor.
+    const jeton = await jetonModulu();
+    if (!jeton) {
+      return NextResponse.json(
+        { error: 'Oturum yenileme geçici olarak kullanılamıyor. Lütfen tekrar giriş yapın.' },
+        { status: 503 },
+      );
+    }
+    const { isOurToken, rotateFamily, mintFamily, dropFamily } = jeton;
+
     // ── YOL 1: BİZİM DÖNDÜRMELİ JETONUMUZ ──────────────────────────────────
     if (isOurToken(refreshToken)) {
       const rot = await rotateFamily(refreshToken);

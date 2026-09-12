@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { verifyMobileToken, invalidateMobileToken } from '../../../lib/mobile-auth';
 import { revokeUserTokens } from '../../../lib/firebase-admin';
-import { dropFamily } from '../../../lib/refresh-token';
+import { dropFamilyGuvenli } from '../../../lib/jeton-tembel';
 import { guard } from '../../../lib/rate-guard';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -41,7 +41,7 @@ export async function POST(request) {
   // (rotateFamily INVALID döner). Yani çıkış, Admin olmadan da etkili.
   let body = {};
   try { body = await request.json(); } catch { /* gövdesiz de olur */ }
-  if (body?.refreshToken) await dropFamily(String(body.refreshToken));
+  if (body?.refreshToken) await dropFamilyGuvenli(String(body.refreshToken));
 
   // Bu isteğin jetonunu doğrulama önbelleğinden de düş — aksi hâlde iptal
   // edilmiş jeton 60 sn boyunca geçerli görünmeye devam ederdi.
