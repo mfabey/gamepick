@@ -41,14 +41,14 @@ export function postaYapilandirildiMi() {
 /**
  * Tek bir posta gönderir.
  *
- * @returns {Promise<boolean>} gönderildiyse true. Hiçbir durumda fırlatmaz.
+ * @returns {Promise<{ok: boolean, hata: string|null}>} Hiçbir durumda fırlatmaz.
  *
  * DÜZ METİN ZORUNLU TUTULUYOR: yalnızca HTML gönderen postalar spam
  * puanlamasında cezalandırılıyor ve HTML'i kapatmış istemcilerde boş görünüyor.
  */
 export async function postaGonder({ alici, konu, html, metin }) {
   const anahtar = process.env.RESEND_API_KEY;
-  if (!anahtar || !alici || !konu || !html) return false;
+  if (!anahtar || !alici || !konu || !html) return { ok: false, hata: 'eksik-girdi' };
 
   try {
     const r = await fetch(API, {
@@ -72,12 +72,14 @@ export async function postaGonder({ alici, konu, html, metin }) {
       let ayrinti = '';
       try { ayrinti = JSON.stringify(await r.json()).slice(0, 300); } catch { /* gövdesiz yanıt */ }
       console.error('[posta] Resend reddetti:', r.status, ayrinti);
-      return false;
+      // Ayrıntı ÇAĞIRANA DA DÖNÜYOR: "gönderilemedi" tek başına, alan adı
+      // doğrulanmadı mı yoksa anahtar mı yanlış ayırt ettirmiyordu.
+      return { ok: false, hata: `resend ${r.status}: ${ayrinti}`.slice(0, 300) };
     }
-    return true;
+    return { ok: true, hata: null };
   } catch (e) {
     console.error('[posta] gönderilemedi:', e?.message || e);
-    return false;
+    return { ok: false, hata: `ag: ${e?.message || e}`.slice(0, 300) };
   }
 }
 

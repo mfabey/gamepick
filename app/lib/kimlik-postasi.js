@@ -38,8 +38,18 @@ async function adminGetir() {
     mod = await import('./firebase-admin');
   } catch (e) {
     // PAKET YÜKLENEMEDİ — servis hesabının olup olmamasıyla ilgisi yok.
+    //
+    // HATA METNİ DE TAŞINIYOR. "Yüklenemedi" tek başına iki hipotezi elemeye
+    // yetmedi (paketleme beyanı ve Node sürümü denendi, ikisi de tutmadı);
+    // Node'un kendi cümlesi ("Cannot find package X", "ERR_REQUIRE_ESM" vb.)
+    // hangisinin doğru olduğunu tek seferde söylüyor. Uzunluk sınırlı: yığın
+    // izinin tamamı yanıta girmemeli.
     console.error('[kimlik-postasi] firebase-admin yüklenemedi:', e?.message || e);
-    return { admin: null, sebep: 'admin-yuklenemedi' };
+    return {
+      admin: null,
+      sebep: 'admin-yuklenemedi',
+      hata: `${e?.code || ''} ${e?.message || e}`.trim().slice(0, 300),
+    };
   }
   const admin = mod.adminAuth?.() || null;
   // AYRIM ÖNEMLİ: paket yüklendi ama `adminAuth()` null döndüyse sorun
@@ -63,8 +73,8 @@ async function gonder(email, dil, tur) {
   if (!email) return { ok: false, sebep: 'adres-yok' };
   if (!postaYapilandirildiMi()) return { ok: false, sebep: 'resend-anahtari-yok' };
 
-  const { admin, sebep: adminSebep } = await adminGetir();
-  if (!admin) return { ok: false, sebep: adminSebep };
+  const { admin, sebep: adminSebep, hata: adminHata } = await adminGetir();
+  if (!admin) return { ok: false, sebep: adminSebep, hata: adminHata };
 
   let baglanti;
   try {
@@ -105,8 +115,12 @@ async function gonder(email, dil, tur) {
     ? dogrulamaPostasi(baglanti, dil)
     : sifreSifirlamaPostasi(baglanti, dil);
 
+  // `.ok` ŞART: `postaGonder` artık `{ok, hata}` nesnesi dönüyor (her zaman
+  // truthy). Doğrudan koşula konsaydı her gönderim başarılı sayılırdı.
   const gitti = await postaGonder({ alici: email, konu, html, metin });
-  return gitti ? { ok: true, sebep: null } : { ok: false, sebep: 'gonderim-reddedildi' };
+  return gitti.ok
+    ? { ok: true, sebep: null }
+    : { ok: false, sebep: 'gonderim-reddedildi', hata: gitti.hata };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -94,7 +94,11 @@ export async function POST(request) {
     // sunucu günlüğüne erişmeden görebilmek gerekiyor — bu uç zaten hesabın
     // kendi parolasını istiyor, yani yanıtı yalnızca hesabın sahibi görüyor.
     // Sebepler kaba (hangi adım düştü), sırların değerini taşımıyor.
-    return NextResponse.json({ ok: true, mock: false, posta: 'firebase', sebep: markali.sebep });
+    return NextResponse.json({
+      ok: true, mock: false, posta: 'firebase',
+      sebep: markali.sebep,
+      hata: markali.hata || null,
+    });
 
   } catch (err) {
     console.error('Resend Verification API Error:', err.message);
