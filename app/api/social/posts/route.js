@@ -4,6 +4,7 @@ import { rateLimit, tooManyRequests } from '../../../lib/rate-limit';
 import { validateFreeText } from '../../../lib/content-filter';
 import { getProfiles, getHiddenUids, getFriends } from '../../../lib/social-store';
 import { createPost, deletePost, listFeed, listFriendFeed, toggleLike } from '../../../lib/post-store';
+import { clientIp as clientKey } from '../../../lib/client-ip';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tartışma akışı.
@@ -28,10 +29,6 @@ function shape(post, profiles) {
       avatar: p?.avatar || null,
     },
   };
-}
-
-function clientKey(request) {
-  return (request.headers.get('x-forwarded-for') || 'unknown').split(',')[0].trim();
 }
 
 export async function GET(request) {

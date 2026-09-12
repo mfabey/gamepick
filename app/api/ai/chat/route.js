@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { guard } from '../../../lib/rate-guard';
+import { parseBody, aiChatBody } from '../../../lib/schemas';
 import fs from 'fs';
 import path from 'path';
 import { getSteamDetailsCached } from '../../../lib/steam-cache';
@@ -453,7 +455,11 @@ function getApiKey(name) {
 }
 
 async function callGenerativeLLM(query, ragContext, userProfile, history = []) {
-  const geminiKey = getApiKey('GEMINI_API_KEY') || getApiKey('NEXT_PUBLIC_GEMINI_API_KEY');
+  // `NEXT_PUBLIC_GEMINI_API_KEY` yedeği BİLEREK kaldırıldı: bu önek değeri
+  // tarayıcı paketine gömer. Burası sunucu route'u olduğu için sızıntı henüz
+  // oluşmamıştı, ama aynı adı bir istemci bileşeni referans verdiği anda
+  // faturalı anahtar herkese açılırdı. Anahtar yalnızca `GEMINI_API_KEY`.
+  const geminiKey = getApiKey('GEMINI_API_KEY');
   const groqKey = getApiKey('GROQ_API_KEY');
   const openaiKey = getApiKey('OPENAI_API_KEY');
 
@@ -1077,15 +1083,28 @@ const STOP_WORDS = new Set([
 // --- Next.js Route POST Handler ---
 export async function POST(req) {
   try {
-    const body = await req.json();
-    const userQuery = (body.message || '').trim();
+    // FATURA KAPISI. Bu uç Gemini / Groq / OpenAI'ye gidiyor ve KİMLİKSİZ —
+    // sınırsız bırakıldığında LLM sağlayıcı faturası saldırganın elinde olur.
+    // Eksen IP: hesap yok, sayacı bağlayacak başka bir kimlik de yok.
+    const kapi = await guard(req, 'aiChat');
+    if (kapi) return kapi;
+
+    // ŞEMA DOĞRULAMASI — bkz. app/lib/schemas.js
+    //
+    // Hız sınırı istek SAYISINI kesiyordu ama BOYUTUNU kesmiyordu: `message`
+    // sınırsızdı ve doğrudan LLM istemine giriyordu, yani saatte 30 istek ×
+    // istenen büyüklükte metin hâlâ istenen büyüklükte jeton faturası
+    // demekti. `profile` serbest bir nesneydi (`hardware.gpu` isteme gömülü),
+    // `history` kayıtlarının metni de sınırsızdı — yalnız asistan yanıtları
+    // 350'ye kesiliyordu, kullanıcı mesajları kesilmiyordu.
+    const ayrist = await parseBody(req, aiChatBody);
+    if (!ayrist.ok) return ayrist.response;
+    const body = ayrist.data;
+
+    const userQuery = body.message;
     const userProfile = body.profile || {};
     const sessionId = body.session_id || `sess_${Date.now()}`;
-    const history = Array.isArray(body.history) ? body.history : [];
-
-    if (!userQuery) {
-      return NextResponse.json({ error: 'Mesaj boş olamaz' }, { status: 400 });
-    }
+    const history = body.history || [];
 
     const normQ = normalizeText(userQuery);
     const gamesDb = loadDatabase();

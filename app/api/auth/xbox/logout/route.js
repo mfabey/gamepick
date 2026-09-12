@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { readValue } from '../../../../lib/session-cookie';
 import { cookies } from 'next/headers';
 import { mergeProfile } from '../../../../lib/social-store';
 
@@ -55,7 +56,7 @@ export async function GET(request) {
   const userSession = cookieStore.get('gp_user_session');
   if (userSession && userSession.value) {
     try {
-      const user = JSON.parse(userSession.value);
+      const user = await readValue(userSession.value); if (!user) throw new Error("gecersiz");
       await removeUserConnection(user.uid, 'xbox');
       const conn = await getUserConnections(user.uid);
       if (!conn.steam && (!conn.steamAccounts || conn.steamAccounts.length === 0)) {

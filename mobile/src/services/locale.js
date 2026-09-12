@@ -28,15 +28,33 @@ import { NativeModules, Platform } from 'react-native';
  * Seçici bu sırayla çiziliyor.
  */
 export const LANGUAGES = [
-  { code: 'en', name: 'English' },
-  { code: 'es', name: 'Español' },
-  { code: 'pt', name: 'Português' },
-  { code: 'de', name: 'Deutsch' },
-  { code: 'tr', name: 'Türkçe' },
+  { code: 'en', name: 'English',   bcp47: 'en-US' },
+  { code: 'es', name: 'Español',   bcp47: 'es-ES' },
+  { code: 'pt', name: 'Português', bcp47: 'pt-BR' },
+  { code: 'de', name: 'Deutsch',   bcp47: 'de-DE' },
+  { code: 'tr', name: 'Türkçe',    bcp47: 'tr-TR' },
 ];
 
 export const SUPPORTED = LANGUAGES.map((l) => l.code);
 export const DEFAULT_LANG = 'en';
+
+/**
+ * Uygulamanin secili dilinin BCP-47 etiketi.
+ *
+ * NEDEN VAR. `toLocaleString` / `toLocaleDateString` ARGUMANSIZ cagrilmamali:
+ * o hal CIHAZIN dilini kullaniyor, uygulamanin secili dilini degil. Olculdu
+ * (2026-09-05, Android 16, cihaz en-US, Hermes uzerinde dogrudan):
+ *   (1234567).toLocaleString()        -> '1,234,567'   (cihaz dili)
+ *   (1234567).toLocaleString('tr-TR') -> '1.234.567'   (dogrusu)
+ * Turkce secili bir kullanici, telefonu Ingilizceyse yanlis ayraci goruyordu.
+ *
+ * `lang === 'tr' ? 'tr-TR' : 'en-US'` kestirmesi de YETMIYOR: de/es/pt de
+ * binlik ayraci olarak nokta kullaniyor, en-US virgul. Etiket dil tablosunda
+ * durmali.
+ */
+export function bcp47(code) {
+  return LANGUAGES.find((l) => l.code === code)?.bcp47 ?? 'en-US';
+}
 
 /**
  * Cihazın dil etiketlerini okur — en tercih edilenden aşağıya.

@@ -3,12 +3,20 @@ import { NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
+  // Yalnızca geliştirmede. Bu uç yukarı akış yanıt başlıklarını olduğu gibi
+  // döküyor ve kimlik doğrulaması yok; üretimde açık bırakmanın karşılığı yok
+  // (repoda tek bir çağıranı da yok).
+  if (process.env.NODE_ENV === 'production') {
+    return new NextResponse(null, { status: 404 });
+  }
+
   const RAWG_KEY = process.env.RAWG_API_KEY;
   const url = `https://api.rawg.io/api/games?key=${RAWG_KEY}&page_size=1&platforms=4`;
 
+  // `keyPreview` KALDIRILDI: anahtarın ilk 6 karakterini döndürmenin teşhis
+  // değeri `hasKey`in üstüne bir şey katmıyor, sızdırdığı bilgi ise gerçek.
   const diag = {
     hasKey: !!RAWG_KEY,
-    keyPreview: RAWG_KEY ? RAWG_KEY.slice(0, 6) + '...' : null,
     timestamp: new Date().toISOString(),
   };
 

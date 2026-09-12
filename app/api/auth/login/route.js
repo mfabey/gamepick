@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
+import { signValue, SESSION_TTL_SEC } from '../../../lib/session-cookie';
+import { sunucuHatasi, yukariAkisHatasi } from '../../../lib/api-error';
+import { canUseAuthMock, authNotConfigured } from '../../../lib/auth-config';
 import { redisCmd, redisSetJSON } from '../../../lib/redis';
 import { mergeProfile, getProfile } from '../../../lib/social-store';
+import { guard, penalize } from '../../../lib/rate-guard';
 
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
 
@@ -12,16 +16,23 @@ export async function POST(request) {
       return NextResponse.json({ error: 'E-posta ve şifre zorunludur.' }, { status: 400 });
     }
 
+    // Hesap ekseni YALNIZ başarısız denemede artıyor (bkz. rate-guard.js):
+    // her denemede artsaydı, saldırgan kurbanın adresiyle 5 kez yanlış parola
+    // göndererek meşru kullanıcıyı 15 dakika kilitleyebilirdi.
+    const kapi = await guard(request, 'login', { account: email });
+    if (kapi) return kapi;
+
     // Local development fallback if Firebase Key is not set
+    if (!FIREBASE_API_KEY && !canUseAuthMock()) return authNotConfigured();
     if (!FIREBASE_API_KEY) {
       console.warn('FIREBASE_API_KEY is not defined. Falling back to mock login.');
       const userObj = { uid: 'mock_user', name: email.split('@')[0], email };
       const response = NextResponse.json({ ok: true, user: userObj });
-      response.cookies.set('gp_user_session', JSON.stringify(userObj), {
+      response.cookies.set('gp_user_session', await signValue(userObj, SESSION_TTL_SEC), {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 7, // 7 days
+        maxAge: SESSION_TTL_SEC,
       });
       try {
         await mergeProfile('mock_user', userObj);
@@ -44,9 +55,15 @@ export async function POST(request) {
     if (!signInRes.ok) {
       const errMsg = signInData?.error?.message;
       if (errMsg === 'INVALID_LOGIN_CREDENTIALS' || errMsg === 'INVALID_PASSWORD' || errMsg === 'EMAIL_NOT_FOUND') {
+        // Başarısız deneme hesap sayacına yazılıyor — parola deneme burada durur.
+        await penalize(request, 'login', { account: email });
         return NextResponse.json({ error: 'E-posta veya şifre hatalı.' }, { status: 400 });
       }
-      return NextResponse.json({ error: signInData?.error?.message || 'Giriş başarısız.' }, { status: signInRes.status });
+      // Firebase'in ham kodu (TOO_MANY_ATTEMPTS_TRY_LATER, USER_DISABLED…)
+      // loga gidiyor, kullanıcıya değil: Google'ın iç kodları kullanıcı için
+      // anlamsız, dışarıdan bakan için bilgi.
+      return yukariAkisHatasi(signInData?.error?.message, 'auth/login',
+        'Giriş yapılamadı. Lütfen tekrar deneyin.', 400);
     }
 
     const { localId, displayName, idToken } = signInData;
@@ -93,11 +110,11 @@ export async function POST(request) {
 
     // 4. Set HttpOnly Cookie for successful verified login
     const response = NextResponse.json({ ok: true, user: userObj });
-    response.cookies.set('gp_user_session', JSON.stringify(userObj), {
+    response.cookies.set('gp_user_session', await signValue(userObj, SESSION_TTL_SEC), {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
+      maxAge: SESSION_TTL_SEC,
     });
 
     // Cache profile and map connections in Redis
@@ -113,7 +130,11 @@ export async function POST(request) {
             await redisCmd(['SET', `steam_to_uid:${acc.steamId}`, localId]);
           }
         }
-        if (connections.xbox && connections.xbox.gamertag) {
+        // SİMÜLASYON OTURUMU İNDEKSLENMEZ. Gamertag, mock-login'de kullanıcının
+        // serbestçe yazdığı bir alan; simüle bir kimliği gerçek eşleme
+        // tablosuna yazmak hem sınırsız anahtar üretiyor hem de ileride bu
+        // tabloyu okuyan biri çıkarsa doğrudan taklit yoluna dönüşürdü.
+        if (connections.xbox && connections.xbox.gamertag && !connections.xbox.isMock) {
           await redisCmd(['SET', `xbox_to_uid:${connections.xbox.gamertag}`, localId]);
         }
       }
@@ -125,6 +146,6 @@ export async function POST(request) {
 
   } catch (err) {
     console.error('Login API Error:', err.message);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return sunucuHatasi(err, 'auth/login');
   }
 }

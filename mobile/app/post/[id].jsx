@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, Pressable, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,6 +19,10 @@ import PostCard from '../../src/components/PostCard';
 import PostComposer from '../../src/components/PostComposer';
 import ReviewRoot from '../../src/components/ReviewRoot';
 import Avatar from '../../src/components/Avatar';
+import ModerasyonKatmani from '../../src/components/ModerasyonKatmani';
+import { suz } from '../../src/services/engel';
+import { useEngelliler } from '../../src/hooks/useEngelliler';
+import { useModerasyon } from '../../src/hooks/useModerasyon';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Konuşma görünümü — bir gönderi ve yanıtları.
@@ -48,6 +52,12 @@ export default function PostThread() {
   const { t } = useLanguage();
   const insets = useSafeAreaInsets();
   const { account } = useAuth();
+
+  // KONUŞMA EKRANINDA HİÇ MODERASYON YOLU YOKTU. Akıştaki bir gönderiye
+  // dokunan herkes buraya geliyor ve yanıtları burada okuyor; yanıtlar da
+  // kullanıcı içeriği. Guideline 1.2 'her yüzey' diyor, burası atlanmıştı.
+  const mod = useModerasyon();
+  const engelSurumu = useEngelliler();
 
   const [session, setSession] = useState(() => getSession());
   useEffect(() => subscribeSession(() => setSession(getSession())), []);
@@ -95,11 +105,25 @@ export default function PostThread() {
     setComposing(true);
   }, [requireAccount]);
 
+  // Engellenen kişinin yanıtı konuşmadan ANINDA düşüyor; sunucu bir
+  // sonraki çekimde zaten süzüyor (bkz. services/engel.js).
+  const yanitlar = useMemo(
+    () => suz(data?.replies || [], (x) => x?.author?.uid || x?.uid),
+    [data, engelSurumu],
+  );
+
   // Satir ici ok fonksiyonuydu: FlashList her render'da `renderItem` degisti
   // sanip butun hucreleri yeniden ciziyordu.
   const satirCiz = useCallback(
-    ({ item }) => <PostCard post={item} onRequireAccount={requireAccount} onOpen={ACMA_YOK} />,
-    [requireAccount],
+    ({ item }) => (
+      <PostCard
+        post={item}
+        onRequireAccount={requireAccount}
+        onOpen={ACMA_YOK}
+        onMenu={(k) => mod.acMenu(k, { targetType: 'post', targetId: String(item.id) })}
+      />
+    ),
+    [requireAccount, mod],
   );
 
   return (
@@ -133,7 +157,7 @@ export default function PostThread() {
         </View>
       ) : (
         <FlashList
-          data={data.replies || []}
+          data={yanitlar}
           keyExtractor={anahtar}
           renderItem={satirCiz}
           ListHeaderComponent={
@@ -160,18 +184,28 @@ export default function PostThread() {
                     const u = data.post.author?.username;
                     if (u) router.push(`/u/${u}`);
                   }}
+                  onMenu={(k) => mod.acMenu(k, {
+                    targetType: 'review',
+                    targetId: `${data.post.appid}:${data.post.uid}`,
+                  })}
                 />
               ) : (
-                <PostCard post={data.post} onRequireAccount={requireAccount} onOpen={ACMA_YOK} kok />
+                <PostCard
+                  post={data.post}
+                  onRequireAccount={requireAccount}
+                  onOpen={ACMA_YOK}
+                  onMenu={(k) => mod.acMenu(k, { targetType: 'post', targetId: String(data.post.id) })}
+                  kok
+                />
               )}
 
               {/* FAZ 5 — SIRALAMA YAZILIYOR. Akış yeniden eskiye, konuşma
                   tersi. İki farklı sıralama aynı uygulamada varsa hangisinin
                   geçerli olduğu SÖYLENMELİ; yoksa kullanıcı en yeni yanıtı
                   en üstte arar ve bulamaz. */}
-              {(data.replies?.length || 0) > 0 ? (
+              {yanitlar.length > 0 ? (
                 <Text style={styles.siralama}>
-                  {data.replies.length} {t('post.repliesCount')} · {t('post.replyOrder')}
+                  {yanitlar.length} {t('post.repliesCount')} · {t('post.replyOrder')}
                 </Text>
               ) : null}
             </View>
@@ -225,6 +259,8 @@ export default function PostThread() {
         onClose={() => setComposing(false)}
         onPosted={() => load(true)}
       />
+
+      <ModerasyonKatmani mod={mod} />
     </SafeAreaView>
   );
 }

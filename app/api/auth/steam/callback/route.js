@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { signValue, readValue, SESSION_TTL_SEC, LINK_TTL_SEC } from '../../../../lib/session-cookie';
+import { consumeState } from '../../../../lib/oauth-state';
 import { cookies } from 'next/headers';
 import { redisCmd, redisGetJSON, redisSetJSON } from '../../../../lib/redis';
 import { mergeProfile } from '../../../../lib/social-store';
@@ -86,6 +88,19 @@ export async function GET(request) {
     return NextResponse.redirect(`${baseUrl}/?steam_error=dogrulanamadi`);
   }
 
+  // ── STATE: CSRF + TEKRAR KORUMASI ────────────────────────────────────────
+  // İmza doğrulaması yukarıda BİTTİ ve geçti — ama o yalnızca "bu Steam
+  // kullanıcısı gerçek mi" sorusunu yanıtlıyor. Saldırgan kendi geçerli
+  // assertion'ını yakalayıp oturumu açık bir kurbanı bu adrese düşürebilir;
+  // sunucu da saldırganın Steam hesabını KURBANIN uid'ine bağlardı
+  // (aşağıdaki saveUserConnection / steam_to_uid yazımları).
+  //
+  // State tek kullanımlık: aynı dönüş ikinci kez oynatılamıyor.
+  const statePayload = await consumeState(searchParams.get('state'));
+  if (!statePayload) {
+    return NextResponse.redirect(`${baseUrl}/?steam_error=state_gecersiz`);
+  }
+
   // ── 2. Steam ID'yi çıkar ─────────────────────────────────────────────────
   const claimedId = searchParams.get('openid.claimed_id') || '';
   const steamId   = claimedId.match(/\/(\d+)$/)?.[1];
@@ -137,13 +152,14 @@ export async function GET(request) {
   let steamAccounts = [];
   try {
     const existing = cookieStore.get('gp_steam_accounts');
-    if (existing?.value) {
-      steamAccounts = JSON.parse(existing.value);
+    const existingVal = await readValue(existing?.value);
+    if (Array.isArray(existingVal)) {
+      steamAccounts = existingVal;
     } else {
       // Eski tek-hesap cookie'sinden geçiş
       const oldSession = cookieStore.get('gp_steam_session');
-      if (oldSession?.value) {
-        const oldProfile = JSON.parse(oldSession.value);
+      const oldProfile = await readValue(oldSession?.value);
+      if (oldProfile) {
         if (oldProfile?.steamId && oldProfile.steamId !== steamId) {
           steamAccounts = [oldProfile]; // Mevcut hesabı koru
         }
@@ -164,7 +180,8 @@ export async function GET(request) {
   const userSession = cookieStore.get('gp_user_session');
   if (userSession?.value) {
     try {
-      const user = JSON.parse(userSession.value);
+      const user = await readValue(userSession.value);
+      if (!user) throw new Error('gecersiz oturum');
       loggedInUser = user;
       await saveUserConnection(user.uid, 'steamAccounts', steamAccounts);
       // Geriye uyumluluk için ilk hesabı 'steam' anahtarına da yaz
@@ -222,16 +239,16 @@ export async function GET(request) {
   };
 
   // Yeni çoklu hesap cookie'si
-  response.cookies.set('gp_steam_accounts', JSON.stringify(steamAccounts), cookieOpts);
+  response.cookies.set('gp_steam_accounts', await signValue(steamAccounts, LINK_TTL_SEC), cookieOpts);
   // Geriye uyumluluk için ilk hesabı eski cookie'ye de yaz
-  response.cookies.set('gp_steam_session', JSON.stringify(steamAccounts[0]), cookieOpts);
+  response.cookies.set('gp_steam_session', await signValue(steamAccounts[0], LINK_TTL_SEC), cookieOpts);
 
   if (loggedInUser) {
-    response.cookies.set('gp_user_session', JSON.stringify(loggedInUser), {
+    response.cookies.set('gp_user_session', await signValue(loggedInUser, SESSION_TTL_SEC), {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
+      maxAge: SESSION_TTL_SEC,
       path: '/',
     });
   }

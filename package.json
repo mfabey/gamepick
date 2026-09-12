@@ -4,20 +4,28 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node scripts/check-access-policy.mjs && node scripts/check-cors-policy.mjs",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "check:access": "node scripts/check-access-policy.mjs",
+    "check:cors": "node scripts/check-cors-policy.mjs",
+    "metrics:mail": "node scripts/mail-volume.mjs",
+    "backup:redis": "node scripts/redis-backup.mjs",
+    "restore:redis": "node scripts/redis-restore.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.28.0",
     "@vercel/blob": "^2.7.0",
+    "firebase-admin": "^14.3.0",
     "hls.js": "^1.6.16",
     "next": "14.2.35",
     "pusher": "^5.3.4",
     "react": "^18.3.0",
-    "react-dom": "^18.3.0"
+    "react-dom": "^18.3.0",
+    "zod": "^4.5.4"
   },
   "overrides": {
-    "postcss": "^8.5.10"
+    "postcss": "^8.5.26"
   }
 }

@@ -61,6 +61,28 @@
 // Play'in listesinde yok. `androidStatusBar.barStyle` de güvenli — o
 // `windowLightStatusBar` yazıyor, desteği sonlandırılan bir API değil.
 //
+// ── KLAVYE: KeyboardAvoidingView behavior'i ──────────────────────────────────
+//
+// Edge-to-edge zorlamasinin ikinci yuzu, ayni kokten. Android 15+ da pencere
+// klavye icin KUCULMUYOR; klavye bir inset olarak geliyor ve uygulamanin onu
+// kendisi tuketmesi gerekiyor. Bunu yapan tek sey KeyboardAvoidingView'in
+// `behavior` prop'u.
+//
+// RN 0.81 KAYNAGINDAN DOGRULANDI --
+// Libraries/Components/Keyboard/KeyboardAvoidingView.js:236 `switch (behavior)`:
+// 'height' / 'position' / 'padding' dallari isi yapiyor, `default:` dali
+// (satir 286) duz bir <View> donduruyor. Yani behavior YOKSA ya da undefined
+// ise bilesen HICBIR SEY yapmiyor.
+//
+// Olculdu (2026-08-31, Android 16 emulatoru, release APK): klavye acilinca
+// yazma alani da mesajlar da klavyenin ALTINDA kaliyordu, hic yukari
+// kaymiyorlardi. O gun chat/[uid].jsx duzeltildi ve "ayni kalip bes dosyada
+// daha var" notu birakildi. Ucu duzeldi, IKISI 2026-09-05'e kadar kaldi.
+// Kalip GERILEDI -- kural bu yuzden var, uslup tercihi degil.
+//
+// `Platform.OS === 'ios' ? 'padding' : undefined` iOS'ta dogru gorunuyor ve
+// Android'i sessizce bosa dusuruyor; gozle fark edilmemesinin sebebi bu.
+//
 // Bu bir RATCHET DEĞİL, sert kural: doğru sayı sıfır, taban dosyası yok.
 // ─────────────────────────────────────────────────────────────────────────────
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
@@ -85,6 +107,10 @@ function dosyalar(dizin, cikti = []) {
 const temizle = (s) => s
   .replace(/\/\*[\s\S]*?\*\//g, '')
   .replace(/(^|[^:])\/\/.*$/gm, '$1');
+
+// <KeyboardAvoidingView ...> acilis etiketlerinin prop metinleri.
+// Duz [^>]* yetmiyor: proplarda ok fonksiyonu (=>) olabiliyor.
+const kavProplari = (s) => [...s.matchAll(/<KeyboardAvoidingView\b((?:=>|[^>])*)>/g)].map((m) => m[1]);
 
 const bulgular = [];
 const bildir = (yer, ne, cozum) => bulgular.push({ yer, ne, cozum });
@@ -142,6 +168,16 @@ const KURALLAR = [
     sina: (s) => /windowOptOutEdgeToEdgeEnforcement/.test(s),
     cozum: 'Kaldir; uyariyi susturmuyor ve targetSdk 36 da yok sayiliyor.',
   },
+  {
+    ad: 'KeyboardAvoidingView behavior i undefined/null a dusuyor',
+    sina: (s) => kavProplari(s).some((p) => /behavior\s*=\s*\{[^}]*\b(undefined|null)\b/.test(p)),
+    cozum: 'behavior="padding" yaz. RN 0.81 de switch(behavior) default dali duz bir <View> donduruyor; Android 15+ da pencere klavye icin kuculmedigi icin alan klavyenin ALTINDA kaliyor.',
+  },
+  {
+    ad: 'KeyboardAvoidingView behavior siz',
+    sina: (s) => kavProplari(s).some((p) => !/\bbehavior\s*=/.test(p)),
+    cozum: 'behavior="padding" ekle; behavior siz KeyboardAvoidingView iki platformda da duz bir <View>.',
+  },
 ];
 
 const taranan = dosyalar(KOK + 'app')
@@ -164,7 +200,8 @@ if (bulgular.length) {
     console.error(`    ${b.ne}`);
     console.error(`    → ${b.cozum}\n`);
   }
-  console.error('Bunlar Play Console un Android 15 uyari listesine BIZIM kodumuzu ekler.\n');
+  console.error('Pencere API leri: Play Console un Android 15 uyari listesine BIZIM kodumuzu ekler.');
+  console.error('KeyboardAvoidingView: alan klavyenin ALTINDA kalir (pencere edge-to-edge de kuculmuyor).\n');
   process.exit(1);
 }
 console.log(`✓ edge-to-edge temiz — ${KURALLAR.length} kural, ${taranan.length} dosya + app.json`);

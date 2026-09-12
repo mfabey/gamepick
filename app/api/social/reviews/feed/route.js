@@ -4,6 +4,7 @@ import { rateLimit, tooManyRequests } from '../../../../lib/rate-limit';
 import { getProfiles, getHiddenUids } from '../../../../lib/social-store';
 import { listRecentReviews, listUserReviews } from '../../../../lib/review-store';
 import { countReplies, reviewRef } from '../../../../lib/post-store';
+import { clientIp } from '../../../../lib/client-ip';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // İnceleme akışı — tüm oyunlardan, en yeni önce.
@@ -40,10 +41,12 @@ export async function GET(request) {
   if (mine && !user) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
 
   // Anonimde uid yok; sayaç IP'ye bağlanıyor. Vercel gerçek istemciyi
-  // x-forwarded-for ile veriyor; yoksa tek bir ortak kovaya düşüyor.
+  // x-forwarded-for ile veriyor (üzerine kendisi yazıyor); yoksa tek bir
+  // ortak kovaya düşüyor. Adres `client-ip.js` ile normalize ediliyor —
+  // IPv6 /64'e kırpılmazsa bu sayaç IPv6 istemcide hiçbir şey tutmuyor.
   const rlKey = user
     ? `rl:revfeed:${user.uid}`
-    : `rl:revfeed:ip:${(request.headers.get('x-forwarded-for') || 'unknown').split(',')[0].trim()}`;
+    : `rl:revfeed:ip:${clientIp(request)}`;
   const rl = await rateLimit(rlKey, 120, 3600);
   if (!rl.ok) return NextResponse.json(tooManyRequests(), { status: 429 });
 

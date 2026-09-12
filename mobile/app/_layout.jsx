@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as ScreenOrientation from 'expo-screen-orientation';
+import * as SplashScreen from 'expo-splash-screen';
 import * as Notifications from 'expo-notifications';
 import { ThemeProvider } from '../src/context/ThemeContext';
 import { LanguageProvider } from '../src/context/LanguageContext';
@@ -15,13 +16,30 @@ import { loadSeen } from '../src/services/seenStore';
 import { loadDismissed } from '../src/services/dismissStore';
 import { loadLiked } from '../src/services/likeStore';
 import { loadCollections } from '../src/services/collectionsStore';
-import { loadOnboarding } from '../src/services/onboarding';
+import { loadPerde } from '../src/services/perde';
 import { initQueryCache } from '../src/services/queryCache';
 import { startSharedLinkWatcher } from '../src/services/sharedLink';
 import { startDmPushSync } from '../src/services/dmPush';
 import { useLastNotificationResponse } from 'expo-notifications';
 import FpsMeter from '../src/dev/FpsMeter';
 import { useTheme } from '../src/context/ThemeContext';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AÇILIŞ PERDESİ ELDE TUTULUYOR.
+//
+// MODÜL KAPSAMINDA, bileşenin içinde DEĞİL — SDK 57 belgesinin şartı: bir
+// efektten çağrılırsa perde çoktan inmiş olabiliyor ve çağrı boşa gidiyor.
+// `await` de edilmiyor, aynı sebeple.
+//
+// Neden gerekti: perde ilk kare çizilir çizilmez kendiliğinden kalkıyordu ve
+// o ilk kare, keşif ekranına gidecek kullanıcıda bile ANASAYFAYDI. Kullanıcı
+// anasayfa iskeletini bir an görüp oyun seçme ekranına çekiliyordu.
+SplashScreen.preventAutoHideAsync().catch(() => {});
+
+// Sert kesme yerine sönümlenerek iniyor — perdenin ardındaki ekran zaten
+// çizilmiş durumda, geçişin kendisi görünmüyor.
+// YALNIZCA iOS: `fade` Android'de desteklenmiyor, orada sessizce yok sayılıyor.
+SplashScreen.setOptions({ fade: true, duration: 220 });
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TEMALI YIĞIN — RootLayout'tan AYRI bir bileşen olmak ZORUNDA.
@@ -98,7 +116,12 @@ function TemaliYigin() {
                 <Stack.Screen name="social-settings" />
                 <Stack.Screen name="lists" />
                 <Stack.Screen name="list/[id]" />
-                <Stack.Screen name="onboarding" options={{ animation: 'fade', gestureEnabled: false }} />
+                {/* "onboarding" KALKTI — "Hangilerini sevdin?" ekranı tümden
+                    silindi. Rota burada bırakılsaydı expo-router var olmayan
+                    bir rota için uyarı verirdi; aynı kırılma "social" ve
+                    "messages" taşınırken iki kez yaşandı (yukarıdaki notlar).
+                    Tanıtım perdesi kaybolmadı: artık (tabs) düzeninde,
+                    anasayfanın üstüne seriliyor. */}
                 <Stack.Screen name="account" />
                 <Stack.Screen name="delete-account" />
       </Stack>
@@ -123,12 +146,31 @@ export default function RootLayout() {
     });
   }, []);
 
-  // İlk açılışta oyun seçimi ekranını göster — kişiselleştirme hemen devreye girsin
+  // ── PERDE, TANITIM ÇİZİLDİKTEN SONRA İNİYOR ──────────────────────────────
+  //
+  // Yerel açılış perdesi, ilk kare çizilir çizilmez kendiliğinden kalkıyordu.
+  // Tanıtım perdesinin gösterilip gösterilmeyeceği ise asenkron bir depo
+  // okumasına bağlı: elde tutulmasaydı önce anasayfa boyanır, tanıtım ancak
+  // ondan SONRA üstüne kapanırdı — görünür bir çakma.
+  //
+  // Bayrak BURADA okunuyor, (tabs) düzeninde değil: orada okunsaydı aynı
+  // asenkron pencere bu kez perdenin altında değil, ÜSTÜNDE açılırdı.
   useEffect(() => {
     let alive = true;
-    loadOnboarding().then((done) => {
-      if (alive && !done) router.replace('/onboarding');
-    });
+
+    loadPerde().then(() => {
+      if (!alive) return;
+      // İKİ KARE BEKLENİYOR. Bayrağın çözüldüğü commit'te (tabs) düzeni
+      // tanıtımı çiziyor, ama boyanması bir sonraki karede oluyor. Perde
+      // aynı karede kalksaydı arada tek karelik çıplak anasayfa görünürdü.
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        SplashScreen.hideAsync().catch(() => {});
+      }));
+    // Depo okuması `services/perde.js` içinde zaten try/catch'li, yani
+    // reddetmiyor. Yine de catch şart: burada patlarsa perde SONSUZA DEK
+    // yukarıda kalır ve uygulama açılmaz.
+    }).catch(() => { SplashScreen.hideAsync().catch(() => {}); });
+
     return () => { alive = false; };
   }, []);
 

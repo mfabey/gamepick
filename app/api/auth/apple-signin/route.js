@@ -1,4 +1,8 @@
 import { NextResponse } from 'next/server';
+import { signValue, SESSION_TTL_SEC } from '../../../lib/session-cookie';
+import { mintFamily } from '../../../lib/refresh-token';
+import { guard } from '../../../lib/rate-guard';
+import { redisSetJSON } from '../../../lib/redis';
 import { mergeProfile, getProfile } from '../../../lib/social-store';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -24,6 +28,10 @@ export async function POST(request) {
   if (!identityToken) {
     return NextResponse.json({ error: 'identityToken zorunludur.' }, { status: 400 });
   }
+
+  // google-signin ile aynı gerekçe ve aynı kova.
+  const kapi = await guard(request, 'oauthSignin');
+  if (kapi) return kapi;
   if (!FIREBASE_API_KEY) {
     return NextResponse.json({ error: 'Kimlik doğrulama yapılandırılmamış.' }, { status: 503 });
   }
@@ -97,7 +105,8 @@ export async function POST(request) {
       ok: true,
       user,
       idToken,
-      refreshToken,
+      // Döndürmeli jeton — bkz. mobile-login. Firebase jetonu sunucuda kalıyor.
+      refreshToken: (await mintFamily(localId, refreshToken)) || refreshToken,
       expiresIn: Number(expiresIn) || 3600,
     });
 
@@ -106,11 +115,14 @@ export async function POST(request) {
     // `web: true` geldiğinde çerez de kuruluyor — mobil bu başlığı yok sayar,
     // bu yüzden mevcut mobil akış etkilenmiyor.
     if (body.web === true) {
-      response.cookies.set('gp_user_session', JSON.stringify(user), {
+      // ÇEREZ İMZALI VE DAR — gerekçe google-signin ile birebir aynı.
+      response.cookies.set('gp_user_session', await signValue({
+        uid: user.uid, name: user.name, email: user.email,
+      }, SESSION_TTL_SEC), {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 7,
+        maxAge: SESSION_TTL_SEC,
       });
     }
 

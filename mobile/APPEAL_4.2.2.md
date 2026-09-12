@@ -1,3 +1,8 @@
+> ⛔ **BU BELGE GEÇERSİZ — kullanma.** 2.2.0 için yazılmıştı; 4. maddedeki
+> "ilk açılışta oyun seçme ekranı" `8d48ec3` ile **kaldırıldı** ve o tarihten
+> beri uygulamaya sosyal katman (arkadaşlar, mesajlaşma, topluluk) eklendi.
+> Güncel inceleme notu: **`APP_REVIEW.md`**.
+
 # App Review yanıtı — Guideline 4.2.2
 
 **Submission ID:** 94eca83f-306e-4648-9d2e-6dfc44a94854

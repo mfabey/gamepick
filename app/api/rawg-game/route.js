@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { sunucuHatasi } from '../../lib/api-error';
 import { isAdultContent, isAdultTitleOrSlug } from '../../lib/adult-filter.js';
 import { FALLBACK_GAMES } from '../../lib/fallback-games.js';
 import { getSteamDetailsCached } from '../../lib/steam-cache.js';
@@ -564,6 +565,6 @@ export async function GET(request) {
     return NextResponse.json({ game });
   } catch (err) {
     console.error('RAWG game mapping hatasi:', err.message);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return sunucuHatasi(err, 'rawg-game');
   }
 }

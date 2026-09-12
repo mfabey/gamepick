@@ -96,10 +96,57 @@ app/
 
 ## Geliştirme Komutları
 ```bash
-npm run dev    # localhost:3000
-npm run build  # production build
-npm run lint   # ESLint
+npm run dev           # localhost:3000
+npm run build         # production build (önce erişim + CORS politikasını denetler)
+npm run lint          # ESLint
+npm run check:access  # erişim politikası denetimi (tek başına)
+npm run check:cors    # CORS politikası denetimi (tek başına)
 ```
+
+## CORS — bilerek KAPALI
+
+Projede hiçbir CORS başlığı yok ve bu bir eksiklik değil, en güvenli hâl:
+başlık yokken tarayıcı aynı-kaynak politikasını uyguluyor, başka bir sitedeki
+JavaScript `/api/*` yanıtını okuyamıyor. Başlık eklemek bu kapıyı **açmak**
+demek, kısıtlamak değil.
+
+Bugün gerekmiyor çünkü web istemcisi aynı kaynakta, mobil React Native
+`fetch` kullanıyor (CORS bir tarayıcı kuralı, orada uygulanmaz) ve hiçbir
+istemci `credentials: 'include'` kullanmıyor.
+
+`app/lib/cors-policy.js` alan adı listelerini (üretim/geliştirme) ve
+`corsHeaders()` yardımcısını tutuyor — **hiçbir yerden çağrılmıyor**, CORS
+gerçekten gerekirse tek meşru yol olsun diye duruyor.
+`scripts/check-cors-policy.mjs` `prebuild` olarak koşuyor: joker kaynak ya da
+politika dosyası dışında elle yazılmış `Access-Control-*` başlığı görürse
+**build düşer**.
+
+**Joker kaynak + kimlik bilgisi birlikte kullanılamaz:** tarayıcı şartnamesi
+`Access-Control-Allow-Origin: *` ile `Access-Control-Allow-Credentials: true`
+kombinasyonunu reddeder. Çerez/Authorization taşıyan çapraz kaynak istekte
+kaynak TAM yazılmalıdır.
+
+## Erişim Politikası — varsayılan REDDET
+
+Bu projede Firestore rules / Supabase RLS gibi **bildirimsel bir kural katmanı
+yok**. Veri Upstash Redis'te, Redis jetonu yalnızca sunucuda, her erişim
+`app/api/**` route handler'ından geçiyor. Yani *kural* = route'un içindeki
+yetki kontrolü. Bunun zayıflığı: kontrolü eklemeyi unutan yeni bir route
+sessizce herkese açık doğuyor — 2026-09-02 denetiminde bulunan dört açığın
+dördü de böyle oluşmuştu.
+
+`app/lib/access-policy.js` her ucu altı kategoriden birine yazıyor (PUBLIC,
+AUTH_ENTRY, SESSION, AUTH, CRON, DEV_ONLY). `scripts/check-access-policy.mjs`
+`prebuild` olarak koşuyor: **sınıflandırılmamış bir route varsa build düşer.**
+
+Yeni route eklerken build "SINIFLANDIRILMAMIŞ" diyerek duracak — ucu manifeste
+ekle. Hangi kategori olduğundan emin değilsen doğru cevap PUBLIC değildir.
+
+Denetleyici auth'u kaynaktan **çıkarsamıyor**, yalnızca beyan eksikliğine
+bakıyor. Sebebi ölçüldü: çıkarsama denendi ve iki kez yanıldı — bir route'un
+yorumunda geçen `verifyMobileToken` onu korunuyor gösterdi, ve kaynaktaki
+`.replace(/\/+$/, '')` gibi ifadeler blok-yorum ayıklamasını şaşırtıp
+`cron/price-alerts` ile OAuth callback'lerini "kimliksiz" gösterdi.
 
 ## Bilinen Sorunlar / Dikkat Edilecekler
 - Xbox OAuth `?xbox_error=cancelled` hatası — `prompt=select_account` fix denendi, Vercel'de test edilmedi

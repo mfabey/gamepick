@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { readValue } from '../../../../lib/session-cookie';
 import { cookies } from 'next/headers';
 import { redisGetJSON } from '../../../../lib/redis';
 
@@ -9,7 +10,10 @@ export async function GET() {
   const userSession = cookieStore.get('gp_user_session');
   if (userSession?.value) {
     try {
-      const user = JSON.parse(userSession.value);
+      // İMZALI ÇEREZ: `readValue` doğruluyor. Main bunu `JSON.parse` ile
+      // okuyordu; bu ağaçta kimlik çerezleri imzalı olduğu icin parse her
+      // zaman hata verir ve blok sessizce hiç çalışmazdı.
+      const user = await readValue(userSession.value);
       if (user?.uid) {
         const conn = await redisGetJSON(`user_connections:${user.uid}`).catch(() => null);
         if (conn) {
@@ -27,7 +31,7 @@ export async function GET() {
   if (!session?.value) return NextResponse.json({ user: null });
 
   try {
-    const { xuid, gamertag, avatar, isMock, gamepassType } = JSON.parse(session.value);
+    const { xuid, gamertag, avatar, isMock, gamepassType } = (await readValue(session.value)) || {};
     return NextResponse.json({ user: { xuid, gamertag, avatar, isMock, gamepassType } });
   } catch {
     return NextResponse.json({ user: null });

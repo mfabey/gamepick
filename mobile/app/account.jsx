@@ -38,6 +38,7 @@ export default function AccountScreen() {
   const router = useRouter();
   const { t, lang } = useLanguage();
 
+
   const [mode, setMode] = useState('signin');   // 'signin' | 'signup' | 'forgot'
   const [name, setName]         = useState('');
   const [username, setUsername] = useState('');
@@ -542,4 +543,6 @@ const makeStyles = (colors) => StyleSheet.create({
 
   link:      { color: colors.accentText, fontSize: type.subhead, fontWeight: '700', textAlign: 'center', marginTop: 20 },
   linkMuted: { color: colors.text3,  fontSize: type.footnote, textAlign: 'center', marginTop: 14 },
+  legal:     { color: colors.text3, fontSize: type.footnote, textAlign: 'center', marginTop: spacing.lg, lineHeight: 18 },
+  legalLink: { color: colors.accentText, fontWeight: '700' },
 });

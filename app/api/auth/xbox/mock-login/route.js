@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { signValue, LINK_TTL_SEC } from '../../../../lib/session-cookie';
+import { sunucuHatasi } from '../../../../lib/api-error';
 import { cookies } from 'next/headers';
 
 export async function POST(request) {
@@ -18,7 +20,7 @@ export async function POST(request) {
     };
     
     const cookieStore = await cookies();
-    cookieStore.set('gp_xbox_session', JSON.stringify(session), {
+    cookieStore.set('gp_xbox_session', await signValue(session, LINK_TTL_SEC), {
       httpOnly: true,
       secure:   process.env.NODE_ENV === 'production',
       maxAge:   60 * 60 * 24 * 30, // 30 gün
@@ -37,6 +39,6 @@ export async function POST(request) {
       } 
     });
   } catch (err) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return sunucuHatasi(err, 'auth/xbox/mock-login');
   }
 }

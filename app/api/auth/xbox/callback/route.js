@@ -1,4 +1,7 @@
 import { NextResponse } from 'next/server';
+import { readValue, signValue, LINK_TTL_SEC } from '../../../../lib/session-cookie';
+import { sunucuHatasi } from '../../../../lib/api-error';
+import { consumeState } from '../../../../lib/oauth-state';
 import { cookies } from 'next/headers';
 
 const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL;
@@ -8,13 +11,6 @@ const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
 function isAllowedAppRedirect(url) {
   if (!url) return false;
   return /^(gamerisen:\/\/|exp(\+[\w-]+)?:\/\/|https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/)/i.test(url);
-}
-function parseMobileState(stateRaw) {
-  if (!stateRaw) return null;
-  try {
-    const obj = JSON.parse(Buffer.from(stateRaw, 'base64url').toString('utf8'));
-    return obj?.mobile ? obj : null;
-  } catch { return null; }
 }
 function mobileRedirect(appRedirect, obj) {
   const sep = appRedirect.includes('?') ? '&' : '?';
@@ -121,12 +117,32 @@ export async function GET(request) {
   const error = searchParams.get('error');
   const errorDesc = searchParams.get('error_description');
 
-  // Mobil bağlamı (varsa) state'ten çöz
-  const mobileState = parseMobileState(searchParams.get('state'));
+  // ── STATE: CSRF + TEKRAR KORUMASI ────────────────────────────────────────
+  // Öncesinde `state` yalnızca mobil bağlamı taşıyordu (imzasız base64 JSON)
+  // ve WEB AKIŞINDA HİÇ ÜRETİLMİYORDU — yani bu ucu tetikleyen isteğin bizim
+  // başlattığımız akıştan geldiğinin hiçbir kanıtı yoktu. Saldırgan kendi
+  // Microsoft hesabıyla akışı başlatıp dönüş `code`'unu yakalayabilir, sonra
+  // oturumu açık bir kurbanı bu adrese düşürüp KENDİ Xbox hesabını kurbanın
+  // hesabına bağlatabilirdi.
+  //
+  // Artık state sunucuda üretiliyor, TEK KULLANIMLIK ve 10 dk ömürlü
+  // (app/lib/oauth-state.js). Tüketilemezse akış burada durur.
+  const statePayload = await consumeState(searchParams.get('state'));
+  if (!statePayload) {
+    return NextResponse.redirect(`${origin}/library?xbox_error=STATE_INVALID`);
+  }
+  const mobileState = statePayload.mobile ? statePayload : null;
   const mobileRedirectOk = mobileState && isAllowedAppRedirect(mobileState.appRedirect);
 
   if (error || !code) {
-    const errorMsg = errorDesc || error || 'cancelled';
+    // YALNIZCA KISA OAUTH KODU YANSITILIYOR, `error_description` DEĞİL.
+    // Açıklama serbest metin ve dışarıdan kontrol edilebilir (bu uca
+    // istenen `error_description` ile gelinebilir); adres çubuğuna
+    // yansıtmak saldırgan metnini kullanıcının ekranına taşırdı.
+    // Kod kümesi daraltıldı ve uzunluk sınırlandı; `cancelled` varsayılanı
+    // mevcut arayüz davranışını koruyor.
+    const errorMsg = String(error || 'cancelled').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40) || 'cancelled';
+    if (errorDesc) console.warn('Xbox OAuth error_description:', String(errorDesc).slice(0, 200));
     if (mobileRedirectOk) return mobileRedirect(mobileState.appRedirect, { platform: 'xbox', error: errorMsg });
     return NextResponse.redirect(`${origin}/library?xbox_error=${encodeURIComponent(errorMsg)}`);
   }
@@ -192,14 +208,14 @@ export async function GET(request) {
     const userSession = cookieStore.get('gp_user_session');
     if (userSession && userSession.value) {
       try {
-        const user = JSON.parse(userSession.value);
+        const user = await readValue(userSession.value); if (!user) throw new Error("gecersiz");
         await saveUserConnection(user.uid, 'xbox', session);
       } catch (err) {
         console.error('Failed to save Xbox connection to Redis:', err.message);
       }
     }
 
-    cookieStore.set('gp_xbox_session', JSON.stringify(session), {
+    cookieStore.set('gp_xbox_session', await signValue(session, LINK_TTL_SEC), {
       httpOnly: true,
       secure:   process.env.NODE_ENV === 'production',
       maxAge:   60 * 60 * 24 * 30,
@@ -209,8 +225,13 @@ export async function GET(request) {
 
     return NextResponse.redirect(`${origin}/library`);
   } catch (err) {
-    console.error('Xbox auth error:', err.message);
-    if (mobileRedirectOk) return mobileRedirect(mobileState.appRedirect, { platform: 'xbox', error: err.message });
-    return NextResponse.redirect(`${origin}/library?xbox_error=${encodeURIComponent(err.message)}`);
+    // İÇ HATA METNİ YÖNLENDİRMEYE KONMUYOR. Web dalında adres çubuğuna
+    // yazılıyordu — oradan tarayıcı geçmişine ve dış sitelere giden
+    // Referer başlığına düşer. Yerine referans kodu: kullanıcı kodu
+    // söylüyor, tam detay logda duruyor.
+    const ref = referansKodu();
+    console.error(`[${ref}] auth/xbox/callback:`, err?.message || err, '\n', err?.stack || '');
+    if (mobileRedirectOk) return mobileRedirect(mobileState.appRedirect, { platform: 'xbox', error: 'AUTH_FAILED', ref });
+    return NextResponse.redirect(`${origin}/library?xbox_error=AUTH_FAILED&ref=${encodeURIComponent(ref)}`);
   }
 }

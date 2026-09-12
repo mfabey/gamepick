@@ -359,6 +359,20 @@ export default function Home() {
                 </Link>
               );
             })}
+
+            {/* KEŞFET — diğer dördünden AYRI duruyor ve bilerek.
+                O dördü hazır bir listeye götürüyor; bu, ne aradığını
+                bilmeyen kullanıcıya "kelime bulmak zorunda değilsin" diyor.
+                Aynı görünümde olsaydı beşinci bir liste sanılırdı. */}
+            <Link href="/discover"
+              style={{
+                padding: '8px 16px', borderRadius: 999, fontSize: 13, fontWeight: 600,
+                background: 'var(--accent-bg)',
+                color: 'var(--accent-on-bg)', border: '1px solid var(--accent-border)',
+              }}
+            >
+              {t('hero.quick.discover')}
+            </Link>
           </div>
         </div>
 

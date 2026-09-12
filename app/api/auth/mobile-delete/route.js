@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { guard, penalize } from '../../../lib/rate-guard';
 import { verifyMobileToken, invalidateMobileToken } from '../../../lib/mobile-auth';
 import { redisCmd } from '../../../lib/redis';
 
@@ -30,6 +31,10 @@ export async function POST(request) {
   if (!password && !appleIdentityToken) {
     return NextResponse.json({ error: 'Kimlik doğrulaması zorunludur.' }, { status: 400 });
   }
+
+  // Web'deki delete-account ile aynı kova; eksen uid (jeton doğrulanmış).
+  const kapi = await guard(request, 'accountDelete', { account: user.uid });
+  if (kapi) return kapi;
   if (!FIREBASE_API_KEY) {
     return NextResponse.json({ error: 'Kimlik doğrulama yapılandırılmamış.' }, { status: 503 });
   }
@@ -65,6 +70,9 @@ export async function POST(request) {
       );
       reauth = await reauthRes.json();
       if (!reauthRes.ok) {
+        // `accountDelete` yalnız başarısızlıkta sayıyor; bu satır olmadan
+        // hesap ekseni hiç artmaz ve sınır etkisiz kalırdı.
+        await penalize(request, 'accountDelete', { account: user.uid });
         return NextResponse.json({ error: 'Şifre hatalı.' }, { status: 400 });
       }
     }

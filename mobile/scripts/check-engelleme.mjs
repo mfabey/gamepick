@@ -2,26 +2,26 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // ENGELLEME TEK KAPIDAN GEÇER — App Store Guideline 1.2 ratchet'i
 //
-// NEDEN VAR. 2.6.1 reddinden sonra `src/services/moderation.js` yazıldı ve
-// engellemeye Apple'ın istediği iki işi ekledi: geliştiriciyi haberdar etme
-// ve içeriği akıştan ANINDA kaldırma. Ama dört engelleme yüzeyinin yalnızca
-// ikisi (sohbet başlığı, gönderi kartı) servise bağlandı; `friends.jsx` ile
-// `u/[username].jsx` ham `blockUser`'ı çağırmaya devam etti.
+// NEDEN VAR. Bu kural bu depoda İKİ KEZ, İKİ AYRI DALDA çiğnendi:
 //
-// SONUÇ SESSİZDİ. Engel sunucuya yazılıyordu, yani ekranda hiçbir şey ters
-// görünmüyordu — ama moderasyon kuyruğuna hiçbir kayıt düşmüyor ve engellenen
-// kişinin gönderileri ekranda kalmaya devam ediyordu. Aynı düğme, iki ekranda
-// iki farklı davranış; hangisinin doğru olduğu koda bakmadan görülemiyordu.
+//   1. `main`'de `friends.jsx` ve `u/[username].jsx` ham `blockUser` çağırıyordu.
+//   2. `giris-asamasi`'nda TÜM yollar ham `blockUser` çağırıyordu ve otomatik
+//      şikayet hiç yazılmamıştı — yani "geliştiriciyi haberdar et" şartı
+//      dalın tamamında eksikti.
 //
-// Bu tam olarak `check-imports.mjs`in anlattığı hata sınıfı: derleme geçer,
-// ekran görüntüsü doğru çıkar, eksik iş yalnızca kuyruğa bakınca fark edilir.
-// Üçüncü bir engelleme yüzeyi eklendiğinde aynı şeyin tekrar olmaması için
-// kural artık denetleniyor.
+// İkisi de sessizdi: engel sunucuya yazılıyordu, ekranda hiçbir şey ters
+// görünmüyordu, eksik iş yalnızca moderasyon kuyruğuna bakınca fark ediliyordu.
+// `check-imports.mjs`in anlattığı hata sınıfı — derleme geçer, ekran görüntüsü
+// doğru çıkar.
 //
 // İDDİA İKİ PARÇALI:
-//   1. `api/social`ten `blockUser` yalnızca moderation.js içe aktarabilir.
-//   2. `engelle` üç işi de yapmaya devam etmeli — kapının arkası boşalırsa
-//      kapıyı tek tutmanın bir anlamı kalmaz.
+//   1. `api/social`ten `blockUser`ı yalnızca kapı içe aktarabilir.
+//   2. `engelUygula` üç işi de yapmaya devam etmeli — kapının arkası
+//      boşalırsa kapıyı tek tutmanın anlamı kalmaz.
+//
+// KAPI `src/services/engel.js`. İki dal birleşirken `services/moderation.js`
+// (main'in kapısı) buraya taşındı: yerel gizleme + `suz()` bu daldan,
+// otomatik şikayet main'den geldi.
 // ─────────────────────────────────────────────────────────────────────────────
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
@@ -31,8 +31,8 @@ const KOK = fileURLToPath(new URL('..', import.meta.url));
 
 // TEK KAPI ve kapının ardındaki tanım. Başka hiçbir dosya ham API'yi görmez.
 const IZINLI = new Set([
-  'src/services/moderation.js',   // kapının kendisi
-  'src/api/social.js',            // `blockUser`ın tanımlandığı yer
+  'src/services/engel.js',   // kapının kendisi
+  'src/api/social.js',       // `blockUser`ın tanımlandığı yer
 ]);
 
 function dosyalar(dizin, cikti = []) {
@@ -46,7 +46,6 @@ function dosyalar(dizin, cikti = []) {
 }
 
 // Yorumlar ayıklanıyor: bu kuralı ANLATAN bir yorum kuralın ihlali sayılmamalı.
-// friends.jsx ve u/[username].jsx içindeki notlar `blockUser` adını geçiriyor;
 // check-plist.mjs aynı tuzağı bir kez yedi, aynı çözüm burada da uygulanıyor.
 const temizle = (s) => s
   .replace(/\/\*[\s\S]*?\*\//g, '')
@@ -75,7 +74,7 @@ for (const yol of kaynak) {
       hatalar.push(
         `  ✗ ${bagil}\n` +
         `      '${m[2]}' icinden ham blockUser ice aktarilmis\n` +
-        `      dogrusu: import { engelle } from '.../services/moderation'`
+        `      dogrusu: import { engelUygula } from '.../services/engel'`
       );
     }
   }
@@ -91,12 +90,15 @@ for (const yol of kaynak) {
   }
 }
 
-// Kapının ardı: `engelle` üç işi de yapıyor mu?
-const KAPI = join(KOK, 'src', 'services', 'moderation.js');
+// Kapının ardı: `engelUygula` üç işi de yapıyor mu?
+const KAPI = join(KOK, 'src', 'services', 'engel.js');
 if (!existsSync(KAPI)) {
-  hatalar.push('  ✗ src/services/moderation.js yok — engellemenin tek kapisi kayip');
+  hatalar.push('  ✗ src/services/engel.js yok — engellemenin tek kapisi kayip');
 } else {
   const kapi = temizle(readFileSync(KAPI, 'utf8'));
+  if (!/export\s+async\s+function\s+engelUygula/.test(kapi)) {
+    hatalar.push('  ✗ engel.js icinde `engelUygula` disa aktarilmiyor');
+  }
   const isler = [
     ['blockUser(',     'sunucuya engel kaydi'],
     ['reportContent(', 'gelistiriciyi haberdar etme (Apple 1.2 parantezi)'],
@@ -104,7 +106,7 @@ if (!existsSync(KAPI)) {
   ];
   for (const [belirtec, ne] of isler) {
     if (!kapi.includes(belirtec)) {
-      hatalar.push(`  ✗ moderation.js icinde ${belirtec} yok — eksik is: ${ne}`);
+      hatalar.push(`  ✗ engel.js icinde ${belirtec} yok — eksik is: ${ne}`);
     }
   }
 }
@@ -119,4 +121,4 @@ if (hatalar.length) {
   process.exit(1);
 }
 
-console.log(`✓ engelleme tek kapidan geciyor (${kaynak.length} dosya tarandi, kapi: src/services/moderation.js)`);
+console.log(`✓ engelleme tek kapidan geciyor (${kaynak.length} dosya tarandi, kapi: src/services/engel.js)`);

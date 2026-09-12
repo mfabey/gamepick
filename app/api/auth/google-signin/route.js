@@ -1,4 +1,7 @@
 import { NextResponse } from 'next/server';
+import { signValue, SESSION_TTL_SEC } from '../../../lib/session-cookie';
+import { mintFamily } from '../../../lib/refresh-token';
+import { guard } from '../../../lib/rate-guard';
 import { mergeProfile, getProfile } from '../../../lib/social-store';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -26,6 +29,11 @@ export async function POST(request) {
   if (!idTokenIn) {
     return NextResponse.json({ error: 'idToken zorunludur.' }, { status: 400 });
   }
+
+  // Parola denemesi değil (jeton Google'da doğrulanıyor) ama hesap oluşturma
+  // yolu — toplu hesap üretimini sınırlıyor.
+  const kapi = await guard(request, 'oauthSignin');
+  if (kapi) return kapi;
   if (!FIREBASE_API_KEY) {
     return NextResponse.json({ error: 'Kimlik doğrulama yapılandırılmamış.' }, { status: 503 });
   }
@@ -80,17 +88,26 @@ export async function POST(request) {
       ok: true,
       user,
       idToken,
-      refreshToken,
+      // Döndürmeli jeton — bkz. mobile-login. Firebase jetonu sunucuda kalıyor.
+      refreshToken: (await mintFamily(localId, refreshToken)) || refreshToken,
       expiresIn: Number(expiresIn) || 3600,
     });
 
     // Web httpOnly çerez bekliyor, mobil yanıttaki token'ları saklıyor.
     if (body.web === true) {
-      response.cookies.set('gp_user_session', JSON.stringify(user), {
+      // ÇEREZ İMZALI VE DAR. Main burada `user` nesnesinin tamamını düz JSON
+      // olarak yazıyordu; kullanıcı adı, avatar ve bio başlıkta görünsün diye.
+      // İki sebeple alınmadı: bu ağaçtaki her okuyucu `readValue` bekliyor ve
+      // imzasız değeri reddediyor, üstelik o alanlar zaten yukarıda
+      // `mergeProfile` ile depoya yazılıyor ve `user-me` oradan zenginleştirip
+      // başlığa veriyor. Yani main'in kazanımı korunuyor, çerez şişmiyor.
+      response.cookies.set('gp_user_session', await signValue({
+        uid: user.uid, name: user.name, email: user.email,
+      }, SESSION_TTL_SEC), {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 7,
+        maxAge: SESSION_TTL_SEC,
       });
     }
 

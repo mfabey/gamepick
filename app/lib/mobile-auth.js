@@ -12,6 +12,7 @@
 // Firebase'e aittir, burada token'a asla doğrudan güvenilmez.
 // ─────────────────────────────────────────────────────────────────────────────
 import { createHash } from 'crypto';
+import { adminAuth } from './firebase-admin';
 
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
 
@@ -82,6 +83,35 @@ export async function verifyMobileToken(request) {
   const key = keyFor(idToken);
   const cached = readCache(key);
   if (cached) return cached;
+
+  // ── İPTAL KONTROLÜ (Admin SDK varsa) ──────────────────────────────────────
+  // `verifyIdToken(token, true)` imzayı YEREL doğruluyor (Google'ın açık
+  // anahtarları önbellekli) ve ayrıca jetonun iptal edilip edilmediğine
+  // bakıyor — `accounts:lookup` bunu YAPAMIYOR, iptal edilmiş bir jeton
+  // orada hâlâ geçerli görünüyor.
+  //
+  // Admin yapılandırılmamışsa aşağıdaki mevcut yola düşüyoruz: jeton yine
+  // doğrulanıyor, yalnızca iptal uygulanmıyor (bkz. firebase-admin.js).
+  const admin = adminAuth();
+  if (admin) {
+    try {
+      const decoded = await admin.verifyIdToken(idToken, true);
+      const user = {
+        uid: decoded.uid,
+        email: decoded.email || '',
+        emailVerified: !!decoded.email_verified,
+        name: decoded.name || (decoded.email || '').split('@')[0],
+      };
+      writeCache(key, user, idToken);
+      return user;
+    } catch (err) {
+      // İptal edilmiş / süresi geçmiş / imzası bozuk → REDDET.
+      // `auth/id-token-revoked` ve `auth/id-token-expired` buraya düşüyor.
+      // Ağ hatasında da reddediyoruz: Admin açıkken lookup'a sessizce
+      // düşmek, iptali atlatmanın yolu olurdu.
+      return null;
+    }
+  }
 
   try {
     const res = await fetch(

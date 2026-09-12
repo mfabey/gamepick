@@ -22,7 +22,7 @@ import { useLanguage } from '../context/LanguageContext';
 // ya da kenarlık kalınlığı eklemeden.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export default function ReviewRoot({ review, onOpenGame, onAuthor }) {
+export default function ReviewRoot({ review, onOpenGame, onAuthor, onMenu }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const { t, lang } = useLanguage();
@@ -38,6 +38,22 @@ export default function ReviewRoot({ review, onOpenGame, onAuthor }) {
       <View style={styles.context}>
         <Ionicons name="arrow-undo-outline" size={13} color={colors.text3} />
         <Text style={styles.contextText} numberOfLines={1}>{t('post.reviewThread')}</Text>
+
+        {/* ⋯ BAĞLAM SATIRINDA, kartın içinde değil: kart bir OYUN kutusu
+            (kapak + ad + saat) ve menü oyuna değil YAZARA ait. Bağlam satırı
+            zaten 'neye bakıyorsun' diyen yer, 'ne yapabilirsin' de oraya
+            yakışıyor. Guideline 1.2 — konuşmanın kökü de kullanıcı içeriği. */}
+        {onMenu ? (
+          <Pressable
+            onPress={() => onMenu(review.author)}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel={t('a11y.more')}
+            style={({ pressed }) => [pressed && PRESSED]}
+          >
+            <Ionicons name="ellipsis-horizontal" size={16} color={colors.text3} />
+          </Pressable>
+        ) : null}
       </View>
 
       <View style={styles.card}>

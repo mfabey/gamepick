@@ -1,4 +1,8 @@
 import { NextResponse } from 'next/server';
+import { readValue } from '../../../lib/session-cookie';
+import { sunucuHatasi, yukariAkisHatasi } from '../../../lib/api-error';
+import { canUseAuthMock, authNotConfigured } from '../../../lib/auth-config';
+import { guard, penalize } from '../../../lib/rate-guard';
 import { cookies } from 'next/headers';
 
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
@@ -37,10 +41,19 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Şifrenizi girmeniz zorunludur.' }, { status: 400 });
     }
 
-    const user = JSON.parse(session.value);
+    const user = await readValue(session.value);
+    if (!user) {
+      return NextResponse.json({ error: 'Oturum bulunamadı. Lütfen tekrar giriş yapın.' }, { status: 401 });
+    }
     const { email, uid } = user;
 
+    // Hesap silme parola doğruluyor — yani çalınmış bir çerezle parola
+    // deneme yüzeyi. Sayaç yalnız başarısız denemede artıyor.
+    const kapi = await guard(request, 'accountDelete', { account: email });
+    if (kapi) return kapi;
+
     // Local development fallback if Firebase Key is not set
+    if (!FIREBASE_API_KEY && !canUseAuthMock()) return authNotConfigured();
     if (!FIREBASE_API_KEY) {
       console.warn('FIREBASE_API_KEY is not defined. Simulating mock account deletion.');
       
@@ -80,9 +93,11 @@ export async function POST(request) {
     if (!signInRes.ok) {
       const errMsg = signInData?.error?.message;
       if (errMsg === 'INVALID_LOGIN_CREDENTIALS' || errMsg === 'INVALID_PASSWORD') {
+        await penalize(request, 'accountDelete', { account: email });
         return NextResponse.json({ error: 'Girdiğiniz şifre hatalı.' }, { status: 400 });
       }
-      return NextResponse.json({ error: signInData?.error?.message || 'Kimlik doğrulama başarısız.' }, { status: signInRes.status });
+      return yukariAkisHatasi(signInData?.error?.message, 'auth/delete-account',
+        'Kimlik doğrulanamadı. Lütfen tekrar deneyin.', 400);
     }
 
     const { idToken } = signInData;
@@ -101,7 +116,9 @@ export async function POST(request) {
 
     if (!deleteRes.ok) {
       return NextResponse.json(
-        { error: deleteData?.error?.message || 'Firebase hesap silme işlemi başarısız.' },
+        // "Firebase" adı da çıkarıldı: kullanıcıya hangi sağlayıcıyı
+        // kullandığımızı söylemenin bir faydası yok.
+        { error: 'DELETE_FAILED', message: 'Hesap silme işlemi tamamlanamadı. Lütfen tekrar deneyin.' },
         { status: deleteRes.status }
       );
     }
@@ -127,6 +144,6 @@ export async function POST(request) {
 
   } catch (err) {
     console.error('Delete Account API Error:', err.message);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return sunucuHatasi(err, 'auth/delete-account');
   }
 }

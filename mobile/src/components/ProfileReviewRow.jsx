@@ -22,12 +22,16 @@ import { useLanguage } from '../context/LanguageContext';
 // sunucunun Steam kütüphanesinden okuduğu değer; "500 saatim var" diye
 // yazılabilseydi rozet anlamsız olurdu.
 //
-// UZUN BASMA = RAPORLA. Kullanıcı içeriğinin gösterildiği her yüzeyde
-// bulunmak zorunda (App Store Guideline 1.2) — çağıran ekran `onLongPress`
-// bağlamalı.
+// ⋯ = ŞİKÂYET VE ENGELLEME. Kullanıcı içeriğinin gösterildiği her yüzeyde
+// bulunmak zorunda (App Store Guideline 1.2).
+//
+// BU SÖZ BİR SÜRE TUTULMADI. Yukarıdaki not "çağıran ekran `onLongPress`
+// bağlamalı" diyordu ama İKİ ÇAĞIRANIN İKİSİ DE bağlamıyordu — profil
+// ekranlarındaki incelemelerin hiçbir moderasyon yolu yoktu. Prop'un
+// varlığı, kullanıldığının kanıtı değil.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export default function ProfileReviewRow({ review, onPress, onLongPress, onEdit, onReplies }) {
+export default function ProfileReviewRow({ review, onPress, onLongPress, onMenu, onEdit, onReplies }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const { t, lang } = useLanguage();
@@ -69,6 +73,21 @@ export default function ProfileReviewRow({ review, onPress, onLongPress, onEdit,
           <Text style={styles.rec} numberOfLines={1}>
             {review.recommended ? t('rev.yes') : t('rev.no')}
           </Text>
+
+          {/* Meta satırının sonunda. `rec` metni numberOfLines=1 ve satır
+              yeri kalmadığında kırpılıyor, yani düğme her genişlikte
+              görünür kalıyor. */}
+          {onMenu ? (
+            <Pressable
+              onPress={() => onMenu(review.author)}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel={t('a11y.more')}
+              style={({ pressed }) => [pressed && PRESSED]}
+            >
+              <Ionicons name="ellipsis-horizontal" size={15} color={colors.text3} />
+            </Pressable>
+          ) : null}
         </View>
 
         {review.text ? (

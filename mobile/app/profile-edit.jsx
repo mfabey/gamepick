@@ -18,7 +18,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   View, Text, Pressable, StyleSheet, TextInput, ScrollView, Modal,
-  ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
+  ActivityIndicator, Alert, KeyboardAvoidingView,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -35,6 +35,7 @@ import {
   getMyProfile, setUsername as apiSetUsername,
   setAvatar as apiSetAvatar,
 } from '../src/api/social';
+import { chatCapabilities } from '../src/services/realtime';
 
 // Sunucudaki MAX_BIO ile AYNI SAYI olmak zorunda (app/lib/social-store.js).
 // Ayrışırlarsa kullanıcı ekranda yazabildiği bir metni kaydedemez.
@@ -55,6 +56,20 @@ export default function ProfileEditScreen() {
   const [avatar, setAvatarState] = useState(null);
   const [saving, setSaving] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+
+  // FOTOĞRAF SEÇENEĞİ SUNUCUYA SORULUYOR. Kullanıcı görsel yüklemesi şu an
+  // kapalı (sunucuda `USER_UPLOADS_ENABLED`); kapalıyken düğmeyi çizip
+  // basınca "şu an kapalı" demek, sohbet kompozitöründe bilerek kaçınılan
+  // şeyin aynısı olurdu — Guideline 2.2 açısından tamamlanmamış uygulama
+  // sinyali.
+  //
+  // BAŞLANGIÇ KAPALI: yanıt gelene kadar düğme göstermek, bir an görünüp
+  // kaybolan düğme demek. `chatCapabilities` hata durumunda da kapalı
+  // dönüyor ve yanıtı önbelleğe alıyor — ek ağ trafiği yok.
+  const [fotoAcik, setFotoAcik] = useState(false);
+  useEffect(() => {
+    chatCapabilities().then((c) => setFotoAcik(!!c.photos)).catch(() => {});
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -128,7 +143,14 @@ export default function ProfileEditScreen() {
         </Pressable>
       </View>
 
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      {/* ANDROID'DE DE 'padding' — `undefined` DEĞİL. `undefined` iken
+          KeyboardAvoidingView Android'de HİÇBİR ŞEY yapmıyor: RN 0.81
+          kaynağında switch(behavior) default dalı düz bir <View> döndürüyor.
+          Edge-to-edge zorlamasıyla pencere de klavye için küçülmediğinden
+          alan hiç yukarı kaymıyordu (bkz. chat/[uid].jsx aynı not).
+          `check:edge` bu kuralı denetliyor ve birleştirme sırasında bir kez
+          düşürüldüğü için yakaladı. */}
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
         <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.s40, paddingHorizontal: yan }]}
                     keyboardShouldPersistTaps="handled">
           {/* Avatar — dokunuş seçiciyi açıyor. Kalem rozeti değişebilirliği

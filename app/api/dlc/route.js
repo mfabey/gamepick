@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
+import { sunucuHatasi } from '../../lib/api-error';
 import { isAdultContent, isAdultTitleOrSlug } from '../../lib/adult-filter.js';
+import { parseQuery, listeQuery } from '../../lib/schemas.js';
 
 const RAWG_KEY = process.env.RAWG_API_KEY;
 const RAWG_BASE = 'https://api.rawg.io/api';
@@ -239,8 +241,10 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const section = searchParams.get('section') || '';
   const q       = searchParams.get('q')       || '';
-  const page    = parseInt(searchParams.get('page') || '1');
-  const num     = parseInt(searchParams.get('num')  || '24');
+  // Sayfalama şemadan — gerekçe games/route.js ile aynı.
+  const sayfalama = parseQuery(request, listeQuery);
+  if (!sayfalama.ok) return sayfalama.response;
+  const { page, num } = sayfalama.data;
 
   try {
     let results = [];
@@ -301,6 +305,6 @@ export async function GET(request) {
 
   } catch (err) {
     console.error('DLC API genel hatası:', err.message);
-    return NextResponse.json({ error: err.message, results: [] }, { status: 500 });
+    return sunucuHatasi(err, 'dlc');
   }
 }

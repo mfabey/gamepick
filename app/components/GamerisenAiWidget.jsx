@@ -5,9 +5,40 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// HTML KAÇIRMA — bu fonksiyonun çıktısı dangerouslySetInnerHTML'e gidiyor.
+//
+// Öncesinde girdi HİÇ kaçırılmıyordu: metindeki `<` `>` doğrudan DOM'a
+// geçiyordu. İki kaynak besliyor:
+//   1. LLM yanıtı (`/api/ai/chat`) — kullanıcının istemiyle yönlendirilebilir
+//   2. Karşılama mesajındaki `${userName}` — `personaname` / `gamertag`'den
+//      geliyor, yani kullanıcının kendi yazdığı bir alan
+//
+// Yürürlükteki CSP bunu DURDURMUYOR: `script-src`'de `'unsafe-inline'` var,
+// dolayısıyla `<img src=x onerror=…>` çalışırdı. (Rapor modundaki sıkı
+// politika `'unsafe-inline'`ı kaldırıyor — orası yürürlüğe girince ikinci
+// bir katman olacak, ama kaçırma yine de doğru yer.)
+//
+// TEMİZLEYİCİ KÜTÜPHANE EKLENMEDİ, bilerek. DOMPurify gelen HTML'i süzmek
+// için; burada gelen HTML YOK — metni kaçırıp ÜÇ etiketi biz üretiyoruz
+// (`<strong>`, `<em>`, `<br>`). İzin listesi zaten bu üçüyle sınırlı ve
+// bizim kontrolümüzde; araya bir kütüphane koymak yüzeyi daraltmaz.
+// ─────────────────────────────────────────────────────────────────────────────
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function formatMarkdown(text) {
   if (!text) return '';
-  let html = text.replace(/\*\*(.*?)\*\*/g, '<strong style="color: #ffffff; font-weight: 750;">$1</strong>');
+  // SIRA ÖNEMLİ: önce kaçır, sonra kendi etiketlerimizi ekle. Ters sırada
+  // kaçırma kendi ürettiğimiz `<strong>` etiketlerini de bozardı.
+  let html = escapeHtml(text);
+  html = html.replace(/\*\*(.*?)\*\*/g, '<strong style="color: #ffffff; font-weight: 750;">$1</strong>');
   html = html.replace(/\*(.*?)\*/g, '<em style="color: #ff9999; font-style: italic;">$1</em>');
   html = html.replace(/^\s*-\s*(.+)/gm, '• $1');
   html = html.replace(/\n/g, '<br />');

@@ -28,7 +28,7 @@ import {
 import { subscribeDM, chatCapabilities } from '../../src/services/realtime';
 import { setActiveChat, dismissChatNotifications } from '../../src/notifications';
 import { getSession, subscribeSession } from '../../src/services/session';
-import { engelle } from '../../src/services/moderation';
+import { engelUygula } from '../../src/services/engel';
 import { useYanBosluk } from '../../src/hooks/useIcerikAlani';
 import EmptyState from '../../src/components/EmptyState';
 import ReportSheet from '../../src/components/ReportSheet';
@@ -889,7 +889,7 @@ export default function ChatScreen() {
           text: t('soc.block'),
           style: 'destructive',
           onPress: async () => {
-            try { await engelle(other); router.back(); }
+            try { await engelUygula(other); router.back(); }
             catch { Alert.alert(t('soc.err.generic')); }
           },
         },
@@ -968,7 +968,7 @@ export default function ChatScreen() {
   } else if (error === 'BLOCKED') {
     body = <EmptyState icon="ban-outline" title={t('msg.blocked')} text={t('msg.blockedText')} />;
   } else if (error) {
-    body = <EmptyState icon="cloud-offline-outline" title={t('sf.error')} text={t('sf.errorText')} />;
+    body = <EmptyState icon="cloud-offline-outline" title={t('common.error')} text={t('common.errorText')} />;
   }
 
   return (

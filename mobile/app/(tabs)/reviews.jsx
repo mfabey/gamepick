@@ -34,7 +34,10 @@ import ReviewCard from '../../src/components/ReviewCard';
 import EmptyState from '../../src/components/EmptyState';
 import PostCard from '../../src/components/PostCard';
 import PostComposer from '../../src/components/PostComposer';
-import ReportSheet from '../../src/components/ReportSheet';
+import ModerasyonKatmani from '../../src/components/ModerasyonKatmani';
+import { suz } from '../../src/services/engel';
+import { useEngelliler } from '../../src/hooks/useEngelliler';
+import { useModerasyon } from '../../src/hooks/useModerasyon';
 import { FeedSkeleton, Reveal } from '../../src/components/Skeleton';
 import { radius, spacing, type, PRESSED, NUMERIC, TOUCH_MIN, motion, SECTION_TITLE, CHIP_TEXT_ON } from '../../src/theme';
 import { useTabBosluk } from '../../src/hooks/useAltBosluk';
@@ -51,6 +54,13 @@ const PAGE = 20;
 /** Liste anahtarı — gönderi ve inceleme farklı kimliklendiriliyor. */
 function itemKey(x) {
   return x?.id != null ? `p:${x.id}` : `r:${x.appid}:${x.uid}`;
+}
+
+/** Şikâyet hedefi — aynı ayrım, bu kez tür ve kimlik olarak. */
+function hedefOf(x) {
+  return x?.id != null
+    ? { targetType: 'post', targetId: String(x.id) }
+    : { targetType: 'review', targetId: `${x.appid}:${x.uid}` };
 }
 
 export default function ReviewsScreen() {
@@ -78,7 +88,8 @@ export default function ReviewsScreen() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [composer, setComposer] = useState(null); // { appid, name, existing }
-  const [reportTarget, setReportTarget] = useState(null);
+  // Şikâyet + engelleme tek kancada — bkz. hooks/useModerasyon.js.
+  const mod = useModerasyon();
   // Bekleyen arkadaşlık isteği sayısı — başlıktaki rozet için.
   // OTURUM YOKSA İSTEK ATILMIYOR: /api/social/friend jetonlu, hesapsız
   // kullanıcıda 401 döner ve boşuna bir ağ turu olurdu.
@@ -268,6 +279,16 @@ export default function ReviewsScreen() {
     };
   }, [tab, session, t, requireAccount, router]);
 
+  // ── ENGEL: EKRANDAKİ LİSTEDEN ANINDA DÜŞÜR ──
+  // Sunucu bir sonraki çekimde zaten süzüyor (getHiddenUids). Buradaki
+  // süzgeç o çekim gelene kadarki boşluğu kapatıyor; Apple 1.2 engellemenin
+  // içeriği akıştan ANINDA kaldırmasını istiyor.
+  const engelSurumu = useEngelliler();
+  const gorunen = useMemo(
+    () => suz(items || [], (x) => x?.author?.uid || x?.uid),
+    [items, engelSurumu],
+  );
+
   const keyExtractor = useCallback((item) => itemKey(item), []);
 
   // TÜR SEKMEDEN DEĞİL ÖĞEDEN OKUNUYOR: "Keşfet" tek listede gönderi ve
@@ -276,7 +297,7 @@ export default function ReviewsScreen() {
   // bkz. load()'daki "başka sekmenin verisi çöp" notu).
   const renderItem = useCallback(({ item }) => (
     item.id != null ? (
-      <PostCard post={item} onRequireAccount={requireAccount} compact />
+      <PostCard post={item} onRequireAccount={requireAccount} onMenu={(k) => mod.acMenu(k, hedefOf(item))} compact />
     ) : (
       <ReviewCard
         review={item}
@@ -284,10 +305,11 @@ export default function ReviewsScreen() {
           pathname: '/game/[id]',
           params: { id: `rawg_${item.appid}`, appid: item.appid, name: item.gameName || '', image: item.image },
         })}
-        onLongPress={() => setReportTarget(item)}
+        onMenu={(k) => mod.acMenu(k, hedefOf(item))}
+        onLongPress={() => mod.acMenu(item.author, hedefOf(item))}
       />
     )
-  ), [requireAccount, router]);
+  ), [requireAccount, router, mod]);
 
   // Başlık BİLEŞEN DEĞİL, ELEMENT olarak veriliyor. Yerel bir bileşen
   // tanımlansaydı her render'da yeni bir tip olurdu ve FlashList başlığı
@@ -396,7 +418,7 @@ export default function ReviewsScreen() {
         <Reveal style={{ flex: 1 }}>
         <FlashList
           ref={listRef}
-          data={items || []}
+          data={gorunen}
           keyExtractor={keyExtractor}
           renderItem={renderItem}
           // extraData: renderItem sekmeye göre FARKLI kart çiziyor. Sekme
@@ -449,12 +471,7 @@ export default function ReviewsScreen() {
         onSaved={() => { setComposer(null); load(); }}
       />
 
-      <ReportSheet
-        visible={!!reportTarget}
-        onClose={() => setReportTarget(null)}
-        targetType="review"
-        targetId={reportTarget ? `${reportTarget.appid}:${reportTarget.uid}` : ''}
-      />
+      <ModerasyonKatmani mod={mod} />
     </SafeAreaView>
   );
 }

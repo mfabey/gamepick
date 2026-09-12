@@ -329,6 +329,45 @@ img { max-width: 100%; display: block; }
 
 html[data-theme="dark"] .badge-purple { background: #10102a; color: #a78bfa; border: 1px solid #3a2a6a; }
 
+/* ===== TOPLULUK — İNCELEME TAVSİYE ROZETİ =====
+   `/reviews` kartlarındaki "Tavsiye ediyor / etmiyor" etiketi.
+
+   NEDEN `.badge-green` / `.badge-red` KULLANILMIYOR: ölçüldü, o çiftler bu
+   metin boyunda (12.5px kalın) WCAG AA'yı geçmiyor —
+     · açık tema  · var(--green)  / var(--green-bg)  → 2.96:1  (gereken 4.5)
+     · koyu tema  · var(--accent) / var(--accent-bg) → 4.08:1
+   Zeminler korunuyor, YALNIZCA yetersiz kalan iki ön plan rengi
+   güçlendiriliyor: açıkta koyu yeşil, koyuda açık kırmızı.
+     · açık 👍 #1c6b48 / --green-bg  → 5.75:1
+     · koyu 👎 #ff6b6b / --accent-bg → 6.40:1
+   Diğer iki bileşim zaten geçiyordu (koyu 👍 9.56, açık 👎 4.74) ve
+   dokunulmadı. */
+.rev-badge {
+  display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;
+  padding: 5px 11px; border-radius: 999px;
+  font-size: 12.5px; font-weight: 700;
+}
+.rev-badge-yes { background: var(--green-bg);  border: 1px solid var(--green-border);  color: var(--green-on-bg); }
+.rev-badge-no  { background: var(--accent-bg); border: 1px solid var(--accent-border); color: var(--accent-on-bg); }
+
+/* ===== ZEMİNİ TİNTLİ METİN İÇİN OKUNAKLI TONLAR =====
+   `--accent` / `--green` marka tonları; kendi soluk zeminlerinin (`--accent-bg`,
+   `--green-bg`) üzerinde küçük metinde WCAG AA'yı geçmiyorlar. Ölçüm:
+     · koyu tema  · --accent (#e8242b) / --accent-bg → 4.08:1
+     · açık tema  · --green  (#2f9e6b) / --green-bg  → 2.96:1
+   Marka renklerine DOKUNULMUYOR (düğme, başlık, vurgu hepsi onları kullanıyor);
+   yalnız "tintli zemin üzerinde metin" durumu için ayrı bir değişken var.
+   Düzeltilmiş değerler: 6.54 (koyu kırmızı) ve 5.68 (açık yeşil).
+   Kullanan: `.rev-badge-*`, anasayfadaki Keşfet çipi. */
+:root {
+  --accent-on-bg: var(--accent);
+  --green-on-bg: #1c6b48;
+}
+html[data-theme="dark"] {
+  --accent-on-bg: #ff6b6b;
+  --green-on-bg: var(--green);
+}
+
 .card {
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -901,15 +940,30 @@ html[data-theme="light"] .bottom-nav-pill {
   }
   
   .bottom-nav a[data-tab] {
-    padding: 8px 12px !important;
-    font-size: 13px !important;
+    padding: 8px 9px !important;
+    font-size: 12.5px !important;
+  }
+}
+
+/* Sekme sayısı 5'ten 6'ya çıkınca (Topluluk) mevcut kırılma noktaları
+   yetmedi: 375px'te şerit 388px yer istiyordu, 351px vardı ve son sekme
+   ("Kütüphane") kırpılıyordu — ölçüldü.
+
+   Kaydırılabilir yapmak denenmedi ve BİLİNÇLİ: `.bottom-nav::before` cam
+   kenarı `inset: 0` ile konumlanıyor, şerit bir kaydırma kabı olsaydı o kenar
+   içerikle birlikte kayıp yalnızca ilk ekranı çerçevelerdi. Yatay dolgu
+   kısmak aynı sorunu görsel bozulma olmadan çözüyor. */
+@media (max-width: 500px) {
+  .bottom-nav a[data-tab] {
+    padding: 8px 6px !important;
+    font-size: 11.5px !important;
   }
 }
 
 @media (max-width: 380px) {
   .bottom-nav a[data-tab] {
-    padding: 8px 8px !important;
-    font-size: 11.5px !important;
+    padding: 8px 4px !important;
+    font-size: 11px !important;
   }
 }
 

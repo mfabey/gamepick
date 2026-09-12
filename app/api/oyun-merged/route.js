@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { readValue } from '../../lib/session-cookie';
 import { cookies } from 'next/headers';
 
 const STEAM_API_KEY = process.env.STEAM_API_KEY;
@@ -72,14 +73,14 @@ export async function GET() {
   let accounts = [];
   try {
     const c = cookieStore.get('gp_steam_accounts');
-    if (c?.value) accounts = JSON.parse(c.value);
+    if (c?.value) accounts = (await readValue(c.value)) || [];
   } catch {}
 
   // Geriye uyumluluk: eski tek hesap
   if (accounts.length === 0) {
     try {
       const s = cookieStore.get('gp_steam_session');
-      if (s?.value) accounts = [JSON.parse(s.value)];
+      if (s?.value) { const v = await readValue(s.value); if (v) accounts = [v]; }
     } catch {}
   }
 

@@ -163,3 +163,89 @@ dalda değil, `main`'de. 11 Eylül'de `main`'e gönderilen `4726cad` ikisini de
 4. Sunucuda `USER_UPLOADS_ENABLED`'ı aç, App Store Connect'teki gizlilik beyanına fotoğrafı ekle.
 
 Hepsi YENİ BUILD ister; OTA ile gitmez.
+# İzin metinleri — KAMERA, MİKROFON, FACE ID, "ALWAYS" KONUM KAPALI
+
+`app.json`'da bu dört alan bilerek `false`. JSON yorum kabul etmediği için
+gerekçe burada.
+
+Üç Expo eklentisi, prop verilmezse İNGİLİZCE VARSAYILAN bir kullanım metni
+yazıyor — `applyPermissions` (@expo/config-plugins/ios/Permissions.js):
+
+    infoPlist[permission] = permissions[permission] || infoPlist[permission] || description;
+
+`false` verilince anahtar SİLİNİYOR; tek kapatma yolu bu.
+
+Ölçüldü (2026-09-05, `expo config --type introspect`). ÖNCE altı kullanım
+metni vardı, dördü uygulamanın YAPMADIĞI bir şeyi anlatıyordu:
+
+| anahtar | değer | neden yanlıştı |
+| --- | --- | --- |
+| `NSMicrophoneUsageDescription` | "Allow $(PRODUCT_NAME) to access your microphone" | ses kaydı YOK; metin İngilizce |
+| `NSFaceIDUsageDescription` | "Allow $(PRODUCT_NAME) to access your Face ID…" | `requireAuthentication` hiç kullanılmıyor |
+| `NSLocationAlwaysUsageDescription` | "Allow $(PRODUCT_NAME) to access your location" | kod yalnız when-in-use istiyor |
+| `NSCameraUsageDescription` | "…sohbette fotoğraf çekip gönderebilmeniz için…" | `launchCameraAsync` hiçbir yerde YOK |
+
+SONRA iki metin kaldı (`NSPhotoLibraryUsageDescription`,
+`NSLocationWhenInUseUsageDescription`) — ikisi de Türkçe ve ikisinin de
+karşılığı kodda var.
+
+Android tarafı aynı düğmelerden geliyor: `microphonePermission: false`
+`RECORD_AUDIO`'yu, `cameraPermission: false` `CAMERA`'yı manifest birleşmesinde
+`tools:node="remove"` ile eliyor. İkisi de introspect çıktısında doğrulandı.
+
+## `locationAlwaysAndWhenInUsePermission` YETMİYOR
+
+Bu alan zaten `false`'tu ama `NSLocationAlwaysUsageDescription` yine
+yazılıyordu: `expo-location` eklentisinde bunlar İKİ AYRI prop
+(`plugin/src/withLocation.ts`). İkisi de kapatılmalı.
+
+## FOTOĞRAF İZNİ DE KAPANDI (2026-09-08) — ESKİDİ
+
+> Bu bölüm bayrak + izin-metni yaklaşımını anlatıyor. 2.7.0 sürümünde paket
+> tamamen kaldırıldı; geçerli olan yukarıdaki "Fotoğraf yükleme — UYGULAMADAN
+> ÇIKARILDI (2.7.0)" bölümü. Aşağısı tarihsel kayıt olarak duruyor.
+
+`photosPermission` artık `false`. Sebep: kullanıcı görsel yüklemesinin
+tamamı — sohbet fotoğrafı VE profil fotoğrafı — sunucuda kapatıldı
+(`app/lib/media-moderation.js` → `USER_UPLOADS_ENABLED = false`). İzin
+metni açık kalsaydı yine "uygulamanın YAPMADIĞI bir şeyi anlatan metin"
+olurdu; yukarıdaki dört metnin silinme gerekçesiyle aynı.
+
+`expo-image-picker` paketi KALDIRILMADI: iki çağrı yeri de bayrağa bağlı
+ve bayrak sunucudan geliyor, yani özellik geri açıldığında kod hazır.
+
+## BU UYARI YETMEDİ — 2.1(a) REDDİ (2026-09-09)
+
+Aşağıdaki ⚠️ satırı 2026-09-08'de yazıldı ve **ertesi gün tam olarak
+tarif ettiği şey oldu**. 2.6.1 (42) App Store'da reddedildi: *"the app
+crashed upon tapping the Photo button"*, iPad Air 11" (M3), iPadOS 26.6.1.
+
+Kaçırılan şey şuydu: bayrağı kapatan `USER_UPLOADS_ENABLED` sabiti yalnızca
+uygulama dalındaydı. Yayındaki sunucu (`main`) o sabiti tanımıyor, `photos`
+değerini `isModerationConfigured() && BLOB_READ_WRITE_TOKEN` üzerinden
+hesaplıyordu — yani **bayrak `true` dönüyordu**. İzin metni olmayan binary
+düğmeyi çizdi, incelemeci bastı, iOS uygulamayı sonlandırdı.
+
+Ders: çökmeyi engelleyen karar UZAKTA duramaz. Karar artık binary'nin
+içinde, `src/services/medya.js` → `GALERI_IZNI_VAR`. Sunucu bayrağı
+`chatCapabilities()` içinde onunla AND'leniyor, iki çağrı yerinde de ikinci
+bir kapı var, ve `npm run check:galeri` üç şeyi birden zorluyor:
+
+- sabit ile `photosPermission` uyuşmazsa **düşer**,
+- galeriye/kameraya giden bir çağrı sabiti okumuyorsa **düşer**,
+- `npm run check` zincirinde koşuyor.
+
+⚠️ **GERİ AÇARKEN ÜÇÜ BİRLİKTE.** Yalnızca sunucudaki bayrağı `true`
+yapmak YETMEZ: izin metni olmadan `launchImageLibraryAsync` çağrıldığında
+iOS uygulamayı SONLANDIRIR. Sırasıyla: `GALERI_IZNI_VAR = true`,
+`photosPermission` metni geri, ve sunucudaki `USER_UPLOADS_ENABLED = true`
+**yayına** çıksın (dalda kalması reddin sebebiydi). İlk iki adım OTA ile
+gitmez, YENİ BUILD gerektirir.
+
+---
+
+## KAMERA GERİ İSTENİRSE
+
+`cameraPermission`'ı geri açmak tek başına yanlış olur — metin "sohbette
+fotoğraf çekip gönderebilmeniz için" diyor, o özellik yok. Önce
+`launchCameraAsync` yolu yazılsın, izin metni ONDAN SONRA geri gelsin.

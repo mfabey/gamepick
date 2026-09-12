@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { guard, penalize } from '../../../lib/rate-guard';
+import { mintFamily } from '../../../lib/refresh-token';
 import { redisSetJSON } from '../../../lib/redis';
 import { mergeProfile } from '../../../lib/social-store';
 
@@ -18,6 +20,11 @@ export async function POST(request) {
   if (!email || !password) {
     return NextResponse.json({ error: 'E-posta ve şifre zorunludur.' }, { status: 400 });
   }
+
+  // Web girişiyle AYNI kova ('login'): mobil uç ayrı sayılsaydı, sınır
+  // aynı hesaba iki kat deneme hakkı vermiş olurdu.
+  const kapi = await guard(request, 'login', { account: email });
+  if (kapi) return kapi;
   if (!FIREBASE_API_KEY) {
     return NextResponse.json({ error: 'Kimlik doğrulama yapılandırılmamış.' }, { status: 503 });
   }
@@ -37,6 +44,7 @@ export async function POST(request) {
     if (!signInRes.ok) {
       const code = signIn?.error?.message;
       if (['INVALID_LOGIN_CREDENTIALS', 'INVALID_PASSWORD', 'EMAIL_NOT_FOUND'].includes(code)) {
+        await penalize(request, 'login', { account: email });
         return NextResponse.json({ error: 'E-posta veya şifre hatalı.' }, { status: 400 });
       }
       return NextResponse.json({ error: 'Giriş başarısız.' }, { status: signInRes.status });
@@ -73,7 +81,10 @@ export async function POST(request) {
       ok: true,
       user,
       idToken,
-      refreshToken,
+      // DÖNDÜRMELİ JETON: Firebase yenileme jetonu sunucuda saklanıyor,
+      // istemciye bizim opak jetonumuz gidiyor. mintFamily null dönerse
+      // (Redis yok) eski davranışa düşülüyor.
+      refreshToken: (await mintFamily(localId, refreshToken)) || refreshToken,
       expiresIn: Number(expiresIn) || 3600,
     });
   } catch (err) {

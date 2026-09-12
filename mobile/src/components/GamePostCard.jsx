@@ -47,6 +47,9 @@ function hash(str) {
 
 function GamePostCard({ game, onDismiss, tag, onExpand }) {
   const styles = useStyles(makeStyles);
+  // Puan rengi PALETE bağlı: bu çip temalı yüzeyde duruyor (kapak rozetinin
+  // aksine). Modül seviyesindeki donuk palet AA'da kalıyordu — bkz. theme.js.
+  const { colors } = useTheme();
   const router = useRouter();
   const { t, lang, formatPrice } = useLanguage();
   const { width } = useWindowDimensions();
@@ -151,7 +154,7 @@ function GamePostCard({ game, onDismiss, tag, onExpand }) {
       <View style={styles.meta}>
         {game.metacritic ? (
           <View style={styles.mc}>
-            <Text style={[styles.mcText, NUMERIC, { color: metacriticColor(game.metacritic) }]}>
+            <Text style={[styles.mcText, NUMERIC, { color: metacriticColor(game.metacritic, colors) }]}>
               {game.metacritic}
             </Text>
           </View>

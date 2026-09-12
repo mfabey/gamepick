@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyMobileToken } from '../../../lib/mobile-auth';
+import { readValue } from '../../../lib/session-cookie';
 import { redisGetJSON, redisSetJSON, redisPipeline, parseJSON } from '../../../lib/redis';
 import { mergeProfile } from '../../../lib/social-store';
 
@@ -73,7 +74,10 @@ async function getAuthUser(request) {
     const cookieStore = cookies();
     const session = cookieStore?.get?.('gp_user_session')?.value;
     if (session) {
-      const u = JSON.parse(session);
+      // İMZALI ÇEREZ — gerekçe auth/me ile aynı. Web tarafinin istek
+      // listesi senkronu bu yola bagli; JSON.parse birakilirsa sessizce
+      // 401 doner ve senkron olur.
+      const u = await readValue(session);
       if (u?.uid) {
         return {
           uid: u.uid,

@@ -1,4 +1,9 @@
 import { NextResponse } from 'next/server';
+import { sunucuHatasi, yukariAkisHatasi } from '../../../lib/api-error';
+import { canUseAuthMock, authNotConfigured } from '../../../lib/auth-config';
+import { guard } from '../../../lib/rate-guard';
+import { kaydetPostaGonderimi } from '../../../lib/mail-metrics';
+import { sabitSureyeTamamla } from '../../../lib/constant-time';
 
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
 
@@ -10,11 +15,27 @@ export async function POST(request) {
       return NextResponse.json({ error: 'E-posta adresi zorunludur.' }, { status: 400 });
     }
 
+    // E-POSTA BOMBARDIMANI KAPISI. Adres saldırganın serbestçe seçtiği bir
+    // alan: sınırsız bırakılırsa istenen kişiye Firebase üzerinden sürekli
+    // sıfırlama postası gönderilebilir. Hesap ekseni burada HER istekte
+    // artıyor — parola doğrulaması yok, dolayısıyla "başarısız deneme"
+    // diye ayırt edilecek bir şey de yok.
+    const kapi = await guard(request, 'passwordReset', { account: email });
+    if (kapi) return kapi;
+
     // Local development fallback if Firebase Key is not set
+    if (!FIREBASE_API_KEY && !canUseAuthMock()) return authNotConfigured();
     if (!FIREBASE_API_KEY) {
       console.warn('FIREBASE_API_KEY is not defined. Falling back to mock password reset.');
       return NextResponse.json({ ok: true, mock: true });
     }
+
+    // SABİT SÜRE TABANI BURADAN BAŞLIYOR (bkz. constant-time.js).
+    // Hız sınırı ve girdi doğrulaması DIŞARIDA bırakıldı bilerek: onların
+    // yanıtları (400/429) zaten hesap varlığından bağımsız, geciktirmenin
+    // faydası yok. Taban, yalnızca "kayıtlıysa gönderildi" yanıtına giden
+    // yolu kapsıyor — ayrımın okunabileceği tek yer orası.
+    const sureBaslangic = Date.now();
 
     // Call Firebase Auth REST API to send password reset email
     const resetRes = await fetch(
@@ -28,18 +49,39 @@ export async function POST(request) {
 
     const resetData = await resetRes.json();
 
+    // HESAP SAYIMINA KAPALI. Eskiden EMAIL_NOT_FOUND için 404 ve "Bu e-posta
+    // adresine kayıtlı bir hesap bulunamadı." dönüyordu — yani herkes,
+    // istediği adresin bu sitede kayıtlı olup olmadığını tek istekle
+    // öğrenebiliyordu. Uç artık adresin varlığından BAĞIMSIZ olarak aynı
+    // yanıtı veriyor; posta yalnızca hesap gerçekten varsa gidiyor.
+    //
+    // `auth/login` bu ayrımı zaten doğru yapıyordu (üç Firebase hatasını tek
+    // mesaja indiriyor); tutarsızlık buradaydı.
     if (!resetRes.ok) {
       const errMsg = resetData?.error?.message;
-      if (errMsg === 'EMAIL_NOT_FOUND') {
-        return NextResponse.json({ error: 'Bu e-posta adresine kayıtlı bir hesap bulunamadı.' }, { status: 404 });
+      if (errMsg !== 'EMAIL_NOT_FOUND') {
+        // Gerçek bir arıza — ham kod loga, kullanıcıya sade mesaj.
+        return yukariAkisHatasi(errMsg, 'auth/reset-password',
+          'Şifre sıfırlama isteği şu an işlenemedi. Lütfen tekrar deneyin.', 502);
       }
-      return NextResponse.json({ error: resetData?.error?.message || 'Şifre sıfırlama işlemi başarısız.' }, { status: resetRes.status });
+      // EMAIL_NOT_FOUND → posta GİTMEDİ, sayma.
+    } else {
+      // Yalnızca gerçekten giden posta ölçülüyor (bkz. mail-metrics.js).
+      await kaydetPostaGonderimi('passwordReset');
     }
 
-    return NextResponse.json({ ok: true });
+    // İki dal da buraya geliyor ve aynı yanıtı alıyor. Taban, aralarındaki
+    // İŞ farkının (Firebase posta kuyruğu + Redis ölçüm turu) süreye
+    // yansımasını örtüyor.
+    await sabitSureyeTamamla(sureBaslangic, 'auth/reset-password');
+
+    return NextResponse.json({
+      ok: true,
+      message: 'Bu adrese kayıtlı bir hesap varsa, sıfırlama bağlantısı gönderildi.',
+    });
 
   } catch (err) {
     console.error('Reset Password API Error:', err.message);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return sunucuHatasi(err, 'auth/reset-password');
   }
 }

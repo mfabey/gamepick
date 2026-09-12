@@ -1,4 +1,8 @@
 import { NextResponse } from 'next/server';
+import { readValue } from '../../../lib/session-cookie';
+import { sunucuHatasi, yukariAkisHatasi } from '../../../lib/api-error';
+import { canUseAuthMock, authNotConfigured } from '../../../lib/auth-config';
+import { guard, penalize } from '../../../lib/rate-guard';
 import { cookies } from 'next/headers';
 
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
@@ -6,6 +10,9 @@ const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
 export async function POST(request) {
   try {
     const { currentPassword, newPassword } = await request.json();
+
+    const kapiIp = await guard(request, 'passwordChange');
+    if (kapiIp) return kapiIp;
 
     if (!currentPassword || !newPassword) {
       return NextResponse.json(
@@ -32,7 +39,13 @@ export async function POST(request) {
       );
     }
 
-    const user = JSON.parse(session.value);
+    const user = await readValue(session.value);
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Oturum bulunamadı. Lütfen tekrar giriş yapın.' },
+        { status: 401 }
+      );
+    }
     const email = user.email;
 
     if (!email) {
@@ -42,7 +55,13 @@ export async function POST(request) {
       );
     }
 
+    // Hesap ekseni burada: e-posta oturumdan yeni çıktı. Çalınmış bir çerezle
+    // mevcut parolayı deneme yoluyla bulmaya çalışmayı sınırlıyor.
+    const kapiHesap = await guard(request, 'passwordChange', { account: email });
+    if (kapiHesap) return kapiHesap;
+
     // Local development mock fallback
+    if (!FIREBASE_API_KEY && !canUseAuthMock()) return authNotConfigured();
     if (!FIREBASE_API_KEY) {
       console.warn('FIREBASE_API_KEY is not defined. Simulating password change.');
       return NextResponse.json({ ok: true, mock: true });
@@ -63,12 +82,11 @@ export async function POST(request) {
     if (!signInRes.ok) {
       const errMsg = signInData?.error?.message;
       if (errMsg === 'INVALID_LOGIN_CREDENTIALS' || errMsg === 'INVALID_PASSWORD' || errMsg === 'EMAIL_NOT_FOUND') {
+        await penalize(request, 'passwordChange', { account: email });
         return NextResponse.json({ error: 'Mevcut şifreniz hatalı.' }, { status: 400 });
       }
-      return NextResponse.json(
-        { error: signInData?.error?.message || 'Kimlik doğrulama başarısız.' },
-        { status: signInRes.status }
-      );
+      return yukariAkisHatasi(signInData?.error?.message, 'auth/change-password',
+        'Kimlik doğrulanamadı. Lütfen tekrar deneyin.', 400);
     }
 
     const { idToken } = signInData;
@@ -94,7 +112,7 @@ export async function POST(request) {
         );
       }
       return NextResponse.json(
-        { error: updateData?.error?.message || 'Şifre değiştirilemedi.' },
+        { error: 'PASSWORD_UPDATE_FAILED', message: 'Şifre değiştirilemedi. Lütfen tekrar deneyin.' },
         { status: updateRes.status }
       );
     }
@@ -103,6 +121,6 @@ export async function POST(request) {
 
   } catch (err) {
     console.error('Change Password API Error:', err.message);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return sunucuHatasi(err, 'auth/change-password');
   }
 }

@@ -1,5 +1,5 @@
 import { memo, useCallback, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, Alert } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
@@ -10,11 +10,7 @@ import { radius, spacing, type, PRESSED, NUMERIC, TOUCH_MIN } from '../theme';
 import { useStyles, useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { togglePostLike } from '../api/social';
-import { getSession } from '../services/session';
-import { engelle, useEngellendi } from '../services/moderation';
 import Avatar from './Avatar';
-import PersonMenu from './PersonMenu';
-import ReportSheet from './ReportSheet';
 import { usePop } from '../hooks/usePop';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -41,7 +37,15 @@ function timeAgo(ts, lang) {
   return `${d}${tr ? ' g' : 'd'}`;
 }
 
-function PostCard({ post, onOpen, onRequireAccount, compact = false, kok = false }) {
+// ── ⋯ = MODERASYON YOLU (App Store Guideline 1.2) ──
+// Bu kartta ÖNCEDEN HİÇBİR yol yoktu: ne şikâyet ne engelleme. İnceleme
+// kartında bari uzun basma vardı, burada o da yoktu ve kart yazar profiline
+// de bağlanmıyordu — yani akışta bir gönderi gören kullanıcının yazarı
+// engellemesi imkânsızdı. 2.6.1 (42) tam olarak bu yüzden 1.2'den reddedildi.
+//
+// GİZLİ JEST TEK YOL OLAMAZ: aynı karar PersonMenu'nün başında yazılı.
+// Uzun basma kısayol olarak duruyor, ⋯ ise görünür kapı.
+function PostCard({ post, onOpen, onMenu, onRequireAccount, compact = false, kok = false }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const { t, lang } = useLanguage();
@@ -71,115 +75,23 @@ function PostCard({ post, onOpen, onRequireAccount, compact = false, kok = false
 
   const name = post.author?.displayName || post.author?.username || t('post.someone');
 
-  // ── App Store 1.2: ŞİKAYET VE ENGELLEME BURADA OLMAK ZORUNDA ──
-  //
-  // Gönderi bu uygulamadaki asıl kullanıcı içeriği ve 2.6.1'e kadar kartta
-  // HİÇBİR moderasyon yolu yoktu: ne şikayet, ne engelleme, gizli bir jest
-  // bile değil. Şikayet yalnızca profil ve arkadaş listesi gibi KİŞİ
-  // yüzeylerindeydi — yani uygunsuz bir gönderiyi gören kullanıcının onu
-  // bildirmek için önce yazarın profilini bulması gerekiyordu.
-  //
-  // MENÜ KARTIN İÇİNDE, EKRANDA DEĞİL. Beş ekran bu kartı çiziyor
-  // (anasayfa, topluluk, konuşma, kendi profilim, başkasının profili);
-  // sayfayı her ekrana ayrı ayrı bağlamak aynı bağlantıyı beş kez kurmak ve
-  // birini unutmak demekti — unutulan ekran sessizce moderasyonsuz kalırdı.
-  const [menuAcik, setMenuAcik] = useState(false);
-  const [sikayet, setSikayet] = useState(false);
-  // Şikayet edilen gönderi ekrandan kalkıyor (bkz. ReportSheet → onSent).
-  const [gizli, setGizli] = useState(false);
-
-  const yazarUid = post.author?.uid || null;
-  const benimUid = getSession()?.user?.uid || null;
-  // Kendi gönderimde menü YOK: kendini engelleyemez, kendini şikayet edemezsin
-  // (sunucu ikisini de reddediyor) ve geriye hiçbir şey yapmayan bir düğme
-  // kalırdı.
-  const menuVar = !!yazarUid && yazarUid !== benimUid;
-
-  // Yazar engellendiyse bu kart ANINDA kalkıyor — Apple'ın istediği
-  // "remove it from the user's feed instantly". Kararı servis veriyor, yani
-  // aynı yazarın ekrandaki bütün gönderileri birlikte kalkıyor.
-  const yazarEngelli = useEngellendi(yazarUid);
-
-  /**
-   * Şikayet ve engelleme OTURUM İSTİYOR (sunucu ikisinde de token arıyor).
-   *
-   * `onRequireAccount` PROPUNA GÜVENMİYORUZ: kartı çizen beş ekranın ikisi
-   * (kendi profilim, başkasının profili) o propu vermiyor ve kapı yalnızca
-   * propla kurulsaydı oralarda misafir kullanıcı sayfayı açar, doldurur,
-   * gönderirdi ve karşılığında yalnızca "bir şeyler ters gitti" görürdü.
-   * Prop varsa o kullanılıyor (ekrana özel işleri o biliyor), yoksa kapıyı
-   * kart kendisi kapatıyor.
-   */
-  const hesapGerek = useCallback(() => {
-    if (benimUid) return false;
-    if (onRequireAccount) return onRequireAccount();
-    router.push('/account');
-    return true;
-  }, [benimUid, onRequireAccount, router]);
-
-  const menuSec = useCallback((anahtar) => {
-    if (anahtar === 'profile') {
-      if (post.author?.username) router.push(`/u/${post.author.username}`);
-      return;
-    }
-    if (anahtar === 'report') {
-      if (hesapGerek()) return;
-      setSikayet(true);
-      return;
-    }
-    if (anahtar === 'block') {
-      if (hesapGerek()) return;
-      Alert.alert(name, t('soc.blockConfirm'), [
-        { text: t('soc.cancel'), style: 'cancel' },
-        {
-          text: t('soc.block'),
-          style: 'destructive',
-          onPress: async () => {
-            try { await engelle(yazarUid); } catch { Alert.alert(t('soc.err.generic')); }
-          },
-        },
-      ]);
-    }
-  }, [post.author, router, hesapGerek, name, yazarUid, t]);
-
-  if (gizli || yazarEngelli) return null;
-
   return (
     <Pressable
       onPress={() => (onOpen ? onOpen(post) : router.push(`/post/${post.id}`))}
+      onLongPress={onMenu ? () => onMenu(post.author) : undefined}
+      delayLongPress={400}
       style={({ pressed }) => [styles.row, pressed && PRESSED]}
     >
       <Avatar avatar={post.author?.avatar} name={name} size={AV} />
 
       <View style={styles.main}>
-        <View style={styles.headRow}>
-          <View style={styles.head}>
-            <Text style={styles.name} numberOfLines={1}>{name}</Text>
-            {post.author?.username ? (
-              <Text style={styles.handle} numberOfLines={1}>@{post.author.username}</Text>
-            ) : null}
-            <Text style={styles.dot}>·</Text>
-            <Text style={styles.time}>{timeAgo(post.at, lang)}</Text>
-          </View>
-
-          {/* "⋯" GÖRÜNÜR BİR DÜĞME, gizli bir jest değil. İnceleme kartında
-              şikayet uzun basmaya bağlıydı ve App Store 1.2 mekanizmanın
-              BULUNABİLİR olmasını istiyor: kimsenin varlığını bilmediği bir
-              jest, olmayan bir önlemle aynı şey.
-
-              Görsel boyut 24×22 ama dokunma alanı hitSlop ile 44'ün üstünde:
-              başlık satırını 44pt'ye çıkarmak gönderi ritmini bozardı. */}
-          {menuVar ? (
-            <Pressable
-              onPress={() => { Haptics.selectionAsync().catch(() => {}); setMenuAcik(true); }}
-              hitSlop={12}
-              style={({ pressed }) => [styles.moreBtn, pressed && PRESSED]}
-              accessibilityRole="button"
-              accessibilityLabel={t('a11y.more')}
-            >
-              <Ionicons name="ellipsis-horizontal" size={16} color={colors.text3} />
-            </Pressable>
+        <View style={styles.head}>
+          <Text style={styles.name} numberOfLines={1}>{name}</Text>
+          {post.author?.username ? (
+            <Text style={styles.handle} numberOfLines={1}>@{post.author.username}</Text>
           ) : null}
+          <Text style={styles.dot}>·</Text>
+          <Text style={styles.time}>{timeAgo(post.at, lang)}</Text>
         </View>
 
         {/* FAZ 5 — KÖK GÖNDERİ İLE YANIT GÖRSEL OLARAK AYRIŞIYOR.
@@ -226,35 +138,21 @@ function PostCard({ post, onOpen, onRequireAccount, compact = false, kok = false
         </View>
       </View>
 
-      {/* Sayfalar YALNIZCA AÇIKKEN monte ediliyor. Kart uzun listelerde
-          onlarca kez çiziliyor; `visible={false}` iki `Modal`ı her satırda
-          kurmak, hiç görülmeyecek iki bileşeni her gönderi için ödemek
-          olurdu. */}
-      {menuAcik ? (
-        <PersonMenu
-          visible
-          person={{
-            uid: yazarUid,
-            username: post.author?.username,
-            displayName: post.author?.displayName,
-            avatar: post.author?.avatar,
-          }}
-          arkadas={false}
-          raporEtiketi={t('post.menuReport')}
-          onClose={() => setMenuAcik(false)}
-          onSec={menuSec}
-        />
-      ) : null}
-
-      {sikayet ? (
-        <ReportSheet
-          visible
-          onClose={() => setSikayet(false)}
-          onSent={() => setGizli(true)}
-          targetType="post"
-          targetId={post.id}
-          targetLabel={post.text}
-        />
+      {/* ⋯ BAŞLIK SATIRININ İÇİNDE DEĞİL, SATIRIN SAĞ ÜSTÜNDE.
+          Başlık satırı `flexWrap: 'wrap'` ve uzun bir adda alt satıra
+          taşıyor; düğme oraya konsaydı kimi kartta tek başına ikinci satıra
+          düşerdi. Dışarıda konumu her kartta aynı.
+          hitSlop 10 — ikon 16pt, dokunma hedefi 36pt oluyor. */}
+      {onMenu ? (
+        <Pressable
+          onPress={() => onMenu(post.author)}
+          hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel={t('a11y.more')}
+          style={({ pressed }) => [styles.menuBtn, pressed && PRESSED]}
+        >
+          <Ionicons name="ellipsis-horizontal" size={16} color={colors.text3} />
+        </Pressable>
       ) : null}
     </Pressable>
   );
@@ -282,11 +180,12 @@ const makeStyles = (colors) => StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.cardBorder,
   },
   main: { flex: 1, minWidth: 0 },
-  // Başlık ile "⋯" aynı satırda. `head` sarmalanıyor (flexWrap) ve büyümesi
-  // gerekiyor; `flex: 1` olmadan uzun bir ad düğmeyi kartın dışına iterdi.
-  headRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.s4 },
-  head: { flex: 1, flexDirection: 'row', alignItems: 'baseline', gap: spacing.s4, flexWrap: 'wrap' },
-  moreBtn: { width: 24, height: 22, alignItems: 'center', justifyContent: 'center', marginRight: -spacing.s4 },
+  head: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.s4, flexWrap: 'wrap' },
+  // alignSelf flex-start: satır yüksekliği gövdeye göre değişiyor, düğme
+  // ortalanırsa uzun gönderide kartın ortasında asılı kalırdı. Ek dolgu YOK —
+  // ölçek dışı bir değer olurdu (check:spacing) ve başlık satırı zaten
+  // ikonun üst hizasına denk geliyor.
+  menuBtn: { alignSelf: 'flex-start' },
   // Maket: ad 15/600, kullanıcı adı ve zaman 13/text3.
   name: { color: colors.text, fontSize: type.subhead, fontWeight: '600', flexShrink: 1 },
   handle: { color: colors.text3, fontSize: type.footnote, flexShrink: 1 },

@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { detectLanguage, SUPPORTED } from '../services/locale';
+import { detectLanguage, SUPPORTED, bcp47 } from '../services/locale';
 
 import tr from '../i18n/tr';
 import en from '../i18n/en';
@@ -75,9 +75,13 @@ export function LanguageProvider({ children }) {
   // dört dilde anlamı kalmıyor. Hiçbir ekran kullanmıyordu; dil seçimi
   // Ayarlar'daki listeden yapılıyor.
 
+  // Sayi/tarih bicimlemesi icin BCP-47 etiketi. Ekranlar `toLocaleString()`i
+  // CIPLAK cagirmamali — o cihazin dilini kullaniyor, bunu degil.
+  const locale = bcp47(lang);
+
   const value = useMemo(
-    () => ({ lang, setLang, t, formatPrice, rate, setRate }),
-    [lang, setLang, t, formatPrice, rate]
+    () => ({ lang, locale, setLang, t, formatPrice, rate, setRate }),
+    [lang, locale, setLang, t, formatPrice, rate]
   );
 
   return (

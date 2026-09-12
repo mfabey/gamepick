@@ -10,6 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { GamesGridSkeleton, Reveal } from '../src/components/Skeleton';
 import EmptyState from '../src/components/EmptyState';
+import CevrimdisiBant from '../src/components/CevrimdisiBant';
 import GameCover from '../src/components/GameCover';
 import { prefetchImages } from '../src/utils/prefetch';
 import { radius, spacing, TAB_SPACE, type, CHIP, CHIP_TEXT } from '../src/theme';
@@ -35,12 +36,15 @@ export default function LibraryScreen() {
   // (390 − 2×10) / 2 = 185 — maketin hücre genişliği.
   const sutun = useKartSutun(185, 2);
   const { colors } = useTheme();
-  const { t, lang, formatPrice } = useLanguage();
+  const { t, lang, locale, formatPrice } = useLanguage();
   const { steamAccounts, xbox, busy, loginSteam, loginXbox, account } = useAuth();
   const router = useRouter();
 
   // Paylaşımlı kütüphane fetch'i (Home önericisi ile aynı cache → çift fetch yok, anlık açılış)
-  const { steam: steamLibs, xbox: xboxRaw, steamGames, xboxGames, loading: libLoading, refetch: refetchLib } = useConnectedLibrary();
+  // TEK AD: iki dal aynı fonksiyonu `libTazele` ve `refetchLib` diye
+  // adlandırmıştı. İkisini de tutmak aynı şeyin iki takma adı olurdu;
+  // çevrimdışı bandı da aşağı çekme de artık `libTazele` çağırıyor.
+  const { steam: steamLibs, xbox: xboxRaw, steamGames, xboxGames, loading: libLoading, ts: libTs, refetch: libTazele } = useConnectedLibrary();
   const [refreshing, setRefreshing] = useState(false);
   const xboxErr = xboxRaw?.error || null;
   const xboxLib = xboxErr ? null : xboxRaw;
@@ -270,7 +274,12 @@ export default function LibraryScreen() {
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             <View style={{ paddingHorizontal: 6 }}>
-              <LibraryHeaderCard header={header} formatPrice={formatPrice} pricesLoading={pricesLoading} t={t} lang={lang} />
+              <CevrimdisiBant
+                ts={libTs}
+                onRetry={libTazele}
+                style={{ marginBottom: spacing.s12 }}
+              />
+              <LibraryHeaderCard header={header} formatPrice={formatPrice} pricesLoading={pricesLoading} t={t} lang={lang} locale={locale} />
               {/* Arama + sıralama */}
               <View style={styles.searchBox}>
                 <Ionicons name="search" size={16} color={colors.text3} />
@@ -317,7 +326,7 @@ export default function LibraryScreen() {
               onRefresh={async () => {
                 setRefreshing(true);
                 try {
-                  if (refetchLib) await refetchLib();
+                  if (libTazele) await libTazele();
                 } finally {
                   setRefreshing(false);
                 }
@@ -334,7 +343,7 @@ export default function LibraryScreen() {
 }
 
 // ── Başlık kartı (profil + istatistik + değer) ──
-function LibraryHeaderCard({ header, formatPrice, pricesLoading, t, lang }) {
+function LibraryHeaderCard({ header, formatPrice, pricesLoading, t, lang, locale }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   if (!header) return null;
@@ -421,7 +430,7 @@ function LibraryHeaderCard({ header, formatPrice, pricesLoading, t, lang }) {
       <View style={styles.statsRow}>
         <StatCell value={header.stats.games} label={t('lib.games')} />
         <StatCell value={header.stats.gamePass} label="Game Pass" color={colors.xbox} />
-        <StatCell value={header.stats.gamerscore?.toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US')} label={t('lib.gamerscore')} />
+        <StatCell value={header.stats.gamerscore?.toLocaleString(locale)} label={t('lib.gamerscore')} />
       </View>
     </View>
   );

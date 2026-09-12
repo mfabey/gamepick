@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { readValue } from '../../lib/session-cookie';
+import { sunucuHatasi } from '../../lib/api-error';
 import { cookies } from 'next/headers';
 import { redisGetJSON } from '../../lib/redis';
 import { verifyMobileToken } from '../../lib/mobile-auth';
@@ -111,40 +113,41 @@ function formatTitle(t) {
 // ── Ana handler ──────────────────────────────────────────────────────────────
 export async function GET(request) {
   const cookieStore = await cookies();
-  const userSession = cookieStore.get('gp_user_session');
-
-  // Giriş yapılmış Gamerisen hesabı varsa Redis durumunu kontrol et
-  if (userSession?.value && !request?.headers?.get('x-xbox-session')) {
-    try {
-      const user = JSON.parse(userSession.value);
-      if (user?.uid) {
-        const conn = await redisGetJSON(`user_connections:${user.uid}`).catch(() => null);
-        if (conn && !conn.xbox) {
-          return NextResponse.json({ error: 'Oturum yok', games: [] }, { status: 401 });
-        }
+  // BAĞLANTI DURUMU REDIS'TEN DOĞRULANIYOR. Kullanıcı Xbox'ı ayırdıktan
+  // sonra çerez tarayıcıda kalabiliyordu ve kütüphane hâlâ doluyordu.
+  //
+  // ÇEREZ `JSON.parse` İLE OKUNMUYOR: bu daldaki kimlik çerezlerinin hepsi
+  // imzalı (bkz. session-cookie.js). Main'den gelen `JSON.parse(...)` burada
+  // her zaman hata verirdi ve kontrol sessizce hiç çalışmazdı.
+  const oturumCerezi = cookieStore.get('gp_user_session')?.value;
+  if (oturumCerezi && !request?.headers?.get('x-xbox-session')) {
+    const user = await readValue(oturumCerezi);
+    if (user?.uid) {
+      const conn = await redisGetJSON(`user_connections:${user.uid}`).catch(() => null);
+      if (conn && !conn.xbox) {
+        return NextResponse.json({ error: 'Oturum yok', games: [] }, { status: 401 });
       }
-    } catch {}
-  }
-
-  let sessionRaw = cookieStore.get('gp_xbox_session')?.value || null;
-
-  // Mobil: httpOnly cookie olmadığından session'ı header ile kabul et (base64 JSON)
-  if (!sessionRaw) {
-    const hdr = request?.headers?.get('x-xbox-session');
-    if (hdr) {
-      try { sessionRaw = Buffer.from(hdr, 'base64').toString('utf8'); } catch { /* geçersiz */ }
     }
   }
 
-  if (!sessionRaw) {
-    return NextResponse.json({ error: 'Oturum yok', games: [] }, { status: 401 });
+  // WEB: imzalı çerez (readValue doğruluyor). MOBİL: httpOnly çerez olmadığı
+  // için session'ı X-Xbox-Session header'ıyla taşıyor (base64 JSON). İki yol
+  // ayrı: çerez artık imzalı formatta, JSON.parse ondan geçmez.
+  let session = null;
+  const cookieVal = cookieStore.get('gp_xbox_session')?.value;
+  if (cookieVal) session = await readValue(cookieVal);
+
+  if (!session) {
+    const hdr = request?.headers?.get('x-xbox-session');
+    if (hdr) {
+      try { session = JSON.parse(Buffer.from(hdr, 'base64').toString('utf8')); } catch { /* geçersiz */ }
+    }
   }
 
-  let session;
-  try {
-    session = JSON.parse(sessionRaw);
-  } catch {
-    return NextResponse.json({ error: 'Geçersiz oturum', games: [] }, { status: 401 });
+  // `games: []` GÖVDEDE KALIYOR (main'den). İstemciler hata yanıtında da
+  // diziyi okuyor; alan yokken liste `undefined` üzerinden geziliyordu.
+  if (!session) {
+    return NextResponse.json({ error: 'Oturum yok', games: [] }, { status: 401 });
   }
 
   if (session.isMock) {
@@ -306,6 +309,6 @@ export async function GET(request) {
     });
   } catch (err) {
     console.error('Xbox library error:', err.message);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return sunucuHatasi(err, 'xbox-library');
   }
 }

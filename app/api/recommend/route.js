@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { guard } from '../../lib/rate-guard';
+import { parseBody, recommendBody } from '../../lib/schemas';
 
 const GROQ_KEY = process.env.GROQ_API_KEY;
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
@@ -35,7 +37,16 @@ async function groq(messages, maxTokens = 300) {
 // Body: { moods, budget }                                  → ruh hali bazlı arama önerisi
 // Body: { mode:'summary', gameTitle, genres, description } → oyun özeti + gizli etiketler
 export async function POST(request) {
-  const body = await request.json();
+  // Groq çağrısı yapıyor, kimliksiz — bkz. ai/chat.
+  const kapi = await guard(request, 'aiSearch');
+  if (kapi) return kapi;
+
+  // ŞEMA DOĞRULAMASI. `gameTitle`, `genres` ve `description` HİÇ
+  // doğrulanmadan şablon dizgesine gömülüyordu (aşağıdaki prompt) — hem
+  // sınırsız jeton maliyeti hem istem enjeksiyonu yüzeyi.
+  const ayrist = await parseBody(request, recommendBody);
+  if (!ayrist.ok) return ayrist.response;
+  const body = ayrist.data;
 
   if (!GROQ_KEY) {
     return NextResponse.json({

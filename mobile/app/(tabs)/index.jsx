@@ -25,10 +25,14 @@ import { useDismissed } from '../../src/hooks/useDismissed';
 import { useForYouFeed } from '../../src/hooks/useForYouFeed';
 import { recordDismiss } from '../../src/services/dismissStore';
 import GamePostCard from '../../src/components/GamePostCard';
+import CevrimdisiBant from '../../src/components/CevrimdisiBant';
 import ReviewCard from '../../src/components/ReviewCard';
 import PostCard from '../../src/components/PostCard';
 import FriendActivity, { hasFriendSignal } from '../../src/components/FriendActivity';
-import ReportSheet from '../../src/components/ReportSheet';
+import ModerasyonKatmani from '../../src/components/ModerasyonKatmani';
+import { suz } from '../../src/services/engel';
+import { useEngelliler } from '../../src/hooks/useEngelliler';
+import { useModerasyon } from '../../src/hooks/useModerasyon';
 import CardExpand from '../../src/components/CardExpand';
 import { kaynakYaz, kucultmeAl } from '../../src/services/gecisKaynak';
 import { fetchForYouCandidates } from '../../src/api/recommend';
@@ -70,9 +74,23 @@ export default function HomeScreen() {
   const { t, lang, formatPrice } = useLanguage();
   const router = useRouter();
 
-  const { data: trendData } = useQuery('home:trending', fetchTrending, { ttl: 3 * 60 * 1000 });
-  const { data: newData }   = useQuery('home:new', fetchNewGames, { ttl: 5 * 60 * 1000 });
-  const { data: saleData }  = useQuery('home:sale', fetchSaleGames, { ttl: 5 * 60 * 1000 });
+  const { data: trendData, ts: trendTs, refetch: trendTazele } = useQuery('home:trending', fetchTrending, { ttl: 3 * 60 * 1000 });
+  const { data: newData, ts: newTs, refetch: newTazele }       = useQuery('home:new', fetchNewGames, { ttl: 5 * 60 * 1000 });
+  const { data: saleData, ts: saleTs, refetch: saleTazele }    = useQuery('home:sale', fetchSaleGames, { ttl: 5 * 60 * 1000 });
+
+  // ── BANDIN OKUDUĞU DAMGA: ÜÇÜNÜN EN ESKİSİ ──
+  // Anasayfa üç ayrı sorgudan besleniyor ve üçü ayrı anlarda tazeleniyor.
+  // En YENİSİ yazılsaydı bant, ekrandaki en bayat şeridi gizleyerek
+  // olduğundan taze gösterirdi. En eskisi "içerik EN AZ bu kadar eski"
+  // diyor — eksik tarafta yanılmak, fazla tarafta yanılmaktan iyidir.
+  const enEskiTs = useMemo(() => {
+    const hepsi = [trendTs, newTs, saleTs].filter(Boolean);
+    return hepsi.length ? Math.min(...hepsi) : 0;
+  }, [trendTs, newTs, saleTs]);
+
+  const hepsiniTazele = useCallback(() => {
+    trendTazele(); newTazele(); saleTazele();
+  }, [trendTazele, newTazele, saleTazele]);
 
   // ── ŞERİT HAZIRLIĞI ──
   // Boş `image` alanı SÜZÜLÜYOR (aşağıdaki `kapakVar`) — ama ölçüldü: alan
@@ -242,7 +260,7 @@ export default function HomeScreen() {
   const [reviews, setReviews] = useState([]);
   const [posts, setPosts] = useState([]);
   const [friendGames, setFriendGames] = useState([]);
-  const [reportTarget, setReportTarget] = useState(null);
+  const mod = useModerasyon();
   // Dev-only ölçüm: iskelet gerekli mi kararını sayıya bağlamak için.
   useTimeToData('Home', trend.length > 0);
 
@@ -349,6 +367,9 @@ export default function HomeScreen() {
     trend: lead === 'trend' ? [] : trend,
   }), [lead, trend]);
 
+  // Engel kümesi değişince akış yeniden süzülüyor — bkz. services/engel.js.
+  const engelSurumu = useEngelliler();
+
   const feed = useMemo(() => {
     const hlIds = highlightIds(highlights);
     const games = feedItems.filter(
@@ -364,9 +385,16 @@ export default function HomeScreen() {
     });
     // İnceleme ve gönderiler TEK sosyal akışta birleşiyor (en yeni önce),
     // sonra oyunların arasına serpiştiriliyor.
-    const social = mergeSocial(reviews, posts);
+    // ENGEL SÜZGECİ KAYNAKTA: harmanlamadan ÖNCE. Sonra süzseydik
+    // araya serpiştirme aralıkları kayar ve oyun kartlarının sırası
+    // engellenen kişiye göre değişirdi (aynı gerekçe 'İlgilenmiyorum'
+    // elemesinde de yazılı).
+    const social = mergeSocial(
+      suz(reviews, (r) => r?.author?.uid || r?.uid),
+      suz(posts, (x) => x?.author?.uid || x?.uid),
+    );
     return mergeHighlights(interleaveReviews(sortedGames, social), highlights);
-  }, [feedItems, dismissedIds, reviews, posts, highlights]);
+  }, [feedItems, dismissedIds, reviews, posts, highlights, engelSurumu]);
 
   // ── Paylaşım BU EKRANDA DEĞİL ──
   // Şerit kartlarının kapağında bir "arkadaşa gönder" dairesi vardı; dört
@@ -461,18 +489,24 @@ export default function HomeScreen() {
 
   const renderFeedItem = useCallback(({ item }) => (
     item.kind === 'post' ? (
-      <PostCard post={item.post} onRequireAccount={requireAccount} compact />
+      <PostCard
+        post={item.post}
+        onRequireAccount={requireAccount}
+        onMenu={(k) => mod.acMenu(k, { targetType: 'post', targetId: String(item.post.id) })}
+        compact
+      />
     ) : item.kind === 'review' ? (
       <ReviewCard
         review={item.review}
         onExpand={kartAc}
-        onLongPress={() => setReportTarget(item.review)}
+        onMenu={(k) => mod.acMenu(k, { targetType: 'review', targetId: `${item.review.appid}:${item.review.uid}` })}
+        onLongPress={() => mod.acMenu(item.review.author, { targetType: 'review', targetId: `${item.review.appid}:${item.review.uid}` })}
         style={styles.feedReview}
       />
     ) : (
       <GamePostCard game={item.game} tag={item.tag} onDismiss={handleDismiss} onExpand={kartAc} />
     )
-  ), [handleDismiss, kartAc, requireAccount, styles]);
+  ), [handleDismiss, kartAc, requireAccount, styles, mod]);
 
   // Mevcut bölümlerin tamamı listenin başlığı olur → tek kaydırma, tek liste.
   const header = (
@@ -519,6 +553,16 @@ export default function HomeScreen() {
             </Pressable>
           </View>
         </View>
+
+        {/* Bant marka satırının ALTINDA: bu ekranda listenin tepesinde
+            sabit bant için yer yok (yukarıdaki nota bkz.), ama başlıkla
+            selamlama arasındaki boşluk onu taşıyor ve kaydırmayla
+            gidiyor — kalıcı bir kabuk olmuyor. */}
+        <CevrimdisiBant
+          ts={enEskiTs}
+          onRetry={hepsiniTazele}
+          style={{ marginHorizontal: spacing.s20, marginBottom: spacing.s12 }}
+        />
 
         {/* ── Selamlama (Faz 1) ──
             Marka satırının ALTINDA, aramanın ÜSTÜNDE; kaydırmada gider
@@ -626,12 +670,7 @@ export default function HomeScreen() {
         onVar={kucultmeBitti}
       />
 
-      <ReportSheet
-        visible={!!reportTarget}
-        onClose={() => setReportTarget(null)}
-        targetType="review"
-        targetId={reportTarget ? `${reportTarget.appid}:${reportTarget.uid}` : ''}
-      />
+      <ModerasyonKatmani mod={mod} />
     </View>
   );
 }

@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { readValue } from '../../lib/session-cookie';
+import { sunucuHatasi } from '../../lib/api-error';
 import { cookies } from 'next/headers';
 import { redisGetJSON } from '../../lib/redis';
 
@@ -12,7 +14,10 @@ export async function GET() {
   // Giriş yapılmış Gamerisen hesabı varsa Redis durumunu kontrol et
   if (userSession?.value) {
     try {
-      const user = JSON.parse(userSession.value);
+      // İMZALI ÇEREZ: `readValue` doğruluyor. Main bunu `JSON.parse` ile
+      // okuyordu; bu ağaçta kimlik çerezleri imzalı olduğu icin parse her
+      // zaman hata verir ve blok sessizce hiç çalışmazdı.
+      const user = await readValue(userSession.value);
       if (user?.uid) {
         const conn = await redisGetJSON(`user_connections:${user.uid}`).catch(() => null);
         if (conn) {
@@ -35,7 +40,7 @@ export async function GET() {
   }
 
   let steamId;
-  try { steamId = JSON.parse(session.value).steamId; } catch {}
+  steamId = (await readValue(session.value))?.steamId;
   if (!steamId) {
     return NextResponse.json({ error: 'Steam ID bulunamadı', games: [] }, { status: 401 });
   }
@@ -105,6 +110,6 @@ export async function GET() {
       }, { status: 403 });
     }
     
-    return NextResponse.json({ error: err.message, games: [] }, { status: 500 });
+    return sunucuHatasi(err, 'steam-library');
   }
 }

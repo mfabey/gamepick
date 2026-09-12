@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { guard } from '../../lib/rate-guard';
+import { parseQuery, aiGameQuery } from '../../lib/schemas';
 
 const GROQ_KEY = process.env.GROQ_API_KEY;
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
@@ -95,15 +97,15 @@ async function getFallbackAiData(name, description, lang = 'tr') {
 
 // GET /api/ai-game?appid=271590&name=GTA+V&description=...&lang=tr
 export async function GET(request) {
-  const { searchParams } = new URL(request.url);
-  const appid       = searchParams.get('appid');
-  const name        = searchParams.get('name')        || '';
-  const description = searchParams.get('description') || '';
-  const lang        = searchParams.get('lang')        || 'tr';
+  // Groq çağrısı yapıyor, kimliksiz — bkz. ai/chat.
+  const kapi = await guard(request, 'aiSearch');
+  if (kapi) return kapi;
 
-  if (!appid || !name) {
-    return NextResponse.json({ error: 'appid ve name gerekli' }, { status: 400 });
-  }
+  // ŞEMA DOĞRULAMASI. `appid` hiç sayıya çevrilmiyordu (dizge olarak
+  // geçiyordu), `name` ve `description` sınırsızdı ve isteme giriyordu.
+  const ayrist = parseQuery(request, aiGameQuery);
+  if (!ayrist.ok) return ayrist.response;
+  const { appid, name, description, lang } = ayrist.data;
 
   const cacheKey = `${appid}_${lang}`;
 

@@ -36,7 +36,7 @@ import { useYanBosluk } from '../src/hooks/useIcerikAlani';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 import { getFriends, searchUsers, friendAction } from '../src/api/social';
-import { engelle } from '../src/services/moderation';
+import { engelUygula } from '../src/services/engel';
 import { getSession } from '../src/services/session';
 
 export default function FriendsScreen() {
@@ -113,7 +113,7 @@ export default function FriendsScreen() {
           style: 'destructive',
           // `engelle` çağrılıyor, ham `blockUser` DEĞİL. Engelin üç işi
           // (sunucu kaydı · moderasyon bildirimi · akıştan anında kaldırma)
-          // tek kapıdan geçmek zorunda — bkz. src/services/moderation.js.
+          // tek kapıdan geçmek zorunda — bkz. src/services/engel.js.
           // Ham API buradayken bu ekrandan yapılan engelleme sunucuya
           // yazılıyor ama moderasyon kuyruğuna hiç düşmüyordu; aynı jest
           // sohbette ve gönderi kartında bildirim üretiyordu. Apple 1.2 bunu
@@ -122,7 +122,7 @@ export default function FriendsScreen() {
           // `load()` YİNE GEREKLİ ve `engelle`nin yerel gizlemesinin yerini
           // TUTMAZ: o küme gönderi kartlarını hedefliyor, bu ekrandaki satır
           // ise arkadaşlık ilişkisi — düşüp düşmediğine sunucu karar veriyor.
-          onPress: async () => { try { await engelle(kisi.uid); await load(); } catch { /* sessiz */ } },
+          onPress: async () => { try { await engelUygula(kisi.uid); await load(); } catch { /* sessiz */ } },
         },
       ]);
       return;

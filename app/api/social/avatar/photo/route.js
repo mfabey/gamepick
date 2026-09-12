@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { guard } from '../../../../lib/rate-guard';
 import { put } from '@vercel/blob';
 import { verifyMobileToken } from '../../../../lib/mobile-auth';
 import { rateLimit, tooManyRequests } from '../../../../lib/rate-limit';
@@ -99,6 +100,17 @@ export async function POST(request) {
   const rl = await rateLimit(`rl:avatarup:${user.uid}`, 200, 3600);
   if (!rl.ok) return NextResponse.json(tooManyRequests(), { status: 429 });
 
+  // GÜNLÜK TAVAN — Google Vision görüntü başına ücretli.
+  // Saatlik sınır anlık patlamayı keser ama gün boyu sürdürülen bir akışı
+  // bağlamaz; günlük sayaç ayrı anahtarda tutuluyor (rate-limit-config.js).
+  const gunluk = await guard(request, 'visionModeration', { account: user.uid });
+  if (gunluk) return gunluk;
+
+  // NO_USERNAME KURALI DÜŞTÜ. Dal, kullanıcı adı yokken 409 veriyordu çünkü
+  // avatar yazılıp hiçbir yerde görünmüyordu. Main aynı sorunu daha iyi
+  // çözüyor: aşağıda bir yedek kullanıcı adı üretiliyor ve mergeProfile ile
+  // profile YAZILIYOR, yani avatar görünür oluyor. Reddetmek yerine kaydı
+  // tamamlamak doğru; 409 bugün yalnızca yüklemeyi bloklardı.
   const existing = (await getProfile(user.uid)) || {};
   const fallbackUsername = existing.username || (user.email ? user.email.split('@')[0] : `user_${user.uid.slice(0, 6)}`);
 

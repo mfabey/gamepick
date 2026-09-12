@@ -30,7 +30,7 @@ import { useStyles, useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { usePrice } from '../../hooks/usePrice';
 import { useKapakOlcum } from '../../hooks/useKapakOlcum';
-import { type, radius, spacing, PRESSED, PRESSED_CARD, metacriticColor } from '../../theme';
+import { type, radius, spacing, PRESSED, PRESSED_CARD, metacriticColorOnDark } from '../../theme';
 import { KART, VARYANT } from './variants';
 import { turAdi } from '../../services/genreName';
 
@@ -83,7 +83,7 @@ function GameCard({ game, variant = 'grid', context, overlay, onPress, onLongPre
     <>
       {v.sinyal.has('puan') && game?.metacritic ? (
         <View style={styles.mcBadge}>
-          <Text style={[styles.mcText, { color: metacriticColor(game.metacritic) }]}>{game.metacritic}</Text>
+          <Text style={[styles.mcText, { color: metacriticColorOnDark(game.metacritic) }]}>{game.metacritic}</Text>
         </View>
       ) : null}
       {!v.sinyal.has('indirim') ? null : isFree ? (

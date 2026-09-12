@@ -43,7 +43,7 @@ export function useConnectedLibrary(enabled = true) {
   const hasAny = !!(steamKey || xbox);
   const key = hasAny ? `connlib:${steamKey}:${xbox?.xuid || ''}` : null;
 
-  const { data, loading, refetch } = useQuery(
+  const { data, loading, ts, refetch } = useQuery(
     key,
     () => fetchConnectedLibraryRaw(steamAccounts, xbox),
     { ttl: 15 * 60 * 1000, enabled: enabled && hasAny }
@@ -67,6 +67,9 @@ export function useConnectedLibrary(enabled = true) {
 
   const xboxGames = useMemo(() => raw.xbox?.games || [], [raw]);
 
+  // XBOX MÜKERRERİ STEAM'E GÖRE ELENİYOR. Aynı oyun iki mağazada da varsa
+  // toplam sayaç onu iki kez saymamalı. Steam öncelikli, çünkü oynama süresi
+  // yalnızca orada geliyor.
   const uniqueXboxGames = useMemo(() => {
     if (steamGames.length === 0) return xboxGames;
     const steamNames = new Set(steamGames.map((g) => normalizeName(g.name || '')));
@@ -80,6 +83,9 @@ export function useConnectedLibrary(enabled = true) {
     return steamGames.length + uniqueXboxGames.length;
   }, [steamGames.length, uniqueXboxGames.length]);
 
+  // `ts` DIŞARI VERİLİYOR: kütüphane ekranı çevrimdışıyken diskteki listeyi
+  // gösteriyor ve "ne zaman güncellendi" cümlesini kurabilmesi için damgaya
+  // erişmesi gerekiyor. Önericiyi ilgilendirmiyor, o alanı okumuyor.
   return {
     steam: raw.steam,
     xbox: raw.xbox,
@@ -88,6 +94,7 @@ export function useConnectedLibrary(enabled = true) {
     uniqueXboxGames,
     totalGamesCount,
     loading: !!loading,
+    ts,
     refetch,
   };
 }

@@ -20,21 +20,18 @@ import { useKapakOlcum } from '../hooks/useKapakOlcum';
 // Steam'den okuduğu kütüphaneden geliyor; "500 saatim var" diye
 // yazılabilseydi "doğrulanmış" kelimesi anlamsız olurdu.
 //
-// ŞİKAYET = GÖRÜNÜR "⋯" DÜĞMESİ (uzun basma da kalıyor). Kullanıcı
-// içeriğinin gösterildiği HER yüzeyde bulunmak zorunda (App Store Guideline
-// 1.2); çağıran ekran bunu `onLongPress` ile bağlıyor.
+// ⋯ = ŞİKÂYET VE ENGELLEME. Kullanıcı içeriğinin gösterildiği HER yüzeyde
+// bulunmak zorunda (App Store Guideline 1.2).
 //
-// DÜĞME 2.6.1 REDDİNDEN SONRA EKLENDİ. Şikayet yalnızca uzun basmaya
-// bağlıydı ve şartın istediği şey mekanizmanın VAR OLMASI değil,
-// BULUNABİLİR olması: varlığını kimsenin bilmediği bir jest, önlem sayılmaz.
-// `PersonMenu`nun başındaki not aynı hatayı kişi listelerinde çoktan
-// yazmıştı — inceleme kartında uygulanmamıştı.
+// ÖNCEDEN YALNIZ UZUN BASMA VARDI ve o da sadece şikâyet açıyordu; engellemeye
+// giden bir yol yoktu. Gizli bir jest, keşfedilebilir tek yol olamaz — aynı
+// karar PersonMenu'nün başında da yazılı ve orada kişiler için düzeltilmişti.
+// 2.6.1 (42) bu eksikle 1.2'den reddedildi.
 //
-// Düğme `onLongPress` VARSA çiziliyor: şikayet edilemeyen bir kartta (kendi
-// incelemem) hiçbir şey yapmayan bir düğme kalmasın diye tek koşul bu.
+// Uzun basma KALIYOR, artık aynı menüyü açıyor: kısayol bonus olabilir.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export default function ReviewCard({ review, onPress, onLongPress, onEdit, onExpand, style }) {
+export default function ReviewCard({ review, onPress, onLongPress, onMenu, onEdit, onExpand, style }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const { t, lang } = useLanguage();
@@ -86,13 +83,16 @@ export default function ReviewCard({ review, onPress, onLongPress, onEdit, onExp
           color={review.recommended ? colors.green : colors.text3}
         />
 
-        {onLongPress ? (
+        {/* Tavsiye rozetinin SAĞINDA. Rozet içeriğin ne dediğini, ⋯ onunla ne
+            yapabileceğini söylüyor; ikisi aynı hizada duruyor.
+            hitSlop 10 — ikon 16pt, dokunma hedefi 36pt oluyor. */}
+        {onMenu ? (
           <Pressable
-            onPress={onLongPress}
-            hitSlop={12}
-            style={({ pressed }) => [styles.moreBtn, pressed && PRESSED]}
+            onPress={() => onMenu(review.author)}
+            hitSlop={10}
             accessibilityRole="button"
             accessibilityLabel={t('a11y.more')}
+            style={({ pressed }) => [pressed && PRESSED]}
           >
             <Ionicons name="ellipsis-horizontal" size={16} color={colors.text3} />
           </Pressable>
@@ -119,9 +119,6 @@ const makeStyles = (colors) => StyleSheet.create({
     padding: spacing.md, gap: spacing.sm,
   },
   cardHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  // Görsel 24×22, dokunma alanı hitSlop ile 48×46: kart başlığını 44pt'ye
-  // çıkarmak kapak/isim hizasını bozardı.
-  moreBtn: { width: 24, height: 22, alignItems: 'center', justifyContent: 'center', marginRight: -spacing.xs },
   // overflow ŞART: görsel artık içeride mutlak konumlu, kırpılmazsa 4pt
   // yarıçap görünmez olurdu.
   cardImg:  { width: 56, height: 26, borderRadius: 4, overflow: 'hidden', backgroundColor: colors.bgInput },
