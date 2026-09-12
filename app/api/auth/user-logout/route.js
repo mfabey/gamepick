@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { sunucuHatasi } from '../../../lib/api-error';
 import { cookies } from 'next/headers';
 import { readValue } from '../../../lib/session-cookie';
-import { revokeUserTokens } from '../../../lib/firebase-admin';
+import { revokeUserTokensGuvenli } from '../../../lib/admin-tembel';
 
 export async function POST() {
   try {
@@ -20,7 +20,7 @@ export async function POST() {
     try {
       const jar = await cookies();
       const oturum = await readValue(jar.get('gp_user_session')?.value);
-      if (oturum?.uid) await revokeUserTokens(oturum.uid);
+      if (oturum?.uid) await revokeUserTokensGuvenli(oturum.uid);
     } catch { /* iptal başarısız → çıkış yine de tamamlanmalı */ }
 
     const response = NextResponse.json({ ok: true });

@@ -1,6 +1,6 @@
 import { randomBytes, createHash } from 'crypto';
 import { redisCmd, redisGetJSON } from './redis';
-import { revokeUserTokens } from './firebase-admin';
+import { revokeUserTokensGuvenli } from './admin-tembel';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DÖNDÜRMELİ YENİLEME JETONU — yeniden kullanım tespitiyle (Aşama 2).
@@ -86,7 +86,7 @@ export async function mintFamily(uid, firebaseRefresh) {
 /** Aileyi ve (mümkünse) Firebase jetonlarını iptal eder. */
 async function revokeFamily(familyId, uid) {
   await redisCmd(['DEL', famKey(familyId)]).catch(() => {});
-  if (uid) await revokeUserTokens(uid).catch(() => {});
+  if (uid) await revokeUserTokensGuvenli(uid).catch(() => {});
 }
 
 /**

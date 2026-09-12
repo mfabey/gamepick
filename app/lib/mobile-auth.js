@@ -12,7 +12,7 @@
 // Firebase'e aittir, burada token'a asla doğrudan güvenilmez.
 // ─────────────────────────────────────────────────────────────────────────────
 import { createHash } from 'crypto';
-import { adminAuth } from './firebase-admin';
+import { adminAuthGuvenli } from './admin-tembel';
 
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
 
@@ -92,7 +92,7 @@ export async function verifyMobileToken(request) {
   //
   // Admin yapılandırılmamışsa aşağıdaki mevcut yola düşüyoruz: jeton yine
   // doğrulanıyor, yalnızca iptal uygulanmıyor (bkz. firebase-admin.js).
-  const admin = adminAuth();
+  const admin = await adminAuthGuvenli();
   if (admin) {
     try {
       const decoded = await admin.verifyIdToken(idToken, true);

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { verifyMobileToken, invalidateMobileToken } from '../../../lib/mobile-auth';
-import { revokeUserTokens } from '../../../lib/firebase-admin';
+import { revokeUserTokensGuvenli } from '../../../lib/admin-tembel';
 import { dropFamilyGuvenli } from '../../../lib/jeton-tembel';
 import { guard } from '../../../lib/rate-guard';
 
@@ -33,7 +33,7 @@ export async function POST(request) {
   const kapi = await guard(request, 'tokenRefresh');
   if (kapi) return kapi;
 
-  const revoked = await revokeUserTokens(user.uid);
+  const revoked = await revokeUserTokensGuvenli(user.uid);
 
   // DÖNDÜRME AİLESİNİ DE DÜŞÜR. Bu, Admin SDK'den BAĞIMSIZ: servis hesabı
   // yapılandırılmamışsa revokeUserTokens false döner ve Firebase jetonları
