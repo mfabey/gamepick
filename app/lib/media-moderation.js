@@ -22,6 +22,27 @@
 //    özelliği kapalı tutmak doğru.
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ── KULLANICI GÖRSEL YÜKLEMESİ — ŞİMDİLİK KAPALI (2026-09-08) ──
+//
+// Sohbet fotoğrafı ve profil fotoğrafı bu sürümde BİLEREK kapalı. Sebep
+// maliyet ya da hata değil, YÜKÜMLÜLÜK: kullanıcıların birbirine görsel
+// gönderebildiği bir sistemi işletmek sürekli denetim ve bildirim
+// sorumluluğu getiriyor — yukarıdaki iki sınır (SafeSearch CSAM tespiti
+// değildir, video denetlenemiyor) bu yükün nerede bittiğini gösteriyor.
+// İlk mağaza sürümünde bu yük üstlenilmiyor; hazır avatar setleri
+// (avatar-presets.js) profil tarafında karşılığını veriyor.
+//
+// ORTAM DEĞİŞKENİNDEN BAĞIMSIZ: `MODERATION_PROVIDER` tanımlı olsa bile
+// yükleme açılmıyor. Kapatmayı değişkenin yokluğuna bırakmak davranışı
+// dağıtım ortamının durumuna bağlar; inceleme sırasında bu kesin olmalı.
+//
+// ⚠️ GERİ AÇARKEN İKİ ŞEY BİRLİKTE YAPILMALI:
+//   1. Bu sabiti `true` yap.
+//   2. `mobile/app.json` → `expo-image-picker` → `photosPermission`
+//      metnini geri koy. İzin metni yokken `launchImageLibraryAsync`
+//      çağrılırsa iOS uygulamayı SONLANDIRIR (bkz. mobile/AGENTS.md).
+export const USER_UPLOADS_ENABLED = false;
+
 const VISION_URL = 'https://vision.googleapis.com/v1/images:annotate';
 const TIMEOUT_MS = 8000;
 
