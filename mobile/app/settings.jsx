@@ -139,7 +139,7 @@ export default function SettingsScreen() {
         <View style={styles.iconBtn} />
       </View>
 
-      <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 40, paddingHorizontal: yan }]} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 40, paddingHorizontal: yan + spacing.lg }]} showsVerticalScrollIndicator={false}>
         {/* ── BÖLÜM BAŞLIKLARI GERİ GELDİ ──
             Eski karar "başlık yok, boşluk yeter"di ve 9 satırda doğruydu.
             Profil sekmesi içerik sayfasına dönüşünce oradaki 10 kısayolun

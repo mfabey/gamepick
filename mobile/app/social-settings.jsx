@@ -112,7 +112,7 @@ export default function SocialSettingsScreen() {
       {privacy === null ? (
         <View style={styles.center}><ActivityIndicator color={colors.accent} /></View>
       ) : (
-        <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 40, paddingHorizontal: yan }]} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 40, paddingHorizontal: yan + spacing.lg }]} showsVerticalScrollIndicator={false}>
           {/* Anahtarlar kapalı ama bu bir DURUM değil bir BİLİNMEZLİK —
               bant tam olarak bunu söylüyor. Kırmızı yok. */}
           {bozuk ? (

@@ -31,15 +31,16 @@ import { useTheme, useStyles } from '../context/ThemeContext';
 
 // Simge sütunu genişliği. Ayırıcının nereden başlayacağını bu belirliyor;
 // ikisi TEK yerden türetilmezse hizalama kayıyor.
-const ICON_COL = 30;
-const PAD = spacing.lg;
+const ICON_COL = 24;
+const PAD = spacing.md;
+const GAP = spacing.sm;
 
 // AYIRICININ SOL BOŞLUĞU DIŞARI AÇIK. Aynı çizgi için depoda üç farklı sayı
 // vardı: burada türetilmiş 58, social-settings'te elle 60, profildeki ölü
 // stilde 56. İkisi tek yerden türetilmezse hizalama kayıyor — bu dosyanın
 // kendi notu bunu zaten söylüyordu, ama sayı dışarı verilmediği için
 // kopyalanmıştı.
-export const AYIRICI_SOL = PAD + ICON_COL + spacing.md;
+export const AYIRICI_SOL = PAD + ICON_COL + GAP;
 
 /**
  * Satır grubu. Çocukların arasına ayırıcıları KENDİ koyuyor — çağıranın
@@ -97,17 +98,17 @@ export function SettingsRow({
       accessibilityLabel={label}
     >
       <View style={styles.iconCol}>
-        {!!icon && <Ionicons name={icon} size={22} color={tint} />}
+        {!!icon && <Ionicons name={icon} size={20} color={tint} />}
       </View>
 
       <View style={styles.mid}>
-        <Text style={[styles.label, danger && { color: colors.danger }]} numberOfLines={1}>
+        <Text style={[styles.label, danger && { color: colors.danger }]}>
           {label}
         </Text>
         {!!desc && <Text style={styles.desc} numberOfLines={2}>{desc}</Text>}
       </View>
 
-      {!!value && <Text style={styles.value} numberOfLines={1}>{value}</Text>}
+      {!!value && <Text style={styles.value}>{value}</Text>}
 
       {right ?? (onPress ? (
         <Ionicons name="chevron-forward" size={18} color={colors.text3} />
@@ -127,22 +128,21 @@ const makeStyles = (colors) => StyleSheet.create({
     borderRadius: radius.lg,
     // Gruplar arası boşluk bölüm başlığının yerini tutuyor; dar olursa
     // gruplar tek bir uzun listeye çökerdi.
-    marginBottom: spacing.xl,
+    marginBottom: spacing.lg,
     overflow: 'hidden',
   },
   row: {
     flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: PAD, paddingVertical: 13,
-    gap: spacing.md,
-    // 44pt HIG dokunma hedefinin üstünde
-    minHeight: 54,
+    paddingHorizontal: PAD, paddingVertical: spacing.sm,
+    gap: GAP,
+    // Kompakt görünüm; dokunma alanı ve büyük yazıda satır büyümesi korunur.
+    minHeight: 48,
   },
-  iconCol: { width: ICON_COL, alignItems: 'flex-start' },
+  iconCol: { width: ICON_COL, flexShrink: 0, alignItems: 'flex-start' },
   mid:     { flex: 1, minWidth: 0, gap: 2 },
-  // 17pt = HIG gövde varsayılanı
-  label:   { color: colors.text, fontSize: type.body },
+  label:   { color: colors.text, fontSize: type.subhead },
   desc:    { color: colors.text3, fontSize: type.caption },
-  value:   { color: colors.text3, fontSize: type.subhead },
+  value:   { color: colors.text3, fontSize: type.footnote, maxWidth: '40%', flexShrink: 1, textAlign: 'right' },
   // İçeriden: sol dolgu + simge sütunu + aradaki boşluk kadar
   divider: {
     height: StyleSheet.hairlineWidth,
