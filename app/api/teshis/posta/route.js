@@ -38,9 +38,28 @@ export async function GET(request) {
     // Asıl soru: `require(esm)` destekli bir sürümde miyiz? O destek Node
     // 20.19 ve 22.12'de geldi; `jwks-rsa@4` de engines'inde bunu yazıyor.
     node: process.version,
-    resendAnahtari: !!process.env.RESEND_API_KEY,
-    servisHesabi: !!process.env.FIREBASE_SERVICE_ACCOUNT,
-    firebaseApiAnahtari: !!process.env.FIREBASE_API_KEY,
+    // ── TÜM ORTAM DEĞİŞKENLERİ, YALNIZCA VAR/YOK ───────────────────────────
+    //
+    // NEDEN HEPSİ. Bugün üst üste DÖRT ayrı eksik değişken çıktı ve her biri
+    // ayrı bir tur aldı: SESSION_SECRET (giriş kırıldı), CRON_SECRET (fiyat
+    // alarmı sustu), FIREBASE_SERVICE_ACCOUNT ve RESEND_API_KEY (markalı
+    // posta). Hepsi aynı birleştirmeyle zorunlu hâle gelmişti. Tek tek
+    // keşfetmek yerine listenin tamamı tek çağrıda görünsün.
+    //
+    // Liste `grep -rhoE "process\.env\.[A-Z0-9_]+" app middleware.js`
+    // taramasından geliyor; yeni bir değişken eklenirse buraya da eklenmeli.
+    //
+    // YALNIZCA BOOLEAN: değerin kendisi, uzunluğu ya da bir parçası ASLA
+    // yanıta girmiyor.
+    ortam: Object.fromEntries([
+      'BLOB_READ_WRITE_TOKEN', 'CARD_SECRET', 'CRON_SECRET',
+      'FIREBASE_API_KEY', 'FIREBASE_SERVICE_ACCOUNT', 'GIF_API_KEY',
+      'GOOGLE_VISION_API_KEY', 'GROQ_API_KEY', 'ITAD_API_KEY',
+      'MODERATION_PROVIDER', 'POSTA_GONDEREN', 'RAWG_API_KEY',
+      'RESEND_API_KEY', 'SESSION_SECRET', 'STEAM_API_KEY',
+      'UPSTASH_REDIS_REST_TOKEN', 'UPSTASH_REDIS_REST_URL',
+      'XBOX_CLIENT_ID', 'XBOX_CLIENT_SECRET',
+    ].map((k) => [k, !!process.env[k]])),
 
     // OTURUM İMZASI — posta zinciriyle ilgisi yok ama aynı birleştirmeyle
     // gelen İKİNCİ yeni zorunluluk ve aynı sınıfta arıza üretiyor.
