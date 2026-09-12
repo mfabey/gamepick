@@ -127,8 +127,6 @@ export const AUTH_ROUTES = new Set([
 
 /** Yalnızca CRON_SECRET ile. Kapalı başarısız oluyor: secret yoksa 503. */
 export const CRON_ROUTES = new Set([
-  // GEÇİCİ — posta zinciri teşhisi. Zincir açılınca route ile birlikte silin.
-  'teshis/posta',
   'cron/price-alerts',
 ]);
 

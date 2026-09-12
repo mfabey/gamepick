@@ -4,6 +4,8 @@ import { canUseAuthMock, authNotConfigured } from '../../../lib/auth-config';
 import { guard } from '../../../lib/rate-guard';
 import { kaydetPostaGonderimi } from '../../../lib/mail-metrics';
 import { sabitSureyeTamamla } from '../../../lib/constant-time';
+import { markaliSifirlamaGonder } from '../../../lib/kimlik-postasi';
+import { istektenDil } from '../../../lib/posta';
 
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
 
@@ -36,6 +38,33 @@ export async function POST(request) {
     // faydası yok. Taban, yalnızca "kayıtlıysa gönderildi" yanıtına giden
     // yolu kapsıyor — ayrımın okunabileceği tek yer orası.
     const sureBaslangic = Date.now();
+
+    // ── ÖNCE MARKALI YOL ───────────────────────────────────────────────────
+    //
+    // Doğrulama postası zaten markalı gidiyor; sıfırlama postasının Firebase'in
+    // markasız şablonuyla gitmesi tutarsızdı — şifresini unutan kullanıcı
+    // aniden başka bir ürünün postasını alıyordu.
+    //
+    // HESAP SAYIMI KORUNUYOR: kullanıcı yoksa `generatePasswordResetLink`
+    // fırlatıyor ve markalı yol `false` dönüyor; akış aşağıdaki Firebase
+    // yoluna düşüyor ve o da EMAIL_NOT_FOUND alıyor. İki dal yine AYNI yanıtı
+    // veriyor.
+    //
+    // ⚠ SÜRE BÜTÇESİ: markalı yol iki ek ağ turu ekliyor (Google + Resend) ve
+    // bunlar yalnızca HESAP VARKEN çalışıyor — yani ayırt edilmemesi gereken
+    // dal yavaşlıyor. `sabitSureyeTamamla` bunu 1500 ms tabanına yaymaya
+    // devam ediyor, ama taban aşılırsa koruma o istek için kalkıyor ve
+    // mekanizma `[SURE-ASIMI]` satırını loga düşürüyor. O satır görülürse
+    // HESAP_UCU_TABAN_MS artırılmalı (bkz. constant-time.js).
+    const markali = await markaliSifirlamaGonder(email, istektenDil(request));
+    if (markali.ok) {
+      await kaydetPostaGonderimi('passwordReset');
+      await sabitSureyeTamamla(sureBaslangic, 'auth/reset-password');
+      return NextResponse.json({
+        ok: true,
+        message: 'Bu adrese kayıtlı bir hesap varsa, sıfırlama bağlantısı gönderildi.',
+      });
+    }
 
     // Call Firebase Auth REST API to send password reset email
     const resetRes = await fetch(
