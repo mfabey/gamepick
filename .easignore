@@ -1,0 +1,72 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# EAS BUILD ARŞİVİ — NE YÜKLENMEYECEK
+#
+# NEDEN KÖKTE. İlk deneme `mobile/.easignore` olarak yazıldı ve HİÇ OKUNMADI:
+# arşiv iki denemede de birebir 969 MB rapor etti. Sebep eas-cli kaynağında
+# yazılı (`build/vcs/clients/git.js`): dosya `rootPath` içinde aranıyor ve
+# `rootPath` GIT DEPOSUNUN KÖKÜ, Expo projesinin klasörü değil. Aynı istemci
+# depoyu `git clone --depth 1` ile kökten kopyalıyor, yani arşivin tabanı da
+# burası. Yollar bu yüzden kök göreli.
+#
+# NEDEN GEREKLİ. 2.7.0'ın ilk iOS build'i yüklemede koptu (ECONNRESET,
+# 148 MB / 969 MB). Ölçüldü: `mobile/android` diskte 3.2 GB. `.gitignore`da
+# `/android` yazmasına rağmen arşive giriyordu; gerçekten gereken içerik
+# ~3 MB (mobile/src + app + assets + betikler).
+#
+# ⚠ BU DOSYA TÜM `.gitignore` DOSYALARININ YERİNİ ALIR, ONLARA EKLENMEZ.
+# eas-cli kaynağı: "if .easignore exists, .gitignore files are not used."
+# Yani hem kökteki hem `mobile/` altındaki GİZLİ DOSYA kuralları buraya
+# taşınmak zorunda — taşınmasaydı `.env.local`, Firebase admin anahtarı ve
+# Play servis hesabı sessizce EAS'e yüklenirdi. Bu depoda anahtar sızıntısı
+# bir kez yaşandı; ikincisi olmayacak.
+#
+# İki `.gitignore`dan birine yeni bir gizli dosya kuralı eklenirse BURAYA DA
+# eklenmeli.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Asıl mesele: üretilmiş yerel klasörler (prebuild EAS tarafında üretir) ──
+mobile/android/
+mobile/ios/
+
+# ── bağımlılıklar ve üretilmiş çıktılar ──
+node_modules/
+.next/
+/out/
+/build
+mobile/dist/
+mobile/.expo/
+mobile/web-build/
+.vercel
+
+# ── GİZLİ: kök .gitignore'dan ──
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*-firebase-adminsdk-*.json
+*-service-account.json
+google-play-service-account.json
+credentials/
+*.pem
+
+# ── GİZLİ: mobile/.gitignore'dan ──
+# Not: `google-services.json` BİLEREK dışarıda — Firebase istemci
+# yapılandırması, sırrı yok ve Android build'i onu istiyor.
+.env*.local
+play-store-key.json
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# ── yerel gürültü ──
+.DS_Store
+.kotlin/
+*.orig.*
+*.tsbuildinfo
+.metro-health-check*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
