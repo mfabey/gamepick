@@ -26,7 +26,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 import Avatar from '../src/components/Avatar';
-import { radius, spacing, type, avatar as avatarSize, PRESSED, NUMERIC, TOUCH_MIN } from '../src/theme';
+import { radius, spacing, type, avatar as avatarSize, PRESSED, NUMERIC, TOUCH_MIN, SHEET_LAYOUT } from '../src/theme';
 import { useYanBosluk } from '../src/hooks/useIcerikAlani';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
@@ -151,7 +151,7 @@ export default function ProfileEditScreen() {
           `check:edge` bu kuralı denetliyor ve birleştirme sırasında bir kez
           düşürüldüğü için yakaladı. */}
       <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
-        <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.s40, paddingHorizontal: yan }]}
+        <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.s40, paddingHorizontal: yan + spacing.s20 }]}
                     keyboardShouldPersistTaps="handled">
           {/* Avatar — dokunuş seçiciyi açıyor. Kalem rozeti değişebilirliği
               ima ediyor; jest artık gizli değil, ekranın işi bu. */}
@@ -205,12 +205,14 @@ export default function ProfileEditScreen() {
 // Profil sekmesinden BURAYA TAŞINDI: düzenleme tek ekranda toplandı.
 function AvatarPicker({ visible, current, onSelect, onClose }) {
   const styles = useStyles(makeStyles);
+  const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const { t } = useLanguage();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
       <Pressable style={styles.pickerOverlay} onPress={onClose}>
-        <Pressable style={styles.pickerSheet} onPress={(e) => e.stopPropagation()}>
+        <Pressable style={[styles.pickerSheet, { paddingBottom: Math.max(insets.bottom, spacing.s20) }]} onPress={(e) => e.stopPropagation()}>
+          <ScrollView style={styles.pickerScroll} bounces={false}>
           <View style={styles.pickerHandle} />
           <Text style={styles.pickerTitle}>{t('prof.chooseAvatar')}</Text>
 
@@ -246,6 +248,7 @@ function AvatarPicker({ visible, current, onSelect, onClose }) {
               <Text style={styles.pickerRemoveText}>{t('prof.removeAvatar')}</Text>
             </Pressable>
           ) : null}
+          </ScrollView>
         </Pressable>
       </Pressable>
     </Modal>
@@ -298,11 +301,13 @@ const makeStyles = (colors) => StyleSheet.create({
 
   pickerOverlay: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },
   pickerSheet: {
+    ...SHEET_LAYOUT, maxHeight: '90%',
     backgroundColor: colors.bgElevated,
     borderTopLeftRadius: 22, borderTopRightRadius: 22,
     paddingHorizontal: spacing.s20, paddingBottom: spacing.s40, paddingTop: spacing.s12,
     borderWidth: 1, borderColor: colors.cardBorder, borderBottomWidth: 0,
   },
+  pickerScroll: { flexGrow: 0 },
   pickerHandle: {
     width: 36, height: 4, borderRadius: 2,
     backgroundColor: colors.text3, opacity: 0.4,

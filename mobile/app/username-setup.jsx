@@ -1,3 +1,4 @@
+import { useYanBosluk } from '../src/hooks/useIcerikAlani';
 // ─────────────────────────────────────────────────────────────────────────────
 // Kullanıcı adı kurulumu — sosyal kimliğin ilk adımı.
 //
@@ -27,6 +28,7 @@ import { checkUsername, setUsername } from '../src/api/social';
 
 export default function UsernameSetupScreen() {
   const styles = useStyles(makeStyles);
+  const yan = useYanBosluk();
   const { colors } = useTheme();
   const { t } = useLanguage();
   const router = useRouter();
@@ -77,7 +79,7 @@ export default function UsernameSetupScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.head}>
+      <View style={[styles.head, { marginHorizontal: yan }]}>
         <Pressable onPress={() => router.back()} hitSlop={8}
                    style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]}
                    accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
@@ -94,7 +96,7 @@ export default function UsernameSetupScreen() {
           alan hiç yukarı kaymıyordu (bkz. chat/[uid].jsx aynı not). */}
       <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
         <ScrollView
-          contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.s24 }]}
+          contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.s24, paddingHorizontal: yan + spacing.s20 }]}
           keyboardShouldPersistTaps="handled"
         >
           <Ionicons name="at-outline" size={48} color={colors.accent} />

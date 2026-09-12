@@ -26,7 +26,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Avatar from './Avatar';
 import { useStyles, useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
-import { radius, spacing, type, PRESSED } from '../theme';
+import { radius, spacing, type, PRESSED, SHEET_LAYOUT } from '../theme';
 
 /**
  * @param {object}  person   { uid, username, displayName, avatar }
@@ -104,6 +104,7 @@ export default function PersonMenu({ visible, person, arkadas = false, raporEtik
 const makeStyles = (colors) => StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },
   sheet: {
+    ...SHEET_LAYOUT,
     backgroundColor: colors.bgElevated,
     borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl,
     paddingHorizontal: spacing.s20, paddingTop: spacing.s8, paddingBottom: spacing.s32,

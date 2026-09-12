@@ -1,3 +1,4 @@
+import { useYanBosluk } from '../src/hooks/useIcerikAlani';
 import { useState, useCallback } from 'react';
 import {
   View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator, Alert, Keyboard, Platform,
@@ -16,6 +17,7 @@ import { useLanguage } from '../src/context/LanguageContext';
 
 export default function DeleteAccountScreen() {
   const styles = useStyles(makeStyles);
+  const yan = useYanBosluk();
   const { colors } = useTheme();
   const router = useRouter();
   const { t } = useLanguage();
@@ -78,7 +80,7 @@ export default function DeleteAccountScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.head}>
+      <View style={[styles.head, { marginHorizontal: yan }]}>
         <Pressable style={({ pressed }) => [styles.back, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </Pressable>
@@ -86,7 +88,7 @@ export default function DeleteAccountScreen() {
         <View style={{ width: 40 }} />
       </View>
 
-      <View style={styles.body}>
+      <View style={[styles.body, { paddingHorizontal: yan + spacing.lg }]}>
         <View style={styles.warnBox}>
           <Ionicons name="warning-outline" size={22} color={colors.danger} />
           <Text style={styles.warnText}>{t('acc.deleteWarn')}</Text>

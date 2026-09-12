@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet, ActivityIndicator, Modal, Dimensions, Share } from 'react-native';
+import { View, Text, Pressable, ScrollView, StyleSheet, ActivityIndicator, Modal, useWindowDimensions, Share } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
@@ -111,7 +111,7 @@ export default function GameDetail() {
   useTimeToData('GameDetail', !!detail);
   const [activeShotIndex, setActiveShotIndex] = useState(null);
   const [currentScrollIndex, setCurrentScrollIndex] = useState(0);
-  const { width: screenWidth } = Dimensions.get('window');
+  const { width: screenWidth } = useWindowDimensions();
 
   // Lightbox'ı aç: indeks ve gösterge aynı anda ayarlanır (bir karelik yanlış sayı olmaz)
   const openShot = useCallback((i) => {

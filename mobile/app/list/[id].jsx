@@ -136,7 +136,7 @@ export default function PublicListScreen() {
         data={list.games || []}
         keyExtractor={(item, i) => `${item.id}_${i}`}
         renderItem={renderItem}
-        contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 30, paddingHorizontal: yan }]}
+        contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 30, paddingHorizontal: yan + spacing.s20 }]}
         estimatedItemSize={SATIR_Y}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={

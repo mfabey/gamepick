@@ -128,7 +128,7 @@ function CollectionsScreenContent() {
           data={collections}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
-          contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 30, paddingHorizontal: yan }]}
+          contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 30, paddingHorizontal: yan + spacing.md }]}
           showsVerticalScrollIndicator={false}
         />
       )}

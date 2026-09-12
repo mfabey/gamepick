@@ -15,7 +15,7 @@
 // useQuery aynı slug için istekleri tekilleştiriyor ve önbellekliyor.
 // ─────────────────────────────────────────────────────────────────────────────
 import { memo, useState, useCallback, useMemo } from 'react';
-import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -52,7 +52,6 @@ function GamePostCard({ game, onDismiss, tag, onExpand }) {
   const { colors } = useTheme();
   const router = useRouter();
   const { t, lang, formatPrice } = useLanguage();
-  const { width } = useWindowDimensions();
   const [expanded, setExpanded] = useState(false);
   const [truncated, setTruncated] = useState(false);
   const [imgFailed, setImgFailed] = useState(false);
@@ -111,17 +110,13 @@ function GamePostCard({ game, onDismiss, tag, onExpand }) {
     if (!expanded && e.nativeEvent.lines.length > CLAMP_LINES) setTruncated(true);
   }, [expanded]);
 
-  // 4:3'e yakın oran — oyun içi kareler genelde 16:9 ama gönderi düzeninde
-  // biraz daha uzun bir alan akışta daha iyi duruyor.
-  const mediaH = Math.round((width - spacing.lg * 2) * 0.56);
-
   return (
     <View style={styles.card}>
       <Pressable onPress={onExpand ? buyuterekAc : open} onLongPress={() => onDismiss?.(game)} style={({ pressed }) => pressed && PRESSED}>
         {/* collapsable={false} ŞART: RN Android'de yalnız düzen taşıyan
             View'leri ağaçtan düşürebiliyor ve düşen View `measureInWindow`
             veremiyor — ölçüm null döner, geçiş sessizce kaybolurdu. */}
-        <View ref={kapakRef} collapsable={false} style={[styles.media, { height: mediaH }]}>
+        <View ref={kapakRef} collapsable={false} style={styles.media}>
           {source && !imgFailed ? (
             <Image source={source} style={StyleSheet.absoluteFill} contentFit="cover"
               cachePolicy="memory-disk" transition={motion.image}
@@ -205,6 +200,8 @@ const makeStyles = (colors) => StyleSheet.create({
   card: { marginHorizontal: spacing.s20, marginBottom: spacing.s24 },
 
   media: {
+    // Ekran değil, tablet kolonu ve kart kenar payı çıktıktan sonraki genişlik.
+    aspectRatio: 1 / 0.56,
     width: '100%', borderRadius: radius.lg, overflow: 'hidden',
     backgroundColor: colors.card,
   },

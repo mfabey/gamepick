@@ -8,7 +8,7 @@ import * as Haptics from 'expo-haptics';
 import { getFriends, sendChat } from '../api/social';
 import Avatar from './Avatar';
 import { getSession } from '../services/session';
-import { radius, spacing, type, PRESSED } from '../theme';
+import { radius, spacing, type, PRESSED, SHEET_LAYOUT } from '../theme';
 import { useStyles, useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -157,6 +157,7 @@ export default function ShareToFriendSheet({ visible, onClose, appid, gameId, ne
 const makeStyles = (colors) => StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: colors.overlay },
   sheet: {
+    ...SHEET_LAYOUT,
     maxHeight: '70%', backgroundColor: colors.bgElevated,
     borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl,
     paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.xl,

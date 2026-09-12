@@ -22,7 +22,7 @@ import { View, Text, Pressable, StyleSheet, Modal, ScrollView } from 'react-nati
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
-import { radius, spacing, PRESSED, type, CHIP, CHIP_TEXT, CHIP_TEXT_ON } from '../theme';
+import { radius, spacing, PRESSED, type, CHIP, CHIP_TEXT, CHIP_TEXT_ON, SHEET_LAYOUT } from '../theme';
 import { useStyles, useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -303,6 +303,7 @@ export function FilterButton({ count, onPress }) {
 const makeStyles = (colors) => StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },
   sheet: {
+    ...SHEET_LAYOUT,
     backgroundColor: colors.bgElevated,
     borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl,
     paddingHorizontal: spacing.lg, paddingTop: 10, paddingBottom: 28,

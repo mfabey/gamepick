@@ -127,7 +127,7 @@ export default function ListsScreen() {
         <View style={styles.iconBtn} />
       </View>
 
-      <View style={styles.tabs}>
+      <View style={[styles.tabs, { marginHorizontal: yan }]}>
         {['popular', 'new'].map((k) => (
           <Pressable
             key={k}
@@ -160,7 +160,7 @@ export default function ListsScreen() {
           data={items}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
-          contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 30, paddingHorizontal: yan }]}
+          contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 30, paddingHorizontal: yan + spacing.md }]}
           showsVerticalScrollIndicator={false}
           onEndReached={onEnd}
           onEndReachedThreshold={0.5}

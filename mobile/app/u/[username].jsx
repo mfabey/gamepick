@@ -217,7 +217,7 @@ export default function UserProfileScreen() {
     const govde = izgara ? bol(items, sutun) : items;
     if (govde.length === 0) return [{ __serit: true }, { __bos: true }];
     return [{ __serit: true }, ...govde];
-  }, [izgara, items, canView]);
+  }, [izgara, items, canView, sutun]);
 
   // ── Bulunamadı ──
   if (bulunamadi) {

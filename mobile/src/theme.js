@@ -486,6 +486,11 @@ export const spacing = {
 export const ICERIK_MAX = 640;
 export const SAYFA_MAX = 820;
 
+// Alt seçim/form pencereleri telefona sığar, tablette okunabilir kolonda kalır.
+export const SHEET_LAYOUT = Object.freeze({
+  width: '100%', maxWidth: ICERIK_MAX, alignSelf: 'center',
+});
+
 // Floating alt bar için ekran altına bırakılacak boşluk
 // ─────────────────────────────────────────────────────────────────────────────
 // YÜZEN SEKME ÇUBUĞU ÖLÇÜLERİ — tasarım handoff'undan.

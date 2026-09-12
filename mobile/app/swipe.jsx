@@ -12,7 +12,7 @@
 // hiç dokunulmaz, böylece kaydırma 60fps kalır.
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { View, Text, Pressable, StyleSheet, ActivityIndicator, Dimensions } from 'react-native';
+import { View, Text, Pressable, StyleSheet, ActivityIndicator, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -41,9 +41,6 @@ import { useLanguage } from '../src/context/LanguageContext';
 import IconButton from '../src/components/IconButton';
 import GameCover from '../src/components/GameCover';
 
-const { width: SCREEN_W } = Dimensions.get('window');
-const SWIPE_THRESHOLD = SCREEN_W * 0.28;   // bu mesafeden sonra bırakınca karar verilir
-const FLY_OUT = SCREEN_W * 1.6;            // karar sonrası kartın uçacağı mesafe
 const VISIBLE = 3;                         // aynı anda render edilen kart sayısı
 const REFILL_AT = 4;                       // deste bu sayıya inince yeni sayfa çek
 
@@ -208,6 +205,10 @@ export default function SwipeScreen() {
 function SwipeCard({ game, index, isTop, onDecide, onPress, t }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
+  const { width: SCREEN_W } = useWindowDimensions();
+  const cardWidth = Math.min(SCREEN_W - spacing.lg * 2, 420);
+  const SWIPE_THRESHOLD = cardWidth * 0.28;
+  const FLY_OUT = SCREEN_W * 1.6;
   const x = useSharedValue(0);
   const y = useSharedValue(0);
 
@@ -266,7 +267,7 @@ function SwipeCard({ game, index, isTop, onDecide, onPress, t }) {
 
   return (
     <GestureDetector gesture={pan}>
-      <Animated.View style={[styles.card, cardStyle]}>
+      <Animated.View style={[styles.card, { width: cardWidth }, cardStyle]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onPress} disabled={!isTop}>
           <GameCover uri={game.image} name={game.name} style={StyleSheet.absoluteFill}>
           <View style={styles.cardBody}>
@@ -345,7 +346,7 @@ const makeStyles = (colors) => StyleSheet.create({
   deck: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.lg },
   card: {
     position: 'absolute',
-    width: '100%', height: '100%',
+    height: '100%', maxHeight: 560,
     borderRadius: radius.xl, overflow: 'hidden',
     backgroundColor: colors.card,
     borderWidth: 1, borderColor: colors.cardBorder,

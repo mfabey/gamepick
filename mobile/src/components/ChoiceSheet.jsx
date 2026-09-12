@@ -25,7 +25,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 
-import { radius, spacing, PRESSED, type, TOUCH_MIN } from '../theme';
+import { radius, spacing, PRESSED, type, TOUCH_MIN, SHEET_LAYOUT } from '../theme';
 import { useStyles, useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -106,6 +106,7 @@ export default function ChoiceSheet({
 const makeStyles = (colors) => StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },
   sheet: {
+    ...SHEET_LAYOUT,
     backgroundColor: colors.bgElevated,
     borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl,
     paddingHorizontal: spacing.s16, paddingTop: spacing.s12,

@@ -6,7 +6,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 
 import { writeReview, removeReview } from '../api/social';
-import { radius, spacing, type, PRESSED, NUMERIC } from '../theme';
+import { radius, spacing, type, PRESSED, NUMERIC, SHEET_LAYOUT } from '../theme';
 import { useStyles, useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -166,6 +166,7 @@ const makeStyles = (colors) => StyleSheet.create({
   backdrop:  { flex: 1, backgroundColor: colors.overlay },
   sheetWrap: { justifyContent: 'flex-end' },
   sheet: {
+    ...SHEET_LAYOUT,
     maxHeight: '82%', backgroundColor: colors.bgElevated,
     borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl,
     paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.xl,

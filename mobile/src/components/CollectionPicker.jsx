@@ -10,7 +10,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
-import { radius, spacing, PRESSED, type } from '../theme';
+import { radius, spacing, PRESSED, type, SHEET_LAYOUT } from '../theme';
 import { useStyles, useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import IconButton from './IconButton';
@@ -109,6 +109,7 @@ export default function CollectionPicker({
 const makeStyles = (colors) => StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },
   sheet: {
+    ...SHEET_LAYOUT,
     backgroundColor: colors.bgElevated,
     borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl,
     paddingHorizontal: spacing.lg, paddingTop: 10, paddingBottom: 28,

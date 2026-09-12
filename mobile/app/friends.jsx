@@ -174,7 +174,7 @@ export default function FriendsScreen() {
         <View style={styles.center}><ActivityIndicator color={colors.accent} /></View>
       ) : (
         <ScrollView
-          contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.s40, paddingHorizontal: yan }]}
+          contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.s40, paddingHorizontal: yan + spacing.s20 }]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           refreshControl={(

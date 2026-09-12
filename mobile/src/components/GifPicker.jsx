@@ -7,7 +7,7 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 
 import { searchGifs } from '../services/klipy';
-import { radius, spacing, type, PRESSED, motion } from '../theme';
+import { radius, spacing, type, PRESSED, motion, SHEET_LAYOUT } from '../theme';
 import { useStyles, useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -135,6 +135,7 @@ export default function GifPicker({ visible, onClose, onPick }) {
 const makeStyles = (colors) => StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: colors.overlay },
   sheet: {
+    ...SHEET_LAYOUT,
     height: '68%', backgroundColor: colors.bgElevated,
     borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl,
     paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.md,

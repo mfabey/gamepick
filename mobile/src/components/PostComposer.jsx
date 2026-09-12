@@ -6,7 +6,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
-import { radius, spacing, type, PRESSED, NUMERIC } from '../theme';
+import { radius, spacing, type, PRESSED, NUMERIC, SHEET_LAYOUT } from '../theme';
 import { useStyles, useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { createPost } from '../api/social';
@@ -133,6 +133,7 @@ const makeStyles = (colors) => StyleSheet.create({
   // rgba yerine palete bağlandı.
   backdrop: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },
   sheet: {
+    ...SHEET_LAYOUT,
     backgroundColor: colors.bgElevated,
     borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl,
     paddingHorizontal: spacing.lg, paddingTop: 14, paddingBottom: 28,

@@ -76,7 +76,7 @@ export default function FriendRequestsScreen() {
         <EmptyState icon="mail-outline" title={t('soc.noRequests')} />
       ) : (
         <ScrollView
-          contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.s40, paddingHorizontal: yan }]}
+          contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.s40, paddingHorizontal: yan + spacing.s20 }]}
           showsVerticalScrollIndicator={false}
         >
           {data.incoming.length > 0 ? (

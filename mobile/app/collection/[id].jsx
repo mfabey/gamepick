@@ -150,7 +150,7 @@ export default function CollectionDetailScreen() {
           data={games}
           keyExtractor={(item) => String(item.id)}
           renderItem={renderItem}
-          contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 30, paddingHorizontal: yan }]}
+          contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 30, paddingHorizontal: yan + spacing.s20 }]}
           estimatedItemSize={SATIR_Y}
           showsVerticalScrollIndicator={false}
         />

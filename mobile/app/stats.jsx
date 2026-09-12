@@ -113,7 +113,7 @@ function StatsScreenContent() {
           onAction={() => router.replace('/games')}
         />
       ) : (
-        <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 40, paddingHorizontal: yan }]} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 40, paddingHorizontal: yan + spacing.lg }]} showsVerticalScrollIndicator={false}>
           {/* Kahraman sayı — haftanın ana metriği */}
           <View style={styles.hero}>
             <Text style={styles.heroNum}>{report.discovered}</Text>
