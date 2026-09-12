@@ -98,6 +98,17 @@ export async function POST(request) {
       ok: true, mock: false, posta: 'firebase',
       sebep: markali.sebep,
       hata: markali.hata || null,
+      // ÇALIŞMA ZAMANI SÜRÜMÜ — tartışmayı bitiren tek veri.
+      //
+      // Hata ERR_REQUIRE_ESM: `jwks-rsa@4` CommonJS ve `require('jose')`
+      // yapıyor, `jose@6` ise yalnızca ESM. `require(esm)` Node 20.19 ve
+      // 22.12'de geldi; `jwks-rsa` da zaten `engines: ^20.19 || ^22.12 || >=23`
+      // diyor. Yani hata alınıyorsa çalışma zamanı BUNLARIN ALTINDA.
+      //
+      // `engines.node` paket dosyasında "24.x" yazıyor ama panelde seçilen
+      // sürümle fonksiyonun gerçekte koştuğu sürüm ayrışabiliyor; bunu dışarıdan
+      // görmenin başka yolu yok.
+      node: process.version,
     });
 
   } catch (err) {
