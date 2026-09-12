@@ -23,6 +23,8 @@ export function AuthProvider({ children }) {
   const [gamePassGames,  setGamePassGames]  = useState(new Set());
   const [ready,          setReady]          = useState(false);
 
+  const sanitizeAccounts = (accs) => (Array.isArray(accs) ? accs.filter(a => a && typeof a === 'object' && a.steamId) : []);
+
   const refreshAuth = async () => {
     try {
       const [userData, steamData, xboxData] = await Promise.all([
@@ -34,16 +36,20 @@ export function AuthProvider({ children }) {
       if (userData.user) {
         setUser(userData.user);
         // Giriş yapmış kullanıcı için Redis (userData) tek yetkili kaynaktır:
-        const accounts = Array.isArray(userData.steamAccounts)
+        const rawAccounts = Array.isArray(userData.steamAccounts)
           ? userData.steamAccounts
           : (userData.steamUser ? [userData.steamUser] : []);
+        const accounts = sanitizeAccounts(rawAccounts);
         setSteamAccounts(accounts);
         setSteamUser(accounts[0] || null);
         setXboxUser(userData.xboxUser || null);
       } else {
         setUser(null);
         // Hesapsız / misafir web oturumu (yalnızca Steam/Xbox cookie ile bağlanmış):
-        const accounts = steamData.accounts || (steamData.user ? [steamData.user] : []);
+        const rawAccounts = Array.isArray(steamData.accounts)
+          ? steamData.accounts
+          : (steamData.user ? [steamData.user] : []);
+        const accounts = sanitizeAccounts(rawAccounts);
         setSteamAccounts(accounts);
         setSteamUser(accounts[0] || null);
         setXboxUser(xboxData.user || null);
@@ -59,7 +65,7 @@ export function AuthProvider({ children }) {
 
   // İlk Steam hesabı değişince sahip olunan oyunları çek
   useEffect(() => {
-    if (!steamUser) { setOwnedGames(new Set()); return; }
+    if (!steamUser || !steamUser.steamId) { setOwnedGames(new Set()); return; }
     fetch(`/api/oyun?steamId=${steamUser.steamId}`)
       .then(r => r.json())
       .then(d => {

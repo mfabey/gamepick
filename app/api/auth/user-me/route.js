@@ -88,10 +88,10 @@ export async function GET() {
       bio: profile?.bio || user.bio || null,
     };
 
-    const connections = await getUserConnections(user.uid);
-    const steamAccounts = Array.isArray(connections.steamAccounts)
+    const rawSteamAccounts = Array.isArray(connections.steamAccounts)
       ? connections.steamAccounts
       : (connections.steam?.steamId ? [connections.steam] : []);
+    const steamAccounts = rawSteamAccounts.filter(a => a && typeof a === 'object' && a.steamId);
     const steamUser = steamAccounts[0] || null;
     const xboxUser = connections.xbox || null;
 

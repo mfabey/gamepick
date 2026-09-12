@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -549,12 +549,16 @@ function DeleteAccountCard({ deleteAccount, lang }) {
 ═══════════════════════════════════════════ */
 export default function ProfilePage() {
   const {
-    user, steamUser, steamAccounts = [], steamLogoutAccount,
+    user, steamUser, steamAccounts: rawSteamAccounts = [], steamLogoutAccount,
     xboxUser, ownedGames, xboxOwnedGames, gamePassGames,
     ready, xboxLogout, changePassword, deleteAccount,
   } = useAuth();
   const { lang } = useLanguage();
   const router = useRouter();
+
+  const steamAccounts = useMemo(() => (
+    Array.isArray(rawSteamAccounts) ? rawSteamAccounts.filter(a => a && typeof a === 'object' && a.steamId) : []
+  ), [rawSteamAccounts]);
 
   const [wishlist, setWishlist] = useState([]);
   const [steamLib, setSteamLib] = useState(null);

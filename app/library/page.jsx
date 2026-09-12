@@ -12,8 +12,12 @@ import { useLanguage } from '../context/LanguageContext';
 // ANA SAYFA
 // ─────────────────────────────────────────────────────────────────────────────
 export default function LibraryPage() {
-  const { user, steamAccounts = [], steamLogoutAccount, xboxUser, xboxLogout } = useAuth();
+  const { user, steamAccounts: rawSteamAccounts = [], steamLogoutAccount, xboxUser, xboxLogout } = useAuth();
   const { lang, t } = useLanguage();
+
+  const steamAccounts = useMemo(() => (
+    Array.isArray(rawSteamAccounts) ? rawSteamAccounts.filter(a => a && typeof a === 'object' && a.steamId) : []
+  ), [rawSteamAccounts]);
 
   const hasSteam = steamAccounts.length > 0;
   const hasXbox  = !!xboxUser;
@@ -438,6 +442,7 @@ function ConnectPrompt({ platform, lang, t, onConnect }) {
 // ─────────────────────────────────────────────────────────────────────────────
 function SteamCombinedHeader({ accounts, combined, pricesLoading }) {
   const { lang, t } = useLanguage();
+  const safeAccounts = Array.isArray(accounts) ? accounts.filter(a => a && a.steamId) : [];
   return (
     <div style={{ marginBottom: 24, borderRadius: 18, overflow: 'hidden', border: '1px solid rgba(26,159,255,0.18)', boxShadow: '0 4px 24px rgba(27,40,56,0.25)' }}>
       <div style={{ height: 3, background: 'linear-gradient(90deg, #1a9fff 0%, #5eb7ff 50%, transparent 100%)' }} />
@@ -445,7 +450,7 @@ function SteamCombinedHeader({ accounts, combined, pricesLoading }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap' }}>
           {/* Avatar yığını */}
           <div style={{ display: 'flex', flexShrink: 0 }}>
-            {accounts.slice(0, 4).map((a, i) => (
+            {safeAccounts.slice(0, 4).map((a, i) => (
               a.avatar
                 // eslint-disable-next-line @next/next/no-img-element
                 ? <img key={a.steamId} src={a.avatar} alt="" style={{ width: 54, height: 54, borderRadius: 12, objectFit: 'cover', border: '2px solid #0f141e', marginLeft: i ? -16 : 0, boxShadow: '0 0 10px rgba(26,159,255,0.2)' }} />
@@ -454,8 +459,8 @@ function SteamCombinedHeader({ accounts, combined, pricesLoading }) {
           </div>
           <div style={{ flex: 1, minWidth: 180 }}>
             <p style={{ fontSize: 10, color: '#1a9fff', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 3 }}>{lang === 'tr' ? 'Birleşik Steam' : 'Combined Steam'}</p>
-            <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff', letterSpacing: '-0.4px', marginBottom: 4 }}>{accounts.length} {lang === 'tr' ? 'Hesap' : 'Accounts'}</h2>
-            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>{accounts.map(a => a.name).join(' · ')}</p>
+            <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff', letterSpacing: '-0.4px', marginBottom: 4 }}>{safeAccounts.length} {lang === 'tr' ? 'Hesap' : 'Accounts'}</h2>
+            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>{safeAccounts.map(a => a.name).join(' · ')}</p>
           </div>
           {/* İstatistikler */}
           <div style={{ display: 'flex', gap: 0, flexWrap: 'wrap' }}>

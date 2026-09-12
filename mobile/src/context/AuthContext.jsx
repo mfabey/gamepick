@@ -78,7 +78,7 @@ export function AuthProvider({ children }) {
         if (x) xb = JSON.parse(x);
       } catch {}
       if (!alive) return;
-      setSteamAccounts(steam);
+      setSteamAccounts(Array.isArray(steam) ? steam.filter(a => a && typeof a === 'object' && a.steamId) : []);
       setXbox(xb);
       setReady(true);
     })();

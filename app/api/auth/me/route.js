@@ -18,9 +18,10 @@ export async function GET() {
       if (user?.uid) {
         const conn = await redisGetJSON(`user_connections:${user.uid}`).catch(() => null);
         if (conn) {
-          const accounts = Array.isArray(conn.steamAccounts)
+          const rawAccounts = Array.isArray(conn.steamAccounts)
             ? conn.steamAccounts
             : (conn.steam?.steamId ? [conn.steam] : []);
+          const accounts = rawAccounts.filter(a => a && a.steamId);
           return NextResponse.json({
             user: accounts[0] || null,
             accounts,
@@ -35,11 +36,14 @@ export async function GET() {
   if (accountsCookie?.value) {
     try {
       const accounts = await readValue(accountsCookie.value);
-      if (Array.isArray(accounts) && accounts.length > 0) {
-        return NextResponse.json({
-          user:    accounts[0],     // Geriye uyumluluk
-          accounts,                  // Çoklu hesap listesi
-        });
+      if (Array.isArray(accounts)) {
+        const validAccounts = accounts.filter(a => a && a.steamId);
+        if (validAccounts.length > 0) {
+          return NextResponse.json({
+            user:    validAccounts[0],     // Geriye uyumluluk
+            accounts: validAccounts,        // Çoklu hesap listesi
+          });
+        }
       }
     } catch {}
   }
@@ -49,7 +53,9 @@ export async function GET() {
   if (session?.value) {
     try {
       const user = await readValue(session.value);
-      return NextResponse.json({ user, accounts: [user] });
+      if (user && user.steamId) {
+        return NextResponse.json({ user, accounts: [user] });
+      }
     } catch {}
   }
 

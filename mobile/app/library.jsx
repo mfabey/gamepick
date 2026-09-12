@@ -37,8 +37,12 @@ export default function LibraryScreen() {
   const sutun = useKartSutun(185, 2);
   const { colors } = useTheme();
   const { t, lang, locale, formatPrice } = useLanguage();
-  const { steamAccounts, xbox, busy, loginSteam, loginXbox, account } = useAuth();
+  const { steamAccounts: rawSteamAccounts = [], xbox, busy, loginSteam, loginXbox, account } = useAuth();
   const router = useRouter();
+
+  const steamAccounts = useMemo(() => (
+    Array.isArray(rawSteamAccounts) ? rawSteamAccounts.filter(a => a && typeof a === 'object' && a.steamId) : []
+  ), [rawSteamAccounts]);
 
   // Paylaşımlı kütüphane fetch'i (Home önericisi ile aynı cache → çift fetch yok, anlık açılış)
   // TEK AD: iki dal aynı fonksiyonu `libTazele` ve `refetchLib` diye
