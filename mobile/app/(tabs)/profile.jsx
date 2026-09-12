@@ -242,40 +242,6 @@ export default function ProfileScreen() {
       .catch(() => { yazilanSayi.current = null; });   // sonraki açılışta yeniden dene
   }, [account, sunucu, gameCount, hasConnections]);
 
-  // ── Oturum yok ──
-  if (!account) {
-    return (
-      <SafeAreaView style={styles.safe} edges={['top']}>
-        <TopFade top={insets.top} />
-        <View style={styles.gate}>
-          <View style={styles.gateIcon}>
-            <Ionicons name="person-outline" size={34} color={colors.text3} />
-          </View>
-          <Text style={styles.gateTitle}>{t('prof.lockTitle')}</Text>
-          <Text style={styles.gateText}>{t('prof.lockDesc')}</Text>
-          {/* ÜÇ EŞİT DÜĞME DEĞİL: giriş dolu, kayıt sessiz, üçüncüsü metin
-              bağlantısı. Hiyerarşi olmadan kullanıcı hangisinin ana yol
-              olduğunu seçemiyordu.
-
-              HER DÜĞME KENDİ FORMUNA GİDİYOR. İkisi de çıplak `/account`a
-              gidiyordu ve ekran sabit giriş modunda açıldığı için "Hesap
-              oluştur" kaydolma formuna DEĞİL giriş formuna düşürüyordu;
-              kullanıcı altta bir bağlantı daha bulup ikinci kez dokunmak
-              zorundaydı. İki ayrı düğme sunup ikisini aynı yere göndermek
-              hiyerarşinin verdiği sözü tutmamaktı. */}
-          <Pressable style={({ pressed }) => [styles.gateBtn, pressed && PRESSED]}
-                     onPress={() => router.push('/account?mode=signin')}>
-            <Text style={styles.gateBtnText}>{t('acc.signIn')}</Text>
-          </Pressable>
-          <Pressable style={({ pressed }) => [styles.gateBtn2, pressed && PRESSED]}
-                     onPress={() => router.push('/account?mode=signup')}>
-            <Text style={styles.gateBtn2Text}>{t('acc.signUp')}</Text>
-          </Pressable>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
   const izgara = tab === 'collection' || tab === 'wishlist';
   const veri = tab === 'collection' ? yerelKoleksiyon
     : tab === 'wishlist' ? yerelIstek
@@ -315,7 +281,42 @@ export default function ProfileScreen() {
     const govde = izgara ? bol(veri, sutun) : veri;
     if (govde.length === 0) return [{ __serit: true }, { __bos: true }];
     return [{ __serit: true }, ...govde];
-  }, [izgara, veri]);
+  }, [izgara, veri, sutun]);
+
+  // Oturum değişse de bütün hook çağrıları misafir dönüşünden önce çalışır.
+  // ── Oturum yok ──
+  if (!account) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <TopFade top={insets.top} />
+        <View style={styles.gate}>
+          <View style={styles.gateIcon}>
+            <Ionicons name="person-outline" size={34} color={colors.text3} />
+          </View>
+          <Text style={styles.gateTitle}>{t('prof.lockTitle')}</Text>
+          <Text style={styles.gateText}>{t('prof.lockDesc')}</Text>
+          {/* ÜÇ EŞİT DÜĞME DEĞİL: giriş dolu, kayıt sessiz, üçüncüsü metin
+              bağlantısı. Hiyerarşi olmadan kullanıcı hangisinin ana yol
+              olduğunu seçemiyordu.
+
+              HER DÜĞME KENDİ FORMUNA GİDİYOR. İkisi de çıplak `/account`a
+              gidiyordu ve ekran sabit giriş modunda açıldığı için "Hesap
+              oluştur" kaydolma formuna DEĞİL giriş formuna düşürüyordu;
+              kullanıcı altta bir bağlantı daha bulup ikinci kez dokunmak
+              zorundaydı. İki ayrı düğme sunup ikisini aynı yere göndermek
+              hiyerarşinin verdiği sözü tutmamaktı. */}
+          <Pressable style={({ pressed }) => [styles.gateBtn, pressed && PRESSED]}
+                     onPress={() => router.push('/account?mode=signin')}>
+            <Text style={styles.gateBtnText}>{t('acc.signIn')}</Text>
+          </Pressable>
+          <Pressable style={({ pressed }) => [styles.gateBtn2, pressed && PRESSED]}
+                     onPress={() => router.push('/account?mode=signup')}>
+            <Text style={styles.gateBtn2Text}>{t('acc.signUp')}</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const bosDurum = () => {
     if (yukleniyor) return null;

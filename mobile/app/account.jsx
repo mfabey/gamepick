@@ -204,10 +204,10 @@ export default function AccountScreen() {
       setBusy(true);
       try {
         await requestPasswordReset(email.trim());
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
         setInfo(t('acc.resetSent'));
       } catch (e) {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
         sunucuHatasi(e?.message || 'Hata');
       } finally {
         setBusy(false);
@@ -261,18 +261,18 @@ export default function AccountScreen() {
     try {
       if (isSignup) {
         await registerAccount({ name: name.trim(), username: username.trim(), email: email.trim(), password });
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
         setInfo(t('acc.verifySent'));
         setMode('signin');
         setPassword('');
       } else {
         await signIn(email.trim(), password);
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
         await offerAnonTransfer();
         router.back();
       }
     } catch (e) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
       sunucuHatasi(String(e?.message || '').includes('EMAIL_NOT_VERIFIED')
         ? t('acc.notVerified')
         : (e?.message || 'Hata'));
@@ -290,11 +290,11 @@ export default function AccountScreen() {
         ? [credential.fullName.givenName, credential.fullName.familyName].filter(Boolean).join(' ')
         : '';
       await signInWithApple(credential.identityToken, fullName);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       await offerAnonTransfer();
       router.back();
     } catch (e) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
       // Sunucudan kod geldiyse göster — "giriş yapılamadı" tek başına ne
       // kullanıcıya ne de bize bir şey anlatıyor.
       sunucuHatasi(e?.code ? `${e.message} (${e.code})` : (e?.message || 'Hata'));
