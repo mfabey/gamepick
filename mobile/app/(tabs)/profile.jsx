@@ -255,13 +255,20 @@ export default function ProfileScreen() {
           <Text style={styles.gateText}>{t('prof.lockDesc')}</Text>
           {/* ÜÇ EŞİT DÜĞME DEĞİL: giriş dolu, kayıt sessiz, üçüncüsü metin
               bağlantısı. Hiyerarşi olmadan kullanıcı hangisinin ana yol
-              olduğunu seçemiyordu. */}
+              olduğunu seçemiyordu.
+
+              HER DÜĞME KENDİ FORMUNA GİDİYOR. İkisi de çıplak `/account`a
+              gidiyordu ve ekran sabit giriş modunda açıldığı için "Hesap
+              oluştur" kaydolma formuna DEĞİL giriş formuna düşürüyordu;
+              kullanıcı altta bir bağlantı daha bulup ikinci kez dokunmak
+              zorundaydı. İki ayrı düğme sunup ikisini aynı yere göndermek
+              hiyerarşinin verdiği sözü tutmamaktı. */}
           <Pressable style={({ pressed }) => [styles.gateBtn, pressed && PRESSED]}
-                     onPress={() => router.push('/account')}>
+                     onPress={() => router.push('/account?mode=signin')}>
             <Text style={styles.gateBtnText}>{t('acc.signIn')}</Text>
           </Pressable>
           <Pressable style={({ pressed }) => [styles.gateBtn2, pressed && PRESSED]}
-                     onPress={() => router.push('/account')}>
+                     onPress={() => router.push('/account?mode=signup')}>
             <Text style={styles.gateBtn2Text}>{t('acc.signUp')}</Text>
           </Pressable>
         </View>

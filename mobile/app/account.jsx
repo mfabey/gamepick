@@ -4,7 +4,7 @@ import {
   KeyboardAvoidingView, Platform, ScrollView, Alert, Keyboard,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as AppleAuthentication from 'expo-apple-authentication';
@@ -38,8 +38,25 @@ export default function AccountScreen() {
   const router = useRouter();
   const { t, lang } = useLanguage();
 
-
-  const [mode, setMode] = useState('signin');   // 'signin' | 'signup' | 'forgot'
+  // ── EKRAN HANGİ MODDA AÇILACAĞINI ÇAĞIRANDAN ÖĞRENİYOR ────────────────────
+  //
+  // Profil kapısında İKİ düğme var — "Giriş yap" ve "Hesap oluştur" — ve ikisi
+  // de `/account`a gidiyordu. Mod burada sabit `signin` olduğu için kaydolmak
+  // isteyen kullanıcı giriş formuna düşüyor, sonra sayfanın altındaki bağlantıyı
+  // bulup İKİNCİ kez dokunmak zorunda kalıyordu. İki ayrı düğmenin tek bir yere
+  // gitmesi, hiyerarşinin verdiği sözü tutmuyordu.
+  //
+  // PARAMETRE DOĞRULANIYOR, DOĞRUDAN KULLANILMIYOR: bağlantı dışarıdan da
+  // gelebilir (derin bağlantı, bildirim) ve `mode=xyz` ekranı tanımsız bir
+  // duruma sokardı. Tanınmayan her değer girişe düşüyor.
+  //
+  // BAŞLANGIÇ DEĞERİ, SENKRONİZASYON DEĞİL: kullanıcı ekrandayken formlar
+  // arasında geçiş yapabiliyor (aşağıdaki `setMode`lar) ve parametreye geri
+  // bağlanmak o geçişleri geri alırdı.
+  const { mode: istenenMod } = useLocalSearchParams();
+  const [mode, setMode] = useState(   // 'signin' | 'signup' | 'forgot'
+    istenenMod === 'signup' || istenenMod === 'forgot' ? istenenMod : 'signin'
+  );
   const [name, setName]         = useState('');
   const [username, setUsername] = useState('');
   const [email, setEmail]       = useState('');
