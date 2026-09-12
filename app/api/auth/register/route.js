@@ -6,6 +6,8 @@ import { sabitSureyeTamamla } from '../../../lib/constant-time';
 import { validateUsername } from '../../../lib/content-filter';
 import { claimUsername, uidForUsername } from '../../../lib/social-store';
 import { kaydetPostaGonderimi } from '../../../lib/mail-metrics';
+import { markaliDogrulamaGonder } from '../../../lib/kimlik-postasi';
+import { istektenDil } from '../../../lib/posta';
 
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
 
@@ -146,26 +148,41 @@ export async function POST(request) {
       }
     );
 
-    // 3. Send Verification Email
-    const sendMailRes = await fetch(
-      `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${FIREBASE_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          requestType: 'VERIFY_EMAIL',
-          idToken,
-        }),
-      }
-    );
+    // 3. Doğrulama postası — ÖNCE MARKALI YOL, olmazsa Firebase'inki.
+    //
+    // Firebase'in şablon düzenleyicisi bu projede kilitli, yani onun gönderdiği
+    // postanın içeriğine hiç dokunamıyoruz. Markalı yol (Admin SDK ile üretilen
+    // bağlantı + Resend) yapılandırıldıysa o kullanılıyor.
+    //
+    // YEDEK YOL KALDIRILMADI ve kaldırılmamalı: markalı yol iki ayrı ön koşula
+    // bağlı (servis hesabı, posta sağlayıcısı) ve ikisinden biri düşerse
+    // kullanıcının hesabı doğrulanamaz hâlde kalırdı. Daha az güzel bir posta,
+    // hiç posta olmamasından iyidir.
+    const markaliGitti = await markaliDogrulamaGonder(email, istektenDil(request));
 
-    if (!sendMailRes.ok) {
-      const sendMailData = await sendMailRes.json();
-      console.error('Firebase sendOobCode Error:', sendMailData?.error?.message);
-      // We still registered the user successfully, so we can proceed but warn
-    } else {
+    if (markaliGitti) {
       // Yalnızca gerçekten giden posta ölçülüyor (bkz. mail-metrics.js).
       await kaydetPostaGonderimi('register');
+    } else {
+      const sendMailRes = await fetch(
+        `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${FIREBASE_API_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            requestType: 'VERIFY_EMAIL',
+            idToken,
+          }),
+        }
+      );
+
+      if (!sendMailRes.ok) {
+        const sendMailData = await sendMailRes.json();
+        console.error('Firebase sendOobCode Error:', sendMailData?.error?.message);
+        // We still registered the user successfully, so we can proceed but warn
+      } else {
+        await kaydetPostaGonderimi('register');
+      }
     }
 
     // ── Sosyal profili kur ──────────────────────────────────────────────────

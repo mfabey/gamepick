@@ -3,6 +3,8 @@ import { sunucuHatasi, yukariAkisHatasi } from '../../../lib/api-error';
 import { canUseAuthMock, authNotConfigured } from '../../../lib/auth-config';
 import { guard } from '../../../lib/rate-guard';
 import { kaydetPostaGonderimi } from '../../../lib/mail-metrics';
+import { markaliDogrulamaGonder } from '../../../lib/kimlik-postasi';
+import { istektenDil } from '../../../lib/posta';
 
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
 
@@ -49,7 +51,20 @@ export async function POST(request) {
 
     const { idToken } = signInData;
 
-    // 2. Trigger Firebase Auth Email Verification Link
+    // 2. Doğrulama postası — ÖNCE MARKALI YOL.
+    //
+    // Parola bu uçta zaten doğrulandı (yukarıdaki signIn), yani adresin sahibi
+    // olduğundan eminiz; markalı postayı göndermek güvenli.
+    //
+    // Yedek yol AŞAĞIDA duruyor: markalı yol iki ön koşula bağlı (servis
+    // hesabı, Resend anahtarı) ve düştüğünde kullanıcı doğrulama postasını hiç
+    // alamazdı — bu ucun tek işi o postayı göndermek.
+    if (await markaliDogrulamaGonder(email, istektenDil(request))) {
+      await kaydetPostaGonderimi('verifyResend');
+      return NextResponse.json({ ok: true, mock: false });
+    }
+
+    // 2b. Yedek: Firebase'in kendi gönderimi
     const sendMailRes = await fetch(
       `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${FIREBASE_API_KEY}`,
       {
