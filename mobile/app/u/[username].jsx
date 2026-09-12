@@ -31,7 +31,8 @@ import * as Haptics from 'expo-haptics';
 import { spacing, type, PRESSED, TOUCH_MIN } from '../../src/theme';
 import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { useLanguage } from '../../src/context/LanguageContext';
-import { getUserProfile, friendAction, blockUser } from '../../src/api/social';
+import { getUserProfile, friendAction } from '../../src/api/social';
+import { engelle } from '../../src/services/moderation';
 import { getSession } from '../../src/services/session';
 
 import ProfileHeader from '../../src/components/ProfileHeader';
@@ -158,8 +159,16 @@ export default function UserProfileScreen() {
         {
           text: t('soc.block'),
           style: 'destructive',
+          // `engelle` çağrılıyor, ham `blockUser` DEĞİL — bkz.
+          // src/services/moderation.js ve friends.jsx içindeki aynı not.
+          // Bu ekran özellikle önemli: `router.back()` seni engellediğin
+          // kişinin profilinden ÇIKARIP geldiğin akışa bırakıyor ve o akış
+          // onun gönderilerini taşıyor. Ham API ile dönen kullanıcı,
+          // "engelledim" dedikten bir kare sonra aynı kişinin gönderisine
+          // bakıyordu — Apple 1.2'nin "remove it from the user's feed
+          // instantly" cümlesinin tam olarak dışladığı durum.
           onPress: async () => {
-            try { await blockUser(p.uid); router.back(); } catch { Alert.alert(t('soc.err.generic')); }
+            try { await engelle(p.uid); router.back(); } catch { Alert.alert(t('soc.err.generic')); }
           },
         },
       ]);
