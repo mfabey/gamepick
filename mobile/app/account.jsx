@@ -61,9 +61,40 @@ export default function AccountScreen() {
   const [username, setUsername] = useState('');
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
+  // §8 password-toggle. Varsayılan KAPALI: omuz üstünden okunmaya karşı
+  // korumayı kullanıcı istediğinde bırakır, biz onun adına bırakmayız.
+  const [sifreAcik, setSifreAcik] = useState(false);
   const [busy, setBusy]   = useState(false);
   const [error, setError] = useState('');
   const [info, setInfo]   = useState('');
+
+  // ── HATA ARTIK HANGİ ALANA AİT OLDUĞUNU DA TAŞIYOR ────────────────────────
+  //
+  // Tek bir dize vardı ve mesaj her zaman CTA'nın üstünde, alanlardan uzakta
+  // çıkıyordu; kullanıcı hangi kutuyu düzelteceğini cümleden çıkarmak
+  // zorundaydı. Kayıt modunda dört alan varken bu tahmin işi.
+  //
+  // Alanı BİLİNMEYEN hatalar (sunucu yanıtı, Apple akışı, ağ) `null` ile
+  // geliyor ve eski yerinde gösteriliyor — uydurma bir alan işaretlemek
+  // yanlış kutuyu suçlamak olurdu.
+  const [hataAlani, setHataAlani] = useState(null);
+
+  // Doğrulama hatalarının tek girişi: mesaj, alan ve dokunsal geri bildirim
+  // birlikte. Üçünü yedi ayrı yerde elle yazmak, birini unutmanın yedi yolu
+  // demekti.
+  const hata = useCallback((mesaj, alan = null) => {
+    setError(mesaj);
+    setHataAlani(alan);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
+  }, []);
+
+  const hatayiTemizle = useCallback(() => { setError(''); setHataAlani(null); }, []);
+
+  // Sunucudan/istisnadan gelen hata: alanı YOK. Ayrı bir giriş, çünkü bu
+  // yolların kendi dokunsal geri bildirimi zaten var (Error) ve `hata`nın
+  // Warning'i üstüne binerdi. Alanı sıfırlamak ŞART: önceki bir doğrulama
+  // hatasından kalan alan işareti, mesajı yanlış kutunun altına iliştirirdi.
+  const sunucuHatasi = useCallback((mesaj) => { setError(mesaj); setHataAlani(null); }, []);
   // App Store Guideline 1.2 — sözleşme KAYITTAN ÖNCE onaylanıyor.
   //
   // ONAY KUTUSU YALNIZCA KAYITTA. Girişte de sözleşme gösteriliyor ama kutu
@@ -161,12 +192,11 @@ export default function AccountScreen() {
   const submit = useCallback(async () => {
     if (busy) return;
     Keyboard.dismiss();
-    setError(''); setInfo('');
+    hatayiTemizle(); setInfo('');
 
     const emailErr = validateEmail(email);
     if (emailErr) {
-      setError(emailErr);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      hata(emailErr, 'email');
       return;
     }
 
@@ -178,7 +208,7 @@ export default function AccountScreen() {
         setInfo(t('acc.resetSent'));
       } catch (e) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        setError(e?.message || 'Hata');
+        sunucuHatasi(e?.message || 'Hata');
       } finally {
         setBusy(false);
       }
@@ -186,8 +216,7 @@ export default function AccountScreen() {
     }
 
     if (isSignup && !name.trim()) {
-      setError(t('acc.nameRequired'));
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      hata(t('acc.nameRequired'), 'name');
       return;
     }
 
@@ -201,26 +230,22 @@ export default function AccountScreen() {
     if (isSignup) {
       const u = username.trim();
       if (!USERNAME_RE.test(u)) {
-        setError(t('soc.err.USERNAME_FORMAT'));
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        hata(t('soc.err.USERNAME_FORMAT'), 'username');
         return;
       }
       if (uname.status === 'taken') {
-        setError(unameMsg);
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        hata(unameMsg, 'username');
         return;
       }
     }
 
     if (!password) {
-      setError(t('acc.passwordRequired'));
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      hata(t('acc.passwordRequired'), 'password');
       return;
     }
 
     if (password.length < 6) {
-      setError(t('acc.passwordTooShort'));
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      hata(t('acc.passwordTooShort'), 'password');
       return;
     }
 
@@ -228,8 +253,7 @@ export default function AccountScreen() {
     // hâlde kutuyu işaretleyen kullanıcı hemen ardından bir alan hatası daha
     // yiyor ve iki adımda öğrenmesi gereken şeyi üç adımda öğreniyor.
     if (isSignup && !accepted) {
-      setError(t('acc.legalRequired'));
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      hata(t('acc.legalRequired'), 'legal');
       return;
     }
 
@@ -249,18 +273,18 @@ export default function AccountScreen() {
       }
     } catch (e) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setError(String(e?.message || '').includes('EMAIL_NOT_VERIFIED')
+      sunucuHatasi(String(e?.message || '').includes('EMAIL_NOT_VERIFIED')
         ? t('acc.notVerified')
         : (e?.message || 'Hata'));
     } finally {
       setBusy(false);
     }
-  }, [busy, mode, email, name, username, uname, unameMsg, password, accepted, t, router, lang, isForgot, isSignup, offerAnonTransfer]);
+  }, [busy, mode, email, name, username, uname, unameMsg, password, accepted, t, router, lang, isForgot, isSignup, offerAnonTransfer, hata, hatayiTemizle, sunucuHatasi]);
 
   // Sign in with Apple — Apple yalnızca İLK onayda tam adı verir, o yüzden
   // credential.fullName'i hemen backend'e iletiyoruz (sonraki girişlerde gelmez).
   const onApple = useCallback(async (credential) => {
-    setBusy(true); setError(''); setInfo('');
+    setBusy(true); hatayiTemizle(); setInfo('');
     try {
       const fullName = credential.fullName
         ? [credential.fullName.givenName, credential.fullName.familyName].filter(Boolean).join(' ')
@@ -273,11 +297,11 @@ export default function AccountScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       // Sunucudan kod geldiyse göster — "giriş yapılamadı" tek başına ne
       // kullanıcıya ne de bize bir şey anlatıyor.
-      setError(e?.code ? `${e.message} (${e.code})` : (e?.message || 'Hata'));
+      sunucuHatasi(e?.code ? `${e.message} (${e.code})` : (e?.message || 'Hata'));
     } finally {
       setBusy(false);
     }
-  }, [router, offerAnonTransfer]);
+  }, [router, offerAnonTransfer, hatayiTemizle, sunucuHatasi]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -294,11 +318,33 @@ export default function AccountScreen() {
 
       <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.lg, paddingHorizontal: spacing.lg + yan }]} keyboardShouldPersistTaps="handled">
-          <Text style={styles.lead}>
-            {isForgot
-              ? (lang === 'tr' ? 'Şifrenizi sıfırlamak için e-posta adresinizi girin.' : 'Enter your email address to reset your password.')
-              : t('acc.why')}
-          </Text>
+          {/* ── MOD SEÇİMİ EKRANIN BAŞINDA, SONUNDA DEĞİL ──────────────────
+              Giriş↔kayıt geçişi CTA'nın ALTINDAKİ bir metin bağlantısıydı:
+              ekranın ne olduğu en son öğeden anlaşılıyordu. Segment, modu
+              görünür ve tek dokunuşluk yapıyor; başlıkla birlikte "neredeyim,
+              nereye gidebilirim" sorusunu formdan önce cevaplıyor.
+
+              ŞİFRE SIFIRLAMADA YOK: o bir üçüncü sekme değil, girişin alt
+              durumu. Üç segment göstermek, eşit olmayan üç şeyi eşitlerdi. */}
+          {!isForgot && (
+            <ModSecici
+              mode={mode}
+              onSec={(m) => { if (m !== mode) { Haptics.selectionAsync().catch(() => {}); setMode(m); hatayiTemizle(); setInfo(''); } }}
+            />
+          )}
+
+          {/* AÇIKLAMA YALNIZCA GEREKTİĞİ YERDE.
+              `acc.why` hesabın faydasını anlatıyor ve HER modda duruyordu —
+              "Giriş yap"a basmış kullanıcı o kararı zaten vermişti, cümle
+              orada ikna değil gürültüydü. Şifre sıfırlamada ise açıklama
+              zorunlu: ekranın ne yapacağı başka türlü belli olmuyor. */}
+          {(isForgot || isSignup) && (
+            <Text style={styles.lead}>
+              {isForgot
+                ? (lang === 'tr' ? 'Şifrenizi sıfırlamak için e-posta adresinizi girin.' : 'Enter your email address to reset your password.')
+                : t('acc.why')}
+            </Text>
+          )}
 
           {/* SÖZLEŞME HER İKİ GİRİŞ YOLUNUN DA ÜSTÜNDE.
               Apple 1.2, sözleşmenin "kayıt veya girişten ÖNCE sunulmasını"
@@ -308,9 +354,13 @@ export default function AccountScreen() {
             <LegalNotice
               signup={isSignup}
               accepted={accepted}
-              onToggle={() => { Haptics.selectionAsync().catch(() => {}); setAccepted((v) => !v); setError(''); }}
+              onToggle={() => { Haptics.selectionAsync().catch(() => {}); setAccepted((v) => !v); hatayiTemizle(); }}
             />
           )}
+
+          {/* Onay kutusu hatası KUTUNUN ALTINDA, CTA'nın üstünde değil:
+              işaretlenmesi gereken şey burada. */}
+          {hataAlani === 'legal' && !!error && <Text style={styles.err}>{error}</Text>}
 
           {!isForgot && Platform.OS === 'ios' && (
             <>
@@ -324,8 +374,7 @@ export default function AccountScreen() {
                   // bağlıyor, yoksa sözleşme yalnızca e-posta yolunda zorunlu
                   // olurdu ve şart yarısı boş kalırdı.
                   if (isSignup && !accepted) {
-                    setError(t('acc.legalRequired'));
-                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+                    hata(t('acc.legalRequired'), 'legal');
                     return;
                   }
                   try {
@@ -337,7 +386,7 @@ export default function AccountScreen() {
                     });
                     await onApple(credential);
                   } catch (e) {
-                    if (e?.code !== 'ERR_REQUEST_CANCELED') setError(e?.message || 'Hata');
+                    if (e?.code !== 'ERR_REQUEST_CANCELED') sunucuHatasi(e?.message || 'Hata');
                   }
                 }}
               />
@@ -349,48 +398,94 @@ export default function AccountScreen() {
             </>
           )}
 
-          {isSignup && (
-            <>
-              <Field label={t('acc.name')} value={name} onChangeText={setName} autoCapitalize="words" />
+          {/* ── ALANLAR TEK YÜZEYDE ────────────────────────────────────────
+              Dört alan dört ayrı kutuydu: her biri kendi kenarlığını ve
+              kendi 14pt boşluğunu taşıyordu. Kayıt modunda bu, ekranda dört
+              ayrı çerçeve ve üç boşluk demekti — form "liste" değil "yığın"
+              gibi duruyordu. Tek kap + saç teli ayraç: kenarlık sayısı
+              4'ten 1'e, alanlar arası boşluk sıfıra iniyor ve dört alanın
+              TEK BİR İŞİN parçaları olduğu görülüyor (§6 whitespace-balance).
 
-              {/* Kullanıcı adı — arkadaş eklemenin ön koşulu.
-                  Kayıtta sorulmadığı için kullanıcılar adsız kalıyordu. */}
-              <View style={{ marginBottom: 14 }}>
-                <Text style={styles.label}>{t('soc.usernameLabel')}</Text>
-                <View style={styles.unameWrap}>
-                  <Text style={styles.at}>@</Text>
-                  <TextInput
-                    value={username}
-                    onChangeText={(v) => setUsername(v.replace(/[^a-zA-Z0-9_]/g, ''))}
-                    placeholder={t('soc.usernamePlaceholder')}
-                    placeholderTextColor={colors.text3}
-                    style={styles.unameInput}
-                    maxLength={20}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
-                  {uname.status === 'checking' && <ActivityIndicator size="small" color={colors.text3} />}
-                  {uname.status === 'ok' && <Ionicons name="checkmark-circle" size={20} color={colors.green} />}
-                  {uname.status === 'taken' && <Ionicons name="close-circle" size={20} color={colors.danger} />}
-                </View>
-                <Text style={[styles.hint, uname.status === 'taken' && { color: colors.danger }]}>
-                  {unameMsg}
-                </Text>
-              </View>
-            </>
-          )}
-          <Field
-            label={t('acc.email')} value={email} onChangeText={setEmail}
-            keyboardType="email-address" autoCapitalize="none" autoCorrect={false}
-          />
-          {!isForgot && (
-            <Field
-              label={t('acc.password')} value={password} onChangeText={setPassword}
-              secureTextEntry autoCapitalize="none"
+              Dokunma hedefi küçülmüyor: her satır etiket + kutu + dolgu ile
+              44pt'nin üstünde (§2 touch-target-size). */}
+          <View style={styles.formCard}>
+            {isSignup && (
+              <>
+                <Alan
+                  label={t('acc.name')} value={name} onChangeText={setName}
+                  autoCapitalize="words"
+                  textContentType="name" autoComplete="name"
+                  hataMesaji={hataAlani === 'name' ? error : ''}
+                />
+                <View style={styles.sep} />
+
+                {/* Kullanıcı adı — arkadaş eklemenin ön koşulu.
+                    Kayıtta sorulmadığı için kullanıcılar adsız kalıyordu. */}
+                <Alan
+                  label={t('soc.usernameLabel')}
+                  on="@"
+                  value={username}
+                  onChangeText={(v) => setUsername(v.replace(/[^a-zA-Z0-9_]/g, ''))}
+                  placeholder={t('soc.usernamePlaceholder')}
+                  maxLength={20}
+                  autoCapitalize="none" autoCorrect={false}
+                  textContentType="username" autoComplete="username"
+                  sag={
+                    uname.status === 'checking' ? <ActivityIndicator size="small" color={colors.text3} />
+                    : uname.status === 'ok' ? <Ionicons name="checkmark-circle" size={20} color={colors.green} />
+                    : uname.status === 'taken' ? <Ionicons name="close-circle" size={20} color={colors.danger} />
+                    : null
+                  }
+                  hataMesaji={hataAlani === 'username' ? error : ''}
+                  ipucu={unameMsg}
+                  ipucuUyari={uname.status === 'taken'}
+                />
+                <View style={styles.sep} />
+              </>
+            )}
+
+            <Alan
+              label={t('acc.email')} value={email} onChangeText={setEmail}
+              keyboardType="email-address" autoCapitalize="none" autoCorrect={false}
+              // §8 autofill-support / input-type-keyboard: bunlar yokken iOS
+              // ne anahtarlığı önerebiliyor ne de doğru klavyeyi açabiliyordu.
+              textContentType="emailAddress" autoComplete="email"
+              hataMesaji={hataAlani === 'email' ? error : ''}
             />
-          )}
 
-          {!!error && <Text style={styles.err}>{error}</Text>}
+            {!isForgot && (
+              <>
+                <View style={styles.sep} />
+                <Alan
+                  label={t('acc.password')} value={password} onChangeText={setPassword}
+                  secureTextEntry={!sifreAcik} autoCapitalize="none" autoCorrect={false}
+                  // Kayıtta `newPassword`: iOS güçlü parola önerir ve
+                  // anahtarlığa YENİ kayıt açar. Girişte `password`: mevcut
+                  // kaydı doldurur. Tek değer kullanmak ikisinden birini bozardı.
+                  textContentType={isSignup ? 'newPassword' : 'password'}
+                  autoComplete={isSignup ? 'new-password' : 'current-password'}
+                  hataMesaji={hataAlani === 'password' ? error : ''}
+                  sag={
+                    <Pressable
+                      onPress={() => setSifreAcik((v) => !v)}
+                      hitSlop={12}
+                      accessibilityRole="button"
+                      accessibilityLabel={t(sifreAcik ? 'acc.hidePassword' : 'acc.showPassword')}
+                      style={({ pressed }) => pressed && PRESSED}
+                    >
+                      <Ionicons name={sifreAcik ? 'eye-off-outline' : 'eye-outline'} size={20} color={colors.text3} />
+                    </Pressable>
+                  }
+                />
+              </>
+            )}
+          </View>
+
+          {/* ALANI BİLİNMEYEN hata burada kalıyor — sunucu yanıtı, ağ hatası,
+              Apple akışı. Alanı bilinen hata zaten ilgili kutunun altında
+              (§8 error-placement); ikisini birden göstermek aynı cümleyi iki
+              yerde tekrarlamak olurdu. */}
+          {!!error && !hataAlani && <Text style={styles.err}>{error}</Text>}
           {!!info && <Text style={styles.info}>{info}</Text>}
 
           <Pressable
@@ -402,22 +497,20 @@ export default function AccountScreen() {
                   : <Text style={styles.ctaText}>{isForgot ? t('acc.sendResetLink') : (isSignup ? t('acc.signUp') : t('acc.signIn'))}</Text>}
           </Pressable>
 
+          {/* ALTTA ARTIK TEK BAĞLANTI KALDI.
+              "Zaten hesabın var mı?" / "Hesabın yok mu?" bağlantısı buradan
+              kalktı: işini üstteki segment devraldı ve aynı geçişi iki ayrı
+              yerde sunmak, ikisini de zayıflatırdı (§4 primary-action).
+              Şifre sıfırlama kalıyor — o bir mod değişimi değil, girişin
+              başarısız olduğu durumdaki kaçış yolu. */}
           {isForgot ? (
-            <Pressable onPress={() => { setMode('signin'); setError(''); setInfo(''); }} hitSlop={8}>
+            <Pressable onPress={() => { setMode('signin'); hatayiTemizle(); setInfo(''); }} hitSlop={8}>
               <Text style={styles.link}>{t('acc.backToSignIn')}</Text>
             </Pressable>
-          ) : (
-            <>
-              <Pressable onPress={() => { setMode(isSignup ? 'signin' : 'signup'); setError(''); setInfo(''); }} hitSlop={8}>
-                <Text style={styles.link}>{isSignup ? t('acc.haveAccount') : t('acc.noAccount')}</Text>
-              </Pressable>
-
-              {!isSignup && (
-                <Pressable onPress={() => { setMode('forgot'); setError(''); setInfo(''); }} hitSlop={8}>
-                  <Text style={styles.linkMuted}>{t('acc.forgot')}</Text>
-                </Pressable>
-              )}
-            </>
+          ) : !isSignup && (
+            <Pressable onPress={() => { setMode('forgot'); hatayiTemizle(); setInfo(''); }} hitSlop={8}>
+              <Text style={styles.linkMuted}>{t('acc.forgot')}</Text>
+            </Pressable>
           )}
         </ScrollView>
       </KeyboardAvoidingView>
@@ -488,17 +581,79 @@ function LegalNotice({ signup, accepted, onToggle }) {
   );
 }
 
-function Field({ label, ...props }) {
+// ─────────────────────────────────────────────────────────────────────────────
+// MOD SEÇİCİ — giriş / kaydol
+//
+// NEDEN SEGMENT, BAĞLANTI DEĞİL. Mod değişimi CTA'nın ALTINDAKİ bir metin
+// bağlantısıydı: ekranın hangi işi yaptığı en son öğeden anlaşılıyor, kaydolmak
+// isteyen kullanıcı önce giriş formunu görüyordu. Segment iki seçeneği de aynı
+// anda gösteriyor ve seçili olanı işaretliyor (§5 visual-hierarchy).
+//
+// İKİ SEÇENEK, EŞİT GENİŞLİK. `flex: 1` ikisine de aynı payı veriyor: biri
+// dar olsaydı hangisinin "ana yol" olduğu konusunda sessiz bir iddia doğardı;
+// oysa bu ekranda ikisi de birinci sınıf.
+//
+// Her sekme 44pt yüksek — görsel yükseklik değil DOKUNMA HEDEFİ ölçüsü
+// (§2 touch-target-size).
+// ─────────────────────────────────────────────────────────────────────────────
+function ModSecici({ mode, onSec }) {
+  const styles = useStyles(makeStyles);
+  const { t } = useLanguage();
+
+  const sekme = (deger, etiket) => {
+    const secili = mode === deger;
+    return (
+      <Pressable
+        onPress={() => onSec(deger)}
+        style={({ pressed }) => [styles.segSekme, secili && styles.segSekmeOn, pressed && !secili && PRESSED]}
+        accessibilityRole="tab"
+        accessibilityState={{ selected: secili }}
+        accessibilityLabel={etiket}
+      >
+        <Text style={[styles.segMetin, secili && styles.segMetinOn]} numberOfLines={1}>{etiket}</Text>
+      </Pressable>
+    );
+  };
+
+  return (
+    <View style={styles.seg} accessibilityRole="tablist">
+      {sekme('signin', t('acc.signIn'))}
+      {sekme('signup', t('acc.signUp'))}
+    </View>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FORM ALANI
+//
+// Eski `Field` kendi kenarlığını ve kendi alt boşluğunu taşıyordu; artık
+// kenarlık kabın (`formCard`), ayırma işi saç teli çizginin. Alan yalnızca
+// kendi içeriğinden sorumlu.
+//
+// `hataMesaji` İPUCUNU EZİYOR: ikisi birden gösterilseydi kullanıcı biri
+// düzeltme talebi biri bilgi olan iki satırı aynı anda okumak zorunda kalırdı
+// ve hata görsel olarak seyrelirdi (§8 error-placement).
+// ─────────────────────────────────────────────────────────────────────────────
+function Alan({ label, hataMesaji, ipucu, ipucuUyari, on, sag, ...props }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   return (
-    <View style={{ marginBottom: 14 }}>
+    <View style={styles.alan}>
       <Text style={styles.label}>{label}</Text>
-      <TextInput
-        style={styles.input}
-        placeholderTextColor={colors.text3}
-        {...props}
-      />
+      <View style={styles.alanSatir}>
+        {on ? <Text style={styles.at}>{on}</Text> : null}
+        <TextInput
+          style={styles.input}
+          placeholderTextColor={colors.text3}
+          {...props}
+        />
+        {sag}
+      </View>
+      {hataMesaji
+        ? <Text style={styles.alanHata}>{hataMesaji}</Text>
+        : ipucu
+          ? <Text style={[styles.hint, ipucuUyari && { color: colors.danger }]}>{ipucu}</Text>
+          : null}
     </View>
   );
 }
@@ -532,19 +687,44 @@ const makeStyles = (colors) => StyleSheet.create({
   dividerLine: { flex: 1, height: 1, backgroundColor: colors.cardBorder },
   dividerText: { color: colors.text3, fontSize: type.footnote, fontWeight: '600' },
 
-  label: { fontSize: type.footnote, color: colors.text3, fontWeight: '700', marginBottom: 7 },
-  unameWrap: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
+  // ── MOD SEÇİCİ ──
+  // Kap dolgusu 4: seçili sekmenin yüzeyi kabın kenarına yapışmasın, ama
+  // aradaki boşluk da bir "boşluk" gibi okunmasın.
+  seg: {
+    flexDirection: 'row', gap: spacing.s4, padding: spacing.s4,
     backgroundColor: colors.bgInput, borderRadius: radius.md,
-    paddingHorizontal: 14, height: 52,
-    borderWidth: 1, borderColor: colors.cardBorder,
+    marginBottom: spacing.s20,
   },
+  segSekme: {
+    flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center',
+    borderRadius: radius.sm,
+  },
+  // Seçili sekme YÜZEYLE ayrılıyor, renkle değil: accent dolgu burada CTA ile
+  // yarışırdı (§4 primary-action) ve `check:accent` da vurgu kullanımını
+  // tabanda tutuyor.
+  segSekmeOn: { backgroundColor: colors.card },
+  segMetin:   { fontSize: type.subhead, fontWeight: '600', color: colors.text3 },
+  segMetinOn: { color: colors.text, fontWeight: '800' },
+
+  // ── FORM KABI ──
+  formCard: {
+    backgroundColor: colors.card,
+    borderWidth: 1, borderColor: colors.cardBorder, borderRadius: radius.md,
+    marginBottom: spacing.s16,
+    overflow: 'hidden',
+  },
+  sep: { height: StyleSheet.hairlineWidth, backgroundColor: colors.cardBorder, marginLeft: spacing.s16 },
+  alan: { paddingHorizontal: spacing.s16, paddingTop: spacing.s12, paddingBottom: spacing.s12 },
+  alanSatir: { flexDirection: 'row', alignItems: 'center', gap: spacing.s8 },
+
+  label: { fontSize: type.caption2, color: colors.text3, fontWeight: '700', marginBottom: spacing.s4 },
   at: { color: colors.text3, fontSize: type.subhead, fontWeight: '700' },
-  unameInput: { flex: 1, color: colors.text, fontSize: type.subhead },
-  hint: { fontSize: type.caption, color: colors.text3, marginTop: 6 },
+  hint: { fontSize: type.caption, color: colors.text3, marginTop: spacing.s4 },
+  alanHata: { fontSize: type.caption, color: colors.danger, marginTop: spacing.s4 },
+  // Kutu artık kendi yüzeyi DEĞİL: kenarlık ve zemin kabın. Yükseklik yine de
+  // tanımlı, yoksa satır yüksekliği yazı tipine göre oynardı.
   input: {
-    backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1,
-    borderRadius: radius.md, paddingHorizontal: 14, height: 50,
+    flex: 1, height: 24, padding: 0,
     color: colors.text, fontSize: type.subhead,
   },
 
@@ -558,8 +738,6 @@ const makeStyles = (colors) => StyleSheet.create({
   ctaOff: { opacity: 0.45 },
   ctaText: { color: '#fff', fontSize: type.subhead, fontWeight: '800' },
 
-  link:      { color: colors.accentText, fontSize: type.subhead, fontWeight: '700', textAlign: 'center', marginTop: 20 },
-  linkMuted: { color: colors.text3,  fontSize: type.footnote, textAlign: 'center', marginTop: 14 },
-  legal:     { color: colors.text3, fontSize: type.footnote, textAlign: 'center', marginTop: spacing.lg, lineHeight: 18 },
-  legalLink: { color: colors.accentText, fontWeight: '700' },
+  link:      { color: colors.accentText, fontSize: type.subhead, fontWeight: '700', textAlign: 'center', marginTop: spacing.s20 },
+  linkMuted: { color: colors.text3,  fontSize: type.footnote, textAlign: 'center', marginTop: spacing.s16 },
 });

@@ -1,7 +1,7 @@
 {
   "app/(tabs)/reviews.jsx": 4,
   "app/(tabs)/videos.jsx": 7,
-  "app/account.jsx": 15,
+  "app/account.jsx": 7,
   "app/collection/[id].jsx": 8,
   "app/collections.jsx": 15,
   "app/delete-account.jsx": 4,
