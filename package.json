@@ -28,7 +28,9 @@
     "react-dom": "^18.3.0",
     "zod": "^4.5.4"
   },
+  "//jose": "jwks-rsa@4 (firebase-admin bagimliligi) CommonJS ve require('jose') yapiyor; jose@6 ise YALNIZCA ESM ve bu, Next'in sunucu paketleme katmaninda ERR_REQUIRE_ESM ile patliyor. OLCULDU: uretimde Node v24.19.0 — yani `require(esm)` destekli bir surumde bile hata aliniyor, sorun Node surumu DEGIL. jose@5 ayni API'yi CJS olarak da sunuyor. jwks-rsa yalnizca importJWK ve exportSPKI kullaniyor, ikisi de 5'te var; diger tuketici @vercel/oidc zaten 5.10.0 kullaniyor.",
   "overrides": {
-    "postcss": "^8.5.26"
+    "postcss": "^8.5.26",
+    "jose": "^5.10.0"
   }
 }
