@@ -25,7 +25,12 @@ export async function GET() {
             ? conn.steamAccounts
             : (conn.steam?.steamId ? [conn.steam] : []);
           if (accounts.length === 0) {
-            return NextResponse.json({ error: 'Giriş yapılmamış', games: [] }, { status: 401 });
+            // Hesap var, Steam kaydı BOŞ. Kullanıcı hiç bağlamamış ya da
+            // kaydı düşmüş olabilir — ikisi de "yeniden bağla" ile çözülüyor.
+            return NextResponse.json(
+              { error: 'Steam hesabı bağlı değil', kod: 'STEAM_KAYIT_BOS', yenidenBagla: true, games: [] },
+              { status: 401 },
+            );
           }
         }
       }
@@ -35,14 +40,31 @@ export async function GET() {
   // Oturumdan steamId al
   const session = cookieStore.get('gp_steam_session');
 
+  // ── ÜÇ FARKLI 401, ÜÇ FARKLI KOD ─────────────────────────────────────────
+  //
+  // Eskiden bu üç arıza noktasından İKİSİ aynı metni ("Giriş yapılmamış")
+  // dönüyordu; yanıt hangisinin olduğunu söylemiyordu ve arayüz de kullanıcıya
+  // tek tip bir hata gösteriyordu. Oysa üçünün de çözümü aynı tek dokunuş:
+  // Steam'i yeniden bağlamak.
+  //
+  // `yenidenBagla: true` arayüzün "hata" yerine DÜĞME göstermesi için.
   if (!session?.value) {
-    return NextResponse.json({ error: 'Giriş yapılmamış', games: [] }, { status: 401 });
+    return NextResponse.json(
+      { error: 'Steam bağlantın yenilenmeli', kod: 'STEAM_CEREZ_YOK', yenidenBagla: true, games: [] },
+      { status: 401 },
+    );
   }
 
-  let steamId;
-  steamId = (await readValue(session.value))?.steamId;
+  // ÇEREZ VAR AMA OKUNAMIYOR — bugün beklenen durum: kimlik çerezleri bu
+  // birleştirmeyle İMZALI hâle geldi ve daha önce yazılmış imzasız çerezler
+  // artık doğrulanamıyor. İmzasızı kabul etmek kapatılan açığı geri açardı,
+  // o yüzden çözüm kabul etmek değil yeniden bağlamak.
+  const steamId = (await readValue(session.value))?.steamId;
   if (!steamId) {
-    return NextResponse.json({ error: 'Steam ID bulunamadı', games: [] }, { status: 401 });
+    return NextResponse.json(
+      { error: 'Steam bağlantın yenilenmeli', kod: 'STEAM_CEREZ_GECERSIZ', yenidenBagla: true, games: [] },
+      { status: 401 },
+    );
   }
 
   if (!STEAM_API_KEY) {
