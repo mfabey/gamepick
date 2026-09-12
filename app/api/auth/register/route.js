@@ -158,9 +158,11 @@ export async function POST(request) {
     // bağlı (servis hesabı, posta sağlayıcısı) ve ikisinden biri düşerse
     // kullanıcının hesabı doğrulanamaz hâlde kalırdı. Daha az güzel bir posta,
     // hiç posta olmamasından iyidir.
-    const markaliGitti = await markaliDogrulamaGonder(email, istektenDil(request));
+    // `.ok` ŞART: fonksiyon `{ok, sebep}` dönüyor ve nesne her zaman truthy —
+    // doğrudan koşula koymak yedek yolu ölü koda çevirirdi.
+    const markali = await markaliDogrulamaGonder(email, istektenDil(request));
 
-    if (markaliGitti) {
+    if (markali.ok) {
       // Yalnızca gerçekten giden posta ölçülüyor (bkz. mail-metrics.js).
       await kaydetPostaGonderimi('register');
     } else {

@@ -59,9 +59,12 @@ export async function POST(request) {
     // Yedek yol AŞAĞIDA duruyor: markalı yol iki ön koşula bağlı (servis
     // hesabı, Resend anahtarı) ve düştüğünde kullanıcı doğrulama postasını hiç
     // alamazdı — bu ucun tek işi o postayı göndermek.
-    if (await markaliDogrulamaGonder(email, istektenDil(request))) {
+    // `.ok` ŞART — dönen değer `{ok, sebep}` nesnesi (her zaman truthy).
+    const markali = await markaliDogrulamaGonder(email, istektenDil(request));
+
+    if (markali.ok) {
       await kaydetPostaGonderimi('verifyResend');
-      return NextResponse.json({ ok: true, mock: false });
+      return NextResponse.json({ ok: true, mock: false, posta: 'markali' });
     }
 
     // 2b. Yedek: Firebase'in kendi gönderimi
@@ -87,7 +90,11 @@ export async function POST(request) {
     // Yalnızca gerçekten giden posta ölçülüyor (bkz. mail-metrics.js).
     await kaydetPostaGonderimi('verifyResend');
 
-    return NextResponse.json({ ok: true, mock: false });
+    // `posta` ve `sebep` TEŞHİS İÇİN: markalı yolun neden devreye girmediğini
+    // sunucu günlüğüne erişmeden görebilmek gerekiyor — bu uç zaten hesabın
+    // kendi parolasını istiyor, yani yanıtı yalnızca hesabın sahibi görüyor.
+    // Sebepler kaba (hangi adım düştü), sırların değerini taşımıyor.
+    return NextResponse.json({ ok: true, mock: false, posta: 'firebase', sebep: markali.sebep });
 
   } catch (err) {
     console.error('Resend Verification API Error:', err.message);

@@ -24,18 +24,28 @@
 import { postaGonder, postaYapilandirildiMi } from './posta';
 import { dogrulamaPostasi, sifreSifirlamaPostasi } from './posta-sablonlari';
 
+// Bağlantının kurulacağı taban. posta-sablonlari.js'teki SITE ile aynı olmalı;
+// biri değişip öteki kalırsa posta bir adrese, bağlantı başka adrese bakar.
+const SITE = 'https://www.gamerisen.com';
+
 /**
  * Admin Auth örneğini TEMBEL getirir.
  * @returns {Promise<object|null>} yapılandırılmamış ya da yüklenemiyorsa null.
  */
 async function adminGetir() {
+  let mod;
   try {
-    const mod = await import('./firebase-admin');
-    return mod.adminAuth?.() || null;
+    mod = await import('./firebase-admin');
   } catch (e) {
+    // PAKET YÜKLENEMEDİ — servis hesabının olup olmamasıyla ilgisi yok.
     console.error('[kimlik-postasi] firebase-admin yüklenemedi:', e?.message || e);
-    return null;
+    return { admin: null, sebep: 'admin-yuklenemedi' };
   }
+  const admin = mod.adminAuth?.() || null;
+  // AYRIM ÖNEMLİ: paket yüklendi ama `adminAuth()` null döndüyse sorun
+  // FIREBASE_SERVICE_ACCOUNT'ta (yok ya da bozuk JSON). İkisini tek bir
+  // "olmadı"ya indirmek, hangisini düzelteceğimizi bilinmez kılıyordu.
+  return { admin, sebep: admin ? null : 'admin-yapilandirilmamis' };
 }
 
 /**
@@ -50,40 +60,75 @@ async function gonder(email, dil, tur) {
   // ÖNCE UCUZ KONTROL: Resend anahtarı yoksa Admin SDK'yı hiç yüklemiyoruz.
   // Yükleme maliyeti boşa gitmesin ve ortada işe yaramayacak bir bağlantı
   // üretilmesin.
-  if (!postaYapilandirildiMi() || !email) return false;
+  if (!email) return { ok: false, sebep: 'adres-yok' };
+  if (!postaYapilandirildiMi()) return { ok: false, sebep: 'resend-anahtari-yok' };
 
-  const admin = await adminGetir();
-  if (!admin) return false;
+  const { admin, sebep: adminSebep } = await adminGetir();
+  if (!admin) return { ok: false, sebep: adminSebep };
 
   let baglanti;
   try {
-    // Bağlantı projenin YAPILANDIRILMIŞ action URL'ine işaret ediyor; o adres
-    // zaten gamerisen.com/auth/action (kullanıcı oraya iniyor). Buraya ayrıca
-    // `url` vermiyoruz: o alan "devam adresi", eylem adresi değil — karıştırmak
-    // kullanıcıyı doğrulamadan önce başka yere atardı.
-    baglanti = tur === 'dogrulama'
+    const ham = tur === 'dogrulama'
       ? await admin.generateEmailVerificationLink(email)
       : await admin.generatePasswordResetLink(email);
+
+    // ── BAĞLANTI KENDİ ADRESİMİZE YENİDEN KURULUYOR ────────────────────────
+    //
+    // Admin SDK'nın ürettiği adres, projenin Firebase Console'da
+    // YAPILANDIRILMIŞ action URL'ine işaret ediyor — bu projede o ayar
+    // `firebaseapp.com/__/auth/action`, yani Firebase'in kendi sayfası. Sonuç:
+    // kullanıcı bizim tasarladığımız doğrulama sayfasını hiç görmüyor.
+    //
+    // O ayarı değiştirmek Console'daki Templates panelinden yapılıyor ve
+    // BU PROJEDE KİLİTLİ ("Email template updates are currently unavailable").
+    // Yani ayarla düzeltilemiyor.
+    //
+    // NEDEN YENİDEN KURMAK GÜVENLİ: `/api/auth/action` `oobCode`'u doğrudan
+    // Firebase REST ile doğruluyor (`accounts:update` / `accounts:resetPassword`).
+    // Kodun hangi adresten geldiğinin hiçbir önemi yok — doğrulama Firebase'de
+    // yapılıyor, bizim sayfamız yalnızca kodu taşıyor. Kodun kendisi tek
+    // kullanımlık ve süreli; taşıyıcı adresi değiştirmek güvenliği zayıflatmıyor.
+    const u = new URL(ham);
+    const oobCode = u.searchParams.get('oobCode');
+    if (!oobCode) throw new Error('uretilen baglantida oobCode yok');
+
+    const mod = tur === 'dogrulama' ? 'verifyEmail' : 'resetPassword';
+    baglanti = `${SITE}/auth/action?mode=${mod}&oobCode=${encodeURIComponent(oobCode)}`;
   } catch (e) {
     // Kullanıcı yoksa, adres geçersizse ya da Admin yetkisi yetmiyorsa buraya
     // düşüyoruz. E-POSTA ADRESİ LOGLANMIYOR.
     console.error(`[kimlik-postasi] ${tur} bağlantısı üretilemedi:`, e?.message || e);
-    return false;
+    return { ok: false, sebep: 'baglanti-uretilemedi' };
   }
 
   const { konu, html, metin } = tur === 'dogrulama'
     ? dogrulamaPostasi(baglanti, dil)
     : sifreSifirlamaPostasi(baglanti, dil);
 
-  return postaGonder({ alici: email, konu, html, metin });
+  const gitti = await postaGonder({ alici: email, konu, html, metin });
+  return gitti ? { ok: true, sebep: null } : { ok: false, sebep: 'gonderim-reddedildi' };
 }
 
-/** @returns {Promise<boolean>} markalı doğrulama postası gittiyse true. */
+// ─────────────────────────────────────────────────────────────────────────────
+// SONUÇ SEBEBİYLE BİRLİKTE DÖNÜYOR
+//
+// Eskiden yalnızca `true/false` dönüyordu ve markalı posta gitmediğinde
+// sebebini YALNIZCA sunucu günlüğü biliyordu. Vercel günlüğüne erişemeyen biri
+// için bu, "çalışmadı" ile "neden çalışmadı" arasında kapanmayan bir boşluk
+// demekti — bugün tam olarak buna takıldık.
+//
+// Sebepler kasıtlı olarak KABA: hangi adımın düştüğünü söylüyor, sırların
+// değerini değil.
+//   adres-yok · resend-anahtari-yok · admin-yuklenemedi ·
+//   admin-yapilandirilmamis · baglanti-uretilemedi · gonderim-reddedildi
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** @returns {Promise<{ok: boolean, sebep: string|null}>} */
 export function markaliDogrulamaGonder(email, dil = 'tr') {
   return gonder(email, dil, 'dogrulama');
 }
 
-/** @returns {Promise<boolean>} markalı sıfırlama postası gittiyse true. */
+/** @returns {Promise<{ok: boolean, sebep: string|null}>} */
 export function markaliSifirlamaGonder(email, dil = 'tr') {
   return gonder(email, dil, 'sifirlama');
 }
