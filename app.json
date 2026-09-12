@@ -1,15 +1,3 @@
 {
-  "expo": {
-    "extra": {
-      "eas": {
-        "projectId": "1032c7be-e713-4387-9c13-a69a6a59b18f"
-      }
-    },
-    "ios": {
-      "bundleIdentifier": "com.mfabey.gamerisen",
-      "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
-      }
-    }
-  }
+  "expo": {}
 }
