@@ -3,7 +3,24 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { LOGO_SRC } from '../../lib/logo';
 import { useLanguage } from '../../context/LanguageContext';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// E-POSTA DOĞRULAMA / ŞİFRE SIFIRLAMA — Firebase action URL'inin indiği sayfa
+//
+// Kullanıcı bu sayfayı hesabını açtıktan hemen sonra, postadaki bağlantıdan
+// görüyor. Yani ürünle kurduğu İLK temaslardan biri ve markanın taşınması
+// gereken bir yer.
+//
+// ÖNCEKİ HÂLİN SORUNU ÖLÇÜLDÜ: 27 ayrı satır içi stil bloğu, sitenin hazır
+// `.card` / `.btn` sınıfları yerine elle kurulmuş düğmeler, ve logo yerine
+// jenerik bir gamepad SVG'si. Sayfa sitenin değil, bir iskeletin parçası gibi
+// duruyordu.
+//
+// MANTIK DEĞİŞMEDİ: `/api/auth/action` çağrıları, doğrulama akışı ve hata
+// metinleri aynı. Değişen yalnızca sunum ve bitiş yolları.
+// ─────────────────────────────────────────────────────────────────────────────
 
 function AuthActionContent() {
   const searchParams = useSearchParams();
@@ -25,8 +42,8 @@ function AuthActionContent() {
     if (!mode || !oobCode) {
       setError(
         lang === 'tr'
-          ? 'Geçersiz veya eksik parametreler. Lütfen e-postanızdaki bağlantıyı kontrol edin.'
-          : 'Invalid or missing parameters. Please check the link in your email.'
+          ? 'Bağlantı eksik ya da bozuk görünüyor. E-postandaki bağlantıya yeniden dokun.'
+          : 'This link looks incomplete or broken. Please open the link from your email again.'
       );
       setLoading(false);
       return;
@@ -40,8 +57,8 @@ function AuthActionContent() {
     } else {
       setError(
         lang === 'tr'
-          ? 'Desteklenmeyen veya geçersiz işlem modu.'
-          : 'Unsupported or invalid action mode.'
+          ? 'Bu bağlantı tanınmayan bir işlem taşıyor.'
+          : 'This link carries an unrecognized action.'
       );
       setLoading(false);
     }
@@ -115,12 +132,46 @@ function AuthActionContent() {
   };
 
   const fieldStyle = {
-    width: '100%', padding: '10px 14px',
-    border: '1.5px solid var(--border)', borderRadius: 8,
-    fontSize: 14, color: 'var(--text)', outline: 'none',
-    background: 'var(--bg-card)',
+    width: '100%', padding: '12px 14px',
+    border: '1px solid var(--border)', borderRadius: 'var(--radius)',
+    fontSize: 15, color: 'var(--text)', outline: 'none',
+    background: 'var(--bg-input)',
     transition: 'border-color 0.15s',
   };
+
+  // ── BİTİŞ EYLEMLERİ: İKİSİ DE GÖRÜNÜR ───────────────────────────────────────
+  //
+  // Bu bağlantıya tıklayanların çoğu hesabı MOBİL UYGULAMADA açtı ve linki
+  // telefonunda açıyor; onları yalnızca web girişine göndermek geldikleri yere
+  // dönmek için fazladan iş çıkarıyordu (eski metin "Sitemize giriş
+  // yapabilirsiniz" diyordu). Ama kayıt web'den de yapılabiliyor ve sayfa
+  // hangisinden gelindiğini BİLEMİYOR.
+  //
+  // Bu yüzden tahmin yok: iki yol da görünür. Özel şemanın tek başına
+  // yetmediği bu depoda zaten yazılı (bkz. app/u/[username]/page.jsx) —
+  // uygulama kurulu değilse `gamerisen://` hiçbir şey yapmaz, o yüzden web
+  // seçeneği soluk bir bağlantı değil tam bir düğme.
+  //
+  // Hedef KÖK: expo-router derin bağlantısında rota çözümü cihazda
+  // doğrulanmadı; kökü açmak kurulu her sürümde çalışıyor.
+  const bitisEylemleri = (
+    <div style={{ display: 'grid', gap: 10, marginTop: 4 }}>
+      {/* `.btn` alt çizgiyi kaldırmıyor (düğmeler için yazılmış, bağlantılar
+          için değil); bağlantı olarak kullanınca elle kapatılıyor. */}
+      <a href="gamerisen://" className="btn btn-red" style={{ width: '100%', textDecoration: 'none' }}>
+        {lang === 'tr' ? 'Uygulamada devam et' : 'Continue in the app'}
+      </a>
+      <Link href="/login" className="btn btn-ghost" style={{ width: '100%', textDecoration: 'none' }}>
+        {lang === 'tr' ? 'Web’de giriş yap' : 'Log in on the web'}
+      </Link>
+    </div>
+  );
+
+  const baslik = mode === 'verifyEmail'
+    ? (lang === 'tr' ? 'E-posta doğrulama' : 'Email verification')
+    : mode === 'resetPassword'
+      ? (lang === 'tr' ? 'Şifre sıfırlama' : 'Reset password')
+      : (lang === 'tr' ? 'Hesap işlemi' : 'Account action');
 
   return (
     <div style={{
@@ -129,159 +180,173 @@ function AuthActionContent() {
       padding: '40px 20px',
       background: 'var(--hero-bg)',
     }}>
-      <div style={{ width: '100%', maxWidth: 420 }}>
-        
-        {/* Logo */}
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{
-            width: 52, height: 52, borderRadius: 14, background: 'var(--accent)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            margin: '0 auto 12px',
-          }}>
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="2" y="6" width="20" height="12" rx="2"/>
-              <path d="M6 12h4M8 10v4"/>
-              <circle cx="15" cy="11" r="1" fill="#fff" stroke="none"/>
-              <circle cx="18" cy="13" r="1" fill="#fff" stroke="none"/>
-            </svg>
+      <div style={{ width: '100%', maxWidth: 440 }}>
+
+        {/* MARKA BAŞLIĞI — jenerik gamepad SVG'si yerine gerçek logo.
+            Kullanıcı bu sayfayı e-postadan geliyor; hangi ürünün sayfasında
+            olduğunu ilk bakışta görmesi gerekiyor. */}
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          {/* MARKA İŞARETİ TEK KAYNAKTAN: `LOGO_SRC`, üst çubuğun da
+              kullandığı gömülü işaret (app/lib/logo.js). İlk denemede
+              `/logo.png` kullanılmıştı — o BAŞKA ve zayıf bir varlık, 56px'te
+              küçük bir kırmızı işarete düşüyordu (tarayıcıda görüldü).
+              Gölge de üst çubuktakiyle aynı, iki yerde aynı işaret aynı
+              görünsün diye.
+
+              Ortalama işi flex kabında: `<img>` blok öğe, ebeveynin
+              `textAlign: center`ı ona işlemiyor. */}
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <img
+              src={LOGO_SRC} alt="Gamerisen" width={56} height={56}
+              style={{ display: 'block', filter: 'drop-shadow(0 4px 12px var(--accent-glow))' }}
+            />
           </div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>
-            {mode === 'verifyEmail' 
-              ? (lang === 'tr' ? 'E-posta Doğrulama' : 'Email Verification') 
-              : mode === 'resetPassword'
-              ? (lang === 'tr' ? 'Şifre Sıfırlama' : 'Reset Password')
-              : (lang === 'tr' ? 'Hesap İşlemleri' : 'Account Actions')}
+          <h1 style={{
+            fontFamily: 'var(--font-heading)',
+            fontSize: 26, fontWeight: 700, color: 'var(--text)',
+            letterSpacing: '-0.3px', marginTop: 14,
+          }}>
+            {baslik}
           </h1>
-          <p style={{ color: 'var(--text-3)', fontSize: 14, marginTop: 4 }}>
-            {mode === 'verifyEmail' && (lang === 'tr' ? 'E-posta adresinizin doğrulama durumu' : 'Verification status of your email address')}
-            {mode === 'resetPassword' && (lang === 'tr' ? 'Hesabınız için yeni bir şifre belirleyin' : 'Set a new password for your account')}
-          </p>
         </div>
 
-        {/* Card */}
-        <div className="card" style={{ padding: '28px' }}>
-          
-          {loading && (
-            <div style={{ textAlign: 'center', padding: '20px 0' }}>
-              <div className="spinner" style={{
-                width: 36, height: 36, border: '3.5px solid var(--border)',
-                borderTopColor: 'var(--accent)', borderRadius: '50%',
-                animation: 'spin 1s linear infinite', margin: '0 auto 16px'
-              }} />
-              <p style={{ color: 'var(--text-2)', fontSize: 14 }}>
-                {lang === 'tr' ? 'İşlem yapılıyor, lütfen bekleyin...' : 'Processing, please wait...'}
-              </p>
-            </div>
-          )}
+        <div className="card" style={{ padding: 28 }}>
 
-          {!loading && error && (
-            <div style={{ textAlign: 'center' }}>
-              <div style={{
-                width: 48, height: 48, borderRadius: '50%', background: 'var(--accent-bg)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px'
-              }}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
+          {/* Durum bölgesi ekran okuyucuya DUYURULUYOR: doğrulama kendiliğinden
+              çalışıyor ve sonucu yalnızca görsel olarak bildirmek, ekranı
+              görmeyen kullanıcıya hiçbir şey söylemezdi. */}
+          <div role="status" aria-live="polite" aria-busy={loading}>
+
+            {loading && (
+              <div style={{ textAlign: 'center', padding: '12px 0' }}>
+                <div className="spinner" style={{
+                  width: 34, height: 34, border: '3px solid var(--border)',
+                  borderTopColor: 'var(--accent)', borderRadius: '50%',
+                  animation: 'spin 1s linear infinite', margin: '0 auto 16px',
+                }} />
+                <p style={{ color: 'var(--text-2)', fontSize: 15 }}>
+                  {mode === 'verifyEmail'
+                    ? (lang === 'tr' ? 'E-postan doğrulanıyor…' : 'Verifying your email…')
+                    : (lang === 'tr' ? 'Bağlantı kontrol ediliyor…' : 'Checking your link…')}
+                </p>
               </div>
-              <p style={{ color: 'var(--accent)', fontSize: 14, fontWeight: 600, marginBottom: 8 }}>
-                {lang === 'tr' ? 'Hata Oluştu' : 'Error Occurred'}
-              </p>
-              <p style={{ color: 'var(--text-2)', fontSize: 13, marginBottom: 20, lineHeight: 1.5 }}>
-                {error}
-              </p>
-              <Link href="/login" style={{
-                display: 'block', width: '100%', padding: '12px',
-                background: 'var(--accent)', color: '#fff',
-                border: 'none', borderRadius: 8,
-                fontSize: 14, fontWeight: 600, textDecoration: 'none',
-                textAlign: 'center'
-              }}>
-                {lang === 'tr' ? 'Giriş Ekranına Git' : 'Go to Login'}
-              </Link>
-            </div>
-          )}
+            )}
 
-          {!loading && !error && success && (
-            <div style={{ textAlign: 'center' }}>
-              <div style={{
-                width: 48, height: 48, borderRadius: '50%', background: 'rgba(34, 197, 94, 0.1)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px'
-              }}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
+            {!loading && error && (
+              <div style={{ textAlign: 'center' }}>
+                {/* Hata simgesi AMBER, marka kırmızısı değil: accent bu sitede
+                    markanın rengi ve aynı tonu hataya da vermek, ikisini
+                    birbirinden ayırt edilemez kılıyordu. Renk tek sinyal
+                    değil — başlık ve simge de durumu söylüyor. */}
+                <div style={{
+                  width: 48, height: 48, borderRadius: '50%', background: 'var(--amber-bg)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px',
+                }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--amber)"
+                       strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M12 9v4" /><path d="M12 17h.01" />
+                    <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
+                  </svg>
+                </div>
+                <p style={{ color: 'var(--text)', fontSize: 17, fontWeight: 700, marginBottom: 8 }}>
+                  {lang === 'tr' ? 'Bu bağlantı işe yaramadı' : 'This link didn’t work'}
+                </p>
+                <p style={{ color: 'var(--text-2)', fontSize: 14, marginBottom: 18, lineHeight: 1.55 }}>
+                  {error}
+                </p>
+                {/* §8 error-recovery: hata mesajı tek başına yetmez, çıkış yolu
+                    da olmalı. Bağlantının süresi dolduysa yenisini istemenin
+                    yeri giriş ekranı. */}
+                <p style={{ color: 'var(--text-3)', fontSize: 13, marginBottom: 18, lineHeight: 1.55 }}>
+                  {lang === 'tr'
+                    ? 'Bağlantının süresi dolmuş olabilir. Giriş ekranından yeni bir doğrulama postası isteyebilirsin.'
+                    : 'The link may have expired. You can request a new verification email from the login screen.'}
+                </p>
+                {bitisEylemleri}
               </div>
-              <p style={{ color: '#22c55e', fontSize: 15, fontWeight: 600, marginBottom: 8 }}>
-                {mode === 'verifyEmail' 
-                  ? (lang === 'tr' ? 'E-posta Başarıyla Doğrulandı!' : 'Email Successfully Verified!')
-                  : (lang === 'tr' ? 'Şifre Başarıyla Değiştirildi!' : 'Password Successfully Changed!')}
-              </p>
-              <p style={{ color: 'var(--text-2)', fontSize: 13, marginBottom: 20, lineHeight: 1.5 }}>
-                {mode === 'verifyEmail'
-                  ? (lang === 'tr' ? 'Hesabınız artık aktif. Sitemize giriş yapabilirsiniz.' : 'Your account is now active. You can log in to our site.')
-                  : (lang === 'tr' ? 'Yeni şifreniz başarıyla kaydedildi. Yeni şifrenizle giriş yapabilirsiniz.' : 'Your new password has been saved. You can now log in with it.')}
-              </p>
-              <Link href="/login" style={{
-                display: 'block', width: '100%', padding: '12px',
-                background: 'var(--accent)', color: '#fff',
-                border: 'none', borderRadius: 8,
-                fontSize: 14, fontWeight: 600, textDecoration: 'none',
-                textAlign: 'center'
-              }}>
-                {lang === 'tr' ? 'Giriş Yap →' : 'Log In →'}
-              </Link>
-            </div>
-          )}
+            )}
 
-          {/* Password Reset Form */}
+            {!loading && !error && success && (
+              <div style={{ textAlign: 'center' }}>
+                <div style={{
+                  width: 48, height: 48, borderRadius: '50%', background: 'var(--green-bg)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px',
+                }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--green)"
+                       strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </div>
+                <p style={{ color: 'var(--text)', fontSize: 17, fontWeight: 700, marginBottom: 8 }}>
+                  {mode === 'verifyEmail'
+                    ? (lang === 'tr' ? 'E-postan doğrulandı' : 'Your email is verified')
+                    : (lang === 'tr' ? 'Şifren güncellendi' : 'Your password is updated')}
+                </p>
+                <p style={{ color: 'var(--text-2)', fontSize: 14, marginBottom: 20, lineHeight: 1.55 }}>
+                  {mode === 'verifyEmail'
+                    ? (lang === 'tr'
+                        ? 'Hesabın hazır. Kütüphaneni bağlayıp arkadaşlarını eklemeye başlayabilirsin.'
+                        : 'Your account is ready. Connect your library and start adding friends.')
+                    : (lang === 'tr'
+                        ? 'Yeni şifrenle giriş yapabilirsin.'
+                        : 'You can now log in with your new password.')}
+                </p>
+                {bitisEylemleri}
+              </div>
+            )}
+
+          </div>
+
+          {/* Şifre sıfırlama formu — durum bölgesinin DIŞINDA: bir form
+              "duyurulacak durum" değil, doldurulacak bir alan. */}
           {!loading && !error && !success && mode === 'resetPassword' && (
             <form onSubmit={handleResetPassword}>
               <div style={{ marginBottom: 16 }}>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>
-                  {lang === 'tr' ? 'Yeni Şifre' : 'New Password'}
+                <label htmlFor="yeni-sifre" style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>
+                  {lang === 'tr' ? 'Yeni şifre' : 'New password'}
                 </label>
                 <input
-                  type="password" required value={password} onChange={e => setPassword(e.target.value)}
+                  id="yeni-sifre" type="password" required
+                  value={password} onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••" style={fieldStyle}
-                  onFocus={e => e.target.style.borderColor = 'var(--accent)'}
-                  onBlur={e => e.target.style.borderColor = 'var(--border)'}
+                  autoComplete="new-password"
+                  onFocus={(e) => { e.target.style.borderColor = 'var(--accent)'; }}
+                  onBlur={(e) => { e.target.style.borderColor = 'var(--border)'; }}
                 />
               </div>
 
-              <div style={{ marginBottom: 24 }}>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>
-                  {lang === 'tr' ? 'Yeni Şifre (Tekrar)' : 'Confirm New Password'}
+              <div style={{ marginBottom: 22 }}>
+                <label htmlFor="yeni-sifre-tekrar" style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>
+                  {lang === 'tr' ? 'Yeni şifre (tekrar)' : 'Confirm new password'}
                 </label>
                 <input
-                  type="password" required value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
+                  id="yeni-sifre-tekrar" type="password" required
+                  value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="••••••••" style={fieldStyle}
-                  onFocus={e => e.target.style.borderColor = 'var(--accent)'}
-                  onBlur={e => e.target.style.borderColor = 'var(--border)'}
+                  autoComplete="new-password"
+                  onFocus={(e) => { e.target.style.borderColor = 'var(--accent)'; }}
+                  onBlur={(e) => { e.target.style.borderColor = 'var(--border)'; }}
                 />
               </div>
 
-              <button
-                type="submit" disabled={formLoading}
-                style={{
-                  width: '100%', padding: '12px',
-                  background: 'var(--accent)', color: '#fff',
-                  border: 'none', borderRadius: 8,
-                  fontSize: 14, fontWeight: 600, cursor: 'pointer',
-                  opacity: formLoading ? 0.7 : 1,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
-                }}
-              >
-                {formLoading 
-                  ? (lang === 'tr' ? 'Güncelleniyor...' : 'Updating...') 
-                  : (lang === 'tr' ? 'Şifreyi Güncelle →' : 'Update Password →')}
+              <button type="submit" disabled={formLoading} className="btn btn-red" style={{ width: '100%' }}>
+                {formLoading
+                  ? (lang === 'tr' ? 'Güncelleniyor…' : 'Updating…')
+                  : (lang === 'tr' ? 'Şifreyi güncelle' : 'Update password')}
               </button>
             </form>
           )}
 
         </div>
+
+        <p style={{ textAlign: 'center', color: 'var(--text-3)', fontSize: 12, marginTop: 18, lineHeight: 1.6 }}>
+          {lang === 'tr'
+            ? 'Bu işlemi sen başlatmadıysan bu postayı yok sayabilirsin.'
+            : 'If you didn’t start this, you can safely ignore the email.'}
+        </p>
+
       </div>
+
       <style>{`
         @keyframes spin {
           0% { transform: rotate(0deg); }
@@ -301,10 +366,11 @@ export default function AuthActionPage() {
         background: 'var(--hero-bg)',
       }}>
         <div className="spinner" style={{
-          width: 36, height: 36, border: '3.5px solid var(--border)',
+          width: 34, height: 34, border: '3px solid var(--border)',
           borderTopColor: 'var(--accent)', borderRadius: '50%',
-          animation: 'spin 1s linear infinite'
+          animation: 'spin 1s linear infinite',
         }} />
+        <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
       </div>
     }>
       <AuthActionContent />
