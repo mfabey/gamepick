@@ -20,10 +20,20 @@
 // kadarki boşluğu kapatan bir örtü; uygulama yeniden açıldığında sunucunun
 // süzgeci zaten devrede.
 //
-// `engelKaldir` VAR ama akışta kullanılmıyor: engeli kaldırma yalnızca
-// sosyal ayarlardan yapılıyor ve orası listeyi zaten yeniden çekiyor. Yine de
-// duruyor, çünkü kaldırma sonrası bu kümede kalan bir uid o oturum boyunca
-// içeriği görünmez tutardı — sessiz ve teşhisi zor bir hata.
+// `engelKaldir` ARTIK ÇAĞRILIYOR — `app/social-settings.jsx`, engeli kaldırma
+// işleminde, sunucu isteği başarılı olduktan hemen sonra.
+//
+// BURADA DAHA ÖNCE YANLIŞ BİR GEREKÇE YAZIYORDU. "Engeli kaldırma yalnızca
+// sosyal ayarlardan yapılıyor ve orası listeyi zaten yeniden çekiyor" deyip
+// fonksiyonu çağrısız bırakmıştı. İki ayrı şeyi birbirine karıştırıyor:
+// o ekranın tazelediği şey ENGELLENENLER LİSTESİ, akışları süzen ise
+// aşağıdaki küme. Sonuç, aynı yorumun bir cümle sonra tarif ettiği hatanın
+// ta kendisiydi: engeli kaldıran kullanıcı akışa döndüğünde o kişinin
+// içeriğini uygulama yeniden başlatılana kadar göremiyordu.
+//
+// Yani madde "neden çağrılmıyor"u değil, ÇAĞRILMASININ ŞARTINI anlatmalıydı:
+// kaldırma sonrası bu kümede kalan bir uid o oturum boyunca içeriği görünmez
+// tutar — sessiz ve teşhisi zor bir hata.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { blockUser, reportContent } from '../api/social';

@@ -258,6 +258,23 @@ export default function SettingsScreen() {
             label={t('soc.privacyTitle')}
             onPress={() => router.push('/social-settings')}
           />
+          {/* AYNI SAYFA, İKİNCİ KAPI — ve bilerek.
+              Engellenenler listesi "Sosyal gizlilik"in EN ALT bölümü ve o
+              satırın etiketinde "engel" kelimesi geçmiyordu: ayarların
+              hiçbir yerinde geçmiyordu. Engeli kaldırmak isteyen kullanıcının
+              önce doğru kapıyı tahmin etmesi, sonra dört anahtarı geçip
+              aşağı inmesi gerekiyordu.
+              Guideline 1.2 engelleme YÖNETİMİNİN bulunabilir olmasını istiyor;
+              aramayla bulunan bir şey bulunabilir sayılmaz. `?odak=engel`
+              sayfayı o bölüme kaydırıyor.
+              Çeviri anahtarı YENİ DEĞİL: `soc.blocked` ("Engellenenler")
+              bölüm başlığı olarak zaten beş dilde var — satırın vardığı yerle
+              birebir aynı kelime. */}
+          <SettingsRow
+            icon="person-remove-outline"
+            label={t('soc.blocked')}
+            onPress={() => router.push('/social-settings?odak=engel')}
+          />
         </SettingsGroup>
 
         {/* Destek ve yasal metinler — bkz. dosya başındaki gerekçe.

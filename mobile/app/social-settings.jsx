@@ -4,16 +4,17 @@
 // Guideline 1.2 (engelleme yönetimi) ve 5.1.2 (kullanıcı kendi verisinin
 // paylaşımını denetleyebilmeli) burada karşılanıyor.
 // ─────────────────────────────────────────────────────────────────────────────
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, Pressable, StyleSheet, Switch, ScrollView, ActivityIndicator, Alert,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 import { getPrivacy, setPrivacy, getBlocked, unblockUser } from '../src/api/social';
+import { engelKaldir } from '../src/services/engel';
 import { radius, spacing, PRESSED, type, SECTION_TITLE, TOUCH_MIN } from '../src/theme';
 import { useYanBosluk } from '../src/hooks/useIcerikAlani';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
@@ -28,6 +29,15 @@ export default function SocialSettingsScreen() {
   const { colors } = useTheme();
   const router = useRouter();
   const { t } = useLanguage();
+  // Ayarlardaki "Engellenenler" satırı buraya `?odak=engel` ile geliyor.
+  const { odak } = useLocalSearchParams();
+
+  // Engellenenler bölümü sayfanın SONUNDA — dört gizlilik anahtarından sonra.
+  // Oraya bakmaya gelen kullanıcıyı boş bir liste karşılamasın diye bölüme
+  // kaydırıyoruz. Kaydırma ANİMASYONLU: yukarıda içerik olduğunu göstermek
+  // gerekiyor, yoksa sayfanın başka bir sayfa olduğu sanılır.
+  const kaydirma = useRef(null);
+  const odaklandi = useRef(false);
 
   const [privacy, setPriv] = useState(null);
   // Ayarlar OKUNAMADI mı — 'kapalı'dan AYRI durum (Faz 8).
@@ -89,12 +99,47 @@ export default function SocialSettingsScreen() {
         onPress: async () => {
           try {
             await unblockUser(person.uid);
+
+            // YEREL SÜZGEÇTEN DE DÜŞÜR — sunucudan silmek TEK BAŞINA yetmiyor.
+            //
+            // `engel.js` bir oturum ömürlü küme tutuyor; oradan engellenen bir
+            // uid akışlarda `suz()` ile eleniyor. Bu satır yokken sunucu
+            // kaydı siliniyor, satır bu listeden kalkıyor, ama küme uid'i
+            // TUTMAYA devam ediyordu: kullanıcı engeli kaldırdığını görüyor,
+            // akışa dönüyor ve o kişinin içeriği hâlâ görünmüyordu —
+            // uygulama tamamen kapanıp açılana kadar.
+            //
+            // `engel.js` bu hatayı yorumunda öngörmüş ama "sosyal ayarlar
+            // listeyi zaten yeniden çekiyor" diyerek kendini güvende saymıştı.
+            // İkisi ayrı şey: burada tazelenen ENGELLENENLER LİSTESİ, akışı
+            // süzen ise o küme.
+            //
+            // SIRA: önce sunucu, sonra yerel — `engelUygula`nın aynadaki hâli.
+            // Ters olsaydı istek düştüğünde içerik görünür olur ama engel
+            // kalkmamış olurdu.
+            engelKaldir(person.uid);
+
             setBlocked((list) => list.filter((x) => x.uid !== person.uid));
           } catch { Alert.alert(t('soc.err.generic')); }
         },
       },
     ]);
   }, [t]);
+
+  // Bölümün y'si YERLEŞİMDEN okunuyor, hesaplanmıyor: üstündeki yığın
+  // (bozuk bandı var/yok, dört satırın metinleri dile göre 1-2 satır)
+  // değişken. Bir kez çalışıyor — döndürmede yeniden kaydırmak, kullanıcı
+  // o an başka yere bakıyorsa sayfayı elinden alırdı.
+  const engelBolumuOlctu = useCallback((e) => {
+    if (odak !== 'engel' || odaklandi.current) return;
+    odaklandi.current = true;
+    const y = e.nativeEvent.layout.y;
+    // Bir kare bekleniyor: `onLayout` içerik yüksekliği kesinleşmeden
+    // ateşlenebiliyor ve o anda `scrollTo` kırpılıp yarı yolda kalıyor.
+    requestAnimationFrame(() => {
+      kaydirma.current?.scrollTo({ y: Math.max(0, y - spacing.lg), animated: true });
+    });
+  }, [odak]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -112,7 +157,7 @@ export default function SocialSettingsScreen() {
       {privacy === null ? (
         <View style={styles.center}><ActivityIndicator color={colors.accent} /></View>
       ) : (
-        <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 40, paddingHorizontal: yan + spacing.lg }]} showsVerticalScrollIndicator={false}>
+        <ScrollView ref={kaydirma} contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 40, paddingHorizontal: yan + spacing.lg }]} showsVerticalScrollIndicator={false}>
           {/* Anahtarlar kapalı ama bu bir DURUM değil bir BİLİNMEZLİK —
               bant tam olarak bunu söylüyor. Kırmızı yok. */}
           {bozuk ? (
@@ -191,34 +236,39 @@ export default function SocialSettingsScreen() {
               )}
             />
           </SettingsGroup>
-          <Text style={styles.sectionLabel}>{t('soc.blocked')}</Text>
-          {blocked === null ? null : blocked.length === 0 ? (
-            <Text style={styles.emptyText}>{t('soc.noBlocked')}</Text>
-          ) : (
-            <View style={styles.card}>
-              {blocked.map((p, i) => (
-                <View key={p.uid}>
-                  {i > 0 && <View style={styles.divider} />}
-                  <View style={styles.blockRow}>
-                    {/* FAZ 8 — ÜÇÜNCÜ AVATAR KOPYASI SİLİNDİ. Burada satır
-                        içi bir IIFE vardı: ön ayar veya baş harf, FOTOĞRAF
-                        YOK. Faz 7'de social.jsx'te bulduğumun aynısı —
-                        fotoğrafı olan kişi harf olarak görünüyordu. */}
-                    <Avatar avatar={p.avatar} name={p.displayName || p.username} size={38} />
-                    <View style={{ flex: 1 }}>
-                      <Text numberOfLines={1} style={styles.blockName}>
-                        {p.displayName || p.username || p.uid}
-                      </Text>
-                      {p.username ? <Text style={styles.blockHandle}>@{p.username}</Text> : null}
+          {/* Başlık ve liste TEK sarmalayıcıda: `onLayout` bölümün tepesini
+              veriyor, başlığın kendisini değil — kaydırma başlığı da ekrana
+              almalı, yoksa kullanıcı listeyi neyin başlattığını göremez. */}
+          <View onLayout={engelBolumuOlctu}>
+            <Text style={styles.sectionLabel}>{t('soc.blocked')}</Text>
+            {blocked === null ? null : blocked.length === 0 ? (
+              <Text style={styles.emptyText}>{t('soc.noBlocked')}</Text>
+            ) : (
+              <View style={styles.card}>
+                {blocked.map((p, i) => (
+                  <View key={p.uid}>
+                    {i > 0 && <View style={styles.divider} />}
+                    <View style={styles.blockRow}>
+                      {/* FAZ 8 — ÜÇÜNCÜ AVATAR KOPYASI SİLİNDİ. Burada satır
+                          içi bir IIFE vardı: ön ayar veya baş harf, FOTOĞRAF
+                          YOK. Faz 7'de social.jsx'te bulduğumun aynısı —
+                          fotoğrafı olan kişi harf olarak görünüyordu. */}
+                      <Avatar avatar={p.avatar} name={p.displayName || p.username} size={38} />
+                      <View style={{ flex: 1 }}>
+                        <Text numberOfLines={1} style={styles.blockName}>
+                          {p.displayName || p.username || p.uid}
+                        </Text>
+                        {p.username ? <Text style={styles.blockHandle}>@{p.username}</Text> : null}
+                      </View>
+                      <Pressable style={({ pressed }) => [styles.unblockBtn, pressed && PRESSED]} onPress={() => unblock(p)}>
+                        <Text style={styles.unblockText}>{t('soc.unblock')}</Text>
+                      </Pressable>
                     </View>
-                    <Pressable style={({ pressed }) => [styles.unblockBtn, pressed && PRESSED]} onPress={() => unblock(p)}>
-                      <Text style={styles.unblockText}>{t('soc.unblock')}</Text>
-                    </Pressable>
                   </View>
-                </View>
-              ))}
-            </View>
-          )}
+                ))}
+              </View>
+            )}
+          </View>
         </ScrollView>
       )}
     </SafeAreaView>
