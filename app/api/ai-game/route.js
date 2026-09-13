@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { guard } from '../../lib/rate-guard';
 import { parseQuery, aiGameQuery } from '../../lib/schemas';
 
+const GEMINI_KEY = process.env.GEMINI_API_KEY;
 const GROQ_KEY = process.env.GROQ_API_KEY;
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const MODEL    = 'llama-3.3-70b-versatile';
@@ -10,7 +11,7 @@ const MODEL    = 'llama-3.3-70b-versatile';
 const _cache = new Map();
 
 function isValidApiKey(key) {
-  return key && key.trim() !== '' && !key.startsWith('buraya_') && key !== 'placeholder';
+  return Boolean(key && key.trim() !== '' && !key.startsWith('buraya_') && key !== 'placeholder');
 }
 
 async function getFallbackAiData(name, description, lang = 'tr') {
@@ -113,7 +114,9 @@ export async function GET(request) {
   if (_cache.has(cacheKey)) return NextResponse.json(_cache.get(cacheKey));
 
   // API anahtarı yoksa veya placeholder ise doğrudan fallback çalıştır
-  if (!isValidApiKey(GROQ_KEY)) {
+  const hasGemini = isValidApiKey(GEMINI_KEY);
+  const hasGroq = isValidApiKey(GROQ_KEY);
+  if (!hasGemini && !hasGroq) {
     const fallbackData = await getFallbackAiData(name, description, lang);
     _cache.set(cacheKey, fallbackData);
     return NextResponse.json(fallbackData);
@@ -171,7 +174,7 @@ Listede olmayan ama oyuna çok uygun özgün etiketler de ekleyebilirsin:
 • ORTAM: orman, çöl, kar, ada, okyanusun-altı, uzay-istasyonu, dungeon, bataklık, şehir-harabeleri, yeraltı
 • OYNANŞ: açık-dünya, çok-oyunculu, hikaye-odaklı, rekabetçi, co-op, sandbox, roguelike, hayatta-kalma, yapım, crafting, keşif, gizlilik, at-binme, uçuş, iki-boyutlu, üst-görünüş, sinematik, gerilim, gizem, dedektif, atmosferik, retro, piksel, indie
 
-Oyunun arka plan bilgilerine göre özellikle ÖZGÜn, AYIRT EDİCİ etiketler seç.
+Oyunun arka plan bilgilerine göre özellikle ÖZGÜN, AYIRT EDİCİ etiketler seç.
 Sadece JSON döndür. Başka hiçbir metin ekleme.`.trim() : `
 Game: ${name}
 Description: ${cleanDesc}
@@ -188,40 +191,73 @@ Generate a response in the following JSON format in English:
 Select appropriate tags in English (8-15 tags, lowercase). You can choose from standard tags (action, adventure, rpg, strategy, shooter, cowboy, sci-fi, horror, survival, open-world, rich-story, multiplayer, co-op) or custom ones. Only return JSON. Do not add any other text.
 `.trim();
 
-    const candidateModels = ['openai/gpt-oss-120b', 'qwen/qwen3.6-27b', 'openai/gpt-oss-20b', 'groq/compound', MODEL];
-    let aiData = null;
-    for (const modelName of candidateModels) {
-      try {
-        const aiRes = await fetch(GROQ_URL, {
-          method:  'POST',
-          headers: {
-            'Authorization': `Bearer ${GROQ_KEY}`,
-            'Content-Type':  'application/json',
-            'User-Agent':    'GamerisenAI/2.0 (gamerisen.com)'
-          },
-          body: JSON.stringify({
-            model:       modelName,
-            max_tokens:  800,
-            temperature: 0.7,
-            messages: [
-              { role: 'system',  content: systemContent },
-              { role: 'user',    content: userPrompt },
-            ],
-          }),
-        });
+    let rawText = '';
 
-        if (aiRes.ok) {
-          aiData = await aiRes.json();
-          break;
-        }
-      } catch (e) {}
+    // 1. Gemini ile JSON üretimi dene
+    if (hasGemini) {
+      const geminiModels = ['gemini-3.7-flash', 'gemini-3.5-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
+      for (const m of geminiModels) {
+        try {
+          const gRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${GEMINI_KEY}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+              systemInstruction: { parts: [{ text: systemContent }] },
+              generationConfig: {
+                temperature: 0.7,
+                maxOutputTokens: 1024,
+                responseMimeType: 'application/json'
+              }
+            })
+          });
+          if (gRes.ok) {
+            const gData = await gRes.json();
+            const txt = gData?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (txt && txt.trim()) {
+              rawText = txt.trim();
+              break;
+            }
+          }
+        } catch (e) {}
+      }
     }
 
-    if (!aiData) {
-      throw new Error('Groq model yanıtı alınamadı.');
+    // 2. Groq ile dene (yedek)
+    if (!rawText && hasGroq) {
+      const candidateModels = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'openai/gpt-oss-120b', 'qwen/qwen3.6-27b', MODEL];
+      for (const modelName of candidateModels) {
+        try {
+          const aiRes = await fetch(GROQ_URL, {
+            method:  'POST',
+            headers: {
+              'Authorization': `Bearer ${GROQ_KEY}`,
+              'Content-Type':  'application/json',
+              'User-Agent':    'GamerisenAI/2.0 (gamerisen.com)'
+            },
+            body: JSON.stringify({
+              model:       modelName,
+              max_tokens:  800,
+              temperature: 0.7,
+              messages: [
+                { role: 'system',  content: systemContent },
+                { role: 'user',    content: userPrompt },
+              ],
+            }),
+          });
+
+          if (aiRes.ok) {
+            const aiData = await aiRes.json();
+            rawText = aiData?.choices?.[0]?.message?.content || '';
+            if (rawText) break;
+          }
+        } catch (e) {}
+      }
     }
 
-    const rawText = aiData?.choices?.[0]?.message?.content || '';
+    if (!rawText) {
+      throw new Error('AI modeli yanıtı alınamadı.');
+    }
 
     // JSON'u raw içinden çıkar
     const jsonMatch = rawText.match(/\{[\s\S]*\}/);

@@ -475,7 +475,7 @@ async function callGenerativeLLM(query, ragContext, userProfile, history = []) {
 
   // 1. Try Google Gemini API (Ultra-fast, high-intelligence)
   if (isValidKey(geminiKey)) {
-    const models = ['gemini-3.6-flash', 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+    const models = ['gemini-3.1-flash-lite', 'gemini-flash-latest', 'gemini-3.7-flash', 'gemini-3.5-flash', 'gemini-pro-latest'];
     for (const model of models) {
       try {
         const contents = [];
@@ -496,6 +496,7 @@ async function callGenerativeLLM(query, ragContext, userProfile, history = []) {
         const res = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          signal: AbortSignal.timeout(8000),
           body: JSON.stringify({
             contents,
             systemInstruction: { parts: [{ text: GAMERISEN_SYSTEM_PROMPT }] },

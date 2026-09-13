@@ -2,33 +2,71 @@ import { NextResponse } from 'next/server';
 import { guard } from '../../lib/rate-guard';
 import { parseBody, recommendBody } from '../../lib/schemas';
 
+const GEMINI_KEY = process.env.GEMINI_API_KEY;
 const GROQ_KEY = process.env.GROQ_API_KEY;
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
-async function groq(messages, maxTokens = 300) {
-  const models = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'groq/compound'];
-  for (const modelName of models) {
-    try {
-      const res = await fetch(GROQ_URL, {
-        method:  'POST',
-        headers: {
-          'Authorization': `Bearer ${GROQ_KEY}`,
-          'Content-Type':  'application/json',
-          'User-Agent':    'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
-        },
-        body: JSON.stringify({
-          model:       modelName,
-          max_tokens:  maxTokens,
-          temperature: 0.7,
-          messages,
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const text = data?.choices?.[0]?.message?.content || '';
-        if (text) return text;
-      }
-    } catch (e) {}
+function isValidKey(key) {
+  return Boolean(key && key.trim() !== '' && !key.startsWith('buraya_') && key !== 'placeholder');
+}
+
+async function generateWithLLM(prompt, systemInstruction = 'Her zaman geçerli JSON döndür.', maxTokens = 400) {
+  // 1. Try Gemini
+  if (isValidKey(GEMINI_KEY)) {
+    const geminiModels = ['gemini-3.7-flash', 'gemini-3.5-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
+    for (const m of geminiModels) {
+      try {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${GEMINI_KEY}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            systemInstruction: { parts: [{ text: systemInstruction }] },
+            generationConfig: {
+              temperature: 0.7,
+              maxOutputTokens: maxTokens,
+              responseMimeType: 'application/json'
+            }
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text && text.trim()) return text.trim();
+        }
+      } catch (e) {}
+    }
+  }
+
+  // 2. Try Groq (Fallback)
+  if (isValidKey(GROQ_KEY)) {
+    const models = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'groq/compound'];
+    for (const modelName of models) {
+      try {
+        const res = await fetch(GROQ_URL, {
+          method:  'POST',
+          headers: {
+            'Authorization': `Bearer ${GROQ_KEY}`,
+            'Content-Type':  'application/json',
+            'User-Agent':    'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+          },
+          body: JSON.stringify({
+            model:       modelName,
+            max_tokens:  maxTokens,
+            temperature: 0.7,
+            messages: [
+              { role: 'system', content: systemInstruction },
+              { role: 'user',   content: prompt }
+            ],
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const text = data?.choices?.[0]?.message?.content || '';
+          if (text) return text;
+        }
+      } catch (e) {}
+    }
   }
   return '';
 }
@@ -37,7 +75,7 @@ async function groq(messages, maxTokens = 300) {
 // Body: { moods, budget }                                  → ruh hali bazlı arama önerisi
 // Body: { mode:'summary', gameTitle, genres, description } → oyun özeti + gizli etiketler
 export async function POST(request) {
-  // Groq çağrısı yapıyor, kimliksiz — bkz. ai/chat.
+  // Groq / Gemini çağrısı yapıyor, kimliksiz — bkz. ai/chat.
   const kapi = await guard(request, 'aiSearch');
   if (kapi) return kapi;
 
@@ -48,9 +86,9 @@ export async function POST(request) {
   if (!ayrist.ok) return ayrist.response;
   const body = ayrist.data;
 
-  if (!GROQ_KEY) {
+  if (!isValidKey(GEMINI_KEY) && !isValidKey(GROQ_KEY)) {
     return NextResponse.json({
-      message:     'AI önerileri için GROQ_API_KEY gerekli.',
+      message:     'AI önerileri için geçerli bir API anahtarı gerekli.',
       searchQuery: body.moods || 'popular',
     });
   }
@@ -73,10 +111,7 @@ Yanıtı YALNIZCA şu JSON formatında ver (başka hiçbir şey ekleme):
 
 tags örnekleri: "Sakin tempo", "Yüksek adrenalin", "Solo deneyim", "Açık dünya", "Bağımlılık yapıcı", "Kısa seanslar", "Zorlayıcı ama adil", "Film kalitesi", "Klostrofobik", "Sonsuz içerik"`;
 
-      const text = await groq([
-        { role: 'system', content: 'Her zaman geçerli JSON döndür.' },
-        { role: 'user',   content: prompt },
-      ], 300);
+      const text = await generateWithLLM(prompt, 'Her zaman geçerli JSON döndür.', 300);
 
       try {
         const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -105,10 +140,7 @@ Yanıtı YALNIZCA şu JSON formatında ver:
   ]
 }`;
 
-      const text = await groq([
-        { role: 'system', content: 'Her zaman geçerli JSON döndür.' },
-        { role: 'user',   content: prompt },
-      ], 600);
+      const text = await generateWithLLM(prompt, 'Her zaman geçerli JSON döndür.', 600);
 
       try {
         const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -130,10 +162,7 @@ YALNIZCA şu JSON formatında yanıtla:
   "searchQuery": "english search terms for RAWG API (max 3 words)"
 }`;
 
-    const text = await groq([
-      { role: 'system', content: 'Her zaman geçerli JSON döndür.' },
-      { role: 'user',   content: prompt },
-    ], 150);
+    const text = await generateWithLLM(prompt, 'Her zaman geçerli JSON döndür.', 150);
 
     try {
       const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -149,7 +178,7 @@ YALNIZCA şu JSON formatında yanıtla:
     }
 
   } catch (err) {
-    console.error('Groq API hatası:', err.message);
+    console.error('LLM API hatası:', err.message);
     return NextResponse.json({
       message:     'AI şu an meşgul. Popüler oyunlar listeleniyor.',
       searchQuery: 'popular games',

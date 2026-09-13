@@ -16,8 +16,13 @@ const RAWG_BASE = 'https://api.rawg.io/api';
 // Böylece dönen her oyun gerçekten katalogda, fiyatı ve detayı hazır.
 // ─────────────────────────────────────────────────────────────────────────────
 
+const GEMINI_KEY = process.env.GEMINI_API_KEY;
 const GROQ_KEY = process.env.GROQ_API_KEY;
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
+
+function isValidKey(key) {
+  return Boolean(key && key.trim() !== '' && !key.startsWith('buraya_') && key !== 'placeholder');
+}
 
 // LLM yalnızca bu listelerden seçebilir → uydurma slug gelmez
 const GENRES = [
@@ -91,32 +96,67 @@ function keywordHints(query) {
 }
 
 async function groqJson(messages, maxTokens = 400) {
-  const models = ['openai/gpt-oss-20b', 'qwen/qwen3.6-27b', 'openai/gpt-oss-120b', 'groq/compound', 'llama-3.1-8b-instant'];
-  for (const modelName of models) {
-    try {
-      const res = await fetch(GROQ_URL, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${GROQ_KEY}`,
-          'Content-Type': 'application/json',
-          'User-Agent': 'GamerisenAI/2.0 (gamerisen.com)'
-        },
-        body: JSON.stringify({
-          model: modelName,
-          max_tokens: maxTokens,
-          temperature: 0.2,
-          response_format: { type: 'json_object' },
-          messages,
-        }),
-        signal: AbortSignal.timeout(12000),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const text = data?.choices?.[0]?.message?.content || '';
-        const match = text.match(/\{[\s\S]*\}/);
-        if (match) return JSON.parse(match[0]);
-      }
-    } catch (e) {}
+  // 1. Try Gemini
+  if (isValidKey(GEMINI_KEY)) {
+    const geminiModels = ['gemini-3.7-flash', 'gemini-3.5-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
+    const systemMsg = messages.find(m => m.role === 'system')?.content || '';
+    const userMsg = messages.find(m => m.role === 'user')?.content || '';
+
+    for (const m of geminiModels) {
+      try {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${GEMINI_KEY}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: userMsg }] }],
+            systemInstruction: systemMsg ? { parts: [{ text: systemMsg }] } : undefined,
+            generationConfig: {
+              temperature: 0.2,
+              maxOutputTokens: maxTokens,
+              responseMimeType: 'application/json'
+            }
+          }),
+          signal: AbortSignal.timeout(10000)
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          const match = text.match(/\{[\s\S]*\}/);
+          if (match) return JSON.parse(match[0]);
+        }
+      } catch (e) {}
+    }
+  }
+
+  // 2. Try Groq (Fallback)
+  if (isValidKey(GROQ_KEY)) {
+    const models = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'openai/gpt-oss-120b', 'groq/compound'];
+    for (const modelName of models) {
+      try {
+        const res = await fetch(GROQ_URL, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${GROQ_KEY}`,
+            'Content-Type': 'application/json',
+            'User-Agent': 'GamerisenAI/2.0 (gamerisen.com)'
+          },
+          body: JSON.stringify({
+            model: modelName,
+            max_tokens: maxTokens,
+            temperature: 0.2,
+            response_format: { type: 'json_object' },
+            messages,
+          }),
+          signal: AbortSignal.timeout(12000),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const text = data?.choices?.[0]?.message?.content || '';
+          const match = text.match(/\{[\s\S]*\}/);
+          if (match) return JSON.parse(match[0]);
+        }
+      } catch (e) {}
+    }
   }
   return {};
 }
