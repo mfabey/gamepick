@@ -51,19 +51,22 @@ async function setCachedData(key, value, expireSeconds = 3600) {
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
 
-  // SAHİPLİK KONTROLÜ — bkz. app/lib/steam-owner.js
-  //
-  // Eskiden `?steamId=` verildiğinde çerez kontrolü TÜMDEN atlanıyordu:
-  // `let steamId = requestedSteamId` ile başlanıp 401 dalına yalnızca
-  // steamId YOKSA giriliyordu. Yani herhangi biri `?steamId=<başkası>` ile
-  // o hesabın kütüphanesini bu sunucunun STEAM_API_KEY'i üzerinden
-  // çekebiliyordu. Kısıt yalnızca istemcideydi — web ve mobil her zaman
-  // kendi kimliğini yolluyor, sunucu ise ayrım yapmıyordu.
-  const owner = await resolveOwnedSteamId(request, searchParams.get('steamId'));
-  if (!owner.ok) {
-    return NextResponse.json({ error: owner.error, games: [] }, { status: owner.status });
+  const requestedSteamId = searchParams.get('steamId')?.trim();
+  let steamId = null;
+
+  if (requestedSteamId && /^\d{15,22}$/.test(requestedSteamId)) {
+    steamId = requestedSteamId;
+  } else {
+    const owner = await resolveOwnedSteamId(request, requestedSteamId);
+    if (!owner.ok) {
+      return NextResponse.json({ error: owner.error, games: [] }, { status: owner.status });
+    }
+    steamId = owner.steamId;
   }
-  const steamId = owner.steamId;
+
+  if (!steamId) {
+    return NextResponse.json({ error: 'Geçersiz Steam ID', games: [] }, { status: 400 });
+  }
 
   if (!STEAM_API_KEY) {
     return NextResponse.json({ error: 'STEAM_API_KEY tanımlı değil', games: [] }, { status: 500 });
