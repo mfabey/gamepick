@@ -108,6 +108,7 @@ export async function POST(request) {
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
         maxAge: SESSION_TTL_SEC,
+        path: '/',
       });
     }
 

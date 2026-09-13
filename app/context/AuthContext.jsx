@@ -119,6 +119,7 @@ export function AuthProvider({ children }) {
       });
       const data = await res.json();
       if (!res.ok || !data.ok) return { error: data.error || 'Giriş başarısız.' };
+      if (data.user) setUser(data.user);
       await refreshAuth();
       return { ok: true };
     } catch (err) { return { error: err.message }; }
