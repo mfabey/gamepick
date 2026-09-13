@@ -32,7 +32,7 @@ export default function PrivacyPage() {
             </p>
 
             <section>
-              <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>1. Hesap Altyapısı ve Veri Güvenliği (Firebase)</h2>
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>1. Hesap Altyapısı ve Veri Güvenliği</h2>
               <p>
                 Gamerisen, üye kayıt, giriş ve kimlik doğrulama işlemlerini gerçekleştirmek amacıyla endüstri standardı güvenlik protokollerine sahip olan <strong>Google Firebase</strong> authentication altyapısını kullanmaktadır.
               </p>
@@ -42,7 +42,7 @@ export default function PrivacyPage() {
             </section>
 
             <section>
-              <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>2. Birebir Sohbet ve Güvenli Mesajlaşma (Pusher)</h2>
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>2. Birebir Sohbet ve Güvenli Mesajlaşma</h2>
               <p>
                 Mobil uygulamamız üzerinden arkadaşlarınızla anlık olarak yazışabilir veya oyun kartları gönderebilirsiniz. Bu özellik kapsamında uygulanan gizlilik ve veri güvenlik önlemleri şunlardır:
               </p>
@@ -76,7 +76,7 @@ export default function PrivacyPage() {
             </section>
 
             <section>
-              <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>5. Üçüncü Taraf Hesap Bağlantıları (Steam & Xbox)</h2>
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>5. Üçüncü Taraf Hesap Bağlantıları</h2>
               <p>
                 Kütüphanenizi entegre ettiğinizde (Steam & Xbox Live resmi API entegrasyonu), yalnızca herkese açık olan oyun listeleriniz, başarılarınız ve hesap adlarınız sorgulanır.
               </p>
@@ -88,7 +88,7 @@ export default function PrivacyPage() {
             </section>
 
             <section>
-              <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>6. Yapay Zekâ Servisleri (Doğal Dil Arama)</h2>
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>6. Yapay Zekâ Servisleri</h2>
               <p>
                 Bir özellik, isteğinizi karşılayabilmek için verinin bir hizmet sağlayıcısına anlık olarak iletilmesini gerektirir. Bu sağlayıcı veriyi bizim adımıza işler:
               </p>
@@ -125,7 +125,7 @@ export default function PrivacyPage() {
             </section>
 
             <section>
-              <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>9. Hesap Silme ve Veri İmha Hakkı (Account Deletion)</h2>
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>9. Hesap Silme ve Veri İmha Hakkı</h2>
               <p>
                 Kullanıcılarımız hem web sitemizdeki ayarlar sekmesinden hem de mobil uygulamamızın profil ekranından hesaplarını diledikleri an kalıcı olarak silebilirler.
               </p>
@@ -148,7 +148,7 @@ export default function PrivacyPage() {
             </p>
 
             <section>
-              <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>1. Account Infrastructure & Data Security (Firebase)</h2>
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>1. Account Infrastructure & Data Security</h2>
               <p>
                 Gamerisen uses <strong>Google Firebase</strong> authentication services, featuring industry-standard security protocols, to handle user registration, logins, and password security.
               </p>
@@ -158,7 +158,7 @@ export default function PrivacyPage() {
             </section>
 
             <section>
-              <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>2. Friends Chat & Secure Messaging (Pusher)</h2>
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>2. Friends Chat & Secure Messaging</h2>
               <p>
                 Through our mobile application, you can chat with your friends in real-time, or send game cards. The privacy and data security measures applied under this feature are as follows:
               </p>
@@ -192,7 +192,7 @@ export default function PrivacyPage() {
             </section>
 
             <section>
-              <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>5. Third-Party Integrations (Steam & Xbox Live)</h2>
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>5. Third-Party Integrations</h2>
               <p>
                 When you connect your library (Steam & Xbox Live integration), we query only your public game lists, achievements, and account names through official secure APIs.
               </p>
@@ -204,7 +204,7 @@ export default function PrivacyPage() {
             </section>
 
             <section>
-              <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>6. AI Services (Natural-Language Search)</h2>
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>6. AI Services</h2>
               <p>
                 One feature requires your data to be passed to a service provider in real time in order to fulfil your request. That provider processes the data on our behalf:
               </p>
