@@ -144,6 +144,30 @@ export async function GET(request) {
     }
   }
 
+  // Web oturum çerezi veya Mobil Bearer ile Redis'ten Xbox oturumunu ara
+  if (!session) {
+    try {
+      const userCookie = cookieStore.get('gp_user_session')?.value;
+      if (userCookie) {
+        const u = await readValue(userCookie);
+        if (u?.uid) {
+          const conn = await redisGetJSON(`user_connections:${u.uid}`).catch(() => null);
+          if (conn?.xbox) session = conn.xbox;
+        }
+      }
+    } catch {}
+  }
+
+  if (!session) {
+    try {
+      const mobileUser = await verifyMobileToken(request);
+      if (mobileUser?.uid) {
+        const conn = await redisGetJSON(`user_connections:${mobileUser.uid}`).catch(() => null);
+        if (conn?.xbox) session = conn.xbox;
+      }
+    } catch {}
+  }
+
   // `games: []` GÖVDEDE KALIYOR (main'den). İstemciler hata yanıtında da
   // diziyi okuyor; alan yokken liste `undefined` üzerinden geziliyordu.
   if (!session) {
@@ -246,7 +270,7 @@ export async function GET(request) {
         try {
           const userCookie = cookieStore.get('gp_user_session')?.value;
           if (userCookie) {
-            const u = JSON.parse(userCookie);
+            const u = await readValue(userCookie);
             if (u?.uid) {
               const conn = await redisGetJSON(`user_connections:${u.uid}`);
               if (conn?.xbox?.refreshToken) {

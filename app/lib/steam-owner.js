@@ -43,6 +43,20 @@ async function idsFromCookies() {
   const jar = await cookies();
   const out = [];
 
+  // 1. Web oturumu: Gamerisen hesabı açıksa Redis'teki bağlı Steam hesaplarını oku
+  const userSession = jar.get('gp_user_session');
+  if (userSession?.value) {
+    try {
+      const user = await readValue(userSession.value);
+      if (user?.uid) {
+        const conn = await redisGetJSON(connKey(user.uid)).catch(() => null);
+        const userIds = idsFromConnections(conn);
+        if (userIds.length > 0) out.push(...userIds);
+      }
+    } catch { /* bozuk oturum */ }
+  }
+
+  // 2. Çoklu Steam hesabı çerezi
   const multi = jar.get('gp_steam_accounts');
   if (multi?.value) {
     try {
@@ -53,7 +67,7 @@ async function idsFromCookies() {
     } catch { /* bozuk çerez = hesap yok */ }
   }
 
-  // Geriye uyumluluk: eski tek hesap çerezi.
+  // 3. Geriye uyumluluk: tek hesap çerezi
   const single = jar.get('gp_steam_session');
   if (single?.value) {
     try {

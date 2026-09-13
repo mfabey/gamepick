@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { signValue, SESSION_TTL_SEC } from '../../../lib/session-cookie';
+import { signValue, SESSION_TTL_SEC, LINK_TTL_SEC } from '../../../lib/session-cookie';
 import { sunucuHatasi, yukariAkisHatasi } from '../../../lib/api-error';
 import { canUseAuthMock, authNotConfigured } from '../../../lib/auth-config';
 import { redisCmd, redisSetJSON } from '../../../lib/redis';
@@ -110,12 +110,16 @@ export async function POST(request) {
 
     // 4. Set HttpOnly Cookie for successful verified login
     const response = NextResponse.json({ ok: true, user: userObj });
-    response.cookies.set('gp_user_session', await signValue(userObj, SESSION_TTL_SEC), {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: SESSION_TTL_SEC,
-    });
+    const userCookieVal = await signValue(userObj, SESSION_TTL_SEC);
+    if (userCookieVal) {
+      response.cookies.set('gp_user_session', userCookieVal, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: SESSION_TTL_SEC,
+        path: '/',
+      });
+    }
 
     // Cache profile and map connections in Redis
     try {
@@ -123,19 +127,34 @@ export async function POST(request) {
 
       const connRes = await redisCmd(['GET', `user_connections:${localId}`]);
       if (connRes) {
-        const connections = JSON.parse(connRes);
-        const steamAccounts = connections.steamAccounts || (connections.steam ? [connections.steam] : []);
+        const connections = typeof connRes === 'string' ? JSON.parse(connRes) : connRes;
+        const steamAccounts = (connections.steamAccounts || (connections.steam ? [connections.steam] : [])).filter(a => a && a.steamId);
         for (const acc of steamAccounts) {
           if (acc.steamId) {
             await redisCmd(['SET', `steam_to_uid:${acc.steamId}`, localId]);
           }
         }
-        // SİMÜLASYON OTURUMU İNDEKSLENMEZ. Gamertag, mock-login'de kullanıcının
-        // serbestçe yazdığı bir alan; simüle bir kimliği gerçek eşleme
-        // tablosuna yazmak hem sınırsız anahtar üretiyor hem de ileride bu
-        // tabloyu okuyan biri çıkarsa doğrudan taklit yoluna dönüşürdü.
         if (connections.xbox && connections.xbox.gamertag && !connections.xbox.isMock) {
           await redisCmd(['SET', `xbox_to_uid:${connections.xbox.gamertag}`, localId]);
+        }
+
+        // Çerezleri bağlı hesaplarla senkronize et
+        const cookieOpts = {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          path: '/',
+          maxAge: LINK_TTL_SEC,
+        };
+        if (steamAccounts.length > 0) {
+          const accsVal = await signValue(steamAccounts, LINK_TTL_SEC);
+          const singleVal = await signValue(steamAccounts[0], LINK_TTL_SEC);
+          if (accsVal) response.cookies.set('gp_steam_accounts', accsVal, cookieOpts);
+          if (singleVal) response.cookies.set('gp_steam_session', singleVal, cookieOpts);
+        }
+        if (connections.xbox) {
+          const xbVal = await signValue(connections.xbox, LINK_TTL_SEC);
+          if (xbVal) response.cookies.set('gp_xbox_session', xbVal, cookieOpts);
         }
       }
     } catch (e) {

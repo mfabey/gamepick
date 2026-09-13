@@ -84,6 +84,26 @@ export async function GET() {
     } catch {}
   }
 
+  // Web hesabı varsa Redis'teki bağlı Steam hesaplarını oku
+  if (accounts.length === 0) {
+    try {
+      const userSession = cookieStore.get('gp_user_session');
+      if (userSession?.value) {
+        const user = await readValue(userSession.value);
+        if (user?.uid) {
+          const conn = await getCachedData(`user_connections:${user.uid}`);
+          const redisAccounts = Array.isArray(conn?.steamAccounts)
+            ? conn.steamAccounts
+            : (conn?.steam?.steamId ? [conn.steam] : []);
+          if (redisAccounts.length > 0) accounts = redisAccounts;
+        }
+      }
+    } catch {}
+  }
+
+  // Sadece geçerli steamId içeren nesneler
+  accounts = accounts.filter(a => a && a.steamId);
+
   if (accounts.length === 0) {
     return NextResponse.json({ error: 'Giriş yapılmamış', games: [], accounts: [] }, { status: 401 });
   }

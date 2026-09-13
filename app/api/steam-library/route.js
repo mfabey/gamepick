@@ -11,12 +11,11 @@ export async function GET() {
   const cookieStore = await cookies();
   const userSession = cookieStore.get('gp_user_session');
 
-  // Giriş yapılmış Gamerisen hesabı varsa Redis durumunu kontrol et
+  let steamId = null;
+
+  // 1. Giriş yapılmış Gamerisen hesabı varsa Redis'ten steamId al
   if (userSession?.value) {
     try {
-      // İMZALI ÇEREZ: `readValue` doğruluyor. Main bunu `JSON.parse` ile
-      // okuyordu; bu ağaçta kimlik çerezleri imzalı olduğu icin parse her
-      // zaman hata verir ve blok sessizce hiç çalışmazdı.
       const user = await readValue(userSession.value);
       if (user?.uid) {
         const conn = await redisGetJSON(`user_connections:${user.uid}`).catch(() => null);
@@ -24,45 +23,40 @@ export async function GET() {
           const accounts = Array.isArray(conn.steamAccounts)
             ? conn.steamAccounts
             : (conn.steam?.steamId ? [conn.steam] : []);
-          if (accounts.length === 0) {
-            // Hesap var, Steam kaydı BOŞ. Kullanıcı hiç bağlamamış ya da
-            // kaydı düşmüş olabilir — ikisi de "yeniden bağla" ile çözülüyor.
-            return NextResponse.json(
-              { error: 'Steam hesabı bağlı değil', kod: 'STEAM_KAYIT_BOS', yenidenBagla: true, games: [] },
-              { status: 401 },
-            );
+          if (accounts[0]?.steamId) {
+            steamId = accounts[0].steamId;
           }
         }
       }
     } catch {}
   }
 
-  // Oturumdan steamId al
-  const session = cookieStore.get('gp_steam_session');
-
-  // ── ÜÇ FARKLI 401, ÜÇ FARKLI KOD ─────────────────────────────────────────
-  //
-  // Eskiden bu üç arıza noktasından İKİSİ aynı metni ("Giriş yapılmamış")
-  // dönüyordu; yanıt hangisinin olduğunu söylemiyordu ve arayüz de kullanıcıya
-  // tek tip bir hata gösteriyordu. Oysa üçünün de çözümü aynı tek dokunuş:
-  // Steam'i yeniden bağlamak.
-  //
-  // `yenidenBagla: true` arayüzün "hata" yerine DÜĞME göstermesi için.
-  if (!session?.value) {
-    return NextResponse.json(
-      { error: 'Steam bağlantın yenilenmeli', kod: 'STEAM_CEREZ_YOK', yenidenBagla: true, games: [] },
-      { status: 401 },
-    );
+  // 2. Çerezden steamId al
+  if (!steamId) {
+    const session = cookieStore.get('gp_steam_session');
+    if (session?.value) {
+      try {
+        steamId = (await readValue(session.value))?.steamId;
+      } catch {}
+    }
   }
 
-  // ÇEREZ VAR AMA OKUNAMIYOR — bugün beklenen durum: kimlik çerezleri bu
-  // birleştirmeyle İMZALI hâle geldi ve daha önce yazılmış imzasız çerezler
-  // artık doğrulanamıyor. İmzasızı kabul etmek kapatılan açığı geri açardı,
-  // o yüzden çözüm kabul etmek değil yeniden bağlamak.
-  const steamId = (await readValue(session.value))?.steamId;
+  // 3. Çoklu hesap çerezinden steamId al
+  if (!steamId) {
+    const multi = cookieStore.get('gp_steam_accounts');
+    if (multi?.value) {
+      try {
+        const list = await readValue(multi.value);
+        if (Array.isArray(list) && list[0]?.steamId) {
+          steamId = list[0].steamId;
+        }
+      } catch {}
+    }
+  }
+
   if (!steamId) {
     return NextResponse.json(
-      { error: 'Steam bağlantın yenilenmeli', kod: 'STEAM_CEREZ_GECERSIZ', yenidenBagla: true, games: [] },
+      { error: 'Steam bağlantın yenilenmeli', kod: 'STEAM_CEREZ_YOK', yenidenBagla: true, games: [] },
       { status: 401 },
     );
   }

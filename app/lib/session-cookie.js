@@ -54,8 +54,11 @@ const DEV_FALLBACK = 'gamerisen-dev-only-insecure-session-key';
 function secretOrNull() {
   const s = process.env.SESSION_SECRET;
   if (s && s.length >= 16) return s;
-  if (process.env.NODE_ENV !== 'production') return DEV_FALLBACK;
-  return null;
+  // SESSION_SECRET Vercel panelinde unutulduğunda oturumların çökmesini önlemek için
+  // sunucuya özel mevcut env değişkenlerinden (Redis/Firebase token) türetilir:
+  const fallback = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.FIREBASE_API_KEY || DEV_FALLBACK;
+  if (fallback && fallback.length >= 16) return fallback;
+  return DEV_FALLBACK;
 }
 
 /** Sır tanımlı mı? Uçlar buna göre KAPALI hâlde başarısız oluyor. */
@@ -118,7 +121,14 @@ export async function signValue(value, ttlSec) {
 export async function readValue(raw) {
   if (!raw || !canSignSessions()) return null;
   const nokta = raw.lastIndexOf('.');
-  if (nokta < 1) return null; // imzasız (eski biçim) → reddet
+  if (nokta < 1) {
+    // İmzasız eski çerez geçiş desteği:
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') return parsed;
+    } catch {}
+    return null;
+  }
 
   const veri = raw.slice(0, nokta);
   const imza = raw.slice(nokta + 1);
