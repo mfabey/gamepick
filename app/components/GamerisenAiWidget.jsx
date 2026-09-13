@@ -215,8 +215,8 @@ export default function GamerisenAiWidget() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: text,
-          session_id: sessionId,
-          profile: userProfile,
+          session_id: sessionId || undefined,
+          profile: userProfile || undefined,
           history: newMessages.slice(-8)
         })
       });

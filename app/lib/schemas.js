@@ -41,27 +41,29 @@ export const dil = z.enum(['tr', 'en']).default('tr');
 
 export const aiChatBody = z.object({
   message: z.string().trim().min(1, 'Mesaj boş olamaz').max(2000),
-  session_id: z.string().max(64).optional(),
+  session_id: z.string().max(64).nullable().optional(),
   // Profil serbest bir nesneydi ve `hardware.gpu` doğrudan isteme giriyordu.
   profile: z.object({
     hardware: z.object({ gpu: z.string().max(80).optional() }).optional(),
     liked_genres: z.array(z.string().max(40)).max(30).optional(),
-  }).optional(),
+  }).nullable().optional(),
   // Geçmiş zaten son 6 kayda kırpılıyordu ama HER KAYDIN METNİ sınırsızdı
   // (yalnız asistan yanıtları 350'ye kesiliyordu, kullanıcı mesajları değil).
   history: z.array(z.object({
     role: z.string().max(20).optional(),
     text: z.string().max(2000).optional(),
     content: z.string().max(2000).optional(),
-  })).max(20).optional(),
+  })).max(20).nullable().optional(),
 });
 
 export const recommendBody = z.object({
-  mode: z.enum(['summary', 'moods']).optional(),
+  mode: z.enum(['summary', 'moods', 'library']).optional(),
   gameTitle: z.string().max(200).optional(),
   genres: z.string().max(300).optional(),
   description: z.string().max(4000).optional(),
   moods: z.string().max(200).optional(),
+  games: z.array(z.string().max(100)).max(50).optional(),
+  lang: dil.optional(),
 });
 
 export const aiGameQuery = z.object({
