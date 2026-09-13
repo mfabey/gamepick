@@ -719,7 +719,13 @@ export async function GET(request) {
       }
       const steamDeals = await fetchSteamSearchPaginated(url, false, true);
       if (steamDeals && steamDeals.length > 0) {
-        results = steamDeals;
+        results = [...steamDeals];
+        if (rotate) {
+          for (let i = results.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [results[i], results[j]] = [results[j], results[i]];
+          }
+        }
         total = page * fetchCount + 48; // paging'i açık tut
       }
     }

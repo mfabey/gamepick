@@ -184,24 +184,26 @@ export default function GameImage({
       }
     } else if (isHero) {
       if (stage === 0) {
+        if (game.image && !game.image.includes('capsule_sm') && !game.image.includes('placeholder')) {
+          return game.image;
+        }
+        const appid = getSteamAppId();
+        if (appid) return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/library_hero.jpg`;
+        return game.image || getImgSrc(1);
+      }
+      if (stage === 1) {
         const appid = getSteamAppId();
         if (appid) return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/library_hero.jpg`;
         return game.image || getImgSrc(2);
       }
-      if (stage === 1) {
-        const appid = getSteamAppId();
-        if (appid && game.image) {
-          return game.image;
-        }
-        return getImgSrc(2);
-      }
       if (stage === 2) {
+        if (game.image) return game.image;
         const appid = getSteamAppId();
         if (appid) return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/header.jpg`;
-        return game.image || getImgSrc(3);
+        return getImgSrc(3);
       }
       if (stage === 3) {
-        if (game.logo) return game.logo.replace('capsule_sm_120.jpg', 'capsule_231x87.jpg');
+        if (game.logo) return game.logo.replace('capsule_sm_120.jpg', 'header.jpg').replace('capsule_231x87.jpg', 'header.jpg');
         const appid = getSteamAppId();
         if (appid) return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/capsule_231x87.jpg`;
         return getImgSrc(4);

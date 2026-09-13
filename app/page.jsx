@@ -219,6 +219,12 @@ export default function Home() {
     );
   }, [heroTiles]);
 
+  // Sinematik vitrin için dinamik fırsat oyunları havuzu
+  const showcaseGames = useMemo(() => {
+    const pool = (saleGames.length >= 4 ? saleGames : popularGames).filter(g => g && g.name);
+    return pool.slice(0, 5);
+  }, [saleGames, popularGames]);
+
   return (
     <div style={{ paddingBottom: 60 }}>
 
@@ -383,7 +389,7 @@ export default function Home() {
       <div className="container" style={{ paddingTop: 48 }}>
 
         {/* Sinematik vitrin */}
-        <CinematicShowcase games={(saleGames.length ? saleGames : popularGames).slice(0, 6)} />
+        <CinematicShowcase games={showcaseGames} />
 
         {/* Bu Hafta Trend — Yayıncıların oynadığı popüler oyunlar */}
         <Section
