@@ -349,7 +349,7 @@ export default function NavBar() {
             <div className="mobile-only" style={{
               position: 'fixed',
               left: '50%',
-              bottom: 82, // Alt bar 12px + ~52px yükseklik = ~64px civarında biter. 82px idealdir.
+              bottom: 88, // Alt bar 14px + ~60px yükseklik = ~74px civarında biter. 88px idealdir.
               zIndex: hintOpen ? 201 : 200,
               alignItems: 'center',
               gap: 8,

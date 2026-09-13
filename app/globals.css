@@ -931,14 +931,14 @@ html[data-theme="light"] .bottom-nav-pill {
 
 @media (max-width: 768px) {
   .bottom-nav {
-    bottom: max(12px, env(safe-area-inset-bottom, 12px)) !important;
-    padding: 6px 8px !important;
+    bottom: max(14px, env(safe-area-inset-bottom, 14px)) !important;
+    padding: 7px 9px !important;
     gap: 3px !important;
     width: auto !important;
     max-width: calc(100vw - 16px) !important;
     justify-content: center !important;
-    border-radius: 22px !important;
-    box-shadow: inset 0 1px 0.5px rgba(255,255,255,0.4), inset 0 0 0 1px color-mix(in srgb, var(--text) 8%, transparent), 0 8px 32px rgba(0,0,0,0.3) !important;
+    border-radius: 26px !important;
+    box-shadow: inset 0 1px 0.5px rgba(255,255,255,0.45), inset 0 0 0 1px color-mix(in srgb, var(--text) 8%, transparent), 0 10px 36px rgba(0,0,0,0.32) !important;
   }
   
   .bottom-nav a[data-tab] {
@@ -946,15 +946,15 @@ html[data-theme="light"] .bottom-nav-pill {
     flex-direction: column !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 3px !important;
-    padding: 6px 11px !important;
-    border-radius: 16px !important;
+    gap: 3.5px !important;
+    padding: 7px 11px !important;
+    border-radius: 18px !important;
     user-select: none !important;
     -webkit-tap-highlight-color: transparent !important;
   }
 
   .bottom-nav-pill {
-    border-radius: 16px !important;
+    border-radius: 18px !important;
   }
 
   .bottom-nav .bottom-nav-icon {
@@ -965,20 +965,20 @@ html[data-theme="light"] .bottom-nav-pill {
   }
 
   .bottom-nav .bottom-nav-icon svg {
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
     stroke-width: 2.1;
   }
 
   .bottom-nav a[data-tab].active .bottom-nav-icon {
-    transform: scale(1.1);
+    transform: scale(1.12);
     color: var(--accent);
   }
 
   .bottom-nav .bottom-nav-label {
-    font-size: 11px !important;
+    font-size: 11.5px !important;
     font-weight: 600 !important;
-    letter-spacing: -0.2px !important;
+    letter-spacing: -0.15px !important;
     line-height: 1 !important;
     white-space: nowrap !important;
   }
@@ -988,61 +988,63 @@ html[data-theme="light"] .bottom-nav-pill {
   }
 }
 
-/* 6 sekmeli yapıyı 500px altı ekranlarda derli toplu ve kompakt tutar */
-@media (max-width: 500px) {
+/* 440px ve altı tipik akıllı telefon ekranları */
+@media (max-width: 440px) {
   .bottom-nav {
-    padding: 5px 6px !important;
+    bottom: max(12px, env(safe-area-inset-bottom, 12px)) !important;
+    padding: 6px 7px !important;
     gap: 2px !important;
-    border-radius: 20px !important;
+    border-radius: 22px !important;
+    max-width: calc(100vw - 12px) !important;
   }
 
   .bottom-nav a[data-tab] {
-    padding: 5px 8px !important;
-    gap: 2.5px !important;
-    border-radius: 14px !important;
+    padding: 6.5px 8px !important;
+    gap: 3px !important;
+    border-radius: 16px !important;
   }
 
   .bottom-nav-pill {
-    border-radius: 14px !important;
+    border-radius: 16px !important;
   }
 
   .bottom-nav .bottom-nav-icon svg {
-    width: 18px;
-    height: 18px;
+    width: 21px;
+    height: 21px;
   }
 
   .bottom-nav .bottom-nav-label {
-    font-size: 10px !important;
+    font-size: 11px !important;
     letter-spacing: -0.2px !important;
   }
 }
 
-/* 380px ve altı dar telefon ekranları (iPhone SE, mini vb.) */
-@media (max-width: 380px) {
+/* 370px ve altı dar telefon ekranları (iPhone SE, mini vb.) */
+@media (max-width: 370px) {
   .bottom-nav {
-    padding: 4px 4px !important;
-    gap: 1px !important;
-    max-width: calc(100vw - 10px) !important;
+    padding: 5px 5px !important;
+    gap: 1.5px !important;
+    max-width: calc(100vw - 8px) !important;
     border-radius: 18px !important;
   }
 
   .bottom-nav a[data-tab] {
-    padding: 4.5px 5.5px !important;
-    gap: 2px !important;
-    border-radius: 12px !important;
+    padding: 5.5px 6px !important;
+    gap: 2.5px !important;
+    border-radius: 13px !important;
   }
 
   .bottom-nav-pill {
-    border-radius: 12px !important;
+    border-radius: 13px !important;
   }
 
   .bottom-nav .bottom-nav-icon svg {
-    width: 16px;
-    height: 16px;
+    width: 19px;
+    height: 19px;
   }
 
   .bottom-nav .bottom-nav-label {
-    font-size: 9px !important;
+    font-size: 10px !important;
     letter-spacing: -0.25px !important;
   }
 }
