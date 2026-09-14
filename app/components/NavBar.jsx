@@ -74,7 +74,7 @@ export default function NavBar() {
     },
   ];
 
-  const handleLogout = () => { logout(); router.push('/'); };
+  const handleLogout = async () => { await logout(); router.push('/'); };
 
   const isActive = (href) => href === '/' ? pathname === '/' : pathname.startsWith(href);
 

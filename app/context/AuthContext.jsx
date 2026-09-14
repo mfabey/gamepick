@@ -125,8 +125,10 @@ export function AuthProvider({ children }) {
     } catch (err) { return { error: err.message }; }
   };
 
-  const logout = () => {
-    fetch('/api/auth/user-logout', { method: 'POST' }).catch(() => {});
+  const logout = async () => {
+    try {
+      await fetch('/api/auth/user-logout', { method: 'POST' });
+    } catch {}
     setUser(null);
     setSteamUser(null);
     setSteamAccounts([]);

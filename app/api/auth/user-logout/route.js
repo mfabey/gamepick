@@ -30,13 +30,14 @@ export async function POST() {
       maxAge: 0,
       path: '/',
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'lax',
     };
 
     // Clear all session cookies
-    response.cookies.set('gp_user_session', '', cookieOptions);
-    response.cookies.set('gp_steam_session', '', { ...cookieOptions, sameSite: 'lax' });
-    response.cookies.set('gp_xbox_session', '', { ...cookieOptions, sameSite: 'lax' });
+    response.cookies.set('gp_user_session', '', { ...cookieOptions, sameSite: 'lax' });
+    response.cookies.set('gp_steam_session', '', cookieOptions);
+    response.cookies.set('gp_steam_accounts', '', cookieOptions);
+    response.cookies.set('gp_xbox_session', '', cookieOptions);
 
     return response;
   } catch (err) {
