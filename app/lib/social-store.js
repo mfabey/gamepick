@@ -391,11 +391,40 @@ export async function getFriendActivity(uid, limit = 40) {
 
 // ── Engelleme ───────────────────────────────────────────────────────────────
 
+// ── ENGELLEME ARKADAŞLIĞI VE BEKLEYEN İSTEKLERİ DE SİLİYOR ──────────────────
+//
+// ÖNCEDEN SİLMİYORDU. Bu fonksiyon yalnızca iki engel kümesine yazıyordu;
+// `friends:{uid}` ve istek kümeleri olduğu gibi kalıyordu. Sonuçları:
+//   - Engellenen kişi iki tarafın arkadaş listesinde de durmaya devam ediyordu
+//     (`/api/social/friend` kümeyi süzmeden döndürüyor).
+//   - Profildeki arkadaş sayısı `SCARD friends:{uid}` — o da yanlış kalıyordu.
+//   - Engellenen kişinin bekleyen isteği İstekler ekranında duruyordu.
+//   - Engel kaldırılınca arkadaşlık SESSİZCE geri geliyordu.
+// Oysa istemcideki onay penceresi (`soc.blockConfirm`) "arkadaşsanız
+// arkadaşlık silinir" diyor. Söz arayüzdeydi, yerine getiren kod yoktu.
+//
+// KALDIRMA GERİ GETİRMİYOR, bilerek: pencere "silinir" dedi. Engeli kaldıran
+// kullanıcı yeniden arkadaş olmak istiyorsa istek gönderir.
+//
+// SIRA: engel kaydı ÖNCE. Upstash'in pipeline'ı bir işlem (MULTI) değil,
+// komutlar sırayla koşuyor; yarıda kesilirse en azından engelin kendisi
+// yazılmış olmalı — arkadaşlığı silinmiş ama engellenmemiş biri, kullanıcının
+// korunduğunu sandığı hâlde korunmadığı durumdur. Kalan SREM'ler tekrar
+// engellemede ya da `scripts/engel-arkadaslik-temizle.mjs` ile tamamlanır.
+//
+// İSTEKLER DÖRT YÖNDEN: iki tarafın da gönderdiği ve aldığı istek
+// (`acceptFriendRequest`'teki temizlikle aynı küme dörtlüsü).
 export async function blockUser(uid, targetUid) {
   if (!uid || !targetUid || uid === targetUid) return false;
   await redisPipeline([
     ['SADD', blocksKey(uid), targetUid],
     ['SADD', blockedByKey(targetUid), uid],
+    ['SREM', friendsKey(uid), targetUid],
+    ['SREM', friendsKey(targetUid), uid],
+    ['SREM', reqOutKey(uid), targetUid],
+    ['SREM', reqInKey(targetUid), uid],
+    ['SREM', reqInKey(uid), targetUid],
+    ['SREM', reqOutKey(targetUid), uid],
   ]);
   return true;
 }

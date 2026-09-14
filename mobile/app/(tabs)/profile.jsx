@@ -46,6 +46,7 @@ import { useConnectedLibrary } from '../../src/hooks/useConnectedLibrary';
 import { getUserProfile } from '../../src/api/social';
 import { pushGameCount } from '../../src/api/account';
 import { getValidToken } from '../../src/services/session';
+import { abone as engelDinle } from '../../src/services/engel';
 import { useTabPressAction, scrollRefToTop } from '../../src/hooks/useTabPressAction';
 import { weeklyReport } from '../../src/services/stats';
 
@@ -169,6 +170,28 @@ export default function ProfileScreen() {
     if (!UZAK.has(tab) && basligiAldik.current) { setYukleniyor(false); return; }
     yukle(tab);
   }, [account, tab, yukle]);
+
+  // ── ENGELLEMEDE BAŞLIĞI TAZELE ──
+  // Profil bir SEKME: arka planda bağlı kalıyor ve veriyi yalnızca ilk
+  // açılışta ve sekme değişince çekiyordu. Başka bir ekrandan (akış, sohbet,
+  // arkadaşlar) birini engelleyen kullanıcı buraya döndüğünde arkadaş sayısı
+  // eski kalıyordu — sunucu arkadaşlığı artık silse bile, aşağı çekip
+  // yenileyene kadar.
+  //
+  // `engel.js` her engelleme ve kaldırmada duyuruyor; o anda başlığı yeniden
+  // çekiyoruz. `tazele: true` bilerek: `yukleniyor` iskeleti içeriğin YERİNE
+  // çiziyor, bu ise mevcut içeriği yerinde bırakıp üzerine yazıyor.
+  //
+  // SEKME REF'TEN OKUNUYOR: bağımlılığa `tab` girseydi her sekme değişiminde
+  // abonelik bırakılıp yeniden kurulurdu; dinleyicinin tek ihtiyacı o anki
+  // sekmenin adı.
+  const sekmeRef = useRef(tab);
+  sekmeRef.current = tab;
+  useEffect(() => {
+    if (!account) return undefined;
+    const birak = engelDinle(() => { yukle(sekmeRef.current, { tazele: true }); });
+    return () => { birak(); };
+  }, [account, yukle]);
 
   const dahaYukle = useCallback(async () => {
     if (!UZAK.has(tab) || dahaYukleniyor || !uzak.hasMore) return;
