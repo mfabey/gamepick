@@ -162,8 +162,16 @@ const GIRDI_DIKEY = 5;
 
 /** Baloncuğun aşağıdan geldiği mesafe. Kompozitör o tarafta. */
 const GIRIS_MESAFE = 24;
-/** ζ = 14 / (2·√260) ≈ 0,43 — aşma İSTENEN yer: "bir şey oldu" hissi. */
-const GONDERIM_YAY = motion.pop;
+// ── GİRİŞ YAYI ARTIK `settle`, `pop` DEĞİL ──
+// `pop` (ζ ≈ 0,43) tek seferlik vurgu için ayarlı ve burada her mesajda
+// tekrar ediyordu. Ölçüldü: baloncuk 216 ms'de hedefi %21,9 aşıp
+// kompozitörün 5pt altına iniyor, 432 ms'de %4,8 geri tepiyor, ancak 517 ms'de
+// oturuyordu — mesaj başına gözle görülen İKİ sekme. Sohbet hızlandıkça bu
+// "oynak" hissine dönüşüyordu.
+//
+// `settle` (ζ ≈ 0,81): %1,3 aşma (0,3pt), 236 ms'de oturma. Karşılaştırma
+// tablosu theme.js'te. Aynı sabit saat sütununun dönüşünde de kullanılıyor.
+const GONDERIM_YAY = motion.settle;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SAAT SÜTUNU — sola sürükleyince kenardan giriyor.
@@ -400,6 +408,9 @@ export default function ChatScreen() {
       // ekranın solunda gösterecek bir şey yok.
       kayma.value = Math.min(0, Math.max(-SAAT_SUTUN, e.translationX));
     })
+    // Bırakınca geri dönüş. `pop` ile -56'dan dönen satırlar sıfırı 12,2pt
+    // AŞIYORDU: baloncuklar ekranın sağ kenarına doğru taşıp geri geliyordu.
+    // `settle` ile taşma 0,7pt.
     .onEnd(() => { kayma.value = withSpring(0, GONDERIM_YAY); }),
   [kayma]);
 
@@ -411,6 +422,29 @@ export default function ChatScreen() {
 
   /** Kimliğe göre tekilleştirerek ekler; en yeni başta düzeni korunur. */
   const addMessage = useCallback((m) => {
+    // ── KARŞI TARAFIN MESAJI "YAZIYOR"U HEMEN BİTİRİR ──
+    // Önceden gösterge kendi süresi (4-5 sn) dolana kadar duruyordu. Sonuç:
+    // mesaj gelince yeni satır ekleniyor, yazıyor baloncuğu onun ALTINDA
+    // kalıyor, saniyeler sonra kaybolunca bütün liste ~40pt BİR DAHA
+    // kayıyordu. Mesajı gönderen artık yazmıyor; göstergenin kalması yanlıştı.
+    //
+    // `setTypingNow(false)` DOĞRUDAN, efekte bırakılmıyor. Göstergeyi asıl
+    // kaldıran `typingNow`; `typingUntil`'i sıfırlamak onu yalnızca aşağıdaki
+    // efekt üzerinden, BOYAMADAN SONRA düşürürdü — bir kare boyunca yeni mesaj
+    // ve yazıyor baloncuğu birlikte çizilip ikinci kayma yine gelirdi. Üç
+    // güncelleme aynı olay döngüsünde toplanıyor (React 18 otomatik
+    // toplama), yani satırın eklenmesi ve göstergenin kalkması TEK render,
+    // TEK kayma. `typingUntil` de sıfırlanıyor ki efekt göstergeyi geri
+    // açmasın.
+    //
+    // YALNIZCA YENİ MESAJDA: yoklama zaten listede olan bir mesajı tekrar
+    // getirebiliyor; o durumda karşı taraf yeniden yazıyorsa göstergesi
+    // silinmemeli. `msgsRef` bir render geriden geliyor — en kötü hâlde
+    // zaten kapalı olan gösterge bir kez daha kapatılır.
+    if (m?.from && m.from !== myUid && !msgsRef.current.some((x) => x.id === m.id)) {
+      setTypingUntil(0);
+      setTypingNow(false);
+    }
     setMsgs((cur) => {
       // Kimlikten tekillestirme (Pusher gonderene de dusuruyor).
       if (cur.some((x) => x.id === m.id)) return cur;

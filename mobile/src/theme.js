@@ -374,12 +374,27 @@ export const motion = Object.freeze({
   sheet:  320,   // alt sayfa yükselirken (firm yay)
 
   // ── Yaylar ──
-  // İkisi çelişmiyor, farklı işler. İkisi de zaten ölçülmüştü; burada
-  // yalnızca adlandırıldılar.
-  //   pop  → aşma İSTENEN yer: "bir şey oldu" hissi. ζ = 14/(2·√260) ≈ 0.43
-  //   firm → aşma İSTENMEYEN yer: hedefe en hızlı, hiç aşmadan. (Sekme
-  //          vurgusu: aşıp geri gelmesi bozukluk gibi görünüyordu.)
+  // Üçü çelişmiyor, farklı işler.
+  //   pop    → aşma İSTENEN yer: "bir şey oldu" hissi. ζ = 14/(2·√260) ≈ 0.43
+  //   settle → TEKRARLANAN hareket: bir yere oturuyor ama sekmemeli.
+  //   firm   → aşma İSTENMEYEN yer: hedefe en hızlı, hiç aşmadan. (Sekme
+  //            vurgusu: aşıp geri gelmesi bozukluk gibi görünüyordu.)
   pop:  { stiffness: 260, damping: 14 },
+  // SETTLE NEDEN VAR. Sohbette her yeni mesaj `pop` ile giriyordu ve pop tek
+  // seferlik bir vurgu için ayarlı, dakikada onlarca kez tekrar eden bir
+  // hareket için değil. Kütle-yay simülasyonu (m = 1, Reanimated varsayılanı),
+  // 24pt'lik giriş için:
+  //
+  //   ayar     ζ     aşma           oturma (%2)
+  //   260/14  0.43  %21.9 (5.25pt)  517 ms  ← iki görünür sekme
+  //   260/26  0.81  %1.3  (0.31pt)  236 ms  ← bu
+  //   260/32  1.00  %0              364 ms  (kritik sönüm)
+  //
+  // Kritik sönüm DAHA YAVAŞ oturuyor: hafif alt-kritik yay hedefe daha erken
+  // varıyor ve 0.3pt'lik aşma üç katlı ekranda bir pikselin altında kalıyor.
+  // Sertlik pop ile AYNI bırakıldı: hareketin hızı aynı hissedilsin, yalnızca
+  // sekmesi gitsin.
+  settle: { stiffness: 260, damping: 26 },
   // firm SÜRE TAŞIMIYOR. Maket aynı yayı İKİ farklı sürede kullanıyor:
   // segment/sheet geçişi 240, alt sayfa yükselişi 320. Süre baked olsaydı
   // ikisinden biri yanlış olurdu; çağrı yeri `{ ...motion.firm, duration }`
