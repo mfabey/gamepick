@@ -613,7 +613,7 @@ function GuestPrompt({ tr }) {
           </p>
         </div>
       </div>
-      <Link href="/auth" style={K.btnPrimary}>
+      <Link href="/login" style={K.btnPrimary}>
         {tr ? 'Giriş Yap / Kaydol' : 'Log In / Sign Up'}
       </Link>
     </div>
@@ -669,7 +669,7 @@ function GonderiKarti({ post, currentUser, onLikeToggle, onOpenThread, onDelete,
 
   const handleLike = async () => {
     if (!currentUser) {
-      window.location.href = '/auth';
+      window.location.href = '/login';
       return;
     }
     if (likePending) return;
@@ -859,7 +859,7 @@ function ThreadModal({ threadId, currentUser, onClose, onReplyAdded, tr }) {
   const handleSendReply = async (e) => {
     e?.preventDefault();
     if (!currentUser) {
-      window.location.href = '/auth';
+      window.location.href = '/login';
       return;
     }
     const trimmed = replyText.trim();
@@ -1017,7 +1017,7 @@ function ThreadModal({ threadId, currentUser, onClose, onReplyAdded, tr }) {
             </div>
           ) : (
             <div style={{ textAlign: 'center', padding: '6px 0' }}>
-              <Link href="/auth" style={{ fontSize: 13.5, color: 'var(--accent)', fontWeight: 600 }}>
+              <Link href="/login" style={{ fontSize: 13.5, color: 'var(--accent)', fontWeight: 600 }}>
                 {tr ? 'Yanıt yazmak için giriş yap' : 'Log in to write a reply'}
               </Link>
             </div>
