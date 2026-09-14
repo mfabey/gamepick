@@ -460,8 +460,10 @@ async function fetchSteamSpecials() {
       const price = priceUSD ? Math.round(priceUSD * rate) : null;
       const original = originalUSD ? Math.round(originalUSD * rate) : null;
 
-      const heroImage = details?.background_raw || details?.screenshots?.[0]?.path_full || details?.background || item.header_image || item.large_capsule_image;
-      const backgroundImage = details?.background_raw || details?.background || details?.screenshots?.[0]?.path_full || null;
+      const isStoreBg = (url) => !url || url.includes('storepagebackground');
+      const cleanBg = !isStoreBg(details?.background_raw) ? details?.background_raw : (!isStoreBg(details?.background) ? details?.background : null);
+      const heroImage = details?.screenshots?.[0]?.path_full || cleanBg || details?.header_image || item.header_image || item.large_capsule_image;
+      const backgroundImage = cleanBg || details?.screenshots?.[0]?.path_full || null;
       const screenshots = (details?.screenshots || []).map(s => s.path_full).filter(Boolean);
 
       const g = {

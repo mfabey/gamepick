@@ -294,8 +294,10 @@ async function fetchSteamSearchPaginated(searchUrl, isFree = false, isOnSale = f
             }
             releasedDate = steamData.release_date?.date || null;
             gercekKapak = steamData.header_image || null;
-            heroImage = steamData.background_raw || steamData.screenshots?.[0]?.path_full || steamData.background || steamData.header_image || null;
-            backgroundImage = steamData.background_raw || steamData.background || steamData.screenshots?.[0]?.path_full || null;
+            const isStoreBg = (url) => !url || url.includes('storepagebackground');
+            const cleanBg = !isStoreBg(steamData.background_raw) ? steamData.background_raw : (!isStoreBg(steamData.background) ? steamData.background : null);
+            heroImage = steamData.screenshots?.[0]?.path_full || cleanBg || steamData.header_image || null;
+            backgroundImage = cleanBg || steamData.screenshots?.[0]?.path_full || null;
             screenshots = (steamData.screenshots || []).map(s => s.path_full).filter(Boolean);
           }
         } catch {}
@@ -392,8 +394,10 @@ async function fetchSteamSearchByTerm(term) {
 
         if (steamData && isSteamDataAdult(steamData)) return null;
 
-        let heroImage = steamData?.background_raw || steamData?.screenshots?.[0]?.path_full || steamData?.background || steamData?.header_image || item.tiny_image;
-        let backgroundImage = steamData?.background_raw || steamData?.background || steamData?.screenshots?.[0]?.path_full || null;
+        const isStoreBg = (url) => !url || url.includes('storepagebackground');
+        const cleanBg = !isStoreBg(steamData?.background_raw) ? steamData?.background_raw : (!isStoreBg(steamData?.background) ? steamData?.background : null);
+        let heroImage = steamData?.screenshots?.[0]?.path_full || cleanBg || steamData?.header_image || item.tiny_image;
+        let backgroundImage = cleanBg || steamData?.screenshots?.[0]?.path_full || null;
         let screenshots = (steamData?.screenshots || []).map(s => s.path_full).filter(Boolean);
 
         const g = {
@@ -474,8 +478,10 @@ async function fetchSteamFeatured(category) {
       const price = item.final_price != null ? amountToTRY(item.final_price, item.currency || 'USD', rate) : null;
       const original = item.original_price != null ? amountToTRY(item.original_price, item.currency || 'USD', rate) : null;
 
-      const heroImage = steamData?.background_raw || steamData?.screenshots?.[0]?.path_full || steamData?.background || item.header_image || item.large_capsule_image;
-      const backgroundImage = steamData?.background_raw || steamData?.background || steamData?.screenshots?.[0]?.path_full || null;
+      const isStoreBg = (url) => !url || url.includes('storepagebackground');
+      const cleanBg = !isStoreBg(steamData?.background_raw) ? steamData?.background_raw : (!isStoreBg(steamData?.background) ? steamData?.background : null);
+      const heroImage = steamData?.screenshots?.[0]?.path_full || cleanBg || steamData?.header_image || item.header_image || item.large_capsule_image;
+      const backgroundImage = cleanBg || steamData?.screenshots?.[0]?.path_full || null;
       const screenshots = (steamData?.screenshots || []).map(s => s.path_full).filter(Boolean);
 
       return {
@@ -555,8 +561,10 @@ async function fetchSteamNewReleases() {
       const price = item.final_price != null ? amountToTRY(item.final_price, item.currency || 'USD', rate) : null;
       const original = item.original_price != null ? amountToTRY(item.original_price, item.currency || 'USD', rate) : null;
 
-      const heroImage = steamData?.background_raw || steamData?.screenshots?.[0]?.path_full || steamData?.background || item.header_image || item.large_capsule_image;
-      const backgroundImage = steamData?.background_raw || steamData?.background || steamData?.screenshots?.[0]?.path_full || null;
+      const isStoreBg = (url) => !url || url.includes('storepagebackground');
+      const cleanBg = !isStoreBg(steamData?.background_raw) ? steamData?.background_raw : (!isStoreBg(steamData?.background) ? steamData?.background : null);
+      const heroImage = steamData?.screenshots?.[0]?.path_full || cleanBg || steamData?.header_image || item.header_image || item.large_capsule_image;
+      const backgroundImage = cleanBg || steamData?.screenshots?.[0]?.path_full || null;
       const screenshots = (steamData?.screenshots || []).map(s => s.path_full).filter(Boolean);
 
       return {
@@ -661,8 +669,10 @@ async function fetchSteamByMode(mode, { genres = '', q = '', section = '', page 
               return null;
             }
             g.image = data.header_image || g.image;
-            g.heroImage = data.background_raw || data.screenshots?.[0]?.path_full || data.background || data.header_image || g.image;
-            g.backgroundImage = data.background_raw || data.background || data.screenshots?.[0]?.path_full || null;
+            const isStoreBg = (url) => !url || url.includes('storepagebackground');
+            const cleanBg = !isStoreBg(data.background_raw) ? data.background_raw : (!isStoreBg(data.background) ? data.background : null);
+            g.heroImage = data.screenshots?.[0]?.path_full || cleanBg || data.header_image || g.image;
+            g.backgroundImage = cleanBg || data.screenshots?.[0]?.path_full || null;
             g.screenshots = (data.screenshots || []).map(s => s.path_full).filter(Boolean);
           }
         } catch {}
