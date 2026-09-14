@@ -785,7 +785,7 @@ function CinematicShowcase({ games }) {
               onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-3px) scale(1.04)'}
               onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
               {it.isPromo ? (
-                <img src={it.promoLogo || it.promoImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', position: 'absolute', inset: 0, backgroundColor: '#000' }} />
+                <img src={it.promoImage || it.promoLogo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} />
               ) : (
                 <GameImage game={it} alt="" fill style={{ objectFit: 'cover' }} />
               )}

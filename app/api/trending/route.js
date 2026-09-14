@@ -417,15 +417,16 @@ async function fetchSteamSpecials() {
     // Ayrıntılı kontrol: Her oyunun içerik tanımlayıcılarını ve türlerini Steam üzerinden kontrol edelim
     const detailedItems = await Promise.all(
       fastFilteredItems.map(async (item) => {
+        let details = null;
         try {
-          const details = await getSteamDetailsCached(item.id);
+          details = await getSteamDetailsCached(item.id);
           if (details && isSteamDataAdult(details)) {
             return null;
           }
         } catch (e) {
           console.warn('Specials adult filter verification failed for:', item.name, e.message);
         }
-        return item;
+        return { item, details };
       })
     );
     const cleanItems = detailedItems.filter(Boolean);
@@ -442,14 +443,14 @@ async function fetchSteamSpecials() {
         .replace(/[^a-z0-9]/g, '');
     }
 
-    for (const item of cleanItems) {
-      const norm = normalizeForDedupe(item.name);
+    for (const entry of cleanItems) {
+      const norm = normalizeForDedupe(entry.item.name);
       if (seenNames.has(norm)) continue;
       seenNames.add(norm);
-      uniqueItems.push(item);
+      uniqueItems.push(entry);
     }
 
-    return uniqueItems.map(item => {
+    return uniqueItems.map(({ item, details }) => {
       const slug = generateSlug(item.name);
       const isFree = item.final_price === 0 || (!item.final_price && !item.original_price);
 
@@ -459,12 +460,19 @@ async function fetchSteamSpecials() {
       const price = priceUSD ? Math.round(priceUSD * rate) : null;
       const original = originalUSD ? Math.round(originalUSD * rate) : null;
 
+      const heroImage = details?.background_raw || details?.screenshots?.[0]?.path_full || details?.background || item.header_image || item.large_capsule_image;
+      const backgroundImage = details?.background_raw || details?.background || details?.screenshots?.[0]?.path_full || null;
+      const screenshots = (details?.screenshots || []).map(s => s.path_full).filter(Boolean);
+
       const g = {
         id:           'rawg_' + item.id,
         rawgId:       item.id,
         rawgSlug:     slug,
         name:         item.name,
-        image:        item.header_image || item.large_capsule_image || item.small_capsule_image,
+        image:        details?.header_image || item.header_image || item.large_capsule_image || item.small_capsule_image,
+        heroImage,
+        backgroundImage,
+        screenshots,
         metacritic:   null,
         reviewScore:  0,
         totalReviews: 0,

@@ -279,12 +279,10 @@ async function fetchSteamSearchPaginated(searchUrl, isFree = false, isOnSale = f
         if (!appid) return null;
 
         let releasedDate = null;
-        // GERÇEK KAPAK ADRESİ. Steam varlık yollarını hash'li biçime taşıdı;
-        // `/apps/<appid>/header.jpg` YENİ oyunlarda 404 veriyor ve hash
-        // kurulamıyor, yalnızca API'den okunuyor. Detay ZATEN burada
-        // çekiliyordu ama `header_image` kullanılmıyordu — kapak elle
-        // birleştiriliyordu. Kırılmanın kökü buydu.
         let gercekKapak = null;
+        let heroImage = null;
+        let backgroundImage = null;
+        let screenshots = [];
         try {
           const steamData = await getSteamDetailsCached(appid);
           if (steamData) {
@@ -296,6 +294,9 @@ async function fetchSteamSearchPaginated(searchUrl, isFree = false, isOnSale = f
             }
             releasedDate = steamData.release_date?.date || null;
             gercekKapak = steamData.header_image || null;
+            heroImage = steamData.background_raw || steamData.screenshots?.[0]?.path_full || steamData.background || steamData.header_image || null;
+            backgroundImage = steamData.background_raw || steamData.background || steamData.screenshots?.[0]?.path_full || null;
+            screenshots = (steamData.screenshots || []).map(s => s.path_full).filter(Boolean);
           }
         } catch {}
 
@@ -309,6 +310,9 @@ async function fetchSteamSearchPaginated(searchUrl, isFree = false, isOnSale = f
           // (son çare) düz yol. Düz yol yalnızca ESKİ oyunlarda çalışıyor.
           image: gercekKapak || item.logo
             || (appid ? `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/header.jpg` : null),
+          heroImage: heroImage || gercekKapak || item.logo,
+          backgroundImage,
+          screenshots,
           // Kapak Steam'den çözülemediyse işaretle — istemci sona atsın.
           gorselYok: !gercekKapak && !item.logo,
           logo: item.logo,
@@ -388,9 +392,9 @@ async function fetchSteamSearchByTerm(term) {
 
         if (steamData && isSteamDataAdult(steamData)) return null;
 
-        const slug = generateSlug(item.name);
-        const isOnSale = (steamData?.price_overview?.discount_percent || 0) > 0;
-        const isFree = steamData?.is_free || false;
+        let heroImage = steamData?.background_raw || steamData?.screenshots?.[0]?.path_full || steamData?.background || steamData?.header_image || item.tiny_image;
+        let backgroundImage = steamData?.background_raw || steamData?.background || steamData?.screenshots?.[0]?.path_full || null;
+        let screenshots = (steamData?.screenshots || []).map(s => s.path_full).filter(Boolean);
 
         const g = {
           id: 'rawg_' + appid,
@@ -399,6 +403,9 @@ async function fetchSteamSearchByTerm(term) {
           name: steamData?.name || item.name,
           image: steamData?.header_image || item.tiny_image
             || `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/header.jpg`,
+          heroImage,
+          backgroundImage,
+          screenshots,
           gorselYok: !steamData?.header_image && !item.tiny_image,
           metacritic: steamData?.metacritic?.score || null,
           reviewScore: 0,
@@ -447,18 +454,19 @@ async function fetchSteamFeatured(category) {
     // Ayrıntılı kontrol: Steam içerik tanımlayıcılarını sorgula
     const detailedItems = await Promise.all(
       fastFilteredItems.map(async (item) => {
+        let steamData = null;
         try {
-          const data = await getSteamDetailsCached(item.id);
-          if (data && isSteamDataAdult(data)) {
+          steamData = await getSteamDetailsCached(item.id);
+          if (steamData && isSteamDataAdult(steamData)) {
             return null;
           }
         } catch {}
-        return item;
+        return { item, steamData };
       })
     );
     const cleanItems = detailedItems.filter(Boolean);
 
-    return cleanItems.map(item => {
+    return cleanItems.map(({ item, steamData }) => {
       const slug = generateSlug(item.name);
       
       const isFree = item.final_price === 0 || (!item.final_price && !item.original_price);
@@ -466,12 +474,19 @@ async function fetchSteamFeatured(category) {
       const price = item.final_price != null ? amountToTRY(item.final_price, item.currency || 'USD', rate) : null;
       const original = item.original_price != null ? amountToTRY(item.original_price, item.currency || 'USD', rate) : null;
 
+      const heroImage = steamData?.background_raw || steamData?.screenshots?.[0]?.path_full || steamData?.background || item.header_image || item.large_capsule_image;
+      const backgroundImage = steamData?.background_raw || steamData?.background || steamData?.screenshots?.[0]?.path_full || null;
+      const screenshots = (steamData?.screenshots || []).map(s => s.path_full).filter(Boolean);
+
       return {
         id:           'rawg_' + item.id,
         rawgId:       item.id,
         rawgSlug:     slug,
         name:         item.name,
-        image:        item.header_image || item.large_capsule_image || item.small_capsule_image,
+        image:        steamData?.header_image || item.header_image || item.large_capsule_image || item.small_capsule_image,
+        heroImage,
+        backgroundImage,
+        screenshots,
         metacritic:   null,
         reviewScore:  0,
         totalReviews: 0,
@@ -532,6 +547,7 @@ async function fetchSteamNewReleases() {
 
     return gamesOnly.map(d => {
       const item = d.item;
+      const steamData = d.steamData;
       const slug = generateSlug(item.name);
       
       const isFree = item.final_price === 0 && !item.original_price;
@@ -539,12 +555,19 @@ async function fetchSteamNewReleases() {
       const price = item.final_price != null ? amountToTRY(item.final_price, item.currency || 'USD', rate) : null;
       const original = item.original_price != null ? amountToTRY(item.original_price, item.currency || 'USD', rate) : null;
 
+      const heroImage = steamData?.background_raw || steamData?.screenshots?.[0]?.path_full || steamData?.background || item.header_image || item.large_capsule_image;
+      const backgroundImage = steamData?.background_raw || steamData?.background || steamData?.screenshots?.[0]?.path_full || null;
+      const screenshots = (steamData?.screenshots || []).map(s => s.path_full).filter(Boolean);
+
       return {
         id:           'rawg_' + item.id,
         rawgId:       item.id,
         rawgSlug:     slug,
         name:         item.name,
-        image:        item.header_image || item.large_capsule_image || item.small_capsule_image,
+        image:        steamData?.header_image || item.header_image || item.large_capsule_image || item.small_capsule_image,
+        heroImage,
+        backgroundImage,
+        screenshots,
         metacritic:   null,
         reviewScore:  0,
         totalReviews: 0,
@@ -633,8 +656,14 @@ async function fetchSteamByMode(mode, { genres = '', q = '', section = '', page 
       initialGames.map(async (g) => {
         try {
           const data = await getSteamDetailsCached(g.rawgId);
-          if (data && isSteamDataAdult(data)) {
-            return null;
+          if (data) {
+            if (isSteamDataAdult(data)) {
+              return null;
+            }
+            g.image = data.header_image || g.image;
+            g.heroImage = data.background_raw || data.screenshots?.[0]?.path_full || data.background || data.header_image || g.image;
+            g.backgroundImage = data.background_raw || data.background || data.screenshots?.[0]?.path_full || null;
+            g.screenshots = (data.screenshots || []).map(s => s.path_full).filter(Boolean);
           }
         } catch {}
         return g;

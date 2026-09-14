@@ -170,6 +170,8 @@ export default function GameImage({
         return getImgSrc(1);
       }
       if (stage === 1) {
+        if (game.heroImage) return game.heroImage;
+        if (game.backgroundImage) return game.backgroundImage;
         return game.image || getImgSrc(2);
       }
       if (stage === 2) {
@@ -184,14 +186,21 @@ export default function GameImage({
       }
     } else if (isHero) {
       if (stage === 0) {
-        if (game.image && !game.image.includes('capsule_sm') && !game.image.includes('placeholder')) {
+        if (game.heroImage) return game.heroImage;
+        if (game.backgroundImage) return game.backgroundImage;
+        if (game.screenshots?.[0]) return game.screenshots[0];
+        // If image is a high-res direct URL (RAWG, Epic, IGDB, etc.)
+        if (game.image && !game.image.includes('/header') && !game.image.includes('capsule') && !game.image.includes('placeholder')) {
           return game.image;
         }
         const appid = getSteamAppId();
-        if (appid) return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/library_hero.jpg`;
+        if (appid) return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/page_bg_raw.jpg`;
         return game.image || getImgSrc(1);
       }
       if (stage === 1) {
+        if (game.heroImage) return game.heroImage;
+        if (game.backgroundImage) return game.backgroundImage;
+        if (game.screenshots?.[0]) return game.screenshots[0];
         const appid = getSteamAppId();
         if (appid) return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/library_hero.jpg`;
         return game.image || getImgSrc(2);
@@ -216,16 +225,27 @@ export default function GameImage({
       }
     } else {
       if (stage === 0) {
+        if (game.image && !game.image.includes('capsule_sm_120') && !game.image.includes('placeholder')) {
+          return game.image;
+        }
+        if (game.heroImage) return game.heroImage;
         return game.image || getImgSrc(1);
       }
       if (stage === 1) {
+        if (game.heroImage) return game.heroImage;
+        if (game.backgroundImage) return game.backgroundImage;
         if (game.logo) return game.logo.replace('capsule_sm_120.jpg', 'capsule_231x87.jpg');
         const appid = getSteamAppId();
-        if (appid) return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/capsule_231x87.jpg`;
+        if (appid) return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/header.jpg`;
         return getImgSrc(2);
       }
       if (stage === 2) {
         if (game.logo) return game.logo;
+        const appid = getSteamAppId();
+        if (appid) return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/capsule_231x87.jpg`;
+        return getImgSrc(3);
+      }
+      if (stage === 3) {
         const appid = getSteamAppId();
         if (appid) return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/capsule_sm_120.jpg`;
         return null;
