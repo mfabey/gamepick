@@ -34,6 +34,9 @@ const RECENT_MAX = 500;
 const revKey  = (appid, uid) => `review:${appid}:${uid}`;
 const gameKey = (appid)      => `game_reviews:${appid}`;
 const userKey = (uid)        => `user_reviews:${uid}`;
+// Profil ucu sayacı tek pipeline'da okuyor — anahtar adı tek kaynaktan
+// (bkz. post-store.js'teki aynı gerekçe).
+export { userKey as userReviewsKey };
 // Genel akış — TÜM oyunların incelemeleri tek sırada.
 //
 // Ayrı bir anahtar tutuluyor çünkü oyun başına ZSET'leri tarayıp

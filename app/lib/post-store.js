@@ -56,6 +56,10 @@ const userKey      = (uid) => `user_posts:${uid}`;
 const repliesKey   = (id)  => `post_replies:${id}`;
 const likesKey     = (id)  => `post_likes:${id}`;
 const userLikesKey = (uid) => `user_post_likes:${uid}`;
+// Profil ucu sayacı tek pipeline'da okuyor (bkz. api/social/profile) ve
+// anahtar adı İKİ YERDE yazılırsa biri değişip öteki kalınca sayaç sessizce
+// sıfırlanır. Ad tek kaynaktan dışa açılıyor.
+export { userKey as userPostsKey };
 
 // lists-store ile aynı biçim: zaman öneki sıralanabilirlik, rastgele kuyruk
 // çakışmayı engelliyor.

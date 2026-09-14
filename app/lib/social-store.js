@@ -197,9 +197,21 @@ const DEFAULT_PRIVACY = {
   shareActivity: true, discoverable: true, showPresence: true, privateProfile: false,
 };
 
+/**
+ * Ham gizlilik kaydını varsayılanlarla birleştirir.
+ *
+ * AYRI FONKSİYON: profil ucu gizliliği kendi pipeline'ında ham olarak okuyor
+ * (bkz. api/social/profile). Birleştirme orada ikinci kez yazılsaydı,
+ * varsayılanlardan biri değiştiğinde iki yer ayrışır ve bir kullanıcının
+ * gizliliği ekrana göre farklı yorumlanırdı.
+ */
+export function privacyWithDefaults(p) {
+  return { ...DEFAULT_PRIVACY, ...(p || {}) };
+}
+
 export async function getPrivacy(uid) {
   const p = await redisGetJSON(privacyKey(uid)).catch(() => null);
-  return { ...DEFAULT_PRIVACY, ...(p || {}) };
+  return privacyWithDefaults(p);
 }
 
 export async function setPrivacy(uid, patch = {}) {

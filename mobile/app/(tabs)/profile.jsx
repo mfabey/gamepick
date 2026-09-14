@@ -33,7 +33,8 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { TopFade, BottomFade } from '../../src/components/EdgeFade';
-import { spacing, type, radius, PRESSED, TOUCH_MIN } from '../../src/theme';
+import { Skeleton } from '../../src/components/Skeleton';
+import { spacing, type, radius, PRESSED, TOUCH_MIN, avatar as avatarSize } from '../../src/theme';
 import { useTabBosluk } from '../../src/hooks/useAltBosluk';
 import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { useTabBarScroll } from '../../src/context/TabBarContext';
@@ -47,6 +48,7 @@ import { getUserProfile } from '../../src/api/social';
 import { pushGameCount } from '../../src/api/account';
 import { getValidToken } from '../../src/services/session';
 import { abone as engelDinle } from '../../src/services/engel';
+import { getEntry, fetchQuery, whenCacheReady } from '../../src/services/queryCache';
 import { useTabPressAction, scrollRefToTop } from '../../src/hooks/useTabPressAction';
 import { weeklyReport } from '../../src/services/stats';
 
@@ -64,6 +66,19 @@ const PAGE = 20;
 
 /** Uzak sekmeler ağdan, yerel sekmeler cihazdan besleniyor. */
 const UZAK = new Set(['reviews', 'posts']);
+
+/**
+ * Önbellekteki kendi profil başlığım — yoksa null.
+ *
+ * `username` şartı: 404 alan (kullanıcı adı kurulmamış) bir hesabın boş
+ * kaydını başlık diye çizmemek için. Anahtar uid içerdiği için başka hesabın
+ * kaydı buradan dönemez (bkz. aşağıdaki BAŞLIK ÖNBELLEĞİ).
+ */
+function onbellektenBaslik(anahtar) {
+  if (!anahtar) return null;
+  const d = getEntry(anahtar)?.data;
+  return d?.profile?.username ? d : null;
+}
 
 /** Izgara satırlara bölünüyor — bkz. `izgaraSatirlari` gerekçesi. */
 function bol(list, n) {
@@ -90,11 +105,37 @@ export default function ProfileScreen() {
   const collections = useCollections();
   const { steamGames, xboxGames, totalGamesCount: gameCount, refetch: refetchLib } = useConnectedLibrary();
 
-  const [sunucu, setSunucu] = useState(null);      // { profile, friendship, canView }
+  // ── BAŞLIK ÖNBELLEĞİ ──
+  // Kimlik bloğu sunucu yanıtını bekliyordu (`ProfileHeader` veri yokken null
+  // çiziyor); koleksiyon ve istek listesi ise cihazda duruyor. Sonuç: sayfa
+  // her açılışta ÖNCE içerikle geliyor, üst kısım sonra gelip içeriği aşağı
+  // itiyordu. Sunucu tarafı ölçüldü: bu uç Türkiye'den ~300 ms taban +
+  // tur başına ~100 ms.
+  //
+  // Son başarılı başlık diske yazılıyor (queryCache → AsyncStorage) ve ilk
+  // çizimde oradan okunuyor; tazeleme arkada. İlk açılıştan sonraki HER
+  // açılışta — soğuk açılış dahil — başlık ağ beklemeden görünüyor.
+  //
+  // ANAHTAR UID İÇERİYOR, ŞART: `clearQueryCache` hiçbir yerden çağrılmıyor
+  // ve disk çıkışta temizlenmiyor. Anahtar hesaba kapsanmasaydı başka hesapla
+  // giren kişi önceki hesabın kimliğini görürdü (messages.jsx aynı kalıp).
+  const onbellekAnahtari = account?.uid ? `profil:ben:${account.uid}` : null;
+  const onbellekRef = useRef(onbellekAnahtari);
+  onbellekRef.current = onbellekAnahtari;
+  const uidRef = useRef(account?.uid || null);
+  uidRef.current = account?.uid || null;
+  // Sunucu bu açılışta yanıt verdi mi (başarı YA DA 404). Soğuk açılışta disk
+  // geri yüklemesi yanıttan SONRA yetişirse eski başlığı taze yanıtın — ya da
+  // "kullanıcı adı yok" kararının — üstüne yazmasın.
+  const yanitGeldi = useRef(false);
+
+  const [sunucu, setSunucu] = useState(() => onbellektenBaslik(onbellekAnahtari)); // { profile, friendship, canView }
   const [yok, setYok] = useState(false);           // kullanıcı adı kurulmamış
   const [tab, setTab] = useState('collection');
   const [uzak, setUzak] = useState({ items: [], hasMore: false, offset: 0 });
-  const [yukleniyor, setYukleniyor] = useState(true);
+  // Başlık önbellekten geldiyse ekran "yükleniyor" DEĞİL: gösterilecek şey
+  // zaten çizili, tazeleme sessiz yapılıyor.
+  const [yukleniyor, setYukleniyor] = useState(() => !onbellektenBaslik(onbellekAnahtari));
   const [dahaYukleniyor, setDahaYukleniyor] = useState(false);
   const [tazeleniyor, setTazeleniyor] = useState(false);
 
@@ -136,9 +177,14 @@ export default function ProfileScreen() {
   // geliyor. Sekme yerelse `tab` gönderilmiyor, sunucu yalnız başlığı kuruyor.
   const yukle = useCallback(async (hedefTab, { tazele = false } = {}) => {
     const uzakMi = UZAK.has(hedefTab);
-    if (tazele) setTazeleniyor(true); else setYukleniyor(true);
+    // SESSİZ TAZELEME: başlık önbellekten zaten çizili ve sekme yerel. Gösterge
+    // açılsaydı ekran içerik dururken "yükleniyor" derdi — tam da giderilen
+    // his. Uzak sekmede liste öğeleri önbellekte olmadığı için gösterge kalıyor.
+    const sessiz = !tazele && !uzakMi && !!onbellektenBaslik(onbellekRef.current);
+    if (tazele) setTazeleniyor(true); else if (!sessiz) setYukleniyor(true);
     try {
       const r = await getUserProfile(uzakMi ? { tab: hedefTab, offset: 0 } : {});
+      yanitGeldi.current = true;
       setSunucu(r);
       basligiAldik.current = true;
       setYok(false);
@@ -146,10 +192,31 @@ export default function ProfileScreen() {
         const list = r?.items || [];
         setUzak({ items: list, hasMore: !!r.hasMore, offset: list.length });
       }
+
+      // ÖNBELLEĞE YAZ — yalnız başlık; liste öğeleri değil (disk bütçesi
+      // paylaşılıyor ve öğeler zaten ayrı sayfalanıyor).
+      //
+      // UID EŞLEŞMESİ ŞART: istek uçarken çıkış yapılıp başka hesapla
+      // girilirse yanıt ESKİ hesabın ama `onbellekRef` YENİ hesabın anahtarını
+      // tutuyor. Eşleşme olmadan eski hesabın kimliği yeni hesabın kovasına
+      // yazılırdı.
+      const anahtar = onbellekRef.current;
+      if (anahtar && r?.profile?.username && r.profile.uid === uidRef.current) {
+        const baslik = { profile: r.profile, friendship: r.friendship, canView: r.canView };
+        fetchQuery(anahtar, () => Promise.resolve(baslik), { force: true }).catch(() => {});
+      }
     } catch (e) {
       // 404 = kullanıcı adı henüz kurulmamış. Hata DEĞİL, bir sonraki adım:
       // sosyal kimlik kurulmadan profilin gösterecek bir şeyi yok.
-      if (e?.status === 404) setYok(true);
+      //
+      // Önbellekten çizilmiş bir başlık varsa KALDIRILIYOR: sunucu artık
+      // "profil yok" diyor ve eski kimliği boş durum mesajının üstünde
+      // göstermek çelişki olurdu.
+      if (e?.status === 404) {
+        yanitGeldi.current = true;
+        setSunucu(null);
+        setYok(true);
+      }
     } finally {
       setYukleniyor(false);
       setTazeleniyor(false);
@@ -170,6 +237,26 @@ export default function ProfileScreen() {
     if (!UZAK.has(tab) && basligiAldik.current) { setYukleniyor(false); return; }
     yukle(tab);
   }, [account, tab, yukle]);
+
+  // ── SOĞUK AÇILIŞ: DİSK GERİ YÜKLEMESİNİ BEKLE ──
+  // İlk çizimdeki `useState` başlatıcısı önbelleği yalnız BELLEKTE bulabiliyor.
+  // Uygulama yeni açıldıysa disk henüz geri yüklenmemiş olabilir; o durumda
+  // başlık iskelette kalır ve yanıtı beklerdi. Geri yükleme bitince (tavan
+  // 400 ms, bkz. whenCacheReady) önbellekteki başlık yerleşiyor.
+  //
+  // Taze yanıt ÖNCE geldiyse dokunulmuyor: `yanitGeldi` bunu tutuyor.
+  useEffect(() => {
+    if (!onbellekAnahtari) return undefined;
+    let canli = true;
+    whenCacheReady().then(() => {
+      if (!canli || yanitGeldi.current) return;
+      const kayit = onbellektenBaslik(onbellekAnahtari);
+      if (!kayit) return;
+      setSunucu((cur) => cur || kayit);
+      setYukleniyor(false);
+    });
+    return () => { canli = false; };
+  }, [onbellekAnahtari]);
 
   // ── ENGELLEMEDE BAŞLIĞI TAZELE ──
   // Profil bir SEKME: arka planda bağlı kalıyor ve veriyi yalnızca ilk
@@ -448,6 +535,12 @@ export default function ProfileScreen() {
         estimatedItemSize={izgara ? Math.round((kapakEn * 4) / 3) + GRID_GAP : 140}
         ListHeaderComponent={(
           <View>
+            {/* İLK AÇILIŞTA YER TUTUCU. Önbellek boşken (hesabın bu cihazdaki
+                ilk profil açılışı) başlık hâlâ yanıtı bekliyor. Önceden bu
+                sürede HİÇBİR ŞEY çiziliyordu; içerik en üstte duruyor, başlık
+                gelince aşağı itiliyordu. İskelet başlığın yerini baştan
+                ayırıyor. */}
+            {!profil && yukleniyor && !yok ? <ProfilBaslikIskeleti /> : null}
             <ProfileHeader
               profile={profil}
               friendship="self"
@@ -486,6 +579,61 @@ export default function ProfileScreen() {
 }
 
 // REAKTİF STİL: tema değişince yeniden üretiliyor (bkz. ThemeContext).
+// ─────────────────────────────────────────────────────────────────────────────
+// BAŞLIK İSKELETİ — ProfileHeader'ın GEOMETRİSİ, verisi değil.
+//
+// Ölçüler ProfileHeader.jsx stillerinden birebir: dış dolgu, avatar çapı
+// (avatar.xl), sayaç kutusu (TOUCH_MIN), ad satırı, çip (28pt) ve eylem
+// düğmesi (TOUCH_MIN) aynı kenar boşluklarıyla. Böylece gerçek başlık
+// geldiğinde içerik yerinden oynamıyor.
+//
+// BİLEREK ÇİZİLMEYENLER: biyografi (var mı bilinmiyor; varsa iki satır daha
+// gelir) ve haftalık özet kartı (yalnız hareket varsa çıkıyor). İkisini de
+// çizmek, OLMAYAN kullanıcıda aynı zıplamayı ters yönde yaratırdı. Kalan fark
+// yalnızca hesabın bu cihazdaki İLK açılışında görülür; sonrası önbellekten.
+//
+// Renk taşımıyor (Skeleton kendi temalı rengini çiziyor), o yüzden stiller
+// tema-reaktif olmak zorunda değil.
+// ─────────────────────────────────────────────────────────────────────────────
+function ProfilBaslikIskeleti() {
+  return (
+    <View
+      style={iskelet.wrap}
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+    >
+      <View style={iskelet.idRow}>
+        <Skeleton style={iskelet.avatar} />
+        <View style={iskelet.counters}>
+          {[0, 1, 2].map((i) => (
+            <View key={i} style={iskelet.counter}>
+              <Skeleton style={iskelet.counterN} />
+              <Skeleton style={iskelet.counterLabel} />
+            </View>
+          ))}
+        </View>
+      </View>
+      <Skeleton style={iskelet.name} />
+      <Skeleton style={iskelet.chip} />
+      <Skeleton style={iskelet.action} />
+    </View>
+  );
+}
+
+const iskelet = StyleSheet.create({
+  wrap: { paddingHorizontal: spacing.s20, paddingTop: spacing.s8 },
+  idRow: { flexDirection: 'row', alignItems: 'center' },
+  avatar: { width: avatarSize.xl, height: avatarSize.xl, borderRadius: avatarSize.xl / 2 },
+  counters: { flex: 1, flexDirection: 'row', marginLeft: spacing.s20 },
+  counter: { flex: 1, height: TOUCH_MIN, alignItems: 'center', justifyContent: 'center', gap: spacing.s4 },
+  counterN: { width: 28, height: 14, borderRadius: radius.xs },
+  counterLabel: { width: 44, height: 10, borderRadius: radius.xs },
+  // Ad satırı: RN'in varsayılan satır yüksekliği yazı boyunun ~1.2 katı.
+  name: { width: '40%', height: Math.round(type.body * 1.2), borderRadius: radius.xs, marginTop: spacing.s16 },
+  chip: { width: 132, height: 28, borderRadius: radius.pill, marginTop: spacing.s12 },
+  action: { height: TOUCH_MIN, borderRadius: radius.md, marginTop: spacing.s16 },
+});
+
 const makeStyles = (colors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
 

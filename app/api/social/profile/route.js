@@ -2,12 +2,12 @@ import { NextResponse } from 'next/server';
 import { verifyMobileToken } from '../../../lib/mobile-auth';
 import { rateLimit, tooManyRequests } from '../../../lib/rate-limit';
 import {
-  getProfile, uidForUsername, getPrivacy, getFriendState,
-  isBlockedBetween, mutualFriendCount,
+  uidForUsername, privacyWithDefaults,
+  profileKey, privacyKey, friendsKey, blocksKey, reqInKey, reqOutKey,
 } from '../../../lib/social-store';
-import { listUserReviews, countUserReviews } from '../../../lib/review-store';
-import { listUserPosts, countUserPosts, countReplies, reviewRef } from '../../../lib/post-store';
-import { redisCmd, redisGetJSON } from '../../../lib/redis';
+import { listUserReviews, userReviewsKey } from '../../../lib/review-store';
+import { listUserPosts, countReplies, reviewRef, userPostsKey } from '../../../lib/post-store';
+import { redisPipeline, parseJSON } from '../../../lib/redis';
 import { getSteamDetailsCached } from '../../../lib/steam-cache.js';
 import { clientIp } from '../../../lib/client-ip';
 
@@ -96,6 +96,85 @@ function flattenCollections(collections) {
   return out;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// PROFİLİN BÜTÜN OKUMALARI TEK PIPELINE'DA
+//
+// ÖLÇÜLDÜ (2026-09-14, canlı uç, Türkiye'den, ısınmış fonksiyon):
+//   Redis'e hiç gitmeyen yol (?tab=gecersiz → 400)   ~300 ms
+//   2 sıralı Redis turu yapan yol (yok kullanıcı → 404) ~495 ms
+//   → her sıralı tur ≈ 100 ms.
+// Fonksiyon iad1'de koşuyor (`X-Vercel-Id: fra1::iad1`) ve her `redisCmd`
+// Upstash'e AYRI bir HTTPS isteği.
+//
+// Önceden kendi profilim 4 sıralı tur bekliyordu: hız sınırı → profil →
+// gizlilik → 6'lı paralel okuma. (Paralel okuma da 6 ayrı HTTPS isteğiydi.)
+// Oysa hedef uid okumalardan ÖNCE belli; hepsi tek turda gelebilir.
+//
+// Şimdi:
+//   kendi profilim / ?uid=   → hız sınırı ∥ pipeline            = 1 tur
+//   ?username=               → hız sınırı ∥ ad çözümü, pipeline = 2 tur
+//
+// DAVRANIŞ AYNI: engel, bulunabilirlik ve gizli profil kapıları aynı sırayla
+// aynı kararı veriyor; yalnızca verinin geliş biçimi değişti. Engel kontrolü
+// artık okumalarla BİRLİKTE geliyor ama sonuç yine 404 ve yanıt gövdesine
+// hiçbir şey sızmıyor.
+//
+// BEDEL: uid belliyken okumalar hız sınırı kararını beklemiyor. Sınırı aşan
+// istek de bir pipeline turu harcıyor — ama yanıt 429 ve veri dönmüyor.
+// Kullanıcı adıyla gelen (anonim tarama yolu) istekte pipeline hâlâ sınırın
+// ARKASINDA.
+//
+// Anahtar adları kendi modüllerinden geliyor (profileKey, userPostsKey…):
+// burada yeniden yazılsalardı biri değişince sayaç sessizce sıfırlanırdı.
+// ─────────────────────────────────────────────────────────────────────────────
+async function profilOku(targetUid, viewerUid) {
+  const baskasi = !!viewerUid && viewerUid !== targetUid;
+  const komutlar = [
+    ['GET', profileKey(targetUid)],               // 0
+    ['GET', privacyKey(targetUid)],               // 1
+    ['GET', `user_collections:${targetUid}`],     // 2
+    ['GET', `user_wishlist:${targetUid}`],        // 3
+    ['SCARD', friendsKey(targetUid)],             // 4
+    ['ZCARD', userPostsKey(targetUid)],           // 5
+    ['ZCARD', userReviewsKey(targetUid)],         // 6
+    ['GET', `user_connections:${targetUid}`],     // 7
+  ];
+  if (baskasi) {
+    komutlar.push(
+      // isBlockedBetween ile aynı iki yön
+      ['SISMEMBER', blocksKey(viewerUid), targetUid],           // 8
+      ['SISMEMBER', blocksKey(targetUid), viewerUid],           // 9
+      // getFriendState ile aynı üç küme, aynı sıra
+      ['SMEMBERS', friendsKey(viewerUid)],                      // 10
+      ['SMEMBERS', reqInKey(viewerUid)],                        // 11
+      ['SMEMBERS', reqOutKey(viewerUid)],                       // 12
+      // mutualFriendCount ile aynı kesişim
+      ['SINTER', friendsKey(viewerUid), friendsKey(targetUid)], // 13
+    );
+  }
+
+  // Pipeline düşerse (null) her alan boş gelir → profil yok → 404. Eski
+  // yolda da `getProfile` hata verince null dönüp 404'e düşüyordu.
+  const r = (await redisPipeline(komutlar)) || [];
+  const dizi = (x) => (Array.isArray(x) ? x : []);
+
+  return {
+    profile: parseJSON(r[0]),
+    privacy: privacyWithDefaults(parseJSON(r[1])),
+    collections: parseJSON(r[2]),
+    wishlist: parseJSON(r[3]),
+    friendCount: Number(r[4]) || 0,
+    postCount: Number(r[5]) || 0,
+    reviewCount: Number(r[6]) || 0,
+    conn: parseJSON(r[7]),
+    engelli: baskasi && (Number(r[8]) === 1 || Number(r[9]) === 1),
+    friendState: baskasi
+      ? { friends: dizi(r[10]), incoming: dizi(r[11]), outgoing: dizi(r[12]) }
+      : null,
+    mutual: baskasi ? dizi(r[13]).length : 0,
+  };
+}
+
 export async function GET(request) {
   const viewer = await verifyMobileToken(request);
   const viewerUid = viewer?.uid || null;
@@ -120,13 +199,32 @@ export async function GET(request) {
   const rlKey = viewerUid
     ? `rl:profile:${viewerUid}`
     : `rl:profile:ip:${clientIp(request)}`;
-  const rl = await rateLimit(rlKey, 300, 3600);
+  // Tur sayısının gerekçesi `profilOku`nun üstünde.
+  const bilinenUid = username ? null : (uidParam || viewerUid);
+  let rl;
+  let targetUid;
+  let okuma = null;
+  if (bilinenUid) {
+    targetUid = bilinenUid;
+    [rl, okuma] = await Promise.all([
+      rateLimit(rlKey, 300, 3600),
+      profilOku(targetUid, viewerUid),
+    ]);
+  } else {
+    [rl, targetUid] = await Promise.all([
+      rateLimit(rlKey, 300, 3600),
+      uidForUsername(username),
+    ]);
+    if (rl.ok && targetUid) okuma = await profilOku(targetUid, viewerUid);
+  }
   if (!rl.ok) return NextResponse.json(tooManyRequests(), { status: 429 });
+  if (!targetUid || !okuma) return notFound();
 
-  const targetUid = username ? await uidForUsername(username) : (uidParam || viewerUid);
-  if (!targetUid) return notFound();
+  const {
+    profile, privacy, engelli, friendState, mutual,
+    collections, wishlist, friendCount, postCount, reviewCount, conn,
+  } = okuma;
 
-  const profile = await getProfile(targetUid);
   // `username` yoksa sosyal kimlik hiç kurulmamış demektir (kimlik uçları
   // aynı anahtara ad/e-posta yazıyor — bkz. mergeProfile). Böyle bir kaydı
   // profil saymak, adı olmayan bir sayfaya kapı açardı.
@@ -137,12 +235,7 @@ export async function GET(request) {
   // ── Kapı 1: engel ──
   // 403 DEĞİL 404: "engellendin" demek, engelleyenin kimliğini ve kararını
   // ifşa eder. Var olmayan sayfa gibi davranmak tek doğru cevap.
-  if (!isSelf && viewerUid && await isBlockedBetween(viewerUid, targetUid)) return notFound();
-
-  const [privacy, friendState] = await Promise.all([
-    getPrivacy(targetUid),
-    viewerUid && !isSelf ? getFriendState(viewerUid) : Promise.resolve(null),
-  ]);
+  if (engelli) return notFound();
 
   let friendship = 'none';
   if (isSelf) friendship = 'self';
@@ -165,17 +258,6 @@ export async function GET(request) {
   // üç sayacı ve eylem satırını gösteriyor — arkadaşlık isteği gönderebilmek
   // için kullanıcının kime baktığını görmesi gerekiyor.
   const canView = isSelf || isFriend || !privacy.privateProfile;
-
-  const [collections, wishlist, friendCount, postCount, reviewCount, conn, mutual] =
-    await Promise.all([
-      redisGetJSON(`user_collections:${targetUid}`).catch(() => null),
-      redisGetJSON(`user_wishlist:${targetUid}`).catch(() => null),
-      redisCmd(['SCARD', `friends:${targetUid}`]).then((n) => Number(n) || 0).catch(() => 0),
-      countUserPosts(targetUid),
-      countUserReviews(targetUid),
-      redisGetJSON(`user_connections:${targetUid}`).catch(() => null),
-      viewerUid && !isSelf ? mutualFriendCount(viewerUid, targetUid) : Promise.resolve(0),
-    ]);
 
   const collectionGames = flattenCollections(collections);
   const wishItems = (Array.isArray(wishlist) ? wishlist : []).map(gridItem);
