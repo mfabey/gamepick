@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useLanguage } from '../context/LanguageContext';
 
 const CATS_TR = ['Tümü', 'İndirimler', 'Çıkışlar', 'Güncellemeler', 'Endüstri', 'İncelemeler'];
 const CATS_EN = ['All', 'Sales', 'Releases', 'Updates', 'Industry', 'Reviews'];
 
 export default function NewsPage() {
+  const router = useRouter();
   const { lang, t } = useLanguage();
   const [cat, setCat] = useState(lang === 'tr' ? 'Tümü' : 'All');
   const [news, setNews] = useState([]);
@@ -47,8 +49,51 @@ export default function NewsPage() {
     <div className="page-transition" style={{ minHeight: '100vh', background: 'var(--bg-body)', paddingBottom: 100 }}>
 
       {/* ── Hero ── */}
-      <section style={{ position: 'relative', overflow: 'hidden', padding: '58px 0 28px', background: 'var(--hero-bg)', borderBottom: '1px solid var(--border)' }}>
+      <section style={{ position: 'relative', overflow: 'hidden', padding: '48px 0 28px', background: 'var(--hero-bg)', borderBottom: '1px solid var(--border)' }}>
         <div style={{ maxWidth: 1180, margin: '0 auto', padding: '0 36px' }}>
+          
+          {/* Geri Dön Butonu */}
+          <button
+            onClick={() => {
+              if (window.history.length > 1) {
+                router.back();
+              } else {
+                router.push('/');
+              }
+            }}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 7,
+              padding: '7px 14px',
+              borderRadius: 999,
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border)',
+              color: 'var(--text-2)',
+              fontSize: 13,
+              fontWeight: 650,
+              cursor: 'pointer',
+              marginBottom: 16,
+              boxShadow: 'var(--shadow)',
+              transition: 'all 0.15s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = 'var(--accent)';
+              e.currentTarget.style.borderColor = 'var(--accent-border)';
+              e.currentTarget.style.transform = 'translateX(-3px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'var(--text-2)';
+              e.currentTarget.style.borderColor = 'var(--border)';
+              e.currentTarget.style.transform = 'translateX(0)';
+            }}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m15 18-6-6 6-6"/>
+            </svg>
+            {lang === 'tr' ? 'Geri Dön' : 'Go Back'}
+          </button>
+
           <p style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: 12 }}>
             ● {lang === 'tr' ? 'Güncel · Oyun Dünyası' : 'Latest · Gaming World'}
           </p>
