@@ -9,6 +9,54 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v57.0.0/ before 
 Aşağıdakiler tartışıldı ve **bilerek yapılmadı**. Tasarım belgelerinde
 istendikleri için "eksik" gibi görünürler; değiller.
 
+## iPad desteği — KAPALI (2.7.2, build 53)
+
+`app.json` → `ios.supportsTablet: false`. JSON yorum almadığı için gerekçe
+burada.
+
+Geçmiş: `true` (`a0eae96`, 24 Tem) → `false` (`cec6c31`, 27 Tem) → `true`
+(`ead4910`, 10 Eyl, "support iPad natively") → `false` (16 Eyl).
+
+NEDEN KAPANDI. iPad destekli bir sürümü incelemeye göndermek için App Store
+Connect 13" iPad ekran görüntüsü (2064×2752 ya da 2048×2732) ZORUNLU tutuyor.
+Ekran görüntüsü alınacak iPad ya da iPad simülatörünü çalıştıracak Mac yok.
+iPhone görsellerinden türetmek ya da yapay zekaya ürettirmek Guideline
+2.3.3'ten ret sebebi: görsel uygulamanın GERÇEK iPad ekranı olmalı. Ayrıca
+kullanıcı iPad'i hedeflemek istemiyor.
+
+`expo-config-plugins` → `ios/DeviceFamily.js`: `supportsTablet: false` →
+`TARGETED_DEVICE_FAMILY = "1"` (yalnızca iPhone).
+
+### BU iPad İNCELEMESİNİ ORTADAN KALDIRMIYOR
+
+Build 42 (2.6.1) `supportsTablet: false` ile alınmıştı ve 2.1(a) çökmesi YİNE
+iPad Air'de bulundu. iPhone uygulamaları iPad'de uyumluluk modunda çalışıyor ve
+inceleyici orada test ediyor. Geliştirici sözleşmesi uygulamanın o modda da
+aynı işlevleri sunmasını ve moda müdahale edilmemesini şart koşuyor. Yani iPad
+hâlâ desteklenen bir ORTAM, sadece App Store'da "iPad uygulaması" olarak
+listelenmiyor.
+
+Uyumluluk modunda pencere iPhone 8 kanvası (375×667) — ölçüm ve katsayı
+`src/theme.js` → GENİŞ EKRAN YERLEŞİMİ. iPad'e özel yerleşim kodu SİLİNMEDİ:
+375 pt'de o dallar tetiklenmiyor.
+
+### `telephony` İLE iPad'DEN GİZLEME YAPILMIYOR
+
+`UIRequiredDeviceCapabilities`'e `telephony` eklemek uygulamayı iPad'lerde
+App Store'dan gizliyor ama uygulama telefon araması YAPMIYOR: yanlış bir
+donanım beyanı ve sözleşmedeki "uyumluluk moduna müdahale etme" maddesine
+aykırı. Bir kez eklenirse güncellemede de kaldırılamaz (aşağıdaki kural).
+
+### ⚠ GERİ AÇMA TEK YÖNLÜ
+
+iPad destekli bir sürüm App Store'da YAYINLANDIKTAN sonra hiçbir güncelleme
+iPad desteğini kaldıramaz: App Store Connect, önceki sürümden daha az cihaz
+destekleyen build'i yüklerken reddediyor (Apple QA1623). Bugün kapatılabildi
+çünkü hiçbir sürüm yayınlanmamıştı.
+
+`true` yapmadan ÖNCE: 13" iPad ekran görüntüleri hazır olsun, ve bu kararın
+kalıcı olduğu bilinsin.
+
 ## "Sıra sende" bölümü — YAPILMIYOR
 
 Faz 1 anasayfada, Faz 3 oyun detayında istiyor. İki sebeple yok:

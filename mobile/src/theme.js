@@ -478,6 +478,12 @@ export const spacing = {
 // verdi. iPad hedefi açılınca ölçek 1,00× oldu — ama bu sefer içerik
 // GERİLDİ: 402 pt için tasarlanmış tek kolonlu bir akış 820 pt'ye yayılıyor.
 //
+// ⚠ 2026-09-16 (2.7.2, build 53): `supportsTablet` YENİDEN `false`. Gerekçe
+// AGENTS.md → "iPad desteği — KAPALI". iPad'de uygulama yine yukarıdaki
+// iPhone 8 kanvasında büyütülerek çiziliyor; pencere 375 pt kaldığı için
+// aşağıdaki iki sınır (640 / 820) o modda DEVREYE GİRMİYOR. Sayılar silinmedi:
+// zararsızlar ve iPad geri açılırsa ölçümleri hazır.
+//
 // ── ICERIK_MAX = 640 — OKUNABİLİR SATIR UZUNLUĞU ──
 // Tipografide üst sınır ~75 karakter; ötesinde göz satır sonundan satır
 // başına dönerken yerini kaybediyor. Gövde metni `type.subhead` = 15 pt ve
