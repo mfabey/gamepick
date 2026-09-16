@@ -100,8 +100,33 @@ export default function VideosPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(false);
   const [active, setActive]   = useState(0);
-  const [muted, setMuted]     = useState(true);
-  const [paused, setPaused]   = useState(false);
+  const [muted, setMuted]             = useState(true);
+  const [volume, setVolume]           = useState(0.8);
+  const [savedVolume, setSavedVolume] = useState(0.8);
+  const [paused, setPaused]           = useState(false);
+
+  const toggleMute = useCallback(() => {
+    if (muted) {
+      const targetVol = volume > 0 ? volume : (savedVolume > 0 ? savedVolume : 0.8);
+      setVolume(targetVol);
+      setMuted(false);
+    } else {
+      if (volume > 0) setSavedVolume(volume);
+      setMuted(true);
+    }
+  }, [muted, volume, savedVolume]);
+
+  const handleVolumeChange = useCallback((newVol) => {
+    const clamped = Math.max(0, Math.min(1, newVol));
+    if (clamped <= 0.01) {
+      setVolume(0);
+      setMuted(true);
+    } else {
+      setVolume(clamped);
+      setSavedVolume(clamped);
+      setMuted(false);
+    }
+  }, []);
 
   // Oturum başına tek tohum — mobildeki ile aynı sözleşme: aynı oturumda
   // sayfalama tutarlı, farklı oturumda sıra değişiyor.
@@ -269,13 +294,14 @@ export default function VideosPage() {
         // yeniden koşmuyor ve aktif video sessizce duruyordu.
         if (i === active && !paused) {
           v.muted = muted;
+          v.volume = muted ? 0 : volume;
           v.play().catch(() => {});
         }
       }
     })();
 
     return () => { iptal = true; };
-  }, [active, items, paused, muted]);
+  }, [active, items, paused, muted, volume]);
 
   // Bileşen sökülürken açık kalan her motoru yık.
   useEffect(() => {
@@ -294,13 +320,14 @@ export default function VideosPage() {
       if (!v) return;
       if (i === active) {
         v.muted = muted;
+        v.volume = muted ? 0 : volume;
         if (paused) v.pause();
         else v.play().catch(() => {});   // otomatik oynatma reddi sessiz geçilir
       } else {
         try { v.pause(); v.currentTime = 0; } catch {}
       }
     });
-  }, [active, paused, muted, items.length]);
+  }, [active, paused, muted, volume, items.length]);
 
   // Sekme arkaplana düşünce durdur. Görünmeyen videoyu indirmeye devam etmek
   // hem bant genişliği hem pil.
@@ -328,11 +355,11 @@ export default function VideosPage() {
       if (e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); git(active + 1); }
       else if (e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); git(active - 1); }
       else if (e.key === ' ') { e.preventDefault(); setPaused((p) => !p); }
-      else if (e.key === 'm' || e.key === 'M') setMuted((m) => !m);
+      else if (e.key === 'm' || e.key === 'M') toggleMute();
     };
     window.addEventListener('keydown', onTus);
     return () => window.removeEventListener('keydown', onTus);
-  }, [active, git]);
+  }, [active, git, toggleMute]);
 
   // ── Durumlar ───────────────────────────────────────────────────────────────
   if (loading && items.length === 0) {
@@ -482,17 +509,14 @@ export default function VideosPage() {
               DİKEYDE ORTALI, mobildeki gibi altta değil: sağ alt köşe
               `.ai-widget-trigger` tarafından tutulmuş ve o düğme dar
               ekranlarda alt kenardan 136px'e kadar yükseliyor. */}
-          <div style={{ position: 'absolute', right: 'clamp(12px,2.5vw,28px)', top: '50%', transform: 'translateY(-50%)', display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <RayDugmesi
-              etiket={muted ? (tr ? 'Sesi aç' : 'Unmute') : (tr ? 'Sesi kapat' : 'Mute')}
-              onClick={() => setMuted((m) => !m)}
-            >
-              {muted ? (
-                <svg width="21" height="21" viewBox="0 0 24 24" fill="#fff"><path d="M16.5 12A4.5 4.5 0 0 0 14 7.97v2.21l2.45 2.45c.03-.2.05-.41.05-.63zM19 12c0 .94-.2 1.82-.54 2.64l1.51 1.51A8.8 8.8 0 0 0 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3 3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06a8.94 8.94 0 0 0 3.69-1.81L19.73 21 21 19.73 4.27 3zM12 4 9.91 6.09 12 8.18V4z" /></svg>
-              ) : (
-                <svg width="21" height="21" viewBox="0 0 24 24" fill="#fff"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" /></svg>
-              )}
-            </RayDugmesi>
+          <div style={{ position: 'absolute', right: 'clamp(12px,2.5vw,28px)', top: '50%', transform: 'translateY(-50%)', display: 'flex', flexDirection: 'column', gap: 14, zIndex: 10 }}>
+            <SesKontrolu
+              muted={muted}
+              volume={volume}
+              onToggleMute={toggleMute}
+              onVolumeChange={handleVolumeChange}
+              tr={tr}
+            />
 
             <RayDugmesi
               etiket={paused ? (tr ? 'Oynat' : 'Play') : (tr ? 'Duraklat' : 'Pause')}
@@ -544,9 +568,227 @@ function RayDugmesi({ etiket, onClick, children }) {
         width: 46, height: 46, borderRadius: '50%', border: 'none', cursor: 'pointer',
         background: 'rgba(0,0,0,0.42)', backdropFilter: 'blur(8px)',
         display: 'grid', placeItems: 'center',
+        transition: 'transform 0.15s ease, background 0.15s ease',
       }}
+      onPointerDown={(e) => { e.currentTarget.style.transform = 'scale(0.92)'; }}
+      onPointerUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+      onPointerLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
     >
       {children}
     </button>
+  );
+}
+
+/**
+ * Dikey ses seviyesi barı ve sessize alma / ses açma kontrolü.
+ */
+function SesKontrolu({ muted, volume, onToggleMute, onVolumeChange, tr }) {
+  const [showSlider, setShowSlider] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const hideTimerRef = useRef(null);
+  const trackRef = useRef(null);
+
+  const effectiveVol = muted ? 0 : volume;
+  const displayPercent = Math.round(effectiveVol * 100);
+
+  const resetHideTimer = useCallback(() => {
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    hideTimerRef.current = setTimeout(() => {
+      setShowSlider(false);
+    }, 2500);
+  }, []);
+
+  const handlePointerDown = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+    setShowSlider(true);
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+
+    const updateFromEvent = (evt) => {
+      if (!trackRef.current) return;
+      const rect = trackRef.current.getBoundingClientRect();
+      const raw = (rect.bottom - evt.clientY) / rect.height;
+      const clamped = Math.max(0, Math.min(1, raw));
+      onVolumeChange(clamped);
+    };
+
+    updateFromEvent(e);
+
+    const onPointerMove = (evt) => {
+      updateFromEvent(evt);
+    };
+
+    const onPointerUp = () => {
+      setIsDragging(false);
+      resetHideTimer();
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerUp);
+    };
+
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerUp);
+  };
+
+  const handleWheel = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const delta = e.deltaY < 0 ? 0.05 : -0.05;
+    const nextVol = Math.max(0, Math.min(1, effectiveVol + delta));
+    onVolumeChange(nextVol);
+    setShowSlider(true);
+    resetHideTimer();
+  };
+
+  const handleButtonClick = (e) => {
+    e.stopPropagation();
+    onToggleMute();
+    setShowSlider(true);
+    resetHideTimer();
+  };
+
+  useEffect(() => {
+    return () => {
+      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    };
+  }, []);
+
+  return (
+    <div
+      style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+      onMouseEnter={() => {
+        if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+        setShowSlider(true);
+      }}
+      onMouseLeave={() => {
+        if (!isDragging) setShowSlider(false);
+      }}
+    >
+      {/* Dikey Ses Seviyesi Barı Popover */}
+      <div
+        onWheel={handleWheel}
+        style={{
+          position: 'absolute',
+          bottom: 'calc(100% + 10px)',
+          left: '50%',
+          transform: `translateX(-50%) scale(${showSlider || isDragging ? 1 : 0.85})`,
+          opacity: showSlider || isDragging ? 1 : 0,
+          pointerEvents: showSlider || isDragging ? 'auto' : 'none',
+          transformOrigin: 'bottom center',
+          transition: isDragging ? 'none' : 'opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+          width: 44,
+          padding: '12px 0 10px',
+          borderRadius: 22,
+          background: 'rgba(15, 15, 20, 0.88)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          boxShadow: '0 12px 36px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(255,255,255,0.18)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 10,
+          zIndex: 30,
+          userSelect: 'none',
+          touchAction: 'none',
+        }}
+      >
+        {/* Yüzde metni */}
+        <span
+          style={{
+            fontSize: 10.5,
+            fontWeight: 700,
+            fontFamily: 'monospace, system-ui, sans-serif',
+            color: effectiveVol > 0 ? '#fff' : 'rgba(255,255,255,0.5)',
+            letterSpacing: '-0.3px',
+            lineHeight: 1,
+          }}
+        >
+          {effectiveVol > 0 ? `${displayPercent}%` : (tr ? 'KAPALI' : 'OFF')}
+        </span>
+
+        {/* Dikey Kaydırıcı Dokunma / Tıklama Alanı */}
+        <div
+          ref={trackRef}
+          onPointerDown={handlePointerDown}
+          style={{
+            position: 'relative',
+            width: 28,
+            height: 96,
+            display: 'flex',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            touchAction: 'none',
+          }}
+        >
+          {/* Arka Plan Çubuğu */}
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              bottom: 0,
+              width: 6,
+              borderRadius: 3,
+              background: 'rgba(255, 255, 255, 0.22)',
+              overflow: 'hidden',
+            }}
+          >
+            {/* Doluluk Çubuğu (Aşağıdan Yukarıya) */}
+            <div
+              style={{
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: `${effectiveVol * 100}%`,
+                background: 'linear-gradient(to top, var(--accent, #6366f1), #a855f7)',
+                boxShadow: effectiveVol > 0 ? '0 0 8px var(--accent, #6366f1)' : 'none',
+                transition: isDragging ? 'none' : 'height 0.08s ease-out',
+              }}
+            />
+          </div>
+
+          {/* Sürükleyici Tutamak (Thumb) */}
+          <div
+            style={{
+              position: 'absolute',
+              bottom: `calc(${effectiveVol * 100}% - 7px)`,
+              width: 15,
+              height: 15,
+              borderRadius: '50%',
+              background: '#fff',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,0,0,0.1)',
+              pointerEvents: 'none',
+              transition: isDragging ? 'none' : 'bottom 0.08s ease-out',
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Ses Açma / Kısma Butonu */}
+      <RayDugmesi
+        etiket={
+          effectiveVol === 0
+            ? (tr ? 'Sesi aç' : 'Unmute')
+            : (tr ? `Sesi kapat (%${displayPercent})` : `Mute (${displayPercent}%)`)
+        }
+        onClick={handleButtonClick}
+      >
+        {effectiveVol === 0 ? (
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="#fff">
+            <path d="M16.5 12A4.5 4.5 0 0 0 14 7.97v2.21l2.45 2.45c.03-.2.05-.41.05-.63zM19 12c0 .94-.2 1.82-.54 2.64l1.51 1.51A8.8 8.8 0 0 0 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3 3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06a8.94 8.94 0 0 0 3.69-1.81L19.73 21 21 19.73 4.27 3zM12 4 9.91 6.09 12 8.18V4z" />
+          </svg>
+        ) : effectiveVol < 0.5 ? (
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="#fff">
+            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02z" />
+          </svg>
+        ) : (
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="#fff">
+            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
+          </svg>
+        )}
+      </RayDugmesi>
+    </div>
   );
 }
