@@ -854,9 +854,15 @@ export default function ProfilePage() {
             )}
             {/* Platform chips */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              <span style={{ padding: '4px 10px', borderRadius: 999, background: 'rgba(201,133,10,0.12)', border: '1px solid rgba(201,133,10,0.25)', fontSize: 11.5, color: 'var(--accent)', fontWeight: 700 }}>
-                ⚡ Gamerisen Member
-              </span>
+              {['batuta', 'test'].includes(user?.username?.toLowerCase()) ? (
+                <span style={{ padding: '4px 10px', borderRadius: 999, background: 'rgba(201,133,10,0.18)', border: '1px solid rgba(201,133,10,0.45)', fontSize: 11.5, color: 'var(--accent)', fontWeight: 750, boxShadow: '0 0 10px rgba(201,133,10,0.18)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  ⚡ Gamerisen Developer
+                </span>
+              ) : (
+                <span style={{ padding: '4px 10px', borderRadius: 999, background: 'rgba(201,133,10,0.12)', border: '1px solid rgba(201,133,10,0.25)', fontSize: 11.5, color: 'var(--accent)', fontWeight: 700 }}>
+                  ⚡ Gamerisen Member
+                </span>
+              )}
               {steamAccounts.map(a => (
                 <span key={a.steamId} style={{ padding: '4px 10px', borderRadius: 999, background: 'rgba(26,159,255,0.1)', border: '1px solid rgba(26,159,255,0.25)', fontSize: 11.5, color: '#5eb7ff', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5 }}>
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="#5eb7ff"><path d="M11.979 0C5.678 0 .511 4.86.022 11.037l6.432 2.658c.545-.371 1.203-.59 1.912-.59.063 0 .125.004.188.006l2.861-4.142V8.91c0-2.495 2.028-4.524 4.524-4.524 2.494 0 4.524 2.031 4.524 4.527s-2.03 4.525-4.524 4.525h-.105l-4.076 2.909c0 .052.004.105.004.159 0 1.875-1.515 3.396-3.39 3.396-1.635 0-3.016-1.173-3.331-2.727L.436 15.27C1.862 20.307 6.486 24 11.979 24c6.627 0 11.999-5.373 11.999-12S18.605 0 11.979 0z"/></svg>

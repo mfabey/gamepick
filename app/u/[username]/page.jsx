@@ -127,7 +127,14 @@ export default async function UserProfilePage({ params }) {
 
         <div style={{ minWidth: 0 }}>
           <h1 style={S.ad}>{ad}</h1>
-          <p style={S.kullanici}>@{profile.username}</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginTop: 4, marginBottom: 8 }}>
+            <p style={{ ...S.kullanici, margin: 0 }}>@{profile.username}</p>
+            {['batuta', 'test'].includes(profile.username?.toLowerCase()) && (
+              <span style={{ padding: '3px 9px', borderRadius: 999, background: 'rgba(201,133,10,0.18)', border: '1px solid rgba(201,133,10,0.45)', fontSize: 11, color: 'var(--accent)', fontWeight: 750, boxShadow: '0 0 10px rgba(201,133,10,0.18)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                ⚡ Gamerisen Developer
+              </span>
+            )}
+          </div>
           {profile.bio ? <p style={S.bio}>{profile.bio}</p> : null}
         </div>
       </section>
