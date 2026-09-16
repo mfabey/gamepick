@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { verifyMobileToken } from '../../../lib/mobile-auth';
 import { rateLimit, tooManyRequests } from '../../../lib/rate-limit';
-import { searchUsers, getFriendState, getPrivacy } from '../../../lib/social-store';
+import { searchUsers, getFriendState, getPrivacy, isPrivilegedViewer } from '../../../lib/social-store';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Kullanıcı arama — arkadaş eklemek için.
@@ -23,9 +23,13 @@ export async function GET(request) {
   const raw = await searchUsers(q, user.uid, 20);
   if (raw.length === 0) return NextResponse.json({ results: [] });
 
-  // Keşfedilmek istemeyenleri ele
-  const flags = await Promise.all(raw.map((r) => getPrivacy(r.uid)));
-  const discoverable = raw.filter((_, i) => flags[i].discoverable);
+  // Keşfedilmek istemeyenleri ele (geliştiriciler muaf)
+  const isPrivileged = await isPrivilegedViewer(user.uid);
+  let discoverable = raw;
+  if (!isPrivileged) {
+    const flags = await Promise.all(raw.map((r) => getPrivacy(r.uid)));
+    discoverable = raw.filter((_, i) => flags[i].discoverable);
+  }
 
   // Mevcut ilişkiyi işaretle → arayüz doğru butonu göstersin
   const { friends, incoming, outgoing } = await getFriendState(user.uid);

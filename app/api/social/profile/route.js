@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { verifyMobileToken } from '../../../lib/mobile-auth';
 import { rateLimit, tooManyRequests } from '../../../lib/rate-limit';
 import {
-  uidForUsername, privacyWithDefaults,
+  uidForUsername, privacyWithDefaults, isPrivilegedViewer,
   profileKey, privacyKey, friendsKey, blocksKey, reqInKey, reqOutKey,
 } from '../../../lib/social-store';
 import { listUserReviews, userReviewsKey } from '../../../lib/review-store';
@@ -245,19 +245,20 @@ export async function GET(request) {
     else if (friendState.incoming.includes(targetUid)) friendship = 'incoming';
   }
   const isFriend = friendship === 'friends';
+  const isPrivileged = await isPrivilegedViewer(viewerUid);
 
   // ── Kapı 2: bulunabilirlik ──
   // `discoverable` bugüne kadar HİÇBİR YERDE uygulanmıyordu (searchUsers
   // yalnız engel süzüyor). Anahtarın sözü "kullanıcı adımla bulunabileyim
   // mi"; profil sayfası tam olarak kullanıcı adıyla açılan yer, yani sözün
-  // tutulacağı yer burası. Arkadaşlar muaf: zaten birbirlerini bulmuşlar.
-  if (!isSelf && !isFriend && privacy.discoverable === false) return notFound();
+  // tutulacağı yer burası. Arkadaşlar ve geliştiriciler muaf.
+  if (!isSelf && !isFriend && !isPrivileged && privacy.discoverable === false) return notFound();
 
   // ── Kapı 3: gizli profil ──
   // İçerik kapanıyor, KİMLİK KAPANMIYOR: maket gizli profilde kimlik bloğunu,
   // üç sayacı ve eylem satırını gösteriyor — arkadaşlık isteği gönderebilmek
-  // için kullanıcının kime baktığını görmesi gerekiyor.
-  const canView = isSelf || isFriend || !privacy.privateProfile;
+  // için kullanıcının kime baktığını görmesi gerekiyor. Geliştirici hesaplar içeriği görebilir.
+  const canView = isSelf || isFriend || isPrivileged || !privacy.privateProfile;
 
   const collectionGames = flattenCollections(collections);
   const wishItems = (Array.isArray(wishlist) ? wishlist : []).map(gridItem);

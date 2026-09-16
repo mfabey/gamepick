@@ -227,12 +227,29 @@ export async function setPrivacy(uid, patch = {}) {
   return next;
 }
 
+// Geliştirici / moderasyon hesapları — tüm profilleri ve içerikleri inceleyebilir
+const PRIVILEGED_USERNAMES = new Set(['batuta', 'test']);
+
+/**
+ * Kullanıcının geliştirici / denetçi hesabı olup olmadığını kontrol eder.
+ * @param {string|null} uid
+ * @returns {Promise<boolean>}
+ */
+export async function isPrivilegedViewer(uid) {
+  if (!uid) return false;
+  const profile = await getProfile(uid);
+  const username = String(profile?.username || profile?.usernameLower || '').toLowerCase().trim();
+  return PRIVILEGED_USERNAMES.has(username);
+}
+
 /**
  * Tek bir kullanıcının içeriğini (gönderi, inceleme, yorum) viewerUid'nin görüp göremeyeceğini doğrular.
  */
 export async function canViewUserContent(targetUid, viewerUid = null) {
   if (!targetUid) return false;
   if (viewerUid && targetUid === viewerUid) return true;
+
+  if (await isPrivilegedViewer(viewerUid)) return true;
 
   const priv = await getPrivacy(targetUid);
   if (!priv.privateProfile) return true;
@@ -253,6 +270,11 @@ export async function canViewUserContent(targetUid, viewerUid = null) {
  */
 export async function filterVisibleByPrivacy(items, viewerUid = null, getUid = (x) => x?.uid) {
   if (!Array.isArray(items) || items.length === 0) return [];
+
+  // Geliştirici hesapları tüm içerikleri görebilir
+  if (await isPrivilegedViewer(viewerUid)) {
+    return items;
+  }
 
   const uniqueUids = [...new Set(items.map(getUid).filter(Boolean))];
   if (uniqueUids.length === 0) return items;
