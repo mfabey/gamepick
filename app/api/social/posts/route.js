@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { verifyMobileToken } from '../../../lib/mobile-auth';
 import { rateLimit, tooManyRequests } from '../../../lib/rate-limit';
 import { validateFreeText } from '../../../lib/content-filter';
-import { getProfiles, getHiddenUids, getFriends } from '../../../lib/social-store';
+import { getProfiles, getHiddenUids, getFriends, filterVisibleByPrivacy } from '../../../lib/social-store';
 import { createPost, deletePost, listFeed, listFriendFeed, toggleLike } from '../../../lib/post-store';
 import { clientIp as clientKey } from '../../../lib/client-ip';
 
@@ -61,7 +61,8 @@ export async function GET(request) {
     // getHiddenUids(null) boş küme döner — anonim okuyucuda engel süzgeci yok.
     getHiddenUids(viewerUid),
   ]);
-  const posts = rows.filter((p) => !hidden.has(p.uid));
+  const unhidden = rows.filter((p) => !hidden.has(p.uid));
+  const posts = await filterVisibleByPrivacy(unhidden, viewerUid, (p) => p.uid);
   const profiles = await getProfiles(posts.map((p) => p.uid));
 
   return NextResponse.json({ posts: posts.map((p) => shape(p, profiles)) });

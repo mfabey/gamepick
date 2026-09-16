@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { verifyMobileToken } from '../../../../lib/mobile-auth';
 import { rateLimit, tooManyRequests } from '../../../../lib/rate-limit';
-import { getProfiles, getHiddenUids } from '../../../../lib/social-store';
+import { getProfiles, getHiddenUids, filterVisibleByPrivacy } from '../../../../lib/social-store';
 import { listRecentReviews, listUserReviews } from '../../../../lib/review-store';
 import { countReplies, reviewRef } from '../../../../lib/post-store';
 import { clientIp } from '../../../../lib/client-ip';
@@ -63,7 +63,8 @@ export async function GET(request) {
       listRecentReviews({ limit: 20, offset }),
       getHiddenUids(user?.uid || null),
     ]);
-    list = rows.filter((r) => !hidden.has(r.uid));
+    const unhidden = rows.filter((r) => !hidden.has(r.uid));
+    list = await filterVisibleByPrivacy(unhidden, user?.uid || null, (r) => r.uid);
   }
 
   const [profiles, yanit] = await Promise.all([

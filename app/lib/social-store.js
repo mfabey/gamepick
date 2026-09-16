@@ -227,6 +227,78 @@ export async function setPrivacy(uid, patch = {}) {
   return next;
 }
 
+/**
+ * Tek bir kullanıcının içeriğini (gönderi, inceleme, yorum) viewerUid'nin görüp göremeyeceğini doğrular.
+ */
+export async function canViewUserContent(targetUid, viewerUid = null) {
+  if (!targetUid) return false;
+  if (viewerUid && targetUid === viewerUid) return true;
+
+  const priv = await getPrivacy(targetUid);
+  if (!priv.privateProfile) return true;
+  if (!viewerUid) return false;
+
+  return areFriends(targetUid, viewerUid);
+}
+
+/**
+ * Verilen öğe listesindeki yazarların gizlilik ayarlarını kontrol eder ve
+ * gizli profil (`privateProfile: true`) sahibi olanların içeriklerini
+ * yabancılardan (anonim ziyaretçiler ve arkadaş olmayanlar) filtreler.
+ *
+ * @param {Array} items - filtrelenecek liste (gönderi, inceleme, yanıt vb.)
+ * @param {string|null} viewerUid - bakan kişinin uid'si (anonim ise null)
+ * @param {function} getUid - öğeden yazar uid'sini çıkaran fonksiyon (varsayılan: x => x.uid)
+ * @returns {Promise<Array>} filtrelenmiş liste
+ */
+export async function filterVisibleByPrivacy(items, viewerUid = null, getUid = (x) => x?.uid) {
+  if (!Array.isArray(items) || items.length === 0) return [];
+
+  const uniqueUids = [...new Set(items.map(getUid).filter(Boolean))];
+  if (uniqueUids.length === 0) return items;
+
+  // Tek pipeline turunda her yazarın gizlilik kaydını (ve gerekirse arkadaşlık durumunu) sorgula
+  const komutlar = uniqueUids.map((u) => ['GET', privacyKey(u)]);
+
+  if (viewerUid) {
+    uniqueUids.forEach((u) => {
+      if (u !== viewerUid) {
+        komutlar.push(['SISMEMBER', friendsKey(viewerUid), u]);
+      }
+    });
+  }
+
+  const r = (await redisPipeline(komutlar)) || [];
+  const n = uniqueUids.length;
+
+  let sismemberIdx = n;
+  const visibleAuthors = new Set();
+
+  uniqueUids.forEach((u, i) => {
+    if (viewerUid && u === viewerUid) {
+      visibleAuthors.add(u);
+      return;
+    }
+
+    const rawPriv = parseJSON(r[i]);
+    const priv = privacyWithDefaults(rawPriv);
+
+    if (!priv.privateProfile) {
+      // Profil herkese açık -> herkes görebilir
+      visibleAuthors.add(u);
+    } else if (viewerUid) {
+      // Profil gizli -> arkadaş mı kontrol et
+      const isFriend = Number(r[sismemberIdx++]) === 1;
+      if (isFriend) visibleAuthors.add(u);
+    }
+  });
+
+  return items.filter((item) => {
+    const authorUid = getUid(item);
+    return !authorUid || visibleAuthors.has(authorUid);
+  });
+}
+
 // ── Arkadaşlık ──────────────────────────────────────────────────────────────
 
 export async function areFriends(a, b) {

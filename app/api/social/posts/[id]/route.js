@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { verifyMobileToken } from '../../../../lib/mobile-auth';
 import { rateLimit, tooManyRequests } from '../../../../lib/rate-limit';
-import { getProfiles, getHiddenUids } from '../../../../lib/social-store';
+import { getProfiles, getHiddenUids, canViewUserContent, filterVisibleByPrivacy } from '../../../../lib/social-store';
 import { getPostWithCounts, listReplies, parseReviewRef, countReplies } from '../../../../lib/post-store';
 import { getReview } from '../../../../lib/review-store';
 import { getSteamDetailsCached } from '../../../../lib/steam-cache.js';
@@ -57,6 +57,9 @@ export async function GET(request, { params }) {
     const review = await getReview(rev.appid, rev.uid);
     if (!review) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
     if (hidden.has(review.uid)) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
+    const canView = await canViewUserContent(review.uid, viewerUid);
+    if (!canView) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
+
     // Kapak: gerçek adres önbellekten okunuyor, elle kurulan yol yalnız yedek
     // (Steam varlık yolları hash'li — bkz. scripts/check-image-urls.mjs).
     const [sayim, detay] = await Promise.all([
@@ -84,10 +87,13 @@ export async function GET(request, { params }) {
     root = await getPostWithCounts(kimlik, viewerUid);
     if (!root) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
     if (hidden.has(root.uid)) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
+    const canView = await canViewUserContent(root.uid, viewerUid);
+    if (!canView) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
   }
 
   const replies = await listReplies(root.id, { viewerUid });
-  const visible = replies.filter((r) => !hidden.has(r.uid));
+  const unhidden = replies.filter((r) => !hidden.has(r.uid));
+  const visible = await filterVisibleByPrivacy(unhidden, viewerUid, (r) => r.uid);
   const profiles = await getProfiles([root.uid, ...visible.map((r) => r.uid)]);
 
   return NextResponse.json({

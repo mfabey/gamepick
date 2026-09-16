@@ -3,7 +3,7 @@ import { verifyMobileToken } from '../../../lib/mobile-auth';
 import { rateLimit, tooManyRequests } from '../../../lib/rate-limit';
 import { validateFreeText } from '../../../lib/content-filter';
 import { redisGetJSON } from '../../../lib/redis';
-import { getProfiles, getHiddenUids } from '../../../lib/social-store';
+import { getProfiles, getHiddenUids, filterVisibleByPrivacy } from '../../../lib/social-store';
 import { countReplies, reviewRef } from '../../../lib/post-store';
 import { libraries } from '../../../lib/steam-graph';
 import { clientIp } from '../../../lib/client-ip';
@@ -92,9 +92,10 @@ export async function GET(request) {
     viewerUid ? verifiedGame(viewerUid, appid).catch(() => null) : Promise.resolve(null),
   ]);
 
-  // Engellenenlerin incelemeleri elenir — sohbet ve listelerdeki kuralla aynı.
+  // Engellenenlerin ve gizli profilli yabancıların incelemeleri elenir
   const hidden = await getHiddenUids(viewerUid);
-  const visible = rows.filter((r) => !hidden.has(r.uid));
+  const unhidden = rows.filter((r) => !hidden.has(r.uid));
+  const visible = await filterVisibleByPrivacy(unhidden, viewerUid, (r) => r.uid);
 
   // Yanıt sayıları TEK TURDA. Her incelemenin altında "n yanıt" duruyor ve
   // dokunulunca topluluk konusu açılıyor; sayı sıfırsa satır hiç çizilmiyor.
