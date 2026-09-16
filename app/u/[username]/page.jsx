@@ -2,12 +2,13 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { cookies } from 'next/headers';
 import {
-  uidForUsername, getProfile, getPrivacy,
+  uidForUsername, getProfile, getPrivacy, isPrivilegedViewer, areFriends,
 } from '../../lib/social-store';
 import { countUserReviews, listUserReviews } from '../../lib/review-store';
 import { countUserPosts } from '../../lib/post-store';
 import { redisCmd, redisGetJSON } from '../../lib/redis';
 import { isAvatarPhoto } from '../../lib/avatar-presets';
+import { readValue } from '../../lib/session-cookie';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Herkese açık profil — WEB.
@@ -24,20 +25,28 @@ import { isAvatarPhoto } from '../../lib/avatar-presets';
 //      API'mize HTTP turu atılmıyor.
 //
 // GİZLİLİK KAPILARI:
-//   · discoverable kapalı veya privateProfile açık → kimlik görünür, içerik gizli
+//   · Kendisi (isSelf), Geliştiriciler (isDev) veya Arkadaşları (isFriend)
+//     içeriği tam olarak görebilir.
+//   · Yabancılar için privateProfile açık veya discoverable kapalıysa içerik gizlenir.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const SITE = 'https://www.gamerisen.com';
 
-async function profilOku(username) {
+async function profilOku(username, viewerUid = null) {
   const uid = await uidForUsername(username).catch(() => null);
   if (!uid) return null;
 
   const profile = await getProfile(uid).catch(() => null);
   if (!profile?.username) return null;
 
+  const isSelf = !!viewerUid && viewerUid === uid;
+  const isDev = await isPrivilegedViewer(viewerUid);
+  const isFriend = viewerUid ? await areFriends(uid, viewerUid) : false;
+
   const privacy = await getPrivacy(uid).catch(() => null);
-  const gizli = !!privacy?.privateProfile || privacy?.discoverable === false;
+  const isPrivate = !!privacy?.privateProfile || privacy?.discoverable === false;
+  const canView = isSelf || isDev || isFriend || !isPrivate;
+  const gizli = !canView;
 
   const [arkadas, gonderi, inceleme, koleksiyonlar, incelemeler] = await Promise.all([
     redisCmd(['SCARD', `friends:${uid}`]).then((n) => Number(n) || 0).catch(() => 0),
@@ -61,13 +70,14 @@ async function profilOku(username) {
   }
 
   return {
-    profile, gizli, oyunlar, incelemeler,
+    profile, gizli, isPrivate, isSelf, oyunlar, incelemeler,
     sayac: { arkadas, gonderi, inceleme, oyun: Number(profile.gameCount) || 0 },
   };
 }
 
 export async function generateMetadata({ params }) {
-  const username = params?.username;
+  const resolvedParams = await params;
+  const username = resolvedParams?.username;
   const veri = username ? await profilOku(username).catch(() => null) : null;
   if (!veri) return { title: 'Gamerisen' };
 
@@ -86,21 +96,38 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function UserProfilePage({ params }) {
-  const username = params?.username;
+  const resolvedParams = await params;
+  const username = resolvedParams?.username;
   if (!username) notFound();
 
   let isLoggedIn = false;
+  let viewerUid = null;
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const userSession = cookieStore?.get?.('gp_user_session')?.value;
-    const steamSession = cookieStore?.get?.('gp_steam_session')?.value;
-    isLoggedIn = !!(userSession || steamSession);
+    if (userSession) {
+      const sessionUser = await readValue(userSession).catch(() => null);
+      if (sessionUser?.uid) {
+        viewerUid = sessionUser.uid;
+        isLoggedIn = true;
+      }
+    }
+    if (!viewerUid) {
+      const steamSession = cookieStore?.get?.('gp_steam_session')?.value;
+      if (steamSession) {
+        const steamUser = await readValue(steamSession).catch(() => null);
+        if (steamUser?.steamId) {
+          viewerUid = await redisCmd(['GET', `steam_to_uid:${steamUser.steamId}`]).catch(() => null);
+          if (viewerUid) isLoggedIn = true;
+        }
+      }
+    }
   } catch {}
 
-  const veri = await profilOku(username);
+  const veri = await profilOku(username, viewerUid);
   if (!veri) notFound();
 
-  const { profile, gizli, oyunlar, incelemeler, sayac } = veri;
+  const { profile, gizli, isPrivate, isSelf, oyunlar, incelemeler, sayac } = veri;
   const ad = profile.displayName || profile.username;
   const bas = (ad || '?').trim().charAt(0).toUpperCase();
 
@@ -132,6 +159,11 @@ export default async function UserProfilePage({ params }) {
             {['batuta', 'test'].includes(profile.username?.toLowerCase()) && (
               <span style={{ padding: '3px 9px', borderRadius: 999, background: 'rgba(201,133,10,0.18)', border: '1px solid rgba(201,133,10,0.45)', fontSize: 11, color: 'var(--accent)', fontWeight: 750, boxShadow: '0 0 10px rgba(201,133,10,0.18)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                 ⚡ Gamerisen Developer
+              </span>
+            )}
+            {isPrivate && isSelf && (
+              <span style={{ padding: '3px 9px', borderRadius: 999, background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)', fontSize: 11, color: 'var(--text-3)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                🔒 Gizli Profil (Yalnızca siz ve arkadaşlarınız görebilir)
               </span>
             )}
           </div>
