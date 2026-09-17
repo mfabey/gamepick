@@ -18,7 +18,7 @@ import { useLanguage } from '../src/context/LanguageContext';
 export default function DeleteAccountScreen() {
   const styles = useStyles(makeStyles);
   const yan = useYanBosluk();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const router = useRouter();
   const { t } = useLanguage();
   const { account } = useAuth();
@@ -99,9 +99,15 @@ export default function DeleteAccountScreen() {
         {isApple && Platform.OS === 'ios' ? (
           <>
             <Text style={styles.label}>{t('acc.appleReauth')}</Text>
+            {/* Stil temadan — gerekçe account.jsx'teki ikizinde. Kısaca:
+                sabit `WHITE` açık temada görünmez bir düğme üretiyor ve
+                Guideline 4'ten ret sebebi. İnceleyici bu ekrana bakmamıştı
+                ama hata buradaydı. */}
             <AppleAuthentication.AppleAuthenticationButton
               buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
-              buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
+              buttonStyle={isDark
+                ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
+                : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
               cornerRadius={radius.lg}
               style={{ height: 52, marginTop: spacing.md }}
               onPress={confirmApple}

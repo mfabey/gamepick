@@ -34,7 +34,9 @@ export default function AccountScreen() {
   const styles = useStyles(makeStyles);
   const yan = useYanBosluk();
   const insets = useSafeAreaInsets();
-  const { colors } = useTheme();
+  // `isDark` Apple ile Giriş düğmesinin stilini seçiyor — bkz. aşağıdaki
+  // DÜĞME STİLİ TEMADAN GELİYOR notu.
+  const { colors, isDark } = useTheme();
   const router = useRouter();
   const { t, lang } = useLanguage();
 
@@ -364,9 +366,22 @@ export default function AccountScreen() {
 
           {!isForgot && Platform.OS === 'ios' && (
             <>
+              {/* ── DÜĞME STİLİ TEMADAN GELİYOR ──
+                  Sabit `WHITE` yazılıydı ve 2.7 (53) bu yüzden Guideline 4'ten
+                  REDDEDİLDİ: açık temada kart beyaz, düğme de beyaz olunca
+                  ortada ne dolgu ne çerçeve kalıyordu; ekranda yalnızca
+                  "Sign in with Apple" yazısı duruyordu ve inceleyici bunu
+                  düğme olarak tanımadı. Koyu temada `WHITE` doğru, açık temada
+                  `BLACK`.
+                  Tema değişiminde ZORLAMA GEREKMİYOR: yerel görünüm stil
+                  değişince düğmeyi yeniden kuruyor (expo-apple-authentication →
+                  AppleAuthenticationButton.swift, `needsUpdate` +
+                  `OnViewDidUpdateProps`). */}
               <AppleAuthentication.AppleAuthenticationButton
                 buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-                buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
+                buttonStyle={isDark
+                  ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
+                  : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
                 cornerRadius={radius.lg}
                 style={{ height: 52, marginBottom: 18 }}
                 onPress={async () => {
