@@ -132,11 +132,11 @@ export async function signOut(wishlist) {
  * Geçerli bir idToken döndürür; gerekiyorsa yeniler.
  * Yenileme başarısız olursa (token iptal edilmiş) oturumu kapatır ve null döner.
  */
-export async function getValidToken() {
+export async function getValidToken(force = false) {
   if (!loaded) await loadSession();
   if (!session?.idToken) return null;
 
-  if (Date.now() < session.expiresAt - SKEW_MS) return session.idToken;
+  if (!force && Date.now() < session.expiresAt - SKEW_MS) return session.idToken;
 
   // Aynı anda birden fazla istek yenileme tetiklemesin
   if (!refreshing) {
@@ -145,6 +145,7 @@ export async function getValidToken() {
         const r = await refreshSession(session.refreshToken);
         await persist({
           ...session,
+          user: session.user,
           idToken: r.idToken,
           refreshToken: r.refreshToken || session.refreshToken,
           expiresAt: Date.now() + (r.expiresIn || 3600) * 1000,

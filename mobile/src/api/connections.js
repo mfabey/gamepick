@@ -13,26 +13,40 @@ import { API_BASE } from './client';
 import { getValidToken } from '../services/session';
 
 async function authed(path, { method = 'GET', body } = {}) {
-  const token = await getValidToken();
+  let token = await getValidToken();
   if (!token) throw Object.assign(new Error('NO_SESSION'), { code: 'NO_SESSION' });
 
-  const res = await fetch(`${API_BASE}${path}`, {
-    method,
-    headers: {
-      Accept: 'application/json',
-      Authorization: `Bearer ${token}`,
-      ...(body ? { 'Content-Type': 'application/json' } : null),
-    },
-    ...(body ? { body: JSON.stringify(body) } : null),
-  });
-
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    throw Object.assign(new Error(data?.error || `HTTP ${res.status}`), {
-      code: data?.error, status: res.status,
+  const doReq = async (authToken) => {
+    const res = await fetch(`${API_BASE}${path}`, {
+      method,
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${authToken}`,
+        ...(body ? { 'Content-Type': 'application/json' } : null),
+      },
+      ...(body ? { body: JSON.stringify(body) } : null),
     });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw Object.assign(new Error(data?.error || `HTTP ${res.status}`), {
+        code: data?.error, status: res.status,
+      });
+    }
+    return data;
+  };
+
+  try {
+    return await doReq(token);
+  } catch (err) {
+    if (err?.status === 401) {
+      const freshToken = await getValidToken(true);
+      if (freshToken) {
+        return await doReq(freshToken);
+      }
+    }
+    throw err;
   }
-  return data;
 }
 
 /** Hesaba bağlı mağazalar: { steamAccounts: [...], xbox: {...}|null } */

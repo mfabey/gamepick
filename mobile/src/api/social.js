@@ -36,9 +36,19 @@ async function request(path, { method = 'GET', body, token } = {}) {
 }
 
 async function authed(path, opts = {}) {
-  const token = await getValidToken();
+  let token = await getValidToken();
   if (!token) throw Object.assign(new Error('NO_SESSION'), { code: 'NO_SESSION' });
-  return request(path, { ...opts, token });
+  try {
+    return await request(path, { ...opts, token });
+  } catch (err) {
+    if (err?.status === 401) {
+      const freshToken = await getValidToken(true);
+      if (freshToken) {
+        return await request(path, { ...opts, token: freshToken });
+      }
+    }
+    throw err;
+  }
 }
 
 /** Hesapsız da okunabilen uçlar. Jeton varsa yine gönderilir. */
