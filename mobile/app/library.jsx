@@ -13,7 +13,7 @@ import EmptyState from '../src/components/EmptyState';
 import CevrimdisiBant from '../src/components/CevrimdisiBant';
 import GameCover from '../src/components/GameCover';
 import { prefetchImages } from '../src/utils/prefetch';
-import { radius, spacing, TAB_SPACE, type, CHIP, CHIP_TEXT } from '../src/theme';
+import { radius, spacing, TAB_SPACE, type, CHIP, CHIP_TEXT, PRESSED } from '../src/theme';
 import { useKartSutun } from '../src/hooks/useIcerikAlani';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
@@ -178,11 +178,25 @@ export default function LibraryScreen() {
 
   // FlashList için stabil referanslar
   const keyExtractor = useCallback((item) => String(item.appid ?? item.titleId), []);
+
+  const handleOpenGame = useCallback((game) => {
+    router.push({
+      pathname: '/game/[id]',
+      params: {
+        id: String(game.appid ?? game.titleId ?? game.id),
+        appid: game.appid ? String(game.appid) : undefined,
+        name: game.name || '',
+        image: game.image || '',
+        hasSteam: game.appid ? '1' : '',
+      },
+    });
+  }, [router]);
+
   const renderTile = useCallback(({ item }) => (
     <View style={styles.cell}>
-      <GameTile game={item} steam={isSteamView} price={steamPrices[item.appid]} />
+      <GameTile game={item} steam={isSteamView} price={steamPrices[item.appid]} onPress={handleOpenGame} />
     </View>
-  ), [isSteamView, steamPrices, styles]);
+  ), [isSteamView, steamPrices, styles, handleOpenGame]);
 
   const doLogin = async (fn) => {
     const r = await fn();
@@ -440,40 +454,47 @@ function LibraryHeaderCard({ header, formatPrice, pricesLoading, t, lang, locale
   );
 }
 
-const GameTile = memo(function GameTile({ game, steam, price }) {
+const GameTile = memo(function GameTile({ game, steam, price, onPress }) {
   const styles = useStyles(makeStyles);
   const { t, lang, formatPrice } = useLanguage();
   const hourSymbol = lang === 'tr' ? 's' : 'h';
   const isFree = price?.isFree;
   const onSale = price?.discount > 0 && !isFree;
   return (
-    <GameCover uri={game.image} name={game.name} recyclingKey={String(game.appid ?? game.titleId)} style={styles.tile}>
-      {!steam && game.isGamePass ? (
-        <View style={styles.gpBadge}><Text style={styles.gpText}>GAME PASS</Text></View>
-      ) : null}
-      {steam && onSale ? (
-        <View style={styles.saleBadge}><Text style={styles.saleText}>-%{price.discount}</Text></View>
-      ) : null}
-      <View style={styles.tileInfo}>
-        <Text numberOfLines={2} style={styles.tileName}>{game.name}</Text>
-        <View style={styles.tileMeta}>
-          {steam ? (
-            game.hours > 0
-              ? <Text style={styles.tileHours}>{game.hours}<Text style={styles.tileSub}>{hourSymbol}</Text></Text>
-              : <Text style={styles.tileSub}>{t('library.notPlayed')}</Text>
-          ) : (
-            <Text style={styles.tileHours}>{game.currentGamerscore ?? 0}<Text style={styles.tileSub}> G</Text></Text>
-          )}
-          {steam && price ? (
-            isFree
-              ? <Text style={styles.tilePriceFree}>{t('card.free')}</Text>
-              : price.original != null
-                ? <Text style={styles.tilePrice}>{formatPrice(onSale ? price.current : price.original)}</Text>
-                : null
-          ) : null}
+    <Pressable
+      onPress={() => onPress?.(game)}
+      style={({ pressed }) => [styles.tilePressable, pressed && PRESSED]}
+      accessibilityRole="button"
+      accessibilityLabel={game.name}
+    >
+      <GameCover uri={game.image} name={game.name} recyclingKey={String(game.appid ?? game.titleId)} style={styles.tile}>
+        {!steam && game.isGamePass ? (
+          <View style={styles.gpBadge}><Text style={styles.gpText}>GAME PASS</Text></View>
+        ) : null}
+        {steam && onSale ? (
+          <View style={styles.saleBadge}><Text style={styles.saleText}>-%{price.discount}</Text></View>
+        ) : null}
+        <View style={styles.tileInfo}>
+          <Text numberOfLines={2} style={styles.tileName}>{game.name}</Text>
+          <View style={styles.tileMeta}>
+            {steam ? (
+              game.hours > 0
+                ? <Text style={styles.tileHours}>{game.hours}<Text style={styles.tileSub}>{hourSymbol}</Text></Text>
+                : <Text style={styles.tileSub}>{t('library.notPlayed')}</Text>
+            ) : (
+              <Text style={styles.tileHours}>{game.currentGamerscore ?? 0}<Text style={styles.tileSub}> G</Text></Text>
+            )}
+            {steam && price ? (
+              isFree
+                ? <Text style={styles.tilePriceFree}>{t('card.free')}</Text>
+                : price.original != null
+                  ? <Text style={styles.tilePrice}>{formatPrice(onSale ? price.current : price.original)}</Text>
+                  : null
+            ) : null}
+          </View>
         </View>
-      </View>
-    </GameCover>
+      </GameCover>
+    </Pressable>
   );
 });
 
@@ -523,6 +544,7 @@ const makeStyles = (colors) => StyleSheet.create({
 
   listContent: { paddingHorizontal: 10, paddingTop: spacing.xs },
   cell: { flex: 1, paddingHorizontal: 6, paddingBottom: spacing.md },
+  tilePressable: { width: '100%' },
   tile: { width: '100%', aspectRatio: 3 / 4, borderRadius: radius.lg, overflow: 'hidden', backgroundColor: colors.card },
   tileInfo: { position: 'absolute', left: 11, right: 11, bottom: 10 },
   tileName: { color: '#fff', fontSize: type.subhead, fontWeight: '800', lineHeight: 17 },
