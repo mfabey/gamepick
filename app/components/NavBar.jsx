@@ -259,6 +259,29 @@ export default function NavBar() {
 
             {user ? (
               <div className="nav-auth-group" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                {['batuta', 'test'].includes(user?.username?.toLowerCase()) && (
+                  <Link
+                    href="/admin"
+                    className="desktop-only"
+                    title="Geliştirici Paneli"
+                    style={{
+                      padding: '6px 10px',
+                      borderRadius: 9,
+                      background: 'rgba(201,133,10,0.14)',
+                      border: '1px solid rgba(201,133,10,0.4)',
+                      fontSize: 12,
+                      fontWeight: 800,
+                      color: 'var(--accent)',
+                      textDecoration: 'none',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <span>⚡</span> Dev Panel
+                  </Link>
+                )}
                 <Link href="/profile" className="nav-user-badge" style={{
                   display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 9,
                   background: 'var(--accent-bg)', border: '1px solid var(--accent-border)', fontSize: 13, fontWeight: 600, color: 'var(--accent)',

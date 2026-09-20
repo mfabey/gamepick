@@ -110,6 +110,7 @@ export const SESSION_ROUTES = new Set([
  * Sahiplik ve gizlilik kontrolü ayrıca store katmanında uygulanıyor.
  */
 export const AUTH_ROUTES = new Set([
+  'admin/users',
   'user/data', 'auth/connections', 'auth/mobile-delete',
   // ÇIKIŞ AMA KİMLİK ŞART: iptal edilecek uid jetondan alınıyor. Kimliksiz
   // olsaydı, herkes istediği kullanıcının oturumunu düşürebilirdi.
