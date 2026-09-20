@@ -238,10 +238,16 @@ const PRIVILEGED_USERNAMES = new Set(['batuta', 'test']);
 export async function isPrivilegedViewer(uid) {
   if (!uid) return false;
   const profile = await getProfile(uid);
-  const username = String(profile?.username || profile?.usernameLower || '').replace(/^@/, '').toLowerCase().trim();
-  const displayName = String(profile?.displayName || profile?.name || '').replace(/^@/, '').toLowerCase().trim();
-  const emailPrefix = String(profile?.email || '').split('@')[0].toLowerCase().trim();
-  return PRIVILEGED_USERNAMES.has(username) || PRIVILEGED_USERNAMES.has(displayName) || PRIVILEGED_USERNAMES.has(emailPrefix);
+  if (!profile) return false;
+
+  // Sadece doğrulanmış kullanıcı adı kontrol edilir.
+  // displayName veya email gibi değiştirilebilir alanlar ASLA yetki veremez.
+  const username = String(profile.usernameLower || profile.username || '').replace(/^@/, '').toLowerCase().trim();
+  if (!PRIVILEGED_USERNAMES.has(username)) return false;
+
+  // Çift katmanlı doğrulama: Redis benzersizlik anahtarının (username:lower) sahibi gerçekten bu uid mi?
+  const ownerUid = await redisCmd(['GET', usernameKey(username)]);
+  return ownerUid === uid;
 }
 
 /**

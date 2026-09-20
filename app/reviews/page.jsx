@@ -669,10 +669,7 @@ function Yazar({ author, at, tr }) {
 function isPrivilegedUser(u) {
   if (!u) return false;
   const uname = String(u.username || '').replace(/^@/, '').toLowerCase().trim();
-  const dname = String(u.displayName || u.name || '').replace(/^@/, '').toLowerCase().trim();
-  const emailPrefix = String(u.email || '').split('@')[0].toLowerCase().trim();
-  const PRIV = ['batuta', 'test'];
-  return PRIV.includes(uname) || PRIV.includes(dname) || PRIV.includes(emailPrefix);
+  return ['batuta', 'test'].includes(uname);
 }
 
 function GonderiKarti({ post, currentUser, onLikeToggle, onOpenThread, onDelete, tr }) {

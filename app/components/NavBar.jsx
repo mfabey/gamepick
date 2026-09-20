@@ -259,7 +259,7 @@ export default function NavBar() {
 
             {user ? (
               <div className="nav-auth-group" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                {['batuta', 'test'].includes(user?.username?.toLowerCase()) && (
+                {['batuta', 'test'].includes(String(user?.username || '').replace(/^@/, '').toLowerCase().trim()) && (
                   <Link
                     href="/admin"
                     className="desktop-only"
