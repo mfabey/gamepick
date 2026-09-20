@@ -18,7 +18,7 @@ export default function AdminUsersPage() {
   const [filterType, setFilterType] = useState('all'); // 'all', 'hasUsername', 'google', 'apple', 'connected'
   const [copiedId, setCopiedId] = useState(null);
 
-  const isDev = user?.username && ['batuta', 'test'].includes(user.username.toLowerCase());
+  const isDev = ['batuta', 'test'].includes(String(user?.username || user?.displayName || user?.name || '').replace(/^@/, '').toLowerCase().trim());
 
   const fetchUsers = async () => {
     setLoading(true);

@@ -238,8 +238,10 @@ const PRIVILEGED_USERNAMES = new Set(['batuta', 'test']);
 export async function isPrivilegedViewer(uid) {
   if (!uid) return false;
   const profile = await getProfile(uid);
-  const username = String(profile?.username || profile?.usernameLower || '').toLowerCase().trim();
-  return PRIVILEGED_USERNAMES.has(username);
+  const username = String(profile?.username || profile?.usernameLower || '').replace(/^@/, '').toLowerCase().trim();
+  const displayName = String(profile?.displayName || profile?.name || '').replace(/^@/, '').toLowerCase().trim();
+  const emailPrefix = String(profile?.email || '').split('@')[0].toLowerCase().trim();
+  return PRIVILEGED_USERNAMES.has(username) || PRIVILEGED_USERNAMES.has(displayName) || PRIVILEGED_USERNAMES.has(emailPrefix);
 }
 
 /**

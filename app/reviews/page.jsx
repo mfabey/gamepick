@@ -666,11 +666,20 @@ function Yazar({ author, at, tr }) {
   );
 }
 
+function isPrivilegedUser(u) {
+  if (!u) return false;
+  const uname = String(u.username || '').replace(/^@/, '').toLowerCase().trim();
+  const dname = String(u.displayName || u.name || '').replace(/^@/, '').toLowerCase().trim();
+  const emailPrefix = String(u.email || '').split('@')[0].toLowerCase().trim();
+  const PRIV = ['batuta', 'test'];
+  return PRIV.includes(uname) || PRIV.includes(dname) || PRIV.includes(emailPrefix);
+}
+
 function GonderiKarti({ post, currentUser, onLikeToggle, onOpenThread, onDelete, tr }) {
   const [likePending, setLikePending] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const isDev = currentUser?.username && ['batuta', 'test'].includes(currentUser.username.toLowerCase());
+  const isDev = isPrivilegedUser(currentUser);
   const isMine = (currentUser && currentUser.uid === post.uid) || post.isMine;
   const canDelete = isMine || isDev;
 
@@ -726,12 +735,26 @@ function GonderiKarti({ post, currentUser, onLikeToggle, onOpenThread, onDelete,
           {canDelete ? (
             <button
               onClick={handleDelete}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: 'var(--text-3)', padding: 4, opacity: 0.7 }}
-              onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
-              onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.7')}
-              title={isDev && !isMine ? (tr ? 'Sil (Moderatör)' : 'Delete (Mod)') : (tr ? 'Sil' : 'Delete')}
+              style={{
+                background: 'rgba(239,68,68,0.1)',
+                border: '1px solid rgba(239,68,68,0.3)',
+                borderRadius: 7,
+                cursor: 'pointer',
+                fontSize: 12,
+                color: '#ef4444',
+                padding: '4px 8px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                fontWeight: 700,
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#ef4444'; e.currentTarget.style.color = '#fff'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; e.currentTarget.style.color = '#ef4444'; }}
+              title={isDev && !isMine ? (tr ? 'Moderatör Olarak Sil' : 'Delete as Moderator') : (tr ? 'Sil' : 'Delete')}
             >
-              🗑️
+              <span>🗑️</span>
+              <span>{tr ? 'Sil' : 'Delete'}</span>
             </button>
           ) : null}
         </div>
@@ -781,7 +804,7 @@ function GonderiKarti({ post, currentUser, onLikeToggle, onOpenThread, onDelete,
 
 function IncelemeKarti({ inceleme, currentUser, onOpenThread, onDeleteReview, tr }) {
   const [deleting, setDeleting] = useState(false);
-  const isDev = currentUser?.username && ['batuta', 'test'].includes(currentUser.username.toLowerCase());
+  const isDev = isPrivilegedUser(currentUser);
   const isMine = currentUser && (currentUser.uid === inceleme.uid);
   const canDelete = isMine || isDev;
 
@@ -835,12 +858,26 @@ function IncelemeKarti({ inceleme, currentUser, onOpenThread, onDeleteReview, tr
             {canDelete ? (
               <button
                 onClick={handleDelete}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: 'var(--text-3)', padding: 4, opacity: 0.7 }}
-                onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
-                onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.7')}
-                title={isDev && !isMine ? (tr ? 'Sil (Moderatör)' : 'Delete (Mod)') : (tr ? 'Sil' : 'Delete')}
+                style={{
+                  background: 'rgba(239,68,68,0.1)',
+                  border: '1px solid rgba(239,68,68,0.3)',
+                  borderRadius: 7,
+                  cursor: 'pointer',
+                  fontSize: 12,
+                  color: '#ef4444',
+                  padding: '4px 8px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  fontWeight: 700,
+                  transition: 'all 0.15s ease',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = '#ef4444'; e.currentTarget.style.color = '#fff'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; e.currentTarget.style.color = '#ef4444'; }}
+                title={isDev && !isMine ? (tr ? 'Moderatör Olarak Sil' : 'Delete as Moderator') : (tr ? 'Sil' : 'Delete')}
               >
-                🗑️
+                <span>🗑️</span>
+                <span>{tr ? 'Sil' : 'Delete'}</span>
               </button>
             ) : null}
           </div>
@@ -881,7 +918,7 @@ function ThreadModal({ threadId, currentUser, onClose, onReplyAdded, onDeleteRoo
   const [error, setError] = useState(null);
 
   const replyEndRef = useRef(null);
-  const isDev = currentUser?.username && ['batuta', 'test'].includes(currentUser.username.toLowerCase());
+  const isDev = isPrivilegedUser(currentUser);
 
   useEffect(() => {
     let iptal = false;
