@@ -35,6 +35,7 @@ import {
   getMyProfile, setUsername as apiSetUsername,
   setAvatar as apiSetAvatar,
 } from '../src/api/social';
+import { updateSessionUser } from '../src/services/session';
 import { chatCapabilities } from '../src/services/realtime';
 
 // Sunucudaki MAX_BIO ile AYNI SAYI olmak zorunda (app/lib/social-store.js).
@@ -91,7 +92,14 @@ export default function ProfileEditScreen() {
     try {
       // Kullanıcı adı DEĞİŞMEDEN gönderiliyor: sunucudaki tek yazar
       // claimUsername ve profil nesnesini o kuruyor (bkz. username/route.js).
-      await apiSetUsername(profile.username, displayName.trim(), bio.trim());
+      const trimmedName = displayName.trim();
+      const trimmedBio = bio.trim();
+      await apiSetUsername(profile.username, trimmedName, trimmedBio);
+      await updateSessionUser({
+        name: trimmedName || profile.username,
+        displayName: trimmedName,
+        bio: trimmedBio,
+      });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       router.back();
     } catch (e) {
@@ -117,6 +125,7 @@ export default function ProfileEditScreen() {
     setPickerOpen(false);
     try {
       await apiSetAvatar(presetId);
+      await updateSessionUser({ avatar: presetId });
     } catch {
       setAvatarState(prev);
       Alert.alert(t('soc.err.generic'));

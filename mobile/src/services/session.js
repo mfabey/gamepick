@@ -167,6 +167,13 @@ export async function getValidToken(force = false) {
   return refreshing;
 }
 
+export async function updateSessionUser(patch) {
+  if (!session?.user) return null;
+  const updatedUser = { ...session.user, ...patch };
+  await persist({ ...session, user: updatedUser });
+  return updatedUser;
+}
+
 export function getSession() { return session; }
 export function getAccount() { return session?.user || null; }
 export function subscribeSession(cb) { listeners.add(cb); return () => listeners.delete(cb); }
