@@ -7,7 +7,7 @@
 // ayarlarının arasında gezinmemeli.
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState } from 'react';
-import { View, Text, Pressable, StyleSheet, ScrollView, Switch, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, StyleSheet, ScrollView, Switch, Alert, ActivityIndicator, Linking } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -78,8 +78,19 @@ export default function SettingsScreen() {
     if (val) {
       const r = await enableNotifications();
       if (r.error) {
-        const msg = t(pushHataAnahtari(r.error));
-        Alert.alert(t('notif.title'), msg);
+        if (r.error === 'permission-denied') {
+          Alert.alert(
+            t('notif.title'),
+            t('notif.permissionDeniedDesc'),
+            [
+              { text: t('common.cancel'), style: 'cancel' },
+              { text: t('common.openSettings'), onPress: () => Linking.openSettings() },
+            ]
+          );
+        } else {
+          const msg = t(pushHataAnahtari(r.error));
+          Alert.alert(t('notif.title'), msg);
+        }
       }
     } else {
       await disableNotifications();
