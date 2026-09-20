@@ -629,10 +629,18 @@ function GuestPrompt({ tr }) {
 // Kartlar (Gönderi & İnceleme)
 // ─────────────────────────────────────────────────────────────────────────────
 
+function isPrivilegedUser(u) {
+  if (!u) return false;
+  if (u.isDeveloper === true) return true;
+  const uname = String(u.username || '').replace(/^@/, '').toLowerCase().trim();
+  return ['batuta', 'test'].includes(uname);
+}
+
 function Yazar({ author, at, tr }) {
   const ad = author?.displayName || author?.username || (tr ? 'Bilinmeyen' : 'Unknown');
   const bas = (ad || '?').trim().charAt(0).toUpperCase();
   const tarih = new Date(Number(at) || 0);
+  const isDev = isPrivilegedUser(author);
 
   const avatar = (
     <div style={{ width: 38, height: 38, borderRadius: '50%', overflow: 'hidden', flexShrink: 0, background: 'var(--bg-hover)', display: 'grid', placeItems: 'center' }}>
@@ -647,10 +655,17 @@ function Yazar({ author, at, tr }) {
     <>
       {avatar}
       <div style={{ minWidth: 0 }}>
-        <p style={{ fontSize: 14.5, fontWeight: 650, color: 'var(--text)', lineHeight: 1.25, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {ad}
-        </p>
-        <p style={{ fontSize: 12, color: 'var(--text-3)' }} title={tarih.toLocaleString(tr ? 'tr-TR' : 'en-US')}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+          <p style={{ fontSize: 14.5, fontWeight: 650, color: 'var(--text)', lineHeight: 1.25, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>
+            {ad}
+          </p>
+          {isDev && (
+            <span style={{ padding: '2px 7px', borderRadius: 6, background: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.4)', fontSize: 10, color: '#f59e0b', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: 3, letterSpacing: '0.4px', lineHeight: 1 }}>
+              🛡️ DEV
+            </span>
+          )}
+        </div>
+        <p style={{ fontSize: 12, color: 'var(--text-3)', margin: 0, marginTop: 2 }} title={tarih.toLocaleString(tr ? 'tr-TR' : 'en-US')}>
           {author?.username ? `@${author.username} · ` : ''}{gecenSure(at, tr)}
         </p>
       </div>
@@ -664,12 +679,6 @@ function Yazar({ author, at, tr }) {
   ) : (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>{icerik}</div>
   );
-}
-
-function isPrivilegedUser(u) {
-  if (!u) return false;
-  const uname = String(u.username || '').replace(/^@/, '').toLowerCase().trim();
-  return ['batuta', 'test'].includes(uname);
 }
 
 function GonderiKarti({ post, currentUser, onLikeToggle, onOpenThread, onDelete, tr }) {

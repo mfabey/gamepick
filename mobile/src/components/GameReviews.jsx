@@ -4,6 +4,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import Avatar from './Avatar';
+import DevBadge from './DevBadge';
 import ReviewComposer from './ReviewComposer';
 import { radius, spacing, type, PRESSED, NUMERIC, TOUCH_MIN, avatar as avatarSize } from '../theme';
 import { useStyles, useTheme } from '../context/ThemeContext';
@@ -55,6 +56,7 @@ function Row({ review, onOpenThread, onAuthor, onMenu }) {
       <Pressable style={styles.rowHead} onPress={onAuthor}>
         <Avatar avatar={review.author?.avatar} name={ad} size={avatarSize.md} />
         <Text style={styles.name} numberOfLines={1}>{ad}</Text>
+        <DevBadge user={review.author} username={review.author?.username} isDeveloper={review.author?.isDeveloper} size={11} />
         <View style={styles.verified}>
           <Ionicons name="shield-checkmark" size={11} color={colors.green} />
           <Text style={[styles.verifiedText, NUMERIC]}>

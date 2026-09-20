@@ -20,6 +20,8 @@ const MAX_POST_LEN = 500;
 
 function shape(post, profiles) {
   const p = profiles[post.uid];
+  const uname = String(p?.username || '').replace(/^@/, '').toLowerCase().trim();
+  const isDev = ['batuta', 'test'].includes(uname);
   return {
     ...post,
     author: {
@@ -27,6 +29,7 @@ function shape(post, profiles) {
       username: p?.username || null,
       displayName: p?.displayName || p?.username || null,
       avatar: p?.avatar || null,
+      isDeveloper: isDev,
     },
   };
 }

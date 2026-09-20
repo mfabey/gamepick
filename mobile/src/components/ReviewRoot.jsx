@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 
 import Avatar from './Avatar';
+import DevBadge from './DevBadge';
 import { radius, spacing, type, shadows, PRESSED, NUMERIC, motion, avatar as avatarSize } from '../theme';
 import { useStyles, useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -77,6 +78,7 @@ export default function ReviewRoot({ review, onOpenGame, onAuthor, onMenu }) {
         <Pressable style={({ pressed }) => [styles.author, pressed && PRESSED]} onPress={onAuthor}>
           <Avatar avatar={review.author?.avatar} name={yazar} size={avatarSize.md} />
           <Text style={styles.authorName} numberOfLines={1}>{yazar}</Text>
+          <DevBadge user={review.author} username={review.author?.username} isDeveloper={review.author?.isDeveloper} size={11} />
           <Ionicons
             name={review.recommended ? 'thumbs-up-outline' : 'thumbs-down-outline'}
             size={13}

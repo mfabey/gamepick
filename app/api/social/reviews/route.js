@@ -112,6 +112,8 @@ export async function GET(request) {
     eligible: eligible ? { hours: eligible.hours, name: eligible.name } : null,
     reviews: visible.map((r) => {
       const p = profiles[r.uid];
+      const uname = String(p?.username || '').replace(/^@/, '').toLowerCase().trim();
+      const isDev = ['batuta', 'test'].includes(uname);
       return {
         ...r,
         replyCount: yanit[reviewRef(r.appid, r.uid)] || 0,
@@ -120,6 +122,7 @@ export async function GET(request) {
           username: p?.username || null,
           displayName: p?.displayName || p?.username || null,
           avatar: p?.avatar ?? null,
+          isDeveloper: isDev,
         },
       };
     }),
