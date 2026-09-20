@@ -331,7 +331,11 @@ export default function ReviewsPage() {
                 <IncelemeKarti
                   key={anahtar(x)}
                   inceleme={x}
+                  currentUser={user}
                   onOpenThread={setActiveThreadId}
+                  onDeleteReview={(appid, uid) => {
+                    setItems((prev) => (prev || []).filter((i) => !(String(i.appid) === String(appid) && String(i.uid) === String(uid))));
+                  }}
                   tr={tr}
                 />
               )
@@ -361,6 +365,7 @@ export default function ReviewsPage() {
           currentUser={user}
           onClose={() => setActiveThreadId(null)}
           onReplyAdded={() => handleReplyCountIncrement(activeThreadId)}
+          onDeleteRoot={(postId) => handlePostDeleted(postId)}
           tr={tr}
         />
       ) : null}
@@ -665,7 +670,9 @@ function GonderiKarti({ post, currentUser, onLikeToggle, onOpenThread, onDelete,
   const [likePending, setLikePending] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  const isDev = currentUser?.username && ['batuta', 'test'].includes(currentUser.username.toLowerCase());
   const isMine = (currentUser && currentUser.uid === post.uid) || post.isMine;
+  const canDelete = isMine || isDev;
 
   const handleLike = async () => {
     if (!currentUser) {
@@ -716,11 +723,13 @@ function GonderiKarti({ post, currentUser, onLikeToggle, onOpenThread, onDelete,
       <div style={K.govde}>
         <div style={K.ust}>
           <Yazar author={post.author} at={post.at} tr={tr} />
-          {isMine ? (
+          {canDelete ? (
             <button
               onClick={handleDelete}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: 'var(--text-3)', padding: 4 }}
-              title={tr ? 'Sil' : 'Delete'}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: 'var(--text-3)', padding: 4, opacity: 0.7 }}
+              onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+              onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.7')}
+              title={isDev && !isMine ? (tr ? 'Sil (Moderatör)' : 'Delete (Mod)') : (tr ? 'Sil' : 'Delete')}
             >
               🗑️
             </button>
@@ -770,13 +779,35 @@ function GonderiKarti({ post, currentUser, onLikeToggle, onOpenThread, onDelete,
   );
 }
 
-function IncelemeKarti({ inceleme, onOpenThread, tr }) {
+function IncelemeKarti({ inceleme, currentUser, onOpenThread, onDeleteReview, tr }) {
+  const [deleting, setDeleting] = useState(false);
+  const isDev = currentUser?.username && ['batuta', 'test'].includes(currentUser.username.toLowerCase());
+  const isMine = currentUser && (currentUser.uid === inceleme.uid);
+  const canDelete = isMine || isDev;
+
   const oyunAdi = inceleme.gameName || `Steam ${inceleme.appid}`;
   const saat = Number(inceleme.hours);
   const threadRef = `r:${inceleme.appid}:${inceleme.uid}`;
 
+  const handleDelete = async (e) => {
+    e?.stopPropagation();
+    if (!window.confirm(tr ? 'Bu incelemeyi silmek istediğinize emin misiniz?' : 'Are you sure you want to delete this review?')) return;
+    setDeleting(true);
+    try {
+      const res = await fetch('/api/social/reviews', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ appid: inceleme.appid, targetUid: inceleme.uid }),
+      });
+      if (res.ok) {
+        onDeleteReview?.(inceleme.appid, inceleme.uid);
+      }
+    } catch {}
+    setDeleting(false);
+  };
+
   return (
-    <article style={K.kart}>
+    <article style={{ ...K.kart, opacity: deleting ? 0.4 : 1 }}>
       <Link href={`/game/rawg/rawg_${inceleme.appid}`} style={{ display: 'block', position: 'relative' }}>
         {inceleme.image ? (
           /* eslint-disable-next-line @next/next/no-img-element */
@@ -796,10 +827,23 @@ function IncelemeKarti({ inceleme, onOpenThread, tr }) {
       <div style={K.govde}>
         <div style={K.ust}>
           <Yazar author={inceleme.author} at={inceleme.at} tr={tr} />
-          <span className={`rev-badge ${inceleme.recommended ? 'rev-badge-yes' : 'rev-badge-no'}`}>
-            {inceleme.recommended ? '👍' : '👎'}
-            {inceleme.recommended ? (tr ? 'Tavsiye ediyor' : 'Recommended') : (tr ? 'Tavsiye etmiyor' : 'Not recommended')}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span className={`rev-badge ${inceleme.recommended ? 'rev-badge-yes' : 'rev-badge-no'}`}>
+              {inceleme.recommended ? '👍' : '👎'}
+              {inceleme.recommended ? (tr ? 'Tavsiye ediyor' : 'Recommended') : (tr ? 'Tavsiye etmiyor' : 'Not recommended')}
+            </span>
+            {canDelete ? (
+              <button
+                onClick={handleDelete}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: 'var(--text-3)', padding: 4, opacity: 0.7 }}
+                onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+                onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.7')}
+                title={isDev && !isMine ? (tr ? 'Sil (Moderatör)' : 'Delete (Mod)') : (tr ? 'Sil' : 'Delete')}
+              >
+                🗑️
+              </button>
+            ) : null}
+          </div>
         </div>
 
         <p style={K.metin}>{inceleme.text}</p>
@@ -829,7 +873,7 @@ function IncelemeKarti({ inceleme, onOpenThread, tr }) {
 // Thread Modal (Yorumlar ve Yanıtlar Görünümü)
 // ─────────────────────────────────────────────────────────────────────────────
 
-function ThreadModal({ threadId, currentUser, onClose, onReplyAdded, tr }) {
+function ThreadModal({ threadId, currentUser, onClose, onReplyAdded, onDeleteRoot, tr }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [replyText, setReplyText] = useState('');
@@ -837,6 +881,7 @@ function ThreadModal({ threadId, currentUser, onClose, onReplyAdded, tr }) {
   const [error, setError] = useState(null);
 
   const replyEndRef = useRef(null);
+  const isDev = currentUser?.username && ['batuta', 'test'].includes(currentUser.username.toLowerCase());
 
   useEffect(() => {
     let iptal = false;
@@ -855,6 +900,21 @@ function ThreadModal({ threadId, currentUser, onClose, onReplyAdded, tr }) {
 
     return () => { iptal = true; };
   }, [threadId]);
+
+  const handleDeleteRoot = async () => {
+    if (!window.confirm(tr ? 'Bu gönderiyi silmek istediğinize emin misiniz?' : 'Are you sure you want to delete this post?')) return;
+    try {
+      const res = await fetch('/api/social/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete', id: data.post.id }),
+      });
+      if (res.ok) {
+        onClose();
+        onDeleteRoot?.(data.post.id);
+      }
+    } catch {}
+  };
 
   const handleDeleteReply = async (replyId) => {
     if (!window.confirm(tr ? 'Bu yanıtı silmek istediğinize emin misiniz?' : 'Are you sure you want to delete this reply?')) return;
@@ -969,7 +1029,29 @@ function ThreadModal({ threadId, currentUser, onClose, onReplyAdded, tr }) {
             <div>
               {/* Ana Kök Gönderi / İnceleme */}
               <div style={{ paddingBottom: 16, borderBottom: '1px solid var(--border)' }}>
-                <Yazar author={data.post.author} at={data.post.at} tr={tr} />
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                  <Yazar author={data.post.author} at={data.post.at} tr={tr} />
+                  {currentUser && data.post.id && (data.post.uid === currentUser.uid || data.post.author?.uid === currentUser.uid || isDev) ? (
+                    <button
+                      type="button"
+                      onClick={handleDeleteRoot}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: 13,
+                        color: 'var(--text-3)',
+                        padding: '2px 6px',
+                        opacity: 0.7,
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+                      onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.7')}
+                      title={isDev ? (tr ? 'Sil (Moderatör)' : 'Delete (Mod)') : (tr ? 'Sil' : 'Delete')}
+                    >
+                      🗑️
+                    </button>
+                  ) : null}
+                </div>
                 <p style={{ ...K.metin, marginTop: 10, fontSize: 15.5 }}>{data.post.text}</p>
                 {data.post.game?.name ? (
                   <span style={{ display: 'inline-block', marginTop: 8, fontSize: 12.5, color: 'var(--accent)', fontWeight: 600 }}>
@@ -994,8 +1076,7 @@ function ThreadModal({ threadId, currentUser, onClose, onReplyAdded, tr }) {
                   const isReplyMine = currentUser && (
                     rep.uid === currentUser.uid ||
                     rep.author?.uid === currentUser.uid ||
-                    currentUser.username === 'batuta' ||
-                    currentUser.username === 'test'
+                    isDev
                   );
 
                   return (
@@ -1017,7 +1098,7 @@ function ThreadModal({ threadId, currentUser, onClose, onReplyAdded, tr }) {
                             }}
                             onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
                             onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.7')}
-                            title={tr ? 'Yanıtı Sil' : 'Delete Reply'}
+                            title={isDev && rep.uid !== currentUser.uid ? (tr ? 'Yanıtı Sil (Moderatör)' : 'Delete Reply (Mod)') : (tr ? 'Yanıtı Sil' : 'Delete Reply')}
                           >
                             🗑️
                           </button>

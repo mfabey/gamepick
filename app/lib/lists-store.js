@@ -20,7 +20,7 @@
 import {
   redisCmd, redisGetJSON, redisPipeline, redisSetJSONStrict, parseJSON,
 } from './redis';
-import { getProfiles, getHiddenUids } from './social-store';
+import { getProfiles, getHiddenUids, isPrivilegedViewer } from './social-store';
 import {
   CURATED_LISTS, CURATOR_UID, CURATOR_PROFILE, isCuratedId,
 } from './curated-lists';
@@ -110,11 +110,12 @@ export async function publishList(uid, { id, title, description, emoji, games })
 export async function deleteList(uid, id) {
   const list = await getList(id);
   if (!list) return { ok: false, error: 'NOT_FOUND' };
-  if (list.ownerUid !== uid) return { ok: false, error: 'NOT_OWNER' };
+  const isDev = await isPrivilegedViewer(uid);
+  if (list.ownerUid !== uid && !isDev) return { ok: false, error: 'NOT_OWNER' };
 
   await redisPipeline([
     ['DEL', listKey(id)],
-    ['SREM', ownerKey(uid), id],
+    ['SREM', ownerKey(list.ownerUid), id],
     ['ZREM', FEED_NEW, id],
     ['ZREM', FEED_POP, id],
     ['DEL', likesKey(id)],

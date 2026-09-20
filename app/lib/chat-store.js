@@ -1,6 +1,7 @@
 import {
   redisCmd, redisCmdStrict, redisPipeline, parseJSON,
 } from './redis';
+import { isPrivilegedViewer } from './social-store';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Birebir mesajlaşma — veri katmanı.
@@ -270,7 +271,8 @@ export async function deleteMessage(cid, msgId, byUid) {
 
   const target = raw.map(parseJSON).find((m) => m?.id === msgId);
   if (!target) return { ok: false, error: 'NOT_FOUND' };
-  if (target.from !== byUid) return { ok: false, error: 'NOT_OWNER' };
+  const isDev = await isPrivilegedViewer(byUid);
+  if (target.from !== byUid && !isDev) return { ok: false, error: 'NOT_OWNER' };
 
   await redisCmd(['SADD', delKey(cid), msgId]);
 

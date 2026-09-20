@@ -3,7 +3,7 @@ import { verifyMobileToken } from '../../../lib/mobile-auth';
 import { rateLimit, tooManyRequests } from '../../../lib/rate-limit';
 import { validateFreeText } from '../../../lib/content-filter';
 import { redisGetJSON } from '../../../lib/redis';
-import { getProfiles, getHiddenUids, filterVisibleByPrivacy } from '../../../lib/social-store';
+import { getProfiles, getHiddenUids, filterVisibleByPrivacy, isPrivilegedViewer } from '../../../lib/social-store';
 import { countReplies, reviewRef } from '../../../lib/post-store';
 import { libraries } from '../../../lib/steam-graph';
 import { clientIp } from '../../../lib/client-ip';
@@ -183,8 +183,9 @@ export async function DELETE(request) {
     return NextResponse.json({ error: 'APPID_REQUIRED' }, { status: 400 });
   }
 
-  // Anahtar `review:{appid}:{uid}` — uid anahtarın parçası olduğu için
-  // başkasının incelemesine erişmek yapısal olarak mümkün değil.
-  await deleteReview(appid, user.uid);
+  const isDev = await isPrivilegedViewer(user.uid);
+  const targetUid = (isDev && body.targetUid) ? String(body.targetUid) : user.uid;
+
+  await deleteReview(appid, targetUid);
   return NextResponse.json({ ok: true });
 }
