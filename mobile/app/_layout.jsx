@@ -124,6 +124,7 @@ function TemaliYigin() {
                     anasayfanın üstüne seriliyor. */}
                 <Stack.Screen name="account" />
                 <Stack.Screen name="delete-account" />
+                <Stack.Screen name="auth" options={{ presentation: 'modal', animation: 'fade' }} />
       </Stack>
     </>
   );

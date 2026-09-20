@@ -270,12 +270,35 @@ export function AuthProvider({ children }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [account, ownerTick, persistSteam, persistXbox]);
 
+  const handleAuthPayload = useCallback(async (payload) => {
+    if (payload?.platform === 'steam' && payload.account?.steamId) {
+      try {
+        const r = await putSteamConnection(payload.account);
+        const nextList = Array.isArray(r?.steamAccounts) ? r.steamAccounts : [payload.account];
+        await persistSteam(nextList);
+        return { ok: true, platform: 'steam' };
+      } catch (e) {
+        return { ok: false, error: e?.code || 'SYNC_FAILED' };
+      }
+    }
+    if (payload?.platform === 'xbox' && payload.session?.xuid) {
+      try {
+        await putXboxConnection(payload.session);
+        await persistXbox(payload.session);
+        return { ok: true, platform: 'xbox' };
+      } catch {
+        return { ok: false, error: 'SYNC_FAILED' };
+      }
+    }
+    return { ok: false, error: payload?.error || 'INVALID_PAYLOAD' };
+  }, [persistSteam, persistXbox]);
+
   const value = useMemo(
     () => ({
       steamAccounts, xbox, ready, busy, loginSteam, loginXbox, logoutSteam, logoutXbox,
-      account, isSignedIn: !!account,
+      handleAuthPayload, account, isSignedIn: !!account,
     }),
-    [steamAccounts, xbox, ready, busy, loginSteam, loginXbox, logoutSteam, logoutXbox, account]
+    [steamAccounts, xbox, ready, busy, loginSteam, loginXbox, logoutSteam, logoutXbox, handleAuthPayload, account]
   );
 
   return (
