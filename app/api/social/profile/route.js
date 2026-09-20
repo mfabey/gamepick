@@ -246,6 +246,7 @@ export async function GET(request) {
   }
   const isFriend = friendship === 'friends';
   const isPrivileged = await isPrivilegedViewer(viewerUid);
+  const targetIsDev = await isPrivilegedViewer(targetUid);
 
   // ── Kapı 2: bulunabilirlik ──
   // `discoverable` bugüne kadar HİÇBİR YERDE uygulanmıyordu (searchUsers
@@ -270,6 +271,7 @@ export async function GET(request) {
       displayName: profile.displayName || profile.username,
       bio: profile.bio || '',
       avatar: profile.avatar ?? null,
+      isDeveloper: targetIsDev,
       counts: {
         // Sayaç üçlüsü (maket): gönderi · arkadaş · oyun.
         posts: postCount,
@@ -322,6 +324,7 @@ export async function GET(request) {
         username: profile.username,
         displayName: profile.displayName || profile.username,
         avatar: profile.avatar ?? null,
+        isDeveloper: targetIsDev,
       },
     }));
   } else {
@@ -338,6 +341,7 @@ export async function GET(request) {
         username: profile.username,
         displayName: profile.displayName || profile.username,
         avatar: profile.avatar ?? null,
+        isDeveloper: targetIsDev,
       },
     }));
   }

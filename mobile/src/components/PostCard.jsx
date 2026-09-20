@@ -11,6 +11,7 @@ import { useStyles, useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { togglePostLike } from '../api/social';
 import Avatar from './Avatar';
+import DevBadge from './DevBadge';
 import { usePop } from '../hooks/usePop';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -87,6 +88,7 @@ function PostCard({ post, onOpen, onMenu, onRequireAccount, compact = false, kok
       <View style={styles.main}>
         <View style={styles.head}>
           <Text style={styles.name} numberOfLines={1}>{name}</Text>
+          <DevBadge user={post.author} username={post.author?.username} isDeveloper={post.author?.isDeveloper} size={13} />
           {post.author?.username ? (
             <Text style={styles.handle} numberOfLines={1}>@{post.author.username}</Text>
           ) : null}

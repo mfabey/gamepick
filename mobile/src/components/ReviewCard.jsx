@@ -4,6 +4,7 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 
 import Avatar from './Avatar';
+import DevBadge from './DevBadge';
 import { radius, spacing, type, PRESSED, NUMERIC, motion } from '../theme';
 import { useStyles, useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -71,6 +72,7 @@ export default function ReviewCard({ review, onPress, onLongPress, onMenu, onEdi
           <View style={styles.byline}>
             <Avatar avatar={review.author?.avatar} name={name} size={18} />
             <Text style={styles.author} numberOfLines={1}>{name}</Text>
+            <DevBadge user={review.author} username={review.author?.username} isDeveloper={review.author?.isDeveloper} size={11} />
             <Ionicons name="shield-checkmark" size={11} color={colors.green} />
             <Text style={[styles.hours, NUMERIC]}>
               {Math.round(review.hours)}{lang === 'tr' ? ' saat' : ' h'}

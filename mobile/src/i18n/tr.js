@@ -518,6 +518,7 @@ export default {
   'prof.statFriends': 'arkadaş',
   'prof.statGames': 'oyun',
   'prof.statPosts': 'gönderi',
+  'prof.devBadge': 'Gamerisen Ekibi',
   'soc.menu.profile': 'Profiline git',
   'soc.all': 'Tümü',
   'prof.notFound': 'Profil bulunamadı',

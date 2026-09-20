@@ -520,6 +520,7 @@ export default {
   'prof.statFriends': 'Freunde',
   'prof.statGames': 'Spiele',
   'prof.statPosts': 'Beiträge',
+  'prof.devBadge': 'Gamerisen-Team',
   'soc.menu.profile': 'Profil ansehen',
   'soc.all': 'Alle',
   'prof.notFound': 'Profil nicht gefunden',

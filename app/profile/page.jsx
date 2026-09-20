@@ -856,7 +856,7 @@ export default function ProfilePage() {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {['batuta', 'test'].includes(String(user?.username || '').replace(/^@/, '').toLowerCase().trim()) ? (
                 <Link href="/admin" style={{ padding: '4px 12px', borderRadius: 999, background: 'rgba(201,133,10,0.18)', border: '1px solid rgba(201,133,10,0.45)', fontSize: 11.5, color: 'var(--accent)', fontWeight: 750, boxShadow: '0 0 10px rgba(201,133,10,0.18)', display: 'inline-flex', alignItems: 'center', gap: 5, textDecoration: 'none', transition: 'all 0.18s ease' }}>
-                  ⚡ Gamerisen Developer (Panel →)
+                  🛡️ Gamerisen Dev (Panel →)
                 </Link>
               ) : (
                 <span style={{ padding: '4px 10px', borderRadius: 999, background: 'rgba(201,133,10,0.12)', border: '1px solid rgba(201,133,10,0.25)', fontSize: 11.5, color: 'var(--accent)', fontWeight: 700 }}>

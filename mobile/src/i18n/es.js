@@ -519,6 +519,7 @@ export default {
   'prof.statFriends': 'amigos',
   'prof.statGames': 'juegos',
   'prof.statPosts': 'publicaciones',
+  'prof.devBadge': 'Equipo Gamerisen',
   'soc.menu.profile': 'Ver perfil',
   'soc.all': 'Todos',
   'prof.notFound': 'Perfil no encontrado',

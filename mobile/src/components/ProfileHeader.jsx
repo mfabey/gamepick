@@ -2,6 +2,8 @@ import { View, Text, Pressable, StyleSheet, ActivityIndicator } from 'react-nati
 import { Ionicons } from '@expo/vector-icons';
 
 import Avatar from './Avatar';
+import DevBadge from './DevBadge';
+import { isDeveloperUser } from '../utils/developer';
 import { radius, spacing, type, avatar as avatarSize, PRESSED, NUMERIC, TOUCH_MIN } from '../theme';
 import { useStyles, useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -132,7 +134,10 @@ export default function ProfileHeader({
         </View>
       </View>
 
-      <Text style={styles.name} numberOfLines={1}>{name}</Text>
+      <View style={styles.nameRow}>
+        <Text style={styles.name} numberOfLines={1}>{name}</Text>
+        <DevBadge user={profile} username={profile.username} isDeveloper={profile.isDeveloper} size={15} showLabel={true} />
+      </View>
 
       {/* Bio İKİ SATIR: sunucu 150 karakterde kesiyor (MAX_BIO) ve bu sayı
           tam olarak 390pt genişlikte iki satır demek. Üçüncü satıra izin
@@ -143,6 +148,9 @@ export default function ProfileHeader({
 
       {/* ── Çipler ── */}
       <View style={styles.chips}>
+        {isDeveloperUser(profile) || profile.isDeveloper ? (
+          <Chip icon="shield-checkmark" dot="#F59E0B" text={t('prof.devBadge')} />
+        ) : null}
         {profile.privateProfile && !isSelf ? (
           <Chip icon="lock-closed-outline" text={t('prof.privateChip')} />
         ) : null}
@@ -261,7 +269,8 @@ const makeStyles = (colors) => StyleSheet.create({
   // yeni borç açmamak için en yakın adım kullanıldı. Gözle fark edilmiyor.
   counterLabel: { fontSize: type.footnote, fontWeight: '500', color: colors.text2, marginTop: spacing.s4 },
 
-  name: { fontSize: type.body, fontWeight: '600', color: colors.text, marginTop: spacing.s16 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.s16 },
+  name: { fontSize: type.body, fontWeight: '600', color: colors.text },
   bio: { fontSize: type.subhead, fontWeight: '400', color: colors.text2, lineHeight: 21, marginTop: spacing.s8 },
 
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.s8, marginTop: spacing.s12 },

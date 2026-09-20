@@ -28,6 +28,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 import Avatar from '../src/components/Avatar';
+import DevBadge from '../src/components/DevBadge';
 import EmptyState from '../src/components/EmptyState';
 import PersonMenu from '../src/components/PersonMenu';
 import ReportSheet from '../src/components/ReportSheet';
@@ -303,7 +304,10 @@ export function PersonRow({ person, right, onPress, onLongPress, sub }) {
     >
       <Avatar avatar={person.avatar} name={person.displayName || person.username} size={avatarSize.list} />
       <View style={styles.rowBody}>
-        <Text numberOfLines={1} style={styles.rowName}>{person.displayName || person.username}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Text numberOfLines={1} style={styles.rowName}>{person.displayName || person.username}</Text>
+          <DevBadge user={person} username={person.username} isDeveloper={person.isDeveloper} size={12} />
+        </View>
         <Text numberOfLines={1} style={styles.rowSub}>{sub || `@${person.username}`}</Text>
       </View>
       {right}

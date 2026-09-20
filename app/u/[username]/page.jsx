@@ -158,7 +158,7 @@ export default async function UserProfilePage({ params }) {
             <p style={{ ...S.kullanici, margin: 0 }}>@{profile.username}</p>
             {['batuta', 'test'].includes(profile.username?.toLowerCase()) && (
               <span style={{ padding: '3px 9px', borderRadius: 999, background: 'rgba(201,133,10,0.18)', border: '1px solid rgba(201,133,10,0.45)', fontSize: 11, color: 'var(--accent)', fontWeight: 750, boxShadow: '0 0 10px rgba(201,133,10,0.18)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                ⚡ Gamerisen Developer
+                🛡️ Gamerisen Dev
               </span>
             )}
             {isPrivate && isSelf && (
