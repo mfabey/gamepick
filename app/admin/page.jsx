@@ -165,8 +165,8 @@ export default function AdminUsersPage() {
           </h2>
           <p style={{ fontSize: 13.5, color: 'var(--text-3)', lineHeight: 1.6, marginBottom: 24 }}>
             {lang === 'tr'
-              ? 'Bu panel yalnızca Gamerisen geliştiricilerine (@batuta, @test) özeldir.'
-              : 'This dashboard is reserved for authorized Gamerisen developers.'}
+              ? 'Bu sayfayı görüntülemek için yetkiniz bulunmamaktadır.'
+              : 'You do not have permission to access this page.'}
           </p>
           <Link
             href="/"
@@ -342,7 +342,7 @@ export default function AdminUsersPage() {
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Kullanıcı adı (@batuta), e-posta, isim veya UID ara..."
+              placeholder="Kullanıcı adı, e-posta, isim veya UID ara..."
               style={{
                 width: '100%',
                 padding: '9px 12px 9px 38px',
