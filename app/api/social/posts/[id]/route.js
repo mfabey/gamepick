@@ -2,13 +2,13 @@ import { NextResponse } from 'next/server';
 import { verifyMobileToken } from '../../../../lib/mobile-auth';
 import { rateLimit, tooManyRequests } from '../../../../lib/rate-limit';
 import { getProfiles, getHiddenUids, canViewUserContent, filterVisibleByPrivacy } from '../../../../lib/social-store';
-import { getPostWithCounts, listReplies, parseReviewRef, countReplies } from '../../../../lib/post-store';
+import { getPostWithCounts, listReplies, parseReviewRef, countReplies, deletePost } from '../../../../lib/post-store';
 import { getReview } from '../../../../lib/review-store';
 import { getSteamDetailsCached } from '../../../../lib/steam-cache.js';
 import { clientIp } from '../../../../lib/client-ip';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Tek gönderi + yanıtları (konuşma görünümü).
+// Tek gönderi + yanıtları (konuşma görünümü) & silme.
 //
 // Akıştaki liste ucuyla AYNI kural: okuma hesapsız, yazma değil. Yanıt yazmak
 // aynı POST /api/social/posts ucundan geçiyor (`replyTo` dolu) — yanıt da bir
@@ -100,4 +100,18 @@ export async function GET(request, { params }) {
     post: shape(root, profiles),
     replies: visible.map((r) => shape(r, profiles)),
   });
+}
+
+export async function DELETE(request, { params }) {
+  const user = await verifyMobileToken(request);
+  if (!user) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
+
+  const { id } = await params;
+  const postId = String(id || '');
+  if (!postId) return NextResponse.json({ error: 'BAD_REQUEST' }, { status: 400 });
+
+  const ok = await deletePost(postId, user.uid);
+  if (!ok) return NextResponse.json({ error: 'NOT_FOUND_OR_FORBIDDEN' }, { status: 404 });
+
+  return NextResponse.json({ ok: true });
 }

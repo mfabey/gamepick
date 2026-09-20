@@ -856,6 +856,23 @@ function ThreadModal({ threadId, currentUser, onClose, onReplyAdded, tr }) {
     return () => { iptal = true; };
   }, [threadId]);
 
+  const handleDeleteReply = async (replyId) => {
+    if (!window.confirm(tr ? 'Bu yanıtı silmek istediğinize emin misiniz?' : 'Are you sure you want to delete this reply?')) return;
+    try {
+      const res = await fetch('/api/social/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete', id: replyId }),
+      });
+      if (res.ok) {
+        setData((prev) => ({
+          ...prev,
+          replies: (prev?.replies || []).filter((r) => r.id !== replyId),
+        }));
+      }
+    } catch {}
+  };
+
   const handleSendReply = async (e) => {
     e?.preventDefault();
     if (!currentUser) {
@@ -973,12 +990,43 @@ function ThreadModal({ threadId, currentUser, onClose, onReplyAdded, tr }) {
                   </p>
                 ) : null}
 
-                {(data.replies || []).map((rep) => (
-                  <div key={rep.id} style={{ padding: '12px 14px', background: 'var(--bg-hover)', borderRadius: 10, border: '1px solid var(--border)' }}>
-                    <Yazar author={rep.author} at={rep.at} tr={tr} />
-                    <p style={{ ...K.metin, marginTop: 8, fontSize: 14.5 }}>{rep.text}</p>
-                  </div>
-                ))}
+                {(data.replies || []).map((rep) => {
+                  const isReplyMine = currentUser && (
+                    rep.uid === currentUser.uid ||
+                    rep.author?.uid === currentUser.uid ||
+                    currentUser.username === 'batuta' ||
+                    currentUser.username === 'test'
+                  );
+
+                  return (
+                    <div key={rep.id} style={{ padding: '12px 14px', background: 'var(--bg-hover)', borderRadius: 10, border: '1px solid var(--border)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                        <Yazar author={rep.author} at={rep.at} tr={tr} />
+                        {isReplyMine ? (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteReply(rep.id)}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              cursor: 'pointer',
+                              fontSize: 13,
+                              color: 'var(--text-3)',
+                              padding: '2px 6px',
+                              opacity: 0.7,
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+                            onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.7')}
+                            title={tr ? 'Yanıtı Sil' : 'Delete Reply'}
+                          >
+                            🗑️
+                          </button>
+                        ) : null}
+                      </div>
+                      <p style={{ ...K.metin, marginTop: 8, fontSize: 14.5 }}>{rep.text}</p>
+                    </div>
+                  );
+                })}
                 <div ref={replyEndRef} />
               </div>
             </div>
@@ -992,16 +1040,37 @@ function ThreadModal({ threadId, currentUser, onClose, onReplyAdded, tr }) {
         {/* Yanıt Yazma Alanı (Alt kısım) */}
         <div style={{ padding: '14px 18px', borderTop: '1px solid var(--border)', background: 'var(--bg-hover)' }}>
           {currentUser ? (
-            <div style={{ display: 'flex', gap: 10 }}>
-              <input
-                type="text"
-                value={replyText}
-                onChange={(e) => setReplyText(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSendReply()}
-                placeholder={tr ? 'Yanıtını yaz...' : 'Write your reply...'}
-                maxLength={MAX_POST_LEN}
-                style={K.input}
-              />
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+              <div style={{ position: 'relative', flex: 1, display: 'flex', alignItems: 'center' }}>
+                <input
+                  type="text"
+                  value={replyText}
+                  onChange={(e) => setReplyText(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSendReply()}
+                  placeholder={tr ? 'Yanıtını yaz...' : 'Write your reply...'}
+                  maxLength={MAX_POST_LEN}
+                  style={{ ...K.input, paddingRight: replyText ? 32 : 12, width: '100%' }}
+                />
+                {replyText ? (
+                  <button
+                    type="button"
+                    onClick={() => setReplyText('')}
+                    style={{
+                      position: 'absolute',
+                      right: 8,
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: 'var(--text-3)',
+                      fontSize: 14,
+                      padding: 4,
+                    }}
+                    title={tr ? 'Temizle' : 'Clear'}
+                  >
+                    ✕
+                  </button>
+                ) : null}
+              </div>
               <button
                 type="button"
                 onClick={handleSendReply}

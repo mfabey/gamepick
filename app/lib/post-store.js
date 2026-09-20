@@ -2,6 +2,7 @@ import { redisCmd, redisPipeline, parseJSON } from './redis';
 // İnceleme kökünün VARLIĞINI doğrulamak için. Tek yönlü bağımlılık:
 // review-store bu dosyayı tanımıyor, yani döngü yok.
 import { getReview } from './review-store';
+import { isPrivilegedViewer } from './social-store';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Gönderi deposu — tartışma sayfasının omurgası.
@@ -140,14 +141,16 @@ export async function getPostWithCounts(id, viewerUid = null) {
   return rows[0] || null;
 }
 
-/** Gönderiyi ve bağlı kayıtlarını siler. Yalnız sahibi çağırmalı. */
+/** Gönderiyi ve bağlı kayıtlarını siler. Sahibi veya geliştirici silebilir. */
 export async function deletePost(id, uid) {
   const post = await getPost(id);
-  if (!post || post.uid !== uid) return false;
+  if (!post) return false;
+  const isDev = await isPrivilegedViewer(uid);
+  if (post.uid !== uid && !isDev) return false;
 
   const cmds = [
     ['DEL', postKey(id)],
-    ['ZREM', userKey(uid), id],
+    ['ZREM', userKey(post.uid), id],
     ['DEL', likesKey(id)],
   ];
   if (post.replyTo) cmds.push(['ZREM', repliesKey(post.replyTo), id]);
