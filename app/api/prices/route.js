@@ -8,6 +8,7 @@ const ITAD_STORE_MAP = {
   '16':  { name: 'Epic Games',    icon: '⚡' },
   '61':  { name: 'Steam',         icon: '💻' },
   '35':  { name: 'GOG',           icon: '🌌' },
+  '37':  { name: 'Humble Bundle', icon: '🙏' },
   '11':  { name: 'Xbox',          icon: '🎮' },
   '74':  { name: 'Xbox',          icon: '🎮' },
 };
@@ -19,6 +20,7 @@ function storeInfo(id, rawName) {
   if (n.includes('epic'))                           return { name: 'Epic Games',     icon: '⚡' };
   if (n.includes('steam'))                          return { name: 'Steam',          icon: '💻' };
   if (n.includes('gog'))                            return { name: 'GOG',            icon: '🌌' };
+  if (n.includes('humble'))                         return { name: 'Humble Bundle',  icon: '🙏' };
   if (n.includes('xbox') || n.includes('microsoft')) return { name: 'Xbox',           icon: '🎮' };
   if (n.includes('playstation') || n.includes('psn')) return { name: 'PlayStation',   icon: '🎮' };
   if (n.includes('nintendo'))                       return { name: 'Nintendo eShop', icon: '🔴' };
