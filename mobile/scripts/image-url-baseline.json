@@ -8,6 +8,6 @@
   "app/api/social/reviews/eligible/route.js": 1,
   "app/api/social/reviews/feed/route.js": 1,
   "app/api/steam-library/route.js": 1,
-  "app/components/GameImage.jsx": 1,
+  "app/components/GameImage.jsx": 3,
   "mobile/src/utils/widgetImage.js": 1
 }

@@ -1,7 +1,8 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
-import { loadSession, getAccount, subscribeSession } from '../services/session';
+import { loadSession, getAccount, subscribeSession, updateSessionUser } from '../services/session';
+import { getMyProfile } from '../api/social';
 import {
   fetchConnections, putSteamConnection, putXboxConnection,
   removeSteamConnection, removeXboxConnection,
@@ -216,6 +217,27 @@ export function AuthProvider({ children }) {
     loadSession().then(() => setAccount(getAccount()));
     return subscribeSession(() => setAccount(getAccount()));
   }, []);
+
+  // Kullanıcı profili (displayName, username) oturumla senkronize tutulur
+  useEffect(() => {
+    if (!account?.uid) return;
+    let alive = true;
+    getMyProfile().then((r) => {
+      if (!alive || !r?.profile) return;
+      const dName = r.profile.displayName || '';
+      const uName = r.profile.username || '';
+      const av = r.profile.avatar || null;
+      if (dName !== account.displayName || uName !== account.username || (av && av !== account.avatar)) {
+        updateSessionUser({
+          displayName: dName,
+          username: uName,
+          avatar: av || account.avatar,
+          name: dName || uName || account.name,
+        });
+      }
+    }).catch(() => {});
+    return () => { alive = false; };
+  }, [account?.uid]);
 
   // ── Hesaptaki bağlantıları çek ──
   // İSTENEN DAVRANIŞIN ÖZÜ BURASI: kullanıcı hangi cihazdan girerse girsin,

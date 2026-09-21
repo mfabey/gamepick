@@ -13,8 +13,8 @@ import EmptyState from '../src/components/EmptyState';
 import CevrimdisiBant from '../src/components/CevrimdisiBant';
 import GameCover from '../src/components/GameCover';
 import { prefetchImages } from '../src/utils/prefetch';
-import { radius, spacing, TAB_SPACE, type, CHIP, CHIP_TEXT, PRESSED } from '../src/theme';
-import { useKartSutun } from '../src/hooks/useIcerikAlani';
+import { radius, spacing, TAB_SPACE, type, CHIP, CHIP_TEXT, PRESSED, TOUCH_MIN } from '../src/theme';
+import { useKartSutun, useYanBosluk } from '../src/hooks/useIcerikAlani';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 import { useAuth } from '../src/context/AuthContext';
@@ -33,6 +33,7 @@ function computeValue(games, prices) {
 
 export default function LibraryScreen() {
   const styles = useStyles(makeStyles);
+  const yan = useYanBosluk();
   // (390 − 2×10) / 2 = 185 — maketin hücre genişliği.
   const sutun = useKartSutun(185, 2);
   const { colors } = useTheme();
@@ -212,6 +213,13 @@ export default function LibraryScreen() {
   if (sources.length === 0) {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
+        <View style={[styles.head, { marginHorizontal: yan }]}>
+          <Pressable style={({ pressed }) => [styles.back, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
+            <Ionicons name="chevron-back" size={24} color={colors.text} />
+          </Pressable>
+          <Text style={styles.title}>{t('nav.library')}</Text>
+          <View style={{ width: 24 }} />
+        </View>
         <View style={styles.center}>
           <Ionicons name="library-outline" size={54} color={colors.text3} />
           <Text style={styles.h1}>{t('nav.library')}</Text>
@@ -250,7 +258,13 @@ export default function LibraryScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <Text style={styles.header}>{t('nav.library')}</Text>
+      <View style={[styles.head, { marginHorizontal: yan }]}>
+        <Pressable style={({ pressed }) => [styles.back, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
+        </Pressable>
+        <Text style={styles.title}>{t('nav.library')}</Text>
+        <View style={{ width: 24 }} />
+      </View>
 
       {/* Kaynak seçici */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll} contentContainerStyle={styles.chipsRow}>
@@ -500,6 +514,9 @@ const GameTile = memo(function GameTile({ game, steam, price, onPress }) {
 
 const makeStyles = (colors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
+  head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.s8, minHeight: TOUCH_MIN },
+  back: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', borderRadius: radius.full },
+  title: { fontSize: type.title3, fontWeight: '700', color: colors.text, letterSpacing: -0.22 },
   header: { fontSize: type.title1, fontWeight: '800', color: colors.text, letterSpacing: -0.6, paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.xs },
   chipsScroll: { flexGrow: 0, flexShrink: 0, maxHeight: 56 },
   chipsRow: { paddingHorizontal: spacing.lg, gap: spacing.sm, paddingVertical: 10, alignItems: 'center' },

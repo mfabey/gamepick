@@ -5,24 +5,42 @@ const ITAD     = 'https://api.isthereanydeal.com';
 
 // ITAD sayısal store ID eşleştirmesi (gerçek değerler)
 const ITAD_STORE_MAP = {
-  '16':  { name: 'Epic Games',    icon: '⚡' },
-  '61':  { name: 'Steam',         icon: '💻' },
-  '35':  { name: 'GOG',           icon: '🌌' },
-  '37':  { name: 'Humble Bundle', icon: '🙏' },
-  '11':  { name: 'Xbox',          icon: '🎮' },
-  '74':  { name: 'Xbox',          icon: '🎮' },
+  '16':  { name: 'Epic Games',          icon: '⚡' },
+  '61':  { name: 'Steam',               icon: '💻' },
+  '35':  { name: 'GOG',                 icon: '🌌' },
+  '37':  { name: 'Humble Bundle',       icon: '🙏' },
+  '11':  { name: 'Xbox',                icon: '🎮' },
+  '74':  { name: 'Xbox',                icon: '🎮' },
+  '24':  { name: 'Green Man Gaming',    icon: '🟢' },
+  '36':  { name: 'Fanatical',           icon: '🔥' },
+  '49':  { name: 'Ubisoft Store',       icon: '🌀' },
+  '43':  { name: 'Gamesplanet',         icon: '🪐' },
+  '23':  { name: 'GamersGate',          icon: '🚪' },
+  '13':  { name: 'WinGameStore',        icon: '🪟' },
+  '31':  { name: 'GameBillet',          icon: '🎫' },
+  '57':  { name: '2Game',               icon: '🎮' },
+  '38':  { name: 'Direct2Drive',        icon: '🚗' },
 };
 
 function storeInfo(id, rawName) {
-  const sid = String(id);
+  const sid = String(id || '');
   if (ITAD_STORE_MAP[sid]) return ITAD_STORE_MAP[sid];
   const n = (rawName || '').toLowerCase();
-  if (n.includes('epic'))      return { name: 'Epic Games',    icon: '⚡' };
-  if (n.includes('xbox'))      return { name: 'Xbox',          icon: '🎮' };
-  if (n.includes('microsoft')) return { name: 'Xbox',          icon: '🎮' };
-  if (n.includes('steam'))     return { name: 'Steam',         icon: '💻' };
-  if (n.includes('gog'))       return { name: 'GOG',           icon: '🌌' };
-  if (n.includes('humble'))    return { name: 'Humble Bundle', icon: '🙏' };
+  if (n.includes('epic'))          return { name: 'Epic Games',       icon: '⚡' };
+  if (n.includes('xbox'))          return { name: 'Xbox',             icon: '🎮' };
+  if (n.includes('microsoft'))     return { name: 'Xbox',             icon: '🎮' };
+  if (n.includes('steam'))         return { name: 'Steam',            icon: '💻' };
+  if (n.includes('gog'))           return { name: 'GOG',              icon: '🌌' };
+  if (n.includes('humble'))        return { name: 'Humble Bundle',    icon: '🙏' };
+  if (n.includes('green man') || n.includes('gmg')) return { name: 'Green Man Gaming', icon: '🟢' };
+  if (n.includes('fanatical'))     return { name: 'Fanatical',        icon: '🔥' };
+  if (n.includes('ubisoft') || n.includes('uplay')) return { name: 'Ubisoft Store', icon: '🌀' };
+  if (n.includes('gamesplanet'))   return { name: 'Gamesplanet',      icon: '🪐' };
+  if (n.includes('playstation') || n.includes('psn')) return { name: 'PlayStation', icon: '🎮' };
+  if (n.includes('nintendo'))      return { name: 'Nintendo eShop',   icon: '🔴' };
+  if (rawName && rawName.trim()) {
+    return { name: rawName.trim(), icon: '🛒' };
+  }
   return null;
 }
 

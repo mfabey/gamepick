@@ -375,6 +375,7 @@ async function fetchSteamSearchPaginated(searchUrl, isFree = false, isOnSale = f
 async function fetchSteamSearchByTerm(term) {
   if (!term || term.trim().length < 2) return [];
   try {
+    const rate = await getUsdToTry();
     const searchUrl = `https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(term.trim())}&l=turkish&cc=tr`;
     const res = await fetch(searchUrl, { next: { revalidate: 1800 } });
     if (!res.ok) return [];
@@ -394,6 +395,22 @@ async function fetchSteamSearchByTerm(term) {
 
         if (steamData && isSteamDataAdult(steamData)) return null;
 
+        const name = steamData?.name || item.name;
+        const slug = generateSlug(name);
+        const isFree = steamData?.is_free ?? (item.price ? item.price.final === 0 : false);
+        const isOnSale = item.price ? (item.price.discount_percent > 0) : false;
+        const discount = item.price?.discount_percent || steamData?.price_overview?.discount_percent || 0;
+
+        let price = null;
+        let original = null;
+        if (steamData?.price_overview) {
+          price = amountToTRY(steamData.price_overview.final, steamData.price_overview.currency || 'USD', rate);
+          original = amountToTRY(steamData.price_overview.initial, steamData.price_overview.currency || 'USD', rate);
+        } else if (item.price) {
+          price = amountToTRY(item.price.final, item.price.currency || 'USD', rate);
+          original = amountToTRY(item.price.initial, item.price.currency || 'USD', rate);
+        }
+
         const isStoreBg = (url) => !url || url.includes('storepagebackground');
         const cleanBg = !isStoreBg(steamData?.background_raw) ? steamData?.background_raw : (!isStoreBg(steamData?.background) ? steamData?.background : null);
         let heroImage = steamData?.screenshots?.[0]?.path_full || cleanBg || steamData?.header_image || item.tiny_image;
@@ -404,9 +421,8 @@ async function fetchSteamSearchByTerm(term) {
           id: 'rawg_' + appid,
           rawgId: appid,
           rawgSlug: slug,
-          name: steamData?.name || item.name,
-          image: steamData?.header_image || item.tiny_image
-            || `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/header.jpg`,
+          name,
+          image: steamData?.header_image || item.tiny_image || null,
           heroImage,
           backgroundImage,
           screenshots,
@@ -416,7 +432,9 @@ async function fetchSteamSearchByTerm(term) {
           totalReviews: steamData?.recommendations?.total || 0,
           isFree,
           onSale: isOnSale,
-          price: null,
+          price,
+          original,
+          discount,
           noData: false,
           platforms: ['pc'],
           source: 'steam',
@@ -431,6 +449,8 @@ async function fetchSteamSearchByTerm(term) {
         if (dbMatch) {
           if (!g.genres.length) g.genres = dbMatch.genres || [];
           if (!g.metacritic) g.metacritic = dbMatch.metacritic || null;
+          if (g.reviewScore === 0) g.reviewScore = dbMatch.reviewScore || 0;
+          if (g.totalReviews === 0) g.totalReviews = dbMatch.totalReviews || 0;
         }
 
         return g;
@@ -442,6 +462,49 @@ async function fetchSteamSearchByTerm(term) {
     console.error("Steam storesearch hatasi:", err);
     return [];
   }
+}
+
+function scoreSearchResult(game, query) {
+  if (!game || !query) return 0;
+  const qClean = query.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+  const nameClean = (game.name || '').toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+  const slugClean = (game.rawgSlug || '').toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+
+  let score = 0;
+
+  // Exact match
+  if (nameClean === qClean || slugClean === qClean) {
+    score += 1000;
+  } else if (nameClean.startsWith(qClean + ' ') || nameClean.startsWith(qClean)) {
+    score += 500;
+  } else if (nameClean.includes(qClean)) {
+    score += 300;
+  }
+
+  const qWords = qClean.split(' ').filter(w => w.length > 1);
+  if (qWords.length > 0) {
+    const allWordsInName = qWords.every(w => nameClean.includes(w));
+    if (allWordsInName) {
+      score += 200;
+    }
+
+    const anyWordInName = qWords.some(w => nameClean.includes(w));
+    if (!anyWordInName && !nameClean.includes(qClean)) {
+      score -= 400;
+    } else {
+      qWords.forEach(w => {
+        if (nameClean.includes(w)) score += 40;
+      });
+    }
+  }
+
+  // Popularity and quality boost
+  if (game.metacritic) score += Math.min(game.metacritic, 100) * 1.5;
+  if (game.totalReviews) score += Math.min(Math.log10(game.totalReviews + 1) * 30, 150);
+  if (game.reviewScore) score += (game.reviewScore / 10);
+  if (game.hasSteam) score += 20;
+
+  return score;
 }
 
 async function fetchSteamFeatured(category) {
@@ -797,6 +860,7 @@ export async function GET(request) {
         params = { ...params, ...mapped };
       } else {
         params.search = trimmedQ;
+        params.search_precise = true;
       }
     } else {
       // Kategori/Tür filtresi
@@ -949,6 +1013,14 @@ export async function GET(request) {
         const rawgResults = (rawgData.results || []).filter(g => !isAdultContent(g) && !isDlc(g)).map(formatRawgGame);
         const filteredRawg = rawgResults.filter(g => g.hasStores && !KNOWN_DELISTED_SLUGS.has(g.rawgSlug));
 
+        // Statik popüler veritabanından da eşleşenleri kontrol et
+        const qClean = trimmedQ.toLowerCase();
+        const staticMatches = [...STATIC_FREE_GAMES, ...FALLBACK_GAMES].filter(g => {
+          const gn = (g.name || '').toLowerCase();
+          const gs = (g.rawgSlug || '').toLowerCase();
+          return gn.includes(qClean) || gs.includes(generateSlug(trimmedQ)) || qClean.split(/\s+/).every(w => w.length > 1 && gn.includes(w));
+        });
+
         const seenAppIds = new Set(filteredSteam.map(g => g.rawgId));
         const seenNames = new Set(filteredSteam.map(g => g.name.toLowerCase().replace(/[^a-z0-9]/g, '')));
 
@@ -958,14 +1030,23 @@ export async function GET(request) {
           return !hasMatch;
         });
 
-        // Steam'deki doğrudan eşleşmeler en üste gelsin
-        results = [...filteredSteam, ...uniqueRawg];
-        total = (rawgData.count || 0) + filteredSteam.length;
+        const uniqueStatic = staticMatches.filter(g => {
+          const cleanName = g.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+          return !seenNames.has(cleanName) && (!g.rawgId || !seenAppIds.has(g.rawgId));
+        });
+
+        // Arama alaka düzeyine (relevance) göre sırala
+        const mergedCandidates = [...filteredSteam, ...uniqueStatic, ...uniqueRawg];
+        results = mergedCandidates.sort((a, b) => scoreSearchResult(b, trimmedQ) - scoreSearchResult(a, trimmedQ));
+        total = (rawgData.count || 0) + filteredSteam.length + uniqueStatic.length;
       } else {
         // Diğer tüm bölümler/aramalar için normal RAWG
         const data = await fetchRawg('/games', params);
         total = data.count || 0;
         results = (data.results || []).filter(g => !isAdultContent(g) && !isDlc(g)).map(formatRawgGame);
+        if (trimmedQ) {
+          results.sort((a, b) => scoreSearchResult(b, trimmedQ) - scoreSearchResult(a, trimmedQ));
+        }
         if (section === 'free') {
           // Ücretsiz oyunlar RAWG'da çoğunlukla mağaza linki olmaz, hasStores şartı arama
           results = results.filter(g => !KNOWN_DELISTED_SLUGS.has(g.rawgSlug));

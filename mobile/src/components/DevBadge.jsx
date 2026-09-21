@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { isDeveloperUser } from '../utils/developer';
 import { useStyles, useTheme } from '../context/ThemeContext';
+import { spacing, radius } from '../theme';
 
 /**
  * Gamerisen Geliştirici Kalkan Rozeti
@@ -34,19 +35,21 @@ const makeStyles = (colors) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 3,
+    marginLeft: spacing.s4,
   },
   wrapWithLabel: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
+    gap: spacing.s4,
+    // tema-bagimsiz: gelistirici rozeti ozel altin sarisi vurgusu
     backgroundColor: 'rgba(245, 158, 11, 0.12)',
+    // tema-bagimsiz: gelistirici rozeti ozel altin sarisi cercevesi
     borderColor: 'rgba(245, 158, 11, 0.35)',
     borderWidth: 1,
-    borderRadius: 6,
-    paddingHorizontal: 5,
-    paddingVertical: 1.5,
-    marginLeft: 6,
+    borderRadius: radius.xs,
+    paddingHorizontal: spacing.s4,
+    paddingVertical: 0,
+    marginLeft: spacing.s8,
   },
   labelText: {
     fontSize: 10,

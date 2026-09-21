@@ -570,7 +570,7 @@ export default function HomeScreen() {
             o zaman içerikle yarışırdı." */}
         <FadeIn delay={40}>
           <Greeting
-            name={session?.user?.name || null}
+            name={session?.user?.displayName || session?.user?.name || session?.user?.username || null}
             saleWish={indirimliIstek}
             friends={arkadasOzet}
             forYouCount={forYou.length}

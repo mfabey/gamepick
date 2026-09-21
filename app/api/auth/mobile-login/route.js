@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { guard, penalize } from '../../../lib/rate-guard';
 import { mintFamilyGuvenli } from '../../../lib/jeton-tembel';
 import { redisSetJSON } from '../../../lib/redis';
-import { mergeProfile } from '../../../lib/social-store';
+import { mergeProfile, getProfile } from '../../../lib/social-store';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Mobil giriş — web'deki /api/auth/login ile aynı kimlik doğrulama, farklı çıktı.
@@ -74,7 +74,15 @@ export async function POST(request) {
       );
     }
 
-    const user = { uid: localId, name: displayName || email.split('@')[0], email };
+    const socialProfile = await getProfile(localId).catch(() => null);
+    const user = {
+      uid: localId,
+      name: socialProfile?.displayName || displayName || email.split('@')[0],
+      displayName: socialProfile?.displayName || displayName || '',
+      username: socialProfile?.username || '',
+      avatar: socialProfile?.avatar || null,
+      email,
+    };
     try { await mergeProfile(localId, user); } catch { /* önbellek şart değil */ }
 
     return NextResponse.json({
