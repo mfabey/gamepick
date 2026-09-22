@@ -8,7 +8,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState } from 'react';
 import Constants from 'expo-constants';
-import { PageHeader } from '../src/components/ui/ScreenParts';
+import { NavBar } from '../src/components/ui/ScreenParts';
 import { Txt, Segmented } from '../src/components/ui/Primitives';
 import { useAppPreferences, setAppPreference } from '../src/services/appPreferences';
 import { View, Text, Pressable, StyleSheet, ScrollView, Switch, Alert, ActivityIndicator, Linking } from 'react-native';
@@ -147,7 +147,7 @@ export default function SettingsScreen() {
       {/* Başlık listenin DIŞINDA: içerik kolonuyla aynı hizaya
           getiriliyor — başlık tam genişlikte kalsaydı sayfanın adı ile
           anlattığı şey iki ayrı sütunda dururdu. */}
-      <PageHeader title={t('prof.settingsTitle')} back />
+      <NavBar title={t('prof.settingsTitle')} />
 
       <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 40, paddingHorizontal: yan + spacing.lg }]} showsVerticalScrollIndicator={false}>
         {/* ── BÖLÜM BAŞLIKLARI GERİ GELDİ ──

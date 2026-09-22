@@ -9,7 +9,7 @@ import { useQuery } from '../../src/hooks/useQuery';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useWishlist } from '../../src/context/WishlistContext';
 import { useDesignTheme } from '../../src/theme/useDesignTheme';
-import { PageHeader, QueryState } from '../../src/components/ui/ScreenParts';
+import { NavBar, QueryState } from '../../src/components/ui/ScreenParts';
 import { Button, SectionHeader, Switch, Txt } from '../../src/components/ui/Primitives';
 import VideoCard from '../../src/components/ui/VideoCard';
 import { useAppPreferences, setAppPreference } from '../../src/services/appPreferences';
@@ -22,7 +22,7 @@ export default function VideoScreen() {
   const inset = useSafeAreaInsets();
   const query = useQuery(`video:${lang}:${id}`, () => fetchVideo(id, lang), { ttl: 300000 });
   return <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: colors.bg }}>
-    <PageHeader title={t('vid.title')} back />
+    <NavBar title={t('vid.title')} />
     <QueryState loading={query.loading} error={query.error} empty={!query.data} retry={query.refetch} />
     {query.data && <Player key={id} item={query.data} bottom={inset.bottom} />}
   </SafeAreaView>;

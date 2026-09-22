@@ -47,11 +47,8 @@
   "stats.collections",
   "stats.decisions",
   "stats.entry",
-  "stats.share",
   "stats.startSwiping",
   "swipe.entry",
   "vid.entry",
-  "wishlist.add",
-  "wishlist.added",
   "wishlist.count"
 ]

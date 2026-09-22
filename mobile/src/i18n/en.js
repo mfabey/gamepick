@@ -727,4 +727,8 @@ export default {
   'v2.readSource': "Read at source",
   'v2.reduceMotion': "Reduce motion",
   'v2.loadMore': "Load more",
+  'v2.follow': "Follow",
+  'v2.following': "Following",
+  'v2.notifications': "Notifications",
+  'v2.cancel': "Cancel",
 };

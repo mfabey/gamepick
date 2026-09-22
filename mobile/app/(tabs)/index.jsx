@@ -17,8 +17,9 @@ import Greeting from '../../src/components/Greeting';
 import HeroRail from '../../src/components/ui/HeroRail';
 import HomeMedia from '../../src/components/ui/HomeMedia';
 import GameCard from '../../src/components/ui/GameCard';
-import { Lockup } from '../../src/components/brand/Logo';
+import { HomeHeader } from '../../src/components/ui/Navigation';
 import { IconButton, SectionHeader } from '../../src/components/ui/Primitives';
+import { useAuth } from '../../src/context/AuthContext';
 import { useQuery } from '../../src/hooks/useQuery';
 import { useTasteProfile } from '../../src/hooks/useTasteProfile';
 import { useOwnedGames } from '../../src/hooks/useOwnedGames';
@@ -76,6 +77,8 @@ export default function HomeScreen() {
   const onTabScroll = useTabBarScroll();
   const { t, lang, formatPrice } = useLanguage();
   const router = useRouter();
+  // Başlıktaki avatar (G-04) — sekme çubuğundaki profil avatarıyla aynı kaynak.
+  const { account } = useAuth();
 
   const { data: trendData, ts: trendTs, refetch: trendTazele } = useQuery('home:trending', fetchTrending, { ttl: 3 * 60 * 1000 });
   const { data: newData, ts: newTs, refetch: newTazele }       = useQuery('home:new', fetchNewGames, { ttl: 5 * 60 * 1000 });
@@ -525,13 +528,16 @@ export default function HomeScreen() {
   const header = (
     <View style={styles.headerWrap}>
 
-        <View style={styles.topBar}>
-          <Lockup />
-          <View style={styles.topActions}>
-            <IconButton icon="search" label={t('hero.search')} onPress={() => router.push('/games')} />
-            <IconButton icon="news" label={t('news.title')} onPress={() => router.push('/news')} />
-          </View>
-        </View>
+        {/* G-04 başlığı: arama · bildirim · avatar. Bildirim merkezi (G-20)
+            henüz yok; sahte bir zil yerine çalışan haber girişi duruyor. */}
+        <HomeHeader
+          onSearch={() => router.push('/games')}
+          avatar={account?.avatar}
+          name={account?.displayName || account?.username}
+          onProfile={() => router.push('/profile')}
+        >
+          <IconButton icon="news" label={t('news.title')} onPress={() => router.push('/news')} />
+        </HomeHeader>
 
         {/* Bant marka satırının ALTINDA: bu ekranda listenin tepesinde
             sabit bant için yer yok (yukarıdaki nota bkz.), ama başlıkla
@@ -681,10 +687,5 @@ const makeStyles = (colors) => StyleSheet.create({
   listContent: {},
   headerWrap: { paddingBottom: spacing.s32 },
   feedReview: { marginBottom: spacing.s24 },
-  topBar: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: spacing.s20, minHeight: 44,
-  },
-  topActions: { flexDirection: 'row' },
   row: { paddingHorizontal: spacing.s20, gap: spacing.s12 },
 });

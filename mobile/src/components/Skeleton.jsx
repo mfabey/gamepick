@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState, useCallback } from 'react';
 import { Animated, Easing, View, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
+// `motion` hâlâ gerekli: Reveal eski ölçeğin `motion.reveal` (160) adımını kullanıyor.
 import { radius, spacing, motion } from '../theme';
+import { motion as tasarimHareketi } from '../theme/tokens';
 import { useStyles, useTheme } from '../context/ThemeContext';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import FadeIn from './FadeIn';
@@ -21,7 +23,8 @@ import FadeIn from './FadeIn';
 // ─────────────────────────────────────────────────────────────────────────────
 // Handoff: sweepWidth 320, duration 1400, easing linear.
 const SWEEP_W = 320;
-const SWEEP_MS = motion.skeleton;
+// Gamerisen 2.0 (DS 4 · `.sk`): 1,3 sn doğrusal süpürme; eski handoff 1400 diyordu.
+const SWEEP_MS = tasarimHareketi.duration.loop;
 
 let sharedValue = null;
 let loopAnim = null;
@@ -104,9 +107,10 @@ export function Skeleton({ style }) {
   // surface3 (#1C1E23) ve fark 255'te 3 — gözle ayırt edilmiyor.
   // Düz hex yazsaydık açık temada bütün yükleme ekranları beyaz zeminde koyu
   // gri kutulara dönerdi; jetona bağlayınca iki tema da doğru geliyor.
+  // DS 4 `.sk`: surface1 → surface2 → surface1 (eski adlarla card → bgInput → card).
   const gradyan = useMemo(
-    () => [colors.bgInput, colors.surfaceTile, colors.bgInput],
-    [colors.bgInput, colors.surfaceTile]
+    () => [colors.card, colors.bgInput, colors.card],
+    [colors.card, colors.bgInput]
   );
 
   return (
@@ -268,7 +272,7 @@ export function TextBlockSkeleton({ lines = 4 }) {
 const makeStyles = (colors) => StyleSheet.create({
   // overflow: parıltı bloğun dışına taşmasın — 320pt'lik katman küçük
   // bloklarda (44pt küçük resim, 60pt satır) blok sınırını kat kat aşıyor.
-  box: { backgroundColor: colors.bgInput, borderRadius: radius.sm, overflow: 'hidden' },
+  box: { backgroundColor: colors.card, borderRadius: radius.sm, overflow: 'hidden' },
   sweep: { position: 'absolute', top: 0, bottom: 0, left: 0, width: SWEEP_W },
 
   // grid

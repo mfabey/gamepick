@@ -2,10 +2,10 @@ import { memo, useState } from 'react';
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import PosterImage from '../PosterImage';
 import Monogram from '../Monogram';
-import { Icon } from '../Icon';
-import { Txt, PressableScale } from './Primitives';
+import { Txt, PressableScale, IconButton } from './Primitives';
+import { HeartButton } from './HeartButton';
 import { useDesignTheme } from '../../theme/useDesignTheme';
-import { size, gameCard as C } from '../../theme/tokens';
+import { size, gameCard as C, component as K } from '../../theme/tokens';
 import { usePrice } from '../../hooks/usePrice';
 import { useKapakOlcum } from '../../hooks/useKapakOlcum';
 import { useLanguage } from '../../context/LanguageContext';
@@ -34,19 +34,16 @@ export default memo(function DesignGameCard({ game, onPress, onExpand, onDismiss
           : <PosterImage uri={game.image} recyclingKey={String(game.id)} contentFit="cover"
               style={StyleSheet.absoluteFill} onError={() => setFailedUri(game.image)} />}
       </PressableScale>
-      <Pressable accessibilityRole="button" accessibilityLabel={watched ? t('wishlist.added') : t('wishlist.add')}
-        accessibilityState={{ selected: watched }} hitSlop={5}
-        onPress={() => toggle(game)} style={[s.heart, { backgroundColor: colors.surface1 }]}>
-        <Icon name="heart" size={17} color={watched ? colors.red : colors.text} fill={watched ? colors.red : 'none'} />
-      </Pressable>
+      {/* Rayda çok kart var: cam bulanıklıksız (plan §6.1). */}
+      <HeartButton selected={watched} onPress={() => toggle(game)} blurred={false}
+        size={K.heart.card.size} iconSize={K.heart.card.icon} style={s.heart} />
       {discount ? <View style={[s.discount, { backgroundColor: colors.green }]}>
         <Txt variant="captionStrong" style={{ color: colors.onGreen }}>−{discount}%</Txt>
       </View> : null}
-      {onDismiss ? <Pressable accessibilityRole="button" accessibilityLabel={t('home.notInterested')}
+      {onDismiss ? <IconButton icon="x" label={t('home.notInterested')} variant="onArt" blurred={false}
+        size={K.heart.card.size} iconSize={K.heart.card.icon - 1}
         onPress={() => onDismiss(game)} onLongPress={() => Alert.alert(t('home.whyThis'), t('home.whyThisBody'))}
-        hitSlop={5} style={[s.dismiss, { backgroundColor: colors.surface1 }]}>
-        <Txt variant="headline">×</Txt>
-      </Pressable> : null}
+        style={s.dismiss} /> : null}
     </View>
     <Pressable accessibilityRole="button" onPress={onExpand ? expand : onPress}>
       <Txt variant="cardTitle" numberOfLines={1} style={s.title}>{game.name}</Txt>
@@ -65,8 +62,8 @@ export default memo(function DesignGameCard({ game, onPress, onExpand, onDismiss
 const s = StyleSheet.create({
   card: { width: size.cover.medium.width },
   cover: { height: size.cover.medium.height, borderRadius: 14, overflow: 'hidden' },
-  heart: { position: 'absolute', right: 8, top: 8, width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
-  dismiss: { position: 'absolute', left: 8, top: 8, width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
+  heart: { position: 'absolute', right: K.heart.card.inset, top: K.heart.card.inset },
+  dismiss: { position: 'absolute', left: K.heart.card.inset, top: K.heart.card.inset },
   discount: { position: 'absolute', left: 8, bottom: 8, borderRadius: 6, paddingHorizontal: C.badgePaddingH, paddingVertical: C.badgePaddingV },
   title: { marginTop: 8 },
   prices: { minHeight: 22, marginTop: C.priceGap, flexDirection: 'row', alignItems: 'center', gap: C.priceGap },

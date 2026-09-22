@@ -142,11 +142,17 @@ export const typography = {
   badge: t(11, undefined, '700', 0), // sayaç, Lv, rozet içi
   tabLabel: t(10, 12, '500', 0), // seçili sekmede 600
   tabLabelActive: t(10, 12, '600', 0),
+  // Kaynaktan eklenenler (kit/k.py): bölüm başlığı bağlantısı "Tümü" 15/500,
+  // NavBar alt başlığı 12/14, toast metni 14/500.
+  link: t(15, 20, '500'),
+  navSubtitle: t(12, 14, '400'),
+  toast: t(14, 18, '500'),
   storeMono: t(9, undefined, '700', 0),
 } as const;
 
 /** Fiyatlar: display ailesi, 700, -0.02em, rakamlar eşit genişlikte. */
-export const priceStyle = (size: 14 | 16 | 18 | 22 | 28, color: string = colors.text): TextStyle => ({
+// 20: StickyBottomBar (kit/s1.py sticky_bar), 40: Fiyat Karşılaştırma "En İyi Fiyat" (G-08).
+export const priceStyle = (size: 14 | 16 | 18 | 20 | 22 | 28 | 40, color: string = colors.text): TextStyle => ({
   fontSize: size,
   ...fontFor('700'),
   letterSpacing: tracking(-0.02, size),
@@ -184,7 +190,10 @@ export const radius = {
   cover: 14, // oyun kapağı, medya görseli, ana ekran simgesi örneği
   card: 16, // standart kart
   group: 18, // gruplu liste, grafik kartı
-  cardLarge: 20, // fırsat kartı, alt sayfa
+  cardLarge: 20, // fırsat kartı
+  // Alt sayfa: G-06b ve DS 4 kaynaklarında `border-radius: 24px 24px 0 0`.
+  // SCREENS.md "20" diyor; doğruluk sırasında kaynak kazanır.
+  sheet: 24,
   hero: 22, // öne çıkan kart
   pill: 999,
 } as const;
@@ -263,8 +272,16 @@ export const blur = {
 
 /* ───────────────────────────── Degradeler (expo-linear-gradient) ───────────────────────────── */
 
-type Gradient = { colors: string[]; locations: number[]; start?: { x: number; y: number }; end?: { x: number; y: number } };
-const v = (stops: [string, number][]): Gradient => ({ colors: stops.map((s) => s[0]), locations: stops.map((s) => s[1]) });
+// expo-linear-gradient en az iki duraklı DEMET istiyor; her degradenin en az iki
+// durağı var, tip bunu söylüyor (değerler değişmedi).
+type Gradient = {
+  colors: readonly [string, string, ...string[]]; locations: readonly [number, number, ...number[]];
+  start?: { x: number; y: number }; end?: { x: number; y: number };
+};
+const v = (stops: [string, number][]): Gradient => ({
+  colors: stops.map((s) => s[0]) as unknown as Gradient['colors'],
+  locations: stops.map((s) => s[1]) as unknown as Gradient['locations'],
+});
 
 export const gradients = {
   heroCard: v([['rgba(0,0,0,0.28)', 0], ['rgba(0,0,0,0)', 0.22], ['rgba(0,0,0,0)', 0.42], ['rgba(0,0,0,0.78)', 0.74], ['rgba(0,0,0,0.9)', 1]]),
@@ -293,7 +310,7 @@ export const motion = {
   },
   press: { scale: 0.97, opacity: 0.9, duration: 150 },
   /** Kalp ve beğeni: 240 ms içinde 1 → 1.28 → 0.92 → 1 */
-  pop: { keyframes: [1, 1.28, 0.92, 1], duration: 240 },
+  pop: { keyframes: [1, 1.28, 0.92, 1], offsets: [0, 0.35, 0.65, 1], duration: 240 }, // offsets: kit CSS @keyframes gr-pop
 } as const;
 
 /* ───────────────────────────── Kısa yol ───────────────────────────── */
@@ -312,5 +329,28 @@ export const control = {
 
 // DS 3 GameCard spacing differs intentionally from the legacy spacing scale.
 export const gameCard = { priceGap: 6, badgePaddingH: 6, badgePaddingV: 2 } as const;
-export const theme = { colors, fonts, typography, space, layout, radius, size, shadow, blur, gradients, motion, tabBar, control, gameCard } as const;
+
+/* Kit ölçüleri — bileşenlerde sayı yazılmasın diye (kaynak: design/kit/k.py, c.py, s1.py; DS 2 ve DS 4). */
+export const component = {
+  iconButton: { dotSize: 8, dotTop: 9, dotRight: 10, dotRing: 2, badgeSize: 18, badgeTop: 4, badgeRight: 2, badgePadding: 5 },
+  heart: { size: 36, icon: 18, card: { size: 34, icon: 17, inset: 8 }, hero: { size: 44, icon: 20 } },
+  follow: { height: 34, radius: 10, paddingH: 14, gap: 5, check: 14, checkStroke: 2.6 },
+  chip: { icon: 15, chevron: 14, chevronStroke: 2.4, gap: 6, iconStroke: 2.2, removablePaddingRight: 10 },
+  segmentCompact: { height: 30, font: 12 },
+  field: { iconGap: 10, helperGap: 5, helperIcon: 13 },
+  search: { height: 40, radius: 12, paddingLeft: 12, paddingRight: 8, gap: 8, icon: 18, iconStroke: 2.2, clearArea: 28, clearCircle: 18, clearIcon: 11, clearStroke: 3, focusRing: 1.5, cancelGap: 10 },
+  switchAndroid: { width: 51, height: 31, knob: 27, inset: 2 },
+  toast: { width: 350, height: 52, radius: 14, paddingLeft: 14, paddingRight: 8, gap: 10, icon: 18, actionHeight: 36, actionPadding: 8, duration: 3000, lift: 12 },
+  listRow: { iconBox: 30, iconBoxRadius: 8, icon: 17, separatorWithIcon: 60, separator: 16 },
+  sectionHeader: { linkGap: 2, linkIcon: 16, linkStroke: 2.4, subtitleGap: 2 },
+  homeHeader: { height: 44, markSize: 32, wordSize: 22, lockupGap: 9, actionGap: 2, edge: -6, avatar: 30 },
+  pageHeader: { height: 52, actionGap: 4, edge: -8 },
+  navBar: { height: 44, paddingH: 16, side: 96, backIcon: 24, backStroke: 2.3, backEdge: -10, edge: -8 },
+  stickyBar: { paddingTop: 10, paddingH: 20, minBottom: 10, gap: 12, button: 48 },
+  pageDots: { active: 18, size: 6, gap: 6, top: 12 },
+  hero: { tagHeight: 28, tagIcon: 13, metaGap: 5, metaStar: 12, priceRow: 28 },
+  skeleton: { card: { titleWidth: 120, titleHeight: 14, metaWidth: 80, metaHeight: 10, priceWidth: 60, priceHeight: 16, radius: 6, gap: 8 } },
+} as const;
+
+export const theme = { colors, fonts, typography, space, layout, radius, size, shadow, blur, gradients, motion, tabBar, control, gameCard, component } as const;
 export type Theme = typeof theme;

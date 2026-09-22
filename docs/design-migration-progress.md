@@ -88,4 +88,60 @@ Mevcut API'ler ve iş mantığı bu grupta değiştirilmedi. Fotoğraf yükleme,
 - Kart ölçüleri (HeroCard iç boşlukları, NewsFeature/NewsRow, GameCard mağaza rozeti) `.dc.html` ile karşılaştırılmadı.
 - Native doğrulama yapılmadı: cam, gölge, ripple, Inter, simge/splash. Cihaz ya da simülatör gerekiyor.
 - Sürüm hâlâ 2.7.2 (runtimeVersion appVersion). Yeni native paketlerle OTA yayınlanmamalı (plan §5.3).
-- Tüm iş `main`'de commit'lenmemiş duruyor (plan §6.6, soru 10).
+- Tüm iş `main`'de commit'lenmemiş duruyor (plan §6.6, soru 10). → Sonradan `design-v2` dalına iki commit olarak alındı (`b9de3c1`, `239f54b`).
+
+### 22 Eylül — Bileşen kütüphanesi, COMPONENTS §1–3 (Claude)
+
+Ölçüler kit'ten (`k.py` btn/iconbtn/chip/segmented/toggle/field/search_field/sec_head/page_head/nav_bar, `c.py` heart/follow_btn/row_item/group, `s1.py` home başlığı ve sticky_bar) ve DS 2 / DS 4 kaynaklarından alındı. Sayılar `tokens.ts → component`'e yazıldı; bileşenlerde sayı yok.
+
+**Yeni:**
+- `GlassView`: görsel üstü cam. Kaydırılan listeler için bulanıklıksız kip (plan §6.1).
+- `HeartButton`: kit'teki anahtar karelerle 240 ms pop, yalnız seçilirken; hafif dokunsal darbe.
+- `FollowButton`: 200 ms renk geçişi. Bir API'ye bağlı değil; takip ucu gelene kadar yalnız galeride.
+- `SearchField`: temizle düğmesi, düğme kipi, "Vazgeç". Mikrofon bilerek yok (plan §6.4).
+- `Toast` + `ToastProvider` (kökte): 3 sn, geri alınabilir eylem, ekran okuyucuya duyuru.
+- `Navigation.tsx`: `HomeHeader`, `PageHeader`, `NavBar`, `StickyBottomBar` + `useStickyBarInset`, `PageDots`.
+- `scripts/check-scope.mjs` (`check:scope`, zincirde): bağlanmamış adları yakalıyor.
+  - Bu işte gerçek bir çökmeyi yakaladı: `Skeleton.jsx`'te kaldırılan `motion` içe aktarımı; iskeletten içeriğe geçişte `ReferenceError`.
+  - Hata geri konunca denetimin düştüğü doğrulandı.
+
+**Tamamlanan:**
+- `Button`:
+  - Görsel üstü varyant ve sondaki ikon.
+  - 52 ve 30 pt boylar (DS 2).
+  - Yüklenirken yalnız yay; genişlik korunuyor.
+  - `onImage`: görsel üstünde temadan bağımsız renk.
+- `IconButton`: düz, dolgulu ve görsel üstü varyantlar; 8 pt nokta, rozet.
+- `Chip`: ok ve "×" varyantları.
+- `Segmented`: başparmak gölgesi, kısa 30 pt boy; uzun etiketler taşmak yerine küçülüyor.
+- `Switch`: Android'de tasarımdaki 51×31 anahtar, iOS'ta yerel.
+- `TextField`:
+  - Odak halkası ayrı katmanda, düzen kaymıyor.
+  - İkon, başarı durumu, yardım ikonu, sayaç, şifre göster/gizle.
+- `SectionHeader`: 15/500 bağlantı, alt yazı; satır 28 pt kalıyor.
+- `ListGroup`/`ListRow`: 30 pt ikon kutusu, 60/16 ayraç, değer 15/400.
+- İskelet: surface1 → surface2 süpürme, 1,3 sn.
+
+**Bağlananlar:**
+- Ana sayfa başlığı `HomeHeader`'a geçti: arama, haber, avatar. Bildirim merkezi yok; sahte zil eklenmedi.
+- HeroRail: cam etiket, `HeartButton` 44/20, `PageDots`, beyaz "Oyunu gör".
+- GameCard: kalp ve × bulanıklıksız cam.
+- Geri düğmeli başlıklar `NavBar`'a geçti: ayarlar, video ve haber detayı.
+
+**Doğrulama:**
+- `npm run check` (19 denetim, `tsc` ve `check:scope` dahil) ve iOS/Android export geçti.
+- **Android 16 emülatöründe dev derlemesi** (Pixel 8, 411 dp):
+  - Ana sayfa, galeri, Videolar ve Ayarlar koyu ve açık temada ekran görüntüsüyle DS 2 / DS 4'e karşı incelendi.
+  - Denenen etkileşimler: yükleniyor, kalp pop, toast gösterim ve kaybolma, uzun basma etiketi, tema geçişi.
+  - Emülatördeki tema tercihi sonunda `system`'e geri alındı.
+- Emülatörde bulunup düzeltilenler:
+  - Açık temada HeroCard butonu görsel üstünde siyahtı.
+  - Galerideki liste grubu 20 yerine 40 pt içerideydi.
+- Boşta ölçülen FPS 56–60. Kaydırma ve dokunma anında 25–42: dev kipi, sürüm derlemesinde ölçülmedi.
+
+**Açık kalanlar:**
+- COMPONENTS §4–7: kart aileleri, fiyat, sosyal, medya ve liste bileşenlerinin geri kalanı.
+- Fiyat adımlayıcısı (DS 2 "− ₺500 +") G-08 ile birlikte.
+- Fiyat biçimi → **Kullanıcı kararı (22 Eylül): tasarımdaki gibi "₺599"** (sembol önde, binlik ayırıcı nokta: "₺1.199"). `formatPrice` buna göre değişecek (sonraki commit).
+- iOS'ta cam/Liquid Glass ve yerel görünüm doğrulanmadı; Mac ya da cihaz gerekiyor.
+- Prebuild uyarısı (bu işten önce de vardı): Android'de `userInterfaceStyle` için `expo-system-ui` kurulu değil.

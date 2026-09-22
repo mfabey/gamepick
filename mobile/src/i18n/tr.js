@@ -734,4 +734,8 @@ export default {
   'v2.readSource': "Kaynakta oku",
   'v2.reduceMotion': "Hareketi azalt",
   'v2.loadMore': "Daha fazla yükle",
+  'v2.follow': "Takip et",
+  'v2.following': "Takip ediliyor",
+  'v2.notifications': "Bildirimler",
+  'v2.cancel': "Vazgeç",
 };

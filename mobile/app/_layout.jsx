@@ -22,6 +22,7 @@ import { startSharedLinkWatcher } from '../src/services/sharedLink';
 import { startDmPushSync } from '../src/services/dmPush';
 import { useLastNotificationResponse } from 'expo-notifications';
 import FpsMeter from '../src/dev/FpsMeter';
+import { ToastProvider } from '../src/components/ui/Toast';
 import { useTheme } from '../src/context/ThemeContext';
 import { useFonts } from 'expo-font';
 import { Inter_400Regular } from '@expo-google-fonts/inter/400Regular';
@@ -265,7 +266,11 @@ export default function RootLayout() {
         <LanguageProvider>
           <AuthProvider>
             <WishlistProvider>
-              <TemaliYigin />
+              {/* Toast katmanı yığının ÜSTÜNDE: hangi ekrandan çağrılırsa çağrılsın
+                  aynı yerde, sekme çubuğunun üstünde görünsün (DS 4). */}
+              <ToastProvider>
+                <TemaliYigin />
+              </ToastProvider>
               {__DEV__ && <FpsMeter />}
             </WishlistProvider>
           </AuthProvider>

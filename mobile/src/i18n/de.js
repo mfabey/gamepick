@@ -736,4 +736,8 @@ export default {
   'v2.readSource': "Bei der Quelle lesen",
   'v2.reduceMotion': "Bewegung reduzieren",
   'v2.loadMore': "Mehr laden",
+  'v2.follow': "Folgen",
+  'v2.following': "Folge ich",
+  'v2.notifications': "Benachrichtigungen",
+  'v2.cancel': "Abbrechen",
 };

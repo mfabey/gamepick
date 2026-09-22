@@ -1,18 +1,12 @@
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
-import { useRouter } from 'expo-router';
 import { useLanguage } from '../../context/LanguageContext';
 import { useDesignTheme } from '../../theme/useDesignTheme';
-import { Txt, IconButton, Button } from './Primitives';
+import { Txt, Button } from './Primitives';
 
-export function PageHeader({ title, children, back = false }) {
-  const router = useRouter();
-  const { t } = useLanguage();
-  return <View style={s.header}>
-    {back && <IconButton icon="back" label={t('common.back')} onPress={() => router.canGoBack() ? router.back() : router.replace('/')} />}
-    <Txt variant={back ? 'headline' : 'largeTitle'} accessibilityRole="header" style={{ flex: 1 }}>{title}</Txt>
-    {children}
-  </View>;
-}
+// Başlıklar Navigation.tsx'te (PageHeader büyük başlık, NavBar geri + ortalı
+// başlık). Eski içe aktarımlar kırılmasın diye buradan da dışa veriliyor.
+export { PageHeader, NavBar } from './Navigation';
+
 export function QueryState({ loading, error, empty, retry }) {
   const { colors } = useDesignTheme();
   const { t } = useLanguage();
@@ -25,6 +19,5 @@ export function QueryState({ loading, error, empty, retry }) {
   </View>;
 }
 const s = StyleSheet.create({
-  header: { minHeight: 52, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', gap: 4 },
   state: { padding: 32, gap: 16, alignItems: 'center' },
 });
