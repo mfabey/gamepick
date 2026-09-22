@@ -49,7 +49,9 @@ export default function HeroRail({ games, onExpand }) {
       contentContainerStyle={s.track}>
       {items.map(game => <HeroCard key={game.id} game={game} width={width} onExpand={onExpand} />)}
     </ScrollView>
-    <View style={s.dots}>{items.map((game, index) => <View key={game.id} style={[s.dot, { width: index === active ? 20 : 6, backgroundColor: index === active ? colors.text : colors.pageDotOff }]} />)}</View>
+    {/* PageDots (COMPONENTS §3): seçili 18×6 kırmızı — kırmızının izinli
+        kullanımlarından "seçili durum" —, diğerleri 6×6, aralık 6, karuselden 12. */}
+    <View style={s.dots}>{items.map((game, index) => <View key={game.id} style={[s.dot, { width: index === active ? 18 : 6, backgroundColor: index === active ? colors.red : colors.pageDotOff }]} />)}</View>
   </View>;
 }
 const s = StyleSheet.create({
@@ -59,6 +61,6 @@ const s = StyleSheet.create({
   content: { position: 'absolute', bottom: 20, left: 20, right: 20, gap: 4 },
   prices: { minHeight: 28, marginTop: 12, flexDirection: 'row', alignItems: 'center', gap: 8 },
   actions: { marginTop: 12, flexDirection: 'row', gap: 12 },
-  dots: { flexDirection: 'row', justifyContent: 'center', gap: 8, marginTop: 16 },
+  dots: { flexDirection: 'row', justifyContent: 'center', gap: space[6], marginTop: space[12] },
   dot: { height: 6, borderRadius: 3 },
 });

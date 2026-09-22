@@ -46,3 +46,46 @@ Mevcut API'ler ve iş mantığı bu grupta değiştirilmedi. Fotoğraf yükleme,
 - Fiyatlar `usePrice` önbelleğinden; kalp `WishlistContext` kimlik eşleştirme ve kalıcılığından besleniyor. Veri yokken fiyat uydurulmuyor. Öneri eleme düğmesi ve kapaktan detay geçişi korundu; düz gezinmede de Steam appid taşınıyor.
 - Öneri sıralaması, sosyal akış, engelleme/moderasyon ve widget güncellemesi değiştirilmedi.
 - `npm run check` ve iki platform export başarılı. Native cihazda görsel eşleme henüz yapılmadı. Bu bölüm ana sayfanın tamamının birebir bittiği anlamına gelmez; mağaza rozeti ve kalan kart aileleri de sırada.
+
+### 22 Eylül — Denetim (Claude)
+
+**Kapsam:** Bu günlükteki iki grup ve günlüğe girmemiş sonraki iş denetlendi. Sonraki iş şunları içeriyor:
+- Videolar kataloğu ile `/reels`, `/video/[id]` ve `/news/[id]` ekranları.
+- Sunucuda kalıcı haber kimliği (`news-identity.js`) ve video kimliğiyle arama.
+- Uygulama içi "Hareketi azalt" ve "Otomatik oynat" tercihleri.
+- Ayarlar'daki tema seçici.
+
+**Doğrulama (düzeltmelerden önce ve sonra):**
+- `npm run check`: `tsc`, `check:design-v2` ve `check:design-icons` dahil, geçti.
+- Web `npm run build` geçti: erişim politikası 92 route, CORS temiz.
+- iOS ve Android export alındı.
+- Babel kapsam taraması: çalışma anında bağlanmamış ad yok.
+- `node scripts/check-media-details.mjs` geçti.
+
+**Bulunan ve düzeltilen:**
+1. Kök layout fontlar yüklenene kadar `null` döndürüyordu. Bu aralıkta soğuk açılışta gelen bildirim yanıtı ya da paylaşım uzantısının bağlantısı `router.push` çağırabiliyordu. Navigator henüz olmadığı için expo-router hata fırlatır. Üç efekt `hazir`e bağlandı; Stack'in ilk çizildiği commit'te çalışıyorlar.
+2. HeroRail trendin ilk beşini gösterirken aynı oyunlar trend şeridinde ya da akışta ikinci kez görünüyordu. Artık hero ilk beşi alıyor, aşağıdaki bölümler kalanı.
+3. `/video/[id]` istek listesine ham video öğesini yazıyordu (`hasSteam: false`), bu yüzden fiyat izleme Steam'i atlıyordu. Artık Reels'teki oyun nesnesinin aynısı kullanılıyor.
+4. Reels geri düğmesi temalı renkteydi; açık temada videonun üstünde koyu kalıyordu. Beyaz yapıldı, yatay payları döndürme düğmesiyle aynı.
+5. Sekme çubuğu titreşimi artık yalnız seçim değişince çalışıyor.
+6. İpucu balonu ekran içinde kalıyor; kenardaki sekmelerde dışarı taşıyordu.
+7. iOS kapsül gölgesi, `overflow:hidden`'ın kırpmaması için ayrı katmana alındı.
+8. Mercek ilk yerleşimde artık animasyonsuz yerine oturuyor.
+9. İpucu şeridi eski 58/24 ölçüsünden konumlanıyordu: yeni çubuğun üstünde Android'de 2, iOS'ta 17 pt boşluk kalıyordu. Artık `tabGeometry` + 8.
+10. HeroRail sayfa noktaları COMPONENTS değerlerine getirildi: seçili 18×6 kırmızı, aralık 6, karuselden 12.
+
+**Açık kalanlar (bu denetimde düzeltilmedi):**
+- Primitives eksikleri:
+  - IconButton: nokta, rozet ve onArt varyantı.
+  - ListRow: 30 pt ikon kutusu ve ayraçlar.
+  - SectionHeader: "Tümü" bağlantısı 600 değil 500 olmalı.
+  - Switch: iOS kapalı zemin rengi.
+  - Segmented: başparmak gölgesi.
+  - Button: onArt varyantı ve sondaki ikon.
+  - TextField: ikonlar ve başarı durumu.
+- Videolar kataloğu sanallaştırılmamış bir `ScrollView`; sayfa ekledikçe büyüyor. FlashList'e geçmeli.
+- Ana sayfanın haber ve video bölümleri açılışta iki ek istek atıyor. Görünür olunca yüklemek ölçülerek değerlendirilmeli.
+- Kart ölçüleri (HeroCard iç boşlukları, NewsFeature/NewsRow, GameCard mağaza rozeti) `.dc.html` ile karşılaştırılmadı.
+- Native doğrulama yapılmadı: cam, gölge, ripple, Inter, simge/splash. Cihaz ya da simülatör gerekiyor.
+- Sürüm hâlâ 2.7.2 (runtimeVersion appVersion). Yeni native paketlerle OTA yayınlanmamalı (plan §5.3).
+- Tüm iş `main`'de commit'lenmemiş duruyor (plan §6.6, soru 10).

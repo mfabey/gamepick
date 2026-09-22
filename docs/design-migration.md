@@ -38,6 +38,8 @@ Tarih: 21 Eylül 2026 (ilk sürüm) · 22 Eylül 2026 (revizyon). Durum: keşif 
 
 Bu revizyonda o iş **incelenmedi ve doğrulanmadı**. Günlükteki "denetimler geçti" ve "export alındı" beyanları yeniden çalıştırılmadı. Nasıl ele alınacağı soru 10'da.
 
+**Güncelleme (22 Eylül öğleden sonra):** Çalışma ağacındaki iş, sonradan eklenenlerle birlikte denetlendi. Bulunan 10 kusur düzeltildi, denetimler yeniden çalıştırıldı. Ayrıntı ve açık kalanlar `docs/design-migration-progress.md` → "Denetim (Claude)" bölümünde. İş hâlâ commit'lenmemiş.
+
 ## Kapsam ve kaynaklar
 
 Bu plan **mobil uygulama** içindir: Expo route kökü `mobile/app/`, bileşen kökü `mobile/src/components/`. Kök `app/`, Next.js web arayüzünü ve mobilin de kullandığı sunucu API'lerini içerir; mobil tasarım dosyaları buraya kopyalanmayacak. Web'in 2.0'a geçip geçmeyeceği ayrı bir karar (soru 11).

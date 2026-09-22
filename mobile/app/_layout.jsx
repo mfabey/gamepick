@@ -137,6 +137,15 @@ function TemaliYigin() {
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold });
+  // ── GEZİNEN HER ŞEY `hazir`I BEKLİYOR ──
+  // Fontlar gelene kadar bu düzen `null` döndürüyor, yani Stack henüz yok.
+  // O aralıkta `router.push` çağrılırsa expo-router "Attempted to navigate
+  // before mounting the Root Layout component" hatası fırlatıyor. Soğuk
+  // açılışta iki yol tam o aralığa düşebiliyor: dokunulan bildirimin yanıtı
+  // (native çağrı, font dosyalarından önce dönebiliyor) ve paylaşım
+  // uzantısının bekleyen bağlantısı. Bu efektler Stack'in İLK KEZ çizildiği
+  // commit'te çalışıyor — font eklenmeden önceki zamanlamanın aynısı.
+  const hazir = fontsLoaded || !!fontError;
   // Zevk profilini açılışta belleğe yükle (keşif algoritması için) ve önbelleği geri yükle
   //
   // loadSession ÖNCE: depolar artık hesaba göre kapsanıyor ve sahip
@@ -182,8 +191,9 @@ export default function RootLayout() {
     return () => { alive = false; };
   }, [fontsLoaded, fontError]);
 
-  // Share Extension'dan gelen bekleyen bir Steam linki varsa oyuna git
-  useEffect(() => { startSharedLinkWatcher(); }, []);
+  // Share Extension'dan gelen bekleyen bir Steam linki varsa oyuna git.
+  // `hazir` false → true yalnız bir kez döner; izleyici bir kez kuruluyor.
+  useEffect(() => { if (hazir) startSharedLinkWatcher(); }, [hazir]);
 
   // Sistem teması değişince (uygulama ön plana döndüğünde) paleti tazele
 
@@ -224,9 +234,10 @@ export default function RootLayout() {
 
   // Uygulama AÇIKKEN dokunulan bildirim
   useEffect(() => {
+    if (!hazir) return;
     const sub = Notifications.addNotificationResponseReceivedListener(handleResponse);
     return () => sub.remove();
-  }, [handleResponse]);
+  }, [handleResponse, hazir]);
 
   // Uygulama KAPALIYKEN dokunulan bildirim.
   // Kanca aynı yanıtı vermeye devam ediyor; işlenen kimliği tutmazsak
@@ -234,13 +245,14 @@ export default function RootLayout() {
   const sonYanit = useLastNotificationResponse();
   const islenenRef = useRef(null);
   useEffect(() => {
+    if (!hazir) return;
     const id = sonYanit?.notification?.request?.identifier;
     if (!id || islenenRef.current === id) return;
     islenenRef.current = id;
     handleResponse(sonYanit);
-  }, [sonYanit, handleResponse]);
+  }, [sonYanit, handleResponse, hazir]);
 
-  if (!fontsLoaded && !fontError) return null;
+  if (!hazir) return null;
 
   return (
     // Jest sistemi kökten sarmalanmalı — swipe (Faz 1) ve diğer jest tabanlı

@@ -42,9 +42,14 @@ export function GamerisenTabBar(props: Props) {
   };
   const itemWidth = width ? (width - (ios ? T.ios.paddingH * 2 : 16)) / props.state.routes.length : 0;
   const lensX = useSharedValue(0);
+  // İlk yerleşim ANİMASYONSUZ: genişlik ölçülmeden hedef hesaplanamıyor ve
+  // animasyonla yerleşseydi mercek her açılışta soldan kayarak girerdi.
+  const lensPlaced = useRef(false);
   useEffect(() => {
+    if (!itemWidth) return;
     const next = T.ios.paddingH + props.state.index * itemWidth + (itemWidth - T.ios.lens.width) / 2;
-    lensX.value = reduced ? next : withTiming(next, { duration: motion.duration.transition, easing: motion.easing.standard });
+    if (reduced || !lensPlaced.current) { lensX.value = next; lensPlaced.current = true; return; }
+    lensX.value = withTiming(next, { duration: motion.duration.transition, easing: motion.easing.standard });
   }, [props.state.index, itemWidth, reduced, lensX]);
   const lensStyle = useAnimatedStyle(() => ({ transform: [{ translateX: lensX.value }] }));
   // Translate glass, never fade its ancestor (native glass requires opacity 1).
@@ -62,9 +67,11 @@ export function GamerisenTabBar(props: Props) {
         accessibilityState={{ selected: focused }} testID={`tab-${route.name}`}
         onPress={() => {
           const event = props.navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
-          if (event.defaultPrevented) return;
+          if (event.defaultPrevented || focused) return;
+          // Dokunsal geri bildirim SEÇİM DEĞİŞİNCE (DS7). Odaktaki sekmeye
+          // tekrar basmak başa sarma; eski çubukta da titreşmiyordu.
           if (ios) void Haptics.selectionAsync().catch(() => {});
-          if (!focused) props.navigation.navigate(route.name, route.params);
+          props.navigation.navigate(route.name, route.params);
         }}
         onLongPress={() => { showLabel(route.key); props.navigation.emit({ type: 'tabLongPress', target: route.key }); }}
         android_ripple={ios ? undefined : { color: colors.pillNeutral, borderless: true, radius: 32 }}
@@ -91,11 +98,21 @@ export function GamerisenTabBar(props: Props) {
 
   const selectedTip = props.state.routes.findIndex((r) => r.key === tooltip);
   const tipOptions = selectedTip >= 0 ? props.descriptors[props.state.routes[selectedTip].key].options : null;
+  // Balon sekmenin ortasına hizalanıyor ama EKRANDAN TAŞMIYOR: kenardaki
+  // sekmelerde ortalanmış 140 pt'lik balon ekranın dışına çıkıyordu.
+  // Sınırlar sarmalayıcıya göre; iOS'ta sarmalayıcı ekran kenarından 20 içeride.
+  const edge = ios ? T.ios.side : 0;
+  const tipCenter = (ios ? T.ios.paddingH : 8) + selectedTip * itemWidth + itemWidth / 2;
+  const tipLeft = Math.min(Math.max(tipCenter - TIP_W / 2, TIP_MARGIN - edge), width - TIP_W - TIP_MARGIN + edge);
   return (
     <Animated.View pointerEvents="box-none" style={[styles.wrap, ios ? { left: T.ios.side, right: T.ios.side, bottom: geometry.bottom } : styles.androidWrap, visibility]}>
+      {/* GÖLGE AYRI KATMANDA: kapsül köşeyi kırpmak için overflow:hidden
+          taşıyor ve iOS bunu clipsToBounds'a çeviriyor; aynı katmandaki
+          gölge kırpılıyordu (eski FloatingTabBar'ın ölçülmüş notu). */}
+      <View style={ios ? [styles.pillShadow, { boxShadow: tabBar.ios.shadow }] : undefined}>
       <View onLayout={(e) => setWidth(e.nativeEvent.layout.width)} style={[
         ios ? styles.pill : styles.androidBar,
-        ios ? { boxShadow: tabBar.ios.shadow } : { backgroundColor: tabBar.android.fill, paddingBottom: insets.bottom },
+        ios ? null : { backgroundColor: tabBar.android.fill, paddingBottom: insets.bottom },
       ]}>
         {ios && (GLASS_OK
           ? <GlassView pointerEvents="none" glassEffectStyle="regular" tintColor={tabBar.ios.glassTint} style={StyleSheet.absoluteFill} />
@@ -105,9 +122,10 @@ export function GamerisenTabBar(props: Props) {
         {ios && itemWidth > 0 && <Animated.View pointerEvents="none" style={[styles.lens, { backgroundColor: tabBar.ios.lens.fill, boxShadow: tabBar.ios.lens.edge }, lensStyle]} />}
         <View accessibilityRole="tablist" style={[styles.row, { paddingHorizontal: ios ? T.ios.paddingH : 8 }]}>{buttons}</View>
       </View>
+      </View>
       {tooltip && itemWidth > 0 && selectedTip >= 0 && (
         <View pointerEvents="none" style={[styles.tooltip, {
-          left: (ios ? T.ios.paddingH : 8) + selectedTip * itemWidth + itemWidth / 2 - 70,
+          left: tipLeft,
           bottom: geometry.height + (ios ? 8 : insets.bottom + 8), backgroundColor: colors.surface3,
         }]}>
           <Text allowFontScaling={false} numberOfLines={1} style={[styles.tooltipText, { color: colors.text }]}>{tipOptions?.tabBarAccessibilityLabel ?? tipOptions?.title}</Text>
@@ -126,8 +144,12 @@ function AndroidIndicator({ focused, reduced, fill }: { focused: boolean; reduce
   return <Animated.View pointerEvents="none" style={[styles.indicator, { backgroundColor: fill }, style]} />;
 }
 
+const TIP_W = 140;
+const TIP_MARGIN = 8;
+
 const styles = StyleSheet.create({
   wrap: { position: 'absolute' }, androidWrap: { left: 0, right: 0, bottom: 0 },
+  pillShadow: { borderRadius: T.ios.height / 2 },
   pill: { height: T.ios.height, borderRadius: T.ios.height / 2, overflow: 'hidden' },
   androidBar: { width: '100%' }, row: { flexDirection: 'row' },
   item: { flex: 1, alignItems: 'center', justifyContent: 'center' }, pressed: { transform: [{ scale: 0.92 }] },
@@ -138,6 +160,6 @@ const styles = StyleSheet.create({
     borderRadius: T.android.indicator.height / 2 },
   badge: { position: 'absolute', paddingHorizontal: 4, alignItems: 'center', justifyContent: 'center' },
   badgeText: { fontSize: 11, ...fontFor('700'), fontVariant: ['tabular-nums'] },
-  tooltip: { position: 'absolute', width: 140, paddingHorizontal: 8, height: 30, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  tooltip: { position: 'absolute', width: TIP_W, paddingHorizontal: 8, height: 30, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   tooltipText: { fontSize: 13, ...fontFor('600') },
 });

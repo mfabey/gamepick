@@ -35,6 +35,9 @@ function Player({ item, bottom }) {
   const { autoplay } = useAppPreferences();
   const query = useQuery(`video-catalog:${lang}`, () => fetchVideoFeed(1, lang, 'catalog'), { ttl: 300000 });
   const next = (query.data?.results || []).filter(video => video.id !== item.id);
+  // Reels'le AYNI oyun nesnesi: video öğesi olduğu gibi verilirse istek
+  // listesine `hasSteam: false` yazılıyor ve fiyat izleme Steam'i atlıyor.
+  const oyun = { id: item.id, name: item.name, image: item.image, appid: item.appid, hasSteam: true, slug: '' };
   const player = useVideoPlayer({ uri: item.hls, contentType: 'hls' }, instance => {
     instance.loop = false;
     instance.staysActiveInBackground = false;
@@ -59,7 +62,7 @@ function Player({ item, bottom }) {
       <Txt variant="title1">{item.name}</Txt>
       <Txt variant="footnote" style={{ color: colors.text2 }}>{t('v2.trailers')} · Steam</Txt>
       <View style={s.actions}>
-        <Button title={t(isWatched(item) ? 'wishlist.added' : 'wishlist.add')} icon="heart" variant="secondary" onPress={() => toggle(item)} />
+        <Button title={t(isWatched(oyun) ? 'wishlist.added' : 'wishlist.add')} icon="heart" variant="secondary" onPress={() => toggle(oyun)} />
         <Button title={t('stats.share')} icon="share" variant="secondary" onPress={() => Share.share({ message: `${item.name} ${item.steamUrl}` }).catch(() => {})} />
       </View>
       <View style={[s.game, { backgroundColor: colors.surface1 }]}>

@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { View, Text, Pressable, StyleSheet, Animated, Easing } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Animated, Easing, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { spacing, radius, type, TAB_BAR, PRESSED } from '../theme';
 import { useStyles, useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useReducedMotion } from '../hooks/useReducedMotion';
-import { useAltBosluk } from '../hooks/useAltBosluk';
+import { tabGeometry } from '../theme/tabGeometry';
 import { useSeen } from '../hooks/useSeen';
 import { getCollections, subscribeCollections } from '../services/collectionsStore';
 import {
@@ -91,7 +92,11 @@ export default function IpucuSeridi() {
   const router = useRouter();
   const pathname = usePathname();
   const reduced = useReducedMotion();
-  const altBosluk = useAltBosluk(TAB_BAR.bottom);
+  // Şerit çubuğun ÜST KENARINA göre konumlanıyor ve o kenar artık tek
+  // kaynaktan geliyor (tabGeometry): eski 58/24 sabitleriyle yeni çubuğun
+  // üstünde Android'de 2, iOS'ta 17 pt boşluk kalıyordu; hedef NEFES (8).
+  const insets = useSafeAreaInsets();
+  const cubukUstu = tabGeometry(Platform.OS, insets.bottom).occupied;
 
   // Anahtarlar DÜZ YAZILIYOR — katalogdan okunsalardı dil denetimi üçünü de
   // "tanımlı ama kullanılmıyor" diye raporlardı.
@@ -207,7 +212,7 @@ export default function IpucuSeridi() {
     <Animated.View
       style={[
         styles.sarmal,
-        { bottom: altBosluk + TAB_BAR.height + NEFES, opacity: opak, transform: [{ translateY: kaydir }] },
+        { bottom: cubukUstu + NEFES, opacity: opak, transform: [{ translateY: kaydir }] },
       ]}
       // Şerit ekranın SAHİBİ değil: altındaki içerik erişilebilir kalmalı.
       pointerEvents="box-none"

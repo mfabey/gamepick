@@ -471,9 +471,16 @@ export default function VideosScreen() {
             accessibilityLabel={landscape ? t('vid.portrait') : t('vid.landscape')}
           />
         </View>
+        {/* Geri düğmesi sağdaki döndürme düğmesiyle AYNI paylarda: yatayda
+            köşe kavisinden kurtulmak için aynı LANDSCAPE_* sayıları. */}
         <Pressable onPress={() => router.back()} accessibilityRole="button" accessibilityLabel={t('common.back')}
-          style={{ position: 'absolute', left: spacing.s16 + insets.left, top: insets.top, width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
+          style={{
+            position: 'absolute', width: 44, height: 44, alignItems: 'center', justifyContent: 'center',
+            top: insets.top + (isLandscape ? LANDSCAPE_TOP_PAD : 0),
+            left: spacing.md + insets.left + (isLandscape ? LANDSCAPE_SIDE_PAD : 0),
+          }}>
+          {/* tema-bagimsiz: zemin video karesi; ekrandaki diger katman ikonlari gibi beyaz */}
+          <Ionicons name="chevron-back" size={24} color="#fff" />
         </Pressable>
         <View style={styles.titleWrap}>
           <Text style={styles.topTitle}>{t('vid.title')}</Text>

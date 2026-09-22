@@ -120,9 +120,19 @@ export default function HomeScreen() {
   const fresh = useMemo(() => hazirla(newData?.results || [], 12), [newData, hazirla]);
   const sale  = useMemo(() => hazirla(saleData?.results || [], 12), [saleData, hazirla]);
 
-  // Haber verisi ARTIK BURADA ÇEKİLMİYOR. Anasayfada haber şeridi yokken
-  // her açılışta haber isteği atmak boşa ağ trafiğiydi; /news kendi
-  // isteğini kendi yapıyor (aynı cache anahtarı, aynı hız).
+  // ── HERO RAYI TRENDİN BAŞINI ALIYOR, GERİSİ AŞAĞIDA ──
+  // G-04'ün öne çıkan kartları trend listesinin ilk beşi. Aynı beş oyun
+  // aşağıda (lider trend şeridi ya da akışa karışan trend) ikinci kez
+  // görünmesin diye oralara yalnız KALANI gidiyor: "lider olarak kullanılan
+  // liste akışa tekrar girmiyor" kuralının hero için karşılığı. Kayan kapak
+  // şeridi bir kez tam bu tekrar yüzünden kaldırılmıştı.
+  const heroGames = useMemo(() => trend.slice(0, 5), [trend]);
+  const trendRest = useMemo(() => trend.slice(heroGames.length), [trend, heroGames]);
+
+  // Haber ve video verisi BURADA DEĞİL, `HomeMedia` içinde çekiliyor: G-04'te
+  // "Oyun Dünyasından" ve "İzlemeye Değer" bölümleri var. Önbellek anahtarları
+  // /news (`news:v2:<dil>`) ve Videolar sekmesiyle (`video-catalog:<dil>`)
+  // ortak; ikinci ekran açılınca istek tekrarlanmıyor.
 
   // ── Günün Fırsatı Widget'ını Güncelle ──
   useEffect(() => {
@@ -367,8 +377,8 @@ export default function HomeScreen() {
   // dağılınca o niyet karşılanamıyordu. Akışa karışan tek şey trend — o zaten
   // "şuna da bak" cinsinden, aranan bir şey değil.
   const highlights = useMemo(() => orderHighlights({
-    trend: lead === 'trend' ? [] : trend,
-  }), [lead, trend]);
+    trend: lead === 'trend' ? [] : trendRest,
+  }), [lead, trendRest]);
 
   // Engel kümesi değişince akış yeniden süzülüyor — bkz. services/engel.js.
   const engelSurumu = useEngelliler();
@@ -548,7 +558,7 @@ export default function HomeScreen() {
           />
         </FadeIn>
 
-        <HeroRail games={trend} onExpand={kartAc} />
+        <HeroRail games={heroGames} onExpand={kartAc} />
 
         {/* Arkadaş etkinliği KATALOG ŞERİTLERİNDEN ÖNCE. Sıra bilinçli:
             "Trend" ve "Yeni" herkese aynı şeyi gösteriyor, bu şerit ise
@@ -564,7 +574,7 @@ export default function HomeScreen() {
           <FadeIn delay={140}><Section title={t('home.forYou')} games={forYou} router={router} onDismiss={handleDismiss} onExpand={kartAc} /></FadeIn>
         )}
         {lead === 'trend' && (
-          <FadeIn delay={140}><Section title={t('home.trend')} games={trend} router={router} onExpand={kartAc} /></FadeIn>
+          <FadeIn delay={140}><Section title={t('home.trend')} games={trendRest} router={router} onExpand={kartAc} /></FadeIn>
         )}
 
         {/* Yeni Çıkanlar ve İndirimdekiler LİDERİN ALTINDA, tam ağırlıkta.
