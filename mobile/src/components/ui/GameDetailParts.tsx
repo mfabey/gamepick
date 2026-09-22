@@ -1,7 +1,7 @@
 import React, { useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Icon } from '../Icon';
-import { Button, CoverImage, PressableScale, Txt } from './Primitives';
+import { Button, CoverImage, PressableScale, Switch, Txt } from './Primitives';
 import { DiscountTag, OldPrice, Price, StoreBadge } from './Commerce';
 import { GlassView } from './GlassView';
 import { PlayButton } from './Media';
@@ -49,11 +49,12 @@ type StorePrice = { key: string; name: string; price: number | null; original?: 
 
 /**
  * "En İyi Fiyat" kartı (G-07): güncelleme zamanı, 44'lük mağaza, 36 pt fiyat, "Mağazaya Git";
- * altında diğer mağazalar ve en ucuza göre GERÇEK fark ("+₺50"). Üçten fazla mağaza varsa
- * bağlantı listeyi yerinde açıyor (Fiyat Karşılaştırma ekranı G-08 gelince oraya gidecek).
+ * altında diğer mağazalar ve en ucuza göre GERÇEK fark ("+₺50"). `onCompareAll` verilirse
+ * "N mağazanın tümünü karşılaştır" Fiyat Karşılaştırma'ya (G-08) gidiyor; verilmezse üçten
+ * fazla mağazada liste yerinde açılıyor.
  */
-export function GamePriceCard({ stores, updated, onOpen }: {
-  stores: StorePrice[]; updated?: string | null; onOpen: (store: StorePrice) => void;
+export function GamePriceCard({ stores, updated, onOpen, onCompareAll }: {
+  stores: StorePrice[]; updated?: string | null; onOpen: (store: StorePrice) => void; onCompareAll?: () => void;
 }) {
   const { colors } = useDesignTheme();
   const { t, formatPrice } = useLanguage();
@@ -108,7 +109,12 @@ export function GamePriceCard({ stores, updated, onOpen }: {
             );
           })}
         </View>
-        {others.length > C.visibleOthers ? (
+        {onCompareAll ? (
+          <Pressable accessibilityRole="button" onPress={onCompareAll} style={styles.link}>
+            <Txt variant="cardTitle" style={{ color: colors.red }}>{t('v2.compareAll').replace('{n}', String(stores.length))}</Txt>
+            <Icon name="chev" size={C.linkChevron} color={colors.red} strokeWidth={2.4} />
+          </Pressable>
+        ) : others.length > C.visibleOthers ? (
           <Pressable accessibilityRole="button" onPress={() => setAll((v) => !v)} style={styles.link}>
             <Txt variant="cardTitle" style={{ color: colors.red }}>
               {all ? t('detail.less') : t('v2.compareAll').replace('{n}', String(stores.length))}
@@ -118,6 +124,28 @@ export function GamePriceCard({ stores, updated, onOpen }: {
           </Pressable>
         ) : null}
       </> : null}
+    </View>
+  );
+}
+
+/**
+ * Fiyat alarmı kartı (G-08, kit prices() alert): 40'lık zil dairesi, başlık 16/21, açıklama 13/18, anahtar.
+ * Anahtar İSTEK LİSTESİ bildirimi (cron/price-alerts: listedeki oyun ucuzlayınca push). Tasarımın
+ * "hedef fiyat" adımlayıcısı YOK: sunucuda hedef fiyat sözleşmesi yok (plan §6, soru 17).
+ */
+export function PriceAlertCard({ on, onChange, title, description }: {
+  on: boolean; onChange: (value: boolean) => void; title: string; description: string;
+}) {
+  const { colors } = useDesignTheme();
+  const A = K.prices.alert;
+  return (
+    <View style={[styles.alert, { backgroundColor: colors.surface1 }]}>
+      <View style={[styles.alertIcon, { backgroundColor: colors.surface2 }]}><Icon name="bell" size={A.glyph} color={colors.text} /></View>
+      <View style={styles.flex}>
+        <Txt variant="cardTitleLarge" numberOfLines={1}>{title}</Txt>
+        <Txt variant="footnote" numberOfLines={2} style={{ color: colors.text2 }}>{description}</Txt>
+      </View>
+      <Switch accessibilityLabel={title} value={on} onValueChange={onChange} />
     </View>
   );
 }
@@ -231,6 +259,9 @@ const styles = StyleSheet.create({
   otherRight: { alignItems: 'flex-end' },
   link: { height: D.card.linkHeight, marginTop: D.card.linkTop, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   flip: { transform: [{ rotate: '180deg' }] },
+  alert: { minHeight: K.prices.alert.row + K.prices.alert.padding * 2, padding: K.prices.alert.padding, borderRadius: K.prices.alert.radius,
+    flexDirection: 'row', alignItems: 'center', gap: K.prices.alert.gap },
+  alertIcon: { width: K.prices.alert.icon, height: K.prices.alert.icon, borderRadius: K.prices.alert.icon / 2, alignItems: 'center', justifyContent: 'center' },
   trailer: { overflow: 'hidden' },
   trailerTag: { position: 'absolute', left: D.trailerTag.inset, bottom: D.trailerTag.inset, height: D.trailerTag.height, paddingHorizontal: D.trailerTag.paddingH,
     borderRadius: D.trailerTag.radius, flexDirection: 'row', alignItems: 'center', gap: D.trailerTag.gap },

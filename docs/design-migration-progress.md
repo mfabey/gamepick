@@ -312,3 +312,38 @@ Fiyat biçimi kullanıcı kararıyla tasarımdaki gibi: "₺599", "-%50" (`27aae
 - OwnershipBand eski görünümde.
 - Detaydan dönünce "Senin İçin" yeniden sıralanabiliyor: aday önbelleği tazelenince görülme cezası devreye giriyor. Bu işten önce de vardı, ayrıca incelenmeli.
 - iOS görünümü doğrulanmadı.
+
+### 22 Eylül — Fiyat Karşılaştırma, G-08 (Claude)
+
+**Mevcut veri (ölçüldü):**
+- `/api/prices` yalnız güvenilir mağazaları listeliyor (kod yorumu ve kimlik listesi: Steam, Epic, GOG, Humble, Xbox).
+- İstek listesi bildirimi gerçek: `cron/price-alerts`, listedeki oyun ucuzlayınca push atıyor.
+- Sürüm, platform, fiyat geçmişi, rekor düşük / ortalama ve hedef fiyat sözleşmesi YOK.
+
+**Yapılanlar:**
+- `hooks/useGamePrices`: fiyat listesi mantığı (ITAD + boşsa kart fiyatı yedeği + Steam adresi yedeği) detaydan çıkarıldı.
+  - Oyun Detayı ve Fiyat Karşılaştırma aynı kaynağı ve aynı sorgu anahtarını (`prices:<steamAppId|slug|id>`) kullanıyor: detaydan geçişte sıfır istek, iki ekran aynı sayıyı gösteriyor.
+- Yeni rota `/game/[id]/prices`. `[id].jsx` dosyası ile `[id]/` klasörü birlikte çalışıyor; emülatörde gezinerek doğrulandı, plan §1'deki taşıma gerekmedi.
+- **Ekran:**
+  - NavBar (zil = istek listesi) ve oyun başlığı (48×64 kapak + ad).
+  - `BestPriceCard`: 40 pt fiyat, "Mağazaya Git" 50, "Satın alma mağazada tamamlanır".
+  - "Fiyat alarmı" kartı: istek listesi anahtarı; açılınca NavBar zili de dolu kırmızı.
+  - "Tüm Mağazalar": mağaza sayısı, "En düşük fiyat" / "En yüksek indirim" sıralaması, en ucuza göre gerçek fark.
+  - Güven notu ve sabit alt çubuk.
+- Oyun Detayı'nın "N mağazanın tümünü karşılaştır" bağlantısı artık bu ekrana gidiyor; yerinde açma yalnız bağlantı verilmezse duruyor.
+
+**Bilerek çizilmeyenler:**
+- Sürüm seçici ve platform segmenti.
+- "Rekor düşük" ve "12 aylık ortalama" kutuları, "Fiyat Geçmişi" grafiği, "Son 24 saatte düştü" notu. Fiyat geçmişi sunucu işi (plan soru 17).
+- Hedef fiyat adımlayıcısı.
+- "Popüler / Platform / Dijital sürüm" sıralaması.
+- "KDV dahil" ve "komisyon" cümleleri: doğrulanamadı. Güven notunun yalnız "resmî ve yetkili satıcılar" kısmı doğru, o yazıldı.
+
+**Doğrulama:**
+- `npm run check` (20) geçti; iOS ve Android export geçti.
+- Emülatörde Ana Sayfa → Detay → "tümünü karşılaştır" → Fiyat Karşılaştırma zinciri gerçek veriyle çalıştı (Helldivers 2: Humble ₺1.951, Steam ₺1.952 +₺1).
+- Alarm anahtarı ve zil birlikte değişiyor, sıralama çipi çalışıyor. Alarm denemeden sonra kapatıldı.
+
+**Açık kalanlar:**
+- Tat profili Steam'in Türkçe tür adlarını ("Basit Eğlence", "Bağımsız Yapımcı") kaydediyor. `GENRE_SLUG` bunları eşlemediği için "Senin İçin" tür imzası boşalabiliyor ve gerekçe alt başlığı çizilmiyor. Bu işten önce de vardı; öneri motoru işi.
+- iOS görünümü doğrulanmadı.

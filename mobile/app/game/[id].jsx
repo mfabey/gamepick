@@ -12,7 +12,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { StatusBar } from 'expo-status-bar';
 import * as WebBrowser from 'expo-web-browser';
-import { fetchGameDetail, fetchGameByAppid, fetchPrices, fetchSteamReviews } from '../../src/api/games';
+import { fetchGameDetail, fetchGameByAppid, fetchSteamReviews } from '../../src/api/games';
 import { motion } from '../../src/theme';
 import { useYanBosluk } from '../../src/hooks/useIcerikAlani';
 import { stripHtml } from '../../src/utils/text';
@@ -26,11 +26,11 @@ import { turAdi } from '../../src/services/genreName';
 import OwnershipBand from '../../src/components/OwnershipBand';
 import CevrimdisiBant from '../../src/components/CevrimdisiBant';
 import { oyunuOnbellektenBul } from '../../src/services/queryCache';
-import { requestPrice } from '../../src/services/priceService';
 import CollectionPicker from '../../src/components/CollectionPicker';
 import ShareToFriendSheet from '../../src/components/ShareToFriendSheet';
 import { reportActivity } from '../../src/api/social';
 import { useQuery } from '../../src/hooks/useQuery';
+import { useGamePrices } from '../../src/hooks/useGamePrices';
 import { useReducedMotion } from '../../src/hooks/useReducedMotion';
 import { kaynakOku, kaynakSil, kucultmeIste } from '../../src/services/gecisKaynak';
 import { GenreChipsSkeleton, ShotStripSkeleton, TextBlockSkeleton, PriceListSkeleton } from '../../src/components/Skeleton';
@@ -116,8 +116,6 @@ export default function GameDetail() {
   );
   const g = detail || yedek;
 
-  const [price, setPrice]     = useState(null);
-  const [loadingPrice, setLoadingPrice] = useState(true);
   const [expanded, setExpanded] = useState(false);
   useTimeToData('GameDetail', !!detail);
   const [activeShotIndex, setActiveShotIndex] = useState(null);
@@ -130,34 +128,17 @@ export default function GameDetail() {
     setCurrentScrollIndex(i);
   }, []);
 
-  // Mağaza-başı fiyat karşılaştırması (ITAD) — detay yüklenince (steamAppId için)
-  const { data: pricesData, ts: pricesTs } = useQuery(
-    `prices:${detail?.steamAppId || slug || id}`,
-    () => fetchPrices({ appid: detail?.steamAppId, title: detail?.name || name }),
-    { ttl: 30 * 60 * 1000, enabled: !!detail }
-  );
-  // ITAD listesi + (boşsa) Steam kart fiyatı YEDEK olarak.
-  //
-  // Yedek neden duruyor: ITAD bazı oyunlarda hiç mağaza döndürmüyor
-  // (bölgesel kısıt, eşleşmeyen başlık). O hâlde ekranda tek fiyat bile
-  // olmuyordu. Artık liste boşsa cardPrice tek satır olarak giriyor —
-  // İKİ SİSTEM DEĞİL, biri ötekinin yokluğunda.
-  const priceStores = useMemo(() => {
-    const list = pricesData?.stores || [];
-    if (list.length > 0) {
-      return [...list].sort((a, b) => (a.isFree ? -1 : b.isFree ? 1 : a.price - b.price));
-    }
-    if (price?.price != null || price?.isFree) {
-      return [{
-        // Kart fiyatı yanıtı adres taşımıyor; Steam fiyatıysa oyunun Steam sayfası
-        // (detay ya da liste kaydından). Yoksa 'Mağazaya Git' ölü düğme kalıyordu.
-        storeId: 'steam', name: 'Steam', url: price.url || g?.steamUrl || null,
-        price: price.price, original: price.original, discount: price.discount || 0,
-        isFree: !!price.isFree, yedek: true,
-      }];
-    }
-    return [];
-  }, [pricesData, price, g?.steamUrl]);
+  // Mağaza fiyat listesi — Fiyat Karşılaştırma (G-08) ile ORTAK kaynak ve
+  // ortak sorgu anahtarı (bkz. hooks/useGamePrices). ITAD sorgusu detay
+  // yüklenince (steamAppId için) açılıyor.
+  const { stores: fiyatlar, loaded: fiyatYuklendi, ts: pricesTs } = useGamePrices({
+    queryKey: detail?.steamAppId || slug || id,
+    appid: detail?.steamAppId,
+    title: detail?.name || name,
+    slug, name,
+    steamUrl: g?.steamUrl,
+    enabled: !!detail,
+  });
 
   // Steam topluluk inceleme analizi — detay yüklenince (steamAppId için)
   const { data: reviews } = useQuery(
@@ -219,24 +200,6 @@ export default function GameDetail() {
   const watched = isWatched(gameObj);
   const inCollections = useCollectionsContaining(gameObj);
   const inAnyCollection = inCollections.size > 0;
-
-  // ── FİYAT SERVİSİNDEN, DOĞRUDAN UÇTAN DEĞİL ──
-  // Burada `fetchCardPrice` doğrudan çağrılıyordu ve bu üç şeyi kaybettiriyordu:
-  //   • DİSK ÖNBELLEĞİ — priceService kayıtları kalıcı; doğrudan çağrı her
-  //     açılışta yeniden istek atıyordu.
-  //   • TEKİLLEŞTİRME — listedeki kart aynı fiyatı zaten çekmişti. Anahtar
-  //     ikisinde de slug/ad'dan türediği için artık aynı kaydı paylaşıyorlar:
-  //     karttan detaya geçişte SIFIR istek.
-  //   • ÇEVRİMDIŞI KISA DEVRE — uçak modunda mahkûm bir istek atılmıyor,
-  //     onun yerine diskteki kayıt gösteriliyor.
-  useEffect(() => {
-    let alive = true;
-    requestPrice({ slug, name, hasSteam: true })
-      .then(d => { if (alive) setPrice(d); })
-      .catch(() => {})
-      .finally(() => { if (alive) setLoadingPrice(false); });
-    return () => { alive = false; };
-  }, [slug, name]);
 
   // Tazelik: bu oyunu "görüldü" işaretle (id anında hazır, detay beklemez)
   // Nesne geçiliyor: anahtar addan türetiliyor, böylece aynı oyun öteki
@@ -417,8 +380,6 @@ export default function GameDetail() {
   );
 
   const title = g?.name || name;
-  const isFree = price?.isFree;
-  const onSale = price?.discount > 0 && !isFree;
   const desc = stripHtml(detail?.description);
   const genres = g?.genres || [];
   const shots = detail?.screenshots || [];
@@ -427,15 +388,20 @@ export default function GameDetail() {
   const open = (url) => { if (url) WebBrowser.openBrowserAsync(url); };
 
   // ── 2.0 GÖRÜNÜM VERİSİ (G-07, kit s1.py game_detail()) ──────────────────
-  // Tek fiyat kaynağı: `priceStores` (ITAD, boşsa Steam kart fiyatı yedeği).
-  // Kart, "En Ucuz Fiyatı Gör" ve alttaki sabit çubuk AYNI listeyi okuyor —
-  // Faz 3'ün "iki sayı çelişmesin" kuralı korunuyor.
-  const fiyatlar = useMemo(() => priceStores.map((st) => ({
-    key: String(st.storeId || st.name), name: st.name, price: st.price, original: st.original,
-    discount: st.discount || 0, isFree: !!st.isFree, url: st.url || null,
-  })), [priceStores]);
+  // Tek fiyat kaynağı: `fiyatlar` (useGamePrices). Kart, "En Ucuz Fiyatı Gör"
+  // ve alttaki sabit çubuk AYNI listeyi okuyor — Faz 3'ün "iki sayı
+  // çelişmesin" kuralı korunuyor.
   const best = fiyatlar[0] || null;
-  const guncel = pricesData && pricesTs ? bagilZaman(pricesTs, t) : null;
+  const guncel = pricesTs ? bagilZaman(pricesTs, t) : null;
+
+  // "Tümünü karşılaştır" → Fiyat Karşılaştırma (G-08). Sorgu anahtarı aynı
+  // olsun diye appid detaydan çözülmüş hâliyle gidiyor.
+  const karsilastir = useCallback(() => {
+    router.push({ pathname: '/game/[id]/prices', params: {
+      id: String(id), appid: detail?.steamAppId || appid || '', name: title || '', image: cover || '',
+      slug: slug || '', hasSteam: hasSteam || '',
+    } });
+  }, [router, id, detail?.steamAppId, appid, title, cover, slug, hasSteam]);
 
   // "2020 · CD PROJEKT RED": yıl çıkış tarihinden, geliştirici detaydan.
   const yil = String(g?.released || '').match(/\d{4}/)?.[0] || null;
@@ -546,17 +512,17 @@ export default function GameDetail() {
               `gap` çizilmediği için butonlar kitteki 20 pt'de kalıyor. */}
           <View style={[s.pad, s.cta]}>
             <OwnershipBand name={title} istekte={watched} onGit={() => router.push('/account')} />
-            {best || !pricesData ? <Button title={t('v2.cheapestPrice')} height={K.detail.ctaPrimary} iconRight="arrdown" onPress={fiyataGit} /> : null}
+            {best || !fiyatYuklendi ? <Button title={t('v2.cheapestPrice')} height={K.detail.ctaPrimary} iconRight="arrdown" onPress={fiyataGit} /> : null}
             <Button title={watched ? t('v2.inWishlist') : t('v2.addToWishlist')} variant="secondary" height={K.detail.ctaSecondary} icon="heart" onPress={() => onToggleWishlist(true)} />
           </View>
         </FadeIn>
 
         {/* Fiyat kartı — ekranın tepe anı. İskelet gerçek kartla aynı yerde,
             200 ms gecikmeli: hızlı yanıtta hiç görünmüyor. */}
-        {best || !pricesData ? (
+        {best || !fiyatYuklendi ? (
           <View onLayout={(e) => { fiyatY.current = e.nativeEvent.layout.y; }} style={[s.pad, s.priceCard]}>
             {best
-              ? <FadeIn delay={130}><GamePriceCard stores={fiyatlar} updated={guncel ? t('v2.updatedAgo').replace('{time}', guncel) : null} onOpen={(st) => open(st.url)} /></FadeIn>
+              ? <FadeIn delay={130}><GamePriceCard stores={fiyatlar} updated={guncel ? t('v2.updatedAgo').replace('{time}', guncel) : null} onOpen={(st) => open(st.url)} onCompareAll={karsilastir} /></FadeIn>
               : <FadeIn delay={200}><PriceListSkeleton /></FadeIn>}
           </View>
         ) : null}
