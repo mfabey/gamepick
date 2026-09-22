@@ -5,8 +5,10 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { useReducedMotion } from '../hooks/useReducedMotion';
-import { radius, spacing } from '../theme';
-import { useStyles, useTheme } from '../context/ThemeContext';
+import { spacing } from '../theme';
+import { useStyles } from '../context/ThemeContext';
+import { useDesignTheme } from '../theme/useDesignTheme';
+import { component as K } from '../theme/tokens';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // "Yazıyor" baloncuğu — AKIŞIN İÇİNDE, başlıkta değil.
@@ -53,12 +55,12 @@ function Nokta({ gecikme, kapali }) {
 
 export default function TypingBubble() {
   const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
+  const { colors: dc } = useDesignTheme();
   const kapali = useReducedMotion();
 
   return (
     <View style={styles.satir} accessibilityRole="text" accessibilityLabel="…">
-      <View style={[styles.baloncuk, { backgroundColor: colors.bgInput }]}>
+      <View style={[styles.baloncuk, { backgroundColor: dc.surface2 }]}>
         <Nokta gecikme={0} kapali={kapali} />
         <Nokta gecikme={GECIKME} kapali={kapali} />
         <Nokta gecikme={GECIKME * 2} kapali={kapali} />
@@ -67,14 +69,17 @@ export default function TypingBubble() {
   );
 }
 
+const T = K.chat.typing;
+
 const makeStyles = (colors) => StyleSheet.create({
   satir: { alignItems: 'flex-start', marginTop: spacing.s8 },
-  // Dolgu metin baloncuğundan farklı: içinde 8pt'lik noktalar var, metin
-  // dolgusunu kullanınca baloncuk basık duruyordu.
+  // G-19 (kit chat() typing): 64×36, gelen baloncuğun köşesi (18/6),
+  // içinde 7 pt üç nokta. Ölçü sabit — dolgudan hesaplanmıyor, çünkü kit
+  // kutunun kendisini veriyor.
   baloncuk: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.s4,
-    paddingHorizontal: spacing.s16, paddingVertical: spacing.s12,
-    borderRadius: radius.lg,
+    width: T.width, height: T.height,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: T.gap,
+    borderRadius: K.chat.bubble.radius, borderBottomLeftRadius: K.chat.bubble.corner,
   },
-  nokta: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.text3 },
+  nokta: { width: T.dot, height: T.dot, borderRadius: T.dot / 2, backgroundColor: colors.text2 },
 });

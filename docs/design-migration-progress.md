@@ -440,3 +440,55 @@ Fiyat biçimi kullanıcı kararıyla tasarımdaki gibi: "₺599", "-%50" (`27aae
 - Topluluk başlığı aynı eylem için `edit`, Mesajlar `pen` kullanıyor; kit ikisinde de `pen` diyor — Topluluk'taki tek kelimelik sapma duruyor.
 - iOS görünümü doğrulanmadı.
 - Kalan ekranlar: Sohbet, Profil, Haberler, Bildirimler, Arama, Oyun Topluluğu.
+
+### 23 Eylül — Sohbet, G-19 · A parçası: konuşma iskeleti (Claude)
+
+Ekran 1973 satır ve tek commit'te hem iskeletini hem zengin baloncuklarını
+değiştirmek denetlenemez olurdu; iş ikiye bölündü. **A** burada: başlık,
+tarih ayracı, baloncuk geometrisi, saat, yazıyor göstergesi, kompozitör.
+**B** sıradaki: paylaşım kartları (oyun/haber/gönderi), alıntı baloncuğu,
+tepki rozeti, medya/GIF baloncukları.
+
+**Yapılanlar:**
+- **Başlık satır oldu** (kit hdr): geri 44 · 38 avatar (çevrimiçi noktasıyla)
+  · ad 16/600 + durum satırı · ⋯, altında hat. Öncesi iOS 26'nın ortalanmış
+  Ø60 avatarı + cam ad hapıydı.
+  - Ad artık dokunulabilir ve profili açıyor (`/u/[username]`). Eski yorum
+    "başka kullanıcının profil ekranı yok" diyordu — o not eskimişti.
+  - Kitin "· Counter-Strike 2 oynuyor" eki YOK: durum ucu yalnız `online` ve
+    `lastSeen` veriyor.
+- **Saat baloncuğun içine girdi** (11/14, sağa yaslı). Sola sürükleyince
+  kenardan giren 56 pt'lik saat sütunu, jesti, paylaşılan değeri ve satır
+  başına `useAnimatedStyle`i ile birlikte KALKTI: kit saati her baloncuğa
+  yazıyor, iki ayrı saat sistemi tutmak artıklıktı. "Görüldü" satırı da
+  saati tekrarlamıyor artık.
+- **Kuyruk artık bir köşe.** `BubbleTail` (çizilen kuyruk) ve salt görselde
+  kullandığı "görselin ikinci kopyası" hilesi gitti; kit kuyruğu köşe
+  yarıçapıyla anlatıyor (18 18 18 6 / 18 18 6 18). Küçük köşe grubun son
+  baloncuğunda — eski kuyruk kuralı neyse o.
+- **Gönderilen baloncuk kırmızı değil.** Kitte zemin `acS` (#F5F5F7), metin
+  `onAc` (#0A0A0B): birincil düğmenin yüzeyi. Uygulamada `primary` /
+  `onPrimary`, saat `onPrimaryMuted`. Genişlik %75 yerine 270 pt.
+- **Tarih ayracı** 24 pt hap oldu; saatini bıraktı.
+- **Yazıyor baloncuğu** kit ölçüsüne geçti: 64×36, üç adet 7 pt nokta.
+- **Kompozitör** kit bandı: üst hat + kendi zemini, `+` 44 (dolgulu), kapsül
+  44/köşe 22, ayrı 44 gönder dairesi. Gönder artık HER ZAMAN çizili, boşken
+  pasif — öncesi kapsülün içindeydi ve yalnız yazınca beliriyordu.
+  - Kitin diğer iki ikonu çizilmedi: "görsel gönder" fotoğraf yüklemesi ve
+    2.7.0'da uygulamadan çıkarıldı (AGENTS.md); "oyun paylaş" için
+    kompozitörde bir seçici yok, paylaşım oyun ekranından başlıyor.
+
+**Doğrulama:**
+- `npm run check` (20 · 57 ✓) geçti — `check:scope` kodmod sonrası Babel
+  kapsam taramasını da yapıyor. `npx expo export --platform ios` geçti.
+- Emülatörde **başlık** doğrulandı: yükseklik 137 px = 52 dp (kit sayısı),
+  alt hat, geri/avatar/ad/⋯ yerleşimi.
+
+**Açık kalanlar:**
+- **Baloncuklar ve kompozitör cihazda görülmedi:** ekran oturum istiyor,
+  emülatörde hesap açık değil. Kod derleniyor ve denetimler geçiyor, ama
+  gözle görülen tek şey başlık.
+- B parçası: paylaşım kartları, alıntı, tepki rozeti, medya/GIF baloncukları
+  hâlâ eski görünümde (kuyrukları kalktı, geometrileri duruyor).
+- `src/components/BubbleTail.jsx` artık hiçbir yerden çağrılmıyor; B
+  parçasından sonra silinecek.

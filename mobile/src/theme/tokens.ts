@@ -365,6 +365,18 @@ export const component = {
   stickyBar: { paddingTop: 10, paddingH: 20, minBottom: 10, gap: 12, button: 48 },
   pageDots: { active: 18, size: 6, gap: 6, top: 12 },
   home: { greetingTop: 2, heroTop: 14, greetingChevron: 14, newsRowsTop: 18, newsRowsGap: 14, dealCount: 2 },
+  // G-19 Sohbet (kit s4.py chat()).
+  //
+  // GÖNDERİLEN BALONCUK VURGU RENGİ DEĞİL: kitte zemin `acS` (#F5F5F7) ve
+  // metin `onAc` (#0A0A0B) — yani birincil düğmenin yüzeyi. Uygulamada
+  // karşılığı `primary` / `onPrimary`; saat `onPrimaryMuted`.
+  chat: { headerHeight: 52, headerPaddingH: 8, headerGap: 4, headerAvatar: 38, headerNameLeft: 8, headerIcon: 22, backIcon: 24, backStroke: 2.3,
+    listPaddingH: 16, listGap: 16, groupGap: 6,
+    bubble: { maxWidth: 270, paddingTop: 9, paddingH: 14, paddingBottom: 8, radius: 18, corner: 6, timeTop: 2 },
+    divider: { height: 24, paddingH: 10, top: 16 },
+    typing: { width: 64, height: 36, dot: 7, gap: 4 },
+    composer: { paddingTop: 10, paddingH: 12, minBottom: 10, gap: 8, button: 44, plusIcon: 22, sendIcon: 19,
+      input: 44, inputRadius: 22, inputLeft: 16, inputRight: 2 } },
   // G-18 Mesajlar (kit s4.py messages()).
   messages: { searchTop: 4, searchHeight: 40, onlineTop: 18, onlineLabel: 18, onlineRailTop: 10, onlineRailHeight: 92,
     tile: { width: 64, avatar: 56, nameTop: 6 }, chipsTop: 16, chipsHeight: 32, listTop: 6 },
