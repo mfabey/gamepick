@@ -365,6 +365,9 @@ export const component = {
   stickyBar: { paddingTop: 10, paddingH: 20, minBottom: 10, gap: 12, button: 48 },
   pageDots: { active: 18, size: 6, gap: 6, top: 12 },
   home: { greetingTop: 2, heroTop: 14, greetingChevron: 14, newsRowsTop: 18, newsRowsGap: 14, dealCount: 2 },
+  // G-13 Gönderi Detayı (kit s3.py post_detail()).
+  thread: { rootTop: 14, statsTop: 8, statsHeight: 40, statsGap: 16, headerTop: 18, headerHeight: 34, listTop: 12, gap: 18,
+    dock: { paddingTop: 10, paddingH: 16, gap: 10, avatar: 32, input: 40, inputRadius: 20, inputLeft: 16, inputRight: 6, send: 34, sendIcon: 18 } },
   // G-10 Topluluk (kit s1.py community()).
   community: { segTop: 4, composerTop: 16, railTop: 24, feedTop: 28, feedGap: 28,
     composer: { padding: 14, radius: 18, row: 36, avatar: 36, gap: 10, chipsTop: 12, chipHeight: 32, chipPadding: 10, chipRadius: 10, chipGap: 5, chipIcon: 15 },

@@ -773,5 +773,8 @@ export default {
   'v2.noPrices': "No store prices found for this game.",
   'v2.statusNotRecommends': "Not recommended",
   'v2.gameChip': "Game",
+  'v2.replies': "Replies",
+  'v2.likesCount': "{n} likes",
+  'v2.repliesCount': "{n} replies",
   'v2.gamingWorld': "From the Gaming World",
 };

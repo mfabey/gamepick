@@ -1,24 +1,24 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, Pressable, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Pressable, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 
-import {
-  spacing, type, radius, PRESSED, TOUCH_MIN, SECTION_TITLE,
-  avatar as avatarSize,
-} from '../../src/theme';
-import { useStyles, useTheme } from '../../src/context/ThemeContext';
+import { useDesignTheme } from '../../src/theme/useDesignTheme';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useYanBosluk } from '../../src/hooks/useIcerikAlani';
 import { fetchPost } from '../../src/api/social';
 import { getSession, subscribeSession } from '../../src/services/session';
 import { useAuth } from '../../src/context/AuthContext';
 import PostCard from '../../src/components/PostCard';
+import CommentCard from '../../src/components/CommentCard';
+import { Icon } from '../../src/components/Icon';
+import { Button, IconButton, Txt } from '../../src/components/ui/Primitives';
+import { NavBar } from '../../src/components/ui/Navigation';
+import { UserAvatar } from '../../src/components/ui/Social';
+import { component as K, layout, space } from '../../src/theme/tokens';
 import PostComposer from '../../src/components/PostComposer';
 import ReviewRoot from '../../src/components/ReviewRoot';
-import Avatar from '../../src/components/Avatar';
 import ModerasyonKatmani from '../../src/components/ModerasyonKatmani';
 import { suz } from '../../src/services/engel';
 import { useEngelliler } from '../../src/hooks/useEngelliler';
@@ -44,12 +44,11 @@ const anahtar = (item) => item.id;
 const ACMA_YOK = () => {};
 
 export default function PostThread() {
-  const styles = useStyles(makeStyles);
   const yan = useYanBosluk();
-  const { colors } = useTheme();
+  const { colors } = useDesignTheme();
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const insets = useSafeAreaInsets();
   const { account } = useAuth();
 
@@ -116,42 +115,53 @@ export default function PostThread() {
   // sanip butun hucreleri yeniden ciziyordu.
   const satirCiz = useCallback(
     ({ item }) => (
-      <PostCard
-        post={item}
-        onRequireAccount={requireAccount}
-        onOpen={ACMA_YOK}
-        onMenu={(k) => mod.acMenu(k, { targetType: 'post', targetId: String(item.id) })}
-      />
+      // Yorumun kendi yan boşluğu yok (kit: yorum listesi `pad`in içinde,
+      // satırlar arası 18). Sarmalayıcı ikisini de veriyor.
+      <View style={[s.pad, s.commentRow]}>
+        <CommentCard
+          reply={item}
+          rootAuthorUid={data?.post?.author?.uid || data?.post?.uid}
+          onRequireAccount={requireAccount}
+          onReply={onReply}
+          onMenu={(k) => mod.acMenu(k, { targetType: 'post', targetId: String(item.id) })}
+        />
+      </View>
     ),
-    [requireAccount, mod],
+    [requireAccount, onReply, mod, data?.post?.author?.uid, data?.post?.uid],
   );
 
+  const kok = data?.post;
+  const kokMenu = useCallback(() => {
+    if (!kok) return;
+    mod.acMenu(kok.author, kok.type === 'review'
+      ? { targetType: 'review', targetId: `${kok.appid}:${kok.uid}` }
+      : { targetType: 'post', targetId: String(kok.id) });
+  }, [kok, mod]);
+
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      {/* Başlık listenin DIŞINDA: içerik kolonuyla aynı hizaya
-          getiriliyor — başlık tam genişlikte kalsaydı sayfanın adı ile
-          anlattığı şey iki ayrı sütunda dururdu. */}
-      <View style={[styles.head, { marginHorizontal: yan }]}>
-        <Pressable onPress={() => router.back()} hitSlop={10} style={({ pressed }) => [styles.back, pressed && PRESSED]} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </Pressable>
-        <Text style={styles.title}>{t('post.threadTitle')}</Text>
-        <View style={styles.back} />
+    <SafeAreaView style={[s.safe, { backgroundColor: colors.bg }]} edges={['top']}>
+      {/* Başlık listenin DIŞINDA: içerik kolonuyla aynı hizaya getiriliyor —
+          başlık tam genişlikte kalsaydı sayfanın adı ile anlattığı şey iki
+          ayrı sütunda dururdu. Sağdaki ⋯ kök gönderinin moderasyon kapısı
+          (kit nav_bar'ın "Seçenekler" düğmesi). */}
+      <View style={{ marginHorizontal: yan }}>
+        <NavBar
+          title={t('post.threadTitle')}
+          onBack={() => router.back()}
+          right={kok ? <IconButton icon="more" label={t('a11y.more')} onPress={kokMenu} /> : undefined}
+        />
       </View>
 
       {loading ? (
-        <View style={styles.center}><ActivityIndicator color={colors.accent} /></View>
-      ) : !data?.post ? (
-        <View style={styles.center}>
-          <Text style={styles.gone}>{yok ? t('post.gone') : t('post.loadFailed')}</Text>
+        <View style={s.center}><ActivityIndicator color={colors.text2} /></View>
+      ) : !kok ? (
+        <View style={s.center}>
+          <Txt variant="cardTitle" style={s.ortala}>{yok ? t('post.gone') : t('post.loadFailed')}</Txt>
           {/* 404'te yeniden denemenin anlamı yok; ağ hatasında var. */}
           {!yok ? (
             <>
-              <Text style={styles.goneDesc}>{t('post.loadFailedDesc')}</Text>
-              <Pressable onPress={() => { setLoading(true); load(); }} hitSlop={8}
-                style={({ pressed }) => [styles.goneEylem, pressed && PRESSED]}>
-                <Text style={styles.goneEylemText}>{t('common.retry')}</Text>
-              </Pressable>
+              <Txt variant="footnote" style={[s.ortala, s.goneDesc, { color: colors.text2 }]}>{t('post.loadFailedDesc')}</Txt>
+              <Button title={t('common.retry')} variant="tertiary" height={40} onPress={() => { setLoading(true); load(); }} />
             </>
           ) : null}
         </View>
@@ -166,56 +176,71 @@ export default function PostThread() {
                   İNCELEME. Ayrımı sunucu söylüyor (`type: 'review'`) —
                   istemci kök kimliğini ayrıştırmıyor, çünkü kimliğin biçimi
                   (`r:{appid}:{uid}`) sunucunun ayrıntısı ve iki yerde
-                  bilinmesi gereksiz bir bağ olurdu.
-
-                  YANIT ÇUBUĞU BURADAN KALKTI: kaydırıp geri gelmek gerekiyordu.
-                  Artık ekranın altında sabit duruyor (aşağıya bakın). */}
-              {data.post.type === 'review' ? (
+                  bilinmesi gereksiz bir bağ olurdu. */}
+              {kok.type === 'review' ? (
                 <ReviewRoot
-                  review={data.post}
+                  review={kok}
                   onOpenGame={() => router.push({
                     pathname: '/game/[id]',
                     params: {
-                      id: `rawg_${data.post.appid}`, appid: data.post.appid,
-                      name: data.post.gameName || '', image: data.post.image || '',
+                      id: `rawg_${kok.appid}`, appid: kok.appid,
+                      name: kok.gameName || '', image: kok.image || '',
                     },
                   })}
                   onAuthor={() => {
-                    const u = data.post.author?.username;
+                    const u = kok.author?.username;
                     if (u) router.push(`/u/${u}`);
                   }}
                   onMenu={(k) => mod.acMenu(k, {
                     targetType: 'review',
-                    targetId: `${data.post.appid}:${data.post.uid}`,
+                    targetId: `${kok.appid}:${kok.uid}`,
                   })}
                 />
               ) : (
-                <PostCard
-                  post={data.post}
-                  onRequireAccount={requireAccount}
-                  onOpen={ACMA_YOK}
-                  onMenu={(k) => mod.acMenu(k, { targetType: 'post', targetId: String(data.post.id) })}
-                  kok
-                />
+                <View style={s.kokTop}>
+                  {/* Kök gönderinin ⋯ düğmesi ÜST ÇUBUKTA (kit nav_bar):
+                      kartta da olsaydı aynı menü iki ayrı düğmeden açılırdı.
+                      Uzun basma kısayolu kartta duruyor. */}
+                  <PostCard
+                    post={kok}
+                    onRequireAccount={requireAccount}
+                    onOpen={ACMA_YOK}
+                    onLongPressMenu={kokMenu}
+                    kok
+                  />
+                </View>
               )}
+
+              {/* Sayaç satırı (kit post_detail stats): iki hat arasında
+                  beğeni ve yanıt. "Paylaşım" sayısı YOK — gönderi paylaşımı
+                  ölçülmüyor, uydurulmuyor. */}
+              <View style={[s.pad, s.stats, { borderColor: colors.line }]}>
+                <Txt variant="footnote" style={{ color: colors.text2 }}>
+                  {t('v2.likesCount').replace('{n}', Number(kok.likeCount || 0).toLocaleString(locale))}
+                </Txt>
+                <Txt variant="footnote" style={{ color: colors.text2 }}>
+                  {t('v2.repliesCount').replace('{n}', yanitlar.length.toLocaleString(locale))}
+                </Txt>
+              </View>
 
               {/* FAZ 5 — SIRALAMA YAZILIYOR. Akış yeniden eskiye, konuşma
                   tersi. İki farklı sıralama aynı uygulamada varsa hangisinin
-                  geçerli olduğu SÖYLENMELİ; yoksa kullanıcı en yeni yanıtı
-                  en üstte arar ve bulamaz. */}
+                  geçerli olduğu SÖYLENMELİ. Tasarımdaki "En iyi ▾" çipi yok:
+                  sunucu tek sıralama veriyor, seçenek sunan çip yanıltır. */}
               {yanitlar.length > 0 ? (
-                <Text style={styles.siralama}>
-                  {yanitlar.length} {t('post.repliesCount')} · {t('post.replyOrder')}
-                </Text>
+                <View style={[s.pad, s.repliesHead]}>
+                  <Txt variant="headline">{t('v2.replies')}</Txt>
+                  <Txt variant="footnote" style={{ color: colors.text3 }}>{t('post.replyOrder')}</Txt>
+                </View>
               ) : null}
             </View>
           }
           ListEmptyComponent={
-            <Text style={styles.empty}>{t('post.noReplies')}</Text>
+            <Txt variant="footnote" style={[s.pad, s.empty, { color: colors.text3 }]}>{t('post.noReplies')}</Txt>
           }
           // Alt boşluk SEKME ÇUBUĞU İÇİN DEĞİL (bu ekranda çubuk yok), sabit
           // yanıt kutusu için: son yanıt kutunun altında kalmamalı.
-          contentContainerStyle={{ paddingBottom: TOUCH_MIN + spacing.s24 + (insets.bottom || spacing.s12), paddingHorizontal: yan }}
+          contentContainerStyle={{ paddingBottom: DOCK + (insets.bottom || space[12]), paddingHorizontal: yan }}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.text2} />
           }
@@ -223,32 +248,30 @@ export default function PostThread() {
         />
       )}
 
-      {/* ── Sabit yanıt kutusu ──
+      {/* ── Sabit yanıt kutusu (kit post_detail comp) ──
           ÖNCESİNDE kök gönderinin altındaydı ve uzun bir konuda ekrandan
           çıkıyordu: yanıt yazmak için başa dönmek gerekiyordu. Konuşma
           ekranının tek işi yanıtlamak; o eylem her zaman parmağın altında.
 
           Kutu KOMPOZİTÖRÜ AÇAN BİR DÜĞME, gerçek bir giriş alanı değil:
           yazma, ek ve gönderme akışı PostComposer'da duruyor ve iki ayrı
-          metin girişi tutmak (biri burada, biri sayfada) hangisinin gönderdiği
-          belirsiz bir durum üretirdi.
-
-          BULANIKLIK YOK, DÜZ CAM DOLGUSU: blur yalnız sekme çubuğunda
-          kullanılıyor; burada Android'de zaten fallback'e düşecekti ve
-          geometri aynı kalıyor (jetonun kendi kuralı). */}
-      {data?.post ? (
-        <View style={[styles.replyDock, { paddingBottom: insets.bottom || spacing.s12 }]}>
-          {/* Kendi baş harfin: kutunun kime ait olduğunu söylüyor. Adsız
-              geçildiğinde "?" çiziliyordu. */}
-          <Avatar avatar={null} name={account?.name || account?.email || ''} size={avatarSize.md} />
+          metin girişi tutmak hangisinin gönderdiği belirsiz bir durum
+          üretirdi. Gönder ikonu da aynı düğmenin parçası. */}
+      {kok ? (
+        <View style={[s.dock, { backgroundColor: colors.bg2, borderTopColor: colors.line, paddingBottom: insets.bottom || space[12] }]}>
+          {/* Kendi baş harfin: kutunun kime ait olduğunu söylüyor. */}
+          <UserAvatar avatar={account?.avatar} name={account?.name || account?.displayName || account?.email || ''} size={K.thread.dock.avatar} />
           <Pressable
             onPress={onReply}
-            style={({ pressed }) => [styles.replyInput, pressed && PRESSED]}
             accessibilityRole="button"
+            style={({ pressed }) => [s.dockInput, { backgroundColor: colors.surface2 }, pressed && s.pressed]}
           >
-            <Text style={styles.replyText} numberOfLines={1}>
-              {data.post.type === 'review' ? t('post.replyToReview') : t('post.replyHint')}
-            </Text>
+            <Txt variant="cardTitle" numberOfLines={1} style={[s.flex, s.dockText, { color: colors.text3 }]}>
+              {kok.type === 'review' ? t('post.replyToReview') : t('post.replyHint')}
+            </Txt>
+            <View style={s.dockSend}>
+              <Icon name="send" size={K.thread.dock.sendIcon} color={colors.text3} />
+            </View>
           </Pressable>
         </View>
       ) : null}
@@ -265,33 +288,28 @@ export default function PostThread() {
   );
 }
 
-const makeStyles = (colors) => StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
-  head: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: spacing.sm, paddingBottom: 6,
-  },
-  back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  title: { color: colors.text, fontSize: type.headline, fontWeight: '800' },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  siralama: { ...SECTION_TITLE, color: colors.text3, paddingHorizontal: spacing.s20, marginTop: spacing.s16, marginBottom: spacing.s8 },
-  gone: { color: colors.text, fontSize: type.subhead, fontWeight: '700', textAlign: 'center' },
-  goneDesc: { color: colors.text2, fontSize: type.footnote, lineHeight: 19, textAlign: 'center', marginTop: spacing.s4, maxWidth: 280 },
-  goneEylem: { minHeight: TOUCH_MIN, justifyContent: 'center', marginTop: spacing.s8 },
-  goneEylemText: { color: colors.accentText, fontSize: type.subhead, fontWeight: '700' },
+const T = K.thread;
+// Sabit kutunun yüksekliği: içerik dolgusu + giriş alanı.
+const DOCK = T.dock.paddingTop + T.dock.input + space[12];
 
-  replyDock: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.s12,
-    paddingHorizontal: spacing.s20, paddingTop: spacing.s12,
-    backgroundColor: colors.glassFill,
-    borderTopWidth: 1, borderTopColor: colors.glassBorder,
-  },
-  replyInput: {
-    flex: 1, height: TOUCH_MIN, justifyContent: 'center',
-    paddingHorizontal: spacing.s16, borderRadius: radius.pill,
-    backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder,
-  },
-  replyText: { color: colors.text3, fontSize: type.subhead },
-
-  empty: { color: colors.text3, fontSize: type.footnote, textAlign: 'center', paddingVertical: spacing.s24 },
+const s = StyleSheet.create({
+  safe: { flex: 1 },
+  flex: { flex: 1, minWidth: 0 },
+  pad: { paddingHorizontal: layout.gutter },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: layout.gutter, gap: space[8] },
+  ortala: { textAlign: 'center' },
+  goneDesc: { marginBottom: space[8] },
+  kokTop: { marginTop: T.rootTop - K.community.feedGap / 2 },
+  stats: { height: T.statsHeight, marginTop: T.statsTop, flexDirection: 'row', alignItems: 'center', gap: T.statsGap,
+    borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth },
+  repliesHead: { height: T.headerHeight, marginTop: T.headerTop, marginBottom: T.listTop, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  commentRow: { paddingBottom: T.gap },
+  empty: { paddingVertical: space[24], textAlign: 'center' },
+  pressed: { opacity: 0.9 },
+  dock: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingTop: T.dock.paddingTop, paddingHorizontal: T.dock.paddingH,
+    borderTopWidth: StyleSheet.hairlineWidth, flexDirection: 'row', alignItems: 'center', gap: T.dock.gap },
+  dockInput: { flex: 1, height: T.dock.input, borderRadius: T.dock.inputRadius, flexDirection: 'row', alignItems: 'center',
+    paddingLeft: T.dock.inputLeft, paddingRight: T.dock.inputRight },
+  dockText: { fontWeight: '400' },
+  dockSend: { width: T.dock.send, height: T.dock.send, alignItems: 'center', justifyContent: 'center' },
 });

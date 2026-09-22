@@ -40,7 +40,9 @@ function timeAgo(ts, lang) {
 // Bu kartta ÖNCEDEN HİÇBİR yol yoktu: ne şikâyet ne engelleme. 2.6.1 (42)
 // tam olarak bu yüzden 1.2'den reddedildi. GİZLİ JEST TEK YOL OLAMAZ: uzun
 // basma kısayol olarak duruyor, ⋯ (PostHeader "daha fazla") görünür kapı.
-function PostCard({ post, onOpen, onMenu, onRequireAccount, compact = false, kok = false }) {
+// `onLongPressMenu`: ⋯ başka yerde (konuşma ekranında üst çubukta) — kartta
+// görünür düğme olmadan yalnız uzun basma kısayolu kalıyor.
+function PostCard({ post, onOpen, onMenu, onLongPressMenu, onRequireAccount, compact = false, kok = false }) {
   const { t, lang, locale } = useLanguage();
   const router = useRouter();
 
@@ -72,7 +74,7 @@ function PostCard({ post, onOpen, onMenu, onRequireAccount, compact = false, kok
   return (
     <Pressable
       onPress={open}
-      onLongPress={onMenu ? () => onMenu(post.author) : undefined}
+      onLongPress={onMenu ? () => onMenu(post.author) : onLongPressMenu}
       delayLongPress={400}
       accessibilityRole="button"
       style={s.row}

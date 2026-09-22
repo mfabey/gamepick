@@ -781,5 +781,8 @@ export default {
   'v2.noPrices': "No se encontraron precios para este juego.",
   'v2.statusNotRecommends': "No lo recomienda",
   'v2.gameChip': "Juego",
+  'v2.replies': "Respuestas",
+  'v2.likesCount': "{n} me gusta",
+  'v2.repliesCount': "{n} respuestas",
   'v2.gamingWorld': "Del mundo gamer",
 };

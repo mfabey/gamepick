@@ -780,5 +780,8 @@ export default {
   'v2.noPrices': "Bu oyun için mağaza fiyatı bulunamadı.",
   'v2.statusNotRecommends': "Tavsiye etmiyor",
   'v2.gameChip': "Oyun",
+  'v2.replies': "Yanıtlar",
+  'v2.likesCount': "{n} beğeni",
+  'v2.repliesCount': "{n} yanıt",
   'v2.gamingWorld': "Oyun Dünyasından",
 };

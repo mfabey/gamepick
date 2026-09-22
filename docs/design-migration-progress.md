@@ -383,3 +383,31 @@ Fiyat biçimi kullanıcı kararıyla tasarımdaki gibi: "₺599", "-%50" (`27aae
 - EmptyState ve FeedSkeleton eski bileşenler.
 - Hesapsız kullanıcıda yazma kartı avatarı "?" (ad yok). Tasarım oturum açmış kullanıcı çiziyor.
 - iOS görünümü doğrulanmadı.
+
+### 23 Eylül — Gönderi Detayı, G-13 (Claude)
+
+**Yapılanlar:**
+- **NavBar** "Gönderi": geri + ⋯ (kök gönderinin moderasyon kapısı, kit nav_bar "Seçenekler").
+  - Kartın kendi ⋯'ü kalktı; aynı menü iki düğmeden açılıyordu. Uzun basma kısayolu kartta duruyor (`onLongPressMenu`).
+- **Kök gönderi** 2.0 Post'u, konuşmada bodyLarge.
+- **Sayaç satırı** (kit stats): iki hat arasında beğeni ve yanıt sayısı. "Paylaşım" YOK — gönderi paylaşımı ölçülmüyor.
+- **"Yanıtlar" başlığı** + sıralama notu. Tasarımın "En iyi ▾" çipi yok: sunucu tek sıralama veriyor (eskiden yeniye), seçenek sunan çip yanıltırdı.
+- **Yanıtlar** artık `Comment` (kit comment()): 40 avatar, ad + rozet + zaman, metin 15/21, 28'lik eylem satırı (kalp + "Yanıtla"), "Yazar" hapı kök gönderi sahibinde.
+  - `CommentCard`: iyimser beğeni + geri alma, hesap kapısı, profil bağlantısı.
+  - Tasarımın yorumunda ⋯ yok; yanıt da kullanıcı içeriği olduğu için görünür ⋯ eklendi (Guideline 1.2, "gizli jest tek yol olamaz").
+- **Sabit yanıt kutusu** (kit comp): 32 avatar + hap giriş + gönder ikonu. Kutu hâlâ kompozitörü açan bir düğme; iki ayrı metin girişi tutulmuyor.
+- Boş/hata durumları ve yükleniyor 2.0 tipografisine geçti.
+
+**Emülatörde bulunup düzeltilenler:**
+1. Kök gönderide iki ⋯ vardı (üst çubuk + kart).
+2. Yanıt satırlarının yan boşluğu yoktu: avatar ekranın soluna taşıyordu. Yorum listesi 20 dolgu + 18 aralık aldı.
+
+**Doğrulama:**
+- `npm run check` (20) geçti; iOS ve Android export geçti.
+- Emülatörde iki ayrı gönderi (derin bağlantıyla) açıldı: kök gönderi, sayaçlar, yanıt, alt kutu.
+- Üst çubuktaki ⋯ kök yazarın moderasyon sayfasını açıyor.
+
+**Açık kalanlar:**
+- `ReviewRoot` (kök inceleme) eski görünümde.
+- PostComposer eski görünümde (G-12).
+- Kalan ekranlar: Mesajlar, Sohbet, Profil, Haberler, Bildirimler, Arama, Oyun Topluluğu.

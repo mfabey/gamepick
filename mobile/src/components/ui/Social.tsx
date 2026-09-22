@@ -222,9 +222,11 @@ export function Post({ header, text, lines, media, game, actions, textVariant = 
 }
 
 /** Yorum: avatarla arası 10; ad 14/600 + rozet + "Yazar" + zaman, metin 15/21, eylemler 28 (kalp 15 + sayı, "Yanıtla"). */
-export function Comment({ avatar, name, time, text, lines, likes, liked = false, onLike, onReply, reply, badge, author, onProfile }: {
+export function Comment({ avatar, name, time, text, lines, likes, liked = false, onLike, onReply, onMore, reply, badge, author, onProfile }: {
   avatar?: string | null; name: string; time: string; text: string; lines?: number; likes: string | number; liked?: boolean;
-  onLike?: () => void; onReply?: () => void; reply?: boolean; badge?: ReactNode; author?: boolean; onProfile?: () => void;
+  /** `onMore`: tasarımda yorumda ⋯ yok ama yanıt da kullanıcı içeriği — şikâyet/engelleme
+   *  görünür bir kapı ister (Guideline 1.2; "gizli jest tek yol olamaz"). */
+  onLike?: () => void; onReply?: () => void; onMore?: () => void; reply?: boolean; badge?: ReactNode; author?: boolean; onProfile?: () => void;
 }) {
   const { colors } = useDesignTheme();
   const { t } = useLanguage();
@@ -241,6 +243,11 @@ export function Comment({ avatar, name, time, text, lines, likes, liked = false,
           {badge}
           {author ? <Badge label={t('v2.author')} /> : null}
           <Txt variant="caption" numberOfLines={1} style={{ color: colors.text3 }}>{`· ${time}`}</Txt>
+          {onMore ? <>
+            <View style={styles.flex} />
+            <IconButton icon="more" label={t('a11y.more')} onPress={onMore} size={K.postHeader.more} iconSize={K.postHeader.moreIcon}
+              color={colors.text3} style={{ marginRight: K.postHeader.moreEdge }} />
+          </> : null}
         </View>
         <Txt variant="bodyTight" numberOfLines={lines} style={{ marginTop: C.textTop }}>{text}</Txt>
         <View style={styles.commentActions}>
