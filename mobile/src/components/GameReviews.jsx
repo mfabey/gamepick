@@ -114,7 +114,9 @@ function Row({ review, onOpenThread, onAuthor, onMenu }) {
  * @param appid    Steam uygulama kimliği
  * @param gameName kapak/başlıktan gelen ad — kompozitöre veriliyor
  */
-export default function GameReviews({ appid, gameName }) {
+// `hideTitle`: oyun detayı (G-07) bölümü kendi "Oyuncu İncelemeleri" başlığıyla
+// açıyor; ikinci bir başlık tekrar olurdu. Düzenle düğmesi yine görünüyor.
+export default function GameReviews({ appid, gameName, hideTitle = false }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const { t } = useLanguage();
@@ -208,7 +210,7 @@ export default function GameReviews({ appid, gameName }) {
   return (
     <View>
       <View style={styles.head}>
-        <Text style={styles.title}>{t('detail.userReviews')}</Text>
+        {hideTitle ? <View /> : <Text style={styles.title}>{t('detail.userReviews')}</Text>}
         {/* Düzenleme çağrısı yalnız kendi incelemesi olanda; olmayan ve
             oynamış olan kullanıcı aşağıdaki davet bloğunu görüyor. */}
         {data?.mine ? (

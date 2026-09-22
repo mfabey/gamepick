@@ -12,8 +12,8 @@
 // çerçeveye büyütülüyor.
 //
 // HEDEF ÇERÇEVE SABİT VE BİLİNİYOR: oyun detayının kapağı
-// `position:absolute; top:0; left:0; right:0; height:320` (game/[id].jsx →
-// coverWrap). Yani iniş noktası tahmin değil, ölçü.
+// `position:absolute; top:0; left:0; right:0; height:380` (game/[id].jsx →
+// cover, component.detail.heroHeight). Yani iniş noktası tahmin değil, ölçü.
 //
 // DEVİR ANI. Bindirme, detay ekranı ilk karesini çizene kadar duruyor.
 // İkisi AYNI görseli AYNI çerçevede gösterdiği için devir görünmüyor;
@@ -28,7 +28,7 @@
 // (çift açılışı önlemek için, bkz. _layout.jsx). Ama bu ayar İKİ YÖNE birden
 // uygulanıyor: geri çıkışta da hiçbir animasyon kalmıyordu, detay tek karede
 // yok oluyordu. Girişteki düzeltmenin görünmeyen bedeli buydu.
-// Çözüm, girişin aynısını ters oynatmak: kapak detayın 320pt alanından
+// Çözüm, girişin aynısını ters oynatmak: kapak detayın 380pt alanından
 // kartın çerçevesine küçülüyor, sonra pop yapılıyor.
 // ─────────────────────────────────────────────────────────────────────────────
 import { useEffect } from 'react';
@@ -41,10 +41,11 @@ import { Image } from 'expo-image';
 import GameCover from './GameCover';
 import { useTheme } from '../context/ThemeContext';
 import { radius } from '../theme';
+import { component } from '../theme/tokens';
 
-// Detay ekranının kapak yüksekliği (game/[id].jsx → COVER_H). İkisi
-// ayrışırsa geçiş yanlış yere iner; bu yüzden burada da adlı sabit.
-export const HEDEF_KAPAK_Y = 320;
+// Detay ekranının kapak yüksekliği (G-07: 380, tokens → component.detail.heroHeight).
+// İki ekran AYNI jetonu okuyor; ayrışırsa geçiş yanlış yere iner.
+export const HEDEF_KAPAK_Y = component.detail.heroHeight;
 
 // App Store'un kendi geçişi ~380 ms sürüyor (videodan ölçüldü: kart
 // 3.08 sn'de yerinde, 3.46 sn'de oturmuş). Yay değil EĞRİ kullanılıyor:

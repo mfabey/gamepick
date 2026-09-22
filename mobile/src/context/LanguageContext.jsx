@@ -105,6 +105,17 @@ export function LanguageProvider({ children }) {
     return `${name}'${hard ? 't' : 'd'}${'aıou'.includes(vowel) ? 'a' : 'e'}`;
   }, [lang, t]);
 
+  // Kısa sayı (kit "38,2 B oy"): 1.000 ve üstü bin, 1.000.000 ve üstü milyon;
+  // bir ondalık. Intl'in `notation: 'compact'` seçeneği Hermes'te her
+  // platformda yok, eşikler elle; ondalık ayraç dilin yerel ayarından.
+  const formatCompact = useCallback((n) => {
+    const v = Number(n) || 0;
+    const kisa = (x) => x.toLocaleString(bcp47(lang), { maximumFractionDigits: 1 });
+    if (v >= 1e6) return t('v2.millions').replace('{n}', kisa(Math.round(v / 1e5) / 10));
+    if (v >= 1e3) return t('v2.thousands').replace('{n}', kisa(Math.round(v / 1e2) / 10));
+    return v.toLocaleString(bcp47(lang));
+  }, [lang, t]);
+
   // `toggleLang` KALDIRILDI: iki dil arasında gidip gelen bir anahtardı ve
   // dört dilde anlamı kalmıyor. Hiçbir ekran kullanmıyordu; dil seçimi
   // Ayarlar'daki listeden yapılıyor.
@@ -114,8 +125,8 @@ export function LanguageProvider({ children }) {
   const locale = bcp47(lang);
 
   const value = useMemo(
-    () => ({ lang, locale, setLang, t, formatPrice, formatDiscount, formatStoreAt, rate, setRate }),
-    [lang, locale, setLang, t, formatPrice, formatDiscount, formatStoreAt, rate]
+    () => ({ lang, locale, setLang, t, formatPrice, formatDiscount, formatStoreAt, formatCompact, rate, setRate }),
+    [lang, locale, setLang, t, formatPrice, formatDiscount, formatStoreAt, formatCompact, rate]
   );
 
   return (

@@ -156,6 +156,8 @@ export const typography = {
   toast: t(14, 18, '500'),
   statValue: t(18, 24, '700'), // StatTile değeri (kit stat())
   greeting: t(15, 20, '400'), // Ana sayfa selamlaması (kit home() greet)
+  ratingValue: t(15, 20, '700'), // Oyun detayı puan satırı (kit game_detail())
+  scoreLarge: t(44, 48, '700', -0.02), // İnceleme özeti büyük sayı (kit game_detail() summ)
   caption2Strong: t(11, 14, '600'), // FriendActivity durumu (kit friend())
   footnoteMedium: t(13, 18, '500'), // gönderi eylem sayıları (kit actions())
   shortTitle: t(13, 17, '600'), // ShortCard başlığı (kit short())
@@ -164,8 +166,9 @@ export const typography = {
 } as const;
 
 /** Fiyatlar: display ailesi, 700, -0.02em, rakamlar eşit genişlikte. */
-// 20: StickyBottomBar (kit/s1.py sticky_bar), 40: Fiyat Karşılaştırma "En İyi Fiyat" (G-08).
-export const priceStyle = (size: 14 | 16 | 18 | 20 | 22 | 28 | 40, color: string = colors.text): TextStyle => ({
+// 20: StickyBottomBar (kit/s1.py sticky_bar), 40: Fiyat Karşılaştırma "En İyi Fiyat" (G-08),
+// 36 ve 15: Oyun Detayı fiyat kartı ve diğer mağazalar (G-07).
+export const priceStyle = (size: 14 | 15 | 16 | 18 | 20 | 22 | 28 | 36 | 40, color: string = colors.text): TextStyle => ({
   fontSize: size,
   ...fontFor('700'),
   letterSpacing: tracking(-0.02, size),
@@ -362,13 +365,25 @@ export const component = {
   stickyBar: { paddingTop: 10, paddingH: 20, minBottom: 10, gap: 12, button: 48 },
   pageDots: { active: 18, size: 6, gap: 6, top: 12 },
   home: { greetingTop: 2, heroTop: 14, greetingChevron: 14, newsRowsTop: 18, newsRowsGap: 14, dealCount: 2 },
+  // G-07 Oyun Detayı (kit s1.py game_detail()).
+  detail: { heroHeight: 380, barSide: 16, barGap: 10, barIcon: 20, backIcon: 22, backStroke: 2.4,
+    subTop: 4, ratingRow: 24, ratingTop: 12, ratingGap: 6, ratingStar: 16, badgeHeight: 20, badgePadding: 6, badgeRadius: 5, badgeRing: 1,
+    chipsTop: 14, chipHeight: 30, chipPadding: 12, chipGap: 8, platformsTop: 12, platformsRow: 20, platformsIcon: 15,
+    ctaTop: 20, ctaGap: 10, ctaPrimary: 52, ctaSecondary: 48,
+    card: { top: 24, padding: 18, radius: 20, headerHeight: 18, updatedIcon: 12, updatedGap: 5, storeTop: 14, storeHeight: 44, storeGap: 12,
+      priceTop: 14, priceHeight: 40, priceGap: 10, oldPrice: 16, buttonTop: 16, button: 48, separatorTop: 18, othersTitleTop: 14,
+      othersTop: 4, otherRow: 52, otherGap: 12, linkTop: 4, linkHeight: 44, linkChevron: 18, visibleOthers: 3 },
+    trailerRatio: 197 / 350, trailerRadius: 18, trailerTag: { height: 26, paddingH: 9, radius: 8, inset: 12, gap: 6 },
+    shot: { width: 200, height: 112, radius: 12 }, shotsTop: 12,
+    aboutTop: 10, aboutLines: 4, readMoreHeight: 32, readMoreTop: 2, cellsTop: 14, cellGap: 12, cellInner: 2,
+    review: { height: 128, padding: 16, radius: 18, gap: 20, scoreWidth: 96, votesTop: 6, bar: 6, barGap: 4, barRow: 16, barLabel: 56, barValue: 30 } },
   hero: { tagHeight: 28, tagIcon: 13, metaGap: 5, metaStar: 12, priceRow: 28, storeGap: 2 },
 
   // ── §4 Oyun ve fiyat (kit c.py/k.py: disc, old, price, drop, mono, store, store_row, stat, status, game_m, game_s, drop_card, deal_card, chart) ──
-  discount: { paddingH: 7, radius: 6, sizes: { xs: [11, 20], sm: [12, 22], md: [13, 24], lg: [14, 26] } },
+  discount: { paddingH: 7, radius: 6, sizes: { xs: [11, 20], sm: [12, 22], md: [13, 24], lg: [14, 26], card: [15, 26] } },
   oldPrice: 13,
   priceDrop: { icon: 2, gap: 4, stroke: 2.4 },
-  storeBadge: { size: 16, radius: 5, font: 9, gap: 5, row: { size: 40, radius: 11, font: 16 } },
+  storeBadge: { size: 16, radius: 5, font: 9, gap: 5, row: { size: 40, radius: 11, font: 16 }, small: { size: 32, radius: 9, font: 13 }, large: { size: 44, radius: 12, font: 18 } },
   storeRow: { height: 64, paddingLeft: 16, paddingRight: 14, gap: 12, separator: 68, chevron: 16, rightGap: 3 },
   statTile: { height: 84, padding: 12, radius: 14, icon: 18, gap: 2, valueTopWithIcon: 4, valueTopNoIcon: 20 },
   statusPill: { height: 22, paddingH: 8, radius: 6, gap: 4, dot: 6, icon: 12, star: 11 },
@@ -404,7 +419,7 @@ export const component = {
 
   // ── §6 Medya ve haber (video, short, news_feat, news_row, media_img, playc, ovl) ──
   overlayTag: { height: 22, paddingH: 7, radius: 6, inset: 10, gap: 4, icon: 12 },
-  playButton: { sizes: [44, 48], iconRatio: 0.4, nudge: 2 },
+  playButton: { sizes: [44, 48, 60], iconRatio: 0.4, nudge: 2 },
   videoCard: { infoTop: 10, titleHeight: 40, lineTop: 4, gameTop: 8, chipHeight: 24, chipRadius: 7, chipPaddingLeft: 3, chipPaddingRight: 8, chipThumb: 18, chipThumbRadius: 5, chipGap: 6, avatarGap: 10 },
   shortCard: { radius: 16, inset: 10, viewsTop: 6, viewsGap: 4, playIcon: 11 },
   newsFeature: { width: 350, imageHeight: 196, radius: 18, metaHeight: 16, metaTop: 12, metaGap: 6, titleTop: 6, descTop: 6 },

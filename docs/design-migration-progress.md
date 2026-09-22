@@ -259,3 +259,56 @@ Fiyat biçimi kullanıcı kararıyla tasarımdaki gibi: "₺599", "-%50" (`27aae
 - `FriendActivity` bileşeni artık çizilmiyor; yalnız `hasFriendSignal` eşiği kullanılıyor, temizlenecek.
 - Arkadaş bölümü emülatör hesabında Steam arkadaş verisi olmadığı için görülmedi.
 - iOS görünümü doğrulanmadı.
+
+### 22 Eylül — Oyun Detayı, G-07 (Claude)
+
+**Bulunan veri sorunu:** Sunucunun Steam yolu puanı uyduruyor: `api/rawg-game` → `rating: d.recommendations?.total ? 4.5 : 0`, yedek yol da varsayılan 4.5. Detayda görünen "★ 4.5" gerçek değildi. RAWG yolu da `source: 'steam'` yazdığı için istemci gerçeğini ayıramıyor.
+- Karar: puan satırı yalnız Steam incelemelerinden (gerçek %, inceleme sayısı).
+- Sunucu düzeltmesi ayrı iş olarak önerildi (kapsam dışı: backend).
+
+**Yapılanlar:**
+- **Kapak:** 380 pt, gameDetailHeader degradesi. Alt uç temanın zemini, ara duraklar zeminin saydamı; açık temada gri bant yok, emülatörde görüldü.
+  - Parallax ve kaydırınca beliren başlık korundu.
+  - CardExpand'in iniş yüksekliği aynı jetondan: `HEDEF_KAPAK_Y = component.detail.heroHeight`.
+- **Üst çubuk:** 44'lük cam geri; paylaş, koleksiyon ve kalp. Koleksiyon tasarımda yok ama ürün özelliği. Kalp kendi dokunsal geri bildirimini verdiği için çift titreşim yok.
+- **Başlık bloğu:** ad 30/36, "yıl · geliştirici", puan satırı ("%84 olumlu · 91.859 inceleme" + Metacritic, PEGI yuvasında), tür çipleri, platform.
+- **CTA:**
+  - "En Ucuz Fiyatı Gör" fiyat kartına kaydırıyor.
+  - "İstek Listesine Ekle" / "İstek listende".
+  - Sahiplik bandı aynı yığında; boşken boşluk bırakmıyor.
+- **"En İyi Fiyat" kartı:**
+  - Bağıl güncelleme zamanı, 44'lük mağaza, 36 pt fiyat, "Mağazaya Git".
+  - Diğer mağazalar en ucuza göre GERÇEK farkla ("+₺379").
+  - "N mağazanın tümünü karşılaştır" G-08 gelene kadar listeyi yerinde açıyor; "Daha az" ile kapanıyor.
+- **Fragman kartı:** kapak görseli, 60'lık oynat, "Resmî Fragman". Oynatıcı kapaktan karta taşındı; kullanıcı başlattığı için sesli ve denetimli.
+- **Görseller ve Oyun Hakkında:**
+  - Ekran görüntüleri 200 × 112; ışık kutusu korundu.
+  - Oyun Hakkında: 4 satır + "Devamını oku", geliştirici/yayıncı/çıkış hücreleri, resmî site bağlantısı.
+- **İncelemeler:**
+  - Steam özet kartı: büyük %, katman etiketi, kısa sayı "91,9 B" ve olumlu/olumsuz çubukları. Tasarımın 5 yıldız dağılımının Steam'de karşılığı yok.
+  - GameReviews `hideTitle` ile altında.
+- **Sabit alt çubuk:** "₺597 · GOG'da en ucuz · -%35", "Mağazaya Git".
+- **Yeni yardımcılar:** `formatCompact` (kısa sayı, Hermes'te Intl compact yerine elle) ve `formatStoreAt` sticky satırında.
+- **Ölü anahtarlar:** kullanılmayan 8 `detail.*` anahtarı beş dilden silindi (check:i18n yakaladı).
+
+**Emülatörde bulunup düzeltilenler:**
+1. Tür çipleri ekran kenarından başlıyordu: iki kat taşma payı vardı.
+2. İnceleme özetinde "91.859 incele…" ve "Olums…" kırpılıyordu. Kısa sayı eklendi, etiket genişliği 44 → 56.
+3. Fragman görseli, hemen altındaki ilk ekran görüntüsüyle aynıydı; kapak görseline geçildi.
+4. "Daha az" aşağı okla gösteriliyordu; ok çevrildi.
+5. "En Ucuz Fiyatı Gör" kartı üst çubuğa yapışık bırakıyordu; 12 pt pay eklendi.
+6. Yedek fiyat satırında adres yoktu ve iki "Mağazaya Git" de ölüydü; Steam sayfasına düşüyor.
+
+**Verisi olmadığı için çizilmeyenler:** tüm zamanların en düşüğü, PEGI, sistem gereksinimleri, oyun modu, topluluk tartışmaları, ilgili haber/video, benzer oyunlar.
+
+**Doğrulama:**
+- `npm run check` (20) geçti; iOS ve Android export geçti.
+- Emülatörde koyu ve açık tema.
+- Karttan büyüme ve geri dönüş, fiyat kartına kaydırma, mağaza listesini açma/kapama, fragmanın kart içinde oynaması denendi.
+- Tema tercihi `system`'e geri alındı.
+
+**Açık kalanlar:**
+- GameReviews satırlarının 2.0 görünümü (kit inceleme kartı) Topluluk ya da Gönderi Detayı işiyle.
+- OwnershipBand eski görünümde.
+- Detaydan dönünce "Senin İçin" yeniden sıralanabiliyor: aday önbelleği tazelenince görülme cezası devreye giriyor. Bu işten önce de vardı, ayrıca incelenmeli.
+- iOS görünümü doğrulanmadı.

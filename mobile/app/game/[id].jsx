@@ -1,24 +1,22 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet, ActivityIndicator, Modal, useWindowDimensions, Share } from 'react-native';
+import { View, Pressable, ScrollView, StyleSheet, Modal, useWindowDimensions, Share } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue, useAnimatedScrollHandler, useAnimatedStyle,
   useAnimatedReaction, runOnJS, interpolate, Extrapolation,
-  withDelay, withSpring,
 } from 'react-native-reanimated';
 import { StatusBar } from 'expo-status-bar';
-import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import { fetchGameDetail, fetchGameByAppid, fetchPrices, fetchSteamReviews } from '../../src/api/games';
-import { radius, spacing, PRESSED, type, scale, metacriticColor, motion, TOUCH_MIN, SECTION_TITLE } from '../../src/theme';
+import { motion } from '../../src/theme';
 import { useYanBosluk } from '../../src/hooks/useIcerikAlani';
-import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { stripHtml } from '../../src/utils/text';
+import { bagilZaman } from '../../src/utils/relativeTime';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useTimeToData } from '../../src/dev/perf';
 import { useWishlist } from '../../src/context/WishlistContext';
@@ -33,31 +31,43 @@ import CollectionPicker from '../../src/components/CollectionPicker';
 import ShareToFriendSheet from '../../src/components/ShareToFriendSheet';
 import { reportActivity } from '../../src/api/social';
 import { useQuery } from '../../src/hooks/useQuery';
-import { usePop } from '../../src/hooks/usePop';
 import { useReducedMotion } from '../../src/hooks/useReducedMotion';
 import { kaynakOku, kaynakSil, kucultmeIste } from '../../src/services/gecisKaynak';
 import { GenreChipsSkeleton, ShotStripSkeleton, TextBlockSkeleton, PriceListSkeleton } from '../../src/components/Skeleton';
 import { recordSignal } from '../../src/services/tasteProfile';
 import { recordSeen } from '../../src/services/seenStore';
 import FadeIn from '../../src/components/FadeIn';
-import StoreLogo from '../../src/components/StoreLogo';
-import IconButton from '../../src/components/IconButton';
+import { Icon } from '../../src/components/Icon';
+import { Button, IconButton, PressableScale, SectionHeader, Txt } from '../../src/components/ui/Primitives';
+import { HeartButton } from '../../src/components/ui/HeartButton';
+import { GlassView } from '../../src/components/ui/GlassView';
+import { StickyBottomBar, useStickyBarInset } from '../../src/components/ui/Navigation';
+import { GamePriceCard, GenreChips, InfoCells, OutlineBadge, ReviewSummary, ScreenshotRail, TrailerCard } from '../../src/components/ui/GameDetailParts';
+import { useDesignTheme } from '../../src/theme/useDesignTheme';
+import { component as K, gradients, layout, space } from '../../src/theme/tokens';
 import GameReviews from '../../src/components/GameReviews';
 
-// Olumlu %'den inceleme tier'ı (etiket i18n + renk)
-function tierFor(pct) {
-  if (pct >= 90) return { key: 'review.veryPositive',    color: scale.best };
-  if (pct >= 75) return { key: 'review.positive',        color: scale.good };
-  if (pct >= 60) return { key: 'review.mostlyPositive',  color: scale.mid  };
-  if (pct >= 40) return { key: 'review.mixed',           color: scale.weak };
-  return           { key: 'review.negative',             color: scale.bad  };
+// Olumlu %'den inceleme tier'ı (etiket i18n + renk). 2.0: renk işlevsel
+// paletten — olumlu yeşil, karışık turuncu, olumsuz kırmızı.
+function tierFor(pct, colors) {
+  if (pct >= 90) return { key: 'review.veryPositive',    color: colors.green };
+  if (pct >= 75) return { key: 'review.positive',        color: colors.green };
+  if (pct >= 60) return { key: 'review.mostlyPositive',  color: colors.green };
+  if (pct >= 40) return { key: 'review.mixed',           color: colors.orange };
+  return           { key: 'review.negative',             color: colors.red };
 }
 
-// Kapak yüksekliği ve gövdenin kapağa binme payı. İkisi ayrı sabit çünkü
-// gövdenin üst dolgusu ikisinin FARKI (320 − 48); tek sayı yazılsaydı biri
-// değişince öteki sessizce kayardı.
-const COVER_H = 320;
-const COVER_OVERLAP = 48;
+// Kapak G-07'de 380 pt ve gövde kapağa BİNMİYOR (kit stack: kapak, sonra
+// başlık bloğu). Yükseklik CardExpand'in iniş çerçevesiyle aynı jeton.
+const COVER_H = K.detail.heroHeight;
+
+// #RRGGBB → aynı rengin saydamı. Kapak degradesi temanın zeminine iniyor;
+// ara duraklar siyahın değil ZEMİNİN saydamı olmalı, yoksa açık temada
+// ortada gri bir bant kalıyor.
+function seffaf(hex) {
+  const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex || '');
+  return m ? `rgba(${parseInt(m[1], 16)},${parseInt(m[2], 16)},${parseInt(m[3], 16)},0)` : 'transparent';
+}
 
 // Handoff: "Kaydırmada başlık ilk 64 px'de 0→1 opaklığa gelir."
 const HEADER_FADE = 64;
@@ -68,12 +78,13 @@ function groupNum(n, sep) {
 }
 
 export default function GameDetail() {
-  const styles = useStyles(makeStyles);
   const yan = useYanBosluk();
-  const { colors, isDark } = useTheme();
+  const { colors, isDark } = useDesignTheme();
+  const insets = useSafeAreaInsets();
+  const stickyInset = useStickyBarInset();
   const { id, name, image, slug, hasSteam, appid } = useLocalSearchParams();
   const router = useRouter();
-  const { t, lang, formatPrice } = useLanguage();
+  const { t, lang, formatPrice, formatDiscount, formatStoreAt, formatCompact } = useLanguage();
   const { isWatched, toggle } = useWishlist();
 
   // Koleksiyonlar — bu oyunun hangi listelerde olduğunu göster
@@ -120,7 +131,7 @@ export default function GameDetail() {
   }, []);
 
   // Mağaza-başı fiyat karşılaştırması (ITAD) — detay yüklenince (steamAppId için)
-  const { data: pricesData } = useQuery(
+  const { data: pricesData, ts: pricesTs } = useQuery(
     `prices:${detail?.steamAppId || slug || id}`,
     () => fetchPrices({ appid: detail?.steamAppId, title: detail?.name || name }),
     { ttl: 30 * 60 * 1000, enabled: !!detail }
@@ -138,13 +149,15 @@ export default function GameDetail() {
     }
     if (price?.price != null || price?.isFree) {
       return [{
-        storeId: 'steam', name: 'Steam', url: price.url || null,
+        // Kart fiyatı yanıtı adres taşımıyor; Steam fiyatıysa oyunun Steam sayfası
+        // (detay ya da liste kaydından). Yoksa 'Mağazaya Git' ölü düğme kalıyordu.
+        storeId: 'steam', name: 'Steam', url: price.url || g?.steamUrl || null,
         price: price.price, original: price.original, discount: price.discount || 0,
         isFree: !!price.isFree, yedek: true,
       }];
     }
     return [];
-  }, [pricesData, price]);
+  }, [pricesData, price, g?.steamUrl]);
 
   // Steam topluluk inceleme analizi — detay yüklenince (steamAppId için)
   const { data: reviews } = useQuery(
@@ -152,7 +165,7 @@ export default function GameDetail() {
     () => fetchSteamReviews(detail?.steamAppId),
     { ttl: 60 * 60 * 1000, enabled: !!detail?.steamAppId }
   );
-  const reviewTier = reviews?.total ? tierFor(reviews.positivePct) : null;
+  const reviewTier = reviews?.total ? tierFor(reviews.positivePct, colors) : null;
 
   // ── FRAGMAN (Faz 3, KIRILMA #2) ──
   // Otomatik oynatma KALKTI. `p.play()` mount'ta çağrılıyordu: sessiz,
@@ -240,9 +253,11 @@ export default function GameDetail() {
   }, [detail]);
 
   // Wishlist eklerken güçlü sinyal + dokunsal geri bildirim
-  const onToggleWishlist = () => {
+  // `dokunsal`: kalp düğmesi (HeartButton) kendi hafif darbesini zaten veriyor;
+  // oradan gelince ikinci bir titreşim olmasın.
+  const onToggleWishlist = (dokunsal = true) => {
     const willAdd = !watched;
-    Haptics.impactAsync(willAdd ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light);
+    if (dokunsal) Haptics.impactAsync(willAdd ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light);
     toggle(gameObj);
     if (willAdd && detail?.genres?.length) recordSignal({ genres: detail.genres, type: 'wishlist' });
     // Arkadaş akışına bildir (ateşle-unut; oturum/gizlilik yoksa sessizce düşer)
@@ -301,8 +316,6 @@ export default function GameDetail() {
     Haptics.selectionAsync();
     setPaylasAcik(true);
   }, [paylasGameId, onShare]);
-
-  const wishStyle = usePop(watched);
 
   // ───────────────────────────────────────────────────────────────────────────
   // KAYDIRMA: kapak parallax + başlık devri
@@ -410,331 +423,231 @@ export default function GameDetail() {
   const genres = g?.genres || [];
   const shots = detail?.screenshots || [];
   const mc = g?.metacritic;
-  const mcColor = metacriticColor(mc, colors);
-
-  const stores = [];
-  if (g?.steamUrl || gameObj.hasSteam) stores.push({ key: 'steam', label: 'Steam', icon: 'logo-steam', color: '#1a9fff', url: g?.steamUrl });
-  if (g?.epicUrl) stores.push({ key: 'epic', label: 'Epic', icon: 'globe-outline', color: '#fff', url: g.epicUrl });
-  if (detail?.officialUrl) stores.push({ key: 'official', label: t('detail.official'), icon: 'link-outline', color: colors.text2, url: detail.officialUrl });
 
   const open = (url) => { if (url) WebBrowser.openBrowserAsync(url); };
 
-  return (
-    <View style={styles.root}>
-      <StatusBar style={cubukOpak ? (isDark ? 'light' : 'dark') : 'light'} />
-      {/* Kapak — MUTLAK KONUMLU ARKA PLAN.
-          Öncesinde normal akışta bir View'di ve gövde onun ALTINDA ayrı bir
-          ScrollView'di; kapak hiç kaymıyordu. Mutlağa alınınca gövde tam
-          yüksekliğe çıkıyor, kapak da altında parallax'la kayabiliyor. */}
-      <Animated.View style={[styles.coverWrap, coverStyle]}>
-        {cover ? <Image source={cover} priority="high" cachePolicy="memory-disk" style={StyleSheet.absoluteFill} contentFit="cover" transition={motion.image} /> : null}
-        {/* Video ancak kullanıcı istediğinde MOUNT ediliyor — sadece
-            duraklatmak yetmezdi, VideoView kendisi de kaynak tutuyor. */}
-        {trailerUrl && fragmanAcik ? (
-          <VideoView
-            player={trailerPlayer}
-            style={StyleSheet.absoluteFill}
-            contentFit="cover"
-            nativeControls={false}
-          />
-        ) : null}
-        <LinearGradient colors={['rgba(8,10,13,0.15)', 'rgba(8,10,13,0.45)', colors.bg]} locations={[0, 0.55, 1]} style={StyleSheet.absoluteFill} />
+  // ── 2.0 GÖRÜNÜM VERİSİ (G-07, kit s1.py game_detail()) ──────────────────
+  // Tek fiyat kaynağı: `priceStores` (ITAD, boşsa Steam kart fiyatı yedeği).
+  // Kart, "En Ucuz Fiyatı Gör" ve alttaki sabit çubuk AYNI listeyi okuyor —
+  // Faz 3'ün "iki sayı çelişmesin" kuralı korunuyor.
+  const fiyatlar = useMemo(() => priceStores.map((st) => ({
+    key: String(st.storeId || st.name), name: st.name, price: st.price, original: st.original,
+    discount: st.discount || 0, isFree: !!st.isFree, url: st.url || null,
+  })), [priceStores]);
+  const best = fiyatlar[0] || null;
+  const guncel = pricesData && pricesTs ? bagilZaman(pricesTs, t) : null;
 
+  // "2020 · CD PROJEKT RED": yıl çıkış tarihinden, geliştirici detaydan.
+  const yil = String(g?.released || '').match(/\d{4}/)?.[0] || null;
+  const altSatir = [yil, detail?.developer].filter(Boolean).join(' · ');
+
+  // PUAN SATIRI STEAM İNCELEMELERİNDEN. `detail.rating` KULLANILMIYOR:
+  // sunucunun Steam yolu onu inceleme sayısı varsa sabit 4.5 yazıyor
+  // (api/rawg-game → `recommendations?.total ? 4.5 : 0`), yani uydurma.
+  // Tasarımın PEGI yuvasında Metacritic duruyor — yaş sınırı verisi yok.
+  const yuzde = reviews?.total ? Math.round(reviews.positivePct) : null;
+  const yuzdeYaz = (n) => (lang === 'tr' ? `%${n}` : `${n}%`);
+  const oySayisi = reviews?.total ? `${groupNum(reviews.total, lang === 'tr' ? '.' : ',')} ${t('detail.reviewsCount')}` : null;
+
+  const turler = genres.slice(0, 8).map((x) => turAdi(x, t));
+  const platformlar = (g?.platforms || []).join(' · ');
+  const hucreler = [
+    detail?.developer ? { label: t('detail.developer'), value: detail.developer } : null,
+    detail?.publisher ? { label: t('v2.publisher'), value: detail.publisher } : null,
+    g?.released ? { label: t('v2.releaseDate'), value: g.released } : null,
+  ].filter(Boolean);
+
+  // "En Ucuz Fiyatı Gör" fiyat kartına kaydırır (kit: href="#fiyat").
+  // Hedef, kartın içerikteki y'si eksi sabit üst çubuk.
+  const scrollRef = useRef(null);
+  const fiyatY = useRef(0);
+  const fiyataGit = useCallback(() => {
+    scrollRef.current?.scrollTo({ y: Math.max(0, fiyatY.current - insets.top - K.navBar.height - layout.headingToContent), animated: !azalt });
+  }, [insets.top, azalt]);
+
+  const kapakDegradesi = useMemo(() => ({
+    ...gradients.gameDetailHeader,
+    colors: [gradients.gameDetailHeader.colors[0], seffaf(colors.bg), seffaf(colors.bg), colors.bg],
+  }), [colors.bg]);
+
+  return (
+    <View style={[s.root, { backgroundColor: colors.bg }]}>
+      <StatusBar style={cubukOpak ? (isDark ? 'light' : 'dark') : 'light'} />
+      {/* Kapak — MUTLAK KONUMLU ARKA PLAN, parallax 0.9 (yukarıdaki not).
+          G-07: 380 pt, gameDetailHeader degradesi (alt uç temanın zemini). */}
+      <Animated.View style={[s.cover, { backgroundColor: colors.surface2 }, coverStyle]}>
+        {cover ? <Image source={cover} priority="high" cachePolicy="memory-disk" style={StyleSheet.absoluteFill} contentFit="cover" transition={motion.image} /> : null}
+        <LinearGradient colors={kapakDegradesi.colors} locations={kapakDegradesi.locations} style={StyleSheet.absoluteFill} />
       </Animated.View>
 
-      {/* ÜST ÇUBUK KAPAĞIN İÇİNDE DEĞİL. İçinde kalsaydı parallax'la birlikte
-          yukarı kayar ve geri düğmesi ekrandan çıkardı. Sabit katman:
-          zemini kaydırmayla 0→1 opaklaşıyor, oyun adı da onunla geliyor.
-          pointerEvents box-none — opak zemin altındaki içeriğe dokunuşu
-          engellemesin. */}
-      <View style={styles.topBarWrap} pointerEvents="box-none">
-        <Animated.View style={[StyleSheet.absoluteFill, styles.barBg, barStyle]} pointerEvents="none" />
-        <SafeAreaView edges={['top']} style={styles.topBar}>
-          <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={geriDon} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
-            <Ionicons name="chevron-back" size={24} color="#fff" />
-          </Pressable>
-
-          {/* Çubuktaki ad. Gövdedeki ad kaydırılınca ekrandan çıkıyor ve
-              öncesinde geriye yalnızca ikonlar kalıyordu. numberOfLines=1 ŞART:
-              çubuk sabit yükseklikte, uzun oyun adı ikinci satıra taşarsa
-              ikonları aşağı iter. */}
-          <Animated.Text numberOfLines={1} style={[styles.barTitle, barStyle]}>
-            {title}
-          </Animated.Text>
-
-          <View style={{ flexDirection: 'row', gap: 10 }}>
-            {/* Tek paylaşım kapısı: arkadaşa gönderme sayfası. Sistem
-                paylaşımı o sayfanın "Diğer uygulamalar" satırında. */}
-            <IconButton
-              icon='paper-plane-outline'
-              size={20}
-              color="#fff"
-              onPress={paylasAc}
-              label={t('share.toFriend')}
-              style={styles.iconBtn}
-            />
-            <Pressable
-              style={[styles.iconBtn, inAnyCollection && styles.iconBtnActive]}
-              onPress={() => { Haptics.selectionAsync(); setPickerOpen(true); }}
-              hitSlop={10}
-            >
-              <Ionicons
-                name={inAnyCollection ? 'albums' : 'albums-outline'}
-                size={20}
-                color={inAnyCollection ? colors.bg : '#fff'}
-              />
-            </Pressable>
-            <Pressable style={[styles.iconBtn, watched && styles.iconBtnActive]} onPress={onToggleWishlist} hitSlop={10}>
-              {/* Aktif yüzey açık olduğu için ikon koyuya dönüyor. Eskiden
-                  `watched ? '#fff' : '#fff'` yazıyordu — iki dalı da aynı
-                  olan işlevsiz bir üçlüydü. */}
-              {/* Listeye EKLERKEN kısa bir tepki; çıkarırken sessiz. */}
-              <Animated.View style={wishStyle}>
-                <Ionicons
-                  name={watched ? 'notifications' : 'notifications-outline'}
-                  size={20}
-                  // tema-bagimsiz: kapak görselinin üstünde duruyor
-                  color={watched ? colors.bg : '#fff'}
-                />
-              </Animated.View>
-            </Pressable>
+      {/* ÜST ÇUBUK KAPAĞIN İÇİNDE DEĞİL: parallax'la kaysaydı geri düğmesi
+          ekrandan çıkardı. Zemini ve oyun adı kaydırmayla 0→1 opaklaşıyor
+          (64 pt). Kit: 44'lük cam geri, sağda paylaş + kalp; koleksiyon
+          düğmesi tasarımda yok ama ürün özelliği, ortada duruyor. */}
+      <View style={s.topBarWrap} pointerEvents="box-none">
+        <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, s.barBg, { backgroundColor: colors.bg2, borderBottomColor: colors.line }, barStyle]} />
+        <View style={{ paddingTop: insets.top }} pointerEvents="box-none">
+          <View style={s.topBar} pointerEvents="box-none">
+            <PressableScale onPress={geriDon} accessibilityRole="button" accessibilityLabel={t('a11y.back')} style={s.back}>
+              <GlassView pointerEvents="none" style={[StyleSheet.absoluteFill, s.backGlass]} />
+              <Icon name="back" size={K.detail.backIcon} color={colors.white} strokeWidth={K.detail.backStroke} />
+            </PressableScale>
+            <Animated.View pointerEvents="none" style={[s.barTitle, barStyle]}>
+              <Txt variant="headline" numberOfLines={1}>{title}</Txt>
+            </Animated.View>
+            <View style={s.barRight}>
+              <IconButton icon="share" label={t('share.toFriend')} variant="onArt" iconSize={K.detail.barIcon} onPress={paylasAc} />
+              <IconButton icon="layers" label={t('a11y.addToCollection')} variant="onArt" iconSize={K.detail.barIcon} selected={inAnyCollection}
+                onPress={() => { Haptics.selectionAsync(); setPickerOpen(true); }} />
+              <HeartButton selected={watched} onPress={() => onToggleWishlist(false)} size={K.heart.hero.size} iconSize={K.heart.hero.icon} />
+            </View>
           </View>
-        </SafeAreaView>
+        </View>
       </View>
 
       <Animated.ScrollView
-        style={styles.body}
-        contentContainerStyle={{ padding: spacing.lg, paddingHorizontal: spacing.lg + yan, paddingTop: COVER_H - COVER_OVERLAP, paddingBottom: 48 }}
+        ref={scrollRef}
+        style={s.body}
+        contentContainerStyle={{ paddingTop: COVER_H, paddingBottom: (best ? stickyInset : insets.bottom) + layout.sectionGap, paddingHorizontal: yan }}
         showsVerticalScrollIndicator={false}
         onScroll={onScroll}
         scrollEventThrottle={16}
       >
         <FadeIn delay={40}>
-        {/* FRAGMAN DÜĞMESİ KAPAĞIN ÜSTÜNDE GÖRÜNÜR AMA ScrollView'İN İÇİNDE.
-            Önce mutlak konumla kapağa konmuştu ve simülatörde DOKUNULAMIYORDU:
-            ScrollView kapağın üstünü örtüyor (contentContainerStyle'ın 272pt
-            saydam üst dolgusu dokunuşları yutuyor). Negatif üst kenar boşluğu
-            onu görsel olarak kapağa taşıyor, dokunma hedefi ise akışta
-            kalıyor. Maket ölçüsü korundu: 36pt, rgba(0,0,0,.5), footnote 13,
-            hitSlop 8 → gerçek hedef 52pt. */}
-        {trailerUrl && !fragmanAcik ? (
-          <Pressable
-            onPress={() => setFragmanAcik(true)}
-            hitSlop={8}
-            accessibilityRole="button"
-            style={({ pressed }) => [styles.fragmanBtn, pressed && PRESSED]}
-          >
-            <Ionicons name="play" size={13} color="#fff" />
-            <Text style={styles.fragmanText}>{t('detail.playTrailer')}</Text>
-          </Pressable>
-        ) : null}
-
-        {/* Çevrimdışı bandı ADIN ÜSTÜNDE: sayfanın tamamı için geçerli bir
-            durum, tek bir alan için değil. Fragman düğmesinin ÜSTÜNE
-            konulamazdı — o düğme negatif kenar boşluğuyla kapağın üstüne
-            taşıyor, araya giren her öğe onu yerinden ederdi. */}
-        <CevrimdisiBant
-          ts={detayTs}
-          onRetry={detayTazele}
-          style={{ marginBottom: spacing.s12 }}
-        />
-
-        <Text style={styles.name}>{title}</Text>
-
-        {/* FAZ 3 — SAHİPLİK BANDI. Adın HEMEN ALTINDA, meta çiplerinin
-            ÜSTÜNDE: "zaten bende mi?" sorusu fiyattan önce gelir.
-            Yeni istek açmıyor — anasayfayla aynı önbelleği okuyor. */}
-        <View style={styles.bantKut}>
-          <OwnershipBand
-            name={title}
-            istekte={watched}
-            onGit={() => router.push('/account')}
-          />
-        </View>
-
-        {/* Meta satırı */}
-        <View style={styles.metaRow}>
-          {mc ? (
-            <View style={styles.metaChip}>
-              <Text style={[styles.metaChipText, { color: mcColor }]}>{mc}</Text>
-              <Text style={styles.metaChipLabel}>Metacritic</Text>
-            </View>
-          ) : null}
-          {detail?.rating > 0 ? (
-            <View style={styles.metaChip}>
-              {/* Yanındaki Metacritic rengi DEĞERE bağlı (mcColor: 80+ yeşil,
-                  60+ amber, altı kırmızı). Puan ise değeri ne olursa olsun
-                  kırmızıydı — aynı satırda iki farklı renklendirme mantığı,
-                  üstelik kırmızı olumsuz okunduğu için 4.5/5 kötü görünüyordu.
-                  Kural: renk değere bağlıysa kalır, değilse nötrleşir. */}
-              <Text style={[styles.metaChipText, { color: colors.text }]}>★ {detail.rating.toFixed(1)}</Text>
-              <Text style={styles.metaChipLabel}>{t('detail.rating')}</Text>
-            </View>
-          ) : null}
-          {g?.released ? (
-            <View style={styles.metaChip}>
-              <Text style={styles.metaChipText2}>{g.released}</Text>
-              <Text style={styles.metaChipLabel}>{t('detail.released')}</Text>
-            </View>
-          ) : null}
-        </View>
-
-        {detail?.developer ? (
-          <Text style={styles.dev}>{t('detail.developer')}: <Text style={{ color: colors.text2 }}>{detail.developer}</Text></Text>
-        ) : null}
-
-        {/* FAZ 3, KIRILMA #1 — ÜSTTEKİ TEK FİYAT KALKTI.
-            Aynı ekranda İKİ fiyat sistemi vardı: burada fetchCardPrice
-            (Steam, 15 dk önbellek), aşağıdaki listede fetchPrices (ITAD,
-            30 dk). İkisi farklı zamanda tazelenip ÇELİŞEBİLİYORDU —
-            üstte ₺449, listede Steam ₺519.
-
-            "Bir sayı yanlış olmaktan kötüsü iki sayının farklı olması."
-            Tepe anı tek yerde: aşağıdaki karşılaştırma listesi. cardPrice
-            yalnızca o liste boş kaldığında yedek satır oluyor. */}
-
-        {/* Mağaza butonları */}
-        {stores.length > 0 && (
-          <View style={styles.storeRow}>
-            {stores.map(s => (
-              <Pressable key={s.key} style={({ pressed }) => [styles.storeBtn, pressed && PRESSED]} onPress={() => open(s.url)} disabled={!s.url}>
-                <Ionicons name={s.icon} size={17} color={s.color} />
-                <Text style={styles.storeText}>{s.label}</Text>
-                <Ionicons name="open-outline" size={13} color={colors.text3} />
-              </Pressable>
-            ))}
+          <View style={s.pad}>
+            {/* Çevrimdışı bandı adın üstünde: sayfanın tamamı için bir durum. */}
+            <CevrimdisiBant ts={detayTs} onRetry={detayTazele} style={s.bant} />
+            <Txt variant="display" maxFontSizeMultiplier={1.3}>{title}</Txt>
+            {altSatir ? <Txt variant="subheadRegular" numberOfLines={1} style={[s.sub, { color: colors.text2 }]}>{altSatir}</Txt> : null}
+            {yuzde != null || mc ? (
+              <View style={s.rating}>
+                {yuzde != null ? <>
+                  <Txt variant="ratingValue" style={s.num}>{yuzdeYaz(yuzde)}</Txt>
+                  <Txt variant="subheadRegular" style={{ color: colors.text2 }}>{t('detail.positive')}</Txt>
+                  <Txt variant="subheadRegular" style={{ color: colors.text2 }}>·</Txt>
+                  <Txt variant="subheadRegular" numberOfLines={1} style={[s.num, s.shrink, { color: colors.text2 }]}>{oySayisi}</Txt>
+                </> : null}
+                {mc ? <OutlineBadge label={`Metacritic ${mc}`} /> : null}
+              </View>
+            ) : null}
           </View>
-        )}
 
+          <View style={s.chipsTop}>
+            {turler.length ? <GenreChips items={turler} /> : !detail ? <View style={s.pad}><GenreChipsSkeleton /></View> : null}
+          </View>
+          {platformlar ? (
+            <View style={[s.pad, s.platforms]}>
+              <Icon name="monitor" size={K.detail.platformsIcon} color={colors.text2} />
+              <Txt variant="footnote" numberOfLines={1} style={{ color: colors.text2 }}>{platformlar}</Txt>
+            </View>
+          ) : null}
+
+          {/* FAZ 3 sahiplik bandı ("zaten bende mi?") fiyattan önce; bant boşsa
+              `gap` çizilmediği için butonlar kitteki 20 pt'de kalıyor. */}
+          <View style={[s.pad, s.cta]}>
+            <OwnershipBand name={title} istekte={watched} onGit={() => router.push('/account')} />
+            {best || !pricesData ? <Button title={t('v2.cheapestPrice')} height={K.detail.ctaPrimary} iconRight="arrdown" onPress={fiyataGit} /> : null}
+            <Button title={watched ? t('v2.inWishlist') : t('v2.addToWishlist')} variant="secondary" height={K.detail.ctaSecondary} icon="heart" onPress={() => onToggleWishlist(true)} />
+          </View>
         </FadeIn>
 
-        {/* Fiyat karşılaştırması */}
-        {/* İskelet: gerçek satırla aynı yükseklikte (56) → içerik gelince
-            sayfa sıçramıyor. 200 ms gecikmeyle: hızlı yanıtta hiç
-            görünmüyor, yalnız yanıp sönerdi. */}
-        {priceStores.length === 0 && !pricesData ? (
-          <Section title={t('detail.priceCompare')} delay={130}>
-            <FadeIn delay={200}><PriceListSkeleton /></FadeIn>
-          </Section>
-        ) : null}
-
-        {priceStores.length > 0 && (
-          <Section title={t('detail.priceCompare')} delay={130}>
-            {/* FAZ 2 — "Ekranın TEPE ANI: yalnızca KAZANAN satır kapsanır
-                (bgInput yüzey + tek kırmızı eylem). Diğerleri DÜZ SATIR."
-
-                Öncesinde her satır kendi kartıydı (card yüzey + 1px kenarlık)
-                ve kazanan kırmızı kenarlık + kırmızı tint taşıyordu. Dört
-                kart yan yana durunca hiçbiri öne çıkmıyordu — kapsama
-                herkesteydi. Şimdi kapsama TEK bir satırda ve kırmızı da
-                orada, üstelik bir eylemin (Git) üstünde: kırmızı yalnızca
-                dokunulacak şeyde. */}
-            <View style={{ gap: spacing.s12 }}>
-              {priceStores.map((s, i) => (
-                <FiyatSatiri
-                  key={s.storeId || s.name}
-                  magaza={s}
-                  kazanan={i === 0}
-                  sira={i}
-                  toplam={priceStores.length}
-                  onPress={() => open(s.url)}
-                />
-              ))}
-            </View>
-          </Section>
-        )}
-
-        {/* Yorum analizi */}
-        {reviewTier && (
-          <Section title={t('detail.reviews')} delay={175}>
-            <View style={styles.revCard}>
-              <View style={styles.revHead}>
-                <Text style={[styles.revLabel, { color: reviewTier.color }]}>{t(reviewTier.key)}</Text>
-                <Text style={styles.revPct}>
-                  {lang === 'tr' ? `%${reviews.positivePct}` : `${reviews.positivePct}%`}
-                  <Text style={styles.revPctLabel}> {t('detail.positive')}</Text>
-                </Text>
-              </View>
-              <View style={styles.revBar}>
-                <View style={[styles.revBarFill, { width: `${reviews.positivePct}%`, backgroundColor: reviewTier.color }]} />
-              </View>
-              <Text style={styles.revCount}>{groupNum(reviews.total, lang === 'tr' ? '.' : ',')} {t('detail.reviewsCount')}</Text>
-            </View>
-          </Section>
-        )}
-
-        {/* ── Kullanıcı incelemeleri ──
-            Steam'in toplu yüzdesinin HEMEN ALTINDA: o sayı binlerce oyuncunun
-            ortalaması, bu satırlar tanıdıkların sesi.
-
-            KENDİ BAŞLIĞINI KENDİ ÇİZİYOR, `Section` ile sarılmıyor: bölüm üç
-            durumdan birine giriyor (liste · davet · hiç yok) ve boş durumda
-            HİÇBİR ŞEY çizmemesi gerekiyor. Section başlığı dışarıda kalsaydı
-            "İncelemeler" başlığı altında boşluk kalırdı — tam da kaçınılan şey.
-            Yalnızca appid VARSA çağrılıyor; incelemelerin tamamı Steam
-            kütüphanesinden doğrulanan saate dayanıyor. */}
-        {(detail?.steamAppId || appid) ? (
-          <View style={styles.userReviews}>
-            <GameReviews appid={detail?.steamAppId || appid} gameName={detail?.name || name} />
+        {/* Fiyat kartı — ekranın tepe anı. İskelet gerçek kartla aynı yerde,
+            200 ms gecikmeli: hızlı yanıtta hiç görünmüyor. */}
+        {best || !pricesData ? (
+          <View onLayout={(e) => { fiyatY.current = e.nativeEvent.layout.y; }} style={[s.pad, s.priceCard]}>
+            {best
+              ? <FadeIn delay={130}><GamePriceCard stores={fiyatlar} updated={guncel ? t('v2.updatedAgo').replace('{time}', guncel) : null} onOpen={(st) => open(st.url)} /></FadeIn>
+              : <FadeIn delay={200}><PriceListSkeleton /></FadeIn>}
           </View>
         ) : null}
 
-        {/* Türler — veri gelene kadar iskelet.
-            TAM EKRAN İSKELET YOK: kapak ve ad rota parametrelerinden anında
-            çiziliyor, onları örtmek kazanç değil kayıp olurdu. Boş kalan
-            yalnızca ağdan gelen bu bölümler (ölçüldü: 868ms). */}
-        {genres.length > 0 ? (
-          <Section title={t('detail.genres')} delay={100}>
-            <View style={styles.genreWrap}>
-              {genres.slice(0, 8).map((g, i) => (
-                <View key={`${g}_${i}`} style={styles.genreChip}><Text style={styles.genreText}>{turAdi(g, t)}</Text></View>
-              ))}
-            </View>
-          </Section>
-        ) : !detail ? (
-          <Section title={t('detail.genres')} delay={100}><GenreChipsSkeleton /></Section>
+        {/* Fragman ve Görseller. FRAGMAN KULLANICI İSTEYİNCE OYNUYOR (Faz 3):
+            mount'ta video decode yok. Oynatıcı artık kapağın değil kartın
+            içinde; kullanıcı başlattığı için sesli ve denetimli. */}
+        {trailerUrl || shots.length > 0 || !detail ? (
+          <FadeIn delay={160} style={s.section}>
+            <View style={s.pad}><SectionHeader title={t('v2.mediaTitle')} /></View>
+            {trailerUrl ? (
+              <View style={[s.pad, s.headGap]}>
+                <TrailerCard image={cover || shots[0]} label={t('v2.officialTrailer')} playing={fragmanAcik}
+                  onPlay={() => { trailerPlayer.muted = false; setFragmanAcik(true); }}>
+                  <VideoView player={trailerPlayer} style={StyleSheet.absoluteFill} contentFit="cover" nativeControls />
+                </TrailerCard>
+              </View>
+            ) : null}
+            {shots.length > 0
+              ? <View style={s.headGap}><ScreenshotRail shots={shots} onOpen={openShot} /></View>
+              : !detail ? <View style={[s.pad, s.headGap]}><ShotStripSkeleton /></View> : null}
+          </FadeIn>
         ) : null}
 
-        {/* Ekran görüntüleri */}
-        {shots.length === 0 && !detail ? (
-          <Section title={t('detail.screenshots')} delay={160}><ShotStripSkeleton /></Section>
-        ) : null}
-        {shots.length > 0 && (
-          <Section title={t('detail.screenshots')} delay={160}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -spacing.lg }} contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: 10 }}>
-              {shots.map((url, i) => (
-                <Pressable key={i} onPress={() => openShot(i)}>
-                  <Image source={url} cachePolicy="memory-disk" style={styles.shot} contentFit="cover" transition={motion.image} />
+        {/* Oyun Hakkında: 4 satır + "Devamını oku", bilgi hücreleri. Resmî site
+            eski mağaza düğmeleri satırından buraya taşındı. */}
+        {desc || hucreler.length > 0 || !detail ? (
+          <FadeIn delay={220} style={s.section}>
+            <View style={s.pad}><SectionHeader title={t('v2.aboutGame')} /></View>
+            <View style={[s.pad, s.aboutTop]}>
+              {desc ? <>
+                <Txt variant="body" maxFontSizeMultiplier={1.3} numberOfLines={expanded ? undefined : K.detail.aboutLines} style={{ color: colors.text2 }}>{desc}</Txt>
+                {desc.length > 240 ? (
+                  <Pressable accessibilityRole="button" onPress={() => setExpanded((e) => !e)} hitSlop={space[6]} style={s.readMore}>
+                    <Txt variant="subhead" style={{ color: colors.red }}>{expanded ? t('detail.less') : t('detail.more')}</Txt>
+                  </Pressable>
+                ) : null}
+              </> : !detail ? <TextBlockSkeleton /> : null}
+              <InfoCells cells={hucreler} />
+              {detail?.officialUrl ? (
+                <Pressable accessibilityRole="link" onPress={() => open(detail.officialUrl)} style={s.official}>
+                  <Txt variant="subhead" style={{ color: colors.red }}>{t('detail.official')}</Txt>
+                  <Icon name="ext" size={K.chip.chevron} color={colors.red} strokeWidth={K.chip.chevronStroke} />
                 </Pressable>
-              ))}
-            </ScrollView>
-          </Section>
-        )}
-
-        {/* Açıklama */}
-        {!desc && !detail ? (
-          <Section title={t('detail.about')} delay={220}><TextBlockSkeleton /></Section>
+              ) : null}
+            </View>
+          </FadeIn>
         ) : null}
-        {desc ? (
-          <Section title={t('detail.about')} delay={220}>
-            <Text style={styles.desc} numberOfLines={expanded ? undefined : 5}>{desc}</Text>
-            {desc.length > 240 && (
-              <Pressable onPress={() => setExpanded(e => !e)} hitSlop={6}>
-                <Text style={styles.moreLink}>{expanded ? t('detail.less') : t('detail.more')}</Text>
-              </Pressable>
-            )}
-          </Section>
+
+        {/* Oyuncu İncelemeleri: Steam özeti (tasarım 5 yıldız dağılımı çiziyor;
+            Steam yalnız olumlu/olumsuz veriyor) + Gamerisen incelemeleri.
+            GameReviews boşsa hiçbir şey çizmiyor. */}
+        {reviewTier ? (
+          <FadeIn delay={260} style={s.section}>
+            <View style={s.pad}><SectionHeader title={t('v2.playerReviews')} /></View>
+            <View style={[s.pad, s.headGap]}>
+              <ReviewSummary score={yuzdeYaz(yuzde)} label={t(reviewTier.key)} labelColor={reviewTier.color}
+                votes={`${formatCompact(reviews.total)} ${t('detail.reviewsCount')}`}
+                bars={[
+                  { label: t('v2.positive'), pct: yuzde, text: yuzdeYaz(yuzde) },
+                  { label: t('v2.negative'), pct: 100 - yuzde, text: yuzdeYaz(100 - yuzde) },
+                ]} />
+            </View>
+          </FadeIn>
+        ) : null}
+        {(detail?.steamAppId || appid) ? (
+          <View style={[s.pad, reviewTier ? s.headGap : s.section]}>
+            <GameReviews appid={detail?.steamAppId || appid} gameName={detail?.name || name} hideTitle={!!reviewTier} />
+          </View>
         ) : null}
       </Animated.ScrollView>
 
-      {/* Screenshot Lightbox Modal */}
+      {/* Sabit alt çubuk (kit sticky_bar): en ucuz fiyat + "Steam'de en ucuz · -%50". */}
+      {best ? (
+        <StickyBottomBar
+          price={best.isFree ? t('card.free') : formatPrice(best.price)}
+          subtitle={[t('v2.cheapestAt').replace('{at}', formatStoreAt(best.name)), !best.isFree && best.discount > 0 ? formatDiscount(best.discount) : null].filter(Boolean).join(' · ')}
+          actionLabel={t('v2.goToStore')}
+          onAction={() => open(best.url)}
+          disabled={!best.url}
+        />
+      ) : null}
+
+      {/* Ekran görüntüsü ışık kutusu */}
       <Modal
         visible={activeShotIndex !== null}
         transparent={true}
         animationType="fade"
         onRequestClose={() => setActiveShotIndex(null)}
       >
-        <View style={styles.modalBg}>
+        <View style={s.modalBg}>
           <ScrollView
             horizontal
             pagingEnabled
@@ -750,29 +663,23 @@ export default function GameDetail() {
             {shots.map((url, index) => (
               <Pressable
                 key={index}
-                style={{ width: screenWidth, height: '100%', justifyContent: 'center', alignItems: 'center' }}
+                style={[s.modalPage, { width: screenWidth }]}
                 onPress={() => setActiveShotIndex(null)}
               >
-                <Image
-                  source={url}
-                  contentFit="contain"
-                  style={styles.modalImage}
-                />
+                <Image source={url} contentFit="contain" style={s.modalImage} />
               </Pressable>
             ))}
           </ScrollView>
 
-          {/* Close button */}
-          <Pressable style={({ pressed }) => [styles.closeBtn, pressed && PRESSED]} onPress={() => setActiveShotIndex(null)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.close')}>
-            <Ionicons name="close" size={26} color="#fff" />
-          </Pressable>
+          <PressableScale style={[s.closeBtn, { top: insets.top + space[8] }]} onPress={() => setActiveShotIndex(null)} accessibilityRole="button" accessibilityLabel={t('a11y.close')}>
+            <Icon name="x" size={K.detail.backIcon} color={colors.white} strokeWidth={K.detail.backStroke} />
+          </PressableScale>
 
-          {/* Page Indicator */}
           {shots.length > 1 && (
-            <View style={styles.indicatorContainer}>
-              <Text style={styles.indicatorText}>
+            <View style={[s.indicator, { bottom: insets.bottom + space[24] }]}>
+              <Txt variant="footnoteStrong" style={[s.num, { color: colors.white }]}>
                 {`${currentScrollIndex + 1} / ${shots.length}`}
-              </Text>
+              </Txt>
             </View>
           )}
         </View>
@@ -818,217 +725,38 @@ export default function GameDetail() {
   );
 }
 
-// ── FİYAT SATIRI · TEPE ANI (Faz 3) ──
-// "Kazanan EN SON ve tek başına oturur." Sıra bilgi taşıyor: satırlar
-// PAHALIDAN UCUZA açılıyor, göz aşağı iniyor ve son inen yer kazanan.
-//
-// Liste ucuzdan pahalıya SIRALI çiziliyor (kazanan üstte); değişen yalnız
-// açılma GECİKMESİ. En pahalı 40 ms'te, her biri 40 ms arayla; kazanan
-// 320 ms'te ve `pop` ile (aşmalı) + hafif dokunsal.
-//
-// Cevap harekete EK OLARAK yüzeyle (bgInput), etiketle ("En düşük") ve
-// eylemle ("Git") işaretli — Reduce Motion'da hiçbir bilgi kaybolmuyor,
-// yalnız zamanlama düşüyor.
-function FiyatSatiri({ magaza: s, kazanan, sira, toplam, onPress }) {
-  const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
-  const { t, formatPrice } = useLanguage();
-  const reducedMotion = useReducedMotion();
-
-  // Pahalıdan ucuza: en son sıradaki (en pahalı) ilk açılır.
-  const gecikme = kazanan ? 40 * toplam + 160 : 40 * (toplam - sira);
-
-  const ilerleme = useSharedValue(reducedMotion ? 1 : 0);
-  useEffect(() => {
-    if (reducedMotion) { ilerleme.value = 1; return; }
-    ilerleme.value = withDelay(
-      gecikme,
-      withSpring(1, kazanan ? motion.pop : motion.firm)
-    );
-    if (!kazanan) return;
-    const zaman = setTimeout(() => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    }, gecikme);
-    return () => clearTimeout(zaman);
-  }, [gecikme, kazanan, reducedMotion, ilerleme]);
-
-  const stil = useAnimatedStyle(() => ({
-    opacity: ilerleme.value,
-    transform: [{ scale: kazanan ? 0.94 + ilerleme.value * 0.06 : 1 },
-                { translateY: (1 - ilerleme.value) * 8 }],
-  }), [kazanan]);
-
-  return (
-    <Animated.View style={stil}>
-      <Pressable onPress={onPress} disabled={!s.url}
-        style={({ pressed }) => [styles.cmpRow, kazanan && styles.cmpBest, pressed && PRESSED]}>
-        <StoreLogo store={s.name} size={26} />
-
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <Text numberOfLines={1} style={styles.cmpName}>{s.name}</Text>
-          {kazanan ? <Text style={styles.cmpCheapest}>{t('detail.cheapest')}</Text> : null}
-        </View>
-
-        {/* Kazananda fiyat sütunu (üstte güncel, altta üstü çizili eski);
-            ötekilerde tek satır ve SÖNÜK — karşılaştırma kazananı okumakla
-            bitiyor. */}
-        <View style={styles.cmpFiyatKut}>
-          <Text style={[styles.cmpPrice, !kazanan && styles.cmpPriceSonuk]}>
-            {s.isFree ? t('card.free') : formatPrice(s.price)}
-          </Text>
-          {kazanan && s.discount > 0 ? (
-            <Text style={styles.original}>{formatPrice(s.original)}</Text>
-          ) : null}
-        </View>
-
-        {kazanan ? (
-          <View style={styles.cmpGit}><Text style={styles.cmpGitText}>{t('detail.go')}</Text></View>
-        ) : (
-          <Ionicons name="chevron-forward" size={15} color={colors.text3} />
-        )}
-      </Pressable>
-    </Animated.View>
-  );
-}
-
-function Section({ title, delay = 0, children }) {
-  const styles = useStyles(makeStyles);
-  return (
-    <FadeIn delay={delay} style={{ marginTop: spacing.xl }}>
-      {/* FAZ 3: body 17/800 → overline (caption 12 · 700 · uppercase · text2),
-          anasayfayla AYNI jeton. "İki ekran aynı yapıya iki farklı ses
-          veriyordu." Hiyerarşi kazancı: başlıklar susunca oyun adı
-          (title1 28) ekranın tek büyük sesi kalıyor. */}
-      <Text style={styles.sectionTitle}>{title}</Text>
-      {children}
-    </FadeIn>
-  );
-}
-
-const makeStyles = (colors) => StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
-  // Kapak yüklenene kadarki zemin — açık temada koyu bir bant çakıyordu.
-  coverWrap: {
-    position: 'absolute', top: 0, left: 0, right: 0,
-    height: COVER_H, backgroundColor: colors.card,
-  },
-  // Sabit üst katman. zIndex ŞART: kapaktan sonra çiziliyor ama gövde de
-  // ondan sonra geliyor; sırasız bırakılsa gövde çubuğun üstüne binerdi.
+const s = StyleSheet.create({
+  root: { flex: 1 },
+  cover: { position: 'absolute', top: 0, left: 0, right: 0, height: COVER_H, overflow: 'hidden' },
   topBarWrap: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 },
-  barBg: { backgroundColor: colors.bg },
-  // Dikey dolgu artık ölçekten (8/8). Öncesi paddingTop: 6 idi — çubuğun
-  // opak zemini artık altına da uzandığı için simetri gerekiyordu ve 6
-  // ölçekte yok.
-  topBar: { paddingHorizontal: spacing.md, paddingTop: spacing.s8, paddingBottom: spacing.s8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.s12 },
-  barTitle: {
-    flex: 1, textAlign: 'center',
-    color: colors.text, fontSize: type.body, fontWeight: '700',
-  },
-  // tema-bagimsiz: kapak/ekran goruntusu ustundeki katman
-  iconBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
-  // Aktif durum dolu nötr yüzeyle: ikon zaten outline→dolu değişiyor, yani
-  // renk olmadan da iki sinyal var (biçim + yüzey). Kapak görselinin üstünde
-  // durduğu için açık yüzey her sahnede okunur kalıyor.
-  iconBtnActive: { backgroundColor: colors.text },
-  // marginTop: -48 KALKTI. Kapak artık mutlak konumlu olduğu için gövde tam
-  // yüksekliğe yayılıyor; kapağa binme payı contentContainerStyle'daki
-  // paddingTop (COVER_H − COVER_OVERLAP) ile veriliyor.
+  barBg: { borderBottomWidth: StyleSheet.hairlineWidth },
+  topBar: { height: K.navBar.height, paddingHorizontal: K.detail.barSide, flexDirection: 'row', alignItems: 'center', gap: K.detail.barGap },
+  back: { width: layout.minTouch, height: layout.minTouch, borderRadius: layout.minTouch / 2, alignItems: 'center', justifyContent: 'center' },
+  backGlass: { borderRadius: layout.minTouch / 2 },
+  barTitle: { flex: 1, minWidth: 0, alignItems: 'center' },
+  barRight: { flexDirection: 'row', alignItems: 'center', gap: K.detail.barGap },
   body: { flex: 1 },
-  name: { fontSize: type.title1, fontWeight: '900', color: colors.text, letterSpacing: -0.5, lineHeight: 30 },
-
-  metaRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
-  metaChip: { backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: radius.md, paddingHorizontal: 14, paddingVertical: spacing.sm, alignItems: 'center', minWidth: 68 },
-  metaChipText: { fontSize: type.body, fontWeight: '800' },
-  metaChipText2: { fontSize: type.footnote, fontWeight: '700', color: colors.text },
-  // Maket: "Metacritic" = 12 / 600 / cumle duzeni.
-  metaChipLabel: { fontSize: type.caption, color: colors.text3, fontWeight: '600', marginTop: 2 },
-  dev: { fontSize: type.footnote, color: colors.text3, marginTop: spacing.md, fontWeight: '600' },
-
-  // ── HANDOFF BELİRSİZLİĞİ, KARARI YAZIYORUM ──
-  // Handoff "fiyat satırı"nı bir KART varyantı olarak tanımlıyor: "44
-  // yükseklik satır, sağda fiyat", kullanıldığı yerler "oyun detayı,
-  // indirimler". Bu ekranda iki ayrı şey var:
-  //   • başlık altındaki TEK fiyat (burası) — solunda hiçbir şey yok
-  //   • Fiyat Karşılaştırması satırları (cmpRow) — solda mağaza, sağda fiyat
-  // Varyantın tarifi ikincisine oturuyor; 44pt ve sağa yaslama oraya
-  // uygulandı. Burada fiyat SOLDA bırakıldı: sayfanın tamamı sola hizalı bir
-  // sütun ve tek bir değeri sağ kenara atmak onu boşlukta yüzen bir öksüze
-  // çevirirdi. Yükseklik yine de 26'dan 44'e çıktı — ailenin ritmi bu.
-  priceRow: { marginTop: spacing.lg, minHeight: TOUCH_MIN, justifyContent: 'center', alignItems: 'flex-start' },
-  price: { fontSize: type.title3, fontWeight: '800', color: colors.text },
-  // tema-bagimsiz: kapak gorselinin ustunde duruyor
-  fragmanBtn: {
-    alignSelf: 'flex-start',
-    // Adın 48pt üstüne çekiyor: 36 (düğme) + 12 (nefes). O bölge kapağın
-    // gövdeyle örtüştüğü alan (COVER_OVERLAP = 48).
-    marginTop: -(36 + spacing.s12),
-    marginBottom: spacing.s12,
-    flexDirection: 'row', alignItems: 'center', gap: spacing.s8,
-    height: 36, paddingHorizontal: spacing.s12, borderRadius: radius.md,
-    // tema-bagimsiz: kapak gorselinin ustunde duruyor, zemin gorselin kendisi
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  // tema-bagimsiz: koyu cam dugmenin uzerinde
-  fragmanText: { color: '#fff', fontSize: type.footnote, fontWeight: '600' },
-  bantKut: { marginTop: spacing.s12 },
-  priceFree: { fontSize: type.title3, fontWeight: '800', color: colors.green },
-  priceLoading: { fontSize: type.headline, color: colors.text3 },
-  original: { fontSize: type.caption, color: colors.text3, textDecorationLine: 'line-through' },
-  // FAZ 2/3: kırmızı dolgu KALKTI — indirim bir DEĞER, eylem değil.
-  // tema-bagimsiz: kapak gorselinin ustundeki koyu cam rozet
-  discountBadge: { backgroundColor: 'rgba(8,10,14,0.75)', borderRadius: 8, paddingHorizontal: spacing.sm, paddingVertical: 3 },
-  discountText: { color: colors.green, fontWeight: '800', fontSize: type.caption2 },
-
-  storeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 18 },
-  storeBtn: { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: radius.md, paddingHorizontal: 14, paddingVertical: 11 },
-  storeText: { color: colors.text, fontSize: type.footnote, fontWeight: '700' },
-
-  // minHeight 44 AÇIKÇA yazılı: handoff'un fiyat satırı ölçüsü bu ve
-  // öncesinde yükseklik yalnızca içerikten türüyordu — mağaza adı tek
-  // satıra düştüğünde satır 44'ün altına iniyordu.
-  // Maket: satır min 56, boşluk 12, yatay dolgu 12. Yüzey YALNIZ kazananda.
-  cmpRow: { flexDirection: 'row', alignItems: 'center', minHeight: 56, gap: spacing.s12, paddingHorizontal: spacing.s12, borderRadius: radius.md },
-  cmpBest: { backgroundColor: colors.bgInput },
-  cmpName: { fontSize: type.subhead, fontWeight: '600', color: colors.text },
-  // "En düşük" GREEN, kırmızı değil: bir DEĞER bildiriyor, eylem değil.
-  cmpCheapest: { fontSize: type.caption, fontWeight: '600', color: colors.green },
-  cmpFiyatKut: { alignItems: 'flex-end', flexShrink: 0 },
-  cmpPrice: { fontSize: type.headline, fontWeight: '700', color: colors.text },
-  cmpPriceSonuk: { color: colors.text2 },
-  // Ekranın tek kırmızısı ve bir EYLEM. 44pt — HIG hedefi.
-  cmpGit: {
-    height: TOUCH_MIN, paddingHorizontal: 14, borderRadius: radius.md,
-    backgroundColor: colors.accentFillStrong, alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-  },
-  // tema-bagimsiz: dolu kirmizi dugmenin uzerinde
-  cmpGitText: { color: '#fff', fontSize: type.subhead, fontWeight: '600' },
-
-  revCard: { backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: radius.md, padding: spacing.lg },
-  revHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: spacing.md },
-  revLabel: { fontSize: type.body, fontWeight: '800' },
-  revPct: { fontSize: type.subhead, fontWeight: '800', color: colors.text },
-  revPctLabel: { fontSize: type.footnote, fontWeight: '600', color: colors.text3 },
-  revBar: { height: 8, borderRadius: 4, backgroundColor: colors.cardBorder, overflow: 'hidden' },
-  revBarFill: { height: '100%', borderRadius: 4 },
-  // Kullanıcı incelemeleri bölümünün dış boşluğu — Section ile aynı ritim.
-  userReviews: { paddingHorizontal: spacing.s20, marginTop: spacing.s24 },
-  revCount: { fontSize: type.footnote, color: colors.text3, fontWeight: '600', marginTop: 10 },
-
-  sectionTitle: { ...SECTION_TITLE, color: colors.text2, marginBottom: spacing.s12 },
-  genreWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  genreChip: { backgroundColor: colors.bgInput, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: spacing.md, paddingVertical: 6 },
-  genreText: { color: colors.text2, fontSize: type.footnote, fontWeight: '700' },
-  shot: { width: 264, height: 148, borderRadius: radius.md, backgroundColor: colors.card },
-  desc: { fontSize: type.subhead, color: colors.text2, lineHeight: 21 },
-  // Gerçek bir eylem (metni açıyor), o yüzden text2 değil text: nötr ama
-  // parlak. Vurgu rengi bu ekranda fiyat ve indirime ayrılmış durumda.
-  moreLink: { color: colors.text, fontSize: type.footnote, fontWeight: '700', marginTop: spacing.sm },
-  // tema-bagimsiz: kapak/ekran goruntusu ustundeki katman
+  pad: { paddingHorizontal: layout.gutter },
+  bant: { marginBottom: space[12] },
+  sub: { marginTop: K.detail.subTop },
+  rating: { height: K.detail.ratingRow, marginTop: K.detail.ratingTop, flexDirection: 'row', alignItems: 'center', gap: K.detail.ratingGap },
+  num: { fontVariant: ['tabular-nums'] },
+  shrink: { flexShrink: 1 },
+  chipsTop: { marginTop: K.detail.chipsTop },
+  platforms: { height: K.detail.platformsRow, marginTop: K.detail.platformsTop, flexDirection: 'row', alignItems: 'center', gap: K.detail.ratingGap },
+  cta: { marginTop: K.detail.ctaTop, gap: K.detail.ctaGap },
+  priceCard: { marginTop: K.detail.card.top },
+  section: { marginTop: layout.sectionGap },
+  headGap: { marginTop: layout.headingToContent },
+  aboutTop: { marginTop: K.detail.aboutTop },
+  readMore: { height: K.detail.readMoreHeight, marginTop: K.detail.readMoreTop, justifyContent: 'center', alignSelf: 'flex-start' },
+  official: { height: layout.minTouch, marginTop: K.detail.cellGap, flexDirection: 'row', alignItems: 'center', gap: K.chip.gap, alignSelf: 'flex-start' },
+  // tema-bagimsiz: ekran görüntüsü ışık kutusu her temada karanlık oda
   modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', alignItems: 'center', justifyContent: 'center' },
+  modalPage: { height: '100%', justifyContent: 'center', alignItems: 'center' },
   modalImage: { width: '100%', height: '100%' },
   // tema-bagimsiz: kapak/ekran goruntusu ustundeki katman
-  closeBtn: { position: 'absolute', top: 50, right: 20, width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center', zIndex: 10 },
+  closeBtn: { position: 'absolute', right: layout.gutter, width: layout.minTouch, height: layout.minTouch, borderRadius: layout.minTouch / 2, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center', zIndex: 10 },
   // tema-bagimsiz: kapak/ekran goruntusu ustundeki katman
-  indicatorContainer: { position: 'absolute', bottom: 40, backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: 20, zIndex: 10 },
-  indicatorText: { color: '#fff', fontSize: type.subhead, fontWeight: '700', letterSpacing: 0.5 },
+  indicator: { position: 'absolute', backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: space[16], paddingVertical: space[8], borderRadius: space[20], zIndex: 10 },
 });
