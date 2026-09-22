@@ -1,5 +1,5 @@
 import { memo, useMemo, useCallback, useEffect, useState, useRef } from 'react';
-import { View, ScrollView, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomFade } from '../../src/components/EdgeFade';
@@ -19,6 +19,10 @@ import HomeMedia from '../../src/components/ui/HomeMedia';
 import GameCard from '../../src/components/ui/GameCard';
 import { HomeHeader } from '../../src/components/ui/Navigation';
 import { IconButton, SectionHeader } from '../../src/components/ui/Primitives';
+import { DealCard, PriceDropCard, Rail } from '../../src/components/ui/GameCards';
+import { FriendTile } from '../../src/components/ui/Social';
+import { usePrice } from '../../src/hooks/usePrice';
+import { component as K, layout } from '../../src/theme/tokens';
 import { useAuth } from '../../src/context/AuthContext';
 import { useQuery } from '../../src/hooks/useQuery';
 import { useTasteProfile } from '../../src/hooks/useTasteProfile';
@@ -32,7 +36,7 @@ import GamePostCard from '../../src/components/GamePostCard';
 import CevrimdisiBant from '../../src/components/CevrimdisiBant';
 import ReviewCard from '../../src/components/ReviewCard';
 import PostCard from '../../src/components/PostCard';
-import FriendActivity, { hasFriendSignal } from '../../src/components/FriendActivity';
+import { hasFriendSignal } from '../../src/components/FriendActivity';
 import ModerasyonKatmani from '../../src/components/ModerasyonKatmani';
 import { suz } from '../../src/services/engel';
 import { useEngelliler } from '../../src/hooks/useEngelliler';
@@ -360,19 +364,20 @@ export default function HomeScreen() {
     router.push('/reviews');
   }, [router]);
 
-  // ── Lider bölüm ──
-  // Header'da eskiden dört şerit vardı (arkadaşlar, Senin İçin, trend, yeni,
-  // indirim) ve hepsi aynı biçimdeydi; göz aralarında sıra kuramıyordu. Daha
-  // kötüsü hepsi ListHeaderComponent'te olduğu için asıl gövde — sosyal akış —
-  // kıvrımın ~1000pt altında başlıyordu.
+  // ── Bölüm düzeni ──
+  // 1.x'te TEK lider vardı (arkadaşlar / Senin İçin / trend; kişiye en özel
+  // olan) çünkü dört aynı biçimli şerit gözü yoruyor ve sosyal akışı kıvrımın
+  // ~1000pt altına itiyordu. 2.0'da bölümler FARKLI kart aileleri (oyun kartı,
+  // fiyat kartı, arkadaş, bilet) — tasarımın hiyerarşi çözümü bu.
   //
-  // Artık TEK lider var ve hangisi olacağı veriye bakıyor: kişiye en özel olan
-  // hangisiyse o. Kalanlar akışa etiketli olarak karışıyor.
-  const lead = useMemo(() => {
-    if (hasFriendSignal(friendGames)) return 'friends';
-    if (!isCold && forYou.length > 0) return 'forYou';
-    return 'trend';
-  }, [friendGames, isCold, forYou]);
+  // 2.0 (G-04): bölümlerin SIRASI tasarımdan geliyor, lider seçimi kalktı:
+  // Senin İçin → Fiyatı Düşenler → Arkadaşlar → Fırsatlar. Veri olan her
+  // bölüm görünüyor; eskiden arkadaş şeridi liderken "Senin İçin" hiç
+  // çizilmiyordu. Trend şeridi yalnız "Senin İçin" boşken (soğuk kullanıcı)
+  // onun yerini tutuyor — hero zaten trendin ilk beşi.
+  const showForYou = !isCold && forYou.length > 0;
+  const showFriends = hasFriendSignal(friendGames);
+  const showTrendRail = !showForYou;
 
   // Lider olarak kullanılan liste akışa TEKRAR girmiyor.
   // Yeni Çıkanlar ve İndirimdekiler AKIŞTAN ÇIKTI, kendi şeritlerine döndüler:
@@ -380,8 +385,28 @@ export default function HomeScreen() {
   // dağılınca o niyet karşılanamıyordu. Akışa karışan tek şey trend — o zaten
   // "şuna da bak" cinsinden, aranan bir şey değil.
   const highlights = useMemo(() => orderHighlights({
-    trend: lead === 'trend' ? [] : trendRest,
-  }), [lead, trendRest]);
+    trend: showTrendRail ? [] : trendRest,
+  }), [showTrendRail, trendRest]);
+
+  // "Çünkü RPG oyunlarını seviyorsun": adaylar hangi tür imzasıyla çekildiyse
+  // (donmuş `forYouSlugs`) onun ilki. Uydurma gerekçe yok — şeridi gerçekten
+  // belirleyen tür.
+  const forYouReason = useMemo(() => {
+    const slug = forYouSlugs[0];
+    const ad = slug ? t(`genre.${slug}`) : null;
+    return ad && ad !== `genre.${slug}` ? t('v2.forYouBecause').replace('{genre}', ad) : undefined;
+  }, [forYouSlugs, t]);
+
+  // İndirim listesi iki tasarım bölümüne bölünüyor: en yüksek iki indirim
+  // "Kaçırılmayacak Fırsatlar" bileti, kalanı "Fiyatı Düşenler". Fiyatı
+  // olmayan öğe fiyat kartına giremiyor; hiçbirinin fiyatı yoksa eski oyun
+  // kartı şeridi duruyor (usePrice kendi çeker).
+  const { deals, drops } = useMemo(() => {
+    const fiyatli = sale.filter((g) => g.price != null && g.original > g.price && (g.discount || 0) > 0);
+    const secilen = [...fiyatli].sort((a, b) => (b.discount || 0) - (a.discount || 0)).slice(0, K.home.dealCount);
+    const ayrilan = new Set(secilen.map((g) => String(g.id)));
+    return { deals: secilen, drops: fiyatli.filter((g) => !ayrilan.has(String(g.id))) };
+  }, [sale]);
 
   // Engel kümesi değişince akış yeniden süzülüyor — bkz. services/engel.js.
   const engelSurumu = useEngelliler();
@@ -566,28 +591,24 @@ export default function HomeScreen() {
 
         <HeroRail games={heroGames} onExpand={kartAc} />
 
-        {/* Arkadaş etkinliği KATALOG ŞERİTLERİNDEN ÖNCE. Sıra bilinçli:
-            "Trend" ve "Yeni" herkese aynı şeyi gösteriyor, bu şerit ise
-            yalnızca bu kullanıcıya ait. Kişiye özel olan, genel olanın
-            üstünde durmalı. */}
-        {lead === 'friends' && (
-          <FadeIn delay={120}>
-            <FriendActivity games={friendGames} onExpand={kartAc} />
-          </FadeIn>
+        {/* G-04 sırası (kit home()): Senin İçin → Fiyatı Düşenler → Arkadaşların
+            Ne Oynuyor? → Kaçırılmayacak Fırsatlar → Oyun Dünyasından → İzlemeye
+            Değer. Verisi olmayanlar ÇİZİLMİYOR: Gündem (etiket trendi yok),
+            "Toplulukta Popüler" (gönderiler akışta), "Belki Bunu Seversin"
+            (gerekçe kaynağı yok). Yeni Çıkanlar tasarımda yok ama niyetle
+            aranan bir bölüm; fırsatların altında kalıyor. */}
+        {showForYou && (
+          <FadeIn delay={140}><Section title={t('home.forYou')} subtitle={forYouReason} games={forYou} router={router} onDismiss={handleDismiss} onExpand={kartAc} /></FadeIn>
         )}
-
-        {lead === 'forYou' && (
-          <FadeIn delay={140}><Section title={t('home.forYou')} games={forYou} router={router} onDismiss={handleDismiss} onExpand={kartAc} /></FadeIn>
-        )}
-        {lead === 'trend' && (
+        {showTrendRail && (
           <FadeIn delay={140}><Section title={t('home.trend')} games={trendRest} router={router} onExpand={kartAc} /></FadeIn>
         )}
-
-        {/* Yeni Çıkanlar ve İndirimdekiler LİDERİN ALTINDA, tam ağırlıkta.
-            Akışa karıştırılmışlardı; geri alındı çünkü ikisi de NİYETLE
-            aranıyor — "indirime ne girmiş" sorusunun akışta karşılığı yok. */}
-        <FadeIn delay={200}><Section title={t('home.new')} games={fresh} router={router} onExpand={kartAc} /></FadeIn>
-        <FadeIn delay={260}><Section title={t('home.sale')} games={sale} router={router} onExpand={kartAc} /></FadeIn>
+        {drops.length > 0
+          ? <FadeIn delay={200}><DropSection games={drops} router={router} /></FadeIn>
+          : <FadeIn delay={200}><Section title={t('home.sale')} games={deals.length ? [] : sale} router={router} onExpand={kartAc} /></FadeIn>}
+        {showFriends && <FadeIn delay={220}><FriendSection games={friendGames} router={router} /></FadeIn>}
+        {deals.length > 0 && <FadeIn delay={240}><DealSection games={deals} router={router} /></FadeIn>}
+        <FadeIn delay={260}><Section title={t('home.new')} games={fresh} router={router} onExpand={kartAc} /></FadeIn>
         <HomeMedia />
     </View>
   );
@@ -648,22 +669,95 @@ function go(router, g) {
   });
 }
 
-function Section({ title, games, router, onDismiss, onExpand }) {
+// Raylar `Rail` (FlatList, COMPONENTS §8 adımları): yalnız görünen kartlar
+// çiziliyor. Ölçüldü (boş fiyat önbelleği, kaydırmadan soğuk açılış):
+// ScrollView'ler her kartı bağladığı için 29 fiyat isteği gidiyordu.
+const gameKey = (g) => String(g.id);
+
+function Section({ title, subtitle, games, router, onDismiss, onExpand }) {
   const { t } = useLanguage();
   // Kanca erken donusten ONCE: asagida `games` bossa null donuluyor.
-  const styles = useStyles(makeStyles);
+  const renderItem = useCallback(({ item }) => (
+    <HomeCard game={item} router={router} onDismiss={onDismiss} onExpand={onExpand} />
+  ), [router, onDismiss, onExpand]);
   if (!games || games.length === 0) return null;
   return (
-    <View style={{ marginTop: spacing.s32 }}>
-      <View style={{ paddingHorizontal: spacing.s20, marginBottom: spacing.s12 }}>
-        <SectionHeader title={title} action={t('home.viewAll')} onAction={() => router.push('/games')} />
+    <View style={sec.section}>
+      <View style={sec.heading}>
+        <SectionHeader title={title} subtitle={subtitle} action={t('home.viewAll')} onAction={() => router.push('/games')} />
       </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-        {games.map(g => <HomeCard key={g.id} game={g} router={router} onDismiss={onDismiss} onExpand={onExpand} />)}
-      </ScrollView>
+      <Rail kind="game" data={games} keyExtractor={gameKey} renderItem={renderItem} />
     </View>
   );
 }
+
+// "Fiyatı Düşenler" (kit drop_card): indirim listesinin kendi fiyatı —
+// Steam özel fırsatlar kaynağı, rozet de o yüzden Steam. "Son 24 saatte"
+// notu YOK: fiyat geçmişi tutulmuyor, düşüşün ne zaman olduğu bilinmiyor.
+function DropSection({ games, router }) {
+  const { t, formatPrice } = useLanguage();
+  const renderItem = useCallback(({ item: g }) => (
+    <PriceDropCard title={g.name} image={g.image} oldPrice={formatPrice(g.original)} price={formatPrice(g.price)}
+      discount={g.discount} store={g.source === 'steam' ? 'Steam' : null} onPress={() => go(router, g)} />
+  ), [formatPrice, router]);
+  return (
+    <View style={sec.section}>
+      <View style={sec.heading}><SectionHeader title={t('v2.priceDrops')} action={t('home.viewAll')} onAction={() => router.push('/games')} /></View>
+      <Rail kind="drop" data={games} keyExtractor={gameKey} renderItem={renderItem} />
+    </View>
+  );
+}
+
+// "Arkadaşların Ne Oynuyor?" (kit friend): oyun başına en çok oynayan
+// arkadaş. "Şu anda oynuyor" DEĞİL: veri son iki haftanın saatleri ve 24
+// saate kadar bayat olabiliyor (bkz. FriendActivity başlığı).
+function FriendSection({ games, router }) {
+  const { t } = useLanguage();
+  const tiles = useMemo(() => games.filter((g) => g.friends?.length).map((g) => ({ key: String(g.appid), game: g, friend: g.friends[0] })), [games]);
+  const renderItem = useCallback(({ item: { game: g, friend } }) => (
+    <FriendTile avatar={friend.avatar} name={friend.name} game={g.name} gameImage={g.image}
+      status={g.count > 1 ? t('v2.friendsPlayed').replace('{n}', String(g.count)) : t('v2.playedThisWeek')}
+      onPress={() => router.push({ pathname: '/game/[id]', params: { id: `rawg_${g.appid}`, appid: g.appid, name: g.name || '', image: g.image } })} />
+  ), [router, t]);
+  if (!tiles.length) return null;
+  return (
+    <View style={sec.section}>
+      <View style={sec.heading}><SectionHeader title={t('v2.friendsPlaying')} action={t('home.viewAll')} onAction={() => router.push('/friends')} /></View>
+      <Rail kind="friend" data={tiles} keyExtractor={(x) => x.key} renderItem={renderItem} />
+    </View>
+  );
+}
+
+// "Kaçırılmayacak Fırsatlar" (kit deal_card): "En düşük fiyat" etiketinin
+// karşılığı card-price — mağazalar arası güncel en düşük (ITAD). Yanıt
+// gelene kadar indirim listesinin Steam fiyatı duruyor.
+function DealSection({ games, router }) {
+  const { t } = useLanguage();
+  const renderItem = useCallback(({ item }) => <HomeDeal game={item} router={router} />, [router]);
+  return (
+    <View style={sec.section}>
+      <View style={sec.heading}><SectionHeader title={t('v2.deals')} action={t('home.viewAll')} onAction={() => router.push('/games')} /></View>
+      <Rail kind="deal" data={games} keyExtractor={gameKey} renderItem={renderItem} />
+    </View>
+  );
+}
+
+const HomeDeal = memo(function HomeDeal({ game, router }) {
+  const { t, formatPrice } = useLanguage();
+  const p = usePrice(game);
+  const low = p?.price ?? game.price;
+  const normal = p?.original ?? game.original;
+  return (
+    <DealCard title={game.name} image={game.image} store={p?.storeName || 'Steam'} discount={p?.discount ?? game.discount}
+      lowPrice={formatPrice(low)} normalPrice={normal > low ? formatPrice(normal) : undefined}
+      actionLabel={t('v2.compareStores')} onAction={() => go(router, game)} onPress={() => go(router, game)} />
+  );
+});
+
+const sec = StyleSheet.create({
+  section: { marginTop: layout.sectionGap },
+  heading: { paddingHorizontal: layout.gutter, marginBottom: layout.headingToContent },
+});
 
 // Yeni kart aynı kapak geçişini ve öneri eleme sözleşmesini kullanır.
 const HomeCard = memo(function HomeCard({ game, router, onDismiss, onExpand }) {
@@ -687,5 +781,4 @@ const makeStyles = (colors) => StyleSheet.create({
   listContent: {},
   headerWrap: { paddingBottom: spacing.s32 },
   feedReview: { marginBottom: spacing.s24 },
-  row: { paddingHorizontal: spacing.s20, gap: spacing.s12 },
 });

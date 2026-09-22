@@ -752,4 +752,12 @@ export default {
   'v2.read': "Gelesen",
   'v2.atStore': "bei {store}",
   'v2.trailer': "Trailer",
+  'v2.forYouBecause': "Weil du {genre}-Spiele magst",
+  'v2.priceDrops': "Preissenkungen",
+  'v2.friendsPlaying': "Was deine Freunde spielen",
+  'v2.playedThisWeek': "Diese Woche gespielt",
+  'v2.friendsPlayed': "{n} Freunde spielten",
+  'v2.deals': "Top-Angebote",
+  'v2.compareStores': "Shops vergleichen",
+  'v2.gamingWorld': "Aus der Gaming-Welt",
 };

@@ -120,9 +120,17 @@ function NewsMeta({ category, time, live, source }: { category?: string; time: s
   );
 }
 
+/** Haber görseli; RSS öğesinde görsel yoksa çağıranın yedeği (ör. kaynak monogramı) aynı çerçevede. */
+function NewsArt({ image, fallback, radius: r, position, width, height }: {
+  image?: string | null; fallback?: ReactNode; radius: number; position?: ImageContentPosition; width: number; height: number;
+}) {
+  if (!image && fallback) return <View style={{ width, height, borderRadius: r, overflow: 'hidden' }}>{fallback}</View>;
+  return <CoverImage source={image ?? undefined} radius={r} contentPosition={position} style={{ width, height }} />;
+}
+
 /** Öne çıkan haber: genişlik min(350, ekran − 40); görsel 196 (köşe 18); bilgi satırı, başlık 18/24 iki satır, isteğe bağlı açıklama. */
-export function NewsFeature({ title, image, category, time, live, source, description, onPress, imagePosition }: {
-  title: string; image?: string | null; category?: string; time: string; live?: boolean; source?: string; description?: string;
+export function NewsFeature({ title, image, fallback, category, time, live, source, description, onPress, imagePosition }: {
+  title: string; image?: string | null; fallback?: ReactNode; category?: string; time: string; live?: boolean; source?: string; description?: string;
   onPress?: () => void; imagePosition?: ImageContentPosition;
 }) {
   const { colors } = useDesignTheme();
@@ -131,7 +139,7 @@ export function NewsFeature({ title, image, category, time, live, source, descri
   const width = Math.min(N.width, screen - layout.gutter * 2);
   return (
     <PressableScale accessibilityRole="button" accessibilityLabel={title} onPress={onPress} style={{ width }}>
-      <CoverImage source={image ?? undefined} radius={N.radius} contentPosition={imagePosition} style={{ width, height: N.imageHeight }} />
+      <NewsArt image={image} fallback={fallback} radius={N.radius} position={imagePosition} width={width} height={N.imageHeight} />
       <View style={{ marginTop: N.metaTop }}><NewsMeta category={category} time={time} live={live} source={source} /></View>
       <Txt variant="newsTitle" numberOfLines={2} style={{ marginTop: N.titleTop }}>{title}</Txt>
       {description ? <Txt variant="subheadRegular" numberOfLines={2} style={{ marginTop: N.descTop, color: colors.text2 }}>{description}</Txt> : null}
@@ -140,14 +148,14 @@ export function NewsFeature({ title, image, category, time, live, source, descri
 }
 
 /** Haber satırı: 72 yükseklik; küçük resim 96 × 72 (köşe 12), bilgi satırı, başlık 15/20 iki satır (üstünde 6). */
-export function NewsRow({ title, image, category, time, live, source, onPress, imagePosition }: {
-  title: string; image?: string | null; category?: string; time: string; live?: boolean; source?: string;
+export function NewsRow({ title, image, fallback, category, time, live, source, onPress, imagePosition }: {
+  title: string; image?: string | null; fallback?: ReactNode; category?: string; time: string; live?: boolean; source?: string;
   onPress?: () => void; imagePosition?: ImageContentPosition;
 }) {
   const N = K.newsRow;
   return (
     <PressableScale accessibilityRole="button" accessibilityLabel={title} onPress={onPress} style={styles.newsRow}>
-      <CoverImage source={image ?? undefined} radius={N.thumbRadius} contentPosition={imagePosition} style={{ width: N.thumbWidth, height: N.thumbHeight }} />
+      <NewsArt image={image} fallback={fallback} radius={N.thumbRadius} position={imagePosition} width={N.thumbWidth} height={N.thumbHeight} />
       <View style={styles.flex}>
         <NewsMeta category={category} time={time} live={live} source={source} />
         <Txt variant="cardTitle" numberOfLines={2} style={{ marginTop: N.titleTop }}>{title}</Txt>

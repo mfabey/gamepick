@@ -155,6 +155,7 @@ export const typography = {
   navSubtitle: t(12, 14, '400'),
   toast: t(14, 18, '500'),
   statValue: t(18, 24, '700'), // StatTile değeri (kit stat())
+  greeting: t(15, 20, '400'), // Ana sayfa selamlaması (kit home() greet)
   caption2Strong: t(11, 14, '600'), // FriendActivity durumu (kit friend())
   footnoteMedium: t(13, 18, '500'), // gönderi eylem sayıları (kit actions())
   shortTitle: t(13, 17, '600'), // ShortCard başlığı (kit short())
@@ -360,6 +361,7 @@ export const component = {
   navBar: { height: 44, paddingH: 16, side: 96, backIcon: 24, backStroke: 2.3, backEdge: -10, edge: -8 },
   stickyBar: { paddingTop: 10, paddingH: 20, minBottom: 10, gap: 12, button: 48 },
   pageDots: { active: 18, size: 6, gap: 6, top: 12 },
+  home: { greetingTop: 2, heroTop: 14, greetingChevron: 14, newsRowsTop: 18, newsRowsGap: 14, dealCount: 2 },
   hero: { tagHeight: 28, tagIcon: 13, metaGap: 5, metaStar: 12, priceRow: 28, storeGap: 2 },
 
   // ── §4 Oyun ve fiyat (kit c.py/k.py: disc, old, price, drop, mono, store, store_row, stat, status, game_m, game_s, drop_card, deal_card, chart) ──

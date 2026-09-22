@@ -91,7 +91,7 @@ export default function HeroRail({ games, onExpand }) {
 
 const s = StyleSheet.create({
   flex: { flex: 1 },
-  rail: { marginTop: space[16] },
+  rail: { marginTop: K.home.heroTop },
   track: { paddingHorizontal: layout.gutter, gap: space[10] },
   card: { height: size.cover.hero.height, borderRadius: radius.hero, overflow: 'hidden' },
   tag: { position: 'absolute', top: space[14], left: space[14], height: K.hero.tagHeight, paddingHorizontal: space[10], borderRadius: radius.md,

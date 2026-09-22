@@ -208,3 +208,54 @@ Fiyat biçimi kullanıcı kararıyla tasarımdaki gibi: "₺599", "-%50" (`27aae
 - Fiyat geçmişi, "fiyatı düştü" notu, izlenme, süre: sunucu verisi yok. Bileşenler hazır, veri gelince bağlanacak.
 - `tokens.gameCard` (eski boşluk sabitleri) artık hiçbir bileşende kullanılmıyor; `theme` dışa aktarımında duruyor.
 - iOS'ta görünüm doğrulanmadı (Mac yok).
+
+### 22 Eylül — Ana Sayfa, G-04 (Claude)
+
+**Ölçüm (önce):** Boş fiyat önbelleğiyle, kaydırmadan soğuk açılışta **29 fiyat isteği** gidiyordu; iki örnek, 29 / 29. TTI 1313 / 1864 ms.
+- Sebep: yatay `ScrollView` şeritleri 12'şer kartın hepsini bağlıyor, her kart `usePrice` ile kendi isteğini atıyordu.
+
+**Yapılanlar:**
+- Şeritler `Rail`'e (FlatList, COMPONENTS §8 adımları) geçti. Yalnız görünen kartlar çiziliyor.
+- Bölüm sırası kit `home()` gibi:
+  1. Senin İçin
+  2. Fiyatı Düşenler
+  3. Arkadaşların Ne Oynuyor?
+  4. Kaçırılmayacak Fırsatlar
+  5. Yeni Çıkanlar
+  6. Oyun Dünyasından
+  7. İzlemeye Değer
+
+  Tek lider seçimi kalktı. Eskiden arkadaş şeridi liderken "Senin İçin" hiç çizilmiyordu. Trend şeridi yalnız "Senin İçin" boşken duruyor.
+- "Senin İçin" alt başlığı gerçek veriden: adayları çeken donmuş tür imzasının ilki ("Çünkü Aksiyon oyunlarını seviyorsun").
+- İndirim listesi iki bölüme ayrıldı:
+  - En yüksek iki indirim → DealCard. "En düşük fiyat" card-price'tan, yani mağazalar arası güncel en düşük.
+  - Kalanı → PriceDropCard: Steam indirim fiyatı ve Steam rozeti. "Son 24 saatte" notu yok, fiyat geçmişi tutulmuyor.
+- Arkadaşlar → FriendTile. Durum "Bu hafta oynadı" ya da "N arkadaşın oynadı"; "Şu anda oynuyor" yazılmıyor, veri iki haftalık ve bayat olabiliyor.
+- Haberler → NewsFeature + 3 NewsRow.
+  - Kategori sunucunun `cat` alanından, zaman bağıl.
+  - Kırmızı canlı nokta ilk bir saat.
+  - Görselsiz öğede eski monogram yedeği korunuyor.
+- Videolar → `Rail` (aralık 14, adım 294).
+- Selamlama: tek satır 15/20 `text2`. Faz 1 bağlam cümlesi aynı satırda, sonda ok (Ionicons yerine Icon).
+- TR bölüm başlıkları tasarımdaki gibi büyük harfle: "Kısa Klipler", "İzlemeye Değer".
+
+**Ölçüm (sonra):** Aynı koşulda **19 fiyat isteği** (19 / 19), %34 az. TTI 1189 / 1116 ms. Dev kipinde TTI gürültülü, iyileşme iddiası yalnız istek sayısı için.
+
+**Bilerek çizilmeyenler (veri yok, plan §Mock politikası):**
+- "Gamerisen'da Gündem": sosyal etiket trendi yok.
+- "Toplulukta Popüler": gönderiler akışta duruyor; PostCard'ın 2.0 görünümü Topluluk (G-10) işi.
+- "Belki Bunu Seversin": "Çünkü X ve Y oynadın" gerekçesinin kaynağı yok.
+- Başlıktaki zil: bildirim merkezi yok, haber düğmesi duruyor.
+
+**Tasarımda olmayan ama korunanlar:** Yeni Çıkanlar şeridi, sonsuz keşif akışı, "İlgilenmiyorum ×", büyüme geçişi.
+
+**Doğrulama:**
+- `npm run check` (20) geçti; iOS ve Android export geçti.
+- Emülatörde bölümler gerçek veriyle görüldü.
+- Karttan detaya büyüme geçişi FlatList içinden çalışıyor.
+- Geçici ölçüm satırı `priceService.js`'ten kaldırıldı; `git diff` boş.
+
+**Açık kalanlar:**
+- `FriendActivity` bileşeni artık çizilmiyor; yalnız `hasFriendSignal` eşiği kullanılıyor, temizlenecek.
+- Arkadaş bölümü emülatör hesabında Steam arkadaş verisi olmadığı için görülmedi.
+- iOS görünümü doğrulanmadı.

@@ -1,47 +1,69 @@
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import { useQuery } from '../../hooks/useQuery';
 import { fetchNews } from '../../api/news';
 import { fetchVideoFeed } from '../../api/videoFeed';
 import { useLanguage } from '../../context/LanguageContext';
-import { useDesignTheme } from '../../theme/useDesignTheme';
-import { PressableScale, SectionHeader, Txt } from './Primitives';
+import { bagilZaman } from '../../utils/relativeTime';
+import { SectionHeader } from './Primitives';
+import { NewsFeature, NewsRow } from './Media';
+import { Rail } from './GameCards';
 import NewsImage from '../NewsImage';
 import VideoCard from './VideoCard';
+import { component as K, layout } from '../../theme/tokens';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// G-04 "Oyun Dünyasından" ve "İzlemeye Değer" (kit home() s7/s8).
+//
+// Haber: öne çıkan kart + üç satır (satırlar 18 altta, aralık 14). Kategori
+// sunucunun konu etiketi (`cat`); zaman istemcide bağıl (bkz. relativeTime).
+// Kırmızı canlı nokta ilk bir saat (G-DS-3: "Tazelik: kırmızı nokta ilk 1
+// saat"). Görseli olmayan RSS öğesi eski davranıştaki monogramla çiziliyor.
+//
+// Önbellek anahtarları /news (`news:v2:<dil>`) ve Videolar sekmesiyle
+// (`video-catalog:<dil>`) ortak; ikinci ekran açılınca istek tekrarlanmıyor.
+// ─────────────────────────────────────────────────────────────────────────────
+const CANLI_MS = 60 * 60 * 1000;
 
 export default function HomeMedia() {
   const { t, lang } = useLanguage();
-  const { colors } = useDesignTheme();
   const router = useRouter();
   const news = useQuery(`news:v2:${lang}`, () => fetchNews(lang), { ttl: 600000 });
   const videos = useQuery(`video-catalog:${lang}`, () => fetchVideoFeed(1, lang, 'catalog'), { ttl: 300000 });
   const items = news.data?.results || [];
   const clips = videos.data?.results || [];
+  const [first, ...rest] = items.slice(0, 4);
+
+  const zaman = (item) => bagilZaman(item.ts, t) || item.date;
+  const canli = (item) => !!item.ts && Date.now() - item.ts < CANLI_MS;
+  const open = (item) => router.push({ pathname: '/news/[id]', params: { id: item.id } });
+  const yedek = (item) => <NewsImage item={item} style={StyleSheet.absoluteFill} />;
+  const openVideo = (item) => router.push({ pathname: '/video/[id]', params: { id: item.id } });
+
   return <>
-    {!!items.length && <View style={s.section}>
-      <View style={s.heading}><SectionHeader title={t('news.title')} action={t('home.viewAll')} onAction={() => router.push('/news')} /></View>
-      <View style={s.news}>{items.slice(0, 4).map((item, index) => <PressableScale key={item.url} accessibilityRole="button" accessibilityLabel={item.title}
-        onPress={() => router.push({ pathname: '/news/[id]', params: { id: item.id } })} style={[index === 0 ? s.feature : s.row, { backgroundColor: colors.surface1 }]}>
-        <NewsImage item={item} style={index === 0 ? s.heroImage : s.thumb} />
-        <View style={[s.copy, { flex: index === 0 ? undefined : 1 }]}>
-          <Txt variant={index === 0 ? 'headline' : 'cardTitle'} numberOfLines={3}>{item.title}</Txt>
-          <Txt variant="caption" style={{ color: colors.text2 }}>{item.source} · {item.date}</Txt>
-        </View>
-      </PressableScale>)}</View>
+    {!!first && <View style={s.section}>
+      <View style={s.heading}><SectionHeader title={t('v2.gamingWorld')} action={t('home.viewAll')} onAction={() => router.push('/news')} /></View>
+      <View style={s.pad}>
+        <NewsFeature title={first.title} image={first.image} fallback={yedek(first)} category={first.cat} time={zaman(first)}
+          live={canli(first)} source={first.source} onPress={() => open(first)} />
+        {rest.length > 0 && <View style={s.rows}>
+          {rest.map((item) => <NewsRow key={item.id} title={item.title} image={item.image} fallback={yedek(item)} category={item.cat}
+            time={zaman(item)} live={canli(item)} onPress={() => open(item)} />)}
+        </View>}
+      </View>
     </View>}
-    {!!clips.length && <View style={s.section}>
+    {clips.length > 0 && <View style={s.section}>
       <View style={s.heading}><SectionHeader title={t('v2.exploreVideos')} action={t('home.viewAll')} onAction={() => router.push('/videos')} /></View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.rail}>
-        {clips.slice(0, 8).map(item => <VideoCard key={item.id} item={item} onPress={() => router.push({ pathname: '/video/[id]', params: { id: item.id } })} />)}
-      </ScrollView>
+      <Rail kind="video" data={clips.slice(0, 8)} keyExtractor={(item) => String(item.id)}
+        renderItem={({ item }) => <VideoCard item={item} onPress={() => openVideo(item)} />} />
     </View>}
   </>;
 }
+
 const s = StyleSheet.create({
-  section: { marginTop: 32 }, heading: { paddingHorizontal: 20, marginBottom: 12 },
-  news: { paddingHorizontal: 20, gap: 16 }, feature: { borderRadius: 16, overflow: 'hidden' },
-  heroImage: { width: '100%', height: 196 }, thumb: { width: 96, height: 72, borderRadius: 12 },
-  copy: { padding: 12, gap: 8 }, row: { flexDirection: 'row', alignItems: 'center', borderRadius: 12 },
-  rail: { paddingHorizontal: 20, gap: 12 },
+  section: { marginTop: layout.sectionGap },
+  heading: { paddingHorizontal: layout.gutter, marginBottom: layout.headingToContent },
+  pad: { paddingHorizontal: layout.gutter },
+  rows: { marginTop: K.home.newsRowsTop, gap: K.home.newsRowsGap },
 });

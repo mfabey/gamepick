@@ -750,4 +750,12 @@ export default {
   'v2.read': "Lida",
   'v2.atStore': "na {store}",
   'v2.trailer': "Trailer",
+  'v2.forYouBecause': "Porque você curte jogos de {genre}",
+  'v2.priceDrops': "Quedas de preço",
+  'v2.friendsPlaying': "O que seus amigos estão jogando",
+  'v2.playedThisWeek': "Jogou esta semana",
+  'v2.friendsPlayed': "{n} amigos jogaram",
+  'v2.deals': "Ofertas imperdíveis",
+  'v2.compareStores': "Comparar lojas",
+  'v2.gamingWorld': "Do mundo dos games",
 };
