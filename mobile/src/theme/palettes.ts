@@ -20,6 +20,9 @@ export const lightColors: DesignColors = {
   switchOff: 'rgba(120,120,128,0.20)', tabBar: 'rgba(244,244,244,0.96)',
   pillNeutral: 'rgba(0,0,0,0.08)', pillNeutralSoft: 'rgba(0,0,0,0.06)',
   pageDotOff: 'rgba(0,0,0,0.22)',
+  chartGrid: 'rgba(0,0,0,0.07)', chartArea: 'rgba(0,0,0,0.05)', chartHalo: 'rgba(0,0,0,0.12)',
+  ticketDash: 'rgba(0,0,0,0.14)',
+  unreadRow: 'rgba(0,0,0,0.03)',
 };
 
 export const designPalettes: Record<'dark' | 'light', DesignColors> = {

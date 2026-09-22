@@ -1,18 +1,19 @@
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLanguage } from '../../context/LanguageContext';
 import { useWishlist } from '../../context/WishlistContext';
 import { usePrice } from '../../hooks/usePrice';
 import { useKapakOlcum } from '../../hooks/useKapakOlcum';
 import { useDesignTheme } from '../../theme/useDesignTheme';
-import { gradients, layout, priceStyle, radius, size, space, component as K } from '../../theme/tokens';
+import { colors as darkPalette, gradients, layout, radius, size, space, component as K } from '../../theme/tokens';
 import { turAdi } from '../../services/genreName';
 import PosterImage from '../PosterImage';
 import { Icon } from '../Icon';
 import { Button, Txt } from './Primitives';
 import { GlassView } from './GlassView';
 import { HeartButton } from './HeartButton';
+import { DiscountTag, OldPrice, Price } from './Commerce';
 import { PageDots } from './Navigation';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -27,11 +28,14 @@ import { PageDots } from './Navigation';
 // ─────────────────────────────────────────────────────────────────────────────
 function HeroCard({ game, width, onExpand }) {
   const { colors } = useDesignTheme();
-  const { t, formatPrice, formatDiscount } = useLanguage();
+  const { t, locale, formatPrice, formatStoreAt } = useLanguage();
   const { isWatched, toggle } = useWishlist();
   const price = usePrice(game);
   const [ref, open] = useKapakOlcum(onExpand, game);
   const free = game.isFree || price?.isFree;
+  const discounted = !free && price?.discount > 0 && price.original > price.price;
+  // ITAD yanıtı mağazayı adlandırıyor; adı yoksa fiyat Steam Store API'sinden (card-price yedeği).
+  const store = !free && price?.price != null ? price.storeName || 'Steam' : null;
   const genre = (game.genres || []).slice(0, 2).map((g) => turAdi(g, t)).filter(Boolean).join(' · ');
   return <View ref={ref} collapsable={false} style={[s.card, { width, backgroundColor: colors.surface2 }]}>
     <PosterImage uri={game.image} recyclingKey={String(game.id)} contentFit="cover" style={StyleSheet.absoluteFill} />
@@ -47,15 +51,16 @@ function HeroCard({ game, width, onExpand }) {
         {game.rating > 0 && <>
           {!!genre && <Txt variant="footnote" style={{ color: colors.onArt }}>·</Txt>}
           <Icon name="star" size={K.hero.metaStar} color={colors.gold} fill={colors.gold} strokeWidth={1} />
-          <Txt variant="footnote" style={{ color: colors.onArt }}>{Number(game.rating).toFixed(1)}</Txt>
+          <Txt variant="footnote" style={{ color: colors.onArt }}>{Number(game.rating).toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</Txt>
         </>}
       </View>
+      {/* Kit hero(): fiyat 22 beyaz, eski fiyat 14, indirim (13/24), "Steam'de" 12 onArt.
+          Eski fiyat görselin üstünde: koyu paletin text3'ü, tema bağımsız. */}
       <View style={s.prices}>
-        <Text allowFontScaling={false} style={priceStyle(22, colors.white)}>
-          {free ? t('card.free') : price?.price != null ? formatPrice(price.price) : '—'}
-        </Text>
-        {!free && price?.discount > 0 && <Txt variant="footnoteStrong" style={{ color: colors.onArt }}>{formatDiscount(price.discount)}</Txt>}
-        {!!price?.storeName && <Txt variant="caption" numberOfLines={1} style={{ color: colors.onArt, flexShrink: 1 }}>{price.storeName}</Txt>}
+        <Price value={free ? t('card.free') : price?.price != null ? formatPrice(price.price) : '—'} size={22} color={colors.white} />
+        {discounted && <OldPrice value={formatPrice(price.original)} size={14} color={darkPalette.text3} />}
+        {discounted && <DiscountTag percent={price.discount} size="md" />}
+        {!!store && <Txt variant="caption" numberOfLines={1} style={[s.store, { color: colors.onArt }]}>{formatStoreAt(store)}</Txt>}
       </View>
       <View style={s.actions}>
         <View style={s.flex}><Button title={t('v2.viewGame')} height={44} onImage onPress={open} /></View>
@@ -94,5 +99,6 @@ const s = StyleSheet.create({
   content: { position: 'absolute', left: space[18], right: space[18], bottom: space[18] },
   meta: { marginTop: space[4], flexDirection: 'row', alignItems: 'center', gap: K.hero.metaGap },
   prices: { height: K.hero.priceRow, marginTop: space[12], flexDirection: 'row', alignItems: 'center', gap: space[8] },
+  store: { marginLeft: K.hero.storeGap, flexShrink: 1 },
   actions: { marginTop: space[14], flexDirection: 'row', gap: space[10] },
 });

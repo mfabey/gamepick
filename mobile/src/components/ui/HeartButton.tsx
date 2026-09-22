@@ -20,13 +20,8 @@ import { component as K, layout, motion } from '../../theme/tokens';
 // Kalbin kendisi durumu TUTMUYOR: `selected` dışarıdan (WishlistContext).
 // Böylece kimlik eşleştirme ve kalıcılık tek yerde kalıyor.
 // ─────────────────────────────────────────────────────────────────────────────
-export function HeartButton({ selected, onPress, size = K.heart.size, iconSize = K.heart.icon, blurred = true, label, style }: {
-  selected: boolean; onPress: () => void; size?: number; iconSize?: number;
-  /** Kaydırılan listelerde false: aynı renk, bulanıklıksız (plan §6.1). */
-  blurred?: boolean; label?: string; style?: StyleProp<ViewStyle>;
-}) {
-  const { colors } = useDesignTheme();
-  const { t } = useLanguage();
+/** Kalp / beğeni "pop" (1 → 1.28 → 0.92 → 1, 240 ms); yalnız seçilirken, "hareketi azalt" kapalıyken. */
+export function usePop(selected: boolean) {
   const reduced = useReducedMotion();
   const scale = useSharedValue(1);
   const previous = useRef(selected);
@@ -42,7 +37,17 @@ export function HeartButton({ selected, onPress, size = K.heart.size, iconSize =
     previous.current = selected;
   }, [selected, reduced, scale]);
 
-  const pop = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  return useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+}
+
+export function HeartButton({ selected, onPress, size = K.heart.size, iconSize = K.heart.icon, blurred = true, label, style }: {
+  selected: boolean; onPress: () => void; size?: number; iconSize?: number;
+  /** Kaydırılan listelerde false: aynı renk, bulanıklıksız (plan §6.1). */
+  blurred?: boolean; label?: string; style?: StyleProp<ViewStyle>;
+}) {
+  const { colors } = useDesignTheme();
+  const { t } = useLanguage();
+  const pop = usePop(selected);
 
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={label ?? t('wishlist.add')} accessibilityState={{ selected }}

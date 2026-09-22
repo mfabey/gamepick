@@ -1,32 +1,19 @@
-import { StyleSheet, View } from 'react-native';
-import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Icon } from '../Icon';
-import { PressableScale, Txt } from './Primitives';
-import { useDesignTheme } from '../../theme/useDesignTheme';
+import { memo } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
-import { gradients, size } from '../../theme/tokens';
+import { ShortCard, VideoCard as MediaVideoCard } from './Media';
 
-export default function VideoCard({ item, onPress, short = false, fluid = false }) {
-  const { colors } = useDesignTheme();
+// ─────────────────────────────────────────────────────────────────────────────
+// Video akışı öğesini (api/video-feed) tasarımın VideoCard / ShortCard'ına
+// bağlayan ince katman. Çizim Media.tsx'te (kit video()/short()).
+//
+// Kaynak Steam'in resmi fragmanı: tür etiketi "Fragman", satır "Steam · tür".
+// Süre, izlenme ve yaratıcı akışta YOK; kart o öğeleri çizmiyor (sahte veri yok).
+// Oyun çipi de yok: başlık zaten oyunun adı, çip aynı adı tekrarlardı.
+// ─────────────────────────────────────────────────────────────────────────────
+export default memo(function VideoCard({ item, onPress, short = false, fluid = false }) {
   const { t } = useLanguage();
-  return <PressableScale accessibilityRole="button" accessibilityLabel={item.name} onPress={onPress}
-    style={{ width: fluid ? '100%' : short ? size.cover.short.width : size.cover.video.width }}>
-    <View style={[s.cover, { height: short ? size.cover.short.height : undefined, aspectRatio: short ? undefined : 280 / 158, backgroundColor: colors.surface2 }]}>
-      <Image source={item.thumbnail || item.image} contentFit="cover" recyclingKey={item.id} style={StyleSheet.absoluteFill} />
-      {short ? <LinearGradient {...gradients.shortCard} style={StyleSheet.absoluteFill} /> : null}
-      <View style={[s.play, { backgroundColor: colors.darkGlass }]}><Icon name="playf" size={22} color={colors.white} /></View>
-      {short && <Txt variant="footnoteStrong" numberOfLines={2} style={[s.shortTitle, { color: colors.white }]}>{item.name}</Txt>}
-    </View>
-    {!short && <View style={s.info}>
-      <Txt variant="cardTitle" numberOfLines={2}>{item.name}</Txt>
-      <Txt variant="footnote" style={{ color: colors.text2 }}>{t('v2.trailers')} · Steam</Txt>
-    </View>}
-  </PressableScale>;
-}
-const s = StyleSheet.create({
-  cover: { borderRadius: 16, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
-  play: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  info: { paddingTop: 8, gap: 4 },
-  shortTitle: { position: 'absolute', bottom: 12, left: 12, right: 12 },
+  const image = item.thumbnail || item.image;
+  if (short) return <ShortCard title={item.name} image={image} recyclingKey={String(item.id)} onPress={onPress} />;
+  return <MediaVideoCard title={item.name} image={image} type={t('v2.trailer')} creator="Steam" meta={item.genres?.[0]}
+    width={fluid ? '100%' : undefined} recyclingKey={String(item.id)} onPress={onPress} />;
 });

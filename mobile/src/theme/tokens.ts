@@ -57,6 +57,13 @@ export const colors = {
   pillNeutral: 'rgba(255,255,255,0.12)', // Lv, soru, anket, mod rozetleri
   pillNeutralSoft: 'rgba(255,255,255,0.1)',
   pageDotOff: 'rgba(255,255,255,0.28)',
+  // Fiyat grafiği (kit chart()): kesikli ızgara, alan dolgusu, son nokta halesi.
+  chartGrid: 'rgba(255,255,255,0.07)',
+  chartArea: 'rgba(255,255,255,0.06)',
+  chartHalo: 'rgba(255,255,255,0.16)',
+  ticketDash: 'rgba(255,255,255,0.14)', // DealCard kesikli ayraç (kit deal_card())
+  overlayTag: 'rgba(0,0,0,0.62)', // görsel üstü süre / tür etiketi (kit ovl()) — tema bağımsız
+  unreadRow: 'rgba(255,255,255,0.04)', // okunmamış bildirim satırı (kit notif())
 
   // Logo
   logoROnDark: '#F8F8F8',
@@ -147,6 +154,11 @@ export const typography = {
   link: t(15, 20, '500'),
   navSubtitle: t(12, 14, '400'),
   toast: t(14, 18, '500'),
+  statValue: t(18, 24, '700'), // StatTile değeri (kit stat())
+  caption2Strong: t(11, 14, '600'), // FriendActivity durumu (kit friend())
+  footnoteMedium: t(13, 18, '500'), // gönderi eylem sayıları (kit actions())
+  shortTitle: t(13, 17, '600'), // ShortCard başlığı (kit short())
+  newsTitle: t(18, 24, '700', -0.015), // NewsFeature başlığı (kit news_feat())
   storeMono: t(9, undefined, '700', 0),
 } as const;
 
@@ -348,7 +360,54 @@ export const component = {
   navBar: { height: 44, paddingH: 16, side: 96, backIcon: 24, backStroke: 2.3, backEdge: -10, edge: -8 },
   stickyBar: { paddingTop: 10, paddingH: 20, minBottom: 10, gap: 12, button: 48 },
   pageDots: { active: 18, size: 6, gap: 6, top: 12 },
-  hero: { tagHeight: 28, tagIcon: 13, metaGap: 5, metaStar: 12, priceRow: 28 },
+  hero: { tagHeight: 28, tagIcon: 13, metaGap: 5, metaStar: 12, priceRow: 28, storeGap: 2 },
+
+  // ── §4 Oyun ve fiyat (kit c.py/k.py: disc, old, price, drop, mono, store, store_row, stat, status, game_m, game_s, drop_card, deal_card, chart) ──
+  discount: { paddingH: 7, radius: 6, sizes: { xs: [11, 20], sm: [12, 22], md: [13, 24], lg: [14, 26] } },
+  oldPrice: 13,
+  priceDrop: { icon: 2, gap: 4, stroke: 2.4 },
+  storeBadge: { size: 16, radius: 5, font: 9, gap: 5, row: { size: 40, radius: 11, font: 16 } },
+  storeRow: { height: 64, paddingLeft: 16, paddingRight: 14, gap: 12, separator: 68, chevron: 16, rightGap: 3 },
+  statTile: { height: 84, padding: 12, radius: 14, icon: 18, gap: 2, valueTopWithIcon: 4, valueTopNoIcon: 20 },
+  statusPill: { height: 22, paddingH: 8, radius: 6, gap: 4, dot: 6, icon: 12, star: 11 },
+  gameCardMedium: { titleTop: 8, metaTop: 2, metaHeight: 16, metaGap: 5, star: 11, priceRow: 22, priceTop: 6, priceGap: 6, badge: 16, discountInset: 8 },
+  gameCardSmall: { titleTop: 8, rowHeight: 20, rowTop: 2, gap: 6 },
+  dropCard: { radius: 16, padding: 12, discountInset: 10, priceRow: 24, top: 6, gap: 8, arrow: 12 },
+  dealCard: { radius: 20, paddingTop: 16, paddingH: 16, paddingBottom: 14, coverWidth: 64, coverHeight: 84, coverRadius: 12, gap: 12,
+    dash: 1.5, notch: 18, notchOffset: -26, pricesTop: 14, priceRow: 36, buttonTop: 12, buttonBottom: 16, columnsGap: 8 },
+  // G-08 "En İyi Fiyat" kartı (kaynak): köşe 22, iç 18; başlık 22; mağaza 48 (köşe 12, harf 20) üstte 14;
+  // fiyat satırı 44 (40 pt fiyat, 17 eski, 15/28 indirim) üstte 16; not 18 üstte 6; buton 50 üstte 16; dipnot üstte 10.
+  bestPrice: { radius: 22, padding: 18, headerHeight: 22, badgePadding: 8, badgeIcon: 12, badgeGap: 4,
+    storeTop: 14, storeHeight: 48, storeBadge: 48, storeRadius: 12, storeFont: 20, storeGap: 12,
+    priceTop: 16, priceHeight: 44, priceGap: 10, oldPrice: 17, noteTop: 6, noteHeight: 18, buttonTop: 16, button: 50, footTop: 10 },
+  chart: { width: 318, height: 120, grid: '3 5', lowRadius: 5, lowRing: 3, haloRadius: 9, labelOffset: 22 },
+  rail: { hero: [10, 344], game: [12, 160], drop: [12, 276], deal: [12, 312], video: [14, 294], friend: [8, 0], short: [12, 144] },
+
+  // ── §5 Topluluk ve sosyal (avatar, friend, trend_card, post_head, post, actions, badge, comment, user_row, comm_row, msg_row, notif, nlead, count, fresh) ──
+  avatar: { onlineMin: 10, onlineRatio: 0.28, onlineRing: 2.5, gameRatio: 0.46, gameRadius: 7, gameOffset: -4, ringGap: 3, ringWidth: 2, initialRatio: 0.4 },
+  friendTile: { width: 96, avatar: 56, nameTop: 10, statusTop: 2, dot: 6, gap: 4 },
+  trend: { radius: 18, paddingV: 4, row: 60, paddingLeft: 16, paddingRight: 14, gap: 12, box: 28, boxRadius: 8, icon: 15, separator: 56, pillHeight: 22, pillPadding: 7, pillRadius: 6, pillIcon: 11 },
+  postHeader: { height: 40, avatar: 40, gap: 12, nameRow: 20, nameGap: 6, more: 40, moreIcon: 20, moreEdge: -10 },
+  post: { indent: 52, bodyTop: 10, mediaTop: 12, mediaRadius: 14, gameTop: 10, actionsTop: 6 },
+  gameTag: { height: 32, rowGap: 8, radius: 10, paddingLeft: 4, paddingRight: 12, gap: 7, thumb: 24, thumbRadius: 7, chevron: 13 },
+  actions: { height: 40, edge: -10, minWidth: 44, paddingH: 10, gap: 6, icon: 20 },
+  badgeSmall: { height: 18, paddingH: 6, radius: 5, gap: 3, icon: 11 },
+  comment: { avatar: 40, replyAvatar: 32, gap: 10, headHeight: 20, nameGap: 6, textTop: 4, actionsTop: 6, actionsHeight: 28, actionsGap: 18, heart: 15, heartGap: 5, replyIndent: 52 },
+  userRow: { height: 60, gap: 12, avatar: 44, thumb: 44, thumbRadius: 12 },
+  messageRow: { height: 72, paddingH: 20, gap: 12, avatar: 52, lineGap: 4, lineHeight: 20, previewGap: 5, check: 15 },
+  notification: { minHeight: 76, paddingTop: 12, paddingRight: 20, paddingBottom: 12, paddingLeft: 22, gap: 12, dot: 8, dotLeft: 8,
+    lead: 44, leadIcon: 20, leadRadius: 12, corner: 22, cornerIcon: 12, cornerRing: 2.5, cornerOffset: -4, thumb: 44, thumbRadius: 10, textGap: 2 },
+  countBadge: { size: 20, paddingH: 6 },
+  liveTime: { dot: 7, gap: 6, pulse: 6 },
+
+  // ── §6 Medya ve haber (video, short, news_feat, news_row, media_img, playc, ovl) ──
+  overlayTag: { height: 22, paddingH: 7, radius: 6, inset: 10, gap: 4, icon: 12 },
+  playButton: { sizes: [44, 48], iconRatio: 0.4, nudge: 2 },
+  videoCard: { infoTop: 10, titleHeight: 40, lineTop: 4, gameTop: 8, chipHeight: 24, chipRadius: 7, chipPaddingLeft: 3, chipPaddingRight: 8, chipThumb: 18, chipThumbRadius: 5, chipGap: 6, avatarGap: 10 },
+  shortCard: { radius: 16, inset: 10, viewsTop: 6, viewsGap: 4, playIcon: 11 },
+  newsFeature: { width: 350, imageHeight: 196, radius: 18, metaHeight: 16, metaTop: 12, metaGap: 6, titleTop: 6, descTop: 6 },
+  newsRow: { height: 72, gap: 14, thumbWidth: 96, thumbHeight: 72, thumbRadius: 12, metaHeight: 16, titleTop: 6 },
+  mediaImage: { radius: 14, tagInset: 10, tagHeight: 24, tagRadius: 7, tagPadding: 8, tagGap: 5 },
   skeleton: { card: { titleWidth: 120, titleHeight: 14, metaWidth: 80, metaHeight: 10, priceWidth: 60, priceHeight: 16, radius: 6, gap: 8 } },
 } as const;
 

@@ -15,6 +15,14 @@ import de from '../i18n/de';
 // pratik yolu kalmazdı.
 const STRINGS = { tr, en, es, pt, de };
 
+// Türkçe bulunma eki, SÖYLENİŞE göre (kit: "Steam'de"). Sıra önemli: daha
+// özel kalıp önce ("Xbox Store" → Store'da, "Xbox" → Xbox'ta).
+const TR_STORE_SUFFIX = [
+  [/store$/i, 'da'], [/steam$/i, 'de'], [/epic( games)?$/i, 'te'], [/gog(\.com)?$/i, 'da'],
+  [/humble( bundle)?$/i, 'da'], [/fanatical$/i, 'da'], [/xbox$/i, 'ta'], [/eshop$/i, 'ta'],
+  [/gamersgate$/i, 'te'], [/gaming$/i, 'de'], [/battle\.net$/i, 'te'], [/(ea )?app$/i, 'te'],
+];
+
 const LanguageContext = createContext(null);
 
 const PREF_KEY = 'lang.pref';
@@ -81,6 +89,22 @@ export function LanguageProvider({ children }) {
     return lang === 'tr' ? `-%${n}` : `-${n}%`;
   }, [lang]);
 
+  // Mağazada: HeroCard fiyat satırı (kit hero() → "Steam'de"). Türkçe ek
+  // YAZILIŞA değil SÖYLENİŞE uyuyor ("Steam" = "stim" → 'de', "Xbox" → 'ta');
+  // bilinen mağazalar tabloda, bilinmeyenler yazılıştan tahmin ediliyor.
+  // Diğer dillerde `v2.atStore` kalıbı ("on {store}").
+  const formatStoreAt = useCallback((store) => {
+    const name = String(store || '').trim();
+    if (!name) return '';
+    if (lang !== 'tr') return t('v2.atStore').replace('{store}', name);
+    const known = TR_STORE_SUFFIX.find(([re]) => re.test(name));
+    if (known) return `${name}'${known[1]}`;
+    const letters = name.toLocaleLowerCase('tr-TR').replace(/[^a-zçğıöşü]/g, '');
+    const vowel = [...letters].reverse().find((ch) => 'aeıioöuü'.includes(ch)) || 'e';
+    const hard = 'çfhkpsştx'.includes(letters.slice(-1));
+    return `${name}'${hard ? 't' : 'd'}${'aıou'.includes(vowel) ? 'a' : 'e'}`;
+  }, [lang, t]);
+
   // `toggleLang` KALDIRILDI: iki dil arasında gidip gelen bir anahtardı ve
   // dört dilde anlamı kalmıyor. Hiçbir ekran kullanmıyordu; dil seçimi
   // Ayarlar'daki listeden yapılıyor.
@@ -90,8 +114,8 @@ export function LanguageProvider({ children }) {
   const locale = bcp47(lang);
 
   const value = useMemo(
-    () => ({ lang, locale, setLang, t, formatPrice, formatDiscount, rate, setRate }),
-    [lang, locale, setLang, t, formatPrice, formatDiscount, rate]
+    () => ({ lang, locale, setLang, t, formatPrice, formatDiscount, formatStoreAt, rate, setRate }),
+    [lang, locale, setLang, t, formatPrice, formatDiscount, formatStoreAt, rate]
   );
 
   return (

@@ -46,8 +46,9 @@ export function PressableScale({ style, onPressIn, onPressOut, disabled, dimDisa
 type ButtonVariant = 'primary' | 'secondary' | 'tertiary' | 'destructive' | 'tinted' | 'onArt';
 type ButtonProps = PressableProps & {
   title: string; variant?: ButtonVariant;
-  /** COMPONENTS: 48/44/40/36. DS 2 ayrıca 52 (Giriş yap) ve 30 (Mini) gösteriyor. */
-  height?: 52 | 48 | 44 | 40 | 36 | 30;
+  /** COMPONENTS: 48/44/40/36. Kaynaklarda ayrıca 52 (Giriş yap), 50 (G-08 Mağazaya Git,
+   *  G-03 sosyal girişler) ve 30 (DS 2 Mini) var. */
+  height?: 52 | 50 | 48 | 44 | 40 | 36 | 30;
   icon?: IconName; iconRight?: IconName; loading?: boolean;
   /** Görselin üstünde (HeroCard): renkler temadan bağımsız, tasarımın koyu paleti.
    *  Açık temada birincil koyulaşıyor; koyu degradeli görsel üstünde siyah buton kayboluyordu. */

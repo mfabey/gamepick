@@ -145,3 +145,66 @@ Mevcut API'ler ve iş mantığı bu grupta değiştirilmedi. Fotoğraf yükleme,
 - Fiyat biçimi → **Kullanıcı kararı (22 Eylül): tasarımdaki gibi "₺599"** (sembol önde, binlik ayırıcı nokta: "₺1.199"). `formatPrice` buna göre değişecek (sonraki commit).
 - iOS'ta cam/Liquid Glass ve yerel görünüm doğrulanmadı; Mac ya da cihaz gerekiyor.
 - Prebuild uyarısı (bu işten önce de vardı): Android'de `userInterfaceStyle` için `expo-system-ui` kurulu değil.
+
+### 22 Eylül — Bileşen kütüphanesi, COMPONENTS §4–7 (Claude)
+
+Ölçüler kit `c.py` / `k.py` fonksiyonlarından; sayılar `tokens.ts → component` altında.
+Fiyat biçimi kullanıcı kararıyla tasarımdaki gibi: "₺599", "-%50" (`27aae1b`).
+
+**Yeni dosyalar (`mobile/src/components/ui/`):**
+- `Commerce.tsx`: DiscountTag (20/22/24/26/28), Price, OldPrice, PriceDrop, StoreBadge + `storeInfo()`, StoreRow, StatTile, StatusPill, BestPriceCard (G-08), PriceChart.
+- `GameCards.tsx`: GameCardSmall, PriceDropCard, DealCard (çentikli bilet), `Rail` (COMPONENTS §8 aralık/adım, FlatList).
+- `Social.tsx`: UserAvatar (çevrimiçi, oyun rozeti, halka), FriendTile, TrendCard, Badge, PostHeader, GameTag, PostActions, Post, Comment, UserRow, CommunityRow, CountBadge, MessageRow, NotificationLead/Row, LiveTime.
+- `Media.tsx`: OverlayTag, PlayButton, VideoCard, ShortCard, NewsFeature, NewsRow, MediaImage.
+
+**Güncellenenler:**
+- GameCard (orta):
+  - Fiyat metin renginde; kit `price()` yeşil çizmiyor, yeşil yalnız indirim etiketi ve düşüş notu.
+  - Bilgi satırı "tür · ★ puan", puan dile göre ("4,6").
+  - Eski fiyat 12, sağda 16 pt mağaza rozeti.
+- HeroRail: fiyat satırı 22 + eski 14 + indirim (13/24) + "Steam'de".
+  - Yeni `formatStoreAt()` Türkçe eki söylenişe göre seçiyor (Steam'de, Epic'te, GOG'da, Xbox'ta); diğer dillerde "on Steam" kalıbı.
+- Mağaza adı yoksa rozet "Steam": card-price'ın ITAD dışı yanıtı Steam Store API'sinden geliyor.
+- `ui/VideoCard.jsx` artık Media'ya ince bağlantı: tür "Fragman", satır "Steam · tür".
+  - Süre, izlenme, yaratıcı akışta yok, çizilmiyor.
+- Avatar baş harfi: `avatarPalette`'ten ada göre sabit zemin, 600, boy × 0.4.
+- `usePop` HeartButton'dan çıkarıldı; beğeni ve kaydet aynı pop'u kullanıyor.
+- i18n (5 dil): durum etiketleri, En İyi Fiyat, en düşük/normal fiyat, Yazar, Yorumlar, okundu/okunmadı, `v2.atStore`, `v2.trailer`.
+- Galeriye DS 3 bölümü: oyun ve fiyat, kartlar, topluluk, medya.
+  - Görseller canlı video kataloğundan geliyor; `check:images` elle yazılan Steam adreslerini sayıyor, adres eklenmedi.
+
+**Emülatörde bulunup düzeltilenler:**
+1. **Kurulu uygulama 4 Eylül'deki 2.6.0 dev istemcisiydi.** `-no-snapshot-save` açılışta eski hızlı açılış anlık görüntüsünü yüklüyor, bugünkü kurulum kayboldu.
+   - Metro "ExpoBlurView dışa aktarılmamış" uyarısıyla fark edildi.
+   - `adb install -r` ile bugünkü APK kuruldu; APK'da expo-blur sınıfları var.
+2. **Bildirimdeki okunmamış noktası 26 dp'deydi, beklenen 38 (satır ortası).** `top: '50%'` yalnız `minHeight` taşıyan satırda çözülmüyor; tam boy mutlak kutuda ortalandı.
+3. **"Oynuyor" hapı GameTag satırında 5 dp yukarıdaydı.** DiscountTag ve StatusPill'deki `alignSelf: 'flex-start'` satır ortalamasını eziyordu. Kaldırıldı, sütun sarmalayıcılara kit gibi `flexDirection: 'row'` verildi.
+   - Aynı hata HeroCard ve BestPriceCard fiyat satırındaki indirim etiketini de 2–3 pt kaydırıyordu.
+4. **Fiyat grafiğinin son nokta halesi sağda yarım kesiliyordu.** Android'de react-native-svg `overflow: visible`'ı uygulamıyor; tuval hale yarıçapı kadar büyütülüp geri kaydırıldı.
+5. **LiveTime nabzı JS FPS'ini düşürüyordu.**
+   - Galeride boşta ölçülen JS FPS:
+     - Reanimated `withRepeat` ile: 49–50.
+     - Nabız kapalıyken: 54–60.
+     - RN Animated + yerel sürücüyle: 54–60.
+   - Nabız yerel sürücüye taşındı; görsel olarak hâlâ atıyor, kare kare kontrol edildi.
+6. **Tek sütun video listesinde boş satır kalıyordu.** Kit başlığa iki satır ayırıyor, rayda hizalama için; tam genişlik kartta bu ayırma kaldırıldı.
+
+**Bilerek kaynaktan farklı:**
+- VideoCard başlık yeri yalnız rayda ayrılıyor (madde 6).
+- DealCard kesikli çizgi SVG'de "4 4" deseni. CSS `dashed` tarayıcıya göre değişiyor, birebir karşılığı yok.
+
+**Doğrulama:**
+- `npm run check` (20 denetim) geçti; iOS ve Android export geçti.
+- Emülatörde görülenler, koyu ve açık temada:
+  - Galeri DS 3 bölümü.
+  - Ana sayfa: HeroCard "₺195 Steam'de"; GameCard'da gerçek fiyat, indirim, Steam ve Xbox rozetleri.
+  - Videolar sekmesi.
+- `G-DS-3-Cards.png` ile yan yana karşılaştırıldı. "-%50"deki tire boşluğu referansta da var: tabular-nums.
+- Denenen etkileşimler: beğeni (kırmızı dolgu, 128 → 129), kaydet, tema geçişi. Tema tercihi sonunda `system`'e geri alındı.
+- Boşta FPS: ana sayfa 58, Videolar 57.
+
+**Açık kalanlar:**
+- Bu bileşenler henüz yalnız galeride ve HomeMedia / Videolar / GameCard / HeroRail'de. Ekran geçişleri Faz 3'te: Topluluk, Mesajlar, Bildirimler, Fiyat, Haber.
+- Fiyat geçmişi, "fiyatı düştü" notu, izlenme, süre: sunucu verisi yok. Bileşenler hazır, veri gelince bağlanacak.
+- `tokens.gameCard` (eski boşluk sabitleri) artık hiçbir bileşende kullanılmıyor; `theme` dışa aktarımında duruyor.
+- iOS'ta görünüm doğrulanmadı (Mac yok).
