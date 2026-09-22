@@ -88,7 +88,13 @@ async function fetchSteamDetails(appid, slug, lang = 'en') {
       image:        d.header_image,
       description:  d.about_the_game || d.detailed_description || '',
       metacritic:   d.metacritic?.score || null,
-      rating:       d.recommendations?.total ? 4.5 : 0,
+      // Steam appdetails'te 1–5 puan yok. Eskiden incelemesi olan her oyuna
+      // sabit 4.5 yazılıyordu (Overwatch 2: %32 olumlu, "Mostly Negative" →
+      // yine "★ 4.5"; ölçüm 2026-09-22). 0 →
+      // istemciler yıldızı gizler; gerçek Steam özeti mobilde /api/steam-reviews
+      // ile ayrıca gösteriliyor. Olumlu %'yi /20 ile yıldıza çevirmiyoruz:
+      // RAWG'ın `rating`'i kullanıcı ortalaması, aynı çipte iki ayrı ölçü olurdu.
+      rating:       0,
       totalReviews: d.recommendations?.total || 0,
       developer:    d.developers?.[0] || null,
       publisher:    d.publishers?.[0] || null,
@@ -137,7 +143,9 @@ async function trySteamFallback(slug, lang = 'en') {
       image:        localMatch.image,
       description:  'Bu oyunun açıklaması şu anda yüklenemedi. Ancak fiyat ve mağaza bilgilerini aşağıda bulabilirsiniz.',
       metacritic:   localMatch.metacritic || null,
-      rating:       localMatch.reviewScore ? localMatch.reviewScore / 20 : 4.5,
+      // fetchSteamDetails ile aynı kural (bkz. yukarı): Steam çökünce yıldız
+      // belirip Steam ayaktayken kaybolmasın.
+      rating:       0,
       totalReviews: localMatch.totalReviews || 0,
       developer:    null,
       publisher:    null,
