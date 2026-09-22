@@ -102,15 +102,19 @@ export function TrendCard({ rows, onPress }: { rows: readonly TrendRow[]; onPres
   );
 }
 
-const BADGE_ICON: Record<'trophy' | 'q' | 'poll' | 'mod', IconName> = { trophy: 'trophy', q: 'help', poll: 'poll', mod: 'shield' };
+const BADGE_ICON: Record<'trophy' | 'q' | 'poll' | 'mod' | 'verified', IconName> = { trophy: 'trophy', q: 'help', poll: 'poll', mod: 'shield', verified: 'shield' };
 
-/** Küçük rozet: 18 yükseklik, köşe 5, 11/700. `lv` nötr; `trophy` altın; `q`/`poll`/`mod` nötr + ikon. */
-export function Badge({ label, kind = 'lv' }: { label: string; kind?: 'lv' | 'trophy' | 'q' | 'poll' | 'mod' }) {
+/**
+ * Küçük rozet: 18 yükseklik, köşe 5, 11/700. `lv` nötr; `trophy` altın; `q`/`poll`/`mod` nötr + ikon.
+ * `verified`: incelemenin Steam'den DOĞRULANMIŞ oynama saati (yeşil kalkan) — kullanıcı yazamıyor.
+ */
+export function Badge({ label, kind = 'lv' }: { label: string; kind?: 'lv' | 'trophy' | 'q' | 'poll' | 'mod' | 'verified' }) {
   const { colors } = useDesignTheme();
   const gold = kind === 'trophy';
-  const color = gold ? colors.gold : colors.text;
+  const green = kind === 'verified';
+  const color = gold ? colors.gold : green ? colors.green : colors.text;
   return (
-    <View style={[styles.badge, { backgroundColor: gold ? colors.goldTint : colors.pillNeutral }]}>
+    <View style={[styles.badge, { backgroundColor: gold ? colors.goldTint : green ? colors.greenTint : colors.pillNeutral }]}>
       {kind !== 'lv' ? <Icon name={BADGE_ICON[kind]} size={K.badgeSmall.icon} color={color} strokeWidth={control.iconStroke} /> : null}
       <Txt variant="badge" numberOfLines={1} style={{ color }}>{label}</Txt>
     </View>
@@ -145,7 +149,7 @@ export function PostHeader({ avatar, name, handle, time, badge, onProfile, onMor
 
 /** Oyun etiketi: 32 yükseklik, köşe 10, `surface1`; 24 küçük resim (köşe 7), 13/600, ok; yanında isteğe bağlı durum. */
 export function GameTag({ title, image, status, onPress }: {
-  title: string; image?: string | null; status?: 'playing' | 'done' | 'recommends'; onPress?: () => void;
+  title: string; image?: string | null; status?: 'playing' | 'done' | 'recommends' | 'notRecommends'; onPress?: () => void;
 }) {
   const { colors } = useDesignTheme();
   const G = K.gameTag;
@@ -162,9 +166,10 @@ export function GameTag({ title, image, status, onPress }: {
 }
 
 /** Gönderi eylemleri: 40 yükseklik, sol -10; beğen (pop), yorum, paylaş, boşluk, kaydet. */
-export function PostActions({ liked, likes, comments, saved, onLike, onComment, onShare, onSave }: {
-  liked: boolean; likes: string | number; comments: string | number; saved: boolean;
-  onLike: () => void; onComment?: () => void; onShare?: () => void; onSave: () => void;
+export function PostActions({ liked, likes, comments, saved = false, onLike, onComment, onShare, onSave }: {
+  liked: boolean; likes: string | number; comments: string | number; saved?: boolean;
+  /** Paylaş ve kaydet YALNIZ işleyici verilirse çiziliyor: özelliği olmayan düğme ölü düğmedir. */
+  onLike: () => void; onComment?: () => void; onShare?: () => void; onSave?: () => void;
 }) {
   const { colors } = useDesignTheme();
   const { t } = useLanguage();
@@ -187,28 +192,30 @@ export function PostActions({ liked, likes, comments, saved, onLike, onComment, 
         <Icon name="share" size={A.icon} color={colors.text2} />
       </Pressable> : null}
       <View style={styles.flex} />
-      <Pressable accessibilityRole="button" accessibilityLabel={t('vid.save')} accessibilityState={{ selected: saved }} onPress={onSave} style={styles.save}>
+      {onSave ? <Pressable accessibilityRole="button" accessibilityLabel={t('vid.save')} accessibilityState={{ selected: saved }} onPress={onSave} style={styles.save}>
         <Animated.View style={savePop}>
           <Icon name="bookmark" size={A.icon} color={saved ? colors.red : colors.text2} fill={saved ? colors.red : 'none'} />
         </Animated.View>
-      </Pressable>
+      </Pressable> : null}
     </View>
   );
 }
 
 /** Gönderi: başlık + soldan 52 içeride gövde (metin 15/22, medya 12, oyun etiketi 10, eylemler 6). */
-export function Post({ header, text, lines, media, game, actions }: {
-  header: ReactNode; text?: string; lines?: number; media?: ReactNode; game?: ReactNode; actions: ReactNode;
+export function Post({ header, text, lines, media, game, actions, textVariant = 'body' }: {
+  header: ReactNode; text?: string; lines?: number; media?: ReactNode; game?: ReactNode; actions?: ReactNode;
+  /** Konuşma ekranının kök gönderisi 'bodyLarge' (Faz 5: hiyerarşi puntoyla). */
+  textVariant?: 'body' | 'bodyLarge';
 }) {
   const P = K.post;
   return (
     <View>
       {header}
       <View style={{ paddingLeft: P.indent, marginTop: P.bodyTop }}>
-        {text ? <Txt variant="body" numberOfLines={lines}>{text}</Txt> : null}
+        {text ? <Txt variant={textVariant} maxFontSizeMultiplier={1.3} numberOfLines={lines}>{text}</Txt> : null}
         {media ? <View style={{ marginTop: P.mediaTop }}>{media}</View> : null}
         {game ? <View style={{ marginTop: P.gameTop }}>{game}</View> : null}
-        <View style={{ marginTop: P.actionsTop }}>{actions}</View>
+        {actions ? <View style={{ marginTop: P.actionsTop }}>{actions}</View> : null}
       </View>
     </View>
   );

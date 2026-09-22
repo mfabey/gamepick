@@ -132,18 +132,24 @@ export function StatTile({ value, label, icon, style }: { value: string; label: 
   );
 }
 
-/** Oyun durumu: Oynuyor (yeşil + nokta), Tamamladı (nötr + tik), Tavsiye ediyor (altın + yıldız). */
-export function StatusPill({ kind }: { kind: 'playing' | 'done' | 'recommends' }) {
+/**
+ * Oyun durumu: Oynuyor (yeşil + nokta), Tamamladı (nötr + tik), Tavsiye ediyor (altın + yıldız).
+ * `notRecommends` tasarımda yok: olumsuz inceleme için (eski kartta başparmak aşağı vardı; bilgi
+ * kaybolmasın). Nötr zemin, ikincil metin.
+ */
+export function StatusPill({ kind }: { kind: 'playing' | 'done' | 'recommends' | 'notRecommends' }) {
   const { colors } = useDesignTheme();
   const { t } = useLanguage();
   const tone = kind === 'playing' ? { bg: colors.greenTint, fg: colors.green }
-    : kind === 'recommends' ? { bg: colors.goldTint, fg: colors.gold } : { bg: colors.pillNeutralSoft, fg: colors.text };
-  const label = t(kind === 'playing' ? 'v2.statusPlaying' : kind === 'done' ? 'v2.statusDone' : 'v2.statusRecommends');
+    : kind === 'recommends' ? { bg: colors.goldTint, fg: colors.gold }
+    : kind === 'notRecommends' ? { bg: colors.pillNeutralSoft, fg: colors.text2 } : { bg: colors.pillNeutralSoft, fg: colors.text };
+  const label = t(kind === 'playing' ? 'v2.statusPlaying' : kind === 'done' ? 'v2.statusDone' : kind === 'recommends' ? 'v2.statusRecommends' : 'v2.statusNotRecommends');
   return (
     <View style={[styles.status, { backgroundColor: tone.bg }]}>
       {kind === 'playing' && <View style={[styles.statusDot, { backgroundColor: tone.fg }]} />}
       {kind === 'done' && <Icon name="checkc" size={K.statusPill.icon} color={tone.fg} strokeWidth={control.iconStroke} />}
       {kind === 'recommends' && <Icon name="star" size={K.statusPill.star} color={tone.fg} fill={tone.fg} strokeWidth={1} />}
+      {kind === 'notRecommends' && <Icon name="x" size={K.statusPill.icon} color={tone.fg} strokeWidth={control.iconStroke} />}
       <Txt variant="captionStrong" numberOfLines={1} style={{ color: tone.fg }}>{label}</Txt>
     </View>
   );

@@ -778,5 +778,7 @@ export default {
   'v2.checkoutNote': "A compra é concluída na loja",
   'v2.bestPriceShort': "Melhor preço",
   'v2.noPrices': "Nenhum preço encontrado para este jogo.",
+  'v2.statusNotRecommends': "Não recomenda",
+  'v2.gameChip': "Jogo",
   'v2.gamingWorld': "Do mundo dos games",
 };

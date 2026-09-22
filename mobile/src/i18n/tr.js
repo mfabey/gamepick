@@ -778,5 +778,7 @@ export default {
   'v2.checkoutNote': "Satın alma mağazada tamamlanır",
   'v2.bestPriceShort': "En iyi fiyat",
   'v2.noPrices': "Bu oyun için mağaza fiyatı bulunamadı.",
+  'v2.statusNotRecommends': "Tavsiye etmiyor",
+  'v2.gameChip': "Oyun",
   'v2.gamingWorld': "Oyun Dünyasından",
 };

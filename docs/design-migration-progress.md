@@ -347,3 +347,39 @@ Fiyat biçimi kullanıcı kararıyla tasarımdaki gibi: "₺599", "-%50" (`27aae
 **Açık kalanlar:**
 - Tat profili Steam'in Türkçe tür adlarını ("Basit Eğlence", "Bağımsız Yapımcı") kaydediyor. `GENRE_SLUG` bunları eşlemediği için "Senin İçin" tür imzası boşalabiliyor ve gerekçe alt başlığı çizilmiyor. Bu işten önce de vardı; öneri motoru işi.
 - iOS görünümü doğrulanmadı.
+
+### 22 Eylül — Topluluk, G-10 (Claude)
+
+**Önce:** 28 pt başlık + "Arkadaşlar" hapı, alt çizgili iki sekme, yuvarlak "Ne düşünüyorsun?" çubuğu, 148 pt kapsüllü "Hakkında yazabilirsin" şeridi. Gönderi (Ionicons, ayraç çizgisi) ve inceleme (kenarlı kutu) iki farklı dilde. TTI 1180–1494 ms.
+
+**Yapılanlar:**
+- **Başlık:** PageHeader; sağda arkadaşlar (bekleyen istek rozeti korundu) ve kalem (gönderi yaz). Tasarımın "ara" ikonu yerine arkadaşlar: istek rozeti Topluluk'ta görünmeli (eski karar).
+- **Segmented:** Keşfet / Arkadaşlar. Tasarımın dört bölümünden (Senin İçin / Takip / Trend / Topluluklar) veri olan ikisi.
+- **Yazma kartı (kit comp):** avatar + "Ne düşünüyorsun?" + "Oyun" çipi. Görsel/video kapalı karar, anket yok; o çipler çizilmedi.
+- **"Hakkında yazabilirsin":** tasarımın topluluk kutucukları (60 pt, köşe 18, ad 12/600, saat 11). Oyun toplulukları sunucuda yok; rayın gerçek karşılığı Steam'den doğrulanan oyunlar. Dokununca inceleme yazma açılıyor.
+- **PostCard** tasarımın Post'una geçti: PostHeader, soldan 52 gövde, GameTag, PostActions.
+  - Korunanlar: iyimser beğeni + hata olursa geri alma, dokunsal geri bildirim, hesap kapısı, ⋯ ve uzun basma moderasyon yolu, geliştirici rozeti, `kok` (konuşma ekranında bodyLarge) ve `compact` (4 satır).
+  - Paylaş ve kaydet çizilmiyor: gönderi için özelliği yok. PostActions ikisini yalnız işleyici verilirse çiziyor.
+  - Kullanım yerleri: Anasayfa akışı, Topluluk, Gönderi, Profil, başkasının profili.
+- **ReviewCard** da aynı Post iskeletinde:
+  - Doğrulanmış saat yeşil kalkan rozeti (`Badge kind="verified"`).
+  - Oyun etiketinde "Tavsiye ediyor" / "Tavsiye etmiyor". İkincisi tasarımda yok; eski kartın başparmak-aşağı bilgisi kaybolmasın diye nötr hap.
+  - Büyüme geçişi korundu (ölçü oyun etiketinden).
+- Anasayfa akışındaki incelemenin ek alt boşluğu kaldırıldı; kart kendi 14+14'ünü taşıyor, akış aralığı 28.
+
+**Doğrulama:**
+- `npm run check` (20) geçti; iOS ve Android export geçti.
+- Emülatörde görülenler:
+  - Topluluk: inceleme ve gönderiler gerçek veriyle.
+  - Hesapsız beğeni giriş ekranına gidiyor.
+  - Gönderiye dokununca detay açılıyor (kök bodyLarge).
+  - ⋯ moderasyon sayfası açılıyor (Profiline git / Engelle / Şikayet et).
+  - Anasayfa akışında yeni inceleme kartı.
+- TTI soğuk açılışta 2692 / 1190 ms (önce 1180–1494). Ağa bağlı ve gürültülü; ikinci örnek önceki aralıkta. Boşta 57–60 FPS.
+
+**Açık kalanlar:**
+- Anasayfa sonsuz akışındaki GamePostCard eski görünümde.
+- Gönderi Detayı (G-13) ve yorumlar eski görünümde.
+- EmptyState ve FeedSkeleton eski bileşenler.
+- Hesapsız kullanıcıda yazma kartı avatarı "?" (ad yok). Tasarım oturum açmış kullanıcı çiziyor.
+- iOS görünümü doğrulanmadı.

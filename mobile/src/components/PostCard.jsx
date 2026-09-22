@@ -1,29 +1,27 @@
 import { memo, useCallback, useState } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
-import Animated from 'react-native-reanimated';
-import { Image } from 'expo-image';
+import { Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
-import { radius, spacing, type, PRESSED, NUMERIC, TOUCH_MIN } from '../theme';
-import { useStyles, useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { togglePostLike } from '../api/social';
-import Avatar from './Avatar';
 import DevBadge from './DevBadge';
-import { usePop } from '../hooks/usePop';
+import { GameTag, Post, PostActions, PostHeader } from './ui/Social';
+import { component as K, layout } from '../theme/tokens';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Tartışma gönderisi.
+// Tartışma gönderisi — 2.0 (G-10, kit c.py post()).
 //
-// KART DEĞİL SATIR. Oyun kartları (GameCard, GamePostCard) kapak görseli
-// etrafında kuruluyor; burada asıl içerik METİN. Görsel ağırlıklı bir kart
-// kullanmak, 40 karakterlik bir cümleyi 200pt'lik bir kutuya oturtmak olurdu.
-// Avatar solda, metin sağda, eylemler altta — konuşma listesi düzeni.
+// KART DEĞİL SATIR (Faz 2 kararı, tasarım da aynı): gönderi zemin üstünde
+// duruyor, yüzey yok. Başlık (40 avatar, ad + rozet + "· zaman", kullanıcı
+// adı, ⋯), gövde soldan 52 içeride: metin, oyun etiketi, eylemler.
 //
 // OYUN EKİ İSTEĞE BAĞLI. Gönderi serbest yazılıyor; oyun eklenmişse metnin
-// altında küçük bir çip olarak duruyor, gönderinin kendisini gölgelemiyor.
+// altında oyun etiketi olarak duruyor.
+//
+// PAYLAŞ ve KAYDET çizilmiyor: gönderiler için ikisinin de özelliği yok;
+// tasarım çiziyor ama ölü düğme koymuyoruz (PostActions yalnız işleyici
+// verilince çiziyor).
 // ─────────────────────────────────────────────────────────────────────────────
 
 function timeAgo(ts, lang) {
@@ -39,20 +37,15 @@ function timeAgo(ts, lang) {
 }
 
 // ── ⋯ = MODERASYON YOLU (App Store Guideline 1.2) ──
-// Bu kartta ÖNCEDEN HİÇBİR yol yoktu: ne şikâyet ne engelleme. İnceleme
-// kartında bari uzun basma vardı, burada o da yoktu ve kart yazar profiline
-// de bağlanmıyordu — yani akışta bir gönderi gören kullanıcının yazarı
-// engellemesi imkânsızdı. 2.6.1 (42) tam olarak bu yüzden 1.2'den reddedildi.
-//
-// GİZLİ JEST TEK YOL OLAMAZ: aynı karar PersonMenu'nün başında yazılı.
-// Uzun basma kısayol olarak duruyor, ⋯ ise görünür kapı.
+// Bu kartta ÖNCEDEN HİÇBİR yol yoktu: ne şikâyet ne engelleme. 2.6.1 (42)
+// tam olarak bu yüzden 1.2'den reddedildi. GİZLİ JEST TEK YOL OLAMAZ: uzun
+// basma kısayol olarak duruyor, ⋯ (PostHeader "daha fazla") görünür kapı.
 function PostCard({ post, onOpen, onMenu, onRequireAccount, compact = false, kok = false }) {
-  const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
-  const { t, lang } = useLanguage();
+  const { t, lang, locale } = useLanguage();
   const router = useRouter();
 
   // İyimser beğeni — sunucu yanıtı beklenirse dokunuş ölü hissettiriyor.
+  // Hata olursa geri alınıyor (COMPONENTS §5 PostActions).
   const [liked, setLiked] = useState(!!post.likedByMe);
   const [count, setCount] = useState(Number(post.likeCount) || 0);
 
@@ -72,146 +65,58 @@ function PostCard({ post, onOpen, onMenu, onRequireAccount, compact = false, kok
     }
   }, [liked, post.id, onRequireAccount]);
 
-  const likeStyle = usePop(liked);
-
   const name = post.author?.displayName || post.author?.username || t('post.someone');
+  const username = post.author?.username;
+  const open = useCallback(() => (onOpen ? onOpen(post) : router.push(`/post/${post.id}`)), [onOpen, post, router]);
 
   return (
     <Pressable
-      onPress={() => (onOpen ? onOpen(post) : router.push(`/post/${post.id}`))}
+      onPress={open}
       onLongPress={onMenu ? () => onMenu(post.author) : undefined}
       delayLongPress={400}
-      style={({ pressed }) => [styles.row, pressed && PRESSED]}
+      accessibilityRole="button"
+      style={s.row}
     >
-      <Avatar avatar={post.author?.avatar} name={name} size={AV} />
-
-      <View style={styles.main}>
-        <View style={styles.head}>
-          <Text style={styles.name} numberOfLines={1}>{name}</Text>
-          <DevBadge user={post.author} username={post.author?.username} isDeveloper={post.author?.isDeveloper} size={13} />
-          {post.author?.username ? (
-            <Text style={styles.handle} numberOfLines={1}>@{post.author.username}</Text>
-          ) : null}
-          <Text style={styles.dot}>·</Text>
-          <Text style={styles.time}>{timeAgo(post.at, lang)}</Text>
-        </View>
-
-        {/* FAZ 5 — KÖK GÖNDERİ İLE YANIT GÖRSEL OLARAK AYRIŞIYOR.
-            `compact` propu zaten vardı ama YALNIZCA satır kırpmasını
-            değiştiriyordu (akışta 4 satır, konuşmada sınırsız); tipografi
-            ikisinde de aynıydı. Konuşmada kök gönderi body 17/23, yanıtlar
-            subhead 15/21 kalıyor. Girinti YOK — hiyerarşi punto ile
-            kuruluyor, boşlukla değil. */}
-        <Text style={[styles.text, kok && styles.textKok]} numberOfLines={compact ? 4 : undefined}>{post.text}</Text>
-
-        {post.game?.appid ? (
-          <Pressable
+      <Post
+        header={
+          <PostHeader
+            avatar={post.author?.avatar}
+            name={name}
+            handle={username ? `@${username}` : ''}
+            time={timeAgo(post.at, lang)}
+            badge={<DevBadge user={post.author} username={username} isDeveloper={post.author?.isDeveloper} size={13} />}
+            onProfile={username ? () => router.push(`/u/${username}`) : undefined}
+            onMore={onMenu ? () => onMenu(post.author) : undefined}
+          />
+        }
+        text={post.text}
+        lines={compact ? 4 : undefined}
+        textVariant={kok ? 'bodyLarge' : 'body'}
+        game={post.game?.appid ? (
+          <GameTag
+            title={post.game.name}
+            image={post.game.image}
             onPress={() => router.push({ pathname: '/game/[id]', params: { id: post.game.appid, name: post.game.name } })}
-            style={({ pressed }) => [styles.gameChip, pressed && PRESSED]}
-          >
-            {post.game.image ? (
-              <Image source={post.game.image} style={styles.gameImg} contentFit="cover" />
-            ) : null}
-            <Text style={styles.gameName} numberOfLines={1}>{post.game.name}</Text>
-          </Pressable>
+          />
         ) : null}
-
-        <View style={styles.actions}>
-          <View style={styles.action}>
-            <Ionicons name="chatbubble-outline" size={15} color={colors.text3} />
-            <Text style={[styles.actionText, NUMERIC]}>{post.replyCount || 0}</Text>
-          </View>
-
-          <Pressable onPress={onLike} hitSlop={10} style={styles.action}>
-            {/* Kalp ANINDA doluyordu: dokunsal geri bildirim vardı, görsel
-                yoktu. usePop yalnızca beğenirken tepki veriyor — geri almak
-                dikkat çekmemeli. */}
-            <Animated.View style={likeStyle}>
-              <Ionicons
-                name={liked ? 'heart' : 'heart-outline'}
-                size={15}
-                color={liked ? colors.accent : colors.text3}
-              />
-            </Animated.View>
-            {/* Kendi beğenin bir DURUM işareti; renk değere bağlı (Faz 5 kararı). */}
-            {/* accent-serbest: kendi beğenin — değere bağlı durum rengi */}
-            <Text style={[styles.actionText, NUMERIC, liked && { color: colors.accent }]}>{count}</Text>
-          </Pressable>
-        </View>
-      </View>
-
-      {/* ⋯ BAŞLIK SATIRININ İÇİNDE DEĞİL, SATIRIN SAĞ ÜSTÜNDE.
-          Başlık satırı `flexWrap: 'wrap'` ve uzun bir adda alt satıra
-          taşıyor; düğme oraya konsaydı kimi kartta tek başına ikinci satıra
-          düşerdi. Dışarıda konumu her kartta aynı.
-          hitSlop 10 — ikon 16pt, dokunma hedefi 36pt oluyor. */}
-      {onMenu ? (
-        <Pressable
-          onPress={() => onMenu(post.author)}
-          hitSlop={10}
-          accessibilityRole="button"
-          accessibilityLabel={t('a11y.more')}
-          style={({ pressed }) => [styles.menuBtn, pressed && PRESSED]}
-        >
-          <Ionicons name="ellipsis-horizontal" size={16} color={colors.text3} />
-        </Pressable>
-      ) : null}
+        actions={
+          <PostActions
+            liked={liked}
+            likes={count.toLocaleString(locale)}
+            comments={(Number(post.replyCount) || 0).toLocaleString(locale)}
+            onLike={onLike}
+            onComment={open}
+          />
+        }
+      />
     </Pressable>
   );
 }
 
-// Maket: avatar 40. Gönderi bir İNSANIN sözü; kimliğin taşıyıcısı avatar.
-const AV = 40;
-
-const makeStyles = (colors) => StyleSheet.create({
-  // ── SATIR, KART DEĞİL (Faz 2) ──
-  // Bir ara satırdı, sonra eski makete bakılarak KART yapıldı (surface2 dolgu
-  // + 1px kenarlık + 12pt kart arası boşluk). Faz 2 geri alıyor ve gerekçesi
-  // yoğunlukla ilgili:
-  //
-  //   "Tek kolon, sabit satır ritmi, düşük maliyetli eylemler satırın
-  //    İÇİNDE. Kart yüzeyi yok: gönderi ZEMİN ÜSTÜNDE durur, yalnızca
-  //    ayırıcı taşır (yoğunluk bir erdem)."
-  //
-  // Maketin gönderi kutusunun zemini sayfa zemininin kendisi (#06070a) —
-  // yani yüzey yok. Kart yüzeyi her gönderiye 2px kenarlık + 12pt boşluk
-  // ekliyordu; ekranda üçte bir daha az gönderi görünüyordu.
-  row: {
-    flexDirection: 'row', gap: spacing.s12,
-    paddingHorizontal: spacing.s20, paddingVertical: spacing.s16,
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.cardBorder,
-  },
-  main: { flex: 1, minWidth: 0 },
-  head: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.s4, flexWrap: 'wrap' },
-  // alignSelf flex-start: satır yüksekliği gövdeye göre değişiyor, düğme
-  // ortalanırsa uzun gönderide kartın ortasında asılı kalırdı. Ek dolgu YOK —
-  // ölçek dışı bir değer olurdu (check:spacing) ve başlık satırı zaten
-  // ikonun üst hizasına denk geliyor.
-  menuBtn: { alignSelf: 'flex-start' },
-  // Maket: ad 15/600, kullanıcı adı ve zaman 13/text3.
-  name: { color: colors.text, fontSize: type.subhead, fontWeight: '600', flexShrink: 1 },
-  handle: { color: colors.text3, fontSize: type.footnote, flexShrink: 1 },
-  dot: { color: colors.text3, fontSize: type.footnote },
-  time: { color: colors.text3, fontSize: type.footnote },
-
-  // Maket: gönderi gövdesi 15 / 400.
-  text: { color: colors.text, fontSize: type.subhead, fontWeight: '400', lineHeight: 20, marginTop: spacing.s4 },
-  textKok: { fontSize: type.body, lineHeight: 23 },
-
-  gameChip: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: 9,
-    // Maket: kart İÇİNDEKİ oyun kartı surface3 (bir tık üstü), r12, dolgu 8.
-    backgroundColor: colors.bgInput, borderRadius: radius.md,
-    borderWidth: 1, borderColor: colors.cardBorder,
-    paddingRight: spacing.s12, overflow: 'hidden', alignSelf: 'flex-start', maxWidth: '100%',
-  },
-  gameImg: { width: 46, height: 30 },
-  gameName: { color: colors.text2, fontSize: type.caption, fontWeight: '600', flexShrink: 1 },
-
-  // Maket: eylemler arası 20, her biri minHeight 44 (HIG hedefi).
-  actions: { flexDirection: 'row', gap: spacing.s20 },
-  action: { flexDirection: 'row', alignItems: 'center', gap: spacing.s4, minHeight: TOUCH_MIN },
-  actionText: { color: colors.text2, fontSize: type.footnote, fontWeight: '600' },
+// Akışta gönderiler arası 28 (kit community() feed gap): her satır yarısını
+// üstte, yarısını altta taşıyor — FlashList'te aralık öğenin kendisinde.
+const s = StyleSheet.create({
+  row: { paddingHorizontal: layout.gutter, paddingVertical: K.community.feedGap / 2 },
 });
 
 export default memo(PostCard);

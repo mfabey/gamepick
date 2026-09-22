@@ -365,6 +365,10 @@ export const component = {
   stickyBar: { paddingTop: 10, paddingH: 20, minBottom: 10, gap: 12, button: 48 },
   pageDots: { active: 18, size: 6, gap: 6, top: 12 },
   home: { greetingTop: 2, heroTop: 14, greetingChevron: 14, newsRowsTop: 18, newsRowsGap: 14, dealCount: 2 },
+  // G-10 Topluluk (kit s1.py community()).
+  community: { segTop: 4, composerTop: 16, railTop: 24, feedTop: 28, feedGap: 28,
+    composer: { padding: 14, radius: 18, row: 36, avatar: 36, gap: 10, chipsTop: 12, chipHeight: 32, chipPadding: 10, chipRadius: 10, chipGap: 5, chipIcon: 15 },
+    tile: { width: 72, image: 60, radius: 18, nameTop: 8, subTop: 2 } },
   // G-08 Fiyat Karşılaştırma (kit s1.py prices()).
   prices: { headerTop: 16, headerHeight: 64, headerGap: 12, thumbWidth: 48, thumbHeight: 64, thumbRadius: 10, cardTop: 16, alertTop: 24,
     storesTop: 28, storesHead: 28, chipsTop: 12, listTop: 12, listRadius: 18, listPaddingV: 4, trustTop: 16, trustGap: 10, trustIcon: 18,

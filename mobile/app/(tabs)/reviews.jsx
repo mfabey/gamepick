@@ -18,13 +18,11 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
-  View, Text, Pressable, StyleSheet, ScrollView, ActivityIndicator, RefreshControl,
+  View, Pressable, StyleSheet, ScrollView, ActivityIndicator, RefreshControl,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 import { getReviewFeed, getEligibleGames, fetchPosts, getFriends } from '../../src/api/social';
@@ -39,10 +37,15 @@ import { suz } from '../../src/services/engel';
 import { useEngelliler } from '../../src/hooks/useEngelliler';
 import { useModerasyon } from '../../src/hooks/useModerasyon';
 import { FeedSkeleton, Reveal } from '../../src/components/Skeleton';
-import { radius, spacing, type, PRESSED, NUMERIC, TOUCH_MIN, motion, SECTION_TITLE, CHIP_TEXT_ON } from '../../src/theme';
 import { useTabBosluk } from '../../src/hooks/useAltBosluk';
 import { useYanBosluk } from '../../src/hooks/useIcerikAlani';
-import { useStyles, useTheme } from '../../src/context/ThemeContext';
+import { useAuth } from '../../src/context/AuthContext';
+import { Icon } from '../../src/components/Icon';
+import { Button, CoverImage, IconButton, PressableScale, SectionHeader, Segmented, Txt } from '../../src/components/ui/Primitives';
+import { PageHeader } from '../../src/components/ui/Navigation';
+import { UserAvatar } from '../../src/components/ui/Social';
+import { useDesignTheme } from '../../src/theme/useDesignTheme';
+import { component as K, control, layout } from '../../src/theme/tokens';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useTimeToData } from '../../src/dev/perf';
 
@@ -64,10 +67,11 @@ function hedefOf(x) {
 }
 
 export default function ReviewsScreen() {
-  const styles = useStyles(makeStyles);
   const tabBosluk = useTabBosluk();
   const yan = useYanBosluk();
-  const { colors } = useTheme();
+  const { colors } = useDesignTheme();
+  // Yazma kartındaki avatar — başlık ve sekme çubuğuyla aynı kaynak.
+  const { account } = useAuth();
   const router = useRouter();
   const { t, lang } = useLanguage();
 
@@ -237,6 +241,7 @@ export default function ReviewsScreen() {
     router.push('/account');
     return true;
   }, [session, router]);
+  const yazmayaBasla = useCallback(() => { if (!requireAccount()) setComposing(true); }, [requireAccount]);
 
   // ─────────────────────────────────────────────────────────────────────────
   // BOŞ DURUM — üç sekmenin üçü de ölü uçtu: tek satır gri yazı, çıkış yok.
@@ -317,97 +322,92 @@ export default function ReviewsScreen() {
   // sıfırlanırdı.
   const header = (
     <View>
-      {/* ── Yazabileceğin oyunlar ──
-          Sayfanın boş görünmemesini sağlayan kısım. Steam bağlıysa ilk
-          günden dolu; topluluk akışı boş olsa bile sayfa ölü durmuyor. */}
+      {/* ── İki akış (G-10 Segmented) ──
+          Tasarım dört bölüm çiziyor (Senin İçin · Takip · Trend · Topluluklar);
+          takip modeli, trend sıralaması ve topluluk üyeliği sunucuda yok.
+          Veri olan iki akış tasarımın kontrolüyle: Keşfet (herkes) ve
+          Arkadaşlar. "Benimkiler" profilde (dosya başı notu). */}
+      <View style={[s.pad, s.segTop]}>
+        <Segmented
+          value={tab}
+          accessibilityLabel={t('rev.section')}
+          onChange={(k) => { Haptics.selectionAsync().catch(() => {}); setTab(k); }}
+          items={[{ value: 'discover', label: t('post.tabDiscover') }, { value: 'friends', label: t('post.tabFriends') }]}
+        />
+      </View>
+
+      {/* Yazma kartı (kit community() comp): akışın ÜSTÜNDE ve HER SEKMEDE —
+          sayfanın işi konuşmak. Tür çiplerinden yalnız "Oyun" gerçek: gönderiye
+          oyun eklenebiliyor; görsel/video kapalı karar (AGENTS.md), anket yok. */}
+      <Pressable
+        onPress={yazmayaBasla}
+        accessibilityRole="button"
+        accessibilityLabel={t('post.hint')}
+        style={({ pressed }) => [s.composer, { backgroundColor: colors.surface1 }, pressed && s.pressed]}
+      >
+        <View style={s.composerRow}>
+          <UserAvatar avatar={account?.avatar} name={account?.displayName || account?.username} size={K.community.composer.avatar} />
+          <Txt variant="input" numberOfLines={1} style={[s.flex, { color: colors.text3 }]}>{t('post.hint')}</Txt>
+        </View>
+        <View style={s.composerChips}>
+          <View style={[s.typeChip, { backgroundColor: colors.surface2 }]}>
+            <Icon name="pad" size={K.community.composer.chipIcon} color={colors.text2} />
+            <Txt variant="captionStrong" style={{ color: colors.text2 }}>{t('v2.gameChip')}</Txt>
+          </View>
+        </View>
+      </Pressable>
+
+      {/* ── Yazabileceğin oyunlar (kit "Toplulukların" rayının kutucukları) ──
+          Oyun toplulukları sunucuda yok; bu rayın gerçek karşılığı Steam'den
+          doğrulanan oyunların — sayfanın boş görünmemesini sağlayan kısım.
+          Dokununca inceleme yazma sayfası açılıyor. */}
       {eligible?.games?.length > 0 && (
-        <>
-          <Text style={styles.sectionLabel}>{t('rev.canWriteAbout')}</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.strip}
-          >
+        <View style={s.railTop}>
+          <View style={s.pad}><SectionHeader title={t('rev.canWriteAbout')} /></View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.tiles}>
             {eligible.games.map((g) => (
-              <Pressable
+              <PressableScale
                 key={g.appid}
-                style={({ pressed }) => [styles.gameCard, pressed && PRESSED]}
+                accessibilityRole="button"
+                accessibilityLabel={g.name}
                 onPress={() => {
                   Haptics.selectionAsync().catch(() => {});
                   setComposer({ appid: g.appid, name: g.name, existing: null });
                 }}
+                style={s.tile}
               >
-                <Image source={g.image} style={styles.gameImg} contentFit="cover" transition={motion.image} />
-                <Text style={styles.gameName} numberOfLines={2}>{g.name}</Text>
-                <Text style={[styles.gameHours, NUMERIC]}>
-                  {Math.round(g.hours)}{lang === 'tr' ? ' saat' : ' h'}
-                </Text>
-              </Pressable>
+                <CoverImage source={g.image} radius={K.community.tile.radius} style={s.tileImg} />
+                <Txt variant="captionStrong" numberOfLines={1} style={s.tileName}>{g.name}</Txt>
+                <Txt variant="caption2Medium" style={[s.tileSub, s.num, { color: colors.text3 }]}>{`${Math.round(g.hours)} ${t('rev.hoursShort')}`}</Txt>
+              </PressableScale>
             ))}
           </ScrollView>
-        </>
+        </View>
       )}
 
       {eligible?.games?.length === 0 && (
-        <Text style={styles.hint}>{t('rev.noEligible')}</Text>
+        <Txt variant="footnote" style={[s.pad, s.hint, { color: colors.text3 }]}>{t('rev.noEligible')}</Txt>
       )}
 
-      {/* ── İki akış sekmesi ──
-          ÜÇTEN İKİYE indi. "Benimkiler" kalktı: kullanıcının kendi gönderileri
-          ve incelemeleri artık PROFİLİNİN sekmelerinde ve aynı listeyi iki
-          yerde tutmak, hangisinin güncel olduğunu belirsizleştiriyordu.
-          "Tartışma" ile "Topluluk" da tek akışta birleşti — ikisi de aynı
-          soruyu (bugün ne konuşuluyor) farklı içerik türüyle cevaplıyordu.
-
-          METİN ETİKETİ KULLANILIYOR, ikon değil: iki etiket var ve
-          "Entdecken / Freunde" Almanca'da bile rahat sığıyor. (Profil
-          sekmeleri dört tane olduğu için oradaki karar ikondu.) */}
-      <View style={styles.tabs}>
-        {['discover', 'friends'].map((k) => (
-          <Pressable
-            key={k}
-            style={({ pressed }) => [styles.tab, tab === k && styles.tabOn, pressed && PRESSED]}
-            onPress={() => {
-              Haptics.selectionAsync().catch(() => {});
-              setTab(k);
-            }}
-          >
-            <Text style={[styles.tabText, tab === k && styles.tabTextOn]}>
-              {k === 'discover' ? t('post.tabDiscover') : t('post.tabFriends')}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      {/* Yazma çağrısı akışın ÜSTÜNDE ve HER SEKMEDE: sayfanın işi konuşmak,
-          bunu söylemenin yeri en görünür nokta. Öncesinde yalnız bir sekmede
-          duruyordu, yani öteki sekmedeki kullanıcı yazma yolunu görmüyordu. */}
-      <Pressable
-        onPress={() => { if (!requireAccount()) setComposing(true); }}
-        style={({ pressed }) => [styles.composeBar, pressed && PRESSED]}
-      >
-        <Ionicons name="create-outline" size={17} color={colors.text3} />
-        <Text style={styles.composeText}>{t('post.hint')}</Text>
-      </Pressable>
-
-      {/* BOZUK AKIŞ — davet şeridinin ve yazma çubuğunun ALTINDA.
-          Sıra bilinçli: hata okumayı engelliyor, YAZMAYI değil. Sayfa
-          hâlâ bir şey teklif ediyor, ölü durmuyor. */}
+      {/* BOZUK AKIŞ — yazma kartının ALTINDA. Hata okumayı engelliyor,
+          YAZMAYI değil: sayfa hâlâ bir şey teklif ediyor, ölü durmuyor.
+          Kırmızı yok: durum bir eylem değil. */}
       {bozuk ? (
-        <View style={styles.bozukBant}>
-          <Text style={styles.bozukBaslik}>{t('rev.degraded')}</Text>
-          <Text style={styles.bozukMetin}>{t('rev.degradedDesc')}</Text>
-          <Pressable onPress={() => load()} hitSlop={8} style={({ pressed }) => [styles.bozukEylem, pressed && PRESSED]}>
-            <Text style={styles.bozukEylemText}>{t('common.retry')}</Text>
-          </Pressable>
+        <View style={[s.bozuk, { backgroundColor: colors.surface1 }]}>
+          <Txt variant="cardTitle">{t('rev.degraded')}</Txt>
+          <Txt variant="footnote" style={{ color: colors.text2 }}>{t('rev.degradedDesc')}</Txt>
+          <View style={s.bozukEylem}><Button title={t('common.retry')} variant="tertiary" height={40} onPress={() => load()} /></View>
         </View>
       ) : null}
+
+      {/* Akış rayın 28 altında başlıyor (kit); ilk satır yarısını kendi taşıyor. */}
+      <View style={s.feedTop} />
     </View>
   );
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <Header t={t} router={router} incoming={incoming} yan={yan} />
+    <SafeAreaView style={[s.safe, { backgroundColor: colors.bg }]} edges={['top']}>
+      <Header t={t} router={router} incoming={incoming} onCompose={yazmayaBasla} yan={yan} />
 
       {loading ? (
         // Dönen çark DEĞİL. Ölçüldü: bu ekran 645ms boyunca ortada tek bir
@@ -415,7 +415,7 @@ export default function ReviewsScreen() {
         // vermeden. İskelet aynı süreyi düzenin kendisini göstererek geçiriyor.
         <FeedSkeleton />
       ) : (
-        <Reveal style={{ flex: 1 }}>
+        <Reveal style={s.flex}>
         <FlashList
           ref={listRef}
           data={gorunen}
@@ -427,23 +427,15 @@ export default function ReviewsScreen() {
           extraData={tab}
           ListHeaderComponent={header}
           // GENİŞ EKRANDA KOLON ORTALANIYOR (bkz. theme → ICERIK_MAX).
-          // Dolgu listenin İÇİNDE: pencere koordinatlarına dokunmuyor, yani
-          // kart büyüme geçişi ve baloncuğa tutturulan menüler bozulmuyor.
           contentContainerStyle={{ paddingHorizontal: yan }}
-          // BOZUKSA "kimse yazmamış" DEMİYORUZ. Bant üç şey söylüyor: ne
-          // oldu, ne çalışmıyor, ne yapabilirsin. Davet şeridi ve yazma
-          // çubuğu YUKARIDA ayakta kalıyor — ikisi de yerel veriden geliyor,
-          // yani sayfa hâlâ bir şey teklif ediyor, ölü durmuyor.
-          //
-          // Bant `header` İÇİNDE (aşağıda), boş bileşende değil: aynı sekmenin
-          // bayat listesi korunduğunda liste boş olmuyor ve bant hiç
-          // çizilmiyordu. İKİNCİ bir ListHeaderComponent propu da olmaz —
-          // simülatörde görüldü: JSX'te son prop kazanıyor ve gerçek başlığı
-          // (davet şeridi + sekmeler) tamamen siliyordu.
+          // BOZUKSA "kimse yazmamış" DEMİYORUZ; bant `header` İÇİNDE (aynı
+          // sekmenin bayat listesi korunduğunda liste boş olmuyor ve bant
+          // boş bileşende hiç çizilmezdi). İKİNCİ bir ListHeaderComponent
+          // propu da olmaz — JSX'te son prop kazanıyor.
           ListEmptyComponent={bozuk ? null : <EmptyState compact {...bosDurum} />}
           ListFooterComponent={
-            <View style={{ height: tabBosluk, alignItems: 'center', paddingTop: spacing.md }}>
-              {loadingMore ? <ActivityIndicator color={colors.accent} /> : null}
+            <View style={[s.footer, { height: tabBosluk }]}>
+              {loadingMore ? <ActivityIndicator color={colors.text2} /> : null}
             </View>
           }
           onEndReached={loadMore}
@@ -476,156 +468,45 @@ export default function ReviewsScreen() {
   );
 }
 
-// Geri düğmesi YOK: burası artık bir sekme, dönülecek önceki ekran yok.
-// Başlık da büyüdü (title3 → title1), üst düzey ekranların dili bu.
-//
-// SAĞDAKİ KISAYOL — "iki topluluk" sorununun bağı.
-// Bu ekran İÇERİK (gönderi, inceleme); /social ise KİŞİ (arkadaşlar,
-// istekler). İkisi de "topluluk" gibi okunuyordu ama birbirinden habersizdi:
-// içerik sekmedeyken kişiler Profil'in altında 2 derinlikte duruyordu.
-// İçerik ebeveyn oluyor, kişiler oradan ulaşılan yer.
-//
-// ROZET BURADA OLMAK ZORUNDA: bekleyen arkadaşlık isteği yalnızca Profil'de
-// görünüyordu. Kullanıcı Topluluk'ta gezerken kendisine gelen isteği
-// göremiyordu — bildirimi, ilgili olduğu yerde göstermek gerekiyor.
-function Header({ t, router, incoming, yan = 0 }) {
-  const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
+// Geri düğmesi YOK: burası bir sekme. G-10 başlığı: büyük başlık + sağda iki
+// ikon. Tasarımın "ara"sı yerine ARKADAŞLAR duruyor: bekleyen arkadaşlık
+// isteği rozeti, kullanıcı Topluluk'ta gezerken kendisine gelen isteği
+// görsün diye burada ("iki topluluk" sorununun bağı — içerik ebeveyn,
+// kişiler oradan ulaşılan yer). Kalem gönderi yazmayı açıyor.
+function Header({ t, router, incoming, onCompose, yan = 0 }) {
   return (
-    // Başlık listenin DIŞINDA duruyor, dolayısıyla kolona kendi hizalanmak
-    // zorunda: `marginHorizontal`, `head`in kendi dolgusunu ezmesin diye.
-    <View style={[styles.head, { marginHorizontal: yan }]}>
-      <Text style={styles.h1}>{t('rev.section')}</Text>
-      <Pressable
-        onPress={() => router.push('/friends')}
-        hitSlop={8}
-        accessibilityRole="button"
-        accessibilityLabel={t('soc.title')}
-        style={({ pressed }) => [styles.friendsBtn, pressed && PRESSED]}
-      >
-        {/* MAKETTEN: cip degil, ETIKETLI hap. Olculdu — 121x36, r99,
-            surface3 dolgu, dolgu 4/12/4/4, ara 8; icinde 28pt yuvarlak
-            bir yuva, ardindan 13/600 etiket, sagda rozet.
-            Oncesinde ciplak bir kisi simgesiydi; "Arkadaslar"a gittigi
-            bicimden okunmuyordu. */}
-        <View style={styles.friendsIcon}>
-          <Ionicons name="people" size={16} color={colors.text2} />
-        </View>
-        <Text style={styles.friendsLabel}>{t('soc.title')}</Text>
-        {incoming > 0 ? (
-          <View style={styles.headBadge}>
-            <Text style={[styles.headBadgeText, NUMERIC]}>{incoming > 9 ? '9+' : incoming}</Text>
-          </View>
-        ) : null}
-      </Pressable>
+    // Başlık listenin DIŞINDA; kolona kendi hizalanıyor.
+    <View style={{ marginHorizontal: yan }}>
+      <PageHeader title={t('rev.section')}>
+        <IconButton icon="users" label={t('soc.title')} badge={incoming || undefined} onPress={() => router.push('/friends')} />
+        <IconButton icon="edit" label={t('post.newTitle')} onPress={onCompose} />
+      </PageHeader>
     </View>
   );
 }
 
-const makeStyles = (colors) => StyleSheet.create({
-  composeBar: {
-    flexDirection: 'row', alignItems: 'center', gap: 9,
-    marginHorizontal: spacing.s20, marginTop: spacing.xs, marginBottom: spacing.s12,
-    paddingHorizontal: 14, paddingVertical: spacing.md,
-    backgroundColor: colors.card, borderRadius: 999,
-  },
-  composeText: { color: colors.text3, fontSize: type.footnote },
-
-  safe:   { flex: 1, backgroundColor: colors.bg },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-
-  head: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    gap: spacing.md,
-    paddingHorizontal: spacing.s20, paddingTop: spacing.s8, paddingBottom: spacing.s16,
-  },
-  // flex:1 + shrink:0 — büyük yazı tipinde başlık sarınca kısayolu ezmesin
-  // (anasayfa bölüm başlığında ölçülen kırılmanın aynısı).
-  // Maket: ekran basligi 28 / 700 / -0.28.
-  h1: { flex: 1, color: colors.text, fontSize: type.title1, fontWeight: '700', letterSpacing: -0.28 },
-  // Maket: 121x36, r99, surface3, dolgu 4/12/4/4, ara 8.
-  friendsBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.s8,
-    height: 36, borderRadius: radius.pill, backgroundColor: colors.bgInput,
-    paddingLeft: spacing.s4, paddingRight: spacing.s12,
-    flexShrink: 0,
-  },
-  // Maketteki 28pt yuvarlak yuva (orada avatar; bizde simge).
-  friendsIcon: {
-    width: 28, height: 28, borderRadius: 14,
-    backgroundColor: colors.bgHover,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  friendsLabel: { ...CHIP_TEXT_ON, color: colors.text2 },
-  // Maket: 22x22, r99, marka dolgusu, 2px ZEMIN renginde halka (rozet
-  // hapin kenarina binerken kesintisiz gorunsun), metin 11/700 beyaz.
-  headBadge: {
-    position: 'absolute', top: -4, right: -6,
-    minWidth: 22, height: 22, borderRadius: 11,
-    borderWidth: 2, borderColor: colors.bg,
-    alignItems: 'center', justifyContent: 'center',
-    backgroundColor: colors.accentFillStrong,
-  },
-  headBadgeText: { color: '#fff', fontSize: type.caption2, fontWeight: '800' },
-
-  sectionLabel: {
-    ...SECTION_TITLE, color: colors.text2,
-    paddingHorizontal: spacing.s20, marginBottom: spacing.sm,
-  },
-  strip: { paddingHorizontal: spacing.s20, gap: spacing.sm, paddingBottom: spacing.lg },
-  // FAZ 5: 132 → 148 (Faz 0 adımı). Medya 148×70 KAPSÜL kalıyor —
-  // bu bir oyun kapağı değil Steam kapsülü, 3/4 oranı burada geçerli değil.
-  gameCard: { width: 148 },
-  gameImg:  { width: 148, height: 70, borderRadius: radius.sm, backgroundColor: colors.bgInput },
-  gameName: { color: colors.text, fontSize: type.caption, fontWeight: '700', marginTop: 5 },
-  gameHours:{ color: colors.text3, fontSize: type.caption2, marginTop: 1 },
-
-  hint: {
-    color: colors.text3, fontSize: type.footnote, textAlign: 'center',
-    paddingHorizontal: spacing.xl, paddingVertical: spacing.lg,
-  },
-
-  // ── SEGMENT: MAKETTEN ──
-  // Maket segmenti bir KAP olarak ciziyor (350x40, r12, surface2, dolgu 4,
-  // ara 4) ve secili sekme kabin ICINDE r8'lik dolu bir kutu. Bizde uc ayri
-  // kutu yan yanaydi ve her birinin kendi kenarligi vardi; kap olmayinca
-  // "bunlar birbirinin alternatifi" bilgisi bicimden okunmuyordu.
-  // ── SEKMELER: DOLU HAP DEĞİL ALT ÇİZGİ ──
-  // Üç sekmeliyken seçili sekme `colors.text` dolgulu bir hapti. Profil dört
-  // ikonlu şeride geçince uygulamada AYNI İŞİN İKİ DİLİ oldu: bir ekranda
-  // dolu hap, ötekinde 2pt alt çizgi. Akış sekmeleri profil şeridiyle
-  // hizalandı — seçim bir DURUM, dolu dikdörtgen ise eylem diliydi.
-  tabs: {
-    flexDirection: 'row', gap: spacing.s24,
-    paddingHorizontal: spacing.s20, marginBottom: spacing.s12,
-  },
-  tab: {
-    minHeight: TOUCH_MIN, justifyContent: 'center',
-    // Alt çizgi metnin altına oturuyor; dolgu yok, kutu yok.
-    paddingBottom: spacing.s8,
-  },
-  // Aktif dolgu surface4 (maket: rgb(42,44,51)) — kabin bir tik ustu.
-  // FAZ 5 — SEÇİMİN ÜÇÜNCÜ LEHÇESİ KALKTI. Burada seçili sekme
-  // `surfaceTile` idi ve seçili/seçilmemiş farkı 1.24:1 — neredeyse
-  // görünmüyordu. Oyunlar ve Filtreler'de aynı jest `colors.text` dolgu +
-  // koyu metin. Şekil (flex dikdörtgen, radius.md) korunuyor; değişen
-  // yalnız dil.
-  // FAZ 5 — BOZUK AKIŞ BANDI. Kırmızı yok: durum bir eylem değil.
-  bozukBant: {
-    marginHorizontal: spacing.s20, marginTop: spacing.s16,
-    padding: spacing.s16, borderRadius: radius.md,
-    backgroundColor: colors.bgInput, gap: spacing.s4,
-  },
-  bozukBaslik: { color: colors.text, fontSize: type.subhead, fontWeight: '700' },
-  bozukMetin: { color: colors.text2, fontSize: type.footnote, lineHeight: 19 },
-  bozukEylem: { minHeight: TOUCH_MIN, justifyContent: 'center', alignSelf: 'flex-start' },
-  bozukEylemText: { color: colors.accentText, fontSize: type.subhead, fontWeight: '700' },
-
-  // Profil şeridiyle aynı işaret: 2pt çizgi (ProfileTabs.underline).
-  // accent-serbest: AKTİF DURUM İŞARETİ — çizgi metin taşımıyor, kontrast eşiği geçerli değil
-  tabOn:      { borderBottomWidth: 2, borderBottomColor: colors.accent },
-  tabText:    { color: colors.text3, fontSize: type.subhead, fontWeight: '500' },
-  tabTextOn:  { color: colors.text, fontWeight: '600' },
-
-
+const C = K.community;
+const s = StyleSheet.create({
+  safe: { flex: 1 },
+  flex: { flex: 1, minWidth: 0 },
+  num: { fontVariant: ['tabular-nums'] },
+  pressed: { opacity: 0.9 },
+  pad: { paddingHorizontal: layout.gutter },
+  segTop: { marginTop: C.segTop },
+  composer: { marginHorizontal: layout.gutter, marginTop: C.composerTop, padding: C.composer.padding, borderRadius: C.composer.radius },
+  composerRow: { height: C.composer.row, flexDirection: 'row', alignItems: 'center', gap: C.composer.gap },
+  composerChips: { marginTop: C.composer.chipsTop, flexDirection: 'row', gap: control.buttonGap },
+  typeChip: { height: C.composer.chipHeight, paddingHorizontal: C.composer.chipPadding, borderRadius: C.composer.chipRadius,
+    flexDirection: 'row', alignItems: 'center', gap: C.composer.chipGap },
+  railTop: { marginTop: C.railTop },
+  tiles: { paddingHorizontal: layout.gutter, paddingTop: layout.headingToContent, gap: K.rail.friend[0] },
+  tile: { width: C.tile.width, alignItems: 'center' },
+  tileImg: { width: C.tile.image, height: C.tile.image },
+  tileName: { width: C.tile.width, marginTop: C.tile.nameTop, textAlign: 'center' },
+  tileSub: { marginTop: C.tile.subTop },
+  hint: { marginTop: C.railTop, textAlign: 'center' },
+  bozuk: { marginHorizontal: layout.gutter, marginTop: C.railTop, padding: K.prices.alert.padding, borderRadius: C.composer.radius, gap: K.comment.textTop },
+  bozukEylem: { alignSelf: 'flex-start' },
+  feedTop: { height: C.feedTop - C.feedGap / 2 },
+  footer: { alignItems: 'center', paddingTop: layout.headingToContent },
 });

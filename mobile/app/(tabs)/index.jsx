@@ -542,7 +542,6 @@ export default function HomeScreen() {
         onExpand={kartAc}
         onMenu={(k) => mod.acMenu(k, { targetType: 'review', targetId: `${item.review.appid}:${item.review.uid}` })}
         onLongPress={() => mod.acMenu(item.review.author, { targetType: 'review', targetId: `${item.review.appid}:${item.review.uid}` })}
-        style={styles.feedReview}
       />
     ) : (
       <GamePostCard game={item.game} tag={item.tag} onDismiss={handleDismiss} onExpand={kartAc} />
@@ -780,5 +779,4 @@ const makeStyles = (colors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   listContent: {},
   headerWrap: { paddingBottom: spacing.s32 },
-  feedReview: { marginBottom: spacing.s24 },
 });
