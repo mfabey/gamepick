@@ -1,5 +1,6 @@
 import { palette } from './design/tokens';
 import { Appearance } from 'react-native';
+import { designPalettes, legacyDesignColors } from './theme/palettes';
 
 // Gamerisen mobil tema.
 // Kaynak: 2026-08 tasarım handoff'u (design_handoff_gamerisen). Vurgu = KIRMIZI.
@@ -107,8 +108,11 @@ export const PALET_EK = {
   },
 };
 
-const dark  = { ...paletten(T.dark),  ...PALET_EK.dark };
-const light = { ...paletten(T.light), ...PALET_EK.light };
+export const APP_PALETTES = {
+  dark: { ...paletten(T.dark), ...PALET_EK.dark, ...legacyDesignColors(designPalettes.dark) },
+  light: { ...paletten(T.light), ...PALET_EK.light, ...legacyDesignColors(designPalettes.light) },
+};
+const { dark, light } = APP_PALETTES;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AÇILIŞ PALETİ — ARTIK YALNIZCA YEDEK.

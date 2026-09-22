@@ -23,6 +23,11 @@ import { startDmPushSync } from '../src/services/dmPush';
 import { useLastNotificationResponse } from 'expo-notifications';
 import FpsMeter from '../src/dev/FpsMeter';
 import { useTheme } from '../src/context/ThemeContext';
+import { useFonts } from 'expo-font';
+import { Inter_400Regular } from '@expo-google-fonts/inter/400Regular';
+import { Inter_500Medium } from '@expo-google-fonts/inter/500Medium';
+import { Inter_600SemiBold } from '@expo-google-fonts/inter/600SemiBold';
+import { Inter_700Bold } from '@expo-google-fonts/inter/700Bold';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AÇILIŞ PERDESİ ELDE TUTULUYOR.
@@ -131,6 +136,7 @@ function TemaliYigin() {
 }
 
 export default function RootLayout() {
+  const [fontsLoaded, fontError] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold });
   // Zevk profilini açılışta belleğe yükle (keşif algoritması için) ve önbelleği geri yükle
   //
   // loadSession ÖNCE: depolar artık hesaba göre kapsanıyor ve sahip
@@ -159,6 +165,7 @@ export default function RootLayout() {
   useEffect(() => {
     let alive = true;
 
+    if (!fontsLoaded && !fontError) return;
     loadPerde().then(() => {
       if (!alive) return;
       // İKİ KARE BEKLENİYOR. Bayrağın çözüldüğü commit'te (tabs) düzeni
@@ -173,7 +180,7 @@ export default function RootLayout() {
     }).catch(() => { SplashScreen.hideAsync().catch(() => {}); });
 
     return () => { alive = false; };
-  }, []);
+  }, [fontsLoaded, fontError]);
 
   // Share Extension'dan gelen bekleyen bir Steam linki varsa oyuna git
   useEffect(() => { startSharedLinkWatcher(); }, []);
@@ -232,6 +239,8 @@ export default function RootLayout() {
     islenenRef.current = id;
     handleResponse(sonYanit);
   }, [sonYanit, handleResponse]);
+
+  if (!fontsLoaded && !fontError) return null;
 
   return (
     // Jest sistemi kökten sarmalanmalı — swipe (Faz 1) ve diğer jest tabanlı

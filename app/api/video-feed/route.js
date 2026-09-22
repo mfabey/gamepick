@@ -205,6 +205,22 @@ async function resolvePool(pool, lang) {
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const lang = searchParams.get('lang') === 'tr' ? 'tr' : 'en';
+  // Stable detail lookup: deep links must not depend on a shuffled feed page.
+  const videoId = searchParams.get('id');
+  if (videoId !== null) {
+    const match = /^rawg_([1-9]\d{0,9})$/.exec(videoId);
+    if (!match) return NextResponse.json({ error: 'Invalid video id' }, { status: 400 });
+    try {
+      const appid = match[1];
+      const cached = await redisGetJSON(itemKey(lang, appid)).catch(() => null);
+      const item = cached || await resolveItem(appid, '', lang);
+      if (!item) return NextResponse.json({ error: 'Video unavailable' }, { status: 404 });
+      if (!cached) await redisCmd(['SET', itemKey(lang, appid), JSON.stringify(item), 'EX', String(ITEM_TTL_SEC)]).catch(() => {});
+      return NextResponse.json({ item });
+    } catch {
+      return NextResponse.json({ error: 'Video temporarily unavailable' }, { status: 503 });
+    }
+  }
   const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
   // İstemci oturum başına bir seed üretiyor → aynı oturumda sayfalama tutarlı,
   // farklı oturumlarda sıra değişiyor.

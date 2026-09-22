@@ -1,12 +1,11 @@
 import { memo, useMemo, useCallback, useEffect, useState, useRef } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { View, ScrollView, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomFade } from '../../src/components/EdgeFade';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { fetchTrending, fetchGames } from '../../src/api/games';
-import { radius, spacing, PRESSED, type, SECTION_TITLE, TOUCH_MIN } from '../../src/theme';
+import { spacing } from '../../src/theme';
 import { useTabBosluk } from '../../src/hooks/useAltBosluk';
 import { useYanBosluk } from '../../src/hooks/useIcerikAlani';
 import { useStyles, useTheme } from '../../src/context/ThemeContext';
@@ -15,7 +14,11 @@ import { useLanguage } from '../../src/context/LanguageContext';
 import { useTimeToData } from '../../src/dev/perf';
 import FadeIn from '../../src/components/FadeIn';
 import Greeting from '../../src/components/Greeting';
-import GameCard from '../../src/components/GameCard';
+import HeroRail from '../../src/components/ui/HeroRail';
+import HomeMedia from '../../src/components/ui/HomeMedia';
+import GameCard from '../../src/components/ui/GameCard';
+import { Lockup } from '../../src/components/brand/Logo';
+import { IconButton, SectionHeader } from '../../src/components/ui/Primitives';
 import { useQuery } from '../../src/hooks/useQuery';
 import { useTasteProfile } from '../../src/hooks/useTasteProfile';
 import { useOwnedGames } from '../../src/hooks/useOwnedGames';
@@ -439,7 +442,7 @@ export default function HomeScreen() {
       pathname: '/game/[id]',
       params: {
         id: String(g.id), name: g.name, image: g.image || '',
-        slug: g.rawgSlug || '', hasSteam: g.hasSteam ? '1' : '',
+        slug: g.rawgSlug || '', appid: g.appid ? String(g.appid) : '', hasSteam: g.hasSteam ? '1' : '',
         // appid ŞART OLDU: geçiş artık arkadaş ve inceleme kartlarını da
         // taşıyor, ikisi de detaya slug'la değil appid'yle gidiyor. Burada
         // düşseydi o iki yol büyüdükten sonra boş detaya inerdi.
@@ -512,45 +515,11 @@ export default function HomeScreen() {
   const header = (
     <View style={styles.headerWrap}>
 
-        {/* ── Üst: marka (ortalı) + haberler ──
-            Marka ORTADA kalsın diye ikon akışa girmiyor, mutlak konumlu.
-            Aksi hâlde marka sola kayardı.
-
-            BU KÖŞENİN GEÇMİŞİ: önce kaydırarak keşif (swipe) girişiydi,
-            sonra mesajlar. Kaydırma arşive alındı, mesajlar ise alt
-            navigasyona terfi etti — orada rozetiyle birlikte duruyor.
-
-            Şimdi haberlerin girişi burada. Haberler eskiden anasayfanın en
-            üstünde 8 kartlık bir şerit ve alt navigasyonda bir sekmeydi;
-            ikisi de kalktı. Dış siteye çıkan içerik uygulamanın ilk
-            perdesini dolduramaz. */}
         <View style={styles.topBar}>
-          {/* MARKA YAZISI, GÖVDE METNİ DEĞİL. Ölçüldü: erişilebilirlik
-              boyutlarında ekran genişliğini aşıp haber ikonunun üstüne
-              biniyordu. Ölçeklenmeyi tamamen KAPATMAK yanlış olurdu (büyük
-              yazıya ihtiyacı olan kullanıcı markayı da okuyamaz); üst sınır
-              konuyor — 1.4 kata kadar büyüyor, sonra duruyor. */}
-          {/* KELİME MARKASI — YENİ TASARIM PROJESİNE GÖRE.
-              Eski handoff'un maketi küçük harf "gamerisen" + kırmızı nokta
-              gösteriyordu ve öyle uygulanmıştı. Yeni projenin Faz 1 kareleri
-              (üçü de: iOS koyu, iOS açık, Android) "GAMERISEN" yazıyor.
-              Kullanıcı çelişkide yeni projeyi seçti.
-
-              maxFontSizeMultiplier 1.4 KALIYOR: erişilebilirlik boyutlarında
-              marka ekran genişliğini aşıp haber ikonunun üstüne biniyordu. */}
-          <Text style={styles.brand} maxFontSizeMultiplier={1.4} numberOfLines={1}>GAMERISEN</Text>
-          {/* Faz 1 karelerinde sağ üstte TEK simge var (haberler); arama
-              aşağıda kendi kutusunda. Arama ikonu buradan kalktı. */}
-          <View style={styles.topRight}>
-            <Pressable
-              style={({ pressed }) => [styles.topBtn, pressed && PRESSED]}
-              onPress={() => router.push('/news')}
-              accessibilityRole="button"
-              accessibilityLabel={t('news.title')}
-              hitSlop={6}
-            >
-              <Ionicons name="newspaper-outline" size={22} color={colors.text} />
-            </Pressable>
+          <Lockup />
+          <View style={styles.topActions}>
+            <IconButton icon="search" label={t('hero.search')} onPress={() => router.push('/games')} />
+            <IconButton icon="news" label={t('news.title')} onPress={() => router.push('/news')} />
           </View>
         </View>
 
@@ -579,27 +548,7 @@ export default function HomeScreen() {
           />
         </FadeIn>
 
-        {/* ── Arama ──
-            YENİ TASARIM PROJESİNE GÖRE GERİ GELDİ. Eski handoff'un maketi
-            aramayı başlıktaki bir ikona indiriyordu ve öyle uygulanmıştı;
-            Faz 1'in üç karesi de aramayı kendi kutusunda gösteriyor ve karar
-            tablosunda gerekçesi yazılı: "Ekranın tek kırmızısı: 44×44 dolgulu
-            düğme — Von Restorff + Fitts. Kırmızı tek anlam taşıyor: buraya
-            dokun."
-
-            Kutu METİN ALMIYOR, /games'e götürüyor — arama alanı orada. */}
-        <FadeIn delay={100}>
-          <Pressable style={({ pressed }) => [styles.search, pressed && PRESSED]} onPress={() => router.push('/games')}>
-            <Ionicons name="search" size={19} color={colors.text3} />
-            <Text style={styles.searchText}>{t('hero.search')}</Text>
-            <View style={styles.searchBtn}><Ionicons name="arrow-forward" size={16} color="#fff" /></View>
-          </Pressable>
-        </FadeIn>
-
-        {/* Not: Kayan kapak şeridi kaldırıldı. Trend/Yeni oyunları zaten
-            aşağıdaki kendi bölümlerinde gösteriyoruz; şerit aynı oyunları
-            ikinci kez, üstelik başlıksız gösterdiği için haberlerin önünü
-            gereksiz kapatıyordu. */}
+        <HeroRail games={trend} onExpand={kartAc} />
 
         {/* Arkadaş etkinliği KATALOG ŞERİTLERİNDEN ÖNCE. Sıra bilinçli:
             "Trend" ve "Yeni" herkese aynı şeyi gösteriyor, bu şerit ise
@@ -623,6 +572,7 @@ export default function HomeScreen() {
             aranıyor — "indirime ne girmiş" sorusunun akışta karşılığı yok. */}
         <FadeIn delay={200}><Section title={t('home.new')} games={fresh} router={router} onExpand={kartAc} /></FadeIn>
         <FadeIn delay={260}><Section title={t('home.sale')} games={sale} router={router} onExpand={kartAc} /></FadeIn>
+        <HomeMedia />
     </View>
   );
 
@@ -688,17 +638,9 @@ function Section({ title, games, router, onDismiss, onExpand }) {
   const styles = useStyles(makeStyles);
   if (!games || games.length === 0) return null;
   return (
-    <View style={{ marginTop: spacing.s24 }}>
-      <View style={styles.sectionHead}>
-        {/* BÜYÜK YAZI TİPİNDE ÜST ÜSTE BİNİYORDU. Ölçüldü (simülatör,
-            accessibility-extra-large): başlık iki satıra sarıyor ama satırda
-            yer bırakmıyor, "Tümü ›" onun üstüne çıkıyordu.
-            flex:1 + shrink:0 ikilisi: başlık kalan yeri alır, bağlantı
-            asla ezilmez. */}
-        <Text style={[styles.sectionTitle, { flex: 1 }]}>{title}</Text>
-        <Pressable onPress={() => router.push('/games')} hitSlop={8} style={{ flexShrink: 0 }}>
-          <Text style={styles.viewAll}>{t('home.viewAll')} ›</Text>
-        </Pressable>
+    <View style={{ marginTop: spacing.s32 }}>
+      <View style={{ paddingHorizontal: spacing.s20, marginBottom: spacing.s12 }}>
+        <SectionHeader title={title} action={t('home.viewAll')} onAction={() => router.push('/games')} />
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
         {games.map(g => <HomeCard key={g.id} game={g} router={router} onDismiss={onDismiss} onExpand={onExpand} />)}
@@ -707,18 +649,14 @@ function Section({ title, games, router, onDismiss, onExpand }) {
   );
 }
 
-// Şerit kartı artık TEK KART AİLESİNDEN geliyor. Öncesinde burada ayrı bir
-// kart vardı: kendi rozetleri, kendi ad bindirmesi, kendi 132pt genişliği.
-// HTML ölçüsü 148 ("eski 132 değil") ve ad kapağın altında — ikisi de
-// GameCard'ın rail varyantında.
+// Yeni kart aynı kapak geçişini ve öneri eleme sözleşmesini kullanır.
 const HomeCard = memo(function HomeCard({ game, router, onDismiss, onExpand }) {
   return (
     <GameCard
       game={game}
-      variant="rail"
       // `onExpand` verildiğinde dokunuş doğrudan gezinmiyor: kapak
       // çerçevesi ölçülüp büyüme geçişi başlıyor (bkz. CardExpand).
-      onPress={onExpand ? undefined : () => go(router, game)}
+      onPress={() => go(router, game)}
       onExpand={onExpand}
       // FAZ 1: eleme artık GÖRÜNÜR bir "×". `onDismiss` yalnızca "Senin için"
       // şeridinden geliyor — Yeni ve İndirim şeritleri onu göndermiyor,
@@ -730,85 +668,13 @@ const HomeCard = memo(function HomeCard({ game, router, onDismiss, onExpand }) {
 
 const makeStyles = (colors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
-  // Tek sütuna geçilince listenin yatay dolgusu kaldırıldı: gönderi kartı
-  // kendi kenar boşluğunu (spacing.lg) taşıyor ve böylece bölüm başlıklarıyla
-  // AYNI hizada duruyor. Dolgu kalsaydı kartlar içeri kaçardı.
   listContent: {},
-  // Başlık tam genişlikte kalsın diye listenin yatay dolgusu geri alınıyor.
-  // paddingBottom ŞART: başlığın son bölümü (İndirimdekiler) ile altındaki
-  // iki sütunlu ızgara bitişik duruyordu, ızgara o bölümün devamı gibi
-  // görünüyordu. 24 = bölümler arası boşlukla aynı ritim (Faz 1: 26 → 24).
-  headerWrap: { paddingBottom: spacing.s24 },
-  // Akıştaki inceleme kartı, oyun gönderileriyle AYNI dikey ritmi tutuyor
-  // (GamePostCard marginBottom: s24). Bileşenin kendi 8'lik boşluğu kalsaydı
-  // incelemeler bir sonraki oyuna yapışık görünürdü.
+  headerWrap: { paddingBottom: spacing.s32 },
   feedReview: { marginBottom: spacing.s24 },
-  // Dikey dolgu 6/4 idi ve 40px ikon bandı taşırıyordu; marka ile ikon
-  // birbirine değiyordu. Bant ikonun boyuna göre açıldı.
-  // Marka artık ORTALI DEĞİL, sola yaslı (makette öyle).
-  // YATAY hizayı alignItems yönetiyor: bu View sütun yönlü, yani ana eksen
-  // DİKEY. justifyContent'i değiştirmek yatayda hiçbir şey yapmıyor —
-  // ilk denemede onu değiştirdim ve marka ortada kaldı.
   topBar: {
-    alignItems: 'center', justifyContent: 'center',
-    paddingHorizontal: spacing.s20, paddingTop: spacing.s8, paddingBottom: spacing.s12,
-    minHeight: 52,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: spacing.s20, minHeight: 44,
   },
-  // İkon akıştan çıkarıldı: marka sola yaslandı ama düğme sağ kenarda kalmalı.
-  // Maket: iki dugme, aralari 12, sag kenardan 20.
-  topRight: {
-    position: 'absolute', right: spacing.s20, top: spacing.s8,
-    flexDirection: 'row', gap: spacing.s12,
-  },
-  // Maket: 36x36, r99, surface3 dolgulu. Bizde 40x40 ve dolgusuzdu.
-  // hitSlop 6 ile etkin dokunma alani 48x48 -- HIG'in 44 sinirinin ustunde.
-  topBtn: {
-    width: 36, height: 36, borderRadius: radius.pill,
-    backgroundColor: colors.bgInput,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  // Faz 1: arama ekranın tek kırmızısı. Kutu nötr, düğme accent.
-  search: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.s12,
-    marginTop: spacing.s12, marginHorizontal: spacing.s20,
-    backgroundColor: colors.card, borderColor: colors.borderHover, borderWidth: 1.5,
-    borderRadius: radius.lg, height: 56, paddingLeft: spacing.s16, paddingRight: spacing.s8,
-  },
-  searchText: { flex: 1, color: colors.text3, fontSize: type.subhead },
-  // 44×44 — Faz 1 ölçüsü ve HIG dokunma hedefi.
-  searchBtn: {
-    width: TOUCH_MIN, height: TOUCH_MIN, borderRadius: radius.md,
-    // accent-serbest: yalniz ok simgesi tasiyor, metin yok — WCAG grafik esigi 3:1 ve accent 4.45 onu asiyor
-    backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center',
-  },
-  // letterSpacing 1.5 KALKTI: o değer BÜYÜK HARF yazı içindi. Küçük harf
-  // kelime markasında harf aralığı açmak kelimeyi dağıtıyor.
-  // Maketten olculdu: 22px / 700 / -0.44px. Bizde 20 / 900 / 0 idi.
-  // Faz 1 kareleri: GAMERISEN, ortalı. Büyük harf marka olduğu için
-  // harf aralığı geri geldi.
-  brand: { fontSize: type.headline, fontWeight: '900', color: colors.text, letterSpacing: 1.5 },
-  // Makette markanın hemen ardındaki kırmızı işaret.
-  //
-  // Dikey yer TABANA bağlı, keyfi bir marginTop'a değil: ilk denemede
-  // `marginTop: 6` yazdım, boşluk cırcırı yakaladı ve haklıydı — 6 ölçekte
-  // yok. flex-end + 4pt, noktayı yazının taban çizgisine oturtuyor ve yazı
-
-
-  // gap eklendi: başlık sarınca iki öğe birbirine yapışıyordu.
-  sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.s8, paddingHorizontal: spacing.s20, marginBottom: spacing.md },
-  sectionTitle: { ...SECTION_TITLE, color: colors.text2 },
-  // Bölüm başına bir tane olduğu için ekranda üç kez tekrarlıyordu. Gideceği
-  // yeri "›" zaten söylüyor; vurgu rengi buraya değil, sayfadaki tek gerçek
-  // eyleme (arama düğmesi) ait.
-  // MAKET KIRMIZI DIYOR. Bizde text2 idi ve gerekcesi yaziliydi ("ekran
-  // basina en cok 3 kirmizi oge"). Maket birebir izleniyor; ikisi
-  // arasindaki gerilim handoff'un kendi icinde -- bkz. commit.
-  // FAZ 1 ÖZ-DENETİMİ: "Kırmızı: içerik katmanında BİR TANE (arama
-  // düğmesi)." "Tümü ›" kırmızıydı ve her bölümde tekrar ediyordu —
-  // beş bölümde beş kırmızı, arama düğmesinin ayırt ediciliği bitiyordu.
-  // Maket ölçüsü: 13 · 700 · #9aa3b0 (koyu) / #5a6270 (açık) = text2.
-  viewAll: { fontSize: type.footnote, color: colors.text2, fontWeight: '700' },
-  row: { paddingHorizontal: spacing.s20, gap: spacing.md },
-
-  // tema-bagimsiz: oyun kapaginin ustundeki rozet; zemin gorsel
+  topActions: { flexDirection: 'row' },
+  row: { paddingHorizontal: spacing.s20, gap: spacing.s12 },
 });

@@ -53,7 +53,7 @@ const CIKIS = 200;
 const NEFES = 8;
 
 // Medya ve konuşma yüzeyleri — bkz. "sessiz kaldığı yerler".
-const SESSIZ_ROTALAR = ['/videos', '/messages'];
+const SESSIZ_ROTALAR = ['/videos', '/reels', '/video', '/messages'];
 
 // ── KATALOG ──
 // Sıra önemli: ilk uygun olan kazanıyor, gösterilen emekli oluyor. Yani

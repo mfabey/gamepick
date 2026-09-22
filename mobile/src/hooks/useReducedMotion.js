@@ -11,9 +11,11 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { useEffect, useState } from 'react';
 import { AccessibilityInfo } from 'react-native';
+import { useAppPreferences } from '../services/appPreferences';
 
 export function useReducedMotion() {
   const [reduced, setReduced] = useState(false);
+  const preference = useAppPreferences();
 
   useEffect(() => {
     let alive = true;
@@ -34,7 +36,7 @@ export function useReducedMotion() {
     };
   }, []);
 
-  return reduced;
+  return reduced || preference.reduceMotion;
 }
 
 export default useReducedMotion;

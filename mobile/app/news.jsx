@@ -16,7 +16,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import ShareToFriendSheet from '../src/components/ShareToFriendSheet';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
+
 import { fetchNews } from '../src/api/news';
 import { NewsListSkeleton, Reveal } from '../src/components/Skeleton';
 import NewsImage from '../src/components/NewsImage';
@@ -44,7 +44,7 @@ export default function NewsScreen() {
 
   // Cache-first: yeniden açılışta anında; arka planda tazelenir
   const { data, loading, error, ts, refetch } = useQuery(
-    `news:${lang}`,
+    `news:v2:${lang}`,
     () => fetchNews(lang),
     { ttl: 10 * 60 * 1000 }
   );
@@ -62,7 +62,7 @@ export default function NewsScreen() {
     return rest;
   }, [items, cat]);
 
-  const open = useCallback((url) => { if (url) WebBrowser.openBrowserAsync(url); }, []);
+  const open = useCallback((item) => router.push({ pathname: '/news/[id]', params: { id: item.id } }), [router]);
 
   // HABER PAYLAŞIMI — uzun basma. Oyun kartındaki menüden farklı olarak
   // burada TEK eylem var (elenecek bir öneri yok), o yüzden menü değil
@@ -137,7 +137,7 @@ export default function NewsScreen() {
             {cat === 'all' && featured && (
               <Pressable
                 style={({ pressed }) => [styles.featured, pressed && PRESSED]}
-                onPress={() => open(featured.url)}
+                onPress={() => open(featured)}
               >
                 <NewsImage item={featured} style={StyleSheet.absoluteFill} />
                 <LinearGradient colors={['transparent', 'rgba(6,7,9,0.55)', 'rgba(6,7,9,0.97)']} locations={[0.2, 0.6, 1]} style={StyleSheet.absoluteFill} />
@@ -212,7 +212,7 @@ const NewsRow = memo(function NewsRow({ item, onPress, onShare }) {
   return (
     <Pressable
       style={({ pressed }) => [styles.row, pressed && PRESSED]}
-      onPress={() => onPress(item.url)}
+      onPress={() => onPress(item)}
     >
       <View style={styles.thumb}>
         <NewsImage item={item} style={StyleSheet.absoluteFill} />

@@ -1,0 +1,316 @@
+// Gamerisen 2.0 — tasarım değerleri (design tokens)
+// Kaynak: Claude Design tuvali "Gamerisen 2.0" → DS 1–6 panoları ve design/kit/k.py.
+// Tasarım 390 pt genişlikte çizildi: tasarımdaki her "px" değeri burada aynı sayıda "pt"dir.
+// Bu dosyadaki değerleri değiştirme; farklı bir şey gerekiyorsa önce tasarımı güncelle.
+
+import { Platform, type TextStyle } from 'react-native';
+import { Easing } from 'react-native-reanimated';
+
+/* ───────────────────────────── Renkler ───────────────────────────── */
+
+export const colors = {
+  // Yüzeyler — saf siyah yok, dört katman
+  bg: '#0A0A0B', // uygulama zemini
+  bg2: '#131315', // alt çubuk, alt sayfa, sabit çubuklar
+  surface1: '#1C1C1E', // kart, gruplu liste, giriş alanı
+  surface2: '#2C2C2E', // çip, ikincil buton, kontroller
+  surface3: '#3A3A3C', // toast, en üst katman
+  fill: 'rgba(118,118,128,0.24)', // arama alanı, segmented zemin
+  line: 'rgba(255,255,255,0.08)', // 0.5 pt ayraçlar, kenar çizgileri
+  lineStrong: 'rgba(255,255,255,0.12)', // sekme çubuğu üst çizgisi
+
+  // Metin
+  text: '#F5F5F7', // birincil — zeminde 18:1
+  text2: '#A1A1A6', // ikincil / açıklama
+  text3: '#8E8E93', // soluk / zaman / ipucu
+  onArt: '#D1D1D6', // oyun görseli üstündeki ikincil metin
+  white: '#FFFFFF',
+
+  // Marka kırmızısı — az ve yerinde (logo, "risen", seçili sekme, rozet, canlı, kalp, bağlantı, odak)
+  brand: '#BC0C0C', // logo kırmızısı; dolgular (rozet, "Son dakika")
+  red: '#F34545', // metin / ikon kırmızısı (kartta 4,7:1). Kalp dolgusu da bu.
+  redTint: 'rgba(188,12,12,0.22)',
+  accentTint: 'rgba(188,12,12,0.24)', // "renkli" (tinted) buton zemini
+  accentLine: 'rgba(188,12,12,0.45)',
+
+  // Birincil buton nötr kalır (kırmızı değil)
+  primary: '#F5F5F7',
+  onPrimary: '#0A0A0B',
+  onPrimaryMuted: 'rgba(10,10,11,0.55)',
+
+  // İşlevsel — yalnızca anlam taşıyınca
+  green: '#30D158', // fiyat düşüşü, indirim, çevrimiçi, anahtar açık
+  greenTint: 'rgba(48,209,88,0.14)',
+  onGreen: '#00210B', // indirim etiketi metni
+  orange: '#FF9F0A', // uyarı, fiyat artışı
+  orangeTint: 'rgba(255,159,10,0.15)',
+  gold: '#FFD60A', // puan yıldızı, başarım, tavsiye
+  goldTint: 'rgba(255,214,10,0.13)',
+  starOff: '#48484A',
+
+  // Kontroller ve cam
+  segmentedThumb: '#636366',
+  switchOff: 'rgba(120,120,128,0.32)',
+  darkGlass: 'rgba(0,0,0,0.42)', // görsel üstü ikon butonu / etiket (+ blur 16)
+  tabBar: 'rgba(19,19,21,0.96)', // sekme çubuğu ve sabit alt çubuklar (+ blur 20)
+  onArtButton: 'rgba(255,255,255,0.16)', // görsel üstü ikincil buton (+ blur 16)
+  pillNeutral: 'rgba(255,255,255,0.12)', // Lv, soru, anket, mod rozetleri
+  pillNeutralSoft: 'rgba(255,255,255,0.1)',
+  pageDotOff: 'rgba(255,255,255,0.28)',
+
+  // Logo
+  logoROnDark: '#F8F8F8',
+  logoROnLight: '#191919',
+} as const;
+
+/** Avatar baş harf zeminleri (sırayla kullanılır). */
+export const avatarPalette = ['#48484A', '#2F4A45', '#5A4535', '#34435A', '#4E3A45', '#44492F', '#4A3434'] as const;
+
+/** Mağaza monogram renkleri (16×16, yarıçap 5, 9 pt kalın harf). */
+export const storeBadges: Record<string, { letter: string; bg: string }> = {
+  Steam: { letter: 'S', bg: '#2B4566' },
+  'Epic Games': { letter: 'E', bg: '#3A3B45' },
+  Epic: { letter: 'E', bg: '#3A3B45' },
+  GOG: { letter: 'G', bg: '#4B3868' },
+  Humble: { letter: 'H', bg: '#8A3B2E' },
+  Fanatical: { letter: 'F', bg: '#8A5A1E' },
+  'Microsoft Store': { letter: 'M', bg: '#23603A' },
+  'Xbox Store': { letter: 'X', bg: '#23603A' },
+  'PlayStation Store': { letter: 'P', bg: '#1F3F7A' },
+  'Nintendo eShop': { letter: 'N', bg: '#7A2323' },
+};
+
+/* ───────────────────────────── Yazı ───────────────────────────── */
+
+// iOS: sistem fontu (SF Pro). 20 pt ve üstünde iOS otomatik olarak SF Pro Display'e geçer.
+// Android: Inter (@expo-google-fonts/inter ile yükle). Ağırlık başına ayrı aile adı gerekir → fontFor().
+export const fonts = {
+  text: Platform.select({ ios: 'System', default: 'Inter_400Regular' }),
+  display: Platform.select({ ios: 'System', default: 'Inter_700Bold' }),
+} as const;
+
+type Weight = '400' | '500' | '600' | '700';
+const ANDROID_INTER: Record<Weight, string> = {
+  '400': 'Inter_400Regular',
+  '500': 'Inter_500Medium',
+  '600': 'Inter_600SemiBold',
+  '700': 'Inter_700Bold',
+};
+/** Ağırlığa göre doğru fontFamily + fontWeight çifti. */
+export function fontFor(weight: Weight): Pick<TextStyle, 'fontFamily' | 'fontWeight'> {
+  return Platform.OS === 'ios' ? { fontFamily: 'System', fontWeight: weight } : { fontFamily: ANDROID_INTER[weight] };
+}
+
+/** CSS "em" harf aralığını RN'in pt değerine çevirir. Tasarımda gövde metni -0.01em'dir. */
+export const tracking = (em: number, size: number) => Math.round(em * size * 100) / 100;
+
+const t = (size: number, lineHeight: number | undefined, weight: Weight, em = -0.01): TextStyle => ({
+  fontSize: size,
+  ...(lineHeight ? { lineHeight } : null),
+  ...fontFor(weight),
+  letterSpacing: tracking(em, size),
+});
+
+/**
+ * Yazı ölçeği — tasarımda en sık kullanılan kombinasyonlar (boyut / satır / ağırlık / harf aralığı).
+ * Ekrana özel bir değer görürsen .dc.html kaynağındaki değeri kullan; bu listeye sadece tekrar edenler girer.
+ */
+export const typography = {
+  display: t(30, 36, '700', -0.03), // profil adı gibi büyük başlıklar
+  largeTitle: t(28, 34, '700', -0.03), // sayfa başlığı (Topluluk, Mesajlar…)
+  heroTitle: t(28, 32, '700', -0.03), // öne çıkan kart başlığı
+  title1: t(22, undefined, '700', -0.02),
+  title2: t(20, 26, '700', -0.02), // bölüm başlığı ("Senin İçin")
+  headline: t(17, 22, '600'), // nav bar başlığı, satır başlığı
+  headlineBold: t(17, 22, '700'),
+  bodyLarge: t(17, 27, '400'), // haber detayı gövde metni
+  input: t(16, undefined, '400'), // giriş alanı metni (iOS zoom yapmasın diye 16)
+  button: t(16, undefined, '600'), // 48 pt buton
+  cardTitleLarge: t(16, 21, '600'), // fırsat kartı başlığı
+  cardTitle: t(15, 20, '600'), // oyun kartı başlığı, liste başlığı
+  body: t(15, 22, '400'), // gönderi metni
+  bodyTight: t(15, 21, '400'),
+  subhead: t(14, 18, '600'),
+  subheadRegular: t(14, 20, '400'),
+  footnote: t(13, 18, '400'),
+  footnoteStrong: t(13, 18, '600'),
+  caption: t(12, 16, '400'),
+  captionMedium: t(12, 16, '500'),
+  captionStrong: t(12, 16, '600'),
+  caption2: t(11, 14, '400'),
+  caption2Medium: t(11, 14, '500'),
+  badge: t(11, undefined, '700', 0), // sayaç, Lv, rozet içi
+  tabLabel: t(10, 12, '500', 0), // seçili sekmede 600
+  tabLabelActive: t(10, 12, '600', 0),
+  storeMono: t(9, undefined, '700', 0),
+} as const;
+
+/** Fiyatlar: display ailesi, 700, -0.02em, rakamlar eşit genişlikte. */
+export const priceStyle = (size: 14 | 16 | 18 | 22 | 28, color: string = colors.text): TextStyle => ({
+  fontSize: size,
+  ...fontFor('700'),
+  letterSpacing: tracking(-0.02, size),
+  fontVariant: ['tabular-nums'],
+  color,
+});
+
+/* ───────────────────────────── Boşluk ve ölçü ───────────────────────────── */
+
+export const space = { 2: 2, 4: 4, 6: 6, 8: 8, 10: 10, 12: 12, 14: 14, 16: 16, 18: 18, 20: 20, 24: 24, 28: 28, 32: 32 } as const;
+
+export const layout = {
+  screenWidth: 390, // tasarım genişliği
+  gutter: 20, // sayfa yan boşluğu
+  sectionGap: 32, // bölümler arası
+  headingToContent: 12, // bölüm başlığı → içerik
+  railGap: 12, // yatay kaydırmalı kart arası (hero rayında 10, videoda 14)
+  statusBar: 54, // tasarımda üst güvenli alan
+  homeIndicator: 34, // alt güvenli alan
+  headerHome: 98, // 54 + 44 (logo satırı)
+  navBar: 98, // 54 + 44, ortalanmış başlık + geri
+  pageHead: 106, // 54 + 52, büyük başlık
+  tabBar: 83, // iOS: 62 kapsül + 21 alt · Android: 64 + sistem alanı (bkz. tabBar)
+  stickyBottomBar: 92, // Oyun Detayı / Fiyat: 10 üst + 48 buton + 34 alt
+  minTouch: 44,
+} as const;
+
+export const radius = {
+  xs: 5, // Lv / mağaza rozeti
+  sm: 6, // indirim etiketi, durum etiketi
+  md: 8, // görsel üstü etiket
+  segmented: 10,
+  button: 12, // 40 pt ve üstü buton, giriş alanı, arama
+  buttonSmall: 10, // 40 pt altı buton
+  cover: 14, // oyun kapağı, medya görseli, ana ekran simgesi örneği
+  card: 16, // standart kart
+  group: 18, // gruplu liste, grafik kartı
+  cardLarge: 20, // fırsat kartı, alt sayfa
+  hero: 22, // öne çıkan kart
+  pill: 999,
+} as const;
+
+export const size = {
+  button: { lg: 48, md: 44, sm: 40, xs: 36 },
+  chip: 34,
+  segmented: 36,
+  switch: { width: 51, height: 31, knob: 27 },
+  field: 48,
+  search: 40,
+  iconButton: 44,
+  icon: { sm: 16, md: 20, lg: 22, xl: 24 },
+  avatar: { xs: 24, sm: 30, md: 40, lg: 56 },
+  cover: {
+    small: { width: 106, height: 142 }, // game_s
+    medium: { width: 148, height: 198 }, // game_m
+    hero: { width: 334, height: 420 },
+    drop: { width: 264, imageHeight: 132 },
+    deal: { width: 300 },
+    video: { width: 280, height: 158 },
+    short: { width: 132, height: 234 },
+  },
+} as const;
+
+/* ───────────────────────────── Sekme çubuğu (DS 7) ───────────────────────────── */
+// Yalnızca ikon. iOS'ta yüzen cam kapsül, Android'de Material 3 çubuğu. Etiketler erişilebilirlik adı olarak kalır.
+
+export const tabBar = {
+  ios: {
+    height: 62, // kapsül yüksekliği
+    side: 20, // ekran kenarından
+    bottomOverSafeArea: -13, // alt boşluk = güvenli alan − 13 (34 → 21), en az 12
+    paddingH: 4,
+    icon: 26,
+    iconOff: '#C7C7CC',
+    cutout: '#303033', // dolu ikonların iç kesiği (mercek üstü renk)
+    glassTint: 'rgba(30,30,32,0.35)', // iOS 26 GlassView tint
+    fallbackFill: 'rgba(30,30,32,0.64)', // iOS < 26: BlurView üstü katman
+    edge: 'inset 0 0 0 0.5px rgba(255,255,255,0.14), inset 0 1px 0 rgba(255,255,255,0.1)',
+    shadow: '0 12px 32px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3)',
+    lens: { width: 60, height: 52, fill: 'rgba(255,255,255,0.12)', edge: 'inset 0 0 0 0.5px rgba(255,255,255,0.16), inset 0 1px 0 rgba(255,255,255,0.12)' },
+    badge: { size: 18, top: -5, left: 17, ring: '#2A2A2D' },
+  },
+  android: {
+    height: 64, // + alt sistem alanı (insets.bottom)
+    icon: 24,
+    iconOff: '#A1A1A6',
+    cutout: '#3C1113', // gösterge üstü renk
+    fill: '#131315',
+    indicator: { width: 56, height: 32, fill: 'rgba(188,12,12,0.24)' },
+    badge: { size: 16, top: -4, left: 13 },
+  },
+} as const;
+
+/* ───────────────────────────── Gölge ve cam ───────────────────────────── */
+// RN 0.76+ (Expo SDK 54) `boxShadow` stilini CSS dizesi olarak destekler; tasarımdaki değerler birebir kullanılabilir.
+
+export const shadow = {
+  segmentedThumb: '0 3px 8px rgba(0,0,0,0.18)',
+  switchKnob: '0 2px 6px rgba(0,0,0,0.3)',
+  floating: '0 2px 8px rgba(0,0,0,0.35)',
+  toast: '0 10px 30px rgba(0,0,0,0.4)',
+  sheet: '0 -10px 40px rgba(0,0,0,0.5)',
+  popover: '0 12px 30px rgba(0,0,0,0.4), inset 0 0 0 0.5px rgba(255,255,255,0.12)',
+  hairlineInset: 'inset 0 0 0 0.5px rgba(255,255,255,0.12)',
+  /** Avatar / rozet çevresindeki zemin renkli halka: `0 0 0 2px ${colors.bg}` */
+  ring: (width: number, color: string) => `0 0 0 ${width}px ${color}`,
+} as const;
+
+/** expo-blur için: BlurView tint="dark". Tasarımdaki blur(16px) ≈ intensity 40, blur(20px) ≈ 50. */
+export const blur = {
+  glass: { tint: 'dark' as const, intensity: 40, overlay: colors.darkGlass },
+  tabBar: { tint: 'dark' as const, intensity: 50, overlay: colors.tabBar },
+};
+
+/* ───────────────────────────── Degradeler (expo-linear-gradient) ───────────────────────────── */
+
+type Gradient = { colors: string[]; locations: number[]; start?: { x: number; y: number }; end?: { x: number; y: number } };
+const v = (stops: [string, number][]): Gradient => ({ colors: stops.map((s) => s[0]), locations: stops.map((s) => s[1]) });
+
+export const gradients = {
+  heroCard: v([['rgba(0,0,0,0.28)', 0], ['rgba(0,0,0,0)', 0.22], ['rgba(0,0,0,0)', 0.42], ['rgba(0,0,0,0.78)', 0.74], ['rgba(0,0,0,0.9)', 1]]),
+  shortCard: v([['rgba(0,0,0,0)', 0.45], ['rgba(0,0,0,0.85)', 1]]),
+  gameDetailHeader: v([['rgba(10,10,11,0.5)', 0], ['rgba(10,10,11,0)', 0.26], ['rgba(10,10,11,0)', 0.52], ['#0A0A0B', 1]]),
+  newsDetailHeader: v([['rgba(10,10,11,0.5)', 0], ['rgba(10,10,11,0)', 0.3], ['rgba(10,10,11,0)', 0.6], ['#0A0A0B', 1]]),
+  gameCommunityHeader: v([['rgba(10,10,11,0.45)', 0], ['rgba(10,10,11,0)', 0.35], ['rgba(10,10,11,0.2)', 0.6], ['#0A0A0B', 1]]),
+  profileHeader: v([['rgba(10,10,11,0.45)', 0], ['rgba(10,10,11,0)', 0.4], ['rgba(10,10,11,0.3)', 0.7], ['#0A0A0B', 1]]),
+  onboardingFade: v([['rgba(10,10,11,0)', 0], ['#0A0A0B', 0.88]]),
+  bottomFade: v([['rgba(10,10,11,0)', 0], ['#0A0A0B', 0.3]]),
+  videoPlayer: v([['rgba(0,0,0,0.55)', 0], ['rgba(0,0,0,0.05)', 0.3], ['rgba(0,0,0,0.05)', 0.65], ['rgba(0,0,0,0.7)', 1]]),
+  settingsBanner: { ...v([['rgba(0,0,0,0.88)', 0], ['rgba(0,0,0,0.6)', 0.55], ['rgba(0,0,0,0.1)', 1]]), start: { x: 0, y: 0.5 }, end: { x: 1, y: 0.5 } },
+  skeleton: { ...v([['#1C1C1E', 0.25], ['#2C2C2E', 0.5], ['#1C1C1E', 0.75]]), start: { x: 0, y: 0.5 }, end: { x: 1, y: 0.5 } },
+} as const;
+
+/* ───────────────────────────── Hareket ───────────────────────────── */
+// Çoğu etkileşim 150–250 ms. Yalnızca transform ve opaklık; düzen kaymaz. "Hareketi azalt" açıkken döngüler durur.
+
+export const motion = {
+  duration: { instant: 150, standard: 200, transition: 250, loop: 1300, livePulse: 1800 },
+  easing: {
+    standard: Easing.bezier(0.2, 0.8, 0.2, 1), // sekme, alt sayfa, sayfa geçişi
+    out: Easing.out(Easing.ease), // basma durumu
+    pop: Easing.bezier(0.2, 0.9, 0.3, 1.25), // kalp / beğeni "pop"
+    switch: Easing.bezier(0.3, 0.9, 0.4, 1),
+  },
+  press: { scale: 0.97, opacity: 0.9, duration: 150 },
+  /** Kalp ve beğeni: 240 ms içinde 1 → 1.28 → 0.92 → 1 */
+  pop: { keyframes: [1, 1.28, 0.92, 1], duration: 240 },
+} as const;
+
+/* ───────────────────────────── Kısa yol ───────────────────────────── */
+
+export const control = {
+  buttonPadding: 18, buttonSmallPadding: 14, buttonGap: 8, disabledOpacity: 0.38,
+  spinner: 18, iconStroke: 2.2, iconButton: 44, iconButtonGlyph: 22,
+  chipHeight: 34, chipPadding: 14, chipFont: 14,
+  fieldHeight: 48, fieldPadding: 14, fieldLabelGap: 6, fieldFocusWidth: 2,
+  fieldBorderWidth: 1, fieldHelperGap: 4, fieldIcon: 18,
+  segmentHeight: 36, segmentPadding: 2, segmentFont: 13,
+  sectionHeight: 28, navHeight: 44, navSide: 96, pageHeight: 52,
+  listHeight: 52, listPadding: 16, listGap: 14,
+  searchHeight: 40, searchClear: 28,
+} as const;
+
+// DS 3 GameCard spacing differs intentionally from the legacy spacing scale.
+export const gameCard = { priceGap: 6, badgePaddingH: 6, badgePaddingV: 2 } as const;
+export const theme = { colors, fonts, typography, space, layout, radius, size, shadow, blur, gradients, motion, tabBar, control, gameCard } as const;
+export type Theme = typeof theme;

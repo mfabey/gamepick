@@ -30,8 +30,7 @@ import { createContext, useContext, useState, useEffect, useCallback, useMemo } 
 import { Appearance } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { palette } from '../design/tokens';
-import { PALET_EK } from '../theme';
+import { APP_PALETTES } from '../theme';
 
 const PREF_KEY = 'theme_pref';          // 'system' | 'dark' | 'light'
 const ThemeContext = createContext(null);
@@ -40,31 +39,8 @@ function sistemSemasi() {
   return Appearance.getColorScheme() === 'light' ? 'light' : 'dark';
 }
 
-/** Handoff adlarını koddaki eski adlara çeviren tek yer (theme.js ile AYNI eşleme). */
-function paletten(t) {
-  return {
-    bg: t.bg, bgElevated: t.surface, card: t.surface2,
-    bgInput: t.surface3, bgHover: t.surface3,
-    cardBorder: t.border, borderHover: t.borderStrong,
-    text: t.text1, text2: t.text2, text3: t.text3,
-    accent: t.brand, accentText: t.brandText,
-    accentBg: t.brandWash, accentSoft: t.brandWash,
-    accentBorder: t.brandWashBorder, accentPill: t.brandWash,
-    onAccent: t.onBrand, surfaceTile: t.surface4,
-    glassFill: t.glassFill, glassBorder: t.glassBorder,
-    barSolid: t.glassFallback,
-    overlay: t.overlayScrimTop,
-    overlayStrong: t.overlayScrimBottom ?? t.overlayScrimTop,
-  };
-}
-
-// Durum ve mağaza renkleri TEK KAYNAKTAN (theme.js). Burada bir kopyası
-// duruyordu; ikisi Faz 2'de sessizce ayrıştı ve eksik jeton `undefined`
-// olarak geçip görünmez bir öğe üretti.
-const PALETLER = {
-  dark:  { ...paletten(palette.dark),  ...PALET_EK.dark },
-  light: { ...paletten(palette.light), ...PALET_EK.light },
-};
+// Gamerisen 2.0 ve eski ekranlar aynı paleti kullanır; alias eşlemesi theme.js'te.
+const PALETLER = APP_PALETTES;
 
 export function ThemeProvider({ children }) {
   const [pref, setPrefState] = useState('system');

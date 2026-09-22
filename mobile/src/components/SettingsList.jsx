@@ -1,7 +1,8 @@
 import { Children, Fragment } from 'react';
+import { typography } from '../theme/tokens';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { radius, spacing, type, PRESSED, SECTION_TITLE } from '../theme';
+import { radius, spacing, PRESSED } from '../theme';
 import { useTheme, useStyles } from '../context/ThemeContext';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -120,12 +121,12 @@ export function SettingsRow({
 // Reaktif stil — tema değişince yeniden üretiliyor (bkz. ThemeContext).
 const makeStyles = (colors) => StyleSheet.create({
   groupTitle: {
-    ...SECTION_TITLE, color: colors.text3,
+    ...typography.footnoteStrong, color: colors.text2,
     marginBottom: spacing.s8, paddingHorizontal: spacing.s4,
   },
   group: {
     backgroundColor: colors.card,
-    borderRadius: radius.lg,
+    borderRadius: 16,
     // Gruplar arası boşluk bölüm başlığının yerini tutuyor; dar olursa
     // gruplar tek bir uzun listeye çökerdi.
     marginBottom: spacing.lg,
@@ -136,13 +137,13 @@ const makeStyles = (colors) => StyleSheet.create({
     paddingHorizontal: PAD, paddingVertical: spacing.sm,
     gap: GAP,
     // Kompakt görünüm; dokunma alanı ve büyük yazıda satır büyümesi korunur.
-    minHeight: 48,
+    minHeight: 54,
   },
   iconCol: { width: ICON_COL, flexShrink: 0, alignItems: 'flex-start' },
   mid:     { flex: 1, minWidth: 0, gap: 2 },
-  label:   { color: colors.text, fontSize: type.subhead },
-  desc:    { color: colors.text3, fontSize: type.caption },
-  value:   { color: colors.text3, fontSize: type.footnote, maxWidth: '40%', flexShrink: 1, textAlign: 'right' },
+  label:   { ...typography.body, color: colors.text },
+  desc:    { ...typography.caption, color: colors.text3 },
+  value:   { ...typography.subheadRegular, color: colors.text2, maxWidth: '40%', flexShrink: 1, textAlign: 'right' },
   // İçeriden: sol dolgu + simge sütunu + aradaki boşluk kadar
   divider: {
     height: StyleSheet.hairlineWidth,

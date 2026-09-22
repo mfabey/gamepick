@@ -1,4 +1,4 @@
-import { API_BASE } from './client';
+import { apiGet } from './client';
 
 /**
  * Dikey video akışı — Steam HLS fragmanları.
@@ -10,6 +10,9 @@ import { API_BASE } from './client';
  * çıkma eğiliminde ama sıra deterministik değil.
  */
 export function fetchVideoFeed(page = 1, lang = 'tr', seed = '') {
-  const q = `page=${page}&lang=${lang}${seed ? `&seed=${encodeURIComponent(seed)}` : ''}`;
-  return fetch(`${API_BASE}/api/video-feed?${q}`).then((r) => r.json());
+  return apiGet('/api/video-feed', { page, lang, seed });
+}
+
+export function fetchVideo(id, lang = 'tr') {
+  return apiGet('/api/video-feed', { id, lang }).then(data => data.item);
 }

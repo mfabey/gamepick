@@ -7,6 +7,10 @@
 // ayarlarının arasında gezinmemeli.
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState } from 'react';
+import Constants from 'expo-constants';
+import { PageHeader } from '../src/components/ui/ScreenParts';
+import { Txt, Segmented } from '../src/components/ui/Primitives';
+import { useAppPreferences, setAppPreference } from '../src/services/appPreferences';
 import { View, Text, Pressable, StyleSheet, ScrollView, Switch, Alert, ActivityIndicator, Linking } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -53,6 +57,7 @@ export default function SettingsScreen() {
   const router = useRouter();
   const { t, lang, setLang } = useLanguage();
   const [dilAcik, setDilAcik] = useState(false);
+  const preferences = useAppPreferences();
   // Bağlı hesap yönetimi PROFİLDEN buraya taşındı (Hesap grubu).
   const {
     account, steamAccounts, xbox, busy,
@@ -142,13 +147,7 @@ export default function SettingsScreen() {
       {/* Başlık listenin DIŞINDA: içerik kolonuyla aynı hizaya
           getiriliyor — başlık tam genişlikte kalsaydı sayfanın adı ile
           anlattığı şey iki ayrı sütunda dururdu. */}
-      <View style={[styles.head, { marginHorizontal: yan }]}>
-        <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </Pressable>
-        <Text style={styles.title}>{t('prof.settingsTitle')}</Text>
-        <View style={styles.iconBtn} />
-      </View>
+      <PageHeader title={t('prof.settingsTitle')} back />
 
       <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 40, paddingHorizontal: yan + spacing.lg }]} showsVerticalScrollIndicator={false}>
         {/* ── BÖLÜM BAŞLIKLARI GERİ GELDİ ──
@@ -234,7 +233,7 @@ export default function SettingsScreen() {
               <Switch
                 value={enabled}
                 onValueChange={onToggleNotif}
-                trackColor={{ false: colors.cardBorder, true: colors.accent }}
+                trackColor={{ false: colors.cardBorder, true: colors.green }}
                 thumbColor="#fff"
               />
             )}
@@ -242,15 +241,12 @@ export default function SettingsScreen() {
           {/* TEMA — handoff'un durum tablosunda "Sistem / koyu / açık" olarak
               tanımlı. Yeniden yükleme YOK: palet artık reaktif, seçim anında
               yansıyor (bkz. ThemeContext başı). */}
-          <SettingsRow
-            icon="contrast-outline"
-            label={t('set.theme')}
-            value={t('set.theme.' + pref)}
-            onPress={() => {
-              const sira = ['system', 'dark', 'light'];
-              setPref(sira[(sira.indexOf(pref) + 1) % sira.length]);
-            }}
-          />
+          <View style={{ padding: spacing.s16, gap: spacing.s12 }}>
+            <Txt variant="body">{t('set.theme')}</Txt>
+            <Segmented value={pref} onChange={setPref} items={['system', 'dark', 'light'].map(value => ({ value, label: t('set.theme.' + value) }))} />
+          </View>
+          <SettingsRow icon="play-outline" label={t('v2.autoplay')} right={<Switch value={preferences.autoplay} onValueChange={value => setAppPreference('autoplay', value).catch(() => Alert.alert(t('v2.loadError')))} trackColor={{ false: colors.cardBorder, true: colors.green }} />} />
+          <SettingsRow icon="accessibility-outline" label={t('v2.reduceMotion')} right={<Switch value={preferences.reduceMotion} onValueChange={value => setAppPreference('reduceMotion', value).catch(() => Alert.alert(t('v2.loadError')))} trackColor={{ false: colors.cardBorder, true: colors.green }} />} />
           <SettingsRow
             icon="language-outline"
             label={t('set.language')}
@@ -324,6 +320,7 @@ export default function SettingsScreen() {
             />
           </SettingsGroup>
         )}
+        <Txt variant="caption" style={{ textAlign: 'center', color: colors.text3 }}>Gamerisen {Constants.expoConfig?.version || ''}</Txt>
       </ScrollView>
 
       <ChoiceSheet
