@@ -319,14 +319,21 @@ export function CountBadge({ count }: { count: number }) {
 
 /** Mesaj satırı: 72 yükseklik; 52 avatar; okunmamışta ad 700, saat kırmızı, önizleme `text`, sayaç; okunmuşta tik. */
 export function MessageRow({ avatar, name, preview, time, unread = 0, read, online, onPress }: {
-  avatar?: string | null; name: string; preview: ReactNode; time: string; unread?: number;
+  avatar?: string | null; name: string; preview: ReactNode; time: string;
+  /**
+   * Sayı = okunmamış mesaj adedi (sayaç rozeti). `true` = okunmamış var ama
+   * KAÇ TANE bilinmiyor: nokta çiziliyor. Konuşma listesi ucu boolean
+   * veriyor ve oraya bir sayı yazmak uydurma olurdu.
+   */
+  unread?: number | boolean;
   /** Son mesaj benimse: 1 iletildi (`text3`), 2 okundu (`text2`). */
   read?: 0 | 1 | 2; online?: boolean; onPress?: () => void;
 }) {
   const { colors } = useDesignTheme();
   const { t } = useLanguage();
   const M = K.messageRow;
-  const fresh = unread > 0;
+  const count = typeof unread === 'number' ? unread : 0;
+  const fresh = unread === true || count > 0;
   return (
     <PressableScale accessibilityRole="button" accessibilityLabel={name} onPress={onPress} style={styles.message}>
       <UserAvatar avatar={avatar} name={name} size={M.avatar} online={online} />
@@ -337,7 +344,10 @@ export function MessageRow({ avatar, name, preview, time, unread = 0, read, onli
         </View>
         <View style={[styles.messageLine, { marginTop: M.lineGap }]}>
           <Txt variant="subheadRegular" numberOfLines={1} style={[styles.flex, { color: fresh ? colors.text : colors.text2 }]}>{preview}</Txt>
-          {fresh ? <CountBadge count={unread} />
+          {fresh ? (count > 0
+            ? <CountBadge count={count} />
+            : <View accessible accessibilityLabel={t('v2.unread')}
+                style={[styles.messageDot, { backgroundColor: colors.brand }]} />)
             : read ? <View accessible accessibilityLabel={t('v2.read')}>
                 <Icon name="check" size={M.check} color={read === 2 ? colors.text2 : colors.text3} strokeWidth={2.4} />
               </View> : null}
@@ -476,6 +486,7 @@ const styles = StyleSheet.create({
   count: { minWidth: K.countBadge.size, height: K.countBadge.size, paddingHorizontal: K.countBadge.paddingH, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
   message: { height: K.messageRow.height, paddingHorizontal: K.messageRow.paddingH, flexDirection: 'row', alignItems: 'center', gap: K.messageRow.gap },
   messageLine: { height: K.messageRow.lineHeight, flexDirection: 'row', alignItems: 'center', gap: control.buttonGap },
+  messageDot: { width: K.messageRow.dot, height: K.messageRow.dot, borderRadius: K.messageRow.dot / 2 },
   leadCorner: { position: 'absolute', right: K.notification.cornerOffset, bottom: K.notification.cornerOffset, width: K.notification.corner, height: K.notification.corner,
     borderRadius: K.notification.corner / 2, alignItems: 'center', justifyContent: 'center' },
   leadCircle: { width: K.notification.lead, height: K.notification.lead, borderRadius: K.notification.lead / 2, alignItems: 'center', justifyContent: 'center' },

@@ -201,6 +201,9 @@ export default function DesignSystem() {
         <View style={s.pad}><UserRow name="Ege Yılmaz" handle="@egey" meta="3 ortak arkadaş" online right={<FollowButton following={following} onPress={() => setFollowing(!following)} />} /></View>
         <View style={s.pad}><CommunityRow image={art[3]?.image} name={art[3]?.name ?? 'Topluluk'} meta="48 B üye · 320 çevrimiçi" /></View>
         <MessageRow name="Selin" preview="Akşam 9'da giriyor musun?" time="21:04" unread={2} online />
+        {/* `unread` boolean: okunmamış var ama adedi bilinmiyor (konuşma
+            listesi ucunun verdiği tek bilgi) — sayaç yerine nokta. */}
+        <MessageRow name="Burak" preview="Yeni sürüm çıkmış, bakalım mı?" time="14:22" unread online />
         <MessageRow name="Mert" preview="Tamamdır, görüşürüz" time="Dün" read={2} />
         <NotificationRow unread lead={<NotificationLead kind="price" image={art[4]?.image} />} text="İstek listendeki oyun ₺599'a düştü" time="5 dk önce" thumb={art[4]?.image} />
         <NotificationRow lead={<NotificationLead kind="like" />} text="Selin ve 12 kişi gönderini beğendi" time="1 sa önce" />

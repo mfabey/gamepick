@@ -262,6 +262,11 @@ export default {
   'gc.locFailed': 'Şehir bulunamadı.',
   // ── Mesajlar ──
   'msg.title': 'Mesajlar',
+  'msg.new': 'Yeni mesaj',
+  'msg.search': 'Sohbetlerde ara',
+  'msg.onlineNow': 'Çevrimiçi',
+  'msg.filterAll': 'Tümü',
+  'msg.filterUnread': 'Okunmamış ({n})',
   'gif.search': 'GIF ara',
   'gif.empty': 'Sonuç bulunamadı.',
   'gif.disabled': 'GIF gönderimi şu an kapalı.',

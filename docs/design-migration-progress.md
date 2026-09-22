@@ -411,3 +411,32 @@ Fiyat biçimi kullanıcı kararıyla tasarımdaki gibi: "₺599", "-%50" (`27aae
 - `ReviewRoot` (kök inceleme) eski görünümde.
 - PostComposer eski görünümde (G-12).
 - Kalan ekranlar: Mesajlar, Sohbet, Profil, Haberler, Bildirimler, Arama, Oyun Topluluğu.
+
+### 23 Eylül — Mesajlar, G-18 (Claude)
+
+**Yapılanlar:**
+- **PageHeader** "Mesajlar" + kalem (kit `pen`): kalem bir kompozitör değil, **arkadaş listesini** açıyor — mesajlaşma yalnız arkadaşlar arasında (sunucu `NOT_FRIENDS`), yani yazılabilecek kişi kümesi zaten orası.
+- **Arama** (40 pt, kit `search_field`): istemci içi süzme. Sunucuda konuşma araması yok ve liste zaten en fazla 40 satır (`listConversations` limit=40) — bu boyda ağ turu saf kayıp.
+- **"Çevrimiçi" şeridi** (64 karo, 56 avatar): yeni istek AÇMIYOR, `presence` alanı konuşma listesiyle birlikte geliyor. `presence: null` (durumunu paylaşmayan) şeritte hiç görünmüyor.
+- **Çipler** yalnız Tümü / Okunmamış (n); n sunucunun kendi saydığı değer. Okunmamış kalmayınca çipler düşüyor ve süzgeç Tümü'ne dönüyor (yoksa "Okunmamış (0)" seçiliyken liste boş kalır, ekran bozuk sanılır).
+- **Satırlar** `MessageRow` (kit `msg_row`): 72 pt, 52 avatar, okunmamışta ad 700 + saat kırmızı.
+
+**Tasarımda olup ÇİZİLMEYENLER — hepsi aynı sebeple (veri yok, uydurulmadı):**
+1. **Sayaç rozeti (2, 5):** `/api/social/chat/list` okunmamışı BOOLEAN veriyor (`meta.lastAt > readAt`), adet değil. `MessageRow` bu yüzden `unread` için boolean kipi kazandı: sayaç yerine 8 pt nokta (ölçü kitteki tek okunmamış noktasından — bildirim satırı).
+2. **Okundu tikleri (✓/✓✓) ve "Sen:" öneki:** ikisi de `lastFrom` ister; alan `chat-store`'da var ama route yanıta koymuyor.
+3. **Yazıyor göstergesi:** yazma bildirimi konuşma kanalında, listede yok.
+4. **Gruplar / İstekler çipleri:** grup sohbeti yok; arkadaş dışı mesaj sunucuda reddediliyor, yani istek kutusu diye bir şey yok.
+5. **Karo alt yazısında oynanan oyun:** bu uçta oyun verisi yok. Tasarımın kendi örneğinde de oyunu bilinmeyen kişi "Çevrimiçi" yazıyor — aynısı yapıldı.
+
+**Ayrıca:** `item.lastDeleted` dalı silindi — istemci okuyordu, sunucu hiç göndermiyor (ölü kod).
+
+**Doğrulama:**
+- `npm run check` (20 · 57 ✓) geçti; `npx expo export --platform ios` geçti.
+- Emülatörde başlık + kalem ikonu doğrulandı.
+- Satırın üç hâli (sayaçlı okunmamış · **noktalı okunmamış** · okundu tiki) tasarım galerisinde yan yana doğrulandı; galeriye boolean kipi örneği eklendi.
+
+**Açık kalanlar:**
+- **Liste, şerit ve çipler CİHAZDA GÖRÜLMEDİ:** ekran oturum istiyor, emülatörde hesap açık değil ve şifre girilmedi. Doğrulanan tek şey başlık ve (galeri üzerinden) satır geometrisi.
+- Topluluk başlığı aynı eylem için `edit`, Mesajlar `pen` kullanıyor; kit ikisinde de `pen` diyor — Topluluk'taki tek kelimelik sapma duruyor.
+- iOS görünümü doğrulanmadı.
+- Kalan ekranlar: Sohbet, Profil, Haberler, Bildirimler, Arama, Oyun Topluluğu.

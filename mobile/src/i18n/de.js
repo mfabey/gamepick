@@ -264,6 +264,11 @@ export default {
   'gc.locFailed': 'Stadt konnte nicht bestimmt werden.',
   // ── Messages ──
   'msg.title': 'Nachrichten',
+  'msg.new': 'Neue Nachricht',
+  'msg.search': 'Chats durchsuchen',
+  'msg.onlineNow': 'Online',
+  'msg.filterAll': 'Alle',
+  'msg.filterUnread': 'Ungelesen ({n})',
   'gif.search': 'GIFs suchen',
   'gif.empty': 'Keine Ergebnisse.',
   'gif.disabled': 'GIFs senden ist derzeit deaktiviert.',

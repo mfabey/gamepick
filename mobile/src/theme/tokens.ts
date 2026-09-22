@@ -365,6 +365,9 @@ export const component = {
   stickyBar: { paddingTop: 10, paddingH: 20, minBottom: 10, gap: 12, button: 48 },
   pageDots: { active: 18, size: 6, gap: 6, top: 12 },
   home: { greetingTop: 2, heroTop: 14, greetingChevron: 14, newsRowsTop: 18, newsRowsGap: 14, dealCount: 2 },
+  // G-18 Mesajlar (kit s4.py messages()).
+  messages: { searchTop: 4, searchHeight: 40, onlineTop: 18, onlineLabel: 18, onlineRailTop: 10, onlineRailHeight: 92,
+    tile: { width: 64, avatar: 56, nameTop: 6 }, chipsTop: 16, chipsHeight: 32, listTop: 6 },
   // G-13 Gönderi Detayı (kit s3.py post_detail()).
   thread: { rootTop: 14, statsTop: 8, statsHeight: 40, statsGap: 16, headerTop: 18, headerHeight: 34, listTop: 12, gap: 18,
     dock: { paddingTop: 10, paddingH: 16, gap: 10, avatar: 32, input: 40, inputRadius: 20, inputLeft: 16, inputRight: 6, send: 34, sendIcon: 18 } },
@@ -409,7 +412,8 @@ export const component = {
     storeTop: 14, storeHeight: 48, storeBadge: 48, storeRadius: 12, storeFont: 20, storeGap: 12,
     priceTop: 16, priceHeight: 44, priceGap: 10, oldPrice: 17, noteTop: 6, noteHeight: 18, buttonTop: 16, button: 50, footTop: 10 },
   chart: { width: 318, height: 120, grid: '3 5', lowRadius: 5, lowRing: 3, haloRadius: 9, labelOffset: 22 },
-  rail: { hero: [10, 344], game: [12, 160], drop: [12, 276], deal: [12, 312], video: [14, 294], friend: [8, 0], short: [12, 144] },
+  rail: { hero: [10, 344], game: [12, 160], drop: [12, 276], deal: [12, 312], video: [14, 294], friend: [8, 0], short: [12, 144],
+    online: [14, 0] },
 
   // ── §5 Topluluk ve sosyal (avatar, friend, trend_card, post_head, post, actions, badge, comment, user_row, comm_row, msg_row, notif, nlead, count, fresh) ──
   avatar: { onlineMin: 10, onlineRatio: 0.28, onlineRing: 2.5, gameRatio: 0.46, gameRadius: 7, gameOffset: -4, ringGap: 3, ringWidth: 2, initialRatio: 0.4 },
@@ -422,7 +426,10 @@ export const component = {
   badgeSmall: { height: 18, paddingH: 6, radius: 5, gap: 3, icon: 11 },
   comment: { avatar: 40, replyAvatar: 32, gap: 10, headHeight: 20, nameGap: 6, textTop: 4, actionsTop: 6, actionsHeight: 28, actionsGap: 18, heart: 15, heartGap: 5, replyIndent: 52 },
   userRow: { height: 60, gap: 12, avatar: 44, thumb: 44, thumbRadius: 12 },
-  messageRow: { height: 72, paddingH: 20, gap: 12, avatar: 52, lineGap: 4, lineHeight: 20, previewGap: 5, check: 15 },
+  // `dot`: sunucu okunmamış SAYISI vermiyor (boolean), sayaç rozeti uydurma
+  // olurdu. Kitteki tek okunmamış noktası bildirim satırınınki (8, AC) — aynı
+  // anlamın çizimi olduğu için ölçüsü oradan alındı.
+  messageRow: { height: 72, paddingH: 20, gap: 12, avatar: 52, lineGap: 4, lineHeight: 20, previewGap: 5, check: 15, dot: 8 },
   notification: { minHeight: 76, paddingTop: 12, paddingRight: 20, paddingBottom: 12, paddingLeft: 22, gap: 12, dot: 8, dotLeft: 8,
     lead: 44, leadIcon: 20, leadRadius: 12, corner: 22, cornerIcon: 12, cornerRing: 2.5, cornerOffset: -4, thumb: 44, thumbRadius: 10, textGap: 2 },
   countBadge: { size: 20, paddingH: 6 },
