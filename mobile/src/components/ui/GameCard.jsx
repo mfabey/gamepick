@@ -15,7 +15,7 @@ import { turAdi } from '../../services/genreName';
 // Data, identity and transition contracts stay shared with the existing cards.
 export default memo(function DesignGameCard({ game, onPress, onExpand, onDismiss }) {
   const { colors } = useDesignTheme();
-  const { t, formatPrice } = useLanguage();
+  const { t, formatPrice, formatDiscount } = useLanguage();
   const { isWatched, toggle } = useWishlist();
   const price = usePrice(game);
   const [coverRef, expand] = useKapakOlcum(onExpand, game);
@@ -38,7 +38,7 @@ export default memo(function DesignGameCard({ game, onPress, onExpand, onDismiss
       <HeartButton selected={watched} onPress={() => toggle(game)} blurred={false}
         size={K.heart.card.size} iconSize={K.heart.card.icon} style={s.heart} />
       {discount ? <View style={[s.discount, { backgroundColor: colors.green }]}>
-        <Txt variant="captionStrong" style={{ color: colors.onGreen }}>−{discount}%</Txt>
+        <Txt variant="captionStrong" style={{ color: colors.onGreen }}>{formatDiscount(discount)}</Txt>
       </View> : null}
       {onDismiss ? <IconButton icon="x" label={t('home.notInterested')} variant="onArt" blurred={false}
         size={K.heart.card.size} iconSize={K.heart.card.icon - 1}

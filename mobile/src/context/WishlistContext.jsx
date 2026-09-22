@@ -124,7 +124,8 @@ export function WishlistProvider({ children }) {
             name: g.name,
             appid: g.appid,
             discount: priceInfo?.discount || 0,
-            price: priceInfo?.current != null ? `${priceInfo.current.toLocaleString('tr-TR')} ₺` : '',
+            // Uygulamayla aynı biçim (2.0): ₺ önde.
+            price: priceInfo?.current != null ? `₺${priceInfo.current.toLocaleString('tr-TR')}` : '',
             originalPrice: priceInfo?.original != null ? priceInfo.original : 0,
             currentPrice: priceInfo?.current != null ? priceInfo.current : 0,
           };

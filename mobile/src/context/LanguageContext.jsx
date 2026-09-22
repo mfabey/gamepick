@@ -57,7 +57,9 @@ export function LanguageProvider({ children }) {
   // düşüyor — yeni bir dil eksik çeviriyle de çalışabilsin.
   const t = useCallback((key) => STRINGS[lang]?.[key] ?? STRINGS.en[key] ?? key, [lang]);
 
-  // Web ile aynı biçim: TL için ₺ simgesi ve binlik ayraç
+  // Gamerisen 2.0 biçimi (kullanıcı kararı, 22 Eylül): ₺ ÖNDE, binlik ayraç
+  // nokta — tasarımdaki "₺599", "₺1.199". Önceden web'le aynı "599₺" idi;
+  // web bu geçişin kapsamında değil, iki yüzey artık farklı yazıyor.
   const formatPrice = useCallback((priceTry) => {
     if (priceTry == null) return '';
     if (priceTry === 0) return t('card.free');
@@ -66,10 +68,18 @@ export function LanguageProvider({ children }) {
       const formatted = val % 1 === 0
         ? val.toLocaleString('tr-TR')
         : val.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      return `${formatted}₺`;
+      return `₺${formatted}`;
     }
     return `$${(priceTry / (rate || 1)).toFixed(2)}`;
   }, [lang, rate, t]);
+
+  // İndirim: Türkçe'de yüzde işareti ÖNDE ("-%50", tasarım), diğer dillerde
+  // sonda ("-50%"). Eksi işareti tasarımdaki gibi düz tire.
+  const formatDiscount = useCallback((percent) => {
+    const n = Math.round(Number(percent) || 0);
+    if (n <= 0) return '';
+    return lang === 'tr' ? `-%${n}` : `-${n}%`;
+  }, [lang]);
 
   // `toggleLang` KALDIRILDI: iki dil arasında gidip gelen bir anahtardı ve
   // dört dilde anlamı kalmıyor. Hiçbir ekran kullanmıyordu; dil seçimi
@@ -80,8 +90,8 @@ export function LanguageProvider({ children }) {
   const locale = bcp47(lang);
 
   const value = useMemo(
-    () => ({ lang, locale, setLang, t, formatPrice, rate, setRate }),
-    [lang, locale, setLang, t, formatPrice, rate]
+    () => ({ lang, locale, setLang, t, formatPrice, formatDiscount, rate, setRate }),
+    [lang, locale, setLang, t, formatPrice, formatDiscount, rate]
   );
 
   return (

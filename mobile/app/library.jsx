@@ -109,7 +109,7 @@ export default function LibraryScreen() {
         const lastPlayedName = lastPlayedGame ? lastPlayedGame.name : '—';
         
         const payload = {
-          value: combined.value ? formatPrice(combined.value.sum) : '0,00 ₺',
+          value: combined.value ? formatPrice(combined.value.sum) : '₺0,00',
           hours: combined.totalHours || 0,
           games: combined.totalGames || 0,
           lastPlayed: lastPlayedName

@@ -27,7 +27,7 @@ import { PageDots } from './Navigation';
 // ─────────────────────────────────────────────────────────────────────────────
 function HeroCard({ game, width, onExpand }) {
   const { colors } = useDesignTheme();
-  const { t, formatPrice } = useLanguage();
+  const { t, formatPrice, formatDiscount } = useLanguage();
   const { isWatched, toggle } = useWishlist();
   const price = usePrice(game);
   const [ref, open] = useKapakOlcum(onExpand, game);
@@ -54,7 +54,7 @@ function HeroCard({ game, width, onExpand }) {
         <Text allowFontScaling={false} style={priceStyle(22, colors.white)}>
           {free ? t('card.free') : price?.price != null ? formatPrice(price.price) : '—'}
         </Text>
-        {!free && price?.discount > 0 && <Txt variant="footnoteStrong" style={{ color: colors.onArt }}>−{price.discount}%</Txt>}
+        {!free && price?.discount > 0 && <Txt variant="footnoteStrong" style={{ color: colors.onArt }}>{formatDiscount(price.discount)}</Txt>}
         {!!price?.storeName && <Txt variant="caption" numberOfLines={1} style={{ color: colors.onArt, flexShrink: 1 }}>{price.storeName}</Txt>}
       </View>
       <View style={s.actions}>
