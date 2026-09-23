@@ -753,3 +753,39 @@ kompakt sıradaki satırları).
 **Açık kalan (sunucu):** `?id=` desteği hem haber hem video için `main`'e
 gidip yayına çıkana kadar derin bağlantılar boş durum gösterecek. İstemci
 artık iki ekranda da sıkışmıyor.
+
+### 24 Eylül — Arama bulgusu ve Oyunlar listesi çerçevesi (Claude)
+
+**G-05 / G-06 BİR TAŞIMA DEĞİL, YENİ ÖZELLİK.** Kit birleşik arama çiziyor:
+tek alanda oyun · kişi · topluluk · haber · video sonuçları (segmented +
+bölüm bölüm listeler), son aramalar, trend aramalar, önerilen kişiler.
+Uygulamada bunların hiçbirinin karşılığı yok:
+
+- Birleşik arama ucu yok. Oyun araması `fetchGames({ q })`, kullanıcı
+  araması `searchUsers` — ayrı uçlar; haber/video araması hiç yok.
+- **Topluluk diye bir varlık yok** (Topluluk sekmesi bir akış, üye/katıl
+  kavramı yok).
+- Arama geçmişi tutulmuyor, trend arama verisi yok, "önerilen kişiler"
+  ucu yok.
+
+Bunu çizmek uydurma olurdu; yapmak sunucu işi içeren ayrı bir özellik.
+Karar kullanıcıya bırakıldı.
+
+**Onun yerine taşınan: Oyunlar listesinin çerçevesi** (`app/games.jsx`).
+Ekranın kendisi kitte yok (G-06 arama sonucu, bu ise filtreli oyun
+listesi) ama çerçevesi 2.0 öncesiydi:
+
+- Başlık `largeTitle` (28/34) oldu; öncesi 22/800'dü.
+- Arama kutusu 2.0 **`SearchField`** (kit search_field: 40 pt, köşe 12,
+  `fill` zemin, 16 pt metin, odakta içte kırmızı halka, temizle düğmesi).
+  Öncesi ekrana özel, kenarlıklı ve 14 pt bir kopyaydı — aynı işi yapan
+  iki farklı arama kutusu uygulamada duruyordu.
+- Bölüm çipleri 2.0 **`Chip`**; ekrana özel çip dili (`CHIP` teması) kalktı.
+  Aynı ekranda iki çip dili vardı.
+- Katlanır başlık mantığına (ölçülen `headerH`, `Animated`) dokunulmadı.
+- Kartlar ve ızgara bu işin dışında: kart ailesi (Faz 2 `GameCard`) ile 2.0
+  kartı arasındaki seçim ayrı bir karar.
+
+**Doğrulama:** `npm run check` (20), `npx expo export --platform ios` ve
+cihazda gerçek liste + "elden" araması (odak halkası, temizle düğmesi,
+süzülmüş sonuçlar).

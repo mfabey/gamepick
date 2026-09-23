@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
-  View, Text, TextInput, Pressable, ActivityIndicator,
+  View, Text, Pressable, ActivityIndicator,
   StyleSheet, ScrollView,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
@@ -18,13 +18,15 @@ import { GamesGridSkeleton, Reveal } from '../src/components/Skeleton';
 import { TopFade, BottomFade } from '../src/components/EdgeFade';
 import { prefetchImages } from '../src/utils/prefetch';
 import { useTimeToData } from '../src/dev/perf';
-import { radius, spacing, type, CHIP, CHIP_TEXT, CHIP_TEXT_ON, PRESSED, TOUCH_MIN } from '../src/theme';
+import { radius, spacing, type, PRESSED, TOUCH_MIN } from '../src/theme';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useScrollCollapse } from '../src/context/TabBarContext';
 import { useLanguage } from '../src/context/LanguageContext';
 import FilterSheet, { FilterButton, countFilters, EtkinFiltreler } from '../src/components/FilterSheet';
 import LimitedMode from '../src/components/LimitedMode';
 import EmptyState from '../src/components/EmptyState';
+import { SearchField } from '../src/components/ui/SearchField';
+import { Chip as UIChip, Txt } from '../src/components/ui/Primitives';
 
 // Maketin sütun sayısı ve o sayının 390 pt'de verdiği hücre genişliği:
 // (390 − 2×10) / 2 = 185. Geniş ekranda sütun bu ölçüden türüyor.
@@ -323,28 +325,24 @@ export default function GamesScreen() {
         <View style={styles.titleRow}>
           <IconButton icon="chevron-back" size={26} color={colors.text}
             onPress={goBack} style={styles.backBtn} />
-          <Text style={styles.title}>{t('games.title')}</Text>
+          <Txt variant="largeTitle" accessibilityRole="header" numberOfLines={1} style={styles.flex}>{t('games.title')}</Txt>
         </View>
         {/* Arama + filtre AYNI SATIRDA: ikisi de "listeyi daralt" işi ve
             filtre düğmesi kendi satırını hak etmiyor. Rozet etkin filtre
             sayısını taşıyor — sayfa kapalıyken hangi filtrelerin açık
             olduğunu gösteren tek işaret o. */}
+        {/* Arama alanı 2.0 `SearchField` (kit search_field): 40 pt, köşe 12,
+            `fill` zemin, 16 pt metin, odakta içte kırmızı halka ve temizle
+            düğmesi. Öncesi ekrana özel, kenarlıklı ve 14 pt bir kopyaydı —
+            aynı işi yapan iki farklı arama kutusu uygulamada duruyordu. */}
         <View style={styles.searchRow}>
-          <View style={styles.searchBox}>
-            <Ionicons name="search" size={17} color={colors.text3} />
-            <TextInput
+          <View style={styles.flex}>
+            <SearchField
               value={query}
               onChangeText={setQuery}
               placeholder={t('games.searchPlaceholder')}
-              placeholderTextColor={colors.text3}
-              style={styles.searchInput}
               returnKeyType="search"
             />
-            {query ? (
-              <Pressable onPress={() => setQuery('')} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('a11y.clear')}>
-                <Ionicons name="close-circle" size={18} color={colors.text3} />
-              </Pressable>
-            ) : null}
           </View>
           <FilterButton count={filterCount} onPress={() => setSheetOpen(true)} />
         </View>
@@ -518,13 +516,15 @@ export default function GamesScreen() {
 // seçili çip ekranın tek gerçek CTA'sıyla aynı ağırlıktaydı.
 //
 // `accent` prop'u kaldırıldı — artık seçimin rengi diye bir şey yok.
+/**
+ * Bölüm çipi — 2.0 `Chip`e ince sarmalayıcı.
+ *
+ * EKRANA ÖZEL ÇİP KALKTI: aynı ekranda iki çip dili vardı (buradaki `CHIP`
+ * teması ve tasarımın 36 pt hapı). Sarmalayıcı yalnızca prop adlarını
+ * çeviriyor; çağrı yerleri (`SECTIONS.map`) değişmedi.
+ */
 function Chip({ active, label, onPress }) {
-  const styles = useStyles(makeStyles);
-  return (
-    <Pressable onPress={onPress} style={[styles.chip, active && styles.chipOn]}>
-      <Text style={[styles.chipText, active && styles.chipTextOn]}>{label}</Text>
-    </Pressable>
-  );
+  return <UIChip title={label} selected={active} onPress={onPress} />;
 }
 
 const makeStyles = (colors) => StyleSheet.create({
@@ -558,24 +558,10 @@ const makeStyles = (colors) => StyleSheet.create({
   // içeride kalıyor. Negatif kenar boşluğu onu geri alıyor: aksi hâlde ok,
   // altındaki arama kutusunun sol kenarına göre sağa kaçık görünüyordu.
   backBtn: { marginLeft: -11 },
-  title: { fontSize: type.title1, fontWeight: '800', color: colors.text, letterSpacing: -0.6 },
+  flex: { flex: 1, minWidth: 0 },
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  searchBox: {
-    // flex:1 — filtre düğmesi sabit 44pt, kalan genişliği arama kutusu alıyor
-    flex: 1,
-    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
-    backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1,
-    borderRadius: radius.md, paddingHorizontal: 14, height: 44,
-  },
-  searchInput: { flex: 1, color: colors.text, fontSize: type.subhead },
   chipsScroll: { flexGrow: 0, flexShrink: 0, maxHeight: 54 },
   chipsRow: { paddingHorizontal: spacing.lg, gap: spacing.sm, paddingVertical: spacing.sm, alignItems: 'center' },
-  // Maketten: hap, dolgu 8/12, surface3, KENARLIK YOK, metin 13/400.
-  chip: { ...CHIP, backgroundColor: colors.bgInput },
-  chipText: { ...CHIP_TEXT, color: colors.text2 },
-  // SEGMENT dili — bir gorunum seciyor. Maket: text1 dolgu + koyu metin.
-  chipOn: { backgroundColor: colors.text },
-  chipTextOn: { ...CHIP_TEXT_ON, color: colors.bg },
   cell: { flex: 1, paddingHorizontal: 6, paddingBottom: spacing.md },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md },
   footer: { paddingVertical: spacing.xl },
