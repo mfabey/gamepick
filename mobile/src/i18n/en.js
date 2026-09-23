@@ -255,6 +255,7 @@ export default {
   'gc.locFailed': 'Could not determine city.',
   // ── Messages ──
   'msg.title': 'Messages',
+  'msg.newsKicker': 'NEWS',
   'msg.new': 'New message',
   'msg.search': 'Search chats',
   'msg.onlineNow': 'Online',

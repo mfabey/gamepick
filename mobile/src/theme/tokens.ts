@@ -376,7 +376,20 @@ export const component = {
     divider: { height: 24, paddingH: 10, top: 16 },
     typing: { width: 64, height: 36, dot: 7, gap: 4 },
     composer: { paddingTop: 10, paddingH: 12, minBottom: 10, gap: 8, button: 44, plusIcon: 22, sendIcon: 19,
-      input: 44, inputRadius: 22, inputLeft: 16, inputRight: 2 } },
+      input: 44, inputRadius: 22, inputLeft: 16, inputRight: 2 },
+    // Paylaşım kartı (kit gcard / newsc): oyun ve fragman görselli kart,
+    // haber küçük resimli satır. Fiyat satırı YOK — paylaşım yükünde fiyat
+    // gelmiyor ve kart başına istek açmak ters listede yükseklik oynatırdı.
+    share: { width: 264, imageHeight: 124, padding: 12, buttonTop: 12, button: 40,
+      newsPadding: 10, newsGap: 10, newsThumb: 64, newsThumbRadius: 10, newsTextGap: 3,
+      // Kartın altındaki saat satırı (kit tstamp).
+      timeHeight: 14, timeTop: 4 },
+    // Görsel / GIF mesajı (kit im): saat görselin üstünde koyu rozette.
+    image: { width: 220, height: 150, badgeInset: 10, badgeHeight: 20, badgePaddingH: 7, badgeRadius: 6 },
+    // Alıntı kutusu (kit reply): baloncuğun içinde ayrı bir kutu.
+    quote: { padding: 8, paddingH: 10, radius: 10, gap: 5, icon: 14, textTop: 8, bodyPaddingH: 6 },
+    // Tepki rozeti (kit reply): baloncuğun ALT kenarına biniyor.
+    reaction: { height: 26, paddingH: 8, gap: 4, ring: 2, overlap: 14, inset: 10 } },
   // G-18 Mesajlar (kit s4.py messages()).
   messages: { searchTop: 4, searchHeight: 40, onlineTop: 18, onlineLabel: 18, onlineRailTop: 10, onlineRailHeight: 92,
     tile: { width: 64, avatar: 56, nameTop: 6 }, chipsTop: 16, chipsHeight: 32, listTop: 6 },

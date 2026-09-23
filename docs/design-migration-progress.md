@@ -492,3 +492,51 @@ tepki rozeti, medya/GIF baloncukları.
   hâlâ eski görünümde (kuyrukları kalktı, geometrileri duruyor).
 - `src/components/BubbleTail.jsx` artık hiçbir yerden çağrılmıyor; B
   parçasından sonra silinecek.
+
+### 23 Eylül — Sohbet, G-19 · B parçası: zengin baloncuklar (Claude)
+
+**Yapılanlar:**
+- **Paylaşım kartı ikiye ayrıldı** (kit gcard / newsc). Haber bir BAŞLIK
+  (64 küçük resim + "HABER · kaynak" + 3 satır başlık), oyun/fragman bir
+  ÜRÜN (264 geniş, 124 kapak, 16/700 ad, tam genişlik "Oyunu gör").
+  - **Kitin fiyat satırı çizilmedi:** paylaşım yükünde fiyat yok
+    (`chat-share.js` yalnız kind/name/image/appid veriyor) ve kart başına
+    fiyat isteği açmak ters listede kartın yüksekliğini sonradan değiştirir.
+  - **Gönderi kartı (kit postc) yok:** sunucu gönderi paylaşımı çözmüyor.
+- **Görsel ve GIF baloncuğunda saat** (kit im): sağ altta koyu rozet. A
+  parçasında salt görselde saat hiç çizilmiyordu.
+- **Alıntı kutusu** kitin şekline geçti: dikey şerit yerine 10 köşeli, bir
+  tık aydınlık katman.
+- **Tepki rozeti alt kenara indi** (kit reply): üst dış köşe yerine alt
+  kenar, içe 10 girintili; yer açan pay satırın altında.
+- Görsel/video ölçüsü kit im'e çekildi (220×150).
+
+**Emülatörde bulunup düzeltilenler (üçü de cihazda görüldü):**
+1. Haber etiketi "HABER PAYLAŞTI · Merlin'in K…" diye kırpılıyordu —
+   `share.news` bir fiil cümlesi. Kit bir KİCKER istiyor; `msg.newsKicker`
+   ("HABER") eklendi.
+2. **Paylaşım kartlarında saat hiç yoktu.** A parçasında saat baloncuğun
+   içine taşınmıştı ama kartlar o dalı kullanmıyor. Kitin `tstamp`i eklendi:
+   kartın altında, gönderen tarafa yaslı.
+3. **Aynı günde iki ayraç da "Çarşamba" diyordu.** Ayraç iki sebeple çıkıyor
+   (gün değişimi · 1 saatten uzun sessizlik) ve saat kaldırılınca ikinci
+   ayraç hiçbir şey söylemez oldu. `ayracMetni()` eklendi: gün değiştiyse gün
+   adı, aynı gün içindeki boşlukta SAAT.
+
+**Doğrulama (oturum açık emülatörde):**
+- `npm run check` (20) ve `npx expo export --platform ios` geçti.
+- **G-18 ölçüldü:** arama alanı 105 px = 40 dp, avatar 137 px = 52 dp, satır
+  aralığı 189 px = 72 dp, kenar 20 dp — dördü de kit sayısı. Arama süzmesi,
+  odak halkası, temizle düğmesi ve "Sonuç bulunamadı" çalışıyor.
+- **G-19 ölçüldü:** gönderilen baloncuk zemini `#f5f5f7` (kit acS), köşe
+  kuralı grup ortasında 18 dp / grup sonunda 6 dp (piksel ölçümü),
+  kompozitör 10 + 44 + 8 + 44, başlık 52 dp. Moderasyon menüsü (şikâyet
+  dahil) açılıyor.
+
+**Açık kalanlar:**
+- **Alıntı ve tepki rozeti cihazda GÖRÜLMEDİ:** mevcut sohbetlerde ne alıntı
+  ne tepki var; ikisini üretmek gerçek bir kişiye bildirim göndermek demek.
+- Gönderilen paylaşım kartında saat ve "Görüldü" iki satır; kit ikisini tek
+  satırda birleştiriyor.
+- `src/components/BubbleTail.jsx` artık hiçbir yerden çağrılmıyor.
+- iOS görünümü doğrulanmadı.

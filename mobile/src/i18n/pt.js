@@ -262,6 +262,7 @@ export default {
   'gc.locFailed': 'Não foi possível identificar a cidade.',
   // ── Messages ──
   'msg.title': 'Mensagens',
+  'msg.newsKicker': 'NOTÍCIA',
   'msg.new': 'Nova mensagem',
   'msg.search': 'Pesquisar conversas',
   'msg.onlineNow': 'Online',

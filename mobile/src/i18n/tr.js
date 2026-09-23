@@ -262,6 +262,7 @@ export default {
   'gc.locFailed': 'Şehir bulunamadı.',
   // ── Mesajlar ──
   'msg.title': 'Mesajlar',
+  'msg.newsKicker': 'HABER',
   'msg.new': 'Yeni mesaj',
   'msg.search': 'Sohbetlerde ara',
   'msg.onlineNow': 'Çevrimiçi',

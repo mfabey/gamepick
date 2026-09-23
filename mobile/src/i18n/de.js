@@ -264,6 +264,7 @@ export default {
   'gc.locFailed': 'Stadt konnte nicht bestimmt werden.',
   // ── Messages ──
   'msg.title': 'Nachrichten',
+  'msg.newsKicker': 'NACHRICHT',
   'msg.new': 'Neue Nachricht',
   'msg.search': 'Chats durchsuchen',
   'msg.onlineNow': 'Online',
