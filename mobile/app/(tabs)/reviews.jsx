@@ -479,7 +479,9 @@ function Header({ t, router, incoming, onCompose, yan = 0 }) {
     <View style={{ marginHorizontal: yan }}>
       <PageHeader title={t('rev.section')}>
         <IconButton icon="users" label={t('soc.title')} badge={incoming || undefined} onPress={() => router.push('/friends')} />
-        <IconButton icon="edit" label={t('post.newTitle')} onPress={onCompose} />
+        {/* Kitteki ikon `pen` (yazma kutusu), `edit` (kalem) değil —
+            Mesajlar'daki "yeni mesaj" ile aynı eylem, aynı simge. */}
+        <IconButton icon="pen" label={t('post.newTitle')} onPress={onCompose} />
       </PageHeader>
     </View>
   );

@@ -1503,7 +1503,7 @@ const Bubble = memo(function Bubble({
         styles.bubble,
         { backgroundColor: mine ? dc.primary : dc.surface2 },
         // ── KUYRUK ARTIK BİR KÖŞE ──
-        // Çizilen kuyruk (BubbleTail) ve onun salt görselde kullandığı
+        // Çizilen kuyruk ve onun salt görselde kullandığı
         // "görselin ikinci kopyası" hilesi kalktı: kit kuyruğu baloncuğun
         // KÖŞE YARIÇAPIYLA anlatıyor (18 18 18 6 / 18 18 6 18). Küçük köşe
         // grubun SON baloncuğunda — kuyruk kuralı neyse o.
