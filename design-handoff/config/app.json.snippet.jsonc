@@ -1,0 +1,39 @@
+// app.json (ya da app.config.ts) içine birleştirilecek alanlar.
+// Görsel yolları, assets/ klasörünü reponda ./assets/brand/ altına koyduğunu varsayar; farklıysa yolları düzelt.
+{
+  "expo": {
+    // Arayüz yalnızca koyu tasarlandı: sistem bileşenleri (klavye, uyarılar) de koyu açılsın.
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0A0A0B",
+
+    "ios": {
+      // iOS 18+: açık, koyu ve tonlu ana ekran simgeleri (SDK 54 destekler).
+      "icon": {
+        "light": "./assets/brand/app-icon/ios-light.png",
+        "dark": "./assets/brand/app-icon/ios-dark.png",
+        "tinted": "./assets/brand/app-icon/ios-tinted.png"
+      }
+      // iOS 26 Liquid Glass için alternatif: Icon Composer'da hazırlanan .icon klasörü
+      // "icon": "./assets/brand/app.icon"
+    },
+
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/brand/app-icon/android-foreground.png",
+        "monochromeImage": "./assets/brand/app-icon/android-monochrome.png",
+        "backgroundColor": "#FFFFFF"
+      }
+    },
+
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/brand/splash/splash-icon.png",
+          "imageWidth": 104,
+          "backgroundColor": "#0A0A0B"
+        }
+      ]
+    ]
+  }
+}

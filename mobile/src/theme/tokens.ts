@@ -368,6 +368,17 @@ export const component = {
   stickyBar: { paddingTop: 10, paddingH: 20, minBottom: 10, gap: 12, button: 48 },
   pageDots: { active: 18, size: 6, gap: 6, top: 12 },
   home: { greetingTop: 2, heroTop: 14, greetingChevron: 14, newsRowsTop: 18, newsRowsGap: 14, dealCount: 2 },
+  // G-15 Video Oynatıcı (kit s3.py player()).
+  //
+  // KİTTEN ALINMAYANLAR: yaratıcı satırı ve takip düğmesi (akışta yaratıcı
+  // yok — kaynak Steam'in resmî fragmanı), beğeni/yorum/klip hapları
+  // (videonun beğenisi ve yorumu yok), izlenme ve süre, altyazı/ayar/
+  // tam ekran özel kontrolleri (yerel oynatıcı kontrolleri kullanılıyor).
+  player: { titleTop: 16, metaTop: 4, actionsTop: 14, actionHeight: 36, actionGap: 8,
+    cardTop: 18, cardPadding: 14, cardRadius: 18, cardGap: 10, cardRow: 74, cardCoverWidth: 56,
+    cardCoverHeight: 74, cardCoverRadius: 10, cardTextGap: 3, cardPriceRow: 22, cardPriceGap: 6,
+    nextTop: 24, nextListTop: 12, nextGap: 14, nextRow: 90, nextThumbWidth: 160, nextThumbHeight: 90,
+    nextThumbRadius: 12, nextTextGap: 4 },
   // G-17 Haber Detayı (kit s3.py news_detail()).
   //
   // KİTTEN ALINMAYANLAR: gövde paragrafları, ara başlık, figür ve imza

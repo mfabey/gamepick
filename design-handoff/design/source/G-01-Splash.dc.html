@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>Gamerisen — 01 Açılış</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&amp;display=swap">
+<style>
+body{margin:0;background:#0A0A0B;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',system-ui,'Segoe UI',sans-serif;color:#F5F5F7;-webkit-font-smoothing:antialiased;letter-spacing:-0.01em}
+a{color:#F5F5F7;text-decoration:none}a:hover{color:#FFFFFF}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;text-align:inherit;letter-spacing:inherit}
+input,textarea{font:inherit;color:inherit;letter-spacing:inherit}
+input::placeholder,textarea::placeholder{color:#8E8E93}input:focus,textarea:focus{outline:none}
+button:focus-visible,a:focus-visible{outline:2px solid #F5F5F7;outline-offset:2px}
+.rail{scrollbar-width:none}.rail::-webkit-scrollbar{display:none}
+.c1,.c2,.c3,.c4{display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden}
+.c1{-webkit-line-clamp:1}.c2{-webkit-line-clamp:2}.c3{-webkit-line-clamp:3}.c4{-webkit-line-clamp:4}
+.num{font-variant-numeric:tabular-nums}
+.press{transition:transform .15s ease-out,opacity .15s ease-out}.press:active{transform:scale(.97);opacity:.9}
+@keyframes gr-pop{0%{transform:scale(1)}35%{transform:scale(1.28)}65%{transform:scale(.92)}100%{transform:scale(1)} }
+.is-on svg{animation:gr-pop .24s cubic-bezier(.2,.9,.3,1.25)}
+@keyframes gr-pulse{0%{box-shadow:0 0 0 0 rgba(243,69,69,.5)}100%{box-shadow:0 0 0 6px rgba(243,69,69,0)} }
+.live{animation:gr-pulse 1.8s ease-out infinite}
+@keyframes gr-dots{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-2px)} }
+.dot1{animation:gr-dots 1.2s infinite}.dot2{animation:gr-dots 1.2s .15s infinite}.dot3{animation:gr-dots 1.2s .3s infinite}
+@keyframes gr-shim{from{background-position:120% 0}to{background-position:-120% 0} }
+.sk{background:linear-gradient(90deg,#1C1C1E 25%,#2C2C2E 50%,#1C1C1E 75%);background-size:220% 100%;animation:gr-shim 1.3s linear infinite}
+@media (prefers-reduced-motion: reduce){*{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important} }
+@keyframes gr-load{0%{transform:translateX(-110%)}100%{transform:translateX(260%)} }.load{animation:gr-load 1.4s cubic-bezier(.4,0,.2,1) infinite}</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #0A0A0B; color: #F5F5F7; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', system-ui, 'Segoe UI', sans-serif; display: flex; flex-direction: column;">
+<a href="G-02-Onboarding.dc.html" aria-label="Gamerisen, devam et" style="position: absolute; left: 0; right: 0; top: 300px; display: flex; flex-direction: column; align-items: center;"><svg width="104" height="104" viewBox="217 215 593 593" role="img" aria-label="Gamerisen" style="flex-shrink: 0; display: block;"><path d="M609 415 L603 415 L545 470 L539 496 L539 516 L543 534 L542 541 L537 541 L527 536 L513 534 L490 534 L471 540 L393 614 L388 625 L385 638 L386 664 L390 677 L404 702 L497 800 L502 800 L748 567 L748 562 L698 510 L693 510 L624 575 L619 575 L617 573 L612 560 L608 540 L608 524 L611 512 L619 502 L655 469 L655 464ZM579 613 L579 618 L494 698 L490 698 L469 676 L461 665 L460 657 L463 650 L517 600 L526 597 L547 598 L560 602Z" fill="#F8F8F8" fill-rule="evenodd"></path><path d="M800 515 L537 238 L519 227 L506 223 L483 224 L467 231 L451 243 L247 436 L233 456 L227 477 L228 503 L236 522 L348 640 L550 448 L482 377 L436 420 L436 422 L449 436 L449 439 L348 535 L344 536 L311 502 L308 496 L309 489 L498 309 L508 308 L751 563 L800 517Z" fill="#BC0C0C" fill-rule="evenodd"></path></svg><div style="margin-top: 22px;"><div style="font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', system-ui, 'Segoe UI', sans-serif; font-size: 36px; font-weight: 700; letter-spacing: -0.035em; line-height: 1; color: #F5F5F7;">game<span style="color: #BC0C0C;">risen</span></div></div><div style="font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', system-ui, 'Segoe UI', sans-serif; font-size: 15px; line-height: 22px; font-weight: 400; color: #A1A1A6; margin-top: 14px;">Oyun dünyasında olan her şey, tek yerde.</div></a><div style="position: absolute; left: 0; right: 0; bottom: 64px; display: flex; flex-direction: column; align-items: center; gap: 12px;"><div style="width: 120px; height: 3px; border-radius: 2px; background: rgba(255,255,255,0.12); overflow: hidden;"><div class="load" style="width: 40%; height: 3px; border-radius: 2px; background: #BC0C0C;"></div></div><span style="font-size: 12px; color: #8E8E93;">Senin için hazırlanıyor…</span></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent": {"editor": "color", "default": "#BC0C0C", "options": ["#BC0C0C", "#F5F5F7", "#0A84FF"], "section": "Vurgu"}, "$preview": {"width": 390, "height": 844} }'>
+class Component extends DCLogic {
+
+  tone() {
+    var hex = String(this.props.accent || '#BC0C0C').replace('#', '');
+    if (hex.length === 3) { hex = hex.split('').map(function (ch) { return ch + ch; }).join(''); }
+    var r = parseInt(hex.slice(0, 2), 16), g = parseInt(hex.slice(2, 4), 16), b = parseInt(hex.slice(4, 6), 16);
+    if (isNaN(r) || isNaN(g) || isNaN(b)) { r = 188; g = 12; b = 12; hex = 'BC0C0C'; }
+    function lin(c) { c = c / 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); }
+    function lum(x, y, z) { return 0.2126 * lin(x) + 0.7152 * lin(y) + 0.0722 * lin(z); }
+    function h2(v) { var q = Math.round(Math.max(0, Math.min(255, v))).toString(16); return q.length < 2 ? '0' + q : q; }
+    function f(p, q, t) { if (t < 0) { t += 1; } if (t > 1) { t -= 1; } if (t < 1 / 6) { return p + (q - p) * 6 * t; } if (t < 1 / 2) { return q; } if (t < 2 / 3) { return p + (q - p) * (2 / 3 - t) * 6; } return p; }
+    var R = r / 255, G = g / 255, B = b / 255, mx = Math.max(R, G, B), mn = Math.min(R, G, B), d = mx - mn, hh = 0, ss = 0, L = (mx + mn) / 2;
+    if (d > 0) { ss = L > 0.5 ? d / (2 - mx - mn) : d / (mx + mn); if (mx === R) { hh = (G - B) / d + (G < B ? 6 : 0); } else if (mx === G) { hh = (B - R) / d + 2; } else { hh = (R - G) / d + 4; } hh = hh / 6; }
+    var c = [r, g, b], bgl = lum(28, 28, 30);
+    while ((lum(c[0], c[1], c[2]) + 0.05) / (bgl + 0.05) < 4.6 && L < 0.95) {
+      L += 0.02;
+      if (ss === 0) { c = [L * 255, L * 255, L * 255]; } else { var q2 = L < 0.5 ? L * (1 + ss) : L + ss - L * ss, p2 = 2 * L - q2; c = [f(p2, q2, hh + 1 / 3) * 255, f(p2, q2, hh) * 255, f(p2, q2, hh - 1 / 3) * 255]; }
+    }
+    var light = lum(r, g, b) > 0.4;
+    return { ac: '#' + h2(c[0]) + h2(c[1]) + h2(c[2]), acF: '#' + hex, onAcF: light ? '#0A0A0B' : '#FFFFFF', acS: '#F5F5F7', onAc: '#0A0A0B', onAc2: 'rgba(10,10,11,0.55)',
+      acT: 'rgba(' + r + ',' + g + ',' + b + ',0.24)', acL: 'rgba(' + r + ',' + g + ',' + b + ',0.45)' };
+  }
+  flag(key, dflt) { var s = this.state || {}; return s[key] === undefined ? !!dflt : !!s[key]; }
+  toggler(key, dflt) { var self = this; return function () { var o = {}; o[key] = !self.flag(key, dflt); self.setState(o); }; }
+  wish(key, dflt) { var on = this.flag(key, dflt); return { fill: on ? '#F34545' : 'none', stroke: on ? '#F34545' : '#F5F5F7', cls: on ? 'is-on' : '', on: on, label: on ? 'İstek listesinden çıkar' : 'İstek listesine ekle', t: this.toggler(key, dflt) }; }
+  like(key, base, dflt) { var on = this.flag(key, dflt); var n = base + (on ? 1 : 0) - (dflt ? 1 : 0); return { fill: on ? '#F34545' : 'none', stroke: on ? '#F34545' : '#A1A1A6', col: on ? '#F34545' : '#A1A1A6', cls: on ? 'is-on' : '', on: on, n: String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.'), t: this.toggler(key, dflt) }; }
+  bm(key, dflt, ac) { var on = this.flag(key, dflt); return { fill: on ? ac : 'none', stroke: on ? ac : '#A1A1A6', cls: on ? 'is-on' : '', on: on, label: on ? 'Kaydedildi' : 'Kaydet', t: this.toggler(key, dflt) }; }
+  sw(key, dflt) { var on = this.flag(key, dflt); return { on: on, bg: on ? '#30D158' : 'rgba(120,120,128,0.32)', x: on ? 20 : 0, t: this.toggler(key, dflt) }; }
+  csel(key, dflt, t) { var on = this.flag(key, dflt); return { on: on, bg: on ? t.acS : '#2C2C2E', col: on ? t.onAc : '#F5F5F7', t: this.toggler(key, dflt) }; }
+  one(group, id, dflt, t) { var s = this.state || {}; var cur = s[group] === undefined ? dflt : s[group]; var on = cur === id; var self = this; return { on: on, bg: on ? t.acS : '#2C2C2E', col: on ? t.onAc : '#F5F5F7', t: function () { var o = {}; o[group] = id; self.setState(o); } }; }
+  follow(key, dflt, t) { var on = this.flag(key, dflt); return { on: on, off: !on, label: on ? 'Takip ediliyor' : 'Takip et', bg: on ? '#2C2C2E' : t.acS, col: on ? '#A1A1A6' : t.onAc, cls: on ? 'is-on' : '', t: this.toggler(key, dflt) }; }
+  renderVals() {
+    var t = this.tone();
+    var v = {};
+    for (var k in v) { t[k] = v[k]; }
+    return t;
+  }
+}
+</script>
+</body>
+</html>
