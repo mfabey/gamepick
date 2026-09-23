@@ -163,6 +163,7 @@ export const typography = {
   shortTitle: t(13, 17, '600'), // ShortCard başlığı (kit short())
   newsTitle: t(18, 24, '700', -0.015), // NewsFeature başlığı (kit news_feat())
   storeMono: t(9, undefined, '700', 0),
+  profileName: t(24, 30, '700', -0.025), // Profil görünen adı (kit profile() name)
 } as const;
 
 /** Fiyatlar: display ailesi, 700, -0.02em, rakamlar eşit genişlikte. */
@@ -365,6 +366,14 @@ export const component = {
   stickyBar: { paddingTop: 10, paddingH: 20, minBottom: 10, gap: 12, button: 48 },
   pageDots: { active: 18, size: 6, gap: 6, top: 12 },
   home: { greetingTop: 2, heroTop: 14, greetingChevron: 14, newsRowsTop: 18, newsRowsGap: 14, dealCount: 2 },
+  // G-21 Profil (kit s4.py profile()).
+  //
+  // KİTTEN ALINMAYANLAR — hiçbirinin verisi yok, bkz. ekranın dosya başı:
+  // kapak görseli, "Lv" rozeti, takipçi/takip sayaçları, "Şu an oynuyor"
+  // kartı, saat/başarım karoları.
+  profile: { avatar: 96, nameTop: 12, handleRow: 22, handleGap: 8, bioTop: 10,
+    statsTop: 12, statsHeight: 24, statsGap: 18, statGap: 5, actionsTop: 16, actionHeight: 40,
+    chipsTop: 12, chipHeight: 28, chipPaddingH: 12, chipGap: 8, chipDot: 6 },
   // G-19 Sohbet (kit s4.py chat()).
   //
   // GÖNDERİLEN BALONCUK VURGU RENGİ DEĞİL: kitte zemin `acS` (#F5F5F7) ve

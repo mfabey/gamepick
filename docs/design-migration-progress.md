@@ -540,3 +540,46 @@ tepki rozeti, medya/GIF baloncukları.
   satırda birleştiriyor.
 - `src/components/BubbleTail.jsx` artık hiçbir yerden çağrılmıyor.
 - iOS görünümü doğrulanmadı.
+
+### 23 Eylül — Profil, G-21 · kimlik bloğu (Claude)
+
+**Yapılanlar (kit s4.py profile()):**
+- Avatar 96 (ölçüldü: 252 px = 96,0 dp), ad 24/30/700, "@kullanıcı" satırı,
+  bio 15/22.
+- **Sayaçlar kitteki gibi satır hâlinde** ("3 gönderi · 6 arkadaş · 8 oyun"),
+  avatarın sağında üç sütun değil.
+- Eylemler 2.0 `Button` ile 40 pt. Kendi profilimde "Profili düzenle"
+  avatarın sağında — kitin `avrow`u birebir. Başkasının profilinde iki düğme
+  var ve 375 pt kanvasta avatarın yanına sığmıyor; orada kendi satırlarında.
+- Paylaş ve ayarlar üst çubukta yan yana (kit onları kapağın sağ üstünde
+  çiftliyor; kapağımız yok).
+- Çipler 2.0 diline geçti (kenarlıklı kart yerine `surface2` hap).
+
+**Kitten alınmayanlar — hiçbirinin verisi yok:**
+kapak görseli (390×190) · "Lv 37" rozeti · **takipçi/takip sayaçları**
+(uygulamada takip değil çift taraflı ARKADAŞLIK var) · "Şu an oynuyor"
+ilerleme kartı · Tamamlanan/İnceleme/Saat/Başarım karoları · "@kullanıcı"
+yanındaki Steam kullanıcı adı (sunucu bilerek vermiyor).
+
+**Sekme şeridi İKONLU KALDI.** Kit dört metin etiketli `segmented` istiyor
+("Gönderiler · Oyunlar · İncelemeler · Medya") ama bu şerit beş dil taşıyor
+ve Almanca etiketler (Sammlung · Wunschliste · Bewertungen · Beiträge)
+390 pt'de sütun başına ~87 pt'ye sığmıyor — kararın gerekçesi
+`ProfileTabs.jsx` başında duruyor ve ölçüm hâlâ geçerli.
+
+**Emülatörde bulunup düzeltilenler:**
+1. Aynı ekranda iki kez "@test": üst çubuktaki kullanıcı adı ile yeni
+   kullanıcı adı satırı. Üst çubuktaki kalktı, yerine paylaş düğmesi geldi.
+2. "Arkadaşsınız" düğmesi `disabled` yüzünden solgundu ve bozuk gibi
+   okunuyordu; durum görünümüne çevrildi.
+
+**Doğrulama:**
+- `npm run check` (20) ve `npx expo export --platform ios` geçti.
+- Cihazda kendi profilim ve `/u/yunus_gns_` (arkadaş) açıldı; iki düzen de
+  doğru çiziliyor.
+
+**Açık kalanlar:**
+- `app/u/[username].jsx` üst çubuğu hâlâ eski (geri · @kullanıcı · ⋯) ve
+  başlıktaki kullanıcı adı kimlik bloğundakiyle tekrarlanıyor.
+- İçerik sekmelerinin kendi düzenleri (ızgara, inceleme satırı) taşınmadı.
+- iOS görünümü doğrulanmadı.

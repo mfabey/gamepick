@@ -58,6 +58,7 @@ import CoverCell, { coverWidth, gridCols, GRID_GAP } from '../../src/components/
 import { useYanBosluk } from '../../src/hooks/useIcerikAlani';
 import ProfileReviewRow from '../../src/components/ProfileReviewRow';
 import PostCard from '../../src/components/PostCard';
+import { IconButton } from '../../src/components/ui/Primitives';
 import EmptyState from '../../src/components/EmptyState';
 
 // Sunucunun sayfa boyutu (`/api/social/profile` PAGE). "Devamı var mı" kararı
@@ -507,19 +508,25 @@ export default function ProfileScreen() {
       <BottomFade />
 
       {/* ── Üst çubuk ──
-          Kullanıcı adı ve ayarlar HER ZAMAN görünür kalıyor: ekran artık
-          kaydırılacak bir içerik sayfası ve ayarların dibe inmesi kabul
-          edilemezdi. Kimlik bloğu kayıp gidiyor (parallax yok — iOS'ta
-          pahalı ve bu ekranın taşıdığı bilgiye değmiyor). */}
+          Ayarlar HER ZAMAN görünür kalıyor: ekran kaydırılacak bir içerik
+          sayfası ve ayarların dibe inmesi kabul edilemezdi. Kimlik bloğu
+          kayıp gidiyor (parallax yok — iOS'ta pahalı ve bu ekranın taşıdığı
+          bilgiye değmiyor).
+
+          KULLANICI ADI BURADAN KALKTI (G-21): kit onu adın altına koyuyor ve
+          kimlik bloğu artık orada yazıyor — aynı ekranda iki kez "@test"
+          duruyordu (emülatörde görüldü).
+
+          PAYLAŞ DA BURAYA GELDİ: kit ikisini (paylaş · ayarlar) kapağın sağ
+          üstünde yan yana çiziyor. Kapak görselimiz yok, o çift bu çubuğa
+          düştü; avatar satırında yalnız "Profili düzenle" kaldı — kitteki
+          avrow'un birebir karşılığı. */}
       <View style={styles.topBar}>
-        <Text style={styles.handle} numberOfLines={1}>
-          {profil?.username ? `@${profil.username}` : t('nav.profile')}
-        </Text>
-        <Pressable onPress={() => router.push('/settings')} hitSlop={8}
-                   style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]}
-                   accessibilityRole="button" accessibilityLabel={t('prof.settingsTitle')}>
-          <Ionicons name="settings-outline" size={22} color={colors.text} />
-        </Pressable>
+        <View style={styles.flex} />
+        {profil?.username ? (
+          <IconButton icon="share" label={t('stats.share')} onPress={paylas} />
+        ) : null}
+        <IconButton icon="gear" label={t('prof.settingsTitle')} onPress={() => router.push('/settings')} />
       </View>
 
       <FlashList
@@ -551,7 +558,6 @@ export default function ProfileScreen() {
                 else router.push('/library');
               }}
               onEdit={() => router.push('/profile-edit')}
-              onShare={profil?.username ? paylas : undefined}
               onConnect={() => router.push('/settings')}
               onWeek={() => router.push('/stats')}
             />
@@ -641,8 +647,7 @@ const makeStyles = (colors) => StyleSheet.create({
     height: TOUCH_MIN, flexDirection: 'row', alignItems: 'center',
     paddingLeft: spacing.s20, paddingRight: spacing.s12,
   },
-  handle: { flex: 1, fontSize: type.body, fontWeight: '600', color: colors.text },
-  iconBtn: { width: TOUCH_MIN, height: TOUCH_MIN, alignItems: 'center', justifyContent: 'center' },
+  flex: { flex: 1 },
 
   // Sabitlenen şerit: altından içerik geçtiği için zemin OPAK olmak zorunda.
   seritSarmal: { backgroundColor: colors.bg },

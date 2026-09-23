@@ -1,102 +1,82 @@
-import { View, Text, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, StyleSheet } from 'react-native';
 
-import Avatar from './Avatar';
 import DevBadge from './DevBadge';
+import { Icon } from './Icon';
+import { Button, IconButton, PressableScale, Txt } from './ui/Primitives';
+import { UserAvatar } from './ui/Social';
 import { isDeveloperUser } from '../utils/developer';
-import { radius, spacing, type, avatar as avatarSize, PRESSED, NUMERIC, TOUCH_MIN } from '../theme';
-import { useStyles, useTheme } from '../context/ThemeContext';
+import { NUMERIC, spacing } from '../theme';
+import { useStyles } from '../context/ThemeContext';
+import { useDesignTheme } from '../theme/useDesignTheme';
+import { component as K, layout, radius } from '../theme/tokens';
 import { useLanguage } from '../context/LanguageContext';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Profil kimlik bloğu — KENDİ PROFİLİM VE BAŞKASININ PROFİLİ AYNI BİLEŞEN.
 //
-// NEDEN ORTAK. İki ekran da aynı iskeleti çiziyor (avatar · üç sayaç · ad ·
-// bio · bağlı çipi · eylem satırı); yalnız EYLEM SATIRI ayrışıyor. İki ayrı
-// kopya yazılsaydı, bu depoda daha önce olduğu gibi (Avatar bileşeninin
+// NEDEN ORTAK. İki ekran da aynı iskeleti çiziyor (avatar · ad · bio ·
+// sayaçlar · eylem satırı); yalnız EYLEMLER ayrışıyor. İki ayrı kopya
+// yazılsaydı, bu depoda daha önce olduğu gibi (Avatar bileşeninin
 // gerekçesine bakın: aynı mantık sekiz dosyada kopyalanmıştı) biri değişip
 // öteki unutulurdu.
 //
-// SAYAÇLAR AVATARIN SAĞINDA, altında değil: Instagram düzeni. Ölçüm gerekçesi
-// eski profil ekranında yazılıydı — dikey kimlik bloğu ekranın %44'ünü
-// yiyordu; yatay düzen aynı bilgiyi ~150pt'ye indiriyor ve kazanılan yer
-// içeriğe gidiyor.
+// ── G-21 (kit s4.py profile()) ──
+// Avatar 96, ad 24/30/700, "@kullanıcı" satırı, bio 15/22, sayaç satırı
+// (16/700 sayı + 14 etiket, aralık 18), eylemler 40 pt.
 //
-// SAYAÇTA KOLEKSİYON YOK: o sayı sekme şeridinin hemen altındaki bağlam
-// satırında duruyor ("KOLEKSİYON · 214"). Aynı sayı ekranda iki kez durmaz —
-// bu dosyanın öncülü olan profile.jsx'in de kuralı buydu.
+// KİTTEN ALINMAYANLAR — hepsinin sebebi aynı: SUNUCU O VERİYİ VERMİYOR ve
+// uydurmuyoruz (`/api/social/profile` → username, displayName, bio, avatar,
+// counts{posts,friends,games,collection,wishlist,reviews}, connections,
+// friendship, mutualFriends):
+//   · KAPAK GÖRSELİ (390×190) — profilde kapak alanı yok.
+//   · "Lv 37" rozeti — seviye/deneyim sistemi yok.
+//   · TAKİPÇİ / TAKİP sayaçları — uygulamada takip değil ARKADAŞLIK var
+//     (çift taraflı). Yerine elimizdeki üçlü: gönderi · arkadaş · oyun.
+//   · "Şu an oynuyor" ilerleme kartı ve saat/başarım karoları — oynanma
+//     süresi ve başarım yüzdesi bu uçta yok.
+//   · "@kullanıcı" satırındaki Steam kullanıcı adı — sunucu BİLEREK
+//     vermiyor (route: "hangi hesap dışarı verilmiyor"); yalnız bağlı olup
+//     olmadığı çipte duruyor.
+//
+// SAYAÇLAR KİTTEKİ GİBİ SATIR HÂLİNDE, avatarın sağında sütunlar hâlinde
+// değil: kit "1.284 takipçi · 312 takip · 48 arkadaş" diye yan yana yazıyor
+// ve bu düzen dar ekranda da kırılmıyor.
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Kimlik bloğundaki tek sayaç. Dokunulabilir: üçü de bir hedefe gidiyor. */
+const P = K.profile;
+
+/** Kimlik bloğundaki tek sayaç: 16/700 sayı + 14 etiket. Üçü de bir hedefe gidiyor. */
 function Counter({ n, label, onPress }) {
   const styles = useStyles(makeStyles);
+  const { colors } = useDesignTheme();
   return (
-    <Pressable
+    <PressableScale
       onPress={onPress}
-      style={({ pressed }) => [styles.counter, pressed && PRESSED]}
+      style={styles.counter}
       accessibilityRole="button"
       accessibilityLabel={`${n} ${label}`}
     >
-      <Text style={[styles.counterN, NUMERIC]}>{n}</Text>
-      <Text style={styles.counterLabel} numberOfLines={1}>{label}</Text>
-    </Pressable>
+      <Txt variant="cardTitleLarge" style={[styles.counterN, NUMERIC]}>{n}</Txt>
+      <Txt variant="subheadRegular" numberOfLines={1} style={{ color: colors.text2 }}>{label}</Txt>
+    </PressableScale>
   );
 }
 
 /** Durum çipi — bağlı mağaza, ortak arkadaş, gizli profil. Bilgi öğesi. */
 function Chip({ icon, dot, text, onPress }) {
   const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
+  const { colors } = useDesignTheme();
   const inner = (
     <>
       {dot ? <View style={[styles.chipDot, { backgroundColor: dot }]} /> : null}
-      {icon ? <Ionicons name={icon} size={12} color={colors.text3} /> : null}
-      <Text style={styles.chipText} numberOfLines={1}>{text}</Text>
+      {icon ? <Icon name={icon} size={P.chipDot * 2} color={colors.text3} /> : null}
+      <Txt variant="footnoteMedium" numberOfLines={1} style={{ color: colors.text2 }}>{text}</Txt>
     </>
   );
-  if (!onPress) return <View style={styles.chip}>{inner}</View>;
+  const stil = [styles.chip, { backgroundColor: colors.surface2 }];
+  if (!onPress) return <View style={stil}>{inner}</View>;
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.chip, pressed && PRESSED]}>
-      {inner}
-    </Pressable>
-  );
-}
-
-/** Eylem satırının tek düğmesi. Yükseklik HER DURUMDA 44 — bkz. dosya sonu. */
-function ActionButton({ label, icon, iconColor, tone = 'quiet', onPress, busy, wide = true }) {
-  const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
-  const toneStyle = tone === 'primary' ? styles.btnPrimary
-    : tone === 'outline' ? styles.btnOutline
-    : tone === 'settled' ? styles.btnSettled
-    : styles.btnQuiet;
-  const textStyle = tone === 'primary' ? styles.btnTextPrimary
-    : tone === 'outline' ? styles.btnTextMuted
-    : styles.btnText;
-
-  return (
-    <Pressable
-      onPress={busy ? undefined : onPress}
-      disabled={busy}
-      style={({ pressed }) => [styles.btn, toneStyle, wide && styles.btnWide, pressed && PRESSED]}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-    >
-      {busy ? (
-        <ActivityIndicator size="small" color={tone === 'primary' ? colors.onAccent : colors.text2} />
-      ) : (
-        <>
-          {icon ? (
-            <Ionicons
-              name={icon}
-              size={17}
-              color={iconColor || (tone === 'primary' ? colors.onAccent : tone === 'outline' ? colors.text2 : colors.text)}
-            />
-          ) : null}
-          {label ? <Text style={textStyle} numberOfLines={1}>{label}</Text> : null}
-        </>
-      )}
-    </Pressable>
+    <PressableScale onPress={onPress} style={stil} accessibilityRole="button">{inner}</PressableScale>
   );
 }
 
@@ -114,7 +94,7 @@ export default function ProfileHeader({
   onCounter, onEdit, onShare, onMessage, onFriend, onConnect, onWeek,
 }) {
   const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
+  const { colors } = useDesignTheme();
   const { t } = useLanguage();
   if (!profile) return null;
 
@@ -124,35 +104,61 @@ export default function ProfileHeader({
 
   return (
     <View style={styles.wrap}>
-      {/* ── Kimlik ── */}
-      <View style={styles.idRow}>
-        <Avatar avatar={profile.avatar} name={name} size={avatarSize.xl} style={styles.avatarXl} />
-        <View style={styles.counters}>
-          <Counter n={c.posts || 0}   label={t('prof.statPosts')}   onPress={() => onCounter?.('posts')} />
-          <Counter n={c.friends || 0} label={t('prof.statFriends')} onPress={() => onCounter?.('friends')} />
-          <Counter n={c.games || 0}   label={t('prof.statGames')}   onPress={() => onCounter?.('games')} />
-        </View>
+      {/* ── Avatar satırı (kit avrow) ──
+          KENDİ PROFİLİMDE düğme avatarın sağında, kitteki gibi. BAŞKASININ
+          profilinde iki düğme var ("Arkadaş Ekle" + "Mesaj") ve ikisi 375 pt
+          kanvasta avatarın yanına sığmıyor — orada eylemler kendi satırında
+          duruyor (aşağıda). Kit yalnız kendi profilini çiziyor. */}
+      <View style={styles.avatarRow}>
+        <UserAvatar avatar={profile.avatar} name={name} size={P.avatar} />
+        {isSelf ? (
+          <View style={styles.avatarActions}>
+            <Button title={t('prof.editProfile')} variant="secondary" height={P.actionHeight} onPress={onEdit} />
+            {/* PAYLAŞ DÜĞMESİ, İŞLEYİCİ VERİLİNCE ÇİZİLİYOR — ve artık hedefi
+                var: profilin web karşılığı (`/u/<kullanıcı>`) yayında.
+                Bir süre çizilmedi çünkü paylaşılacak adres yoktu; yalnız
+                `gamerisen://` şeması paylaşılsaydı bağlantıyı alan çoğu kişi
+                hiçbir şey görmezdi — oysa paylaşmanın anlamı tam olarak
+                uygulaması OLMAYAN birine göstermek. */}
+            {onShare ? <IconButton icon="share" label={t('stats.share')} variant="filled" onPress={onShare} /> : null}
+          </View>
+        ) : null}
       </View>
 
+      {/* ── Ad ve kullanıcı adı (kit name) ── */}
       <View style={styles.nameRow}>
-        <Text style={styles.name} numberOfLines={1}>{name}</Text>
-        <DevBadge user={profile} username={profile.username} isDeveloper={profile.isDeveloper} size={15} showLabel={true} />
+        <Txt variant="profileName" numberOfLines={1} style={styles.flex}>{name}</Txt>
+        <DevBadge user={profile} username={profile.username} isDeveloper={profile.isDeveloper} size={15} showLabel />
       </View>
+      {profile.username ? (
+        <View style={styles.handleRow}>
+          <Txt variant="subheadRegular" numberOfLines={1} style={{ color: colors.text2 }}>
+            {`@${profile.username}`}
+          </Txt>
+        </View>
+      ) : null}
 
       {/* Bio İKİ SATIR: sunucu 150 karakterde kesiyor (MAX_BIO) ve bu sayı
           tam olarak 390pt genişlikte iki satır demek. Üçüncü satıra izin
           vermek kimlik bloğunu içeriğin üstüne taşırdı. */}
       {profile.bio ? (
-        <Text style={styles.bio} numberOfLines={2}>{profile.bio}</Text>
+        <Txt variant="body" numberOfLines={2} style={[styles.bio, { color: colors.text2 }]}>{profile.bio}</Txt>
       ) : null}
+
+      {/* ── Sayaçlar (kit stats) ── */}
+      <View style={styles.stats}>
+        <Counter n={c.posts || 0}   label={t('prof.statPosts')}   onPress={() => onCounter?.('posts')} />
+        <Counter n={c.friends || 0} label={t('prof.statFriends')} onPress={() => onCounter?.('friends')} />
+        <Counter n={c.games || 0}   label={t('prof.statGames')}   onPress={() => onCounter?.('games')} />
+      </View>
 
       {/* ── Çipler ── */}
       <View style={styles.chips}>
         {isDeveloperUser(profile) || profile.isDeveloper ? (
-          <Chip icon="shield-checkmark" dot="#F59E0B" text={t('prof.devBadge')} />
+          <Chip icon="shield" dot={colors.orange} text={t('prof.devBadge')} />
         ) : null}
         {profile.privateProfile && !isSelf ? (
-          <Chip icon="lock-closed-outline" text={t('prof.privateChip')} />
+          <Chip icon="lock" text={t('prof.privateChip')} />
         ) : null}
         {profile.connections?.steam ? (
           <Chip dot={colors.green} text={t('prof.steamConnected')} />
@@ -167,67 +173,57 @@ export default function ProfileHeader({
         ) : null}
       </View>
 
-      {/* ── Eylem satırı ──
-          BİRİNCİL EYLEM KENDİ PROFİLİMDE KIRMIZI DEĞİL: ekran başına üç
-          marka-kırmızı öğe kotası var ve kendi profilimde kırmızı, aktif
-          sekme çizgisiyle sekme çubuğunun aktif ikonuna ayrıldı. "Profili
-          düzenle" zaten aranan bir eylem, bağırması gerekmiyor.
-
-          Başkasının profilinde kırmızı "Arkadaş ekle"nin: orada sayfanın
-          VAR OLUŞ SEBEBİ o düğme. */}
-      <View style={styles.actions}>
-        {isSelf ? (
-          <>
-            <ActionButton label={t('prof.editProfile')} icon="create-outline" onPress={onEdit} />
-            {/* PAYLAŞ DÜĞMESİ, İŞLEYİCİ VERİLİNCE ÇİZİLİYOR — ve artık hedefi
-                var: profilin web karşılığı (`/u/<kullanıcı>`) yayında.
-                Bir süre çizilmedi çünkü paylaşılacak adres yoktu; yalnız
-                `gamerisen://` şeması paylaşılsaydı bağlantıyı alan çoğu kişi
-                hiçbir şey görmezdi — oysa paylaşmanın anlamı tam olarak
-                uygulaması OLMAYAN birine göstermek. */}
-            {onShare ? (
-              <ActionButton icon="share-outline" tone="quiet" wide={false} onPress={onShare} />
-            ) : null}
-          </>
-        ) : friendship === 'incoming' ? (
-          <>
-            <ActionButton label={t('soc.accept')} icon="checkmark-circle" tone="primary"
-                          busy={busy} onPress={() => onFriend?.('accept')} />
-            <ActionButton label={t('soc.reject')} icon="close"
-                          busy={busy} onPress={() => onFriend?.('reject')} />
-          </>
-        ) : friendship === 'requested' ? (
-          <>
-            <ActionButton label={t('soc.requested')} icon="time-outline" tone="outline"
-                          busy={busy} onPress={() => onFriend?.('cancel')} />
-            <ActionButton label={t('soc.messageShort')} icon="mail-outline" onPress={onMessage} />
-          </>
-        ) : friendship === 'friends' ? (
-          <>
-            <ActionButton label={t('soc.friends')} icon="checkmark-circle" iconColor={colors.green}
-                          tone="settled" busy={busy} onPress={undefined} />
-            <ActionButton label={t('soc.messageShort')} icon="mail-outline" onPress={onMessage} />
-          </>
-        ) : (
-          <>
-            <ActionButton label={t('soc.addFriend')} icon="person-add-outline" tone="primary"
-                          busy={busy} onPress={() => onFriend?.('request')} />
-            <ActionButton label={t('soc.messageShort')} icon="mail-outline" onPress={onMessage} />
-          </>
-        )}
-      </View>
+      {/* ── Eylem satırı — BAŞKASININ PROFİLİ ──
+          BİRİNCİL EYLEM ORADA: sayfanın var oluş sebebi "Arkadaş Ekle".
+          Kendi profilimde eylemler avatarın yanında (yukarıda). */}
+      {isSelf ? null : (
+        <View style={styles.actions}>
+          {friendship === 'incoming' ? (
+            <>
+              <Button title={t('soc.accept')} variant="primary" height={P.actionHeight} style={styles.flex}
+                      loading={busy} onPress={() => onFriend?.('accept')} />
+              <Button title={t('soc.reject')} variant="secondary" height={P.actionHeight} style={styles.flex}
+                      loading={busy} onPress={() => onFriend?.('reject')} />
+            </>
+          ) : friendship === 'requested' ? (
+            <>
+              <Button title={t('soc.requested')} variant="secondary" height={P.actionHeight} style={styles.flex}
+                      loading={busy} onPress={() => onFriend?.('cancel')} />
+              <Button title={t('soc.messageShort')} variant="secondary" height={P.actionHeight} style={styles.flex}
+                      onPress={onMessage} />
+            </>
+          ) : friendship === 'friends' ? (
+            <>
+              {/* DURUM, EYLEM DEĞİL: "Arkadaşsınız" bir bilgi. `disabled`
+                  VERİLMİYOR — solgunlaşınca düğme bozuk gibi okunuyordu
+                  (emülatörde görüldü); işleyicisi yok, görünümü normal. */}
+              <Button title={t('soc.friends')} variant="secondary" height={P.actionHeight} style={styles.flex}
+                      icon="check" onPress={undefined} />
+              <Button title={t('soc.messageShort')} variant="secondary" height={P.actionHeight} style={styles.flex}
+                      onPress={onMessage} />
+            </>
+          ) : (
+            <>
+              <Button title={t('soc.addFriend')} variant="primary" height={P.actionHeight} style={styles.flex}
+                      loading={busy} onPress={() => onFriend?.('request')} />
+              <Button title={t('soc.messageShort')} variant="secondary" height={P.actionHeight} style={styles.flex}
+                      onPress={onMessage} />
+            </>
+          )}
+        </View>
+      )}
 
       {/* ── Bu hafta ──
           Sayaçlar "kaç" diyor, bu satır "NE YAPTIN" diyor. Yalnız kendi
           profilimde ve yalnız hareket varsa: boş bir özet sayfayı canlı
           değil ÖLÜ gösterir.
 
-          MAKETTEN SAPMA — maket sağda "12sa 40dk" oynama süresi gösteriyor;
-          o veri uygulamada YOK (haftalık rapor keşif sayıyor, saat değil).
-          Geometri korundu, sayı gerçek olanla değiştirildi: olmayan bir
-          basamağı çizmek yerine var olanı göstermek. */}
+          KİTTE YOK. Kit bu yerde "Şu an oynuyor" kartını çiziyor; oynama
+          süresi ve başarım yüzdesi uygulamada yok (haftalık rapor keşif
+          sayıyor, saat değil). Olmayan bir kartı çizmek yerine var olan
+          özet duruyor. */}
       {isSelf && week?.hasActivity ? (
-        <Pressable onPress={onWeek} style={({ pressed }) => [styles.week, pressed && PRESSED]}>
+        <PressableScale onPress={onWeek} style={[styles.week, { backgroundColor: colors.surface1 }]}>
           <View style={styles.weekChart}>
             {week.byDay.map((n, i) => {
               const enCok = Math.max(...week.byDay, 1);
@@ -236,18 +232,19 @@ export default function ProfileHeader({
               // çizilseydi yedi günlük ritim kopardı.
               const y = n > 0 ? Math.max(8, Math.round((n / enCok) * 32)) : 4;
               return (
-                <View key={i} style={[styles.weekBar, { height: y }, n > 0 && i === week.topDay && styles.weekBarTop]} />
+                <View key={i} style={[styles.weekBar, { backgroundColor: colors.surface3 },
+                  { height: y }, n > 0 && i === week.topDay && { backgroundColor: colors.brand }]} />
               );
             })}
           </View>
           <View style={styles.weekText}>
-            <Text style={styles.weekValue} numberOfLines={1}>
-              <Text style={NUMERIC}>{week.discovered}</Text> {t('prof.weekDiscovered')}
-            </Text>
-            <Text style={styles.weekHint} numberOfLines={1}>{t('prof.weekOnlyYou')}</Text>
+            <Txt variant="subhead" numberOfLines={1}>
+              <Txt variant="subhead" style={NUMERIC}>{week.discovered}</Txt> {t('prof.weekDiscovered')}
+            </Txt>
+            <Txt variant="footnoteMedium" numberOfLines={1} style={{ color: colors.text3 }}>{t('prof.weekOnlyYou')}</Txt>
           </View>
-          <Ionicons name="chevron-forward" size={16} color={colors.text3} />
-        </Pressable>
+          <Icon name="chev" size={K.sectionHeader.linkIcon} color={colors.text3} strokeWidth={K.sectionHeader.linkStroke} />
+        </PressableScale>
       ) : null}
     </View>
   );
@@ -255,61 +252,34 @@ export default function ProfileHeader({
 
 // REAKTİF STİL: tema değişince yeniden üretiliyor (bkz. ThemeContext).
 const makeStyles = (colors) => StyleSheet.create({
-  wrap: { paddingHorizontal: spacing.s20, paddingTop: spacing.s8 },
+  wrap: { paddingHorizontal: layout.gutter, paddingTop: spacing.s8 },
+  flex: { flex: 1, minWidth: 0 },
 
-  idRow: { flexDirection: 'row', alignItems: 'center' },
-  avatarXl: {
-    backgroundColor: colors.surfaceTile,
-    borderWidth: 1, borderColor: colors.borderHover,
-  },
-  counters: { flex: 1, flexDirection: 'row', marginLeft: spacing.s20 },
-  counter: { flex: 1, height: TOUCH_MIN, alignItems: 'center', justifyContent: 'center' },
-  counterN: { fontSize: type.body, fontWeight: '600', color: colors.text },
-  // Maket sayı ile etiket arasına 2pt koyuyor; ölçekte 2 YOK (4·8·12…) ve
-  // yeni borç açmamak için en yakın adım kullanıldı. Gözle fark edilmiyor.
-  counterLabel: { fontSize: type.footnote, fontWeight: '500', color: colors.text2, marginTop: spacing.s4 },
+  avatarRow: { minHeight: P.avatar, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
+  avatarActions: { flexDirection: 'row', alignItems: 'center', gap: P.chipGap },
 
-  nameRow: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.s16 },
-  name: { fontSize: type.body, fontWeight: '600', color: colors.text },
-  bio: { fontSize: type.subhead, fontWeight: '400', color: colors.text2, lineHeight: 21, marginTop: spacing.s8 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: P.handleGap, marginTop: P.nameTop },
+  handleRow: { height: P.handleRow, flexDirection: 'row', alignItems: 'center', gap: P.handleGap },
+  bio: { marginTop: P.bioTop },
 
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.s8, marginTop: spacing.s12 },
+  stats: { height: P.statsHeight, marginTop: P.statsTop, flexDirection: 'row', alignItems: 'center', gap: P.statsGap },
+  counter: { flexDirection: 'row', alignItems: 'baseline', gap: P.statGap },
+  counterN: { color: colors.text },
+
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: P.chipGap, marginTop: P.chipsTop },
   chip: {
-    height: 28, flexDirection: 'row', alignItems: 'center', gap: spacing.s8,
-    paddingHorizontal: spacing.s12, borderRadius: radius.pill,
-    backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder,
+    height: P.chipHeight, flexDirection: 'row', alignItems: 'center', gap: P.chipGap,
+    paddingHorizontal: P.chipPaddingH, borderRadius: radius.pill,
   },
-  chipDot: { width: 6, height: 6, borderRadius: 3 },
-  chipText: { fontSize: type.footnote, fontWeight: '500', color: colors.text2 },
+  chipDot: { width: P.chipDot, height: P.chipDot, borderRadius: P.chipDot / 2 },
 
-  actions: { flexDirection: 'row', gap: spacing.s8, marginTop: spacing.s16 },
-  btn: {
-    height: TOUCH_MIN, minWidth: TOUCH_MIN, borderRadius: radius.md,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: spacing.s8, paddingHorizontal: spacing.s12,
-  },
-  btnWide: { flex: 1 },
-  // Dolgu `accentFillStrong`: üstünde metin taşıyan tek yer burası ve düz
-  // `accent` beyazla 4.45 veriyor (eşik 4.5). Bkz. scripts/check-accent.mjs.
-  btnPrimary: { backgroundColor: colors.accentFillStrong },
-  btnQuiet: { backgroundColor: colors.bgInput },
-  btnOutline: { backgroundColor: colors.bgInput, borderWidth: 1, borderColor: colors.borderHover },
-  btnSettled: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder },
-  btnText: { fontSize: type.subhead, fontWeight: '600', color: colors.text },
-  btnTextPrimary: { fontSize: type.subhead, fontWeight: '600', color: colors.onAccent },
-  btnTextMuted: { fontSize: type.subhead, fontWeight: '600', color: colors.text2 },
+  actions: { flexDirection: 'row', gap: P.chipGap, marginTop: P.actionsTop },
 
   week: {
     height: 64, flexDirection: 'row', alignItems: 'center', gap: spacing.s16,
-    marginTop: spacing.s16, paddingHorizontal: spacing.s16,
-    borderRadius: radius.lg, backgroundColor: colors.bgElevated,
-    borderWidth: 1, borderColor: colors.cardBorder,
+    marginTop: P.actionsTop, paddingHorizontal: spacing.s16, borderRadius: radius.lg,
   },
   weekChart: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.s4, height: 32 },
-  weekBar: { width: 8, borderRadius: radius.xs, backgroundColor: colors.surfaceTile },
-  // accent-serbest: DEĞERE BAĞLI — haftanın en yoğun günü. Metin taşımıyor.
-  weekBarTop: { backgroundColor: colors.accent },
+  weekBar: { width: 8, borderRadius: radius.xs },
   weekText: { flex: 1, minWidth: 0 },
-  weekValue: { fontSize: type.subhead, fontWeight: '600', color: colors.text },
-  weekHint: { fontSize: type.footnote, fontWeight: '500', color: colors.text3, marginTop: spacing.s4 },
 });
