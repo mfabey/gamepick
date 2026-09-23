@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Haberler.
+// Haberler — G-16 (kit s3.py news()).
 //
 // ARTIK BİR SEKME DEĞİL, yığın ekranı. Alt navigasyondaki yerini Mesajlar
 // aldı; buraya anasayfanın sağ üstündeki gazete simgesinden geliniyor.
@@ -7,39 +7,72 @@
 // Sebep: alt navigasyon uygulamanın kendini nasıl tanıttığı yer. Orada
 // "Haberler" yazması, uygulamayı bir haber okuyucusu gibi gösteriyordu —
 // oysa haberler tamamlayıcı bir bölüm, ana iş değil.
+//
+// ── ÜÇ KADEME (kit) ──
+// En üstteki haber LEAD (350×220 görsel, 22/28 başlık, özet), sonraki ikisi
+// iki sütunlu ORTA kart, gerisi 72 pt SATIR. Hiyerarşi tarihten geliyor:
+// liste zaten yeniden eskiye sıralı.
+//
+// ── KİTTE OLUP ÇİZİLMEYENLER ──
+//   · "Son dakika" rozeti: RSS'te böyle bir bayrak yok. Tazelik zamandan
+//     okunuyor (bir saatten yeni haber kırmızı "canlı" zamanla).
+//   · Başlıktaki ARAMA ve KAYDET düğmeleri: haber araması ve kaydedilen
+//     haber diye bir şey yok.
+//   · "Canlı akış" göstergesi: canlı yayın yok.
+//   · Kitin sabit kategorileri (PC · PlayStation · Xbox…): bizim
+//     kategorilerimiz akıştan çıkıyor (İndirimler · İncelemeler …) ve
+//     gerçek olan bu.
 // ─────────────────────────────────────────────────────────────────────────────
-import { memo, useState, useMemo, useCallback } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { useState, useMemo, useCallback } from 'react';
+import { View, StyleSheet } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import ShareToFriendSheet from '../src/components/ShareToFriendSheet';
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
+import ShareToFriendSheet from '../src/components/ShareToFriendSheet';
 import { fetchNews } from '../src/api/news';
 import { NewsListSkeleton, Reveal } from '../src/components/Skeleton';
-import NewsImage from '../src/components/NewsImage';
 import EmptyState from '../src/components/EmptyState';
 import CevrimdisiBant from '../src/components/CevrimdisiBant';
-import { radius, spacing, PRESSED, type, CHIP, CHIP_TEXT } from '../src/theme';
+import { Chip, CoverImage, IconButton, PressableScale, SectionHeader, Txt } from '../src/components/ui/Primitives';
+import { NewsFeature, NewsRow } from '../src/components/ui/Media';
 import { useYanBosluk } from '../src/hooks/useIcerikAlani';
-import { useStyles, useTheme } from '../src/context/ThemeContext';
+import { useStyles } from '../src/context/ThemeContext';
+import { useDesignTheme } from '../src/theme/useDesignTheme';
+import { component as K, layout, space } from '../src/theme/tokens';
 import { useLanguage } from '../src/context/LanguageContext';
 import { bagilZaman } from '../src/utils/relativeTime';
 import { useQuery } from '../src/hooks/useQuery';
 
+/** Bir saatten yeni haber "canlı" zamanla yazılıyor (kit fresh()). */
+const TAZE = 60 * 60 * 1000;
+
+/** Orta kart: iki sütun, kit news() med. */
+const ORTA = K.newsMedium;
+
+/**
+ * Gün grubunun etiketi: "Bugün" · "Dün" · tarih.
+ *
+ * "Bugün/Dün" anahtarları sohbet ekranından paylaşılıyor — ikisi de aynı iki
+ * kelimeyi yazıyor ve beş dilde ikinci bir çeviri açmanın anlamı yok.
+ */
+function gunAdi(ts, t) {
+  const d = new Date(ts);
+  const simdi = new Date();
+  if (d.toDateString() === simdi.toDateString()) return t('msg.today');
+  const dun = new Date(simdi);
+  dun.setDate(simdi.getDate() - 1);
+  if (d.toDateString() === dun.toDateString()) return t('msg.yesterdayCap');
+  return d.toLocaleDateString(undefined, { day: 'numeric', month: 'long' });
+}
+
 export default function NewsScreen() {
   const styles = useStyles(makeStyles);
   const yan = useYanBosluk();
-  const { colors } = useTheme();
+  const { colors } = useDesignTheme();
   const { t, lang } = useLanguage();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  // Başlık listenin DIŞINDA ve sabit: sönümleme bandı onun altına, listenin
-  // gerçek üst kenarına oturmalı. Üstüne binerse başlığı karartır.
-  // Yükseklik ölçülüyor, sabit yazılmıyor — yazı tipi boyutu ve dil değiştikçe
-  // değişiyor (games.jsx'te aynı gerekçe).
   const [cat, setCat] = useState('all');
 
   // Cache-first: yeniden açılışta anında; arka planda tazelenir
@@ -56,11 +89,13 @@ export default function NewsScreen() {
     return ['all', ...set];
   }, [items]);
 
-  const featured = items[0] || null;
-  const filtered = useMemo(() => {
-    const rest = cat === 'all' ? items.slice(1) : items.filter(n => n.cat === cat);
-    return rest;
-  }, [items, cat]);
+  // Üç kademe YALNIZ "Tümü"nde: bir kategori seçiliyken liste zaten kısa ve
+  // hiyerarşi kurmak için yeterli haber olmayabilir.
+  const hepsi = cat === 'all';
+  const secili = useMemo(() => (hepsi ? items : items.filter(n => n.cat === cat)), [items, cat, hepsi]);
+  const lead = hepsi ? secili[0] || null : null;
+  const orta = hepsi ? secili.slice(1, 3) : [];
+  const liste = hepsi ? secili.slice(3) : secili;
 
   const open = useCallback((item) => router.push({ pathname: '/news/[id]', params: { id: item.id } }), [router]);
 
@@ -68,30 +103,69 @@ export default function NewsScreen() {
   // burada TEK eylem var (elenecek bir öneri yok), o yüzden menü değil
   // doğrudan gönderme sayfası açılıyor.
   const [paylas, setPaylas] = useState(null);   // { url, title }
+  const gonder = useCallback((n) => setPaylas({ url: n.url, title: n.title }), []);
+
+  const zaman = useCallback((n) => bagilZaman(n.ts, t) || n.date, [t]);
+  const canli = useCallback((n) => !!n.ts && Date.now() - n.ts < TAZE, []);
+
+  // ── GÜN GRUPLARI (kit news(): "Bugün" · "Dün") ──
+  // Grup başlıkları listeye SAHTE SATIR olarak giriyor; ayrı bir bölüm
+  // listesi kurmak sanal listeyi ikiye bölerdi. Etiket `ts`den çıkıyor:
+  // uydurma yok, tarihi olmayan haber gruplanmıyor.
+  const gruplu = useMemo(() => {
+    const out = [];
+    let sonGun = null;
+    for (const n of liste) {
+      const gun = n.ts ? new Date(n.ts).toDateString() : null;
+      if (gun && gun !== sonGun) {
+        sonGun = gun;
+        out.push({ id: `g:${gun}`, __grup: gunAdi(n.ts, t) });
+      }
+      out.push(n);
+    }
+    return out;
+  }, [liste, t]);
+
   const keyExtractor = useCallback((item) => item.id, []);
-  const renderNews = useCallback(
-    ({ item }) => <NewsRow item={item} onPress={open} onShare={(n) => setPaylas({ url: n.url, title: n.title })} />,
-    [open]
-  );
+  const itemType = useCallback((item) => (item.__grup ? 'grup' : 'haber'), []);
+  const renderNews = useCallback(({ item }) => (item.__grup ? (
+    <View style={[styles.pad, styles.grup]}>
+      <Txt variant="footnoteStrong" style={{ color: colors.text3 }}>{item.__grup}</Txt>
+    </View>
+  ) : (
+    <View style={styles.rowWrap}>
+      <NewsRow
+        title={item.title}
+        image={item.image}
+        category={item.cat}
+        time={zaman(item)}
+        live={canli(item)}
+        source={item.source}
+        onPress={() => open(item)}
+        onLongPress={() => gonder(item)}
+      />
+    </View>
+  )), [open, gonder, zaman, canli, styles, colors.text3]);
 
   // Geri düğmesi ÜÇ DALDA DA gerekiyor (yükleniyor / hata / liste). Ayrı bir
   // bileşen olmasının sebebi bu: üç kez elle yazılsaydı biri unutulur ve o
   // durumda ekranda mahsur kalınırdı.
-  const head = (onLayout) => (
-    <View style={[styles.header, { marginHorizontal: yan }]} onLayout={onLayout}>
-      <Pressable style={({ pressed }) => [styles.backBtn, pressed && PRESSED]}
-                 onPress={() => router.back()} hitSlop={10}
-                 accessibilityRole="button" accessibilityLabel={t('common.back')}>
-        <Ionicons name="chevron-back" size={24} color={colors.text} />
-      </Pressable>
-      <Text style={styles.headerText}>{t('news.title')}</Text>
+  //
+  // Kitin iki katlı başlığı: geri satırı, altında 28/34 sayfa adı.
+  const head = (
+    <View style={[styles.header, { marginHorizontal: yan }]}>
+      <View style={styles.headRow}>
+        <IconButton icon="back" label={t('common.back')} iconSize={K.navBar.backIcon}
+                    strokeWidth={K.navBar.backStroke} onPress={() => router.back()} />
+      </View>
+      <Txt variant="largeTitle" accessibilityRole="header" style={styles.headTitle}>{t('news.title')}</Txt>
     </View>
   );
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safe} edges={['top']}>
-        {head()}
+      <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
+        {head}
         <NewsListSkeleton />
       </SafeAreaView>
     );
@@ -103,25 +177,29 @@ export default function NewsScreen() {
   // bayat olduğunu listenin tepesindeki bant söyler.
   if (error && !data) {
     return (
-      <SafeAreaView style={styles.safe} edges={['top']}>
-        {head()}
-        <View style={styles.center}>
-          <Ionicons name="cloud-offline-outline" size={44} color={colors.text3} />
-          <Pressable style={({ pressed }) => [styles.retryBtn, pressed && PRESSED]} onPress={refetch}><Text style={styles.retryText}>{t('common.retry')}</Text></Pressable>
-        </View>
+      <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
+        {head}
+        <EmptyState
+          icon="cloud-offline-outline"
+          title={t('common.error')}
+          text={t('common.errorText')}
+          actionLabel={t('common.retry')}
+          onAction={refetch}
+        />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      {head()}
-      <Reveal style={{ flex: 1 }}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
+      {head}
+      <Reveal style={styles.flex}>
       <FlashList
-        data={filtered}
+        data={gruplu}
         keyExtractor={keyExtractor}
         renderItem={renderNews}
-        contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xl, paddingHorizontal: yan }}
+        getItemType={itemType}
+        contentContainerStyle={{ paddingBottom: insets.bottom + space[32], paddingHorizontal: yan }}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <View>
@@ -131,70 +209,75 @@ export default function NewsScreen() {
               ts={ts}
               hata={!!error}
               onRetry={refetch}
-              style={{ marginHorizontal: spacing.lg, marginTop: spacing.sm, marginBottom: spacing.xs }}
+              style={styles.bant}
             />
-            {/* Öne çıkan */}
-            {cat === 'all' && featured && (
-              <Pressable
-                style={({ pressed }) => [styles.featured, pressed && PRESSED]}
-                onPress={() => open(featured)}
-              >
-                <NewsImage item={featured} style={StyleSheet.absoluteFill} />
-                <LinearGradient colors={['transparent', 'rgba(6,7,9,0.55)', 'rgba(6,7,9,0.97)']} locations={[0.2, 0.6, 1]} style={StyleSheet.absoluteFill} />
-                <View style={styles.featuredBadge}><Text style={styles.featuredBadgeText}>★ {t('news.featured')}</Text></View>
 
-                {/* "ÖNE ÇIKAN" rozeti SOL üstte; gönderme SAĞ üstte —
-                    çakışmıyorlar. Kart ailesindeki 26pt sessiz daireyle
-                    aynı dil (bkz. GameCard). */}
-                <Pressable
-                  onPress={() => setPaylas({ url: featured.url, title: featured.title })}
-                  hitSlop={9}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('share.toFriend')}
-                  style={({ pressed }) => [styles.featuredGonder, pressed && PRESSED]}
-                >
-                  <Ionicons name="paper-plane" size={14} color="#fff" />
-                </Pressable>
-                <View style={styles.featuredInfo}>
-                  <View style={styles.catRow}>
-                    <View style={styles.catPill}><Text style={styles.catPillText}>{featured.cat}</Text></View>
-                    <Text style={styles.metaText}>{featured.source} · {bagilZaman(featured.ts, t) || featured.date}</Text>
-                  </View>
-                  <Text numberOfLines={3} style={styles.featuredTitle}>{featured.title}</Text>
-                </View>
-              </Pressable>
-            )}
+            {/* Kategori çipleri — kitte başlığın hemen altında. */}
+            <FlashList
+              horizontal
+              data={cats}
+              keyExtractor={(c) => c}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.chipsRow}
+              renderItem={({ item: c }) => (
+                <Chip title={c === 'all' ? t('news.all') : c} selected={cat === c} onPress={() => setCat(c)} />
+              )}
+              ItemSeparatorComponent={CipAra}
+            />
 
-            {/* Kategori çipleri */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
-              {cats.map(c => {
-                const active = cat === c;
-                const label = c === 'all' ? t('news.all') : c;
-                return (
-                  <Pressable key={c} onPress={() => setCat(c)} style={[styles.chip, active && styles.chipActive]}>
-                    <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
+            {lead ? (
+              <View style={styles.pad}>
+                <NewsFeature
+                  lead
+                  title={lead.title}
+                  image={lead.image}
+                  category={lead.cat}
+                  time={zaman(lead)}
+                  live={canli(lead)}
+                  source={lead.source}
+                  description={lead.excerpt || undefined}
+                  onPress={() => open(lead)}
+                  onLongPress={() => gonder(lead)}
+                />
+              </View>
+            ) : null}
+
+            {orta.length ? (
+              <View style={[styles.pad, styles.grid]}>
+                {orta.map((n) => (
+                  <OrtaKart key={n.id} item={n} onPress={open} onShare={gonder}
+                            time={zaman(n)} live={canli(n)} />
+                ))}
+              </View>
+            ) : null}
+
+            {/* `SectionHeader` kendi yan dolgusunu TAŞIMIYOR (bkz. Primitives
+                `sectionWrap`): yan boşluğu çağıran veriyor. */}
+            {liste.length ? (
+              <View style={[styles.pad, styles.sonGelismeler]}>
+                <SectionHeader title={t('news.latest')} />
+              </View>
+            ) : null}
           </View>
         }
         ListEmptyComponent={
           // Çıkış: boş kalan şey SEÇİLİ kategori, o yüzden düğme "Tümü"ne
           // döndürüyor. Tümü zaten seçiliyken çıkış yok — gösterilecek haber
           // gerçekten yoktur ve sahte bir düğme koymak yanıltıcı olurdu.
-          <EmptyState
-            compact
-            icon="newspaper-outline"
-            title={t('news.empty')}
-            text={t('news.emptyDesc')}
-            actionLabel={cat !== 'all' ? t('news.showAll') : undefined}
-            onAction={cat !== 'all' ? () => setCat('all') : undefined}
-          />
+          lead ? null : (
+            <EmptyState
+              compact
+              icon="newspaper-outline"
+              title={t('news.empty')}
+              text={t('news.emptyDesc')}
+              actionLabel={cat !== 'all' ? t('news.showAll') : undefined}
+              onAction={cat !== 'all' ? () => setCat('all') : undefined}
+            />
+          )
         }
       />
       </Reveal>
-    
+
       <ShareToFriendSheet
         visible={!!paylas}
         onClose={() => setPaylas(null)}
@@ -205,97 +288,56 @@ export default function NewsScreen() {
   );
 }
 
-const NewsRow = memo(function NewsRow({ item, onPress, onShare }) {
-  const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
-  const { t } = useLanguage();
-  return (
-    <Pressable
-      style={({ pressed }) => [styles.row, pressed && PRESSED]}
-      onPress={() => onPress(item)}
-    >
-      <View style={styles.thumb}>
-        <NewsImage item={item} style={StyleSheet.absoluteFill} />
-      </View>
-      <View style={{ flex: 1, minWidth: 0 }}>
-        <View style={styles.catRow}>
-          <View style={styles.catPillSm}><Text style={styles.catPillTextSm}>{item.cat}</Text></View>
-        </View>
-        <Text numberOfLines={3} style={styles.rowTitle}>{item.title}</Text>
-        {/* TAZELİK, okuma süresi değil. Eskiden `item.read` yazıyordu ve
-            34 haberin 34'ü "1 dk" diyordu — RSS özeti okuma süresini
-            ölçmeye yetmiyor. Bir haftadan eskisinde bağıl ifade bilgi
-            taşımadığı için mutlak tarihe dönülüyor. */}
-        <Text style={styles.rowMeta} numberOfLines={1}>
-          {item.source} · {bagilZaman(item.ts, t) || item.date}
-        </Text>
-      </View>
+/** Çipler arası boşluk — modül düzeyinde: satır içi verilseydi her render'da yeni kimlik. */
+function CipAra() {
+  return <View style={{ width: space[8] }} />;
+}
 
-      {/* GÖRÜNÜR GÖNDERME DÜĞMESİ. Uzun basmaya bağlıydı — keşfedilemiyordu
-          ve haberin tek eylemi (aç) ile aynı jeste yükleniyordu.
-          hitSlop 10 → 44pt gerçek hedef; çizilen ikon 20pt. */}
-      <Pressable
-        onPress={() => onShare?.(item)}
-        hitSlop={10}
-        accessibilityRole="button"
-        accessibilityLabel={t('share.toFriend')}
-        style={({ pressed }) => [styles.gonder, pressed && PRESSED]}
-      >
-        <Ionicons name="paper-plane-outline" size={19} color={colors.text3} />
-      </Pressable>
-    </Pressable>
+/**
+ * Orta kart (kit news() med): 169×112 görsel, kategori · zaman, 15/20 başlık.
+ *
+ * İki sütunlu ızgarada esniyor — kitin 169'u 390 pt kanvasta iki sütun +
+ * 12 boşluk demek; dar cihazda sütun kendiliğinden daralıyor.
+ */
+function OrtaKart({ item, time, live, onPress, onShare }) {
+  const styles = useStyles(makeStyles);
+  return (
+    <PressableScale accessibilityRole="button" accessibilityLabel={item.title} style={styles.orta}
+                    onPress={() => onPress(item)} onLongPress={() => onShare(item)}>
+      <CoverImage source={item.image} radius={ORTA.radius} style={styles.ortaGorsel} />
+      <View style={styles.ortaMeta}>
+        <Txt variant="captionStrong" numberOfLines={1}>{item.cat}</Txt>
+        <Txt variant="caption" numberOfLines={1} style={styles.ortaZaman}>{`· ${time}`}</Txt>
+      </View>
+      <Txt variant="cardTitle" numberOfLines={3} style={styles.ortaBaslik}>{item.title}</Txt>
+    </PressableScale>
   );
-});
+}
 
 const makeStyles = (colors) => StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
-  // Başlık artık bir satır: geri düğmesi + metin. Sol dolgu, düğmenin negatif
-  // kenar boşluğuyla dengeleniyor ki metin diğer ekranlarla AYNI hizada
-  // başlasın — düğme kadar sağa kaymasın.
-  header: { flexDirection: 'row', alignItems: 'center', gap: 2, paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.sm },
-  backBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginLeft: -12 },
-  headerText: { fontSize: type.title1, fontWeight: '800', color: colors.text, letterSpacing: -0.6 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.lg },
+  safe: { flex: 1 },
+  flex: { flex: 1 },
+  pad: { paddingHorizontal: layout.gutter },
 
-  featured: { marginHorizontal: spacing.lg, height: 210, borderRadius: radius.lg, overflow: 'hidden', backgroundColor: colors.card, marginBottom: spacing.xs },
-  featuredBadge: { position: 'absolute', top: 12, left: 12, backgroundColor: colors.accentFillStrong, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: spacing.xs },
-  featuredBadgeText: { color: '#fff', fontSize: type.caption2, fontWeight: '800', letterSpacing: 0.5 },
-  featuredInfo: { position: 'absolute', left: 16, right: 16, bottom: 14 },
-  featuredTitle: { color: '#fff', fontSize: type.body, fontWeight: '800', lineHeight: 22, marginTop: spacing.sm },
+  // Kit news_head: 44'lük geri satırı, altında 28/34 sayfa adı.
+  header: { paddingHorizontal: K.newsHead.paddingH, paddingBottom: K.newsHead.titleTop },
+  headRow: { height: K.newsHead.row, flexDirection: 'row', alignItems: 'center', marginLeft: K.newsHead.backEdge },
+  headTitle: { marginTop: K.newsHead.titleTop, marginHorizontal: K.newsHead.titleEdge },
 
-  catRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  catPill: { backgroundColor: colors.bgInput, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: 9, paddingVertical: 3 },
-  // Kategori SABİT bir etiket, eylem değil. Kırmızıyken her haber satırında
-  // tekrarlıyor ve ekrandaki vurgu sayısını tek başına dörde katlıyordu —
-  // üstelik listedeki tüm satırlar aynı kategoriyi taşıdığında hiçbir şey
-  // ayırt etmiyor. Rolü zaten büyük harf + harf aralığı + 800 ağırlık
-  // anlatıyor; renge ihtiyaç yok.
-  catPillText: { color: colors.text2, fontSize: type.caption, fontWeight: '600' },
-  metaText: { color: 'rgba(255,255,255,0.7)', fontSize: type.caption, fontWeight: '500' },
+  bant: { marginHorizontal: layout.gutter, marginBottom: space[8] },
+  chipsRow: { paddingHorizontal: layout.gutter, paddingBottom: K.newsHead.chipsBottom },
 
-  chipsRow: { paddingHorizontal: spacing.lg, gap: spacing.sm, paddingVertical: 14 },
-  // Maketten: hap, dolgu 8/12, surface3, KENARLIK YOK, metin 13/400.
-  chip: { ...CHIP, backgroundColor: colors.bgInput },
-  // games.jsx ile ayni secim dili: dolu notr yuzey, koyu metin, agirlik.
-  chipActive: { backgroundColor: colors.text, borderColor: colors.text },
-  chipTextActive: { color: colors.bg, fontWeight: '700' },
-  chipText: { fontSize: type.footnote, color: colors.text2, fontWeight: '500' },
+  // Gruplar arası kit 24 diyor; her SATIR zaten altında rowGap (16)
+  // taşıyor, başlık o yüzden farkı ekliyor — toplam yine 24.
+  grup: { paddingTop: ORTA.groupTop - ORTA.rowGap, paddingBottom: ORTA.titleTop },
+  grid: { marginTop: ORTA.top, flexDirection: 'row', gap: ORTA.gap },
+  orta: { flex: 1, minWidth: 0 },
+  ortaGorsel: { width: '100%', height: ORTA.imageHeight },
+  ortaMeta: { height: K.newsRow.metaHeight, marginTop: ORTA.metaTop, flexDirection: 'row', alignItems: 'center', gap: K.newsFeature.metaGap },
+  ortaZaman: { color: colors.text3, flex: 1, minWidth: 0 },
+  ortaBaslik: { marginTop: ORTA.titleTop },
 
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
-  gonder: { width: 24, alignItems: 'center', justifyContent: 'center', alignSelf: 'center' },
-  featuredGonder: {
-    position: 'absolute', top: 12, right: 12,
-    width: 28, height: 28, borderRadius: 14,
-    alignItems: 'center', justifyContent: 'center',
-    // tema-bagimsiz: haber kapaginin ustunde duruyor, zemin gorsel
-    backgroundColor: 'rgba(8,10,14,0.6)',
-  },
-  thumb: { width: 108, height: 76, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.card },
-  catPillSm: { alignSelf: 'flex-start', backgroundColor: colors.bgInput, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2, marginBottom: 5 },
-  catPillTextSm: { color: colors.text2, fontSize: type.caption2, fontWeight: '600' },
-  rowTitle: { color: colors.text, fontSize: type.subhead, fontWeight: '700', lineHeight: 18 },
-  rowMeta: { color: colors.text3, fontSize: type.caption, marginTop: 5, fontWeight: '500' },
-
-  retryBtn: { backgroundColor: colors.accentFillStrong, borderRadius: radius.md, paddingHorizontal: 22, paddingVertical: 11 },
-  retryText: { color: '#fff', fontWeight: '700', fontSize: type.subhead },
+  sonGelismeler: { marginTop: ORTA.sectionTop },
+  // Satırlar arası boşluk satırın KENDİSİNDE (kit: gap 16).
+  rowWrap: { paddingHorizontal: layout.gutter, paddingBottom: ORTA.rowGap },
 });

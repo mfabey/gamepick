@@ -624,3 +624,42 @@ cihazda 13 oyunluk gerçek liste.
 **Açık kalan (bu işin dışında):** listede aynı oyun iki kez görünüyor
 ("The Witcher 3" — biri RAWG biri Steam kimliğiyle). Bilinen çift kimlik
 uzayı sorunu; bu ekranın değil veri katmanının işi.
+
+### 23 Eylül — Haberler listesi, G-16 (Claude)
+
+**Yapılanlar (kit s3.py news()):**
+- Kitin iki katlı başlığı: geri satırı, altında 28/34 "Haberler".
+- **Üç kademeli hiyerarşi**: en üstteki haber LEAD (350×220 görsel, 22/28
+  başlık, özet), sonraki ikisi iki sütunlu ORTA kart (169×112), gerisi 72 pt
+  `NewsRow`. Sıra tarihten geliyor; liste zaten yeniden eskiye.
+- **Kullanılmayan `excerpt` görünür oldu**: RSS 200 karakterlik özet
+  veriyordu, ekran hiç çizmiyordu. Lead kartında iki satır olarak duruyor.
+- `NewsFeature`'a **lead bedeni** eklendi (kit G-16 lead'i COMPONENTS
+  kartından büyük: 220 görsel, 22/28 başlık, üç satır).
+- **Gün grupları** (Bugün · Dün · tarih): etiket `ts`den çıkıyor, tarihi
+  olmayan haber gruplanmıyor. Başlıklar listeye sahte satır olarak giriyor —
+  ayrı bölüm listesi sanal listeyi ikiye bölerdi.
+- Öne çıkan haber artık metni GÖRSEL ÜSTÜNDE taşımıyor; kit metni görselin
+  altına koyuyor ve okunurluk oradan geliyor.
+
+**Kitten alınmayanlar:**
+- **"Son dakika" rozeti:** RSS'te böyle bir bayrak yok. Tazelik zamandan
+  okunuyor — bir saatten yeni haber kırmızı "canlı" zamanla yazılıyor.
+- **Başlıktaki arama ve kaydet düğmeleri:** haber araması ve kaydedilen
+  haber diye bir şey yok.
+- **"Canlı akış" göstergesi:** canlı yayın yok.
+- **Kitin sabit kategorileri** (PC · PlayStation · Xbox…): bizim
+  kategorilerimiz akıştan çıkıyor (Endüstri · İncelemeler · Çıkışlar…).
+
+**Emülatörde bulunup düzeltilenler:**
+1. "Son Gelişmeler" başlığı ekranın soluna taşıyordu: `SectionHeader` kendi
+   yan dolgusunu taşımıyor, çağıran veriyor.
+2. Gün grupları arası boşluk 44 pt'ye çıkmıştı (satırın alt boşluğu +
+   başlığın üst boşluğu); kit 24 diyor, başlık artık farkı ekliyor.
+
+**Doğrulama:** `npm run check` (20), `npx expo export --platform ios` ve
+cihazda gerçek akış (lead · iki orta kart · Bugün/Dün grupları · satırlar).
+
+**Açık kalan:** haber DETAYI (G-17) bu işte değil. Ekran zaten 2.0
+bileşenlerini kullanıyor ama kitin 300 pt kapağı, meta satırı ve 26/32
+başlığı yok.

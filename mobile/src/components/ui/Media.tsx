@@ -129,32 +129,38 @@ function NewsArt({ image, fallback, radius: r, position, width, height }: {
 }
 
 /** Öne çıkan haber: genişlik min(350, ekran − 40); görsel 196 (köşe 18); bilgi satırı, başlık 18/24 iki satır, isteğe bağlı açıklama. */
-export function NewsFeature({ title, image, fallback, category, time, live, source, description, onPress, imagePosition }: {
+export function NewsFeature({ title, image, fallback, category, time, live, source, description, onPress, imagePosition, lead, onLongPress }: {
   title: string; image?: string | null; fallback?: ReactNode; category?: string; time: string; live?: boolean; source?: string; description?: string;
   onPress?: () => void; imagePosition?: ImageContentPosition;
+  /** Haber listesinin en üstteki haberi (kit news() lead): görsel 220, başlık 22/28, üç satır. */
+  lead?: boolean;
+  onLongPress?: () => void;
 }) {
   const { colors } = useDesignTheme();
   const { width: screen } = useWindowDimensions();
   const N = K.newsFeature;
   const width = Math.min(N.width, screen - layout.gutter * 2);
   return (
-    <PressableScale accessibilityRole="button" accessibilityLabel={title} onPress={onPress} style={{ width }}>
-      <NewsArt image={image} fallback={fallback} radius={N.radius} position={imagePosition} width={width} height={N.imageHeight} />
-      <View style={{ marginTop: N.metaTop }}><NewsMeta category={category} time={time} live={live} source={source} /></View>
-      <Txt variant="newsTitle" numberOfLines={2} style={{ marginTop: N.titleTop }}>{title}</Txt>
-      {description ? <Txt variant="subheadRegular" numberOfLines={2} style={{ marginTop: N.descTop, color: colors.text2 }}>{description}</Txt> : null}
+    <PressableScale accessibilityRole="button" accessibilityLabel={title} onPress={onPress} onLongPress={onLongPress} style={{ width }}>
+      <NewsArt image={image} fallback={fallback} radius={N.radius} position={imagePosition} width={width}
+        height={lead ? N.leadImageHeight : N.imageHeight} />
+      <View style={{ marginTop: lead ? N.leadMetaTop : N.metaTop }}><NewsMeta category={category} time={time} live={live} source={source} /></View>
+      <Txt variant={lead ? 'newsLeadTitle' : 'newsTitle'} numberOfLines={lead ? 3 : 2}
+        style={{ marginTop: lead ? N.leadTitleTop : N.titleTop }}>{title}</Txt>
+      {description ? <Txt variant="subheadRegular" numberOfLines={2}
+        style={{ marginTop: lead ? N.leadDescTop : N.descTop, color: colors.text2 }}>{description}</Txt> : null}
     </PressableScale>
   );
 }
 
 /** Haber satırı: 72 yükseklik; küçük resim 96 × 72 (köşe 12), bilgi satırı, başlık 15/20 iki satır (üstünde 6). */
-export function NewsRow({ title, image, fallback, category, time, live, source, onPress, imagePosition }: {
+export function NewsRow({ title, image, fallback, category, time, live, source, onPress, imagePosition, onLongPress }: {
   title: string; image?: string | null; fallback?: ReactNode; category?: string; time: string; live?: boolean; source?: string;
-  onPress?: () => void; imagePosition?: ImageContentPosition;
+  onPress?: () => void; imagePosition?: ImageContentPosition; onLongPress?: () => void;
 }) {
   const N = K.newsRow;
   return (
-    <PressableScale accessibilityRole="button" accessibilityLabel={title} onPress={onPress} style={styles.newsRow}>
+    <PressableScale accessibilityRole="button" accessibilityLabel={title} onPress={onPress} onLongPress={onLongPress} style={styles.newsRow}>
       <NewsArt image={image} fallback={fallback} radius={N.thumbRadius} position={imagePosition} width={N.thumbWidth} height={N.thumbHeight} />
       <View style={styles.flex}>
         <NewsMeta category={category} time={time} live={live} source={source} />

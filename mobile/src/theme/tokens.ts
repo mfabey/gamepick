@@ -162,6 +162,7 @@ export const typography = {
   footnoteMedium: t(13, 18, '500'), // gönderi eylem sayıları (kit actions())
   shortTitle: t(13, 17, '600'), // ShortCard başlığı (kit short())
   newsTitle: t(18, 24, '700', -0.015), // NewsFeature başlığı (kit news_feat())
+  newsLeadTitle: t(22, 28, '700', -0.02), // Haber listesinin öne çıkanı (kit news() lead)
   storeMono: t(9, undefined, '700', 0),
   profileName: t(24, 30, '700', -0.025), // Profil görünen adı (kit profile() name)
 } as const;
@@ -481,8 +482,15 @@ export const component = {
   playButton: { sizes: [44, 48, 60], iconRatio: 0.4, nudge: 2 },
   videoCard: { infoTop: 10, titleHeight: 40, lineTop: 4, gameTop: 8, chipHeight: 24, chipRadius: 7, chipPaddingLeft: 3, chipPaddingRight: 8, chipThumb: 18, chipThumbRadius: 5, chipGap: 6, avatarGap: 10 },
   shortCard: { radius: 16, inset: 10, viewsTop: 6, viewsGap: 4, playIcon: 11 },
-  newsFeature: { width: 350, imageHeight: 196, radius: 18, metaHeight: 16, metaTop: 12, metaGap: 6, titleTop: 6, descTop: 6 },
+  // lead değerleri: G-16 haber listesinin en üstteki haberi COMPONENTS
+  // kartından büyük (kit s3.py news() lead) — görsel 220, başlık 22/28.
+  newsFeature: { width: 350, imageHeight: 196, radius: 18, metaHeight: 16, metaTop: 12, metaGap: 6, titleTop: 6, descTop: 6,
+    leadImageHeight: 220, leadMetaTop: 14, leadTitleTop: 8, leadDescTop: 8 },
   newsRow: { height: 72, gap: 14, thumbWidth: 96, thumbHeight: 72, thumbRadius: 12, metaHeight: 16, titleTop: 6 },
+  // G-16 Haberler (kit s3.py news_head / news()).
+  newsHead: { paddingH: 16, row: 44, backEdge: -6, titleTop: 6, titleEdge: 4, chipsBottom: 20 },
+  // Orta kart: iki sütunlu ızgara (kit news() med).
+  newsMedium: { imageHeight: 112, radius: 14, metaTop: 10, titleTop: 4, gap: 12, top: 24, sectionTop: 28, rowGap: 16, groupTop: 24 },
   mediaImage: { radius: 14, tagInset: 10, tagHeight: 24, tagRadius: 7, tagPadding: 8, tagGap: 5 },
   skeleton: { card: { titleWidth: 120, titleHeight: 14, metaWidth: 80, metaHeight: 10, priceWidth: 60, priceHeight: 16, radius: 6, gap: 8 } },
 } as const;
