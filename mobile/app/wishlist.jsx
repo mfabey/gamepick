@@ -1,19 +1,51 @@
 import { memo, useEffect, useState, useCallback } from 'react';
-import { View, Text, Pressable, StyleSheet, Alert, Linking } from 'react-native';
+import { View, StyleSheet, Alert, Linking } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+
 import { fetchCardPrice } from '../src/api/games';
 import EmptyState from '../src/components/EmptyState';
-import { radius, spacing, PRESSED, type } from '../src/theme';
+import { Icon } from '../src/components/Icon';
+import { CoverImage, IconButton, PressableScale, Txt } from '../src/components/ui/Primitives';
+import { NavBar } from '../src/components/ui/Navigation';
+import { DiscountTag, OldPrice, Price, StoreBadge } from '../src/components/ui/Commerce';
 import { useYanBosluk } from '../src/hooks/useIcerikAlani';
-import GameRow, { SATIR_Y } from '../src/components/GameRow';
-import { useStyles, useTheme } from '../src/context/ThemeContext';
+import { useStyles } from '../src/context/ThemeContext';
+import { useDesignTheme } from '../src/theme/useDesignTheme';
+import { component as K, layout, radius, space } from '../src/theme/tokens';
 import { useLanguage } from '../src/context/LanguageContext';
 import { pushHataAnahtari } from '../src/notifications';
 import { useWishlist } from '../src/context/WishlistContext';
 import ProfileGate from '../src/components/ProfileGate';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// İSTEK LİSTESİ — G-09 (kit s2.py wishlist()).
+//
+// SATIR BU EKRANA ÖZEL, ortak `GameRow` DEĞİL. GameRow üç ekranı besliyor
+// (istek listesi · liste · koleksiyon) ve kit üçüne farklı satır veriyor;
+// ortak bileşeni bu ekran için büyütmek diğer ikisini de sessizce oynatırdı.
+// Kitin satırı: 112 yükseklik, 62×84 kapak, ad 16/21/600, mağaza rozeti,
+// fiyat satırı (17 + 12 üstü çizili + indirim).
+//
+// ── KİTTE OLUP BURADA ÇİZİLMEYENLER ──
+//   · ÖZET KARTI ("Bu hafta 4 oyunun fiyatı düştü · ₺1.250 tasarruf") ve
+//     satırdaki DEĞİŞİM NOTU ("₺100 düştü" / "Fiyat değişmedi" / "₺50
+//     arttı"): üçü de fiyat GEÇMİŞİ ister. Sunucu geçmiş tutmuyor — bugünkü
+//     fiyatı dünküyle karşılaştıramıyoruz ve "değişmedi" demek de bir iddia.
+//   · SATIR BAŞINA ZİL: fiyat alarmı uygulamada oyun başına değil, liste
+//     geneli (`enableNotifications`). Zil çizilse her satır kendi alarmını
+//     vaat ederdi. Genel anahtar listenin üstündeki bantta duruyor.
+//   · SIRALAMA ÇİPLERİ (Fiyat · İndirim · Çıkış tarihi): fiyatlar satır
+//     satır ve GEÇ geliyor (her kart kendi isteğini yapıyor); henüz
+//     yüklenmemiş bir alana göre sıralama listeyi rastgele karıştırırdı.
+//   · ÇIKIŞ TARİHİ satırı: istek listesi kaydı çıkış tarihi taşımıyor.
+//
+// Sağdaki eylem KALDIR: kitin zilinin yerinde duruyor ve bu listenin tek
+// gerçek satır eylemi o.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const W = K.wishlist;
 
 export default function WishlistScreen() {
   return (
@@ -27,7 +59,7 @@ function WishlistScreenContent() {
   const styles = useStyles(makeStyles);
   const yan = useYanBosluk();
   const insets = useSafeAreaInsets();
-  const { colors } = useTheme();
+  const { colors } = useDesignTheme();
   const router = useRouter();
   const { t } = useLanguage();
   const { items, remove, enabled, enableNotifications } = useWishlist();
@@ -57,22 +89,26 @@ function WishlistScreenContent() {
     pathname: '/game/[id]',
     params: { id: String(it.id), name: it.name, image: it.image || '', slug: it.slug || '', hasSteam: it.hasSteam ? '1' : '' },
   }), [router]);
-  const renderWish = useCallback(({ item }) => (
-    <WishRow item={item} onOpen={handleOpen} onRemove={remove} />
+  const renderWish = useCallback(({ item, index }) => (
+    <WishRow item={item} ilk={index === 0} onOpen={handleOpen} onRemove={remove} />
   ), [handleOpen, remove]);
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      {/* Başlık */}
-      {/* Başlık listenin DIŞINDA: içerik kolonuyla aynı hizaya
-          getiriliyor — başlık tam genişlikte kalsaydı sayfanın adı ile
-          anlattığı şey iki ayrı sütunda dururdu. */}
-      <View style={[styles.head, { marginHorizontal: yan }]}>
-        <Pressable style={({ pressed }) => [styles.back, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </Pressable>
-        <Text style={styles.title}>{t('wishlist.title')}</Text>
-        {items.length > 0 ? <Text style={styles.count}>{items.length}</Text> : <View style={{ width: 24 }} />}
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
+      {/* Başlık listenin DIŞINDA: içerik kolonuyla aynı hizaya getiriliyor —
+          başlık tam genişlikte kalsaydı sayfanın adı ile anlattığı şey iki
+          ayrı sütunda dururdu. Alt başlık kitten: "{n} oyun".
+
+          KİTTEKİ SÜZGEÇ DÜĞMESİ YOK: bu listede süzülecek bir alan yok
+          (tür/platform verisi kayıtta durmuyor) ve boş bir sayfa açan düğme
+          olmaz. */}
+      <View style={{ marginHorizontal: yan }}>
+        <NavBar
+          title={t('wishlist.title')}
+          subtitle={items.length ? `${items.length} ${t('wishlist.count')}` : undefined}
+          onBack={() => router.back()}
+          backLabel={t('a11y.back')}
+        />
       </View>
 
       {items.length === 0 ? (
@@ -92,19 +128,22 @@ function WishlistScreenContent() {
           data={items}
           keyExtractor={keyExtractor}
           renderItem={renderWish}
-          // Yatay dolgu SATIRDA değil listede: ayırıcı çizgi kenardan
-          // kenara gitmiyor, metin bloğuyla hizalanıyor.
-          contentContainerStyle={{ paddingBottom: insets.bottom + 32, paddingHorizontal: spacing.s20 + yan }}
-          // Sabit yükseklikli satır → tahmin değil ÖLÇÜ (Faz 2 sözleşmesi).
-          estimatedItemSize={SATIR_Y}
+          contentContainerStyle={{ paddingBottom: insets.bottom + space[32], paddingHorizontal: yan }}
+          // Sabit yükseklikli satır → tahmin değil ÖLÇÜ (kit: 112).
+          estimatedItemSize={W.row}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             !enabled ? (
-              <Pressable style={({ pressed }) => [styles.notifBanner, pressed && PRESSED]} onPress={onEnable}>
-                <Ionicons name="notifications" size={18} color={colors.accent} />
-                <Text style={styles.notifText}>{t('notif.desc')}</Text>
-                <Text style={styles.notifCta}>{t('notif.enable')}</Text>
-              </Pressable>
+              <PressableScale onPress={onEnable} accessibilityRole="button"
+                style={[styles.bant, { backgroundColor: colors.greenTint }]}>
+                <View style={[styles.bantIkon, { backgroundColor: colors.green }]}>
+                  <Icon name="bell" size={K.prices.alert.glyph} color={colors.onGreen} />
+                </View>
+                <View style={styles.flex}>
+                  <Txt variant="cardTitle" numberOfLines={2}>{t('notif.desc')}</Txt>
+                  <Txt variant="footnote" style={{ color: colors.text2 }}>{t('notif.enable')}</Txt>
+                </View>
+              </PressableScale>
             ) : null
           }
         />
@@ -113,9 +152,16 @@ function WishlistScreenContent() {
   );
 }
 
-const WishRow = memo(function WishRow({ item, onOpen, onRemove }) {
+// ─────────────────────────────────────────────────────────────────────────────
+// Satır — kit wishlist() rows.
+//
+// FİYAT SATIR SATIR ÇEKİLİYOR (kart başına bir istek): liste kaydı yalnız
+// kimlik ve kapak taşıyor. Gelene kadar fiyat yerinde "…" duruyor; satırın
+// yüksekliği sabit olduğu için fiyat geldiğinde liste KAYMIYOR.
+// ─────────────────────────────────────────────────────────────────────────────
+const WishRow = memo(function WishRow({ item, ilk, onOpen, onRemove }) {
   const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
+  const { colors } = useDesignTheme();
   const { t, formatPrice } = useLanguage();
   const [price, setPrice] = useState(null);
 
@@ -128,54 +174,84 @@ const WishRow = memo(function WishRow({ item, onOpen, onRemove }) {
   }, [item.slug, item.name, item.hasSteam]);
 
   const isFree = price?.isFree;
-  const onSale = price?.discount > 0 && !isFree;
-
-  // FAZ 2 — E bedeni. Fiyat SAĞ YUVADA, indirim ad altındaki durum
-  // satırında: ikisi eskiden aynı satırda yan yanaydı ve uzun adlarda
-  // fiyat sıkışıyordu.
-  const durum = isFree ? t('card.free')
-    : onSale ? `-%${price.discount}`
-    : null;
+  const indirim = Number(price?.discount) || 0;
+  // Eski fiyat YALNIZCA indirim varken: indirimsiz oyunda `original` fiyata
+  // eşit geliyor ve üstü çizili aynı sayıyı yazmak yanlış bir iddia olurdu.
+  const eski = indirim > 0 && price?.original > price?.price ? price.original : null;
 
   return (
-    <GameRow
-      game={item}
-      durum={durum}
+    <PressableScale
       onPress={() => onOpen(item)}
-      sag={
-        <View style={styles.sag}>
-          {price?.price != null && !isFree ? (
-            <Text style={[styles.price, onSale && { color: colors.accentText }]}>{formatPrice(price.price)}</Text>
-          ) : !isFree ? (
-            <Text style={styles.priceDim}>…</Text>
-          ) : null}
-          <Pressable onPress={() => onRemove(item.id)} hitSlop={10} style={styles.remove} accessibilityRole="button" accessibilityLabel={t('a11y.delete')}>
-            <Ionicons name="trash-outline" size={19} color={colors.text3} />
-          </Pressable>
+      accessibilityRole="button"
+      accessibilityLabel={item.name}
+      style={styles.satir}
+    >
+      {/* Ayraç MUTLAK KONUMLU (kit: left 96, right 20): satırın kenarlığı
+          olsaydı `marginLeft` bütün satırı içeri iterdi. */}
+      {ilk ? null : <View style={[styles.ayirici, { backgroundColor: colors.line }]} />}
+
+      <CoverImage source={item.image} radius={W.coverRadius}
+                  style={{ width: W.coverWidth, height: W.coverHeight }} />
+
+      <View style={styles.flex}>
+        <Txt variant="cardTitleLarge" numberOfLines={2}>{item.name}</Txt>
+        {price?.storeName ? (
+          <View style={styles.magaza}><StoreBadge store={price.storeName} withName /></View>
+        ) : null}
+
+        <View style={styles.fiyat}>
+          {isFree ? (
+            <Txt variant="subhead">{t('card.free')}</Txt>
+          ) : price?.price != null ? (
+            <>
+              <Price value={formatPrice(price.price)} size={17} />
+              {eski ? <OldPrice value={formatPrice(eski)} size={12} /> : null}
+              {indirim > 0 ? <DiscountTag percent={indirim} /> : null}
+            </>
+          ) : (
+            <Txt variant="subheadRegular" style={{ color: colors.text3 }}>…</Txt>
+          )}
         </View>
-      }
-    />
+      </View>
+
+      {/* Kitin zilinin yerinde: bu listenin tek gerçek satır eylemi.
+          İKON KALP, çöp kutusu DEĞİL: 2.0 ikon setinde çöp kutusu yok ve
+          oyun bu listeye zaten kalple ekleniyor — aynı düğme, aynı anlam,
+          geri alınabilir bir eylem. */}
+      <IconButton icon="heart" label={t('a11y.delete')} iconSize={W.actionIcon}
+                  color={colors.red} fill={colors.red} onPress={() => onRemove(item.id)} />
+    </PressableScale>
   );
 });
 
-const makeStyles = (colors) => StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
-  head: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
-  back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  title: { flex: 1, fontSize: type.headline, fontWeight: '800', color: colors.text, textAlign: 'center' },
-  count: { width: 40, textAlign: 'center', fontSize: type.subhead, fontWeight: '800', color: colors.accentText },
+const makeStyles = () => StyleSheet.create({
+  safe: { flex: 1 },
+  flex: { flex: 1, minWidth: 0 },
 
+  satir: {
+    height: W.row, paddingHorizontal: layout.gutter, gap: W.gap,
+    flexDirection: 'row', alignItems: 'center',
+  },
+  // Ayraç METİN SÜTUNUNDAN başlıyor (kit: left 96): kapağın altından geçen
+  // bir çizgi satırları değil kapakları ayırıyormuş gibi durur.
+  ayirici: {
+    position: 'absolute', top: 0, left: W.separatorLeft, right: layout.gutter,
+    height: StyleSheet.hairlineWidth,
+  },
 
+  magaza: { marginTop: W.textGap, flexDirection: 'row' },
+  fiyat: { height: W.priceRow, marginTop: W.textGap, flexDirection: 'row', alignItems: 'center', gap: W.priceGap },
 
-
-
-
-  notifBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.accentSoft, borderColor: colors.accentBorder, borderWidth: 1, borderRadius: radius.md, padding: spacing.md, marginHorizontal: spacing.lg, marginTop: spacing.md, marginBottom: spacing.xs },
-  notifText: { flex: 1, fontSize: type.caption, color: colors.text2, lineHeight: 16 },
-  notifCta: { fontSize: type.footnote, fontWeight: '800', color: colors.accentText },
-
-  sag: { flexDirection: 'row', alignItems: 'center', gap: spacing.s8 },
-  price: { fontSize: type.subhead, fontWeight: '700', color: colors.text },
-  priceDim: { fontSize: type.subhead, color: colors.text3 },
-  remove: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  // Kenar payı ŞART: liste satırları kendi dolgusunu taşıyor ama liste
+  // kabının yatay dolgusu yok, bant kenarlara yapışıyordu (cihazda görüldü).
+  // Kitin özet kartı da `margin: 0 20px` ile duruyor.
+  bant: {
+    marginHorizontal: layout.gutter, marginBottom: space[8],
+    padding: K.prices.alert.padding, borderRadius: radius.lg,
+    flexDirection: 'row', alignItems: 'center', gap: K.prices.alert.gap,
+  },
+  bantIkon: {
+    width: K.prices.alert.icon, height: K.prices.alert.icon, borderRadius: K.prices.alert.icon / 2,
+    alignItems: 'center', justifyContent: 'center',
+  },
 });

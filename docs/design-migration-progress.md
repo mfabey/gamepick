@@ -583,3 +583,44 @@ ve Almanca etiketler (Sammlung · Wunschliste · Bewertungen · Beiträge)
   başlıktaki kullanıcı adı kimlik bloğundakiyle tekrarlanıyor.
 - İçerik sekmelerinin kendi düzenleri (ızgara, inceleme satırı) taşınmadı.
 - iOS görünümü doğrulanmadı.
+
+### 23 Eylül — İstek Listesi, G-09 (Claude)
+
+**Yapılanlar (kit s2.py wishlist()):**
+- `NavBar` + alt başlık ("13 oyun izleniyor"). Kitin süzgeç düğmesi yok:
+  bu listede süzülecek alan yok (tür/platform kayıtta durmuyor).
+- **Satır ekrana özel yazıldı, ortak `GameRow` büyütülmedi.** GameRow üç
+  ekranı besliyor (istek listesi · liste · koleksiyon) ve kit üçüne farklı
+  satır veriyor; ortak bileşeni bu ekran için değiştirmek diğer ikisini de
+  sessizce oynatırdı.
+- Satır kitin ölçüsünde: 112 yükseklik (ölçüldü: 294 px = 111,9 dp),
+  62×84 kapak, ad 16/21/600, mağaza rozeti, fiyat satırı
+  (17 fiyat + 12 üstü çizili + indirim etiketi). Ayraç metin sütunundan
+  başlıyor (ölçüldü: 252 px = 95,9 dp — kit `left: 96`).
+- **Elde olup gösterilmeyen iki veri görünür oldu:** `card-price` zaten
+  `original` (eski fiyat) ve `storeName` döndürüyordu; ikisi de çizilmiyordu.
+- Bildirim bandı kitin özet kartı yerinde, 2.0 diliyle.
+
+**Kitten alınmayanlar:**
+- **Özet kartı** ("Bu hafta 4 oyunun fiyatı düştü · ₺1.250 tasarruf") ve
+  satırdaki **değişim notu** ("₺100 düştü" / "Fiyat değişmedi" / "₺50
+  arttı"): üçü de fiyat GEÇMİŞİ ister, sunucu geçmiş tutmuyor.
+- **Satır başına zil:** alarm uygulamada oyun başına değil liste geneli.
+  Zil çizilse her satır kendi alarmını vaat ederdi.
+- **Sıralama çipleri** (Fiyat · İndirim · Çıkış tarihi): fiyatlar satır satır
+  ve geç geliyor; yüklenmemiş alana göre sıralama listeyi karıştırırdı.
+- **Çıkış tarihi satırı:** istek listesi kaydı tarih taşımıyor.
+
+**Sağdaki eylem kalp, çöp kutusu değil:** 2.0 ikon setinde çöp kutusu yok ve
+oyun bu listeye zaten kalple ekleniyor — aynı düğme, geri alınabilir eylem.
+
+**Emülatörde bulunup düzeltileni:** bildirim bandı ekran kenarlarına
+yapışıyordu (liste kabının yatay dolgusu yok); kitin `margin: 0 20px`
+karşılığı eklendi.
+
+**Doğrulama:** `npm run check` (20), `npx expo export --platform ios` ve
+cihazda 13 oyunluk gerçek liste.
+
+**Açık kalan (bu işin dışında):** listede aynı oyun iki kez görünüyor
+("The Witcher 3" — biri RAWG biri Steam kimliğiyle). Bilinen çift kimlik
+uzayı sorunu; bu ekranın değil veri katmanının işi.

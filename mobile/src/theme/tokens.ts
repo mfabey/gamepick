@@ -366,6 +366,13 @@ export const component = {
   stickyBar: { paddingTop: 10, paddingH: 20, minBottom: 10, gap: 12, button: 48 },
   pageDots: { active: 18, size: 6, gap: 6, top: 12 },
   home: { greetingTop: 2, heroTop: 14, greetingChevron: 14, newsRowsTop: 18, newsRowsGap: 14, dealCount: 2 },
+  // G-09 İstek Listesi (kit s2.py wishlist()).
+  //
+  // KİTTEN ALINMAYANLAR: özet kartı ("Bu hafta 4 oyunun fiyatı düştü") ve
+  // satırdaki değişim notu ("₺100 düştü") fiyat GEÇMİŞİ ister — sunucuda
+  // yok. Satır başına zil de yok: alarm uygulamada genel.
+  wishlist: { row: 112, gap: 14, coverWidth: 62, coverHeight: 84, coverRadius: 10,
+    textGap: 4, priceRow: 24, priceGap: 6, action: 40, actionIcon: 19, separatorLeft: 96 },
   // G-21 Profil (kit s4.py profile()).
   //
   // KİTTEN ALINMAYANLAR — hiçbirinin verisi yok, bkz. ekranın dosya başı:
