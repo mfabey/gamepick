@@ -52,6 +52,7 @@ export default {
   'offline.noCache': 'Diese Liste wurde noch nicht geladen; sie kommt, sobald du wieder online bist.',
   'news.all': 'Alle',
   'news.latest': 'Neueste',
+  'news.related': 'Ähnliche Nachrichten',
   'news.empty': 'Keine News gefunden',
   'games.title': 'Spiele',
   'games.searchPlaceholder': 'Spiele suchen…',

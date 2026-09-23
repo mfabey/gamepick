@@ -43,6 +43,7 @@ export default {
   'offline.noCache': "This list hasn't been downloaded yet; it will load once you're back online.",
   'news.all': 'All',
   'news.latest': 'Latest',
+  'news.related': 'Related News',
   'news.empty': 'No news found',
   'games.title': 'Games',
   'games.searchPlaceholder': 'Search games…',

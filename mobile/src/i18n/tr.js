@@ -43,6 +43,7 @@ export default {
   'offline.noCache': 'Bu liste henüz indirilmedi; bağlanınca yüklenecek.',
   'news.all': 'Tümü',
   'news.latest': 'Son Gelişmeler',
+  'news.related': 'İlgili Haberler',
   'news.empty': 'Haber bulunamadı',
   'games.title': 'Oyunlar',
   'games.searchPlaceholder': 'Oyun ara…',

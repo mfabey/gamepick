@@ -663,3 +663,48 @@ cihazda gerçek akış (lead · iki orta kart · Bugün/Dün grupları · satır
 **Açık kalan:** haber DETAYI (G-17) bu işte değil. Ekran zaten 2.0
 bileşenlerini kullanıyor ama kitin 300 pt kapağı, meta satırı ve 26/32
 başlığı yok.
+
+### 23 Eylül — Haber Detayı, G-17 (Claude)
+
+**Önce: EKRAN ÜRETİMDE HİÇ AÇILMIYORDU.** Emülatörde doğrulanırken sonsuz
+"yükleniyor" dönüyordu. Kök neden:
+
+- Ekran `/api/news?id=<id>` çağırıyor ve yanıttaki `item` alanını okuyor.
+- `?id=` desteği **yalnızca bu dalda** var; üretimdeki `main` sürümü
+  parametreyi yok sayıp listeyi döndürüyor (`{results, count}`), yani
+  `item` **yok**.
+- `fetchNewsArticle` bu durumda `undefined` dönüyordu; `useQuery` veriyi
+  `undefined` olduğu sürece "gelmedi" sayıyor → `loading` sonsuza dek true.
+
+**Düzeltme iki katmanda:**
+1. `fetchNewsArticle` artık `data?.item ?? null` dönüyor — "istek bitti,
+   kayıt yok" ile "istek sürüyor" ayrıldı.
+2. Ekran haberi ÖNCE LİSTEDEN okuyor (liste ekranıyla aynı `useQuery`
+   anahtarı, yeni istek yok). Tek haber ucu yalnızca haber akıştan düşmüşse
+   (eski bağlantı) deneniyor.
+
+**Yapılanlar (kit s3.py news_detail()):**
+- 300 pt kapak (ölçüldü: 780 px = 297 dp) + gradient; geri ve paylaş
+  kapağın üstünde cam dairelerde.
+- Kategori NÖTR HAP (kırmızı metin değil) + bağıl zaman; bir saatten yeni
+  haberde zaman kırmızı.
+- Başlık 26/32/700, kaynak satırı, özet 17/27, "Kaynakta oku".
+- **İlgili Haberler**: önbellekteki listeden üç satır, önce aynı kategori.
+
+**Kitten alınmayanlar:**
+- **Gövde paragrafları, ara başlık, figür:** sunucu tam metni saklamıyor —
+  `news-list.js` bunu açıkça yazıyor ("this does not copy full publisher
+  articles"). Elimizde RSS özeti var, devamı kaynağın sayfasında.
+- **İmza satırı (yazar + avatar):** haberde yazar alanı yok; kaynak var.
+- **Okuma süresi:** gövde olmadan hesaplanamaz.
+- **İlgili oyun kartı:** haber ile oyun arasında bağ tutulmuyor.
+- **Topluluk tepkileri:** haberin beğenisi/yorumu yok.
+- **Kaydet düğmesi:** kaydedilen haber diye bir özellik yok.
+
+**Doğrulama:** `npm run check` (20), `npx expo export --platform ios` ve
+cihazda gerçek haber (kapak, hap, başlık, özet, kaynak düğmesi, ilgili
+haberler).
+
+**Açık kalan (sunucu):** `?id=` desteği `main`'e gidip yayına çıkana kadar
+eski bağlantılar (akıştan düşmüş haberler) boş durum gösterecek. İstemci
+artık o durumda sıkışmıyor.

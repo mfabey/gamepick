@@ -163,6 +163,7 @@ export const typography = {
   shortTitle: t(13, 17, '600'), // ShortCard başlığı (kit short())
   newsTitle: t(18, 24, '700', -0.015), // NewsFeature başlığı (kit news_feat())
   newsLeadTitle: t(22, 28, '700', -0.02), // Haber listesinin öne çıkanı (kit news() lead)
+  newsDetailTitle: t(26, 32, '700', -0.025), // Haber detayı başlığı (kit news_detail() h1)
   storeMono: t(9, undefined, '700', 0),
   profileName: t(24, 30, '700', -0.025), // Profil görünen adı (kit profile() name)
 } as const;
@@ -367,6 +368,15 @@ export const component = {
   stickyBar: { paddingTop: 10, paddingH: 20, minBottom: 10, gap: 12, button: 48 },
   pageDots: { active: 18, size: 6, gap: 6, top: 12 },
   home: { greetingTop: 2, heroTop: 14, greetingChevron: 14, newsRowsTop: 18, newsRowsGap: 14, dealCount: 2 },
+  // G-17 Haber Detayı (kit s3.py news_detail()).
+  //
+  // KİTTEN ALINMAYANLAR: gövde paragrafları, ara başlık, figür ve imza
+  // satırı — sunucu tam metni saklamıyor (telif kararı, bkz. news-list.js)
+  // ve haberin yazarı bilinmiyor. Okuma süresi de gövdesiz hesaplanamaz.
+  newsDetail: { heroHeight: 300, barTop: 8, barSide: 16, backIcon: 22, backStroke: 2.4, barIcon: 20,
+    metaTop: 4, metaHeight: 26, metaGap: 8, categoryPaddingH: 10, categoryRadius: 8,
+    titleTop: 10, sourceTop: 14, excerptTop: 18, buttonTop: 20,
+    relatedTop: 28, relatedListTop: 12, relatedGap: 14, relatedCount: 3 },
   // G-09 İstek Listesi (kit s2.py wishlist()).
   //
   // KİTTEN ALINMAYANLAR: özet kartı ("Bu hafta 4 oyunun fiyatı düştü") ve
