@@ -708,3 +708,48 @@ haberler).
 **Açık kalan (sunucu):** `?id=` desteği `main`'e gidip yayına çıkana kadar
 eski bağlantılar (akıştan düşmüş haberler) boş durum gösterecek. İstemci
 artık o durumda sıkışmıyor.
+
+### 23 Eylül — Videolar, G-14 ve G-15 (Claude)
+
+**G-14 (Videolar sekmesi): TAŞIMA GEREKMEDİ.** Ekran zaten 2.0
+bileşenlerinde (PageHeader, Chip, SectionHeader, VideoCard, ShortCard) ve
+kitin kalan parçalarının verisi yok. `VideoCard` bunu kendi başında zaten
+yazıyor: "Süre, izlenme ve yaratıcı akışta YOK; kart o öğeleri çizmiyor
+(sahte veri yok)." Kaynak Steam'in resmî fragmanı; kitin yaratıcı
+platformu (yaratıcı avatarları, takip, izlenme, 6 kategori) uydurulmadan
+çizilemez. Cihazda doğrulandı.
+
+**G-15 (Oynatıcı): ÜRETİMDE HİÇ AÇILMIYORDU — haber detayıyla AYNI HATA.**
+- Ekran `/api/video-feed?id=<id>` çağırıp `item` alanını okuyor.
+- `?id=` dalı yalnızca bu dalda (main'e göre +16 satır); üretim parametreyi
+  yok sayıp akış sayfasını döndürüyor, `item` gelmiyor.
+- `fetchVideo` `undefined` dönüyordu → `useQuery` sonsuza dek `loading`.
+
+**Düzeltme (haberdekiyle aynı iki katman):**
+1. `fetchVideo` artık `data?.item ?? null`.
+2. Ekran videoyu ÖNCE KATALOGDAN okuyor (sıradaki listesiyle aynı sorgu
+   anahtarı → yeni istek yok); tek video ucu yalnızca derin bağlantıda yedek.
+
+**G-15 düzeni (kit s3.py player()):**
+- Başlık 16/21 + "Fragman · Steam".
+- Eylemler **36 pt hap** (kit acts): öncesi iki tam boy düğmeydi ve iki
+  satıra sarmalanıyordu.
+- **Oyun kartı kitin gcard'ı**: 56×74 kapak, ad, tür, **fiyat · indirim ·
+  mağaza** ve "Oyunu Gör". Fiyat `useGamePrices`'tan ve oyun detayıyla AYNI
+  sorgu anahtarında — karttan detaya geçişte sıfır istek, iki ekran
+  çelişemiyor.
+- **Sıradaki** listesi kompakt satıra indi (160×90 küçük resim, 90 pt);
+  otomatik oynat anahtarı bölüm başlığına taşındı — altındaki ayrı
+  "Otomatik oynat" yazısı kalıntıydı, kalktı.
+
+**Kitten alınmayanlar:** yaratıcı satırı ve takip düğmesi, beğeni/yorum/klip
+hapları, izlenme ve süre, altyazı/kalite/tam ekran özel kontrolleri (yerel
+oynatıcı kontrolleri kullanılıyor).
+
+**Doğrulama:** `npm run check` (20), `npx expo export --platform ios` ve
+cihazda gerçek fragman (oynatma, hap eylemler, ₺1.025 fiyatlı oyun kartı,
+kompakt sıradaki satırları).
+
+**Açık kalan (sunucu):** `?id=` desteği hem haber hem video için `main`'e
+gidip yayına çıkana kadar derin bağlantılar boş durum gösterecek. İstemci
+artık iki ekranda da sıkışmıyor.

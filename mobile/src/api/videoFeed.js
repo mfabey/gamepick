@@ -13,6 +13,18 @@ export function fetchVideoFeed(page = 1, lang = 'tr', seed = '') {
   return apiGet('/api/video-feed', { page, lang, seed });
 }
 
+/**
+ * Tek video — DERİN BAĞLANTI İÇİN.
+ *
+ * `?id=` DESTEĞİ HER SUNUCUDA YOK: uç, id'yi tanımayan bir sürümde
+ * parametreyi yok sayıp akış sayfasını döndürüyor ve yanıtta `item`
+ * bulunmuyor. O durumda `undefined` dönmek ekranı SONSUZA DEK
+ * "yükleniyor"da bırakıyordu — `useQuery` veriyi `undefined` olduğu sürece
+ * yüklenmiş saymıyor (cihazda görüldü; haber detayında da aynı hata vardı,
+ * bkz. api/news.js).
+ *
+ * Karşılık `null`: "istek bitti, kayıt yok".
+ */
 export function fetchVideo(id, lang = 'tr') {
-  return apiGet('/api/video-feed', { id, lang }).then(data => data.item);
+  return apiGet('/api/video-feed', { id, lang }).then(data => data?.item ?? null);
 }

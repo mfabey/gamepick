@@ -374,7 +374,7 @@ export const component = {
   // yok — kaynak Steam'in resmî fragmanı), beğeni/yorum/klip hapları
   // (videonun beğenisi ve yorumu yok), izlenme ve süre, altyazı/ayar/
   // tam ekran özel kontrolleri (yerel oynatıcı kontrolleri kullanılıyor).
-  player: { titleTop: 16, metaTop: 4, actionsTop: 14, actionHeight: 36, actionGap: 8,
+  player: { titleTop: 16, metaTop: 4, actionsTop: 14, actionHeight: 36, actionGap: 8, actionIcon: 17,
     cardTop: 18, cardPadding: 14, cardRadius: 18, cardGap: 10, cardRow: 74, cardCoverWidth: 56,
     cardCoverHeight: 74, cardCoverRadius: 10, cardTextGap: 3, cardPriceRow: 22, cardPriceGap: 6,
     nextTop: 24, nextListTop: 12, nextGap: 14, nextRow: 90, nextThumbWidth: 160, nextThumbHeight: 90,
