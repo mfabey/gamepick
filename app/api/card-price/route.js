@@ -58,33 +58,37 @@ export async function getSteamAppIdBySlug(slug) {
 }
 
 // Steam appid → TRY fiyat
-export async function fetchPriceByAppId(appid) {
+export async function fetchPriceByAppId(appid, name = '') {
   try {
     const res = await fetch(
       `https://store.steampowered.com/api/appdetails?appids=${appid}&cc=tr&filters=basic,price_overview`,
       { next: { revalidate: 1800 } }
     );
-    if (!res.ok) return null;
-    const data = await res.json();
-    const entry = data?.[appid];
-    if (!entry?.success || !entry.data) return null;
+    let gameData = null;
+    if (res.ok) {
+      const data = await res.json();
+      const entry = data?.[appid] || (data && typeof data === 'object' ? Object.values(data)[0] : null);
+      if (entry?.success && entry.data) {
+        gameData = entry.data;
+      }
+    }
 
-    const gameData = entry.data;
-
-    // Gerçekten ücretsiz oyun
-    if (gameData.is_free === true) {
+    // 1. Gerçekten ücretsiz oyun
+    if (gameData?.is_free === true) {
       return {
         price: 0,
         original: 0,
         discount: 0,
         isFree: true,
         isAvailable: true,
+        storeName: 'Steam',
+        storeIcon: '💻',
         appid,
       };
     }
 
-    // Ücretli ve fiyatı var
-    if (gameData.price_overview) {
+    // 2. Ücretli ve fiyatı var
+    if (gameData?.price_overview) {
       const info     = gameData.price_overview;
       const currency = info.currency || 'TRY';
       const rate     = currency !== 'TRY' ? await getUsdToTry() : 1;
@@ -94,8 +98,16 @@ export async function fetchPriceByAppId(appid) {
         discount: info.discount_percent ?? 0,
         isFree:   info.final === 0,
         isAvailable: true,
+        storeName: 'Steam',
+        storeIcon: '💻',
         appid,
       };
+    }
+
+    // 3. Paket/Storesearch fallback
+    const searchTerm = name || gameData?.name;
+    if (searchTerm) {
+      return fetchPriceByName(searchTerm, appid);
     }
 
     // Fiyat bilgisi yok ve ücretsiz de değilse → Satışta değil/Bulunmuyor
@@ -110,28 +122,47 @@ export async function fetchPriceByAppId(appid) {
   }
 }
 
-// İsim tabanlı arama fallback
-async function fetchPriceByName(name) {
-  const sRes = await fetch(
-    `https://store.steampowered.com/search/results/?term=${encodeURIComponent(name)}&cc=tr&l=tr&json=1`,
-    { next: { revalidate: 3600 } }
-  );
-  if (!sRes.ok) return null;
-  const sData  = await sRes.json();
-  const items  = sData?.items || [];
-  const target = name.toLowerCase().trim();
+// İsim tabanlı arama fallback (Steam Storesearch API)
+async function fetchPriceByName(name, fallbackAppid = null) {
+  if (!name) return null;
+  try {
+    const sRes = await fetch(
+      `https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(name)}&cc=tr&l=turkish`,
+      { next: { revalidate: 1800 } }
+    );
+    if (!sRes.ok) return null;
+    const sData  = await sRes.json();
+    const items  = sData?.items || [];
+    if (items.length === 0) return null;
 
-  const match = items.find(i => i.name?.toLowerCase().trim() === target)
-             || items.find(i => i.name?.toLowerCase().trim().startsWith(target))
-             || items.find(i => target.startsWith(i.name?.toLowerCase().trim() || 'XXXXX'))
-             || items[0];
+    const target = name.toLowerCase().trim();
+    const match = (fallbackAppid ? items.find(i => String(i.id) === String(fallbackAppid)) : null)
+               || items.find(i => i.name?.toLowerCase().trim() === target)
+               || items.find(i => i.name?.toLowerCase().trim().startsWith(target))
+               || items.find(i => target.startsWith(i.name?.toLowerCase().trim() || 'XXXXX'))
+               || items[0];
 
-  if (!match) return null;
-  const appidMatch = match.logo?.match(/\/apps\/(\d+)\//);
-  const appid = appidMatch ? parseInt(appidMatch[1]) : null;
-  if (!appid) return null;
+    if (!match) return null;
 
-  return fetchPriceByAppId(appid);
+    if (match.price) {
+      const currency = match.price.currency || 'USD';
+      const rate = currency !== 'TRY' ? await getUsdToTry() : 1;
+      return {
+        price:    amountToTRY(match.price.final, currency, rate),
+        original: amountToTRY(match.price.initial, currency, rate),
+        discount: match.price.discount_percent || (match.price.initial > match.price.final ? Math.round((1 - match.price.final / match.price.initial) * 100) : 0),
+        isFree:   match.price.final === 0,
+        isAvailable: true,
+        storeName: 'Steam',
+        storeIcon: '💻',
+        appid: match.id || fallbackAppid,
+      };
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 // ITAD'dan en ucuz fiyatı çek (edisyonları birleştirerek)
@@ -285,7 +316,7 @@ export async function GET(request) {
   const name     = searchParams.get('name')     || '';
   const hasSteam = searchParams.get('hasSteam') === 'true';
 
-  if (!hasSteam && !slug) return NextResponse.json({ price: null });
+  if (!hasSteam && !slug && !name) return NextResponse.json({ price: null });
 
   try {
     let appid = null;
@@ -297,22 +328,31 @@ export async function GET(request) {
       }
     }
 
-    const itadPrice = await fetchLowestPriceFromITAD(appid, name || slug);
-    if (itadPrice) {
-      return NextResponse.json(itadPrice);
+    // Hem ITAD hem de direkt Steam fiyatını paralel çek
+    const [itadPrice, steamPriceDirect, steamPriceByName] = await Promise.all([
+      fetchLowestPriceFromITAD(appid, name || slug),
+      appid ? fetchPriceByAppId(appid, name || slug) : null,
+      (!appid && (name || hasSteam)) ? fetchPriceByName(name || slug) : null,
+    ]);
+
+    const steamPrice = steamPriceDirect || steamPriceByName;
+
+    // Fiyat adaylarını topla
+    const candidates = [itadPrice, steamPrice].filter(p => p && p.price != null);
+
+    if (candidates.length === 0) {
+      return NextResponse.json({ price: null });
     }
 
-    if (appid) {
-      const price = await fetchPriceByAppId(appid);
-      if (price) return NextResponse.json(price);
+    // Eğer ücretsiz seçenek varsa doğrudan onu seç
+    const freeDeal = candidates.find(c => c.isFree || c.price === 0);
+    if (freeDeal) {
+      return NextResponse.json(freeDeal);
     }
 
-    if (name && hasSteam) {
-      const price = await fetchPriceByName(name);
-      if (price) return NextResponse.json(price);
-    }
-
-    return NextResponse.json({ price: null });
+    // En ucuz olanını seç
+    candidates.sort((a, b) => a.price - b.price);
+    return NextResponse.json(candidates[0]);
   } catch {
     return NextResponse.json({ price: null });
   }

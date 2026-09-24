@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getUsdToTry, amountToTRY } from '../../lib/exchange';
 
 const ITAD_KEY = process.env.ITAD_API_KEY;
 const ITAD     = 'https://api.isthereanydeal.com';
@@ -82,20 +83,102 @@ function dealsToStores(deals) {
   return Object.values(storeMap);
 }
 
+// Doğrudan Steam API'sinden canlı ve doğru Steam fiyatını çek
+async function fetchDirectSteamPrice(appid, title) {
+  try {
+    let gameData = null;
+    let effectiveAppId = appid;
+
+    if (appid) {
+      const res = await fetch(
+        `https://store.steampowered.com/api/appdetails?appids=${appid}&cc=tr&filters=basic,price_overview`,
+        { next: { revalidate: 1800 } }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        const entry = data?.[appid] || (data && typeof data === 'object' ? Object.values(data)[0] : null);
+        if (entry?.success && entry.data) {
+          gameData = entry.data;
+        }
+      }
+    }
+
+    if (gameData?.is_free === true) {
+      return {
+        storeId:  '61',
+        name:     'Steam',
+        icon:     '💻',
+        price:    0,
+        original: 0,
+        discount: 0,
+        url:      `https://store.steampowered.com/app/${appid || ''}`,
+        isFree:   true,
+      };
+    }
+
+    if (gameData?.price_overview) {
+      const info = gameData.price_overview;
+      const currency = info.currency || 'TRY';
+      const usdTryRate = currency !== 'TRY' ? await getUsdToTry() : 1;
+      return {
+        storeId:  '61',
+        name:     'Steam',
+        icon:     '💻',
+        price:    amountToTRY(info.final, currency, usdTryRate),
+        original: amountToTRY(info.initial, currency, usdTryRate),
+        discount: info.discount_percent ?? 0,
+        url:      `https://store.steampowered.com/app/${appid || ''}`,
+        isFree:   info.final === 0,
+      };
+    }
+
+    const searchTerm = title || gameData?.name;
+    if (searchTerm) {
+      const sRes = await fetch(
+        `https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(searchTerm)}&cc=tr&l=turkish`,
+        { next: { revalidate: 1800 } }
+      );
+      if (sRes.ok) {
+        const sData = await sRes.json();
+        const items = sData?.items || [];
+        const match = (appid ? items.find(i => String(i.id) === String(appid)) : null)
+                   || items.find(i => i.name?.toLowerCase().trim() === searchTerm.toLowerCase().trim())
+                   || items[0];
+
+        if (match?.price) {
+          effectiveAppId = match.id || appid;
+          const currency = match.price.currency || 'USD';
+          const usdTryRate = currency !== 'TRY' ? await getUsdToTry() : 1;
+          return {
+            storeId:  '61',
+            name:     'Steam',
+            icon:     '💻',
+            price:    amountToTRY(match.price.final, currency, usdTryRate),
+            original: amountToTRY(match.price.initial, currency, usdTryRate),
+            discount: match.price.discount_percent || (match.price.initial > match.price.final ? Math.round((1 - match.price.final / match.price.initial) * 100) : 0),
+            url:      `https://store.steampowered.com/app/${effectiveAppId || ''}`,
+            isFree:   match.price.final === 0,
+          };
+        }
+      }
+    }
+  } catch {}
+  return null;
+}
+
 // GET /api/prices?appid=271590&title=GTA+V
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const appid = searchParams.get('appid');   // Steam App ID
   const title = searchParams.get('title');   // İsim
 
-  if (!ITAD_KEY) return NextResponse.json({ stores: [] });
   if (!appid && !title) return NextResponse.json({ stores: [] });
 
   try {
     const gameIds = [];
 
     // ── 1. Steam AppID → ITAD lookup GET (kesin eşleşme) ──
-    if (appid) {
+    if (ITAD_KEY && appid) {
       try {
         const lookupRes = await fetch(
           `${ITAD}/games/lookup/v1?key=${ITAD_KEY}&appid=${encodeURIComponent(appid)}`,
@@ -112,7 +195,7 @@ export async function GET(request) {
 
     // ── 2. İsim araması ile diğer edisyonları bul (Complete, GOTY vb.) ──
     const searchTitle = title || '';
-    if (searchTitle) {
+    if (ITAD_KEY && searchTitle) {
       try {
         const searchRes = await fetch(
           `${ITAD}/games/search/v1?key=${ITAD_KEY}&title=${encodeURIComponent(searchTitle)}&limit=10`,
@@ -142,14 +225,29 @@ export async function GET(request) {
     }
 
     const uniqueIds = Array.from(new Set(gameIds));
-    if (uniqueIds.length === 0) return NextResponse.json({ stores: [] });
+    
+    // ITAD teklifleri ile doğrudan Steam fiyatını paralel al
+    const [deals, directSteam] = await Promise.all([
+      uniqueIds.length > 0 ? fetchDeals(uniqueIds) : Promise.resolve([]),
+      fetchDirectSteamPrice(appid, title),
+    ]);
 
-    const deals  = await fetchDeals(uniqueIds);
-    const stores = dealsToStores(deals);
-    return NextResponse.json({ stores });
+    const storeList = dealsToStores(deals);
+
+    // Steam fiyatı varsa, storeList içindeki Steam'i doğrudan Steam API'den gelen kesin fiyatla güncelle / ekle
+    if (directSteam) {
+      const idx = storeList.findIndex(s => s.name === 'Steam' || s.storeId === '61');
+      if (idx >= 0) {
+        storeList[idx] = directSteam;
+      } else {
+        storeList.unshift(directSteam);
+      }
+    }
+
+    return NextResponse.json({ stores: storeList });
 
   } catch (err) {
-    console.error('ITAD hatası:', err.message);
+    console.error('Prices API hatası:', err.message);
     return NextResponse.json({ stores: [] });
   }
 }
