@@ -2,14 +2,15 @@
 // GOOGLE DÜĞMESİ — TEMBEL SARMALAYICI
 //
 // Asıl uygulama `GoogleAuthButtonImpl.jsx` içinde ve BURADAN STATİK OLARAK
-// IMPORT EDİLMİYOR. Sebep cihazda ölçüldü: statik import
-// expo-auth-session → expo-crypto zincirini kuruyor; yerel modülü olmayan bir
-// yapıda (ör. paket eklenmeden önce derlenmiş APK) uygulamanın TAMAMI
-// "Cannot find native module 'ExpoCrypto'" ile düşüyordu. Ekran yüklenmeden
-// önce çökmek, olmayan bir düğme göstermekten çok daha kötü.
+// IMPORT EDİLMİYOR. Kütüphanenin importu yerel modülü `getEnforcing` ile
+// istiyor; modülü olmayan bir yapıda (ör. paket eklenmeden önce derlenmiş
+// APK) uygulamanın TAMAMI açılışta düşerdi. Aynı sınıf hata cihazda ölçüldü:
+// ilk sürümde statik import edilen expo-crypto "Cannot find native module
+// 'ExpoCrypto'" ile tüm uygulamayı düşürmüştü. Ekran yüklenmeden önce çökmek,
+// olmayan bir düğme göstermekten çok daha kötü.
 //
-// Böylece özellik, istemci kimlikleri eklenene kadar tamamen SESSİZ: ne kod
-// yolu çalışıyor ne de yerel bağımlılık aranıyor.
+// Böylece özellik, yapılandırılana kadar tamamen SESSİZ: ne kod yolu
+// çalışıyor ne de yerel bağımlılık aranıyor.
 // ─────────────────────────────────────────────────────────────────────────────
 import { GOOGLE_YAPILANDIRILDI } from '../services/googleAuthConfig';
 

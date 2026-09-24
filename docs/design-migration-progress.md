@@ -977,3 +977,43 @@ başarılı, `npm run check:access` temiz (yeni route yok). Emülatörde uygulam
 hatasız açılıyor (TTI 954 ms, logcat'te ExpoCrypto yok); giriş ve hesap silme
 ekranları bugünkü hâlleriyle birebir aynı — beklenen davranış, çünkü Google
 yapılandırılmadı. Google akışının KENDİSİ denenemedi: istemci kimlikleri yok.
+
+### 24 Eylül — G-03 Google: kütüphane değişimi (Claude)
+
+**Neden.** Expo'nun AuthSession belgesi Google sağlayıcı yapılandırmasının
+üstünde "Deprecated" yazıyor ve Google authentication rehberine yönlendiriyor;
+rehber `expo-auth-session`'dan hiç bahsetmiyor, `@react-native-google-signin/
+google-signin` ya da `react-native-nitro-google-signin` öneriyor. Kod hiç
+çalışmadığı ve kullanıcıya ulaşmadığı için değişimin en ucuz anı buydu.
+
+**Değişen.** `expo-auth-session` ve `expo-crypto` çıktı,
+`@react-native-google-signin/google-signin` 16.1.5 ve config plugin'i girdi.
+Yalnız `GoogleAuthButtonImpl` yeniden yazıldı; dışa verdiği `onIdToken` /
+`onError` / `guard` arayüzü aynı, giriş ve silme ekranları ile sunucuya
+dokunulmadı. Android'de tarayıcı yerine yerel hesap seçici açılıyor. Her
+akıştan önce `GoogleSignin.signOut()`: yapılmazsa Android son hesabı sormadan
+döndürüyor.
+
+**Yapılandırma sadeleşti.** Kodda yalnız zaten var olan `webClientId`
+kullanılıyor. `app.json → extra.googleAuth` artık iki bayrak taşıyor:
+`androidEnabled` (Firebase Android uygulamasına yerel/EAS VE Play App Signing
+SHA-1'leri eklenince), `iosEnabled` (Firebase'e iOS uygulaması eklenip
+`GoogleService-Info.plist` `ios.googleServicesFile` olarak bağlanınca; plugin
+ters URL şemasını oradan okuyor). İkisi de yeni yerel derleme ister.
+
+**Çökme kapısı güçlendi.** `extra` OTA ile değişebiliyor, yerel modül
+değişemiyor. `GOOGLE_YAPILANDIRILDI` artık bayrağa ek olarak
+`TurboModuleRegistry.get('RNGoogleSignin')`'e de bakıyor: bayrağı açan bir
+güncelleme modülü içermeyen eski kuruluma inerse düğme çizilmiyor, uygulama
+düşmüyor. Tembel `require` duruyor (kütüphane importu `getEnforcing` ile
+fırlatıyor).
+
+**Plugin'in etkisi ölçüldü.** Seçeneksiz (Firebase) kipte kaynak
+okunarak ve `expo config --type introspect` ile: iOS URL şemaları değişmedi
+(`gamerisen`, `com.gamerisen.app`, `exp+gamerisen`), `ios.googleServicesFile`
+yokken iOS adımları hiçbir şey yapmıyor; Android'deki google-services adımları
+`android.googleServicesFile` ile zaten uygulanıyordu.
+
+**Doğrulama:** `npm run check` geçti, `npx expo export` iOS ve Android
+başarılı. Cihazda doğrulanamadı: bu makinede `adb` / Android SDK bulunamadı.
+Google akışının kendisi yine denenmedi (bayraklar kapalı).

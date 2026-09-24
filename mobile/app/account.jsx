@@ -440,10 +440,11 @@ export default function AccountScreen() {
               İKİ PLATFORMDA DA: Android'de bugüne kadar hiç sağlayıcı girişi
               yoktu, tek yol e-posta+şifreydi.
 
-              YAPILANDIRILMAMIŞSA HİÇ ÇİZİLMİYOR — istemci kimlikleri
-              app.json → extra.googleAuth içinde ve Android/iOS istemcileri
-              henüz oluşturulmadı. Çalışmayan bir giriş yolu göstermektense
-              yokmuş gibi davranmak doğru (bkz. GoogleAuthButton başlığı). */}
+              YAPILANDIRILMAMIŞSA HİÇ ÇİZİLMİYOR — platform bayrakları
+              app.json → extra.googleAuth içinde ve Android/iOS tarafı
+              Firebase'de henüz kurulmadı. Çalışmayan bir giriş yolu
+              göstermektense yokmuş gibi davranmak doğru (bkz.
+              googleAuthConfig başlığı). */}
           {!isForgot && GOOGLE_YAPILANDIRILDI && (
             <GoogleAuthButton
               title={t('acc.google')}

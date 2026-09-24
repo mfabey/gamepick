@@ -1,30 +1,26 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // GOOGLE İLE GİRİŞ / YENİDEN DOĞRULAMA — ASIL UYGULAMA
 //
-// BU DOSYA DOĞRUDAN IMPORT EDİLMEZ. `GoogleAuthButton.jsx` yalnızca kimlikler
-// yapılandırılmışsa `require` ediyor; sebebi CİHAZDA ÖLÇÜLDÜ: statik import
-// expo-auth-session → expo-crypto zincirini kuruyor ve yerel modülü olmayan
-// bir yapıda uygulamanın TAMAMI "Cannot find native module 'ExpoCrypto'" ile
-// düşüyordu. Tembel require ile özellik yapılandırılana kadar zincir hiç
-// yüklenmiyor.
+// BU DOSYA DOĞRUDAN IMPORT EDİLMEZ. `GoogleAuthButton.jsx` yalnızca
+// `GOOGLE_YAPILANDIRILDI` iken `require` ediyor: kütüphanenin importu yerel
+// modülü `TurboModuleRegistry.getEnforcing` ile istiyor ve modülü olmayan bir
+// derlemede uygulamanın TAMAMI düşerdi.
 //
 // Sunucu tarafı HAZIR ve ÜRETİMDE: `/api/auth/google-signin` id_token'ı
 // Firebase'e federe kimlik olarak veriyor ve apple-signin ile birebir aynı
 // yanıtı döndürüyor (`main`'de doğrulandı). Buradaki tek iş Google'dan taze
 // bir id_token almak; gerisini `session.signInWithGoogle` yapıyor.
-//
-// Kimlikler eklendikten sonra YENİ YEREL DERLEME gerekiyor; yönlendirme şeması
-// ve expo-crypto yerel yapılandırmadan geliyor, OTA ile gitmez.
 // ─────────────────────────────────────────────────────────────────────────────
-import { useCallback } from 'react';
-import * as WebBrowser from 'expo-web-browser';
-import * as Google from 'expo-auth-session/providers/google';
+import { useCallback, useState } from 'react';
+import { Platform } from 'react-native';
+import { GoogleSignin, isErrorWithCode, statusCodes } from '@react-native-google-signin/google-signin';
 
 import { GOOGLE_YAPI } from '../services/googleAuthConfig';
 import { Button } from './ui/Primitives';
 
-// Tarayıcıdan dönen oturumu kapatır — modül düzeyinde çağrılması gerekiyor.
-WebBrowser.maybeCompleteAuthSession();
+// Modül düzeyinde bir kez. iOS istemci kimliği GoogleService-Info.plist'ten
+// geliyor; Android'de istemci kimliği verilmiyor (bkz. googleAuthConfig).
+GoogleSignin.configure({ webClientId: GOOGLE_YAPI.webClientId });
 
 /**
  * Google düğmesi. Yalnızca `GOOGLE_YAPILANDIRILDI` iken mount edilmeli.
@@ -37,37 +33,43 @@ WebBrowser.maybeCompleteAuthSession();
  *                   gösterebiliyor.
  */
 export default function GoogleAuthButton({ title, onIdToken, onError, guard, disabled, height = 52, variant = 'secondary', style }) {
-  const [request, , promptAsync] = Google.useIdTokenAuthRequest({
-    androidClientId: GOOGLE_YAPI.androidClientId,
-    iosClientId: GOOGLE_YAPI.iosClientId,
-    webClientId: GOOGLE_YAPI.webClientId,
-  });
+  // Akış açıkken ikinci dokunuş yeni bir akış başlatmasın (kütüphane
+  // IN_PROGRESS fırlatıyor ama düğmenin basılabilir görünmesi yanlış).
+  const [acik, setAcik] = useState(false);
 
   const bas = useCallback(async () => {
     if (guard && guard() === false) return;
+    setAcik(true);
     try {
-      const r = await promptAsync();
-      if (r?.type !== 'success') {
-        // Vazgeçme hata değil: kullanıcı kendi kapattı, ekranda kırmızı
-        // bir satır görmesi için bir sebep yok.
-        if (r?.type === 'error') onError?.(r?.error?.message || 'GOOGLE_HATA');
-        return;
+      if (Platform.OS === 'android') {
+        await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       }
-      const idToken = r.params?.id_token || r.authentication?.idToken || null;
+      // Önceki Google oturumu kapatılıyor: kapatılmazsa Android son seçilen
+      // hesabı SORMADAN döndürüyor — Gamerisen'den çıkıp başka bir Google
+      // hesabıyla girmek isteyen kullanıcı hesap seçiciyi hiç görmezdi.
+      // Gamerisen oturumu bu SDK'ya bağlı değil; bu çağrı onu etkilemiyor.
+      await GoogleSignin.signOut().catch(() => {});
+      const r = await GoogleSignin.signIn();
+      // Vazgeçme hata değil: kullanıcı kendi kapattı, ekranda kırmızı bir
+      // satır görmesi için bir sebep yok.
+      if (r?.type !== 'success') return;
+      const idToken = r.data?.idToken || null;
       if (!idToken) { onError?.('ID_TOKEN_YOK'); return; }
       await onIdToken?.(idToken);
     } catch (e) {
-      onError?.(e?.message || 'GOOGLE_HATA');
+      if (isErrorWithCode(e) && (e.code === statusCodes.SIGN_IN_CANCELLED || e.code === statusCodes.IN_PROGRESS)) return;
+      onError?.(isErrorWithCode(e) ? `${e.message || 'GOOGLE_HATA'} (${e.code})` : (e?.message || 'GOOGLE_HATA'));
+    } finally {
+      setAcik(false);
     }
-  }, [promptAsync, onIdToken, onError, guard]);
+  }, [onIdToken, onError, guard]);
 
   return (
     <Button
       title={title}
       variant={variant}
       height={height}
-      // `request` hazırlanana kadar basılamaz: erken dokunuş sessizce düşerdi.
-      disabled={disabled || !request}
+      disabled={disabled || acik}
       onPress={bas}
       style={style}
     />
