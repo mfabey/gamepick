@@ -17,7 +17,7 @@ export async function GET(request) {
     
     if (res.ok) {
       const data = await res.json();
-      const entry = data[appid];
+      const entry = data[appid] || (data && typeof data === 'object' ? Object.values(data)[0] : null);
       
       if (entry?.success && entry.data?.screenshots) {
         const screenshots = entry.data.screenshots.map(s => s.path_full);

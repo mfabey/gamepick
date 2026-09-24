@@ -167,14 +167,28 @@ export default function GameImage({
       if (stage === 0) {
         const appid = getSteamAppId();
         if (appid) return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/library_600x900.jpg`;
+        if (game.backgroundImage && !game.backgroundImage.includes('storepagebackground')) return game.backgroundImage;
+        if (game.heroImage && !game.heroImage.includes('storepagebackground')) return game.heroImage;
+        if (game.screenshots?.[0]) return game.screenshots[0];
+        if (game.image && !game.image.includes('capsule_sm_120') && !game.image.includes('capsule_231x87') && !game.image.includes('placeholder')) {
+          return game.image;
+        }
         return getImgSrc(1);
       }
       if (stage === 1) {
-        if (game.heroImage) return game.heroImage;
-        if (game.backgroundImage) return game.backgroundImage;
+        if (game.backgroundImage && !game.backgroundImage.includes('storepagebackground')) return game.backgroundImage;
+        if (game.heroImage && !game.heroImage.includes('storepagebackground')) return game.heroImage;
+        if (game.screenshots?.[0]) return game.screenshots[0];
+        if (game.image && !game.image.includes('capsule_sm_120') && !game.image.includes('capsule_231x87') && !game.image.includes('placeholder')) {
+          return game.image;
+        }
+        const appid = getSteamAppId();
+        if (appid) return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/header.jpg`;
         return game.image || getImgSrc(2);
       }
       if (stage === 2) {
+        if (game.image && !game.image.includes('placeholder')) return game.image;
+        if (game.logo) return game.logo;
         const appid = getSteamAppId();
         if (appid) return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/capsule_231x87.jpg`;
         return getImgSrc(3);
