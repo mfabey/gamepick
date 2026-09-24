@@ -12,7 +12,6 @@
 export default {
   'nav.home': 'Anasayfa',
   'home.reviewPrompt': 'Bunları oynadın — ne düşünüyorsun?',
-  'home.friendsPlaying': 'Arkadaşların bu hafta',
   'nav.games': 'Oyunlar',
   'nav.news': 'Haberler',
   'nav.videos': 'Videolar',
@@ -707,7 +706,6 @@ export default {
   'post.feedEmptyDesc': 'Sohbeti sen başlat — aklındaki oyunu sor ya da bir anını paylaş.',
   'rev.mineEmptyDesc': 'Yukarıdaki oyunlardan birini seçerek ilk incelemeni yazabilirsin.',
   'prof.steamConnected': 'Steam bağlı',
-  'home.friendsCount': 'kişi',
   'home.hoursShort': 'sa',
 
   // ── Selamlama bloğu (Faz 1) ──

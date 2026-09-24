@@ -21,7 +21,6 @@
 export default {
   'nav.home': 'Start',
   'home.reviewPrompt': 'Die hast du gespielt — wie waren sie?',
-  'home.friendsPlaying': 'Deine Freunde diese Woche',
   'nav.games': 'Spiele',
   'nav.news': 'News',
   'nav.videos': 'Videos',
@@ -709,7 +708,6 @@ export default {
   'post.feedEmptyDesc': 'Starte das Gespräch — frag nach einem Spiel oder teil einen Moment.',
   'rev.mineEmptyDesc': 'Wähl eins der Spiele oben für deine erste Review.',
   'prof.steamConnected': 'Steam verbunden',
-  'home.friendsCount': 'Freunde',
   'home.hoursShort': 'Std',
 
   // ── Selamlama bloğu (Faz 1) ──

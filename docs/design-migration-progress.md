@@ -1132,3 +1132,29 @@ Steam'de alt satır saat ve fiyat BİRLİKTE.
 
 **Doğrulama:** `npm run check` geçti, `npx expo export --platform ios`
 başarılı. Cihazda görülmedi (emülatör yok).
+
+### 25 Eylül — Kart ailesi 4/4: ölü Faz-2 kodu silindi (Claude)
+
+Silinmeden önce doğrulandı: `components/GameCard/` (index + `variants.js`)
+yalnız `FriendActivity` bileşeninden çağrılıyordu; o bileşen de hiçbir
+yerden çizilmiyordu — anasayfanın arkadaş şeridi 2.0 `FriendSection`
+(`app/(tabs)/index.jsx`). Betikler bu dosyaları yol adıyla okumuyordu
+(yalnız `spacing-baseline.json`'da kayıt vardı).
+
+- `src/components/GameCard/` silindi (455 satır).
+- `FriendActivity.jsx` yalnız `hasFriendSignal` + eşik sabitleri ve veri
+  kararları notuyla kaldı; anasayfa hem şeridi hem selamlamayı buna
+  bağlıyor, `index.jsx`'teki "bkz. FriendActivity başlığı" atfı geçerli.
+- Yalnız o bileşenin kullandığı `home.friendsPlaying` / `home.friendsCount`
+  beş dilden silindi (`check:i18n` "YENİ ölü anahtar" diye düşürüyordu).
+- Tabanlar güncellendi: `check:spacing` 191 → 189, ölü anahtar 52 → 50.
+
+**Dokunulmadı:** `theme.js`'teki `metacriticColorOnDark` artık hiçbir
+yerden çağrılmıyor (yalnız Faz-2 kart kullanıyordu); tema temizliği ayrı iş.
+
+**Kart ailesi tamam (4/4):** profil ızgarası, liste satırı, kütüphane
+kutucukları 2.0; Faz-2 kart kodu ağaçta yok. Açık kalanlar: yükleme
+iskeleti (`GamesGridSkeleton`) hâlâ 2 sütun; hiçbiri cihazda görülmedi.
+
+**Doğrulama:** `npm run check` geçti (beş dil parite tam, 749 anahtar),
+`npx expo export --platform ios` başarılı.
