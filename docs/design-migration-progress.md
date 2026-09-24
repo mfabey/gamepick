@@ -1097,3 +1097,38 @@ tokenlarda oyun satırı ölçüsü yoktu.
 
 **Doğrulama:** `npm run check` geçti (boşluk tabanı 198, artmadı),
 `npx expo export --platform ios` başarılı. Cihazda görülmedi (emülatör yok).
+
+### 24 Eylül — Kart ailesi 3/4: kütüphane kutucukları → GameCardSmall (Claude)
+
+`library.jsx` kendi `GameTile`'ını çiziyordu: 2 sütun × 185 pt, 3:4 kapak,
+ad kapak ÜSTÜNDE beyaz (açık renkli kapakta okunmuyordu), saat + fiyat +
+indirim rozeti (Steam), gamerscore + yeşil "GAME PASS" rozeti (Xbox).
+
+**Kullanıcı kararları (24 Eylül):** 3 sütun küçük kart (planın kalıbı);
+Steam'de alt satır saat ve fiyat BİRLİKTE.
+
+**Değişen:**
+- Kutucuk 2.0 `GameCardSmall`; ızgara profil ızgarasıyla aynı ölçü
+  (`CoverGrid` → `gridCols`/`coverWidth`): 390 pt'de 3 × 106. FlashList
+  sütunları eşit böldüğü için 16 pt boşluk hücre başına 8+8, liste kenarı
+  12 → hücre içi tam `coverWidth()`. Başlık bloğu (çevrimdışı bandı, özet
+  kartı, arama) kartlarla aynı 20 pt hizaya çekildi (16 → 20).
+- Alt satır: Steam "134 sa · ₺1.299" (`home.hoursShort`, beş dilde var;
+  eski "134s"/"134h" kısaltması kitin "134 sa"sına döndü), oynanmamışsa
+  "Oynanmadı · ₺…", ücretsizse "… · Ücretsiz"; Xbox "1.250 G".
+- **İndirim rozeti kalktı:** küçük kartın alt satırı fiyatla indirimi aynı
+  anda taşımıyor; indirimdeyse gösterilen fiyat güncel fiyat (eski davranış).
+- Game Pass kapak üstünde 2.0 `OverlayTag` (sol üst, `overlayTag` dolgu);
+  eski yeşil marka rozeti gitti. `GameCardSmall`'a bunun için `overlay`
+  eklendi; kapak artık tek sarmalayıcıda (köşeyi o kırpıyor).
+- Ekrana özel 13 kutucuk stili silindi; `check:spacing` 198 → 191, taban
+  güncellendi.
+
+**Bilinen:**
+- Yükleme iskeleti (`GamesGridSkeleton`, games.jsx ile ortak) hâlâ genel
+  2 sütun; veri gelince 3 sütuna geçerken şekil değişiyor. Ayrı iş.
+- Uzun dillerde alt satır kesilebilir ("Nicht gespielt · ₺1.299" 106 pt'de
+  tek satıra sığmayabilir, ellipsis). Cihazda ölçülmedi.
+
+**Doğrulama:** `npm run check` geçti, `npx expo export --platform ios`
+başarılı. Cihazda görülmedi (emülatör yok).

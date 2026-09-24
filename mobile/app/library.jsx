@@ -1,7 +1,7 @@
 import { memo, useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View, Text, TextInput, Pressable, ScrollView,
-  StyleSheet, Alert, RefreshControl,
+  StyleSheet, Alert, RefreshControl, useWindowDimensions,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
@@ -11,10 +11,12 @@ import { useRouter } from 'expo-router';
 import { GamesGridSkeleton, Reveal } from '../src/components/Skeleton';
 import EmptyState from '../src/components/EmptyState';
 import CevrimdisiBant from '../src/components/CevrimdisiBant';
-import GameCover from '../src/components/GameCover';
+import { GameCardSmall } from '../src/components/ui/GameCards';
+import { OverlayTag } from '../src/components/ui/Media';
+import { coverWidth, gridCols, GRID_GAP, GRID_PAD } from '../src/components/CoverGrid';
 import { prefetchImages } from '../src/utils/prefetch';
 import { radius, spacing, TAB_SPACE, type, CHIP, CHIP_TEXT, PRESSED, TOUCH_MIN } from '../src/theme';
-import { useKartSutun, useYanBosluk } from '../src/hooks/useIcerikAlani';
+import { useYanBosluk } from '../src/hooks/useIcerikAlani';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 import { useAuth } from '../src/context/AuthContext';
@@ -34,8 +36,11 @@ function computeValue(games, prices) {
 export default function LibraryScreen() {
   const styles = useStyles(makeStyles);
   const yan = useYanBosluk();
-  // (390 − 2×10) / 2 = 185 — maketin hücre genişliği.
-  const sutun = useKartSutun(185, 2);
+  // 2.0 GameCardSmall ızgarası — profil ızgarasıyla AYNI ölçü (CoverGrid):
+  // 390 pt'de 3 sütun × 106. Eskiden 2 sütun × 185 (Faz maketinin hücresi).
+  const { width: pencereEn } = useWindowDimensions();
+  const sutun = gridCols(pencereEn);
+  const kapakEn = coverWidth(pencereEn, sutun);
   const { colors } = useTheme();
   const { t, lang, locale, formatPrice } = useLanguage();
   const { steamAccounts: rawSteamAccounts = [], xbox, busy, loginSteam, loginXbox, account } = useAuth();
@@ -195,9 +200,9 @@ export default function LibraryScreen() {
 
   const renderTile = useCallback(({ item }) => (
     <View style={styles.cell}>
-      <GameTile game={item} steam={isSteamView} price={steamPrices[item.appid]} onPress={handleOpenGame} />
+      <GameTile game={item} steam={isSteamView} price={steamPrices[item.appid]} width={kapakEn} onPress={handleOpenGame} />
     </View>
-  ), [isSteamView, steamPrices, styles, handleOpenGame]);
+  ), [isSteamView, steamPrices, styles, handleOpenGame, kapakEn]);
 
   const doLogin = async (fn) => {
     const r = await fn();
@@ -305,7 +310,7 @@ export default function LibraryScreen() {
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
-            <View style={{ paddingHorizontal: 6 }}>
+            <View style={{ paddingHorizontal: GRID_GAP / 2 }}>
               <CevrimdisiBant
                 ts={libTs}
                 onRetry={libTazele}
@@ -468,47 +473,38 @@ function LibraryHeaderCard({ header, formatPrice, pricesLoading, t, lang, locale
   );
 }
 
-const GameTile = memo(function GameTile({ game, steam, price, onPress }) {
-  const styles = useStyles(makeStyles);
-  const { t, lang, formatPrice } = useLanguage();
-  const hourSymbol = lang === 'tr' ? 's' : 'h';
+// ── KUTUCUK: 2.0 GameCardSmall (kart ailesi 3/4) ──
+// Ad kapağın ALTINDA: eskiden kapak üstüne beyaz yazılıyordu ve açık renkli
+// kapakta okunmuyordu. Alt satır Steam'de "134 sa · ₺1.299" (kullanıcı
+// kararı: saat ve fiyat birlikte), Xbox'ta gamerscore. İndirim rozeti kalktı:
+// küçük kartın alt satırı fiyatla indirimi aynı anda taşımıyor ve sahip
+// olunan oyunda indirim bir karar değiştirmiyor. Fiyat, indirimdeyse güncel
+// fiyat (eski davranış). Game Pass kapak üstünde 2.0 `OverlayTag`.
+const GameTile = memo(function GameTile({ game, steam, price, width, onPress }) {
+  const { t, formatPrice } = useLanguage();
   const isFree = price?.isFree;
   const onSale = price?.discount > 0 && !isFree;
+  let alt;
+  if (steam) {
+    const saat = game.hours > 0 ? `${game.hours} ${t('home.hoursShort')}` : t('library.notPlayed');
+    const fiyat = !price ? null
+      : isFree ? t('card.free')
+      : price.original != null ? formatPrice(onSale ? price.current : price.original)
+      : null;
+    alt = fiyat ? `${saat} · ${fiyat}` : saat;
+  } else {
+    alt = `${game.currentGamerscore ?? 0} G`;
+  }
   return (
-    <Pressable
+    <GameCardSmall
+      title={game.name}
+      image={game.image || null}
+      recyclingKey={String(game.appid ?? game.titleId)}
+      width={width}
+      subtitle={alt}
+      overlay={!steam && game.isGamePass ? <OverlayTag label="Game Pass" /> : null}
       onPress={() => onPress?.(game)}
-      style={({ pressed }) => [styles.tilePressable, pressed && PRESSED]}
-      accessibilityRole="button"
-      accessibilityLabel={game.name}
-    >
-      <GameCover uri={game.image} name={game.name} recyclingKey={String(game.appid ?? game.titleId)} style={styles.tile}>
-        {!steam && game.isGamePass ? (
-          <View style={styles.gpBadge}><Text style={styles.gpText}>GAME PASS</Text></View>
-        ) : null}
-        {steam && onSale ? (
-          <View style={styles.saleBadge}><Text style={styles.saleText}>-%{price.discount}</Text></View>
-        ) : null}
-        <View style={styles.tileInfo}>
-          <Text numberOfLines={2} style={styles.tileName}>{game.name}</Text>
-          <View style={styles.tileMeta}>
-            {steam ? (
-              game.hours > 0
-                ? <Text style={styles.tileHours}>{game.hours}<Text style={styles.tileSub}>{hourSymbol}</Text></Text>
-                : <Text style={styles.tileSub}>{t('library.notPlayed')}</Text>
-            ) : (
-              <Text style={styles.tileHours}>{game.currentGamerscore ?? 0}<Text style={styles.tileSub}> G</Text></Text>
-            )}
-            {steam && price ? (
-              isFree
-                ? <Text style={styles.tilePriceFree}>{t('card.free')}</Text>
-                : price.original != null
-                  ? <Text style={styles.tilePrice}>{formatPrice(onSale ? price.current : price.original)}</Text>
-                  : null
-            ) : null}
-          </View>
-        </View>
-      </GameCover>
-    </Pressable>
+    />
   );
 });
 
@@ -559,22 +555,11 @@ const makeStyles = (colors) => StyleSheet.create({
   sortChipText: { fontSize: type.footnote, color: colors.text2 },
   countText: { marginLeft: 'auto', fontSize: type.caption, color: colors.text3, fontWeight: '600' },
 
-  listContent: { paddingHorizontal: 10, paddingTop: spacing.xs },
-  cell: { flex: 1, paddingHorizontal: 6, paddingBottom: spacing.md },
-  tilePressable: { width: '100%' },
-  tile: { width: '100%', aspectRatio: 3 / 4, borderRadius: radius.lg, overflow: 'hidden', backgroundColor: colors.card },
-  tileInfo: { position: 'absolute', left: 11, right: 11, bottom: 10 },
-  tileName: { color: '#fff', fontSize: type.subhead, fontWeight: '800', lineHeight: 17 },
-  tileMeta: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: spacing.xs },
-  tileHours: { color: colors.accentText, fontSize: type.body, fontWeight: '800' },
-  tileSub: { color: colors.text3, fontSize: type.caption2, fontWeight: '600' },
-  tilePrice: { color: '#fff', fontSize: type.footnote, fontWeight: '800' },
-  tilePriceFree: { color: colors.green, fontSize: type.footnote, fontWeight: '800' },
-  // tema-bagimsiz: magaza marka rengi (Steam / Xbox)
-  gpBadge: { position: 'absolute', top: 8, right: 8, backgroundColor: '#107c10', borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 },
-  gpText: { color: '#fff', fontSize: type.caption2, fontWeight: '800' },
-  saleBadge: { position: 'absolute', top: 8, left: 8, backgroundColor: colors.accentFillStrong, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 },
-  saleText: { color: '#0b0d10', fontSize: type.caption2, fontWeight: '800' },
+  // FlashList sütunları EŞİT bölüyor; 16 pt boşluk hücre başına 8+8 olarak
+  // veriliyor, liste kenarı 20 − 8 = 12. Hücre içi genişlik böylece tam
+  // `coverWidth()` (390 pt'de 106) — profil ızgarasıyla aynı ölçü.
+  listContent: { paddingHorizontal: GRID_PAD - GRID_GAP / 2, paddingTop: spacing.xs },
+  cell: { flex: 1, paddingHorizontal: GRID_GAP / 2, paddingBottom: GRID_GAP },
 
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, paddingHorizontal: 32 },
   h1: { fontSize: type.title3, fontWeight: '800', color: colors.text },

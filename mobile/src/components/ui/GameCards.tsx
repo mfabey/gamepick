@@ -21,9 +21,11 @@ import { component as K, layout, radius, size, typography } from '../../theme/to
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Küçük oyun kartı: 106 geniş, kapak 142 (köşe 14); başlık 14/18; altında fiyat 14 + indirim (11/20) ya da alt yazı. */
-export function GameCardSmall({ title, image, price, discount, subtitle, onPress, width = size.cover.small.width, imagePosition, recyclingKey }: {
+export function GameCardSmall({ title, image, price, discount, subtitle, onPress, width = size.cover.small.width, imagePosition, recyclingKey, overlay }: {
   title: string; image?: string | null; price?: string; discount?: number; subtitle?: string; onPress?: () => void;
   width?: number; imagePosition?: ImageContentPosition; recyclingKey?: string;
+  /** Kapağın ÜSTÜNE binen etiket (ör. `OverlayTag` ile "Game Pass"). */
+  overlay?: React.ReactNode;
 }) {
   const { colors } = useDesignTheme();
   const coverHeight = smallCoverHeight(width);
@@ -37,10 +39,14 @@ export function GameCardSmall({ title, image, price, discount, subtitle, onPress
   const hasRow = !!(subtitle || price || discount);
   return (
     <PressableScale accessibilityRole="button" accessibilityLabel={title} onPress={onPress} style={{ width }}>
-      {showMonogram
-        ? <View style={[styles.smallCover, { width, height: coverHeight }]}><Monogram name={title} style={StyleSheet.absoluteFill} /></View>
-        : <CoverImage source={image} contentPosition={imagePosition} recyclingKey={recyclingKey}
-            onError={() => setFailedUri(image)} style={{ width, height: coverHeight }} />}
+      {/* Kapak tek sarmalayıcıda: köşeyi o kırpıyor, etiket onun üstünde. */}
+      <View style={[styles.smallCover, { width, height: coverHeight, backgroundColor: colors.surface2 }]}>
+        {showMonogram
+          ? <Monogram name={title} style={StyleSheet.absoluteFill} />
+          : <CoverImage source={image ?? undefined} radius={0} contentPosition={imagePosition} recyclingKey={recyclingKey}
+              onError={() => setFailedUri(image ?? null)} style={StyleSheet.absoluteFill} />}
+        {overlay}
+      </View>
       <Txt variant="subhead" numberOfLines={1} style={styles.smallTitle}>{title}</Txt>
       {hasRow ? <View style={styles.smallRow}>
         {subtitle ? <Txt variant="caption" numberOfLines={1} style={{ color: colors.text2 }}>{subtitle}</Txt> : <>
