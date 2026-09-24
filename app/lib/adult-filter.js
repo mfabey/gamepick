@@ -53,7 +53,31 @@ const FORBIDDEN_TAGS = new Set([
   'creampie', 'doujinshi', 'camgirl', 'striptease', 'femdom', 'pegging', 'dildo', 'masturbation'
 ]);
 
+// Steam içerik tanımlayıcıları:
+//   1 = Some Nudity or Sexual Content      2 = Frequent Violence or Gore
+//   3 = Adult Only Sexual Content          4 = Frequent Nudity or Sexual Content
+//   5 = General Mature Content
+// 3 her zaman engellenir. 1 ve 4 TEK BAŞINA ayırt edici DEĞİL (ölçüldü,
+// 2026-09-24): GTA V Enhanced ile Strip Fighter 5 aynı [1,2,5]'i, Persona 5
+// Royal ile Sakura Beach aynı [1,5]'i taşıyor. 1/4 hepsini engellediğinde AAA
+// oyunlar kayboluyordu; hiçbirini engellemediğinde cinsel içerikli oyunlar
+// aramaya sızdı. Ayıran şey RESMÎ YAŞ DERECESİ — bkz. hasOfficialRating.
 const FORBIDDEN_STEAM_DESCRIPTOR_IDS = new Set([3]);
+const SEXUAL_CONTENT_DESCRIPTOR_IDS = new Set([1, 4]);
+
+// Cinsel içerik sinyali taşıyan bir oyun, resmî bir kurulun (ESRB/PEGI/USK)
+// derecesini taşıyorsa geçer. Ölçüm (appdetails → ratings, 2026-09-24):
+//   geçmesi gereken — GTA V Enhanced esrb:m pegi:18 · Mass Effect LE esrb:m
+//     pegi:18 · Persona 5 Royal esrb:m pegi:16 · Persona 3 Portable esrb:m
+//     pegi:12 · Phantom Liberty (DLC) esrb:m pegi:18 · Witcher 3 DLC esrb:m
+//   engellenmesi gereken — Strip Fighter 5: yalnız dejus/steam_germany/igrs
+//     (Steam'in kendi ürettiği dereceler) · Sakura Beach: esrb/pegi ANAHTARI
+//     var ama DEĞERİ yok
+// Popülerlik tek başına ayırmıyordu: 50.000 öneri eşiği Persona 3 Portable'ı
+// (4.734) ve Phantom Liberty'yi (22.363) de gizliyordu. Eşik yalnız resmî
+// derecesi olmayan çok popüler PC oyunları için ikinci bir geçiş kapısı.
+const OFFICIAL_RATING_BOARDS = ['esrb', 'pegi', 'usk'];
+const POPULAR_RECOMMENDATIONS = 50000;
 
 export function isAdultTitleOrSlug(name, slug) {
   const rawName = String(name || '');
@@ -159,5 +183,48 @@ export function isSteamDataAdult(steamData) {
     return true;
   }
 
+  // 5. ESRB "Adults Only"
+  if (String(steamData.ratings?.esrb?.rating || '').toLowerCase() === 'ao') {
+    return true;
+  }
+
+  // 6. Cinsel içerik sinyali + resmî derece yok + popüler değil
+  if (hasSexualContentSignal(steamData, desc) && !hasOfficialRating(steamData) && !isPopularOnSteam(steamData)) {
+    return true;
+  }
+
   return false;
+}
+
+// Anahtarın varlığı YETMEZ: Sakura Beach'te esrb/pegi anahtarları değersiz
+// duruyor. "rp" (rating pending) da henüz derece değil.
+function hasOfficialRating(steamData) {
+  const ratings = steamData?.ratings;
+  if (!ratings || typeof ratings !== 'object') return false;
+  return OFFICIAL_RATING_BOARDS.some(board => {
+    const value = String(ratings[board]?.rating ?? '').trim().toLowerCase();
+    return value !== '' && value !== 'rp' && value !== 'ao';
+  });
+}
+
+function isPopularOnSteam(steamData) {
+  return (Number(steamData?.recommendations?.total) || 0) >= POPULAR_RECOMMENDATIONS;
+}
+
+// ac93b12'de kaldırılan kontroller burada geri geliyor, ama tek başına
+// engellemiyorlar: yalnız resmî derecesi olmayan ve popüler olmayan oyunda
+// engelliyorlar.
+function hasSexualContentSignal(steamData, desc) {
+  const ids = steamData.content_descriptors?.ids;
+  if (Array.isArray(ids) && ids.some(id => SEXUAL_CONTENT_DESCRIPTOR_IDS.has(id))) return true;
+
+  const notes = String(steamData.content_descriptors?.notes || '').toLowerCase();
+  if (notes && FORBIDDEN_SUBSTRINGS.some(sub => notes.includes(sub))) return true;
+
+  if (Array.isArray(steamData.genres) && steamData.genres.some(g => {
+    const d = (g.description || '').toLowerCase();
+    return d === 'nudity' || d === 'sexual content';
+  })) return true;
+
+  return desc.includes('contains nudity') || desc.includes('sexual content');
 }
