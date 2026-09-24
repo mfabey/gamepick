@@ -154,7 +154,8 @@ for (const file of fs.readdirSync(new URL('src/components/', root)).filter((f) =
 
 // Kapakların toplam genişliği pencereye sığmalı; geniş ekranda sütun artmalı.
 const coverSource = read('src/components/CoverGrid.jsx');
-const gridEnv = { GRID_PAD: constants.spacing.s20, GRID_GAP: constants.spacing.s4, HEDEF_HUCRE: 114 };
+// CoverGrid.jsx'teki sabitlerle AYNI olmalı (2.0: GameCardSmall, 16 boşluk, 106 hücre).
+const gridEnv = { GRID_PAD: constants.spacing.s20, GRID_GAP: constants.spacing.s16, HEDEF_HUCRE: 106 };
 traverse(ast(coverSource), {
   FunctionDeclaration(p) {
     if (['gridCols', 'coverWidth'].includes(p.node.id.name)) {

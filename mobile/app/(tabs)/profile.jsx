@@ -54,7 +54,8 @@ import { weeklyReport } from '../../src/services/stats';
 
 import ProfileHeader from '../../src/components/ProfileHeader';
 import ProfileTabs from '../../src/components/ProfileTabs';
-import CoverCell, { coverWidth, gridCols, GRID_GAP } from '../../src/components/CoverGrid';
+import { coverWidth, gridCols, GRID_GAP, GRID_PAD } from '../../src/components/CoverGrid';
+import { GameCardSmall, smallCardHeight } from '../../src/components/ui/GameCards';
 import { useYanBosluk } from '../../src/hooks/useIcerikAlani';
 import ProfileReviewRow from '../../src/components/ProfileReviewRow';
 import PostCard from '../../src/components/PostCard';
@@ -474,9 +475,11 @@ export default function ProfileScreen() {
       return (
         <View style={styles.gridRow}>
           {item.map((g) => (
-            <CoverCell
+            <GameCardSmall
               key={g.id}
-              item={g}
+              title={g.name}
+              image={g.image || null}
+              recyclingKey={String(g.id)}
               width={kapakEn}
               onPress={() => router.push({
                 pathname: '/game/[id]',
@@ -539,7 +542,7 @@ export default function ProfileScreen() {
         renderItem={satirCiz}
         contentContainerStyle={{ paddingHorizontal: izgara ? 0 : yan }}
         extraData={tab}
-        estimatedItemSize={izgara ? Math.round((kapakEn * 4) / 3) + GRID_GAP : 140}
+        estimatedItemSize={izgara ? Math.round(smallCardHeight(kapakEn)) + GRID_GAP : 140}
         ListHeaderComponent={(
           <View>
             {/* İLK AÇILIŞTA YER TUTUCU. Önbellek boşken (hesabın bu cihazdaki
@@ -654,7 +657,7 @@ const makeStyles = (colors) => StyleSheet.create({
 
   gridRow: {
     flexDirection: 'row', gap: GRID_GAP,
-    paddingHorizontal: spacing.s20, marginBottom: GRID_GAP,
+    paddingHorizontal: GRID_PAD, marginBottom: GRID_GAP,
   },
 
   // ── Oturum yok ──

@@ -1,13 +1,14 @@
 import type { ImageContentPosition } from 'expo-image';
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { FlatList, StyleSheet, View, type ListRenderItem } from 'react-native';
 import Svg, { Line } from 'react-native-svg';
 import { Icon } from '../Icon';
+import Monogram from '../Monogram';
 import { Button, CoverImage, PressableScale, Txt } from './Primitives';
 import { DiscountTag, OldPrice, Price, PriceDrop, StoreBadge } from './Commerce';
 import { useLanguage } from '../../context/LanguageContext';
 import { useDesignTheme } from '../../theme/useDesignTheme';
-import { component as K, layout, size } from '../../theme/tokens';
+import { component as K, layout, radius, size, typography } from '../../theme/tokens';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // OYUN KART AİLESİ (sunum) — COMPONENTS §4: GameCardSmall, PriceDropCard,
@@ -20,24 +21,46 @@ import { component as K, layout, size } from '../../theme/tokens';
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Küçük oyun kartı: 106 geniş, kapak 142 (köşe 14); başlık 14/18; altında fiyat 14 + indirim (11/20) ya da alt yazı. */
-export function GameCardSmall({ title, image, price, discount, subtitle, onPress, width = size.cover.small.width, imagePosition }: {
+export function GameCardSmall({ title, image, price, discount, subtitle, onPress, width = size.cover.small.width, imagePosition, recyclingKey }: {
   title: string; image?: string | null; price?: string; discount?: number; subtitle?: string; onPress?: () => void;
-  width?: number; imagePosition?: ImageContentPosition;
+  width?: number; imagePosition?: ImageContentPosition; recyclingKey?: string;
 }) {
   const { colors } = useDesignTheme();
-  const coverHeight = Math.round(width * size.cover.small.height / size.cover.small.width);
+  const coverHeight = smallCoverHeight(width);
+  // Kapak yoksa ya da yüklenemezse MONOGRAM — boş gri kutu değil (ui/GameCard
+  // ile aynı kural). Hangi adresin düştüğü tutuluyor: FlashList hücreyi başka
+  // bir oyuna yeniden kullandığında yeni adres yine denenir.
+  const [failedUri, setFailedUri] = useState<string | null>(null);
+  const showMonogram = !image || failedUri === image;
+  // Fiyat da alt yazı da yoksa satır ÇİZİLMİYOR: kit satırı hep doluyken
+  // çiziyor; boş satır kartın altında anlamsız bir 22 pt boşluk bırakırdı.
+  const hasRow = !!(subtitle || price || discount);
   return (
     <PressableScale accessibilityRole="button" accessibilityLabel={title} onPress={onPress} style={{ width }}>
-      <CoverImage source={image ?? undefined} contentPosition={imagePosition} style={{ width, height: coverHeight }} />
+      {showMonogram
+        ? <View style={[styles.smallCover, { width, height: coverHeight }]}><Monogram name={title} style={StyleSheet.absoluteFill} /></View>
+        : <CoverImage source={image} contentPosition={imagePosition} recyclingKey={recyclingKey}
+            onError={() => setFailedUri(image)} style={{ width, height: coverHeight }} />}
       <Txt variant="subhead" numberOfLines={1} style={styles.smallTitle}>{title}</Txt>
-      <View style={styles.smallRow}>
+      {hasRow ? <View style={styles.smallRow}>
         {subtitle ? <Txt variant="caption" numberOfLines={1} style={{ color: colors.text2 }}>{subtitle}</Txt> : <>
           {price ? <Price value={price} size={14} /> : null}
           {discount ? <DiscountTag percent={discount} size="xs" /> : null}
         </>}
-      </View>
+      </View> : null}
     </PressableScale>
   );
+}
+
+/** Kapak yüksekliği genişlikten, kitin 106×142 oranıyla. */
+export function smallCoverHeight(width: number) {
+  return Math.round(width * size.cover.small.height / size.cover.small.width);
+}
+
+/** Izgara satırı tahmini için kartın toplam yüksekliği (kapak + başlık [+ satır]). */
+export function smallCardHeight(width: number, withRow = false) {
+  return smallCoverHeight(width) + K.gameCardSmall.titleTop + (typography.subhead.lineHeight ?? 0)
+    + (withRow ? K.gameCardSmall.rowTop + K.gameCardSmall.rowHeight : 0);
 }
 
 /** Fiyatı düşen kartı: 264 geniş, köşe 16, surface1; görsel 132; eski fiyat → yeni fiyat, mağaza, düşüş notu. */
@@ -133,6 +156,7 @@ export function Rail<T>({ kind, data, renderItem, keyExtractor, initialNumToRend
 const styles = StyleSheet.create({
   flex: { flex: 1, minWidth: 0 },
   rail: { paddingHorizontal: layout.gutter },
+  smallCover: { borderRadius: radius.cover, overflow: 'hidden' },
   smallTitle: { marginTop: K.gameCardSmall.titleTop },
   smallRow: { height: K.gameCardSmall.rowHeight, marginTop: K.gameCardSmall.rowTop, flexDirection: 'row', alignItems: 'center', gap: K.gameCardSmall.gap },
   drop: { width: size.cover.drop.width, borderRadius: K.dropCard.radius, overflow: 'hidden' },

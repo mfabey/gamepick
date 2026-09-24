@@ -1034,3 +1034,38 @@ Google akışının kendisi yine denenmedi (bayraklar kapalı).
 
 **Doğrulama:** `npm run check` geçti, `npx expo export --platform ios`
 başarılı.
+
+### 24 Eylül — Kart ailesi 1/4: profil ızgarası → GameCardSmall (Claude)
+
+Kart ailesi dört parçaya bölündü: (1) profil ızgarası, (2) `GameRow` →
+kitin `prow` satırı, (3) kütüphane kutucukları, (4) ölü Faz-2 kodu
+(`components/GameCard/`, `variants.js`, `FriendActivity` bileşeni — yalnız
+`hasFriendSignal` kullanılıyor). Bu kayıt 1. parça; G-21'in "içerik
+sekmelerinin kendi düzenleri taşınmadı" açığının ızgara yarısını kapatıyor.
+
+**Değişen.** `profile.jsx` ve `u/[username].jsx` koleksiyon/istek
+sekmelerinde eski `CoverCell` (114 pt, 4 pt boşluk, adı kapak üstünde
+perdeli) yerine 2.0 `GameCardSmall` (ad kapağın ALTINDA, 14/18). COMPONENTS
+§4 "üç sütunda 16 boşluk": `CoverGrid.jsx` artık yalnız ölçü modülü —
+`GRID_GAP` 4 → 16, hedef hücre 114 → 106. 390 pt'de hücre tam 106 (kitin
+game_s'i). Ölçüm: 375 → 3 (101) · 390 → 3 (106) · 411 → 3 (113) ·
+820 → 6 (117). `gridRow` kenar payı ayrı `spacing.s20` yerine `GRID_PAD`.
+
+**GameCardSmall'a iki ek** (ilk gerçek kullanıcısı bu ekranlar; önceden
+yalnız `/design-system` galerisi çağırıyordu):
+- Kapak yoksa ya da yüklenemezse `Monogram` — `CoverImage` boş gri kutu
+  çiziyordu, "boş kutu yok" kuralını deliyordu. `ui/GameCard` ile aynı
+  `failedUri` kalıbı; `recyclingKey` FlashList geri dönüşümü için.
+- Fiyat da alt yazı da yoksa alt satır çizilmiyor: profil öğeleri yalnız
+  `{id, appid, name, image}` taşıyor, boş satır 22 pt anlamsız boşluk
+  bırakırdı. `smallCardHeight()` FlashList tahmini için.
+- `Monogram.jsx`'e JSDoc: TS, JS imzasından `size`'ı zorunlu sanıyordu.
+
+**Kitten farkı (veri yok):** kit profilde "Tamamlananlar" (saat),
+"İstek Listesi" (fiyat + indirim), "Favoriler" (puan) raylarını gösteriyor;
+bizde sekme + ızgara ve kartta yalnız ad. İstek listesi sekmesine fiyat
+eklemek kart başına fiyat çağrısı demek — ayrı karar.
+
+**Doğrulama:** `npm run check` geçti (`check-layout` yeni sabitlerle
+güncellendi), `npx expo export --platform ios` başarılı. Cihazda
+görülmedi: bu makinede emülatör/adb yok.
