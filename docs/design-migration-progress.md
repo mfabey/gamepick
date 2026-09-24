@@ -1158,3 +1158,51 @@ iskeleti (`GamesGridSkeleton`) hâlâ 2 sütun; hiçbiri cihazda görülmedi.
 
 **Doğrulama:** `npm run check` geçti (beş dil parite tam, 749 anahtar),
 `npx expo export --platform ios` başarılı.
+
+### 25 Eylül — G-03 Giriş: görsel geçiş (Claude)
+
+**Kullanıcı kararları (25 Eylül):** mod geçişi kitteki gibi en altta
+bağlantı (segment kalktı); alanlar kitteki gibi ayrı 2.0 `TextField`
+(tek kart kalktı). İkisi de Faz'daki bilinçli kararları geri çeviriyor;
+segmentin gerekçesi ("ekranın ne olduğu formdan önce anlaşılsın") artık
+büyük başlıkla karşılanıyor.
+
+**Kit s2.py login() → uygulanan** (ölçüler `tokens.component.login`):
+2.0 `NavBar` (yalnız geri) · `Mark` 52 · başlık `display` 30/36, 22 üstte
+(girişte "Tekrar hoş geldin", kayıtta "Hesap oluştur", sıfırlamada
+"Şifremi unuttum") · alt metin `body` 15/22 text2, 8 · sağlayıcılar 50 pt,
+aralık 10 · "veya e-postayla" ayracı (18, saç teli) · alanlar 20 üstte,
+aralık 14, ikonlu (`mail`, `lock`, `at`) · "Şifremi unuttum" sağa yaslı
+tertiary 36 pt, alanların hemen altında · CTA 52 / köşe 12 · en altta
+"Hesabın yok mu? **Hesap oluştur**" / "Hesabın var mı? **Giriş yap**" /
+sıfırlamada "Giriş Yap Ekranına Dön" (44 pt, esnek boşlukla dibe iniyor).
+Şifre göster/gizle `TextField`'ın kendi `secure` düğmesi; kullanıcı adı
+uygunluğu alanın altında (alınmış → hata, uygun → başarı, diğer → ipucu),
+kontrol sürerken sağda gösterge.
+
+**Kitten BİLEREK sapmalar:**
+- Sözleşme cümlesi sağlayıcı düğmelerinin ÜSTÜNDE kaldı (Apple 1.2:
+  kayıt/girişten ÖNCE); kit onu en alta koyuyor. Kayıttaki onay kutusu da.
+- Apple düğmesi yerel `AppleAuthenticationButton` kaldı (2.7 (53) reddi);
+  yalnız yükseklik/köşe kitin 50 / 12'si.
+- CTA kırmızı kaldı (kullanıcı kararı; 2.0 `Button` primary açık yüzeyli).
+- "Steam hesabınla devam et" yok (sunucu ucu yok); Google yapılandırılana
+  kadar çizilmiyor.
+- Sıfırlama açıklaması hâlâ TR/EN sabit dize (önceden de öyleydi).
+
+**Metinler:** beş dilde `acc.welcomeBack`, `acc.signinLead`
+("Fiyat alarmların, listen ve arkadaşların seni bekliyor." — fiyat
+bildirimi istek listesinde var, iddia doğru), `acc.orEmail`,
+`acc.noAccount`, `acc.haveAccount`; yalnız burada kullanılan `acc.or`
+kalktı. `check:i18n` eklenip kullanılmayan `acc.welcomeBack`'i yakaladı
+(başlık bağlanmamıştı) — düzeltildi.
+
+**Silinen:** `ModSecici`, `Alan`, tek kart ve segment stilleri,
+`SAGLAYICI_BOSLUK`; `check:spacing` 189 → 183, taban güncellendi.
+`check-layout` içerik kabının telefon payını temel stilde istiyor —
+`body.paddingHorizontal` 20 geri kondu.
+
+**Doğrulama:** `npm run check` geçti (753 anahtar, parite tam),
+`npx expo export` iOS ve Android başarılı. Cihazda görülmedi (emülatör
+yok): klavye açıkken alt bağlantının yeri, Apple düğmesinin 50 pt'de
+görünümü ve uzun dillerde başlık/alt metin gözle bakılmalı.

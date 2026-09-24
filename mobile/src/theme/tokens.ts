@@ -490,6 +490,13 @@ export const component = {
   badgeSmall: { height: 18, paddingH: 6, radius: 5, gap: 3, icon: 11 },
   comment: { avatar: 40, replyAvatar: 32, gap: 10, headHeight: 20, nameGap: 6, textTop: 4, actionsTop: 6, actionsHeight: 28, actionsGap: 18, heart: 15, heartGap: 5, replyIndent: 52 },
   userRow: { height: 60, gap: 12, avatar: 44, thumb: 44, thumbRadius: 12 },
+  // G-03 Giriş — kit s2.py login(): işaret 52, başlık üstü 22, alt metin 8,
+  // sağlayıcılar 26 (50 pt, aralık 10), ayraç 22 (18 yükseklik, 12 boşluk),
+  // alanlar 20 (aralık 14), "şifreni mi unuttun" 4 (36 pt), CTA 8 (52 pt),
+  // alt bağlantı 44 pt.
+  login: { mark: 52, titleTop: 22, leadTop: 8, providersTop: 26, provider: 50, providerGap: 10,
+    dividerTop: 22, dividerHeight: 18, dividerGap: 12, fieldsTop: 20, fieldGap: 14,
+    forgotTop: 4, forgot: 36, ctaTop: 8, cta: 52, switchRow: 44 },
   // Kompakt oyun satırı — kit s4.py profile() prow(): 60 yükseklik, kapak
   // 46×60 (köşe 9), boşluk 12, ad 15/20/600, meta 13/18 text2, 16 pt ok;
   // satırlar arası 8 (ayraç yok).

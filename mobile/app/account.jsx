@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import {
-  View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator,
+  View, Text, Pressable, StyleSheet, ActivityIndicator,
   KeyboardAvoidingView, Platform, ScrollView, Alert, Keyboard,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,7 +14,11 @@ import GoogleAuthButton, { GOOGLE_YAPILANDIRILDI } from '../src/components/Googl
 import { anonDataSummary, transferAnonData } from '../src/services/owner';
 import { resetSyncThrottle } from '../src/services/sync';
 import { registerAccount, requestPasswordReset, checkUsernameAvailable } from '../src/api/account';
-import { radius, spacing, PRESSED, type } from '../src/theme';
+import { spacing, PRESSED, type } from '../src/theme';
+import { component as K, radius as dsRadius } from '../src/theme/tokens';
+import { NavBar } from '../src/components/ui/Navigation';
+import { Button, TextField, Txt } from '../src/components/ui/Primitives';
+import { Mark } from '../src/components/brand/Logo';
 import { useYanBosluk } from '../src/hooks/useIcerikAlani';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
@@ -24,12 +28,8 @@ import { useLanguage } from '../src/context/LanguageContext';
 // da duruyor — yetkili doğrulama her zaman sunucuda.
 const USERNAME_RE = /^[a-zA-Z0-9_]{3,20}$/;
 
-// Sağlayıcı düğmesi ile altındaki öğe arasındaki boşluk. ÖLÇEK DIŞI ve öyle
-// kalıyor: 16 dar, 20 geniş duruyor ve 18 yayınlanmış Apple düğmesinin
-// boşluğu — ölçeğe çekmek doğrulanmamış bir görsel değişiklik olurdu.
-// Tek yerde durması Google düğmesinin aynı boşluğu ikinci kez yazmasını da
-// önlüyor (bkz. check:spacing cırcırı).
-const SAGLAYICI_BOSLUK = 18;
+// G-03 ölçüleri (kit s2.py login()) — bkz. tokens.component.login.
+const L = K.login;
 
 // Sözleşmeler UYGULAMA İÇİ tarayıcıda açılıyor, Safari'ye atılmıyor: kayıt
 // formunu yarıda bırakıp uygulamadan çıkan bir kullanıcı geri döndüğünde
@@ -71,9 +71,6 @@ export default function AccountScreen() {
   const [username, setUsername] = useState('');
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
-  // §8 password-toggle. Varsayılan KAPALI: omuz üstünden okunmaya karşı
-  // korumayı kullanıcı istediğinde bırakır, biz onun adına bırakmayız.
-  const [sifreAcik, setSifreAcik] = useState(false);
   const [busy, setBusy]   = useState(false);
   const [error, setError] = useState('');
   const [info, setInfo]   = useState('');
@@ -147,9 +144,10 @@ export default function AccountScreen() {
 
   const isForgot = mode === 'forgot';
   const isSignup = mode === 'signup';
+  // Kit girişte "Tekrar hoş geldin" diyor; kayıt ve sıfırlamada başlık işin adı.
   const titleText = isForgot
     ? t('acc.forgot')
-    : (isSignup ? t('acc.signUp') : t('acc.signIn'));
+    : (isSignup ? t('acc.signUp') : t('acc.welcomeBack'));
 
   const validateEmail = (emailStr) => {
     const trimmed = emailStr.trim();
@@ -331,227 +329,200 @@ export default function AccountScreen() {
     }
   }, [router, offerAnonTransfer, hatayiTemizle, sunucuHatasi]);
 
+  // Mod değişimi tek yerden: segmentin yerini alan alt bağlantı ve "girişe dön".
+  const modaGec = (m) => {
+    if (m === mode) return;
+    Haptics.selectionAsync().catch(() => {});
+    setMode(m); hatayiTemizle(); setInfo('');
+  };
+  const saglayiciVar = !isForgot && (Platform.OS === 'ios' || GOOGLE_YAPILANDIRILDI);
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      {/* Başlık listenin DIŞINDA: içerik kolonuyla aynı hizaya
-          getiriliyor — başlık tam genişlikte kalsaydı sayfanın adı ile
-          anlattığı şey iki ayrı sütunda dururdu. */}
-      <View style={[styles.head, { marginHorizontal: yan }]}>
-        <Pressable style={({ pressed }) => [styles.back, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </Pressable>
-        <Text style={styles.title}>{titleText}</Text>
-        <View style={{ width: 40 }} />
-      </View>
+      <NavBar onBack={() => router.back()} />
 
       <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.lg, paddingHorizontal: spacing.lg + yan }]} keyboardShouldPersistTaps="handled">
-          {/* ── MOD SEÇİMİ EKRANIN BAŞINDA, SONUNDA DEĞİL ──────────────────
-              Giriş↔kayıt geçişi CTA'nın ALTINDAKİ bir metin bağlantısıydı:
-              ekranın ne olduğu en son öğeden anlaşılıyordu. Segment, modu
-              görünür ve tek dokunuşluk yapıyor; başlıkla birlikte "neredeyim,
-              nereye gidebilirim" sorusunu formdan önce cevaplıyor.
+        <ScrollView
+          contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.lg, paddingHorizontal: spacing.s20 + yan }]}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* ── G-03 BAŞLIĞI (kit s2.py login()) ──────────────────────────────
+              İşaret + büyük başlık + tek cümle. Eskiden üst çubukta küçük bir
+              başlık ve altında giriş/kayıt SEGMENTİ vardı; ekranın ne olduğunu
+              artık bu başlık söylüyor, segmentin işi kalmadı (kullanıcı
+              kararı, 25 Eylül: mod geçişi kitteki gibi en altta). */}
+          <Mark size={L.mark} />
+          <Txt variant="display" accessibilityRole="header" style={styles.baslik}>{titleText}</Txt>
+          <Txt variant="body" style={[styles.lead, { color: colors.text2 }]}>
+            {isForgot
+              ? (lang === 'tr' ? 'Şifrenizi sıfırlamak için e-posta adresinizi girin.' : 'Enter your email address to reset your password.')
+              : isSignup ? t('acc.why') : t('acc.signinLead')}
+          </Txt>
 
-              ŞİFRE SIFIRLAMADA YOK: o bir üçüncü sekme değil, girişin alt
-              durumu. Üç segment göstermek, eşit olmayan üç şeyi eşitlerdi. */}
+          {/* SÖZLEŞME HER İKİ GİRİŞ YOLUNUN DA ÜSTÜNDE — KİTTEN BİLEREK SAPMA.
+              Kit koşul cümlesini ekranın en altına koyuyor. Apple 1.2 ise
+              sözleşmenin "kayıt veya girişten ÖNCE sunulmasını" istiyor;
+              altta kalsaydı Apple/Google düğmeleri ondan önce gelirdi ve o
+              yolu seçen kullanıcı sözleşmeyi hiç görmezdi. */}
           {!isForgot && (
-            <ModSecici
-              mode={mode}
-              onSec={(m) => { if (m !== mode) { Haptics.selectionAsync().catch(() => {}); setMode(m); hatayiTemizle(); setInfo(''); } }}
-            />
-          )}
-
-          {/* AÇIKLAMA YALNIZCA GEREKTİĞİ YERDE.
-              `acc.why` hesabın faydasını anlatıyor ve HER modda duruyordu —
-              "Giriş yap"a basmış kullanıcı o kararı zaten vermişti, cümle
-              orada ikna değil gürültüydü. Şifre sıfırlamada ise açıklama
-              zorunlu: ekranın ne yapacağı başka türlü belli olmuyor. */}
-          {(isForgot || isSignup) && (
-            <Text style={styles.lead}>
-              {isForgot
-                ? (lang === 'tr' ? 'Şifrenizi sıfırlamak için e-posta adresinizi girin.' : 'Enter your email address to reset your password.')
-                : t('acc.why')}
-            </Text>
-          )}
-
-          {/* SÖZLEŞME HER İKİ GİRİŞ YOLUNUN DA ÜSTÜNDE.
-              Apple 1.2, sözleşmenin "kayıt veya girişten ÖNCE sunulmasını"
-              istiyor; formun altına konsaydı Apple ile giriş düğmesi ondan
-              önce gelirdi ve o yolu seçen kullanıcı sözleşmeyi hiç görmezdi. */}
-          {!isForgot && (
-            <LegalNotice
-              signup={isSignup}
-              accepted={accepted}
-              onToggle={() => { Haptics.selectionAsync().catch(() => {}); setAccepted((v) => !v); hatayiTemizle(); }}
-            />
-          )}
-
-          {/* Onay kutusu hatası KUTUNUN ALTINDA, CTA'nın üstünde değil:
-              işaretlenmesi gereken şey burada. */}
-          {hataAlani === 'legal' && !!error && <Text style={styles.err}>{error}</Text>}
-
-          {!isForgot && Platform.OS === 'ios' && (
-            <>
-              {/* Apple ayracı AŞAĞIDA, Google'la ORTAK: iki sağlayıcı da
-                  gösterildiğinde "veya" bir kez yazılıyor. */}
-              {/* ── DÜĞME STİLİ TEMADAN GELİYOR ──
-                  Sabit `WHITE` yazılıydı ve 2.7 (53) bu yüzden Guideline 4'ten
-                  REDDEDİLDİ: açık temada kart beyaz, düğme de beyaz olunca
-                  ortada ne dolgu ne çerçeve kalıyordu; ekranda yalnızca
-                  "Sign in with Apple" yazısı duruyordu ve inceleyici bunu
-                  düğme olarak tanımadı. Koyu temada `WHITE` doğru, açık temada
-                  `BLACK`.
-                  Tema değişiminde ZORLAMA GEREKMİYOR: yerel görünüm stil
-                  değişince düğmeyi yeniden kuruyor (expo-apple-authentication →
-                  AppleAuthenticationButton.swift, `needsUpdate` +
-                  `OnViewDidUpdateProps`). */}
-              <AppleAuthentication.AppleAuthenticationButton
-                buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-                buttonStyle={isDark
-                  ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
-                  : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-                cornerRadius={radius.lg}
-                style={{ height: 52, marginBottom: SAGLAYICI_BOSLUK }}
-                onPress={async () => {
-                  // Apple ile KAYIT da bir kayıt: onay kutusu bu yolu da
-                  // bağlıyor, yoksa sözleşme yalnızca e-posta yolunda zorunlu
-                  // olurdu ve şart yarısı boş kalırdı.
-                  if (isSignup && !accepted) {
-                    hata(t('acc.legalRequired'), 'legal');
-                    return;
-                  }
-                  try {
-                    const credential = await AppleAuthentication.signInAsync({
-                      requestedScopes: [
-                        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-                        AppleAuthentication.AppleAuthenticationScope.EMAIL,
-                      ],
-                    });
-                    await onApple(credential);
-                  } catch (e) {
-                    if (e?.code !== 'ERR_REQUEST_CANCELED') sunucuHatasi(e?.message || 'Hata');
-                  }
-                }}
+            <View style={styles.legalWrap}>
+              <LegalNotice
+                signup={isSignup}
+                accepted={accepted}
+                onToggle={() => { Haptics.selectionAsync().catch(() => {}); setAccepted((v) => !v); hatayiTemizle(); }}
               />
-            </>
+              {/* Onay kutusu hatası KUTUNUN ALTINDA: işaretlenmesi gereken şey burada. */}
+              {hataAlani === 'legal' && !!error && <Text style={styles.err}>{error}</Text>}
+            </View>
           )}
 
-          {/* ── GOOGLE İLE DEVAM ET ─────────────────────────────────────────
-              İKİ PLATFORMDA DA: Android'de bugüne kadar hiç sağlayıcı girişi
-              yoktu, tek yol e-posta+şifreydi.
+          {saglayiciVar && (
+            <View style={styles.saglayicilar}>
+              {Platform.OS === 'ios' && (
+                /* ── DÜĞME STİLİ TEMADAN GELİYOR ──
+                   Sabit `WHITE` yazılıydı ve 2.7 (53) bu yüzden Guideline 4'ten
+                   REDDEDİLDİ: açık temada kart beyaz, düğme de beyaz olunca
+                   ortada ne dolgu ne çerçeve kalıyordu; ekranda yalnızca
+                   "Sign in with Apple" yazısı duruyordu ve inceleyici bunu
+                   düğme olarak tanımadı. Koyu temada `WHITE` doğru, açık temada
+                   `BLACK`. YEREL DÜĞME KALIYOR (kit kendi düğmesini çiziyor):
+                   yalnız yükseklik ve köşe kitin 50 / 12'sine çekildi.
+                   Tema değişiminde ZORLAMA GEREKMİYOR: yerel görünüm stil
+                   değişince düğmeyi yeniden kuruyor (expo-apple-authentication →
+                   AppleAuthenticationButton.swift, `needsUpdate` +
+                   `OnViewDidUpdateProps`). */
+                <AppleAuthentication.AppleAuthenticationButton
+                  buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                  buttonStyle={isDark
+                    ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
+                    : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+                  cornerRadius={dsRadius.button}
+                  style={{ height: L.provider }}
+                  onPress={async () => {
+                    // Apple ile KAYIT da bir kayıt: onay kutusu bu yolu da
+                    // bağlıyor, yoksa sözleşme yalnızca e-posta yolunda zorunlu
+                    // olurdu ve şart yarısı boş kalırdı.
+                    if (isSignup && !accepted) {
+                      hata(t('acc.legalRequired'), 'legal');
+                      return;
+                    }
+                    try {
+                      const credential = await AppleAuthentication.signInAsync({
+                        requestedScopes: [
+                          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+                          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+                        ],
+                      });
+                      await onApple(credential);
+                    } catch (e) {
+                      if (e?.code !== 'ERR_REQUEST_CANCELED') sunucuHatasi(e?.message || 'Hata');
+                    }
+                  }}
+                />
+              )}
 
-              YAPILANDIRILMAMIŞSA HİÇ ÇİZİLMİYOR — platform bayrakları
-              app.json → extra.googleAuth içinde ve Android/iOS tarafı
-              Firebase'de henüz kurulmadı. Çalışmayan bir giriş yolu
-              göstermektense yokmuş gibi davranmak doğru (bkz.
-              googleAuthConfig başlığı). */}
-          {!isForgot && GOOGLE_YAPILANDIRILDI && (
-            <GoogleAuthButton
-              title={t('acc.google')}
-              onIdToken={onGoogle}
-              onError={sunucuHatasi}
-              disabled={busy}
-              style={{ marginBottom: SAGLAYICI_BOSLUK }}
-              // Apple yolundaki kuralın aynısı: Google ile KAYIT da bir kayıt,
-              // sözleşme onayı olmadan akış açılmıyor.
-              guard={() => {
-                if (isSignup && !accepted) { hata(t('acc.legalRequired'), 'legal'); return false; }
-                return true;
-              }}
-            />
+              {/* ── GOOGLE İLE DEVAM ET ───────────────────────────────────────
+                  İKİ PLATFORMDA DA: Android'de bugüne kadar hiç sağlayıcı girişi
+                  yoktu, tek yol e-posta+şifreydi.
+                  YAPILANDIRILMAMIŞSA HİÇ ÇİZİLMİYOR — platform bayrakları
+                  app.json → extra.googleAuth içinde ve Android/iOS tarafı
+                  Firebase'de henüz kurulmadı (bkz. googleAuthConfig başlığı).
+                  Kitteki "Steam hesabınla devam et" YOK: Steam ile hesap açan
+                  bir sunucu ucu yok (günlük, G-03 Google yolu). */}
+              {GOOGLE_YAPILANDIRILDI && (
+                <GoogleAuthButton
+                  title={t('acc.google')}
+                  onIdToken={onGoogle}
+                  onError={sunucuHatasi}
+                  disabled={busy}
+                  height={L.provider}
+                  // Apple yolundaki kuralın aynısı: Google ile KAYIT da bir kayıt,
+                  // sözleşme onayı olmadan akış açılmıyor.
+                  guard={() => {
+                    if (isSignup && !accepted) { hata(t('acc.legalRequired'), 'legal'); return false; }
+                    return true;
+                  }}
+                />
+              )}
+            </View>
           )}
 
           {/* Ayraç, ÜSTÜNDE en az bir sağlayıcı düğmesi varsa anlamlı. */}
-          {!isForgot && (Platform.OS === 'ios' || GOOGLE_YAPILANDIRILDI) && (
+          {saglayiciVar && (
             <View style={styles.dividerRow}>
               <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>{t('acc.or')}</Text>
+              <Text style={styles.dividerText}>{t('acc.orEmail')}</Text>
               <View style={styles.dividerLine} />
             </View>
           )}
 
-          {/* ── ALANLAR TEK YÜZEYDE ────────────────────────────────────────
-              Dört alan dört ayrı kutuydu: her biri kendi kenarlığını ve
-              kendi 14pt boşluğunu taşıyordu. Kayıt modunda bu, ekranda dört
-              ayrı çerçeve ve üç boşluk demekti — form "liste" değil "yığın"
-              gibi duruyordu. Tek kap + saç teli ayraç: kenarlık sayısı
-              4'ten 1'e, alanlar arası boşluk sıfıra iniyor ve dört alanın
-              TEK BİR İŞİN parçaları olduğu görülüyor (§6 whitespace-balance).
-
-              Dokunma hedefi küçülmüyor: her satır etiket + kutu + dolgu ile
-              44pt'nin üstünde (§2 touch-target-size). */}
-          <View style={styles.formCard}>
+          {/* ── ALANLAR: 2.0 TextField, kitteki gibi AYRI ─────────────────────
+              Faz'da dört alan tek kartta, saç teli ayraçla duruyordu; kit her
+              alanı kendi etiketi ve ikonuyla ayrı çiziyor (kullanıcı kararı,
+              25 Eylül). Alanı bilinen hata ilgili kutunun ALTINDA (TextField
+              `error`); şifre göster/gizle TextField'ın kendi `secure` düğmesi. */}
+          <View style={styles.alanlar}>
             {isSignup && (
               <>
-                <Alan
+                <TextField
                   label={t('acc.name')} value={name} onChangeText={setName}
                   autoCapitalize="words"
                   textContentType="name" autoComplete="name"
-                  hataMesaji={hataAlani === 'name' ? error : ''}
+                  error={hataAlani === 'name' ? error : undefined}
                 />
-                <View style={styles.sep} />
-
                 {/* Kullanıcı adı — arkadaş eklemenin ön koşulu.
-                    Kayıtta sorulmadığı için kullanıcılar adsız kalıyordu. */}
-                <Alan
+                    Kayıtta sorulmadığı için kullanıcılar adsız kalıyordu.
+                    Uygunluk: kontrol sürerken sağda gösterge; sonuç alanın
+                    altında (alınmış → hata, uygun → başarı, diğer → ipucu). */}
+                <TextField
                   label={t('soc.usernameLabel')}
-                  on="@"
+                  icon="at"
                   value={username}
                   onChangeText={(v) => setUsername(v.replace(/[^a-zA-Z0-9_]/g, ''))}
                   placeholder={t('soc.usernamePlaceholder')}
                   maxLength={20}
                   autoCapitalize="none" autoCorrect={false}
                   textContentType="username" autoComplete="username"
-                  sag={
-                    uname.status === 'checking' ? <ActivityIndicator size="small" color={colors.text3} />
-                    : uname.status === 'ok' ? <Ionicons name="checkmark-circle" size={20} color={colors.green} />
-                    : uname.status === 'taken' ? <Ionicons name="close-circle" size={20} color={colors.danger} />
-                    : null
-                  }
-                  hataMesaji={hataAlani === 'username' ? error : ''}
-                  ipucu={unameMsg}
-                  ipucuUyari={uname.status === 'taken'}
+                  trailing={uname.status === 'checking' ? <ActivityIndicator size="small" color={colors.text3} /> : null}
+                  error={hataAlani === 'username' ? error : uname.status === 'taken' ? unameMsg : undefined}
+                  success={hataAlani !== 'username' && uname.status === 'ok' ? unameMsg : undefined}
+                  helper={unameMsg}
                 />
-                <View style={styles.sep} />
               </>
             )}
 
-            <Alan
-              label={t('acc.email')} value={email} onChangeText={setEmail}
+            <TextField
+              label={t('acc.email')} icon="mail" value={email} onChangeText={setEmail}
               keyboardType="email-address" autoCapitalize="none" autoCorrect={false}
               // §8 autofill-support / input-type-keyboard: bunlar yokken iOS
               // ne anahtarlığı önerebiliyor ne de doğru klavyeyi açabiliyordu.
               textContentType="emailAddress" autoComplete="email"
-              hataMesaji={hataAlani === 'email' ? error : ''}
+              error={hataAlani === 'email' ? error : undefined}
             />
 
             {!isForgot && (
-              <>
-                <View style={styles.sep} />
-                <Alan
-                  label={t('acc.password')} value={password} onChangeText={setPassword}
-                  secureTextEntry={!sifreAcik} autoCapitalize="none" autoCorrect={false}
-                  // Kayıtta `newPassword`: iOS güçlü parola önerir ve
-                  // anahtarlığa YENİ kayıt açar. Girişte `password`: mevcut
-                  // kaydı doldurur. Tek değer kullanmak ikisinden birini bozardı.
-                  textContentType={isSignup ? 'newPassword' : 'password'}
-                  autoComplete={isSignup ? 'new-password' : 'current-password'}
-                  hataMesaji={hataAlani === 'password' ? error : ''}
-                  sag={
-                    <Pressable
-                      onPress={() => setSifreAcik((v) => !v)}
-                      hitSlop={12}
-                      accessibilityRole="button"
-                      accessibilityLabel={t(sifreAcik ? 'acc.hidePassword' : 'acc.showPassword')}
-                      style={({ pressed }) => pressed && PRESSED}
-                    >
-                      <Ionicons name={sifreAcik ? 'eye-off-outline' : 'eye-outline'} size={20} color={colors.text3} />
-                    </Pressable>
-                  }
-                />
-              </>
+              <TextField
+                label={t('acc.password')} icon="lock" value={password} onChangeText={setPassword}
+                secure autoCapitalize="none" autoCorrect={false}
+                // Kayıtta `newPassword`: iOS güçlü parola önerir ve
+                // anahtarlığa YENİ kayıt açar. Girişte `password`: mevcut
+                // kaydı doldurur. Tek değer kullanmak ikisinden birini bozardı.
+                textContentType={isSignup ? 'newPassword' : 'password'}
+                autoComplete={isSignup ? 'new-password' : 'current-password'}
+                error={hataAlani === 'password' ? error : undefined}
+              />
             )}
           </View>
+
+          {/* Şifre sıfırlama bir MOD DEĞİL, girişin kaçış yolu: kitteki gibi
+              şifre alanının hemen altında, sağa yaslı. */}
+          {!isForgot && !isSignup && (
+            <Button
+              title={t('acc.forgot')} variant="tertiary" height={L.forgot}
+              onPress={() => modaGec('forgot')}
+              style={styles.unuttum}
+            />
+          )}
 
           {/* ALANI BİLİNMEYEN hata burada kalıyor — sunucu yanıtı, ağ hatası,
               Apple akışı. Alanı bilinen hata zaten ilgili kutunun altında
@@ -560,28 +531,32 @@ export default function AccountScreen() {
           {!!error && !hataAlani && <Text style={styles.err}>{error}</Text>}
           {!!info && <Text style={styles.info}>{info}</Text>}
 
+          {/* KIRMIZI CTA — kullanıcı kararıyla kalıyor (2.0 `Button` primary
+              açık yüzeyli); ölçü kitin 52 / 12'si. */}
           <Pressable
             onPress={submit}
             disabled={busy}
+            accessibilityRole="button"
             style={({ pressed }) => [styles.cta, busy && styles.ctaOff, pressed && { opacity: 0.85 }]}
           >
             {busy ? <ActivityIndicator color="#fff" />
                   : <Text style={styles.ctaText}>{isForgot ? t('acc.sendResetLink') : (isSignup ? t('acc.signUp') : t('acc.signIn'))}</Text>}
           </Pressable>
 
-          {/* ALTTA ARTIK TEK BAĞLANTI KALDI.
-              "Zaten hesabın var mı?" / "Hesabın yok mu?" bağlantısı buradan
-              kalktı: işini üstteki segment devraldı ve aynı geçişi iki ayrı
-              yerde sunmak, ikisini de zayıflatırdı (§4 primary-action).
-              Şifre sıfırlama kalıyor — o bir mod değişimi değil, girişin
-              başarısız olduğu durumdaki kaçış yolu. */}
+          {/* ── ALT BAĞLANTI (kit: "Hesabın yok mu? Kayıt ol") ──────────────
+              Boşluk esniyor: kısa formda bağlantı ekranın dibine iniyor, uzun
+              formda (kayıt, klavye açık) içeriğin hemen ardından geliyor. */}
+          <View style={styles.esnek} />
           {isForgot ? (
-            <Pressable onPress={() => { setMode('signin'); hatayiTemizle(); setInfo(''); }} hitSlop={8}>
-              <Text style={styles.link}>{t('acc.backToSignIn')}</Text>
+            <Pressable onPress={() => modaGec('signin')} accessibilityRole="button" style={styles.altSatir}>
+              <Text style={styles.altMetin}><Text style={styles.altVurgu}>{t('acc.backToSignIn')}</Text></Text>
             </Pressable>
-          ) : !isSignup && (
-            <Pressable onPress={() => { setMode('forgot'); hatayiTemizle(); setInfo(''); }} hitSlop={8}>
-              <Text style={styles.linkMuted}>{t('acc.forgot')}</Text>
+          ) : (
+            <Pressable onPress={() => modaGec(isSignup ? 'signin' : 'signup')} accessibilityRole="button" style={styles.altSatir}>
+              <Text style={styles.altMetin}>
+                {isSignup ? t('acc.haveAccount') : t('acc.noAccount')}{' '}
+                <Text style={styles.altVurgu}>{isSignup ? t('acc.signIn') : t('acc.signUp')}</Text>
+              </Text>
             </Pressable>
           )}
         </ScrollView>
@@ -653,97 +628,24 @@ function LegalNotice({ signup, accepted, onToggle }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MOD SEÇİCİ — giriş / kaydol
-//
-// NEDEN SEGMENT, BAĞLANTI DEĞİL. Mod değişimi CTA'nın ALTINDAKİ bir metin
-// bağlantısıydı: ekranın hangi işi yaptığı en son öğeden anlaşılıyor, kaydolmak
-// isteyen kullanıcı önce giriş formunu görüyordu. Segment iki seçeneği de aynı
-// anda gösteriyor ve seçili olanı işaretliyor (§5 visual-hierarchy).
-//
-// İKİ SEÇENEK, EŞİT GENİŞLİK. `flex: 1` ikisine de aynı payı veriyor: biri
-// dar olsaydı hangisinin "ana yol" olduğu konusunda sessiz bir iddia doğardı;
-// oysa bu ekranda ikisi de birinci sınıf.
-//
-// Her sekme 44pt yüksek — görsel yükseklik değil DOKUNMA HEDEFİ ölçüsü
-// (§2 touch-target-size).
-// ─────────────────────────────────────────────────────────────────────────────
-function ModSecici({ mode, onSec }) {
-  const styles = useStyles(makeStyles);
-  const { t } = useLanguage();
-
-  const sekme = (deger, etiket) => {
-    const secili = mode === deger;
-    return (
-      <Pressable
-        onPress={() => onSec(deger)}
-        style={({ pressed }) => [styles.segSekme, secili && styles.segSekmeOn, pressed && !secili && PRESSED]}
-        accessibilityRole="tab"
-        accessibilityState={{ selected: secili }}
-        accessibilityLabel={etiket}
-      >
-        <Text style={[styles.segMetin, secili && styles.segMetinOn]} numberOfLines={1}>{etiket}</Text>
-      </Pressable>
-    );
-  };
-
-  return (
-    <View style={styles.seg} accessibilityRole="tablist">
-      {sekme('signin', t('acc.signIn'))}
-      {sekme('signup', t('acc.signUp'))}
-    </View>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// FORM ALANI
-//
-// Eski `Field` kendi kenarlığını ve kendi alt boşluğunu taşıyordu; artık
-// kenarlık kabın (`formCard`), ayırma işi saç teli çizginin. Alan yalnızca
-// kendi içeriğinden sorumlu.
-//
-// `hataMesaji` İPUCUNU EZİYOR: ikisi birden gösterilseydi kullanıcı biri
-// düzeltme talebi biri bilgi olan iki satırı aynı anda okumak zorunda kalırdı
-// ve hata görsel olarak seyrelirdi (§8 error-placement).
-// ─────────────────────────────────────────────────────────────────────────────
-function Alan({ label, hataMesaji, ipucu, ipucuUyari, on, sag, ...props }) {
-  const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
-  return (
-    <View style={styles.alan}>
-      <Text style={styles.label}>{label}</Text>
-      <View style={styles.alanSatir}>
-        {on ? <Text style={styles.at}>{on}</Text> : null}
-        <TextInput
-          style={styles.input}
-          placeholderTextColor={colors.text3}
-          {...props}
-        />
-        {sag}
-      </View>
-      {hataMesaji
-        ? <Text style={styles.alanHata}>{hataMesaji}</Text>
-        : ipucu
-          ? <Text style={[styles.hint, ipucuUyari && { color: colors.danger }]}>{ipucu}</Text>
-          : null}
-    </View>
-  );
-}
-
 const makeStyles = (colors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
-  head: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.sm },
-  back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  title: { flex: 1, fontSize: type.headline, fontWeight: '800', color: colors.text, textAlign: 'center' },
 
-  body: { padding: spacing.lg, paddingTop: spacing.sm },
-  lead: { fontSize: type.subhead, color: colors.text2, lineHeight: 21, marginBottom: 22 },
+  // flexGrow: alt bağlantı kısa formda ekranın dibine insin (bkz. `esnek`).
+  // Telefon kenar payı 20 (kit); geniş ekranda JSX `yan + 20` ile eziyor
+  // (check-layout bu ikisinin tutarlılığını denetliyor).
+  body: { flexGrow: 1, paddingHorizontal: spacing.s20, paddingTop: spacing.s8 },
+  baslik: { marginTop: L.titleTop },
+  lead: { marginTop: L.leadTop },
 
-  // Sözleşme bildirimi — bkz. LegalNotice.
-  legalPlain: { marginBottom: spacing.s20 },
+  // Sözleşme bildirimi — bkz. LegalNotice. Kitte sağlayıcılar başlıktan 26
+  // aşağıda; sözleşme onların üstüne girdiği için 26 sözleşmeye, 16 da
+  // sözleşme ile ilk düğme arasına veriliyor.
+  legalWrap: { marginTop: L.providersTop },
+  legalPlain: {},
   legalRow: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.s12,
-    minHeight: 44, marginBottom: spacing.s20,
+    minHeight: 44,
   },
   legalBox: {
     width: 22, height: 22, borderRadius: 6,
@@ -752,64 +654,35 @@ const makeStyles = (colors) => StyleSheet.create({
   },
   legalBoxOn: { backgroundColor: colors.accentFillStrong, borderColor: colors.accentFillStrong },
   // 19pt satır yüksekliği: iki satıra taşan cümlede metin bloğu kutuyla aynı
-  // optik ağırlıkta kalsın diye `lead`in 21'inden bir tık sıkı.
+  // optik ağırlıkta kalsın diye.
   legalText: { fontSize: type.footnote, color: colors.text3, lineHeight: 19 },
   legalLink: { color: colors.accentText, fontWeight: '700' },
-  dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 18 },
-  dividerLine: { flex: 1, height: 1, backgroundColor: colors.cardBorder },
-  dividerText: { color: colors.text3, fontSize: type.footnote, fontWeight: '600' },
 
-  // ── MOD SEÇİCİ ──
-  // Kap dolgusu 4: seçili sekmenin yüzeyi kabın kenarına yapışmasın, ama
-  // aradaki boşluk da bir "boşluk" gibi okunmasın.
-  seg: {
-    flexDirection: 'row', gap: spacing.s4, padding: spacing.s4,
-    backgroundColor: colors.bgInput, borderRadius: radius.md,
-    marginBottom: spacing.s20,
+  saglayicilar: { marginTop: spacing.s16, gap: L.providerGap },
+  dividerRow: {
+    flexDirection: 'row', alignItems: 'center', gap: L.dividerGap,
+    height: L.dividerHeight, marginTop: L.dividerTop,
   },
-  segSekme: {
-    flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center',
-    borderRadius: radius.sm,
-  },
-  // Seçili sekme YÜZEYLE ayrılıyor, renkle değil: accent dolgu burada CTA ile
-  // yarışırdı (§4 primary-action) ve `check:accent` da vurgu kullanımını
-  // tabanda tutuyor.
-  segSekmeOn: { backgroundColor: colors.card },
-  segMetin:   { fontSize: type.subhead, fontWeight: '600', color: colors.text3 },
-  segMetinOn: { color: colors.text, fontWeight: '800' },
+  dividerLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: colors.cardBorder },
+  dividerText: { color: colors.text3, fontSize: type.footnote },
 
-  // ── FORM KABI ──
-  formCard: {
-    backgroundColor: colors.card,
-    borderWidth: 1, borderColor: colors.cardBorder, borderRadius: radius.md,
-    marginBottom: spacing.s16,
-    overflow: 'hidden',
-  },
-  sep: { height: StyleSheet.hairlineWidth, backgroundColor: colors.cardBorder, marginLeft: spacing.s16 },
-  alan: { paddingHorizontal: spacing.s16, paddingTop: spacing.s12, paddingBottom: spacing.s12 },
-  alanSatir: { flexDirection: 'row', alignItems: 'center', gap: spacing.s8 },
+  alanlar: { marginTop: L.fieldsTop, gap: L.fieldGap },
+  // Metin düğmesi kendi kenarına yaslanıyor: iç dolgu sağ kenarı içeri
+  // itip alanların hizasını bozardı.
+  unuttum: { alignSelf: 'flex-end', marginTop: L.forgotTop, paddingHorizontal: 0 },
 
-  label: { fontSize: type.caption2, color: colors.text3, fontWeight: '700', marginBottom: spacing.s4 },
-  at: { color: colors.text3, fontSize: type.subhead, fontWeight: '700' },
-  hint: { fontSize: type.caption, color: colors.text3, marginTop: spacing.s4 },
-  alanHata: { fontSize: type.caption, color: colors.danger, marginTop: spacing.s4 },
-  // Kutu artık kendi yüzeyi DEĞİL: kenarlık ve zemin kabın. Yükseklik yine de
-  // tanımlı, yoksa satır yüksekliği yazı tipine göre oynardı.
-  input: {
-    flex: 1, height: 24, padding: 0,
-    color: colors.text, fontSize: type.subhead,
-  },
-
-  err:  { color: colors.danger, fontSize: type.footnote, lineHeight: 20, marginBottom: 10 },
-  info: { color: colors.green,  fontSize: type.footnote, lineHeight: 20, marginBottom: 10 },
+  err:  { color: colors.danger, fontSize: type.footnote, lineHeight: 20, marginTop: spacing.s8 },
+  info: { color: colors.green,  fontSize: type.footnote, lineHeight: 20, marginTop: spacing.s8 },
 
   cta: {
-    height: 52, borderRadius: radius.lg, backgroundColor: colors.accentFillStrong,
-    alignItems: 'center', justifyContent: 'center', marginTop: 6,
+    height: L.cta, borderRadius: dsRadius.button, backgroundColor: colors.accentFillStrong,
+    alignItems: 'center', justifyContent: 'center', marginTop: L.ctaTop,
   },
   ctaOff: { opacity: 0.45 },
   ctaText: { color: '#fff', fontSize: type.subhead, fontWeight: '800' },
 
-  link:      { color: colors.accentText, fontSize: type.subhead, fontWeight: '700', textAlign: 'center', marginTop: spacing.s20 },
-  linkMuted: { color: colors.text3,  fontSize: type.footnote, textAlign: 'center', marginTop: spacing.s16 },
+  esnek: { flex: 1, minHeight: spacing.s24 },
+  altSatir: { height: L.switchRow, alignItems: 'center', justifyContent: 'center' },
+  altMetin: { fontSize: type.subhead, color: colors.text2, textAlign: 'center' },
+  altVurgu: { color: colors.text, fontWeight: '600' },
 });
