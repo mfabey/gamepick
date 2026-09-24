@@ -47,13 +47,13 @@ const STANDALONE_FORBIDDEN = new Set([
 ]);
 
 const FORBIDDEN_TAGS = new Set([
-  'hentai', 'nsfw', 'erotica', 'erotic', 'porn', 'adult-only', 'adult', 'uncensored', 'sex',
-  'r-18', 'r18', 'xxx', 'naked', 'lewd', 'ecchi', 'lust', 'fetish', 'boobs', 'boob', 'ass',
-  'butt', 'nudity', 'sexual-content', 'mature', 'eroge', 'visual-novel-18', 'sexual',
-  'dating-sim-18', '18+', 'r18+', 'mature-content', 'sexual-themes',
+  'hentai', 'nsfw', 'erotica', 'erotic', 'porn', 'adult-only', 'uncensored',
+  'r-18', 'r18', 'r18+', 'xxx', 'lewd', 'ecchi', 'eroge', 'visual-novel-18',
+  'dating-sim-18', 'fetish', 'oppai', 'ahegao', 'futanari', 'futa', 'bukkake',
+  'creampie', 'doujinshi', 'camgirl', 'striptease', 'femdom', 'pegging', 'dildo', 'masturbation'
 ]);
 
-const FORBIDDEN_STEAM_DESCRIPTOR_IDS = new Set([1, 3, 4, 5]);
+const FORBIDDEN_STEAM_DESCRIPTOR_IDS = new Set([3]);
 
 export function isAdultTitleOrSlug(name, slug) {
   const rawName = String(name || '');
@@ -125,29 +125,25 @@ export function isSteamDataAdult(steamData) {
     return true;
   }
 
-  // 2. Content Descriptors
+  // 2. Content Descriptors (Steam Descriptor 3 is Adult Only Sexual Content)
   if (steamData.content_descriptors && Array.isArray(steamData.content_descriptors.ids)) {
     if (steamData.content_descriptors.ids.some(id => FORBIDDEN_STEAM_DESCRIPTOR_IDS.has(id))) {
       return true;
     }
   }
-  if (steamData.content_descriptors?.notes) {
-    const notes = String(steamData.content_descriptors.notes).toLowerCase();
-    if (FORBIDDEN_SUBSTRINGS.some(sub => notes.includes(sub))) return true;
-  }
 
   // 3. Genres check
   if (Array.isArray(steamData.genres)) {
-    const forbiddenGenres = ['nudity', 'sexual content', 'erotica', 'hentai', 'adult', 'mature'];
+    const forbiddenGenres = ['erotica', 'hentai', 'adult only', 'adults only'];
     if (steamData.genres.some(g => {
       const desc = (g.description || '').toLowerCase();
-      return forbiddenGenres.some(fg => desc.includes(fg));
+      return forbiddenGenres.some(fg => desc === fg || desc.includes('adult only') || desc.includes('hentai') || desc.includes('erotica'));
     })) {
       return true;
     }
   }
 
-  // 4. Categories & Descriptions check (legal disclaimers on Steam 18+ games)
+  // 4. Categories & Descriptions check (legal disclaimers on Steam 18+ adult games)
   const desc = ((steamData.short_description || '') + ' ' + (steamData.about_the_game || '')).toLowerCase();
   if (
     desc.includes('all characters are 18') ||
@@ -156,9 +152,8 @@ export function isSteamDataAdult(steamData) {
     desc.includes('all characters are at least 18') ||
     desc.includes('18 years of age or older') ||
     desc.includes('uncensored patch') ||
-    desc.includes('adult only') ||
-    desc.includes('contains nudity') ||
-    desc.includes('sexual content') ||
+    desc.includes('adults only') ||
+    desc.includes('adult only sexual') ||
     desc.includes('explicit sexual')
   ) {
     return true;

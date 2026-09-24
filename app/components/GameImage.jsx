@@ -186,26 +186,26 @@ export default function GameImage({
       }
     } else if (isHero) {
       if (stage === 0) {
+        const appid = getSteamAppId();
+        if (appid) return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/library_hero.jpg`;
         if (game.heroImage && !game.heroImage.includes('storepagebackground')) return game.heroImage;
         if (game.screenshots?.[0]) return game.screenshots[0];
         if (game.backgroundImage && !game.backgroundImage.includes('storepagebackground')) return game.backgroundImage;
-        // If image is a high-res direct URL (RAWG, Epic, IGDB, etc.)
-        if (game.image && !game.image.includes('/header') && !game.image.includes('capsule') && !game.image.includes('placeholder') && !game.image.includes('storepagebackground')) {
+        if (game.image && !game.image.includes('placeholder') && !game.image.includes('storepagebackground')) {
           return game.image;
         }
+        return getImgSrc(1);
+      }
+      if (stage === 1) {
+        if (game.heroImage && !game.heroImage.includes('storepagebackground')) return game.heroImage;
+        if (game.screenshots?.[0]) return game.screenshots[0];
+        if (game.backgroundImage && !game.backgroundImage.includes('storepagebackground')) return game.backgroundImage;
         if (game.image && !game.image.includes('placeholder') && !game.image.includes('storepagebackground')) {
           return game.image;
         }
         const appid = getSteamAppId();
         if (appid) return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/header.jpg`;
-        return game.image || getImgSrc(1);
-      }
-      if (stage === 1) {
-        if (game.screenshots?.[0]) return game.screenshots[0];
-        if (game.image && !game.image.includes('storepagebackground')) return game.image;
-        const appid = getSteamAppId();
-        if (appid) return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/library_hero.jpg`;
-        return game.image || getImgSrc(2);
+        return getImgSrc(2);
       }
       if (stage === 2) {
         if (game.image && !game.image.includes('storepagebackground')) return game.image;
