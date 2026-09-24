@@ -29,6 +29,13 @@ export function appleSignIn({ identityToken, fullName }) {
   return apiPost('/api/auth/apple-signin', { identityToken, fullName });
 }
 
+// Google ile giriş. Uç, id_token'ı Firebase'e federe kimlik olarak veriyor ve
+// apple-signin ile AYNI yanıt şeklini döndürüyor — session.js iki sağlayıcıyı
+// da aynı `persist()` ile işliyor. (Uç üretimde de var, `main`'de doğrulandı.)
+export function googleSignIn({ idToken }) {
+  return apiPost('/api/auth/google-signin', { idToken });
+}
+
 export function refreshSession(refreshToken) {
   return apiPost('/api/auth/mobile-refresh', { refreshToken });
 }

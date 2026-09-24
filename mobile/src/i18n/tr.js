@@ -138,6 +138,8 @@ export default {
   'home.sale': 'İndirimdekiler',
   'home.viewAll': 'Tümü',
   'acc.or': 'veya',
+  'acc.google': "Google ile devam et",
+  'acc.googleReauth': "Silme işlemini onaylamak için Google ile tekrar doğrula",
   'acc.appleReauth': 'Silme işlemini onaylamak için Apple ile tekrar doğrula',
   'acc.appleReauthBtn': 'Apple ile doğrula ve sil',
   'acc.signIn': 'Giriş yap',

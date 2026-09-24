@@ -147,6 +147,8 @@ export default {
   'home.sale': 'Im Angebot',
   'home.viewAll': 'Alle',
   'acc.or': 'oder',
+  'acc.google': "Mit Google fortfahren",
+  'acc.googleReauth': "Melde dich erneut bei Google an, um die Löschung zu bestätigen",
   'acc.appleReauth': 'Melde dich erneut bei Apple an, um die Löschung zu bestätigen',
   'acc.appleReauthBtn': 'Mit Apple bestätigen und löschen',
   'acc.signIn': 'Anmelden',

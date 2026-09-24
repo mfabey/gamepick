@@ -11,10 +11,16 @@ import { redisCmd } from '../../../lib/redis';
 // Güvenlik: token'a ek olarak KİMLİK tekrar doğrulanır (silme, taze bir kimlik
 // doğrulaması ister) — çalınmış bir cihazla hesap silinemesin.
 //
-// İki yeniden doğrulama yolu desteklenir çünkü Apple ile kaydolan kullanıcıların
-// şifresi yoktur:
+// Üç yeniden doğrulama yolu desteklenir çünkü sağlayıcıyla kaydolan
+// kullanıcıların şifresi yoktur:
 //   { password }             → e-posta/şifre hesapları
 //   { appleIdentityToken }   → Apple ile kaydolan hesaplar (taze Apple onayı)
+//   { googleIdToken }        → Google ile kaydolan hesaplar (taze Google onayı)
+//
+// GOOGLE YOLU ZORUNLU, SÜS DEĞİL: Google girişi eklendiğinde bu dal olmasaydı
+// o hesaplar uygulama içinden SİLİNEMEZDİ ve ekran onlara asla
+// doldurulamayacak bir şifre alanı gösterirdi — App Store 5.1.1(v) uygulama
+// içi hesap silme şartını karşılamayan tam olarak bu durumdur.
 // ─────────────────────────────────────────────────────────────────────────────
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
 const REQUEST_URI = 'https://www.gamerisen.com';
@@ -27,8 +33,17 @@ export async function POST(request) {
   try { body = await request.json(); } catch { /* boş gövde */ }
   const password = (body.password || '').toString();
   const appleIdentityToken = (body.appleIdentityToken || '').toString();
+  const googleIdToken = (body.googleIdToken || '').toString();
 
-  if (!password && !appleIdentityToken) {
+  // Federe yolların ikisi de Firebase'in aynı `signInWithIdp` ucunu kullanıyor;
+  // değişen tek şey providerId ve hata mesajındaki ad.
+  const federe = appleIdentityToken
+    ? { token: appleIdentityToken, providerId: 'apple.com', ad: 'Apple' }
+    : googleIdToken
+      ? { token: googleIdToken, providerId: 'google.com', ad: 'Google' }
+      : null;
+
+  if (!password && !federe) {
     return NextResponse.json({ error: 'Kimlik doğrulaması zorunludur.' }, { status: 400 });
   }
 
@@ -42,22 +57,24 @@ export async function POST(request) {
   try {
     // 1) Taze bir idToken al (silme işlemi taze kimlik doğrulaması ister)
     let reauth;
-    if (appleIdentityToken) {
+    if (federe) {
       const reauthRes = await fetch(
         `https://identitytoolkit.googleapis.com/v1/accounts:signInWithIdp?key=${FIREBASE_API_KEY}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            postBody: `id_token=${appleIdentityToken}&providerId=apple.com`,
+            postBody: `id_token=${federe.token}&providerId=${federe.providerId}`,
             requestUri: REQUEST_URI,
             returnSecureToken: true,
           }),
         }
       );
       reauth = await reauthRes.json();
+      // `localId !== uid` KONTROLÜ ŞART: başka bir hesabın taze jetonuyla
+      // gelinip bu hesabın silinmesi engelleniyor.
       if (!reauthRes.ok || reauth.localId !== user.uid) {
-        return NextResponse.json({ error: 'Apple doğrulaması başarısız.' }, { status: 400 });
+        return NextResponse.json({ error: `${federe.ad} doğrulaması başarısız.` }, { status: 400 });
       }
     } else {
       const reauthRes = await fetch(

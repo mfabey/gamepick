@@ -9,7 +9,8 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as WebBrowser from 'expo-web-browser';
-import { signIn, signInWithApple } from '../src/services/session';
+import { signIn, signInWithApple, signInWithGoogle } from '../src/services/session';
+import GoogleAuthButton, { GOOGLE_YAPILANDIRILDI } from '../src/components/GoogleAuthButton';
 import { anonDataSummary, transferAnonData } from '../src/services/owner';
 import { resetSyncThrottle } from '../src/services/sync';
 import { registerAccount, requestPasswordReset, checkUsernameAvailable } from '../src/api/account';
@@ -22,6 +23,13 @@ import { useLanguage } from '../src/context/LanguageContext';
 // Sunucuya ulaşılamadığında biçim hatasını yine de yakalayabilmek için burada
 // da duruyor — yetkili doğrulama her zaman sunucuda.
 const USERNAME_RE = /^[a-zA-Z0-9_]{3,20}$/;
+
+// Sağlayıcı düğmesi ile altındaki öğe arasındaki boşluk. ÖLÇEK DIŞI ve öyle
+// kalıyor: 16 dar, 20 geniş duruyor ve 18 yayınlanmış Apple düğmesinin
+// boşluğu — ölçeğe çekmek doğrulanmamış bir görsel değişiklik olurdu.
+// Tek yerde durması Google düğmesinin aynı boşluğu ikinci kez yazmasını da
+// önlüyor (bkz. check:spacing cırcırı).
+const SAGLAYICI_BOSLUK = 18;
 
 // Sözleşmeler UYGULAMA İÇİ tarayıcıda açılıyor, Safari'ye atılmıyor: kayıt
 // formunu yarıda bırakıp uygulamadan çıkan bir kullanıcı geri döndüğünde
@@ -305,6 +313,24 @@ export default function AccountScreen() {
     }
   }, [router, offerAnonTransfer, hatayiTemizle, sunucuHatasi]);
 
+  // Google ile giriş — Apple'la aynı kuyruk (oturum kur → anonim veriyi
+  // devret → geri dön). Tek farkı ad: Google id_token'ın içinde taşıyor,
+  // ayrıca göndermeye gerek yok.
+  const onGoogle = useCallback(async (idToken) => {
+    setBusy(true); hatayiTemizle(); setInfo('');
+    try {
+      await signInWithGoogle(idToken);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      await offerAnonTransfer();
+      router.back();
+    } catch (e) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
+      sunucuHatasi(e?.code ? `${e.message} (${e.code})` : (e?.message || 'Hata'));
+    } finally {
+      setBusy(false);
+    }
+  }, [router, offerAnonTransfer, hatayiTemizle, sunucuHatasi]);
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       {/* Başlık listenin DIŞINDA: içerik kolonuyla aynı hizaya
@@ -366,6 +392,8 @@ export default function AccountScreen() {
 
           {!isForgot && Platform.OS === 'ios' && (
             <>
+              {/* Apple ayracı AŞAĞIDA, Google'la ORTAK: iki sağlayıcı da
+                  gösterildiğinde "veya" bir kez yazılıyor. */}
               {/* ── DÜĞME STİLİ TEMADAN GELİYOR ──
                   Sabit `WHITE` yazılıydı ve 2.7 (53) bu yüzden Guideline 4'ten
                   REDDEDİLDİ: açık temada kart beyaz, düğme de beyaz olunca
@@ -383,7 +411,7 @@ export default function AccountScreen() {
                   ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
                   : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
                 cornerRadius={radius.lg}
-                style={{ height: 52, marginBottom: 18 }}
+                style={{ height: 52, marginBottom: SAGLAYICI_BOSLUK }}
                 onPress={async () => {
                   // Apple ile KAYIT da bir kayıt: onay kutusu bu yolu da
                   // bağlıyor, yoksa sözleşme yalnızca e-posta yolunda zorunlu
@@ -405,12 +433,40 @@ export default function AccountScreen() {
                   }
                 }}
               />
-              <View style={styles.dividerRow}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>{t('acc.or')}</Text>
-                <View style={styles.dividerLine} />
-              </View>
             </>
+          )}
+
+          {/* ── GOOGLE İLE DEVAM ET ─────────────────────────────────────────
+              İKİ PLATFORMDA DA: Android'de bugüne kadar hiç sağlayıcı girişi
+              yoktu, tek yol e-posta+şifreydi.
+
+              YAPILANDIRILMAMIŞSA HİÇ ÇİZİLMİYOR — istemci kimlikleri
+              app.json → extra.googleAuth içinde ve Android/iOS istemcileri
+              henüz oluşturulmadı. Çalışmayan bir giriş yolu göstermektense
+              yokmuş gibi davranmak doğru (bkz. GoogleAuthButton başlığı). */}
+          {!isForgot && GOOGLE_YAPILANDIRILDI && (
+            <GoogleAuthButton
+              title={t('acc.google')}
+              onIdToken={onGoogle}
+              onError={sunucuHatasi}
+              disabled={busy}
+              style={{ marginBottom: SAGLAYICI_BOSLUK }}
+              // Apple yolundaki kuralın aynısı: Google ile KAYIT da bir kayıt,
+              // sözleşme onayı olmadan akış açılmıyor.
+              guard={() => {
+                if (isSignup && !accepted) { hata(t('acc.legalRequired'), 'legal'); return false; }
+                return true;
+              }}
+            />
+          )}
+
+          {/* Ayraç, ÜSTÜNDE en az bir sağlayıcı düğmesi varsa anlamlı. */}
+          {!isForgot && (Platform.OS === 'ios' || GOOGLE_YAPILANDIRILDI) && (
+            <View style={styles.dividerRow}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>{t('acc.or')}</Text>
+              <View style={styles.dividerLine} />
+            </View>
           )}
 
           {/* ── ALANLAR TEK YÜZEYDE ────────────────────────────────────────

@@ -10,6 +10,7 @@ import * as Haptics from 'expo-haptics';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { getValidToken, signOut } from '../src/services/session';
 import { deleteAccount } from '../src/api/account';
+import GoogleAuthButton, { GOOGLE_YAPILANDIRILDI } from '../src/components/GoogleAuthButton';
 import { useAuth } from '../src/context/AuthContext';
 import { radius, spacing, PRESSED, type } from '../src/theme';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
@@ -28,6 +29,10 @@ export default function DeleteAccountScreen() {
   const [error, setError] = useState('');
 
   const isApple = account?.provider === 'apple';
+  // Google hesabının da şifresi yok. Bu dal olmasaydı ekran ona
+  // doldurulamayacak bir şifre alanı gösterir, hesap uygulama içinden
+  // silinemezdi — App Store 5.1.1(v) tam olarak bunu reddediyor.
+  const isGoogle = account?.provider === 'google';
 
   const runDelete = useCallback(async (reauth) => {
     setBusy(true); setError('');
@@ -78,6 +83,17 @@ export default function DeleteAccountScreen() {
     ]);
   }, [busy, t, runDelete]);
 
+  // Google hesapları: taze bir Google onayı. Apple'dan tek farkı SIRA —
+  // düğme doğrudan Google akışını açtığı için uyarı, jeton geldikten sonra
+  // ve geri dönülemez işlemin hemen öncesinde gösteriliyor.
+  const onGoogleToken = useCallback((googleIdToken) => {
+    if (busy) return;
+    Alert.alert(t('acc.deleteTitle'), t('acc.deleteWarn'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('acc.deleteConfirm'), style: 'destructive', onPress: () => runDelete({ googleIdToken }) },
+    ]);
+  }, [busy, t, runDelete]);
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={[styles.head, { marginHorizontal: yan }]}>
@@ -111,6 +127,18 @@ export default function DeleteAccountScreen() {
               cornerRadius={radius.lg}
               style={{ height: 52, marginTop: spacing.md }}
               onPress={confirmApple}
+            />
+            {busy && <ActivityIndicator color={colors.accent} style={{ marginTop: spacing.lg }} />}
+          </>
+        ) : isGoogle && GOOGLE_YAPILANDIRILDI ? (
+          <>
+            <Text style={styles.label}>{t('acc.googleReauth')}</Text>
+            <GoogleAuthButton
+              title={t('acc.google')}
+              onIdToken={onGoogleToken}
+              onError={(m) => setError(m)}
+              disabled={busy}
+              style={{ marginTop: spacing.md }}
             />
             {busy && <ActivityIndicator color={colors.accent} style={{ marginTop: spacing.lg }} />}
           </>

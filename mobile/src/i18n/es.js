@@ -146,6 +146,8 @@ export default {
   'home.sale': 'En oferta',
   'home.viewAll': 'Ver todo',
   'acc.or': 'o',
+  'acc.google': "Continuar con Google",
+  'acc.googleReauth': "Vuelve a autenticarte con Google para confirmar la eliminación",
   'acc.appleReauth': 'Vuelve a autenticarte con Apple para confirmar la eliminación',
   'acc.appleReauthBtn': 'Verificar con Apple y eliminar',
   'acc.signIn': 'Iniciar sesión',

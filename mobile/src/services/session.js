@@ -5,7 +5,7 @@
 // sessizce yeniler; kullanıcı tekrar giriş yapmak zorunda kalmaz.
 // ─────────────────────────────────────────────────────────────────────────────
 import * as SecureStore from 'expo-secure-store';
-import { loginAccount, refreshSession, appleSignIn, logoutAccount } from '../api/account';
+import { loginAccount, refreshSession, appleSignIn, googleSignIn, logoutAccount } from '../api/account';
 import { bindOwner, ownerKeyFor, wipeOwnerData } from './owner';
 
 const KEY = 'gr_account_session';
@@ -75,6 +75,20 @@ export async function signIn(email, password) {
 export async function signInWithApple(identityToken, fullName) {
   await loadSession();
   const r = await appleSignIn({ identityToken, fullName });
+  await persist({
+    user: r.user,
+    idToken: r.idToken,
+    refreshToken: r.refreshToken,
+    expiresAt: Date.now() + (r.expiresIn || 3600) * 1000,
+  });
+  return r.user;
+}
+
+// Google ile giriş — Apple'la aynı yol, yalnızca uç farklı.
+// account.provider === 'google' olur.
+export async function signInWithGoogle(idToken) {
+  await loadSession();
+  const r = await googleSignIn({ idToken });
   await persist({
     user: r.user,
     idToken: r.idToken,

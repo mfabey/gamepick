@@ -923,3 +923,57 @@ artı; başlık "Hasta Beşiktaşlı", `@fogrex` yalnız kimlik bloğunda). Tema
 diff'te verilmiş durumda. Kullanıcı adı alanındaki `#` ön eki kit'in kendi
 tercihi (`s4.py:145`, `icon_='hash'`) ama uygulama her yerde `@handle`
 gösteriyor. `check:spacing` tabanı 245 → 199'a düştü, güncellenmedi.
+
+### 24 Eylül — G-03 sağlayıcı girişleri: Google yolu (Claude)
+
+Kullanıcı "Google ve Steam ile giriş ekle" dedi. Ölçüm ikisinin aynı durumda
+OLMADIĞINI gösterdi ve iş buna göre bölündü.
+
+**Google — istemci yolu uçtan uca yazıldı.** Sunucu zaten hazırdı:
+`/api/auth/google-signin` `main`'de var, id_token'ı Firebase'e federe kimlik
+olarak veriyor ve `apple-signin` ile birebir aynı yanıtı döndürüyor. Eklenen:
+`api/account.js → googleSignIn`, `services/session.js → signInWithGoogle`,
+`services/googleAuthConfig.js`, `GoogleAuthButton` + `GoogleAuthButtonImpl`,
+beş dilde iki metin, `app.json → extra.googleAuth`. Düğme giriş ekranında
+Apple'ın altında, "veya" ayracının üstünde; ayraç artık en az bir sağlayıcı
+varsa çiziliyor (eskiden yalnız iOS'ta vardı, Android'de hiç sağlayıcı
+girişi yoktu).
+
+**Hesap silme de kapsandı — süs değil, şart.** `delete-account` yalnız Apple
+ve şifre biliyordu; Google hesabının şifresi olmadığı için ekran ona
+doldurulamayacak bir alan gösterir, hesap uygulama içinden silinemezdi. App
+Store 5.1.1(v) tam olarak bunu reddediyor. `mobile-delete` ucuna
+`{ googleIdToken }` dalı eklendi (Apple dalıyla ortak `signInWithIdp`,
+değişen tek şey providerId) ve ekrana Google ile yeniden doğrulama kondu.
+
+**Tembel yükleme — cihazda ölçülerek eklendi.** İlk yazımda
+`expo-auth-session` statik import edilmişti; emülatörde uygulamanın TAMAMI
+`Cannot find native module 'ExpoCrypto'` ile düştü (APK 22 Eylül'de, paket
+eklenmeden derlenmişti). Artık `GoogleAuthButton` yalnız kimlikler
+yapılandırılmışsa `require` ediyor: özellik yapılandırılana kadar ne kod yolu
+çalışıyor ne yerel bağımlılık aranıyor.
+
+**AÇIK: iki OAuth istemcisi.** `google-services.json` yalnız type 3 (web)
+istemcisini taşıyor. Google Cloud Console'da `androidClientId` (uygulamanın
+SHA-1'iyle) ve `iosClientId` (+ ters çevrilmiş URL şeması) oluşturulup
+`app.json → extra.googleAuth` içine yazılmalı; sonra YENİ YEREL DERLEME
+gerekiyor (OTA yetmez). O ana kadar düğme çizilmiyor ve ekran bugünküyle
+birebir aynı.
+
+**Steam — YAPILMADI, sunucu ucu yok.** `AuthContext.loginSteam` ilk satırında
+`requireAccount()` ile duruyor: bağlantı cihaza değil Gamerisen hesabına
+yazılıyor, hesap yoksa yazacak yer yok. Steam callback'i profil döndürüyor,
+oturum üretmiyor. "Steam ile giriş" için steamId'ye bağlı hesap açan/bulan
+yeni bir uç gerekiyor ve üç ürün kararı açık: Steam e-posta vermiyor, aynı
+kişinin e-postayla açtığı hesapla birleştirme kuralı yok, kullanıcı adı
+üretimi tanımsız. Ayrıca `main`'e gidecek bir değişiklik.
+
+**G-03 görsel geçişi de YAPILMADI.** Bu turda işlevsel taraf öncelendi.
+Kırmızı birincil düğme kullanıcı kararıyla kalıyor; Apple'ın yerel düğmesi ve
+koşul metninin formun üstündeki yeri (Guideline 1.2) korunacak.
+
+**Doğrulama:** `npm run check` 20/20, `npx expo export --platform ios`
+başarılı, `npm run check:access` temiz (yeni route yok). Emülatörde uygulama
+hatasız açılıyor (TTI 954 ms, logcat'te ExpoCrypto yok); giriş ve hesap silme
+ekranları bugünkü hâlleriyle birebir aynı — beklenen davranış, çünkü Google
+yapılandırılmadı. Google akışının KENDİSİ denenemedi: istemci kimlikleri yok.

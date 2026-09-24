@@ -119,6 +119,11 @@
             }
           }
         }
+      },
+      "googleAuth": {
+        "androidClientId": "",
+        "iosClientId": "",
+        "webClientId": "554716473983-pc6au7o7nquofb6k7b25ll7mge502pp8.apps.googleusercontent.com"
       }
     },
     "owner": "mfabeys-team",

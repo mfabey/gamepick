@@ -138,6 +138,8 @@ export default {
   'home.sale': 'On Sale',
   'home.viewAll': 'All',
   'acc.or': 'or',
+  'acc.google': "Continue with Google",
+  'acc.googleReauth': "Re-authenticate with Google to confirm deletion",
   'acc.appleReauth': 'Re-authenticate with Apple to confirm deletion',
   'acc.appleReauthBtn': 'Verify with Apple and delete',
   'acc.signIn': 'Sign in',
