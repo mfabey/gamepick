@@ -265,6 +265,14 @@ const STEAM_TAG_MAP = {
   'card': '1738'
 };
 
+const isStoreBg = (url) => !url || url.includes('storepagebackground');
+const sanitizeSteamImg = (url) => {
+  if (!url || isStoreBg(url)) return null;
+  const u = String(url);
+  if (u.includes('header_alt_assets_')) return u.replace(/header_alt_assets_\d+\.jpg/, 'header.jpg');
+  return u;
+};
+
 async function fetchSteamSearchPaginated(searchUrl, isFree = false, isOnSale = false, fetchReleaseDates = false) {
   try {
     const res = await fetch(searchUrl, { next: { revalidate: 1800 } });
@@ -293,10 +301,9 @@ async function fetchSteamSearchPaginated(searchUrl, isFree = false, isOnSale = f
               return null;
             }
             releasedDate = steamData.release_date?.date || null;
-            gercekKapak = steamData.header_image || null;
-            const isStoreBg = (url) => !url || url.includes('storepagebackground');
-            const cleanBg = !isStoreBg(steamData.background_raw) ? steamData.background_raw : (!isStoreBg(steamData.background) ? steamData.background : null);
-            heroImage = steamData.screenshots?.[0]?.path_full || cleanBg || steamData.header_image || null;
+            gercekKapak = sanitizeSteamImg(steamData.header_image) || null;
+            const cleanBg = sanitizeSteamImg(steamData.background_raw) || sanitizeSteamImg(steamData.background) || null;
+            heroImage = steamData.screenshots?.[0]?.path_full || cleanBg || gercekKapak || null;
             backgroundImage = cleanBg || steamData.screenshots?.[0]?.path_full || null;
             screenshots = (steamData.screenshots || []).map(s => s.path_full).filter(Boolean);
           }
@@ -310,9 +317,8 @@ async function fetchSteamSearchPaginated(searchUrl, isFree = false, isOnSale = f
           name: item.name,
           // Sıra: Steam'in verdiği gerçek adres → öne çıkanlar kapsülü →
           // (son çare) düz yol. Düz yol yalnızca ESKİ oyunlarda çalışıyor.
-          image: gercekKapak || item.logo
-            || (appid ? `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/header.jpg` : null),
-          heroImage: heroImage || gercekKapak || item.logo,
+          image: gercekKapak || (appid ? `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/header.jpg` : null) || item.logo,
+          heroImage: heroImage || gercekKapak || (appid ? `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/library_hero.jpg` : null) || item.logo,
           backgroundImage,
           screenshots,
           // Kapak Steam'den çözülemediyse işaretle — istemci sona atsın.
@@ -411,9 +417,8 @@ async function fetchSteamSearchByTerm(term) {
           original = amountToTRY(item.price.initial, item.price.currency || 'USD', rate);
         }
 
-        const isStoreBg = (url) => !url || url.includes('storepagebackground');
-        const cleanBg = !isStoreBg(steamData?.background_raw) ? steamData?.background_raw : (!isStoreBg(steamData?.background) ? steamData?.background : null);
-        let heroImage = steamData?.screenshots?.[0]?.path_full || cleanBg || steamData?.header_image || item.tiny_image;
+        const cleanBg = sanitizeSteamImg(steamData?.background_raw) || sanitizeSteamImg(steamData?.background) || null;
+        let heroImage = steamData?.screenshots?.[0]?.path_full || cleanBg || sanitizeSteamImg(steamData?.header_image) || item.tiny_image;
         let backgroundImage = cleanBg || steamData?.screenshots?.[0]?.path_full || null;
         let screenshots = (steamData?.screenshots || []).map(s => s.path_full).filter(Boolean);
 
@@ -422,7 +427,7 @@ async function fetchSteamSearchByTerm(term) {
           rawgId: appid,
           rawgSlug: slug,
           name,
-          image: steamData?.header_image || item.tiny_image || null,
+          image: sanitizeSteamImg(steamData?.header_image) || (appid ? `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/header.jpg` : null) || item.tiny_image || null,
           heroImage,
           backgroundImage,
           screenshots,
@@ -541,9 +546,8 @@ async function fetchSteamFeatured(category) {
       const price = item.final_price != null ? amountToTRY(item.final_price, item.currency || 'USD', rate) : null;
       const original = item.original_price != null ? amountToTRY(item.original_price, item.currency || 'USD', rate) : null;
 
-      const isStoreBg = (url) => !url || url.includes('storepagebackground');
-      const cleanBg = !isStoreBg(steamData?.background_raw) ? steamData?.background_raw : (!isStoreBg(steamData?.background) ? steamData?.background : null);
-      const heroImage = steamData?.screenshots?.[0]?.path_full || cleanBg || steamData?.header_image || item.header_image || item.large_capsule_image;
+      const cleanBg = sanitizeSteamImg(steamData?.background_raw) || sanitizeSteamImg(steamData?.background) || null;
+      const heroImage = steamData?.screenshots?.[0]?.path_full || cleanBg || sanitizeSteamImg(steamData?.header_image) || item.header_image || item.large_capsule_image;
       const backgroundImage = cleanBg || steamData?.screenshots?.[0]?.path_full || null;
       const screenshots = (steamData?.screenshots || []).map(s => s.path_full).filter(Boolean);
 
@@ -552,7 +556,7 @@ async function fetchSteamFeatured(category) {
         rawgId:       item.id,
         rawgSlug:     slug,
         name:         item.name,
-        image:        steamData?.header_image || item.header_image || item.large_capsule_image || item.small_capsule_image,
+        image:        sanitizeSteamImg(steamData?.header_image) || item.header_image || item.large_capsule_image || item.small_capsule_image,
         heroImage,
         backgroundImage,
         screenshots,
@@ -624,9 +628,8 @@ async function fetchSteamNewReleases() {
       const price = item.final_price != null ? amountToTRY(item.final_price, item.currency || 'USD', rate) : null;
       const original = item.original_price != null ? amountToTRY(item.original_price, item.currency || 'USD', rate) : null;
 
-      const isStoreBg = (url) => !url || url.includes('storepagebackground');
-      const cleanBg = !isStoreBg(steamData?.background_raw) ? steamData?.background_raw : (!isStoreBg(steamData?.background) ? steamData?.background : null);
-      const heroImage = steamData?.screenshots?.[0]?.path_full || cleanBg || steamData?.header_image || item.header_image || item.large_capsule_image;
+      const cleanBg = sanitizeSteamImg(steamData?.background_raw) || sanitizeSteamImg(steamData?.background) || null;
+      const heroImage = steamData?.screenshots?.[0]?.path_full || cleanBg || sanitizeSteamImg(steamData?.header_image) || item.header_image || item.large_capsule_image;
       const backgroundImage = cleanBg || steamData?.screenshots?.[0]?.path_full || null;
       const screenshots = (steamData?.screenshots || []).map(s => s.path_full).filter(Boolean);
 
@@ -635,7 +638,7 @@ async function fetchSteamNewReleases() {
         rawgId:       item.id,
         rawgSlug:     slug,
         name:         item.name,
-        image:        steamData?.header_image || item.header_image || item.large_capsule_image || item.small_capsule_image,
+        image:        sanitizeSteamImg(steamData?.header_image) || item.header_image || item.large_capsule_image || item.small_capsule_image,
         heroImage,
         backgroundImage,
         screenshots,
@@ -731,10 +734,9 @@ async function fetchSteamByMode(mode, { genres = '', q = '', section = '', page 
             if (isSteamDataAdult(data)) {
               return null;
             }
-            g.image = data.header_image || g.image;
-            const isStoreBg = (url) => !url || url.includes('storepagebackground');
-            const cleanBg = !isStoreBg(data.background_raw) ? data.background_raw : (!isStoreBg(data.background) ? data.background : null);
-            g.heroImage = data.screenshots?.[0]?.path_full || cleanBg || data.header_image || g.image;
+            g.image = sanitizeSteamImg(data.header_image) || g.image;
+            const cleanBg = sanitizeSteamImg(data.background_raw) || sanitizeSteamImg(data.background) || null;
+            g.heroImage = data.screenshots?.[0]?.path_full || cleanBg || sanitizeSteamImg(data.header_image) || g.image;
             g.backgroundImage = cleanBg || data.screenshots?.[0]?.path_full || null;
             g.screenshots = (data.screenshots || []).map(s => s.path_full).filter(Boolean);
           }
