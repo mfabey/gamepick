@@ -165,7 +165,7 @@ export default function ProfileEditScreen() {
             <TextField label={t('prof.displayName')} value={displayName}
               onChangeText={setDisplayName} placeholder={profile?.username || ''}
               maxLength={MAX_NAME} editable={!saving} />
-            <TextField label={t('soc.usernameLabel')} icon="hash"
+            <TextField label={t('soc.usernameLabel')} icon="at"
               value={profile?.username || ''} editable={false} />
             <TextField label={t('prof.bio')} value={bio} onChangeText={setBio}
               placeholder={t('prof.bioHint')} multiline counter

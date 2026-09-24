@@ -1017,3 +1017,20 @@ yokken iOS adımları hiçbir şey yapmıyor; Android'deki google-services adım
 **Doğrulama:** `npm run check` geçti, `npx expo export` iOS ve Android
 başarılı. Cihazda doğrulanamadı: bu makinede `adb` / Android SDK bulunamadı.
 Google akışının kendisi yine denenmedi (bayraklar kapalı).
+
+### 24 Eylül — Bekleyen üç karar kapandı (Claude)
+
+1. **Kart ailesi: 2.0 `ui/GameCard` kalıyor.** Anasayfa ve Keşfet zaten onu
+   kullanıyordu; `games.jsx` de artık aynı kartta. Izgara (`useDesignGrid`)
+   sabit 148 pt karta göre sütun sayısını ayarlıyor. Eski Faz-2
+   `components/GameCard`'ı yalnız `FriendActivity` kullanıyor.
+2. **Kullanıcı adı ön eki: `@`.** Profil Düzenle'deki salt okunur alan kitin
+   `hash` ikonu yerine `at` ikonunu gösteriyor — kayıt ekranı (`on="@"`) ve
+   uygulamanın geri kalanı `@handle` yazıyor. Kitte `@` ikonu yok; `Icon.tsx`'e
+   aynı 24×24 çizgi biçiminde elle eklendi ve yerinde not düşüldü. İkon
+   görsel olarak cihazda görülmedi.
+3. **`check:spacing` tabanı 245 → 198.** `--guncelle` ile yazıldı (26 dosya);
+   kazanılan azalma artık kilitli.
+
+**Doğrulama:** `npm run check` geçti, `npx expo export --platform ios`
+başarılı.

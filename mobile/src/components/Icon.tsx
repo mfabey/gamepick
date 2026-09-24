@@ -77,6 +77,9 @@ const ICONS = {
   "checkc": <><Circle cx="12" cy="12" r="9.5" /><Path d="m8 12 3 3 5-6" /></>,
   "news": <><Path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2" /><Path d="M18 14h-8M15 18h-5M10 6h8v4h-8z" /></>,
   "hash": <><Path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18" /></>,
+  // Kitte YOK, elle eklendi: kullanıcı adı alanı uygulamanın her yerindeki
+  // `@handle` biçimine uysun diye (kit o alanda `hash` kullanıyor).
+  "at": <><Circle cx="12" cy="12" r="4" /><Path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8" /></>,
   "bag": <><Path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><Path d="M3 6h18M16 10a4 4 0 0 1-8 0" /></>,
   "calendar": <><Rect x="3" y="4.5" width="18" height="17" rx="2.5" /><Path d="M16 2.5v4M8 2.5v4M3 10h18" /></>,
   "spark": <><Path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" /></>,
