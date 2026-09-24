@@ -22,7 +22,12 @@ import { View, Text, Pressable, StyleSheet, Modal, ScrollView } from 'react-nati
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
-import { radius, spacing, PRESSED, type, CHIP, CHIP_TEXT, CHIP_TEXT_ON, SHEET_LAYOUT } from '../theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { radius, spacing, PRESSED, type, SHEET_LAYOUT } from '../theme';
+import { component as K, radius as dsRadius, shadow } from '../theme/tokens';
+import { useDesignTheme } from '../theme/useDesignTheme';
+import { Button, Chip, IconButton, Txt } from './ui/Primitives';
 import { useStyles, useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -34,6 +39,9 @@ export const GENRES = [
   'shooter', 'puzzle', 'sports', 'racing',
   'horror', 'platformer', 'card', 'simulation',
 ];
+
+// G-06b ölçüleri — bkz. tokens.component.filterSheet.
+const F = K.filterSheet;
 
 const MODES  = ['singleplayer', 'multiplayer', 'coop'];
 const STORES = ['steam', 'epic'];
@@ -127,8 +135,25 @@ export function countFilters({ genre, mode, store, mc, tags }) {
        + (mc ? 1 : 0) + (tags?.length || 0);
 }
 
+// ── G-06b SAYFASI (kit s2.py filters()) ──────────────────────────────────────
+// Kitten alınan: 24 köşe + bg2 + üst gölge, 36×5 tutamaç, üç parçalı başlık
+// satırı (Sıfırla · Filtreler · ×), 15/20 bölüm başlıkları, 2.0 çipler ve
+// sabit alt çubukta 52 pt 2.0 birincil düğme (üstünde saç teli).
+//
+// KİTTEN BİLEREK SAPMALAR (hepsinin verisi yok):
+//   • Platform (PC/PS/Xbox/Switch/Mobil) — sunucuda platform süzgeci yok.
+//   • Fiyat aralığı — dosya başındaki gerekçe (kart kart tembel fiyat).
+//   • İndirim eşikleri (%25+/%50+/%75+) — sunucu indirim eşiği uygulamıyor.
+//   • "Diğer filtreler" satır listesi — kitte her satır ayrı bir seçim
+//     sayfası açıyor; bizde mod, mağaza ve puan az seçenekli, çip olarak
+//     sayfanın kendisinde (iç içe Modal cihazda denenmeden yazılmayacak).
+//   • Düğme metni "128 oyunu göster" değil "Uygula (n)": sonuç sayısı
+//     uygulanmadan bilinmiyor, sayı uydurulmaz.
+// Etiketler kitte yok ama uygulamada var (en fazla 5) — kaldırılmadı.
 export default function FilterSheet({ visible, onClose, value, onApply, unavailable = [] }) {
   const styles = useStyles(makeStyles);
+  const { colors } = useDesignTheme();
+  const insets = useSafeAreaInsets();
   const { t } = useLanguage();
   const [draft, setDraft] = useState(value);
 
@@ -136,11 +161,6 @@ export default function FilterSheet({ visible, onClose, value, onApply, unavaila
   // kullanıcı "Uygula"madan kapattığında taslak kalır, bir sonraki açılışta
   // listeyle uyuşmayan seçimler görünürdü.
   useEffect(() => { if (visible) setDraft(value); }, [visible, value]);
-
-  const set = useCallback((patch) => {
-    Haptics.selectionAsync().catch(() => {});
-    setDraft((d) => ({ ...d, ...patch }));
-  }, []);
 
   // Tek seçimliler AÇIP KAPANIYOR: aynı çipe ikinci kez basmak seçimi
   // kaldırıyor. Ayrı bir "Tümü" çipi koymak her gruba bir çip daha eklerdi.
@@ -182,102 +202,94 @@ export default function FilterSheet({ visible, onClose, value, onApply, unavaila
       <Pressable style={styles.backdrop} onPress={onClose}>
         {/* İç yüzeyde onPress var ama HİÇBİR ŞEY YAPMIYOR: sayfanın boş bir
             yerine dokunmak arkadaki Pressable'a ulaşıp sayfayı kapatıyordu. */}
-        <Pressable style={styles.sheet} onPress={() => {}}>
-          <View style={styles.grabber} />
+        <Pressable style={[styles.sheet, { backgroundColor: colors.bg2 }]} onPress={() => {}}>
+          <View style={[styles.grabber, { backgroundColor: colors.text3 }]} />
 
+          {/* Başlık ORTADA SABİT, yanlar serbest: kit iki yana 90 pt veriyor
+              ama "Zurücksetzen" 90 pt'ye sığmıyor. Başlık mutlak ortalı,
+              "Sıfırla" solda kendi genişliğinde. */}
           <View style={styles.head}>
-            <Text style={styles.title}>{t('filter.title')}</Text>
-            {n > 0 ? (
-              <Pressable onPress={clear} hitSlop={10}>
-                <Text style={styles.clear}>{t('filter.clear')}</Text>
-              </Pressable>
-            ) : null}
+            <Txt variant="headline" accessibilityRole="header" numberOfLines={1} style={styles.headTitle}>{t('filter.title')}</Txt>
+            {/* Seçim yokken SOLUK, gizli değil: kitte hep orada duruyor ve
+                yeri değişmeyen bir düğme aranmıyor. */}
+            <Button title={t('filter.reset')} variant="tertiary" height={F.reset}
+              disabled={n === 0} onPress={clear} style={styles.reset} />
+            <IconButton icon="x" label={t('a11y.close')} onPress={onClose} variant="filled"
+              size={F.close} iconSize={F.closeGlyph} color={colors.text2} />
           </View>
 
-          <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
-            <Group label={t('filter.genre')}>
+          <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent} showsVerticalScrollIndicator={false}>
+            <Section title={t('filter.genre')}>
               {GENRES.map((g) => (
-                <Chip key={g} on={draft.genre === g} label={t('genre.' + g)}
+                <Chip key={g} title={t('genre.' + g)} selected={draft.genre === g}
                   onPress={() => toggle('genre', g)} />
               ))}
-            </Group>
+            </Section>
 
-            <Group label={t('filter.mode')}>
+            <Section title={t('filter.mode')}>
               {MODES.map((m) => (
-                <Chip key={m} on={draft.mode === m} label={t('mode.' + m)}
+                <Chip key={m} title={t('mode.' + m)} selected={draft.mode === m}
                   onPress={() => toggle('mode', m)} />
               ))}
-            </Group>
+            </Section>
 
             {/* DEVRE DIŞI GÖRÜNÜYOR, GİZLENMİYOR (kontrol listesi). Gizlemek
                 "böyle bir özellik yok" der; soluk göstermek "var ama şu an
                 çalışmıyor" der. Veri kaynağı düşünce sunucu hangi filtrelerin
                 uygulanmadığını bildiriyor. */}
-            <Group label={t('filter.store')} kapali={kapali('store')}>
+            <Section title={t('filter.store')} kapali={kapali('store')}>
               {STORES.map((s) => (
-                <Chip key={s} on={draft.store === s} label={t('store.' + s)}
-                  kapali={kapali('store')}
+                <Chip key={s} title={t('store.' + s)} selected={draft.store === s}
                   onPress={() => toggle('store', s)} />
               ))}
-            </Group>
+            </Section>
 
-            <Group label={t('filter.score')} kapali={kapali('metacritic')}>
+            <Section title={t('filter.score')} kapali={kapali('metacritic')}>
               {SCORES.map((s) => (
-                <Chip key={s} on={draft.mc === s} label={`${s}+`}
-                  kapali={kapali('metacritic')}
+                <Chip key={s} title={`${s}+`} selected={draft.mc === s}
                   onPress={() => toggle('mc', s)} />
               ))}
-            </Group>
+            </Section>
 
-            {/* Sınır BAŞLIKTA yazıyor, hata mesajında değil: kullanıcı altıncı
-                etikete basıp reddedilmeden önce sınırı görüyor. */}
-            <Group label={`${t('filter.tags')}  ${draft.tags.length}/${MAX_TAGS}`} kapali={kapali('tags')}>
+            {/* Sınır BAŞLIĞIN SAĞINDA (kitin bölüm başlığı sağ yuvası):
+                kullanıcı altıncı etikete basıp reddedilmeden önce görüyor. */}
+            <Section title={t('filter.tags')} sag={`${draft.tags.length}/${MAX_TAGS}`} kapali={kapali('tags')}>
               {TAGS.map((tag) => (
-                <Chip key={tag} on={draft.tags.includes(tag)} label={t('tag.' + tag)}
-                  kapali={kapali('tags')}
+                <Chip key={tag} title={t('tag.' + tag)} selected={draft.tags.includes(tag)}
                   onPress={() => toggleTag(tag)} />
               ))}
-            </Group>
+            </Section>
           </ScrollView>
 
-          <Pressable style={({ pressed }) => [styles.cta, pressed && PRESSED]} onPress={apply}>
-            <Text style={styles.ctaText}>
-              {n > 0 ? `${t('filter.apply')} (${n})` : t('filter.applyNone')}
-            </Text>
-          </Pressable>
+          <View style={[styles.footer, { borderTopColor: colors.line, paddingBottom: Math.max(insets.bottom, F.footerTop) }]}>
+            <Button title={n > 0 ? `${t('filter.apply')} (${n})` : t('filter.applyNone')} height={F.cta} onPress={apply} />
+          </View>
         </Pressable>
       </Pressable>
     </Modal>
   );
 }
 
-function Group({ label, children, kapali }) {
+// Bölüm: 15/20 başlık (sağında isteğe bağlı sayaç), 12 aşağıda sarılan çipler.
+// Kapalı bölüm soluk ve dokunulmaz ama GÖRÜNÜR; başlıkta "çalışmıyor" notu.
+function Section({ title, sag, kapali, children }) {
   const styles = useStyles(makeStyles);
+  const { colors } = useDesignTheme();
   const { t } = useLanguage();
   return (
-    <View style={styles.group}>
-      <Text style={[styles.groupLabel, kapali && styles.groupLabelKapali]}>
-        {label}{kapali ? `  ·  ${t('limited.off')}` : ''}
-      </Text>
-      <View style={styles.wrap}>{children}</View>
+    <View style={styles.section}>
+      <View style={styles.sectionHead}>
+        <Txt variant="cardTitle" numberOfLines={1} style={styles.flex}>
+          {title}
+          {kapali ? <Txt variant="cardTitle" style={{ color: colors.red }}>{`  ·  ${t('limited.off')}`}</Txt> : null}
+        </Txt>
+        {sag ? <Txt variant="footnote" style={{ color: colors.text2 }}>{sag}</Txt> : null}
+      </View>
+      <View style={[styles.wrap, kapali && styles.kapali]} pointerEvents={kapali ? 'none' : 'auto'}
+        accessibilityElementsHidden={kapali} importantForAccessibility={kapali ? 'no-hide-descendants' : 'auto'}>
+        {children}
+      </View>
     </View>
-  );
-}
-
-// Seçim dili games.jsx ile AYNI: dolu nötr yüzey + koyu metin. Marka rengi
-// kullanılmıyor; ekranın tek gerçek CTA'sı "Uygula" ve vurguyu o taşımalı.
-function Chip({ on, label, onPress, kapali }) {
-  const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
-  return (
-    <Pressable
-      onPress={kapali ? undefined : onPress}
-      disabled={kapali}
-      accessibilityState={kapali ? { disabled: true } : undefined}
-      style={[styles.chip, on && styles.chipOn, kapali && styles.chipKapali]}
-    >
-      <Text style={[styles.chipText, on && styles.chipTextOn]}>{label}</Text>
-    </Pressable>
   );
 }
 
@@ -302,55 +314,39 @@ export function FilterButton({ count, onPress }) {
 
 const makeStyles = (colors) => StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },
+  // Zemin (bg2) JSX'te, 2.0 temasından. Köşe ve gölge kitin (DS 4 Bottom Sheet).
   sheet: {
     ...SHEET_LAYOUT,
-    backgroundColor: colors.bgElevated,
-    borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl,
-    paddingHorizontal: spacing.lg, paddingTop: 10, paddingBottom: 28,
+    borderTopLeftRadius: dsRadius.sheet, borderTopRightRadius: dsRadius.sheet,
+    boxShadow: shadow.sheet,
     maxHeight: '85%',
   },
   grabber: {
-    alignSelf: 'center', width: 38, height: 4, borderRadius: 2,
-    backgroundColor: colors.text3, opacity: 0.5, marginBottom: 14,
+    alignSelf: 'center', width: F.grabberWidth, height: F.grabberHeight,
+    borderRadius: F.grabberRadius, marginTop: F.grabberTop,
   },
-  head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  title: { color: colors.text, fontSize: type.body, fontWeight: '900' },
-  clear: { color: colors.accentText, fontSize: type.footnote, fontWeight: '700' },
-
-  body: { flexGrow: 0, marginTop: 6 },
-  group: { marginTop: spacing.lg },
-  groupLabel: {
-    // Maket: filtre grup etiketi "Tur" = 13 / 600 / text2.
-    color: colors.text2, fontSize: type.footnote, fontWeight: '600', marginBottom: spacing.s8,
+  head: {
+    height: F.header, paddingHorizontal: F.headerPadding,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
   },
-  wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  // Başlık düğmelerin ALTINDA çiziliyor (JSX'te önce): dokunuşu onlar alıyor.
+  headTitle: { position: 'absolute', left: 0, right: 0, textAlign: 'center' },
+  // Kit: tertiary düğme, yatay dolgu 8.
+  reset: { paddingHorizontal: spacing.s8 },
 
-  // Maketten: hap, dolgu 8/12, surface3, KENARLIK YOK, metin 13/400.
-  chip: { ...CHIP, backgroundColor: colors.bgInput },
-  chipText: { ...CHIP_TEXT, color: colors.text2 },
-  // FILTRE dili — bir KISITLAMA ekliyor. Maket bunu MARKA rengiyle
-  // isaretliyor (segmentten farkli): kisitlama geri alinmasi gereken bir
-  // durum, secilmis bir gorunum degil.
-  //
-  // Onceki not "marka rengi kullanilmiyor, tek CTA Uygula" diyordu; maket
-  // tersini gosterdigi ve karar "birebir maket" oldugu icin degisti.
-  // FAZ 4'TE YAKALANDI: bu dosyanın KENDİ yorumu (bkz. Chip'in üstü)
-  // "Marka rengi kullanılmıyor; ekranın tek gerçek CTA'sı 'Uygula' ve
-  // vurguyu o taşımalı" diyordu ama stil `colors.accent` yazıyordu.
-  // Yorum doğru, kod yanlıştı: seçili çip + CTA = ekranda İKİ kırmızı ve
-  // ikisi farklı anlam taşıyor (biri seçim, öteki eylem).
-  // games.jsx'in bölüm çipiyle aynı dile geçti.
-  chipOn: { backgroundColor: colors.text },
-  // tema-bagimsiz: marka dolgusu ustundeki metin (tokens: onBrand)
-  chipTextOn: { ...CHIP_TEXT_ON, color: colors.bg },
+  body: { flexGrow: 0 },
+  bodyContent: { paddingTop: F.bodyTop, paddingHorizontal: spacing.s20, paddingBottom: spacing.s20, gap: F.sectionGap },
+  section: { gap: F.sectionTitleGap },
+  sectionHead: { height: F.sectionTitle, flexDirection: 'row', alignItems: 'center', gap: spacing.s8 },
+  flex: { flex: 1 },
+  wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: F.chipGap },
   // Soluk ama GÖRÜNÜR — kullanıcı özelliğin var olduğunu bilsin.
-  chipKapali: { opacity: 0.4 },
-  groupLabelKapali: { color: colors.accentText },
+  kapali: { opacity: 0.4 },
 
-  // FAZ 4 — DOLGU accent → accentFillStrong. Beyaz 15pt/800 üstünde
-  // accent tam 4.45:1 veriyordu; ölçüldü ve AA eşiğinin (4.5) altında.
-  // Yeni ton 5.45:1. Yükseklik, yarıçap ve metin DEĞİŞMEDİ — tek değişiklik
-  // dolgu tonu; marka rengi ikonlarda ve kenarlıklarda aynı kalıyor.
+  // Sabit alt çubuk: kaydırılan içerikten saç teliyle ayrılıyor (kit).
+  footer: { paddingTop: F.footerTop, paddingHorizontal: spacing.s20, borderTopWidth: StyleSheet.hairlineWidth },
+
+  // ── ETKİN FİLTRE ÇİPLERİ ve BAŞLIK DÜĞMESİ (games.jsx) — G-06 işi, değişmedi.
   // Maket: 32pt, pill, bgInput, footnote 13, hitSlop 8.
   etkinSatir: { flexDirection: 'row', gap: spacing.s8, paddingHorizontal: spacing.s20 },
   etkinSar: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.s8, justifyContent: 'center' },
@@ -360,12 +356,6 @@ const makeStyles = (colors) => StyleSheet.create({
     backgroundColor: colors.bgInput,
   },
   etkinCipText: { color: colors.text2, fontSize: type.footnote, fontWeight: '600' },
-
-  cta: {
-    height: 52, borderRadius: radius.lg, backgroundColor: colors.accentFillStrong,
-    alignItems: 'center', justifyContent: 'center', marginTop: 18,
-  },
-  ctaText: { color: '#fff', fontSize: type.subhead, fontWeight: '800' },
 
   // Arama kutusunun yanındaki düğme — kutuyla aynı yükseklikte dursun diye
   // sabit 44pt (aynı zamanda HIG'in asgari dokunma hedefi).

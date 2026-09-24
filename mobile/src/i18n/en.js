@@ -67,7 +67,7 @@ export default {
   'mode.coop': 'Co-op',
   // ── Advanced filter ──
   'filter.title': 'Filter',
-  'filter.clear': 'Clear filters',
+  'filter.reset': 'Reset',
   'filter.apply': 'Apply',
   'filter.applyNone': 'Show all games',
   'filter.genre': 'Genre',

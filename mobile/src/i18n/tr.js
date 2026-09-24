@@ -67,7 +67,7 @@ export default {
   'mode.coop': 'Co-op',
   // ── Gelişmiş filtre ──
   'filter.title': 'Filtrele',
-  'filter.clear': 'Filtreleri temizle',
+  'filter.reset': 'Sıfırla',
   'filter.apply': 'Uygula',
   'filter.applyNone': 'Tüm oyunları göster',
   'filter.genre': 'Tür',

@@ -1206,3 +1206,43 @@ kalktı. `check:i18n` eklenip kullanılmayan `acc.welcomeBack`'i yakaladı
 `npx expo export` iOS ve Android başarılı. Cihazda görülmedi (emülatör
 yok): klavye açıkken alt bağlantının yeri, Apple düğmesinin 50 pt'de
 görünümü ve uzun dillerde başlık/alt metin gözle bakılmalı.
+
+### 25 Eylül — G-06b Filtreler: sayfa 2.0 (Claude)
+
+`FilterSheet` (Oyunlar listesinin filtre sayfası) kit s2.py filters()
+diline geçti; uygulamanın ilk 2.0 alt sayfası. Ölçüler
+`tokens.component.filterSheet`.
+
+**Kitten alınan:** 24 köşe (`radius.sheet`) + `bg2` + `shadow.sheet`,
+36×5 tutamaç (üstte 8), 44 pt başlık satırı — solda "Sıfırla" (tertiary
+36; seçim yokken soluk, gizli değil), ortada `headline` başlık, sağda 32 pt
+dolu × (`IconButton`) —, gövde üstü 10 / bölümler arası 20, bölüm başlığı
+`cardTitle` 15/20 (sağ yuvada etiket sayacı "2/5"), 12 aşağıda 2.0 `Chip`'ler
+(aralık 8), sabit alt çubuk (üstte saç teli, 12 dolgu) ve 52 pt 2.0 birincil
+düğme.
+
+**Kararlar:**
+- CTA 2.0 `Button` primary (açık yüzey): kırmızı CTA kullanıcı kararı yalnız
+  G-03'e ait; diğer 2.0 ekranlar (detay, profil düzenle, gönderi, haber)
+  primary kullanıyor.
+- Başlık mutlak ortalı, yanlar serbest: kit iki yana 90 pt veriyor ama
+  Almanca "Zurücksetzen" sığmıyor. Uzun `filter.clear` ("Filtreleri
+  temizle") yerine kitin kısa "Sıfırla"sı — beş dilde `filter.reset`;
+  yalnız burada kullanılan `filter.clear` kalktı.
+
+**Kitten BİLEREK sapmalar (veri yok):** Platform bölümü (sunucuda platform
+süzgeci yok) · Fiyat aralığı (dosya başındaki gerekçe) · İndirim eşikleri
+(sunucu uygulamıyor) · "Diğer filtreler" satırları (her biri ayrı seçim
+sayfası açıyor; mod/mağaza/puan çip olarak kaldı — iç içe Modal cihazda
+denenmeden yazılmayacak) · "128 oyunu göster" yerine "Uygula (n)" (sonuç
+sayısı uygulanmadan bilinmiyor). Etiketler kitte yok, uygulamada var — kaldı.
+Kapalı bölüm (sunucu bildirdiğinde) soluk + dokunulmaz + başlıkta kırmızı
+"çalışmıyor".
+
+**Dokunulmadı (G-06 işi):** `EtkinFiltreler` çipleri ve başlıktaki
+`FilterButton` eski görünümde; 2.0 `Chip removable` ve `IconButton` hazır.
+
+**Doğrulama:** `npm run check` geçti (`check:spacing` 183 → 178, taban
+güncellendi), `npx expo export` iOS ve Android başarılı. Cihazda görülmedi
+(emülatör yok): sayfanın açılış animasyonu, gölge ve Almanca başlık satırı
+gözle bakılmalı.

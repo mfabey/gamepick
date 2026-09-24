@@ -75,7 +75,7 @@ export default {
   'mode.coop': 'Cooperativo',
   // ── Filtro avanzado ──
   'filter.title': 'Filtrar',
-  'filter.clear': 'Borrar filtros',
+  'filter.reset': 'Restablecer',
   'filter.apply': 'Aplicar',
   'filter.applyNone': 'Ver todos los juegos',
   'filter.genre': 'Género',
