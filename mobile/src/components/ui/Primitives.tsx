@@ -121,12 +121,14 @@ export function IconButton({ icon, label, onPress, onLongPress, selected, disabl
   </PressableScale>;
 }
 
-export function Chip({ title, selected = false, onPress, icon, chevron, removable, accessibilityLabel }: {
+export function Chip({ title, selected = false, onPress, icon, chevron, removable, count, accessibilityLabel }: {
   title: string; selected?: boolean; onPress: () => void; icon?: IconName;
   /** Sonda aşağı ok: seçenek listesi açan çip ("Platform ⌄"). */
   chevron?: boolean;
   /** Sonda ×: uygulanmış filtre, dokununca kalkar ("RPG ×", DS 2). */
   removable?: boolean;
+  /** Başlıktan sonra sayı rozeti — kit results() "Filtrele ②". 0 ya da yoksa çizilmez. */
+  count?: number;
   accessibilityLabel?: string;
 }) {
   const { colors } = useDesignTheme();
@@ -137,6 +139,9 @@ export function Chip({ title, selected = false, onPress, icon, chevron, removabl
     style={[s.chip, removable && s.chipRemovable, { backgroundColor: selected ? colors.primary : colors.surface2 }]}>
     {icon && <Icon name={icon} size={K.chip.icon} color={color} strokeWidth={K.chip.iconStroke} />}
     <Txt variant="subhead" numberOfLines={1} style={{ color }}>{title}</Txt>
+    {count ? <View style={[s.badge, s.badgeInline, { backgroundColor: colors.brand }]}>
+      <Text allowFontScaling={false} style={[s.badgeText, { color: colors.white }]}>{count > 99 ? '99+' : count}</Text>
+    </View> : null}
     {trailing && <Icon name={trailing} size={K.chip.chevron} color={color} strokeWidth={K.chip.chevronStroke} />}
   </PressableScale>;
 }
@@ -329,6 +334,8 @@ const s = StyleSheet.create({
   badge: { position: 'absolute', top: K.iconButton.badgeTop, right: K.iconButton.badgeRight, minWidth: K.iconButton.badgeSize, height: K.iconButton.badgeSize,
     borderRadius: K.iconButton.badgeSize / 2, paddingHorizontal: K.iconButton.badgePadding, alignItems: 'center', justifyContent: 'center' },
   badgeText: { ...typography.badge, fontVariant: ['tabular-nums'] },
+  // Aynı rozet, IconButton'ın köşesi yerine çipin satırında (akışta).
+  badgeInline: { position: 'relative', top: 0, right: 0 },
   chip: { height: C.chipHeight, paddingHorizontal: C.chipPadding, borderRadius: radius.pill, flexDirection: 'row', alignItems: 'center', gap: K.chip.gap },
   chipRemovable: { paddingRight: K.chip.removablePaddingRight },
   segment: { height: C.segmentHeight, padding: C.segmentPadding, borderRadius: radius.segmented, flexDirection: 'row' },

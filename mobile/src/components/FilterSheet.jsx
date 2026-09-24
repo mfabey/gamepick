@@ -18,17 +18,16 @@
 // silerdi. "Ücretsiz" zaten bölüm çipi olarak var ve sunucu destekliyor.
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState, useEffect, useCallback } from 'react';
-import { View, Text, Pressable, StyleSheet, Modal, ScrollView } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Pressable, StyleSheet, Modal, ScrollView } from 'react-native';
 import * as Haptics from 'expo-haptics';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { radius, spacing, PRESSED, type, SHEET_LAYOUT } from '../theme';
+import { spacing, SHEET_LAYOUT } from '../theme';
 import { component as K, radius as dsRadius, shadow } from '../theme/tokens';
 import { useDesignTheme } from '../theme/useDesignTheme';
 import { Button, Chip, IconButton, Txt } from './ui/Primitives';
-import { useStyles, useTheme } from '../context/ThemeContext';
+import { useStyles } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 
 // Tür slug'ları sunucudaki eşlemelerle BİREBİR: STEAM_GENRE_MAP (7) +
@@ -102,23 +101,20 @@ export function etkinFiltreler(filters, t) {
  */
 export function EtkinFiltreler({ filters, onKaldir, sar = false }) {
   const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
   const { t } = useLanguage();
   const liste = etkinFiltreler(filters, t);
   if (liste.length === 0) return null;
 
+  // 2.0 `Chip removable` — DS 2'nin "RPG ×" çipinin kendisi. Ekrana özel
+  // kopya (32 pt, bgInput, Ionicons ×) kalktı.
   const cipler = liste.map((f) => (
-    <Pressable
+    <Chip
       key={f.anahtar}
+      title={f.etiket}
+      removable
       onPress={() => onKaldir(f.sifirla)}
-      hitSlop={8}
-      accessibilityRole="button"
       accessibilityLabel={`${f.etiket} — ${t('filter.remove')}`}
-      style={({ pressed }) => [styles.etkinCip, pressed && PRESSED]}
-    >
-      <Text style={styles.etkinCipText}>{f.etiket}</Text>
-      <Ionicons name="close" size={13} color={colors.text3} />
-    </Pressable>
+    />
   ));
 
   if (sar) return <View style={styles.etkinSar}>{cipler}</View>;
@@ -293,22 +289,21 @@ function Section({ title, sag, kapali, children }) {
   );
 }
 
-/** Başlıktaki filtre düğmesi — etkin sayıyı rozet olarak taşıyor. */
+/**
+ * Filtre hapı — kit results(): "⚙ Filtrele ②" (2.0 Chip + `sliders` + sayı
+ * rozeti). Bölüm çiplerinin satırında ilk öğe (kullanıcı kararı, 25 Eylül);
+ * eskiden arama kutusunun yanında 44 pt kare bir düğmeydi.
+ */
 export function FilterButton({ count, onPress }) {
-  const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
   const { t } = useLanguage();
   return (
-    <Pressable
+    <Chip
+      title={t('filter.title')}
+      icon="sliders"
+      count={count}
       onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={t('filter.title')}
-      style={({ pressed }) => [styles.fbtn, count > 0 && styles.fbtnOn, pressed && PRESSED]}
-      hitSlop={6}
-    >
-      <Ionicons name="options-outline" size={19} color={count > 0 ? colors.bg : colors.text2} />
-      {count > 0 ? <Text style={styles.fbtnCount}>{count}</Text> : null}
-    </Pressable>
+      accessibilityLabel={count > 0 ? `${t('filter.title')}, ${count}` : t('filter.title')}
+    />
   );
 }
 
@@ -346,24 +341,7 @@ const makeStyles = (colors) => StyleSheet.create({
   // Sabit alt çubuk: kaydırılan içerikten saç teliyle ayrılıyor (kit).
   footer: { paddingTop: F.footerTop, paddingHorizontal: spacing.s20, borderTopWidth: StyleSheet.hairlineWidth },
 
-  // ── ETKİN FİLTRE ÇİPLERİ ve BAŞLIK DÜĞMESİ (games.jsx) — G-06 işi, değişmedi.
-  // Maket: 32pt, pill, bgInput, footnote 13, hitSlop 8.
+  // ── ETKİN FİLTRE ÇİPLERİ (games.jsx) — çipin kendisi 2.0 `Chip removable`.
   etkinSatir: { flexDirection: 'row', gap: spacing.s8, paddingHorizontal: spacing.s20 },
   etkinSar: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.s8, justifyContent: 'center' },
-  etkinCip: {
-    height: 32, flexDirection: 'row', alignItems: 'center', gap: spacing.s4,
-    paddingHorizontal: spacing.s12, borderRadius: radius.pill,
-    backgroundColor: colors.bgInput,
-  },
-  etkinCipText: { color: colors.text2, fontSize: type.footnote, fontWeight: '600' },
-
-  // Arama kutusunun yanındaki düğme — kutuyla aynı yükseklikte dursun diye
-  // sabit 44pt (aynı zamanda HIG'in asgari dokunma hedefi).
-  fbtn: {
-    width: 44, height: 44, borderRadius: radius.md,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 3,
-    backgroundColor: colors.bgInput, borderWidth: 1, borderColor: colors.cardBorder,
-  },
-  fbtnOn: { backgroundColor: colors.text, borderColor: colors.text },
-  fbtnCount: { color: colors.bg, fontSize: type.caption, fontWeight: '900' },
 });

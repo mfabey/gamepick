@@ -1246,3 +1246,32 @@ Kapalı bölüm (sunucu bildirdiğinde) soluk + dokunulmaz + başlıkta kırmız
 güncellendi), `npx expo export` iOS ve Android başarılı. Cihazda görülmedi
 (emülatör yok): sayfanın açılış animasyonu, gölge ve Almanca başlık satırı
 gözle bakılmalı.
+
+### 25 Eylül — G-06 Sonuçlar: filtre dili tamamlandı (Claude)
+
+Oyunlar ekranında kalan üç eski parça 2.0'a geçti; filtre dili (hap,
+sayfa, etkin çipler) baştan sona 2.0.
+
+- **Filtre düğmesi → kit results() hapı** ("⚙ Filtrele ②"): 2.0 `Chip` +
+  `sliders` + sayı rozeti. **Kullanıcı kararı (25 Eylül):** bölüm çiplerinin
+  satırında İLK öğe; arama kutusu kitteki gibi tam genişlik. Eskiden kutunun
+  yanında 44 pt kareydi (40 pt `SearchField`'dan 4 pt yüksek).
+- 2.0 `Chip`'e `count` eklendi: başlıktan sonra satır içinde rozet
+  (`IconButton` rozetinin aynı ölçü/renk; köşe yerine akışta).
+- **Etkin filtre çipleri → 2.0 `Chip removable`** (DS 2 "RPG ×"); ekrana
+  özel 32 pt kopya ve Ionicons × kalktı.
+- **Geri düğmesi → 2.0 `IconButton` `back`** (NavBar'ın ikon/çizgi ölçüsü;
+  kenar düzeltmesi `tokens.navBar.backEdge`). Eski `components/IconButton`
+  bu ekrandan çıktı.
+- `check:spacing` 178 → 176, taban güncellendi.
+
+**Kitten fark:** kit hapı ayrı bir sonuç çubuğunda ("“elden” için 24
+sonuç · Filtrele"); o çubuk eklenmedi — hap, kullanıcı kararıyla bölüm
+satırında. API bir `total` döndürüyor ama birden çok kaynağın toplamı
+(RAWG + Steam + statik), gösterilecek sayı olarak doğruluğu ölçülmedi. Birleşik arama (Kişiler/Haberler/Videolar
+kapsamları) sunucu ucu gerektiriyor — ayrı iş.
+
+**Doğrulama:** `npm run check` geçti, `npx expo export` iOS ve Android
+başarılı. Cihazda görülmedi (emülatör yok): bölüm satırının yatay
+kaydırması, hap rozeti ve 34 pt çiplerle katlanan başlığın yüksekliği
+gözle bakılmalı.

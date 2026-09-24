@@ -9,7 +9,6 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { fetchGames } from '../src/api/games';
-import IconButton from '../src/components/IconButton';
 import { fetchQuery, getEntry, isFresh, cacheTs } from '../src/services/queryCache';
 import CevrimdisiBant from '../src/components/CevrimdisiBant';
 import { useCevrimdisi } from '../src/hooks/useCevrimdisi';
@@ -26,7 +25,8 @@ import FilterSheet, { FilterButton, countFilters, EtkinFiltreler } from '../src/
 import LimitedMode from '../src/components/LimitedMode';
 import EmptyState from '../src/components/EmptyState';
 import { SearchField } from '../src/components/ui/SearchField';
-import { Chip as UIChip, Txt } from '../src/components/ui/Primitives';
+import { Chip as UIChip, IconButton, Txt } from '../src/components/ui/Primitives';
+import { component as K } from '../src/theme/tokens';
 
 // Maketin sütun sayısı ve o sayının 390 pt'de verdiği hücre genişliği:
 // (390 − 2×10) / 2 = 185. Geniş ekranda sütun bu ölçüden türüyor.
@@ -321,14 +321,14 @@ export default function GamesScreen() {
             anda en çok yeri o alır. Yan yana dururken başlığın taban çizgisi
             ile hizalı ve dokunma hedefi (44pt) korunuyor. */}
         <View style={styles.titleRow}>
-          <IconButton icon="chevron-back" size={26} color={colors.text}
-            onPress={goBack} style={styles.backBtn} />
+          <IconButton icon="back" label={t('a11y.back')} iconSize={K.navBar.backIcon}
+            strokeWidth={K.navBar.backStroke} onPress={goBack} style={styles.backBtn} />
           <Txt variant="largeTitle" accessibilityRole="header" numberOfLines={1} style={styles.flex}>{t('games.title')}</Txt>
         </View>
-        {/* Arama + filtre AYNI SATIRDA: ikisi de "listeyi daralt" işi ve
-            filtre düğmesi kendi satırını hak etmiyor. Rozet etkin filtre
-            sayısını taşıyor — sayfa kapalıyken hangi filtrelerin açık
-            olduğunu gösteren tek işaret o. */}
+        {/* Arama TAM GENİŞLİK (kit): filtre düğmesi eskiden burada, kutunun
+            yanında 44 pt kareydi; artık bölüm çiplerinin başında "Filtrele ②"
+            hapı. Rozet etkin filtre sayısını taşıyor, altındaki etkin filtre
+            çipleri de hangilerinin açık olduğunu söylüyor. */}
         {/* Arama alanı 2.0 `SearchField` (kit search_field): 40 pt, köşe 12,
             `fill` zemin, 16 pt metin, odakta içte kırmızı halka ve temizle
             düğmesi. Öncesi ekrana özel, kenarlıklı ve 14 pt bir kopyaydı —
@@ -342,7 +342,6 @@ export default function GamesScreen() {
               returnKeyType="search"
             />
           </View>
-          <FilterButton count={filterCount} onPress={() => setSheetOpen(true)} />
         </View>
       </View>
 
@@ -351,6 +350,9 @@ export default function GamesScreen() {
           kaldı çünkü o bir filtre değil, listenin ne olduğunu söyleyen ana
           kip (indirimdekiler ayrı bir Steam yolundan geliyor). */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll} contentContainerStyle={[styles.chipsRow, { paddingBottom: 6 }]}>
+        {/* Filtre hapı satırın İLK öğesi (kit results() "Filtrele ②"; kullanıcı
+            kararı, 25 Eylül). Arama kutusu böylece kitteki gibi tam genişlik. */}
+        <FilterButton count={filterCount} onPress={() => setSheetOpen(true)} />
         {SECTIONS.map(s => (
           <Chip key={s.v} active={section === s.v} label={s.label} onPress={() => setSection(s.v)} />
         ))}
@@ -552,10 +554,11 @@ const makeStyles = (colors) => StyleSheet.create({
   },
   header: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: 6 },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 2, marginBottom: spacing.md },
-  // IconButton 44pt'lik hedefi ortalıyor, yani chevron kendi kutusunda ~9pt
+  // IconButton 44pt'lik hedefi ortalıyor, yani ok kendi kutusunda ~10pt
   // içeride kalıyor. Negatif kenar boşluğu onu geri alıyor: aksi hâlde ok,
   // altındaki arama kutusunun sol kenarına göre sağa kaçık görünüyordu.
-  backBtn: { marginLeft: -11 },
+  // Değer NavBar'ınkiyle aynı (tokens.navBar.backEdge).
+  backBtn: { marginLeft: K.navBar.backEdge },
   flex: { flex: 1, minWidth: 0 },
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   chipsScroll: { flexGrow: 0, flexShrink: 0, maxHeight: 54 },
