@@ -1,97 +1,98 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// KOMPAKT SATIR — kart ailesinin E bedeni (Faz 2).
+// KOMPAKT OYUN SATIRI — 2.0, kit s4.py profile() → prow().
 //
-// "Yoğun listeler (İstek listesi, Liste detayı, seçiciler). Ad tek satır +
-//  ellipsis — burada ad zaten BİLİNEN bir şeyin hatırlatıcısı. Ayırıcı çizgi
-//  YALNIZCA BURADA meşru."
+// Yoğun listeler (Liste detayı, Koleksiyon detayı). Ad tek satır + ellipsis —
+// burada ad zaten BİLİNEN bir şeyin hatırlatıcısı.
 //
-// NEDEN AYRI BİR BİLEŞEN. Üç ekran aynı işi üç ayrı biçimde yapıyordu:
-//   wishlist        → 96×54 yatay küçük görsel, 2 satır ad, fiyat satırı
-//   list/[id]       → 2 sütunlu ızgara, ad KAPAK ÜSTÜNDE
-//   collection/[id] → aynısı
-// Son ikisi Faz 2'nin öz-denetimindeki "açık temada kapak üstü metin"
-// maddesini de deliyordu: kapak açık renkliyse beyaz ad kayboluyor.
+// NEDEN AYRI BİR BİLEŞEN (Faz 2'den): list/[id] ve collection/[id] 2 sütunlu
+// ızgarada adı KAPAK ÜSTÜNE yazıyordu; açık temada açık renkli kapakta beyaz
+// ad kayboluyordu. Satır bunu çözdü, 2.0 ölçüsü aynı kararı taşıyor.
 //
-// SABİT 72pt — FlashList sözleşmesi. `estimatedItemSize` bir tahmin değil,
-// ölçü: satır içerikle büyümediği için liste kaydırmada sıçramıyor.
+// 2.0 FARKI: kapak 36×48 → 46×60 ve satırı dolduruyor; satır 72 → 60 ve
+// satırlar arası 8. AYRAÇ KALKTI: Faz 2'de kapak satırdan küçüktü ve satırları
+// ancak çizgi ayırıyordu; kitte kapak satırın tam boyu, 8 pt boşlukla kapaklar
+// satırları kendisi ayırıyor. Kapağın üstünde karartma yok (GameCover'ın
+// perdesi kapak üstüne yazı yazmak için; burada yazı kapağın yanında).
 //
-// Ölçüler makette ölçüldü: satır 72 · kapak 36×48 (3:4, r8) · boşluk 12 ·
-// ad 15/600 tek satır · durum 13/text3 · sağ yuva 15/text3.
+// SABİT YÜKSEKLİK — FlashList sözleşmesi: satır içerikle büyümüyor, liste
+// kaydırmada sıçramıyor. SATIR_Y satır + satır arası boşluk.
 // ─────────────────────────────────────────────────────────────────────────────
-import { memo } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { memo, useState } from 'react';
+import { View, StyleSheet } from 'react-native';
 
-import GameCover from './GameCover';
-import { useStyles, useTheme } from '../context/ThemeContext';
-import { radius, spacing, type, PRESSED } from '../theme';
+import PosterImage from './PosterImage';
+import Monogram from './Monogram';
+import { Icon } from './Icon';
+import { PressableScale, Txt } from './ui/Primitives';
+import { useDesignTheme } from '../theme/useDesignTheme';
+import { component as K } from '../theme/tokens';
 
-export const SATIR_Y = 72;
+const R = K.gameRow;
+export const SATIR_Y = R.height + R.rowGap;
 
 /**
- * @param {object}  game        { id, name, image }
+ * @param {object}  game        { id, name, image, logo? }
  * @param {node}   [durum]      ad altındaki tek satır ("Kütüphanende · 46 saat")
- * @param {node}   [sag]        sağ yuva; verilmezse chevron
- * @param {bool}   [ayirici]    alt çizgi (varsayılan açık; son satırda kapatılır)
+ * @param {node}   [sag]        sağ yuva; verilmezse ok
  * @param {func}    onPress
  * @param {func}   [onLongPress]
  */
-function GameRow({ game, durum, sag, ayirici = true, onPress, onLongPress }) {
-  const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
+function GameRow({ game, durum, sag, onPress, onLongPress }) {
+  const { colors } = useDesignTheme();
+  // Kapak zinciri (görsel → logo) tükenirse MONOGRAM, boş kutu değil. Düşen
+  // adres tutuluyor: FlashList satırı başka oyuna verdiğinde yeni adres denenir.
+  const [failedUri, setFailedUri] = useState(null);
+  const showMonogram = !game?.image || failedUri === game.image;
 
   return (
-    <Pressable
+    <PressableScale
       onPress={onPress}
       onLongPress={onLongPress}
       delayLongPress={350}
       accessibilityRole="button"
       accessibilityLabel={game?.name}
-      style={({ pressed }) => [styles.satir, ayirici && styles.ayirici, pressed && PRESSED]}
+      style={styles.satir}
     >
-      {/* 36×48 — 44pt eşiğinin ALTINDA, dolayısıyla kapaksız oyunda
-          "kapak yok" notu çıkmıyor (Faz 1 kuralı). Bu bedende baş harf
-          zaten tek başına yeterli: adın kendisi hemen yanında duruyor. */}
-      <GameCover
-        uri={game?.image}
-        fallbackUri={game?.logo}
-        name={game?.name}
-        recyclingKey={String(game?.id ?? '')}
-        style={styles.kapak}
-      />
+      <View style={[styles.kapak, { backgroundColor: colors.surface2 }]}>
+        {showMonogram
+          ? <Monogram name={game?.name} style={StyleSheet.absoluteFill} not={false} />
+          : <PosterImage
+              uri={game.image}
+              fallbackUri={game?.logo}
+              recyclingKey={String(game?.id ?? '')}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              style={StyleSheet.absoluteFill}
+              onError={() => setFailedUri(game.image)}
+            />}
+      </View>
 
       <View style={styles.metin}>
-        <Text numberOfLines={1} style={styles.ad}>{game?.name}</Text>
+        <Txt variant="cardTitle" numberOfLines={1}>{game?.name}</Txt>
         {durum ? (
           typeof durum === 'string'
-            ? <Text numberOfLines={1} style={styles.durum}>{durum}</Text>
+            ? <Txt variant="footnote" numberOfLines={1} style={{ color: colors.text2 }}>{durum}</Txt>
             : durum
         ) : null}
       </View>
 
       {sag !== undefined ? sag : (
-        <Ionicons name="chevron-forward" size={16} color={colors.text3} />
+        <Icon name="chev" size={R.chevron} color={colors.text3} strokeWidth={R.chevronStroke} />
       )}
-    </Pressable>
+    </PressableScale>
   );
 }
 
-const makeStyles = (colors) => StyleSheet.create({
+const styles = StyleSheet.create({
   satir: {
-    height: SATIR_Y,
+    height: R.height,
+    marginBottom: R.rowGap,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.s12,
+    gap: R.gap,
   },
-  // Ayırıcı bu bedende MEŞRU: satırlar arasında kapak boşluğu yok, göz
-  // nereden nereye olduğunu ancak çizgiyle ayırıyor.
-  ayirici: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.cardBorder },
-  kapak: { width: 36, height: 48, borderRadius: radius.sm, overflow: 'hidden', backgroundColor: colors.card },
-  // Maket 2px diyor; ölçeğin en küçük basamağı 4. 72pt'lik satırda
-  // fark görünmüyor, ölçek disiplini duruyor.
-  metin: { flex: 1, minWidth: 0, gap: spacing.s4 },
-  ad: { fontSize: type.subhead, fontWeight: '600', color: colors.text },
-  durum: { fontSize: type.footnote, color: colors.text3 },
+  kapak: { width: R.coverWidth, height: R.coverHeight, borderRadius: R.coverRadius, overflow: 'hidden' },
+  metin: { flex: 1, minWidth: 0 },
 });
 
 export default memo(GameRow);

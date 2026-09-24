@@ -1069,3 +1069,31 @@ eklemek kart başına fiyat çağrısı demek — ayrı karar.
 **Doğrulama:** `npm run check` geçti (`check-layout` yeni sabitlerle
 güncellendi), `npx expo export --platform ios` başarılı. Cihazda
 görülmedi: bu makinede emülatör/adb yok.
+
+### 24 Eylül — Kart ailesi 2/4: GameRow → kitin prow satırı (Claude)
+
+`GameRow` yalnız `collection/[id]` ve `list/[id]`'de kullanılıyor; ikisi de
+yalnız `game` + dokunma olaylarını veriyor (`durum`/`sag` API'si duruyor,
+çağıran yok; `ayirici` kaldırıldı — çağıran yoktu).
+
+**Kit s4.py profile() → prow():** satır 60, kapak 46×60 (köşe 9), boşluk 12,
+ad 15/20/600 (`cardTitle`), meta 13/18 text2 (`footnote`), 16 pt `chev`
+(2.4 çizgi), satırlar arası 8. Ölçüler `tokens.component.gameRow`'a yazıldı;
+tokenlarda oyun satırı ölçüsü yoktu.
+
+**Faz 2'den farklar:**
+- Satır 72 → 60 + 8 boşluk (`SATIR_Y` 68); kapak 36×48 → 46×60.
+- **Ayraç kalktı.** Faz 2'de kapak satırdan küçüktü, satırları çizgi
+  ayırıyordu; kitte kapak satırın tam boyu ve 8 pt boşlukla kapaklar
+  satırları kendisi ayırıyor.
+- Kapakta karartma yok: `GameCover`'ın perdesi kapak ÜSTÜNE yazı içindi.
+  Yerine `PosterImage` (görsel → logo zinciri korunuyor) + zincir tükenince
+  `Monogram` — `ui/GameCard` ile aynı `failedUri` kalıbı.
+- Monogram'ın "kapak yok" notu kapalı: 46 pt, notun 44 pt eşiğini aşıyor ve
+  bu boyutta not sıkışık duruyor (Faz 2'de 36 pt eşiğin altındaydı, not
+  zaten çıkmıyordu — davranış aynı).
+- Basma geri bildirimi 2.0 `PressableScale` (ListRow ile aynı); uzun basma
+  (koleksiyondan çıkarma, 350 ms) korunuyor.
+
+**Doğrulama:** `npm run check` geçti (boşluk tabanı 198, artmadı),
+`npx expo export --platform ios` başarılı. Cihazda görülmedi (emülatör yok).

@@ -490,6 +490,10 @@ export const component = {
   badgeSmall: { height: 18, paddingH: 6, radius: 5, gap: 3, icon: 11 },
   comment: { avatar: 40, replyAvatar: 32, gap: 10, headHeight: 20, nameGap: 6, textTop: 4, actionsTop: 6, actionsHeight: 28, actionsGap: 18, heart: 15, heartGap: 5, replyIndent: 52 },
   userRow: { height: 60, gap: 12, avatar: 44, thumb: 44, thumbRadius: 12 },
+  // Kompakt oyun satırı — kit s4.py profile() prow(): 60 yükseklik, kapak
+  // 46×60 (köşe 9), boşluk 12, ad 15/20/600, meta 13/18 text2, 16 pt ok;
+  // satırlar arası 8 (ayraç yok).
+  gameRow: { height: 60, gap: 12, coverWidth: 46, coverHeight: 60, coverRadius: 9, rowGap: 8, chevron: 16, chevronStroke: 2.4 },
   // `dot`: sunucu okunmamış SAYISI vermiyor (boolean), sayaç rozeti uydurma
   // olurdu. Kitteki tek okunmamış noktası bildirim satırınınki (8, AC) — aynı
   // anlamın çizimi olduğu için ölçüsü oradan alındı.
