@@ -1,13 +1,15 @@
 import { useState, useCallback } from 'react';
-import {
-  View, Text, TextInput, Pressable, StyleSheet, Modal,
-  KeyboardAvoidingView, ActivityIndicator,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Pressable, TextInput, StyleSheet, Modal, KeyboardAvoidingView, ScrollView } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-
-import { radius, spacing, type, PRESSED, NUMERIC, SHEET_LAYOUT } from '../theme';
-import { useStyles, useTheme } from '../context/ThemeContext';
+import { Button, Txt } from './ui/Primitives';
+import { NavBar } from './ui/Navigation';
+import Avatar from './Avatar';
+import { Icon } from './Icon';
+import { useDesignTheme } from '../theme/useDesignTheme';
+import { layout, space, typography } from '../theme/tokens';
+import { useYanBosluk } from '../hooks/useIcerikAlani';
+import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { createPost } from '../api/social';
 
@@ -25,8 +27,9 @@ import { createPost } from '../api/social';
 const MAX_LEN = 500;
 
 export default function PostComposer({ visible, onClose, onPosted, replyTo = null, game = null }) {
-  const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
+  const { colors } = useDesignTheme();
+  const { account } = useAuth();
+  const yan = useYanBosluk();
   const { t } = useLanguage();
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
@@ -64,111 +67,61 @@ export default function PostComposer({ visible, onClose, onPosted, replyTo = nul
     }
   }, [text, busy, game, replyTo, onPosted, onClose, t]);
 
-  const left = MAX_LEN - text.length;
-
+  const name = account?.displayName || account?.name || account?.username || '';
+  const hint = replyTo ? t('post.replyHint') : t('post.hint');
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={close}>
-      <KeyboardAvoidingView
-        behavior="padding"
-        style={styles.backdrop}
-      >
-        <View style={styles.sheet}>
-          <View style={styles.head}>
-            <Pressable onPress={close} hitSlop={10} style={({ pressed }) => pressed && PRESSED}>
-              <Text style={styles.cancel}>{t('common.cancel')}</Text>
-            </Pressable>
-
-            <Text style={styles.title}>{replyTo ? t('post.replyTitle') : t('post.newTitle')}</Text>
-
-            <Pressable
-              onPress={submit}
-              disabled={!text.trim() || busy}
-              hitSlop={10}
-              style={({ pressed }) => [
-                styles.send,
-                (!text.trim() || busy) && styles.sendOff,
-                pressed && PRESSED,
-              ]}
-            >
-              {busy
-                ? <ActivityIndicator size="small" color="#fff" />
-                : <Text style={[styles.sendText, (!text.trim() || busy) && styles.sendTextOff]}>{t('post.send')}</Text>}
-            </Pressable>
+    <Modal visible={visible} animationType="slide" onRequestClose={close} presentationStyle="fullScreen">
+      <SafeAreaProvider>
+      <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top', 'bottom']}>
+        <KeyboardAvoidingView behavior="padding" style={styles.flex}>
+          <View style={{ marginHorizontal: yan }}>
+            <NavBar title={replyTo ? t('post.replyTitle') : t('post.newTitle')} border
+              left={<Pressable accessibilityRole="button" disabled={busy} accessibilityState={{ disabled: busy }}
+                onPress={close} style={styles.cancel}>
+                <Txt variant="input" style={{ color: colors.text2 }}>{t('common.cancel')}</Txt>
+              </Pressable>}
+              right={<Button title={t('post.send')} height={34} onPress={submit}
+                disabled={!text.trim()} loading={busy} />} />
           </View>
-
-          <TextInput
-            style={styles.input}
-            placeholder={replyTo ? t('post.replyHint') : t('post.hint')}
-            placeholderTextColor={colors.text3}
-            value={text}
-            onChangeText={setText}
-            multiline
-            autoFocus
-            maxLength={MAX_LEN}
-            textAlignVertical="top"
-          />
-
-          {game?.appid ? (
-            <View style={styles.gameChip}>
-              <Ionicons name="game-controller-outline" size={14} color={colors.text2} />
-              <Text style={styles.gameName} numberOfLines={1}>{game.name}</Text>
+          <ScrollView keyboardShouldPersistTaps="handled" style={styles.flex}
+            contentContainerStyle={[styles.body, { paddingHorizontal: yan + layout.gutter }]}>
+            <View style={styles.author}>
+              <Avatar avatar={account?.avatar} name={name} size={40} />
+              <View style={styles.flex}>
+                <Txt variant="cardTitle" numberOfLines={1}>{name}</Txt>
+                {account?.username ? <Txt variant="footnote" style={{ color: colors.text3 }}>@{account.username}</Txt> : null}
+              </View>
             </View>
-          ) : null}
-
-          <View style={styles.foot}>
-            {error ? <Text style={styles.error}>{error}</Text> : <View />}
-            <Text style={[styles.count, NUMERIC, left < 40 && { color: colors.accentText }]}>{left}</Text>
+            <TextInput style={[styles.input, { color: colors.text }]} placeholder={hint}
+              accessibilityLabel={hint} placeholderTextColor={colors.text3} selectionColor={colors.red}
+              value={text} onChangeText={setText} multiline autoFocus maxLength={MAX_LEN}
+              editable={!busy} textAlignVertical="top" maxFontSizeMultiplier={1.3} />
+            {game?.appid ? <View style={[styles.game, { backgroundColor: colors.surface1 }]}>
+              <Icon name="pad" size={16} color={colors.text2} />
+              <Txt variant="footnoteStrong" numberOfLines={1} style={styles.shrink}>{game.name}</Txt>
+            </View> : null}
+          </ScrollView>
+          <View style={[styles.foot, { paddingHorizontal: yan + layout.gutter, backgroundColor: colors.bg2, borderTopColor: colors.line }]}>
+            <Txt variant="footnote" accessibilityLiveRegion="polite" style={[styles.flex, { color: colors.red }]}>{error}</Txt>
+            <Txt variant="footnote" style={{ color: text.length === MAX_LEN ? colors.red : colors.text3,
+              fontVariant: ['tabular-nums'] }}>{text.length}/{MAX_LEN}</Txt>
           </View>
-        </View>
-      </KeyboardAvoidingView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+      </SafeAreaProvider>
     </Modal>
   );
 }
 
-const makeStyles = (colors) => StyleSheet.create({
-  // KARAR 2 — YAZMA YÜZEYİ bgElevated, KARARTMA colors.overlay.
-  // Dört yazma yüzeyinden ÜÇÜ zaten bgElevated'dı; bu tek aykırıydı
-  // (colors.bg) ve AÇIK TEMADA sayfa arkasındaki ekranla AYNI renge
-  // düşüyordu — yükseklik yönü kayboluyordu. Karartma da sabit bir
-  // rgba yerine palete bağlandı.
-  backdrop: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },
-  sheet: {
-    ...SHEET_LAYOUT,
-    backgroundColor: colors.bgElevated,
-    borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl,
-    paddingHorizontal: spacing.lg, paddingTop: 14, paddingBottom: 28,
-  },
-  head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  cancel: { color: colors.text2, fontSize: type.subhead },
-  title: { color: colors.text, fontSize: type.subhead, fontWeight: '700' },
-  // FAZ 6 — TEK GÖNDER DİLİ. Hap + nötr dolgu bir SEÇİM dili; bu ise
-  // birincil eylem. Üç bestecide aynı: 44pt · radius.md · subhead 15/600 ·
-  // accentFillStrong.
-  send: {
-    backgroundColor: colors.accentFillStrong, borderRadius: radius.md,
-    paddingHorizontal: spacing.s20, height: 44,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  // Opaklık DEĞİL yüzey: opacity 0.4 beyaz etiketi 1.9:1'e düşürüyordu.
-  sendOff: { backgroundColor: colors.bgInput },
-  // tema-bagimsiz: dolu marka dugmesinin uzerinde
-  sendText: { color: '#fff', fontSize: type.subhead, fontWeight: '600' },
-  sendTextOff: { color: colors.text3 },
-
-  input: {
-    color: colors.text, fontSize: type.body, lineHeight: 22,
-    minHeight: 130, marginTop: 14,
-  },
-
-  gameChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 7, alignSelf: 'flex-start',
-    backgroundColor: colors.card, borderRadius: radius.md,
-    borderWidth: 1, borderColor: colors.cardBorder,
-    paddingHorizontal: 10, paddingVertical: 6, maxWidth: '100%',
-  },
-  gameName: { color: colors.text2, fontSize: type.caption, fontWeight: '600', flexShrink: 1 },
-
-  foot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.md },
-  error: { color: colors.accentText, fontSize: type.caption, flexShrink: 1, paddingRight: spacing.md },
-  count: { color: colors.text3, fontSize: type.caption, fontWeight: '600' },
+const styles = StyleSheet.create({
+  safe: { flex: 1 },
+  cancel: { minHeight: 44, justifyContent: 'center' },
+  flex: { flex: 1 },
+  shrink: { flexShrink: 1 },
+  body: { flexGrow: 1, paddingVertical: space[20] },
+  author: { flexDirection: 'row', alignItems: 'center', gap: space[12] },
+  input: { ...typography.bodyLarge, lineHeight: 26, minHeight: 104, marginTop: space[14], padding: 0 },
+  game: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', maxWidth: '100%',
+    gap: space[8], paddingHorizontal: space[12], paddingVertical: space[8], borderRadius: 10, marginTop: space[16] },
+  foot: { flexDirection: 'row', alignItems: 'center', gap: space[12], paddingVertical: space[12], borderTopWidth: StyleSheet.hairlineWidth },
 });

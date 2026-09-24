@@ -9,27 +9,27 @@
 import { useState } from 'react';
 import Constants from 'expo-constants';
 import { NavBar } from '../src/components/ui/ScreenParts';
-import { Txt, Segmented } from '../src/components/ui/Primitives';
+import { Txt, PressableScale, IconButton, ListGroup, ListRow, Switch } from '../src/components/ui/Primitives';
+import Avatar from '../src/components/Avatar';
+import { Icon } from '../src/components/Icon';
+import { useDesignTheme } from '../src/theme/useDesignTheme';
+import { space, component } from '../src/theme/tokens';
 import { useAppPreferences, setAppPreference } from '../src/services/appPreferences';
-import { View, Text, Pressable, StyleSheet, ScrollView, Switch, Alert, ActivityIndicator, Linking } from 'react-native';
+import { View, StyleSheet, ScrollView, Alert, ActivityIndicator, Linking } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 
-import { radius, spacing, type, PRESSED } from '../src/theme';
 import { useYanBosluk } from '../src/hooks/useIcerikAlani';
 import { useLanguage } from '../src/context/LanguageContext';
 import { useAuth } from '../src/context/AuthContext';
 import { useWishlist } from '../src/context/WishlistContext';
 import { signOut } from '../src/services/session';
 import { LANGUAGES } from '../src/services/locale';
-import { SettingsGroup, SettingsRow } from '../src/components/SettingsList';
-import IconButton from '../src/components/IconButton';
 import { useConnectedLibrary } from '../src/hooks/useConnectedLibrary';
 import ChoiceSheet from '../src/components/ChoiceSheet';
 import { pushHataAnahtari } from '../src/notifications';
-import { useTheme, useStyles } from '../src/context/ThemeContext';
+import { useTheme } from '../src/context/ThemeContext';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // YASAL VE İLETİŞİM
@@ -50,20 +50,22 @@ const SITE = 'https://www.gamerisen.com';
 const SUPPORT_EMAIL = 'support@gamerisen.com';
 
 export default function SettingsScreen() {
-  const { colors, pref, setPref } = useTheme();
-  const styles = useStyles(makeStyles);
+  const { pref, setPref } = useTheme();
+  const { colors } = useDesignTheme();
   const yan = useYanBosluk();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { t, lang, setLang } = useLanguage();
   const [dilAcik, setDilAcik] = useState(false);
   const preferences = useAppPreferences();
+  const [themeOpen, setThemeOpen] = useState(false);
+  const [notifBusy, setNotifBusy] = useState(false);
   // Bağlı hesap yönetimi PROFİLDEN buraya taşındı (Hesap grubu).
   const {
     account, steamAccounts, xbox, busy,
     loginSteam, loginXbox, logoutSteam, logoutXbox,
   } = useAuth();
-  const { steamGames, xboxGames, totalGamesCount: gameCount } = useConnectedLibrary();
+  const { totalGamesCount: gameCount } = useConnectedLibrary();
   const { items, enabled, enableNotifications, disableNotifications } = useWishlist();
 
   /**
@@ -79,7 +81,7 @@ export default function SettingsScreen() {
     }
   };
 
-  const onToggleNotif = async (val) => {
+  const toggleNotifications = async (val) => {
     if (val) {
       const r = await enableNotifications();
       if (r.error) {
@@ -100,6 +102,14 @@ export default function SettingsScreen() {
     } else {
       await disableNotifications();
     }
+  };
+
+  const onToggleNotif = async (value) => {
+    if (notifBusy) return;
+    setNotifBusy(true);
+    try { await toggleNotifications(value); }
+    catch { Alert.alert(t('notif.title'), t('v2.loadError')); }
+    finally { setNotifBusy(false); }
   };
 
   /**
@@ -142,211 +152,80 @@ export default function SettingsScreen() {
     ]);
   };
 
+  const profileName = account?.displayName || account?.name || account?.username || t('prof.editProfile');
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      {/* Başlık listenin DIŞINDA: içerik kolonuyla aynı hizaya
-          getiriliyor — başlık tam genişlikte kalsaydı sayfanın adı ile
-          anlattığı şey iki ayrı sütunda dururdu. */}
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
       <NavBar title={t('prof.settingsTitle')} />
-
-      <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 40, paddingHorizontal: yan + spacing.lg }]} showsVerticalScrollIndicator={false}>
-        {/* ── BÖLÜM BAŞLIKLARI GERİ GELDİ ──
-            Eski karar "başlık yok, boşluk yeter"di ve 9 satırda doğruydu.
-            Profil sekmesi içerik sayfasına dönüşünce oradaki 10 kısayolun
-            altısı ile bağlı hesap satırları BURAYA taşındı; liste 19 satıra
-            çıktı ve boşlukla gruplama taranamaz hâle geldi. Başlıklar
-            taksonomi değil, "ne bulacağın"ın adı. */}
-
-        {/* ── Hesap ──
-            Profil düzenleme ve bağlı mağazalar aynı yerde: ikisi de "bu hesap
-            kim" sorusunun cevabı. Bağlı hesap satırları PROFİLDEN geldi —
-            profilde artık durumu bir çip söylüyor, yönetimi burası yapıyor. */}
-        <SettingsGroup title={t('set.grpAccount')}>
-          <SettingsRow
-            icon="person-circle-outline"
-            label={t('prof.editProfile')}
-            onPress={() => router.push(account ? '/profile-edit' : '/account')}
-          />
-          {steamAccounts.map((acc) => (
-            <SettingsRow
-              key={acc.steamId}
-              icon="logo-steam"
-              label={acc.name}
-              desc={`Steam · ${t('auth.connected')}`}
-              right={<IconButton icon="close" size={18} color={colors.text3}
-                                 onPress={() => logoutSteam(acc.steamId)} />}
-            />
-          ))}
-          <SettingsRow
-            icon="add-circle-outline"
-            label={steamAccounts.length > 0 ? t('auth.addSteam') : t('auth.connectSteam')}
-            onPress={busy ? undefined : () => doLogin(loginSteam)}
-            disabled={busy}
-            right={busy ? <ActivityIndicator size="small" color={colors.steam} /> : undefined}
-          />
-          {xbox ? (
-            <SettingsRow
-              icon="logo-xbox"
-              label={xbox.gamertag}
-              desc={`Xbox · ${t('auth.connected')}`}
-              right={<IconButton icon="close" size={18} color={colors.text3} onPress={logoutXbox} />}
-            />
-          ) : (
-            <SettingsRow
-              icon="logo-xbox"
-              label={t('auth.connectXbox')}
-              onPress={busy ? undefined : () => doLogin(loginXbox)}
-              disabled={busy}
-              right={busy ? <ActivityIndicator size="small" color={colors.xbox} /> : undefined}
-            />
-          )}
-        </SettingsGroup>
-
-        {/* ── Oyun verim ──
-            Profildeki kısayol ızgarasının GEZİNME yarısı. İçerik yarısı
-            (koleksiyon · istek listesi · inceleme · gönderi) profilde sekme
-            oldu; kalanlar araç ve burada duruyorlar. */}
-        <SettingsGroup title={t('set.grpGameData')}>
-          <SettingsRow icon="grid-outline" label={t('prof.gLibrary')}
-                       value={gameCount > 0 ? String(gameCount) : undefined}
-                       onPress={() => router.push('/library')} />
-          <SettingsRow icon="list-outline" label={t('prof.gLists')}
-                       onPress={() => router.push('/lists')} />
-          <SettingsRow icon="albums-outline" label={t('prof.gCollections')}
-                       onPress={() => router.push('/collections')} />
-          <SettingsRow icon="card-outline" label={t('prof.gCards')}
-                       onPress={() => router.push(account ? '/game-cards' : '/account')} />
-          <SettingsRow icon="stats-chart-outline" label={t('prof.gStats')}
-                       onPress={() => router.push(account ? '/stats' : '/account')} />
-          <SettingsRow icon="sparkles-outline" label={t('prof.gDiscover')}
-                       onPress={() => router.push('/discover')} />
-          <SettingsRow icon="people-outline" label={t('prof.gSteam')}
-                       onPress={() => router.push(account ? '/steam-friends' : '/account')} />
-        </SettingsGroup>
-
-        <SettingsGroup title={t('set.grpApp')}>
-          <SettingsRow
-            icon="notifications-outline"
-            label={t('notif.enable')}
-            desc={t('notif.desc')}
-            right={(
-              <Switch
-                value={enabled}
-                onValueChange={onToggleNotif}
-                trackColor={{ false: colors.cardBorder, true: colors.green }}
-                thumbColor="#fff"
-              />
-            )}
-          />
-          {/* TEMA — handoff'un durum tablosunda "Sistem / koyu / açık" olarak
-              tanımlı. Yeniden yükleme YOK: palet artık reaktif, seçim anında
-              yansıyor (bkz. ThemeContext başı). */}
-          <View style={{ padding: spacing.s16, gap: spacing.s12 }}>
-            <Txt variant="body">{t('set.theme')}</Txt>
-            <Segmented value={pref} onChange={setPref} items={['system', 'dark', 'light'].map(value => ({ value, label: t('set.theme.' + value) }))} />
+      <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + space[28], paddingHorizontal: yan }} showsVerticalScrollIndicator={false}>
+        <PressableScale accessibilityRole="button" onPress={() => router.push(account ? '/profile-edit' : '/account')}
+          style={[styles.profile, { backgroundColor: colors.surface1 }]}>
+          <Avatar avatar={account?.avatar} name={profileName} size={component.settings.avatar} />
+          <View style={{ flex: 1 }}>
+            <Txt variant="headline" numberOfLines={2}>{account ? profileName : t('acc.signIn')}</Txt>
+            <Txt variant="footnote" style={{ color: colors.text2 }}>{t('set.accountSummary')}</Txt>
           </View>
-          <SettingsRow icon="play-outline" label={t('v2.autoplay')} right={<Switch value={preferences.autoplay} onValueChange={value => setAppPreference('autoplay', value).catch(() => Alert.alert(t('v2.loadError')))} trackColor={{ false: colors.cardBorder, true: colors.green }} />} />
-          <SettingsRow icon="accessibility-outline" label={t('v2.reduceMotion')} right={<Switch value={preferences.reduceMotion} onValueChange={value => setAppPreference('reduceMotion', value).catch(() => Alert.alert(t('v2.loadError')))} trackColor={{ false: colors.cardBorder, true: colors.green }} />} />
-          <SettingsRow
-            icon="language-outline"
-            label={t('set.language')}
-            value={LANGUAGES.find((l) => l.code === lang)?.name || lang}
-            onPress={showLanguagePicker}
-          />
-          {/* "Zevkini yeniden seç" KALKTI — hedefi olan "Hangilerini
-              sevdin?" ekranı tümden silindi. Zevk profili artık yalnızca
-              gerçek kullanımdan besleniyor (görüntüleme, kaydetme,
-              kütüphane); ayrıca bildirilmesi gerekmiyor. */}
-        </SettingsGroup>
-
-        <SettingsGroup title={t('set.grpPrivacy')}>
-          <SettingsRow
-            icon="lock-closed-outline"
-            label={t('soc.privacyTitle')}
-            onPress={() => router.push('/social-settings')}
-          />
-          {/* AYNI SAYFA, İKİNCİ KAPI — ve bilerek.
-              Engellenenler listesi "Sosyal gizlilik"in EN ALT bölümü ve o
-              satırın etiketinde "engel" kelimesi geçmiyordu: ayarların
-              hiçbir yerinde geçmiyordu. Engeli kaldırmak isteyen kullanıcının
-              önce doğru kapıyı tahmin etmesi, sonra dört anahtarı geçip
-              aşağı inmesi gerekiyordu.
-              Guideline 1.2 engelleme YÖNETİMİNİN bulunabilir olmasını istiyor;
-              aramayla bulunan bir şey bulunabilir sayılmaz. `?odak=engel`
-              sayfayı o bölüme kaydırıyor.
-              Çeviri anahtarı YENİ DEĞİL: `soc.blocked` ("Engellenenler")
-              bölüm başlığı olarak zaten beş dilde var — satırın vardığı yerle
-              birebir aynı kelime. */}
-          <SettingsRow
-            icon="person-remove-outline"
-            label={t('soc.blocked')}
-            onPress={() => router.push('/social-settings?odak=engel')}
-          />
-        </SettingsGroup>
-
-        {/* Destek ve yasal metinler — bkz. dosya başındaki gerekçe.
-            BAŞLIKSIZ KALIYOR: dört başlığın (Hesap · Oyun verim · Gizlilik ·
-            Uygulama) hiçbirine ait değil ve beşinci bir başlık eklemek,
-            listeyi başlıklarla doldurup taranabilirliği geri götürürdü. */}
-        <SettingsGroup>
-          <SettingsRow
-            icon="mail-outline"
-            label={t('set.support')}
-            desc={SUPPORT_EMAIL}
-            onPress={() => openPage('/support')}
-          />
-          <SettingsRow
-            icon="shield-checkmark-outline"
-            label={t('set.privacyPolicy')}
-            onPress={() => openPage('/privacy')}
-          />
-          <SettingsRow
-            icon="document-text-outline"
-            label={t('set.terms')}
-            onPress={() => openPage('/terms')}
-          />
-        </SettingsGroup>
-
-        {account && (
-          <SettingsGroup>
-            <SettingsRow icon="log-out-outline" label={t('acc.signOut')} onPress={onSignOut} />
-            {/* Apple zorunlu: uygulama içinden hesap silme.
-                TEK RENK İSTİSNASI — burada kırmızı gerçek bir uyarı taşıyor. */}
-            <SettingsRow
-              icon="trash-outline"
-              label={t('acc.deleteTitle')}
-              danger
-              onPress={() => router.push('/delete-account')}
-            />
-          </SettingsGroup>
-        )}
-        <Txt variant="caption" style={{ textAlign: 'center', color: colors.text3 }}>Gamerisen {Constants.expoConfig?.version || ''}</Txt>
+          <Icon name="chev" size={16} color={colors.text3} />
+        </PressableScale>
+        <View style={styles.groups}>
+          <ListGroup title={t('notif.title')} note={t('notif.desc')}>
+            <ListRow icon="heart" title={t('notif.enable')} trailing={<Switch accessibilityLabel={t('notif.enable')} disabled={notifBusy} value={enabled} onValueChange={onToggleNotif} />} />
+          </ListGroup>
+          <ListGroup title={t('set.appearance')}>
+            <ListRow icon="moon" title={t('set.theme')} value={t('set.theme.' + pref)} onPress={() => setThemeOpen(true)} />
+            <ListRow icon="layers" title={t('v2.reduceMotion')} trailing={<Switch accessibilityLabel={t('v2.reduceMotion')} value={preferences.reduceMotion} onValueChange={value => setAppPreference('reduceMotion', value).catch(() => Alert.alert(t('v2.loadError')))} />} />
+            <ListRow icon="play" title={t('v2.autoplay')} trailing={<Switch accessibilityLabel={t('v2.autoplay')} value={preferences.autoplay} onValueChange={value => setAppPreference('autoplay', value).catch(() => Alert.alert(t('v2.loadError')))} />} />
+            <ListRow icon="globe" title={t('set.language')} value={LANGUAGES.find(l => l.code === lang)?.name || lang} onPress={showLanguagePicker} />
+          </ListGroup>
+          <ListGroup title={t('set.grpPrivacy')}>
+            <ListRow icon="eye" title={t('soc.privacyTitle')} onPress={() => router.push('/social-settings')} />
+            <ListRow icon="lock" title={t('soc.blocked')} onPress={() => router.push('/social-settings?odak=engel')} />
+          </ListGroup>
+          <ListGroup title={t('set.grpAccount')}>
+            {steamAccounts.map(acc => <ListRow key={acc.steamId} icon="bag" title={acc.name} description={'Steam · ' + t('auth.connected')}
+              trailing={<IconButton icon="x" label={acc.name + ' · ' + t('auth.disconnect')} onPress={() => logoutSteam(acc.steamId)} />} />)}
+            <ListRow icon="plus" title={steamAccounts.length ? t('auth.addSteam') : t('auth.connectSteam')} onPress={() => doLogin(loginSteam)} disabled={busy}
+              trailing={busy ? <ActivityIndicator color={colors.text2} /> : undefined} />
+            {xbox ? <ListRow icon="pad" title={xbox.gamertag} description={'Xbox · ' + t('auth.connected')}
+              trailing={<IconButton icon="x" label={'Xbox · ' + t('auth.disconnect')} onPress={logoutXbox} />} />
+              : <ListRow icon="pad" title={t('auth.connectXbox')} onPress={() => doLogin(loginXbox)} disabled={busy}
+                  trailing={busy ? <ActivityIndicator color={colors.text2} /> : undefined} />}
+          </ListGroup>
+          <ListGroup title={t('set.grpGameData')}>
+            <ListRow icon="grid" title={t('prof.gLibrary')} value={gameCount > 0 ? String(gameCount) : undefined} onPress={() => router.push('/library')} />
+            <ListRow icon="book" title={t('prof.gLists')} onPress={() => router.push('/lists')} />
+            <ListRow icon="layers" title={t('prof.gCollections')} onPress={() => router.push('/collections')} />
+            <ListRow icon="image" title={t('prof.gCards')} onPress={() => router.push(account ? '/game-cards' : '/account')} />
+            <ListRow icon="poll" title={t('prof.gStats')} onPress={() => router.push(account ? '/stats' : '/account')} />
+            <ListRow icon="spark" title={t('prof.gDiscover')} onPress={() => router.push('/discover')} />
+            <ListRow icon="users" title={t('prof.gSteam')} onPress={() => router.push(account ? '/steam-friends' : '/account')} />
+          </ListGroup>
+          <ListGroup title={t('set.support')}>
+            <ListRow icon="mail" title={t('set.support')} description={SUPPORT_EMAIL} onPress={() => openPage('/support')} />
+            <ListRow icon="shield" title={t('set.privacyPolicy')} onPress={() => openPage('/privacy')} />
+            <ListRow icon="book" title={t('set.terms')} onPress={() => openPage('/terms')} />
+          </ListGroup>
+          {account && <>
+            <PressableScale accessibilityRole="button" onPress={onSignOut} style={[styles.signOut, { backgroundColor: colors.surface1 }]}>
+              <Icon name="logout" size={18} color={colors.red} />
+              <Txt variant="button" style={{ color: colors.red }}>{t('acc.signOut')}</Txt>
+            </PressableScale>
+            <ListGroup><ListRow icon="alert" title={t('acc.deleteTitle')} destructive onPress={() => router.push('/delete-account')} /></ListGroup>
+          </>}
+        </View>
+        <Txt variant="caption" style={[styles.version, { color: colors.text3 }]}>Gamerisen {Constants.expoConfig?.version || ''}</Txt>
       </ScrollView>
-
-      <ChoiceSheet
-        visible={dilAcik}
-        title={t('set.language')}
-        options={LANGUAGES.map((l) => ({ key: l.code, label: l.name }))}
-        selectedKey={lang}
-        onSelect={setLang}
-        onClose={() => setDilAcik(false)}
-      />
+      <ChoiceSheet visible={themeOpen} title={t('set.theme')} options={['system', 'dark', 'light'].map(key => ({ key, label: t('set.theme.' + key) }))}
+        selectedKey={pref} onSelect={setPref} onClose={() => setThemeOpen(false)} />
+      <ChoiceSheet visible={dilAcik} title={t('set.language')} options={LANGUAGES.map(l => ({ key: l.code, label: l.name }))}
+        selectedKey={lang} onSelect={setLang} onClose={() => setDilAcik(false)} />
     </SafeAreaView>
   );
 }
-
-// REAKTİF STİL: tema değişince yeniden üretiliyor. Modül düzeyinde tanımlı
-// olması şart — bileşen içinde tanımlansaydı her render'da yeni fonksiyon
-// olur, useMemo hiç tutmaz ve StyleSheet her çizimde yeniden kurulurdu.
-const makeStyles = (colors) => StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
-
-  head: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: spacing.md, paddingTop: 6, paddingBottom: 10,
-  },
-  title: { flex: 1, textAlign: 'center', fontSize: type.body, fontWeight: '900', color: colors.text },
-  iconBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-
-  body: { padding: spacing.lg },
+const styles = StyleSheet.create({
+  safe: { flex: 1 },
+  profile: { marginHorizontal: 20, marginTop: 16, minHeight: component.settings.profileHeight, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12,
+    flexDirection: 'row', alignItems: 'center', gap: component.settings.profileGap },
+  groups: { marginTop: space[28], gap: space[28] },
+  signOut: { marginHorizontal: 20, minHeight: 52, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  version: { textAlign: 'center', marginTop: 16 },
 });

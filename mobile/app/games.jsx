@@ -13,7 +13,7 @@ import IconButton from '../src/components/IconButton';
 import { fetchQuery, getEntry, isFresh, cacheTs } from '../src/services/queryCache';
 import CevrimdisiBant from '../src/components/CevrimdisiBant';
 import { useCevrimdisi } from '../src/hooks/useCevrimdisi';
-import GameCard from '../src/components/GameCard';
+import GameCard from '../src/components/ui/GameCard';
 import { GamesGridSkeleton, Reveal } from '../src/components/Skeleton';
 import { TopFade, BottomFade } from '../src/components/EdgeFade';
 import { prefetchImages } from '../src/utils/prefetch';
@@ -30,13 +30,11 @@ import { Chip as UIChip, Txt } from '../src/components/ui/Primitives';
 
 // Maketin sütun sayısı ve o sayının 390 pt'de verdiği hücre genişliği:
 // (390 − 2×10) / 2 = 185. Geniş ekranda sütun bu ölçüden türüyor.
-const COLS = 2;
-const HUCRE = 185;
 const NUM = 24;
 const PAGE1_TTL = 5 * 60 * 1000;   // 1. sayfa önbellek ömrü
 
 import { useReducedMotion } from '../src/hooks/useReducedMotion';
-import { useKartSutun } from '../src/hooks/useIcerikAlani';
+import { useDesignGrid } from '../src/hooks/useDesignGrid';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // BU EKRAN ARTIK SEKME DEĞİL, YIĞIN EKRANI.
@@ -254,10 +252,10 @@ export default function GamesScreen() {
   }, [reducedMotion, compact, headerH]);
 
   // Liste başlığın ALTINDAN kayıyor; dolgu olmasa ilk satır gizli kalırdı.
-  const sutun = useKartSutun(HUCRE, COLS);
+  const { columns: sutun, padding: gridPadding } = useDesignGrid();
   const listPad = useMemo(
-    () => ({ paddingHorizontal: 10, paddingTop: headerH + 6 }),
-    [headerH]
+    () => ({ paddingHorizontal: gridPadding, paddingTop: headerH + spacing.s12 }),
+    [headerH, gridPadding]
   );
 
   // FlashList için stabil referanslar (her render'da yeniden oluşmasın)
@@ -413,7 +411,7 @@ export default function GamesScreen() {
                   numColumns={sutun}
                   keyExtractor={keyExtractor}
                   renderItem={renderGame}
-                  contentContainerStyle={styles.listContent}
+                  contentContainerStyle={[styles.listContent, { paddingHorizontal: gridPadding }]}
                   showsVerticalScrollIndicator={false}
                   scrollEnabled={false}
                 />
@@ -562,7 +560,7 @@ const makeStyles = (colors) => StyleSheet.create({
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   chipsScroll: { flexGrow: 0, flexShrink: 0, maxHeight: 54 },
   chipsRow: { paddingHorizontal: spacing.lg, gap: spacing.sm, paddingVertical: spacing.sm, alignItems: 'center' },
-  cell: { flex: 1, paddingHorizontal: 6, paddingBottom: spacing.md },
+  cell: { flex: 1, alignItems: 'center', paddingHorizontal: 6, paddingBottom: spacing.md },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md },
   footer: { paddingVertical: spacing.xl },
 });

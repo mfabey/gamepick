@@ -136,7 +136,7 @@ export function PostHeader({ avatar, name, handle, time, badge, onProfile, onMor
           <View style={styles.postNameRow}>
             <Txt variant="cardTitle" numberOfLines={1} style={styles.shrink}>{name}</Txt>
             {badge}
-            <Txt variant="footnote" numberOfLines={1} style={{ color: colors.text3 }}>{`· ${time}`}</Txt>
+            <Txt variant="footnote" numberOfLines={1} style={{ color: colors.text3 }}>{time ? `· ${time}` : ''}</Txt>
           </View>
           <Txt variant="footnote" numberOfLines={1} style={{ color: colors.text3 }}>{handle}</Txt>
         </View>

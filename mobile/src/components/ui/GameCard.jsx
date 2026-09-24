@@ -1,4 +1,5 @@
 import { memo, useState } from 'react';
+import { useRouter } from 'expo-router';
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import PosterImage from '../PosterImage';
 import Monogram from '../Monogram';
@@ -15,7 +16,8 @@ import { useWishlist } from '../../context/WishlistContext';
 import { turAdi } from '../../services/genreName';
 
 // Data, identity and transition contracts stay shared with the existing cards.
-export default memo(function DesignGameCard({ game, onPress, onExpand, onDismiss }) {
+export default memo(function DesignGameCard({ game, onPress, onExpand, onDismiss, onLongPress, style }) {
+  const router = useRouter();
   const { colors } = useDesignTheme();
   const { t, locale, formatPrice } = useLanguage();
   const { isWatched, toggle } = useWishlist();
@@ -30,10 +32,15 @@ export default memo(function DesignGameCard({ game, onPress, onExpand, onDismiss
   const hasPrice = !free && price?.price != null;
   // ITAD yanıtı mağazayı adlandırıyor; adı yoksa fiyat Steam Store API'sinden (card-price yedeği).
   const store = hasPrice ? price.storeName || 'Steam' : null;
-  return <View style={s.card}>
+  const open = onExpand ? expand : onPress || (() => router.push({
+    pathname: '/game/[id]', params: { id: String(game.id), name: game.name,
+      image: game.image || '', slug: game.rawgSlug || '', appid: game.appid ? String(game.appid) : '',
+      hasSteam: game.hasSteam ? '1' : '' },
+  }));
+  return <View style={[s.card, style]}>
     <View ref={coverRef} collapsable={false} style={[s.cover, { backgroundColor: colors.surface2 }]}>
       <PressableScale accessibilityRole="button" accessibilityLabel={game.name}
-        onPress={onExpand ? expand : onPress} style={StyleSheet.absoluteFill}>
+        onPress={open} onLongPress={onLongPress} style={StyleSheet.absoluteFill}>
         {!game.image || failedUri === game.image
           ? <Monogram name={game.name} style={StyleSheet.absoluteFill} />
           : <PosterImage uri={game.image} recyclingKey={String(game.id)} contentFit="cover"
@@ -48,7 +55,7 @@ export default memo(function DesignGameCard({ game, onPress, onExpand, onDismiss
         onPress={() => onDismiss(game)} onLongPress={() => Alert.alert(t('home.whyThis'), t('home.whyThisBody'))}
         style={s.dismiss} /> : null}
     </View>
-    <Pressable accessibilityRole="button" onPress={onExpand ? expand : onPress}>
+    <Pressable accessibilityRole="button" onPress={open} onLongPress={onLongPress}>
       <Txt variant="cardTitle" numberOfLines={1} style={s.title}>{game.name}</Txt>
       {/* Kit game_m(): "tür · ★ puan" 12 text2, 11 pt altın yıldız; 16 yükseklik. */}
       <View style={s.meta}>

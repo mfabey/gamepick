@@ -17,8 +17,8 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { useCallback, useEffect, useState } from 'react';
 import {
-  View, Text, Pressable, StyleSheet, TextInput, ScrollView, Modal,
-  ActivityIndicator, Alert, KeyboardAvoidingView,
+  View, Text, Pressable, StyleSheet, ScrollView, Modal,
+  Alert, KeyboardAvoidingView,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -26,7 +26,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 import Avatar from '../src/components/Avatar';
-import { radius, spacing, type, avatar as avatarSize, PRESSED, NUMERIC, TOUCH_MIN, SHEET_LAYOUT } from '../src/theme';
+import { radius, spacing, type, SHEET_LAYOUT } from '../src/theme';
 import { useYanBosluk } from '../src/hooks/useIcerikAlani';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
@@ -36,7 +36,8 @@ import {
   setAvatar as apiSetAvatar,
 } from '../src/api/social';
 import { updateSessionUser } from '../src/services/session';
-import { chatCapabilities } from '../src/services/realtime';
+import { Button, TextField, Txt } from '../src/components/ui/Primitives';
+import { NavBar, QueryState } from '../src/components/ui/ScreenParts';
 
 // Sunucudaki MAX_BIO ile AYNI SAYI olmak zorunda (app/lib/social-store.js).
 // Ayrışırlarsa kullanıcı ekranda yazabildiği bir metni kaydedemez.
@@ -58,33 +59,25 @@ export default function ProfileEditScreen() {
   const [saving, setSaving] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
 
-  // FOTOĞRAF SEÇENEĞİ SUNUCUYA SORULUYOR. Kullanıcı görsel yüklemesi şu an
-  // kapalı (sunucuda `USER_UPLOADS_ENABLED`); kapalıyken düğmeyi çizip
-  // basınca "şu an kapalı" demek, sohbet kompozitöründe bilerek kaçınılan
-  // şeyin aynısı olurdu — Guideline 2.2 açısından tamamlanmamış uygulama
-  // sinyali.
-  //
-  // BAŞLANGIÇ KAPALI: yanıt gelene kadar düğme göstermek, bir an görünüp
-  // kaybolan düğme demek. `chatCapabilities` hata durumunda da kapalı
-  // dönüyor ve yanıtı önbelleğe alıyor — ek ağ trafiği yok.
-  const [fotoAcik, setFotoAcik] = useState(false);
-  useEffect(() => {
-    chatCapabilities().then((c) => setFotoAcik(!!c.photos)).catch(() => {});
-  }, []);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [loadAttempt, setLoadAttempt] = useState(0);
 
   useEffect(() => {
     let alive = true;
-    getMyProfile()
-      .then((r) => {
-        if (!alive || !r?.profile) return;
-        setProfile(r.profile);
-        setDisplayName(r.profile.displayName || '');
-        setBio(r.profile.bio || '');
-        setAvatarState(r.profile.avatar || null);
-      })
-      .catch(() => {});
+    setLoading(true);
+    setLoadError(false);
+    getMyProfile().then((r) => {
+      if (!alive) return;
+      if (!r?.profile?.username) throw new Error('PROFILE_UNAVAILABLE');
+      setProfile(r.profile);
+      setDisplayName(r.profile.displayName || '');
+      setBio(r.profile.bio || '');
+      setAvatarState(r.profile.avatar || null);
+    }).catch(() => { if (alive) setLoadError(true); })
+      .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
-  }, []);
+  }, [loadAttempt]);
 
   const save = useCallback(async () => {
     if (saving || !profile?.username) return;
@@ -134,23 +127,17 @@ export default function ProfileEditScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      {/* Başlık listenin DIŞINDA: içerik kolonuyla aynı hizaya
-          getiriliyor — başlık tam genişlikte kalsaydı sayfanın adı ile
-          anlattığı şey iki ayrı sütunda dururdu. */}
-      <View style={[styles.head, { marginHorizontal: yan }]}>
-        <Pressable onPress={() => router.back()} hitSlop={10}
-                   style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]}
-                   accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </Pressable>
-        <Text style={styles.title}>{t('prof.editProfile')}</Text>
-        <Pressable onPress={save} disabled={saving || !profile} hitSlop={10}
-                   style={({ pressed }) => [styles.saveBtn, pressed && PRESSED]}>
-          {saving
-            ? <ActivityIndicator size="small" color={colors.accentText} />
-            : <Text style={styles.saveText}>{t('prof.save')}</Text>}
-        </Pressable>
+      <View style={{ marginHorizontal: yan }}>
+        <NavBar title={t('prof.editProfile')} border
+          left={<Pressable accessibilityRole="button" disabled={saving} accessibilityState={{ disabled: saving }}
+            onPress={() => router.back()} style={styles.cancel}>
+            <Txt variant="input" style={{ color: colors.text2 }}>{t('common.cancel')}</Txt>
+          </Pressable>}
+          right={<Button title={t('prof.save')} height={34} onPress={save}
+            loading={saving} disabled={loading || loadError || !profile?.username} />} />
       </View>
+      <QueryState loading={loading} error={loadError}
+        retry={loadError ? () => setLoadAttempt(n => n + 1) : undefined} />
 
       {/* ANDROID'DE DE 'padding' — `undefined` DEĞİL. `undefined` iken
           KeyboardAvoidingView Android'de HİÇBİR ŞEY yapmıyor: RN 0.81
@@ -159,45 +146,33 @@ export default function ProfileEditScreen() {
           alan hiç yukarı kaymıyordu (bkz. chat/[uid].jsx aynı not).
           `check:edge` bu kuralı denetliyor ve birleştirme sırasında bir kez
           düşürüldüğü için yakaladı. */}
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
+      {!loading && !loadError && <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
         <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.s40, paddingHorizontal: yan + spacing.s20 }]}
                     keyboardShouldPersistTaps="handled">
           {/* Avatar — dokunuş seçiciyi açıyor. Kalem rozeti değişebilirliği
               ima ediyor; jest artık gizli değil, ekranın işi bu. */}
-          <Pressable style={styles.avatarWrap} onPress={() => setPickerOpen(true)}>
-            <Avatar avatar={avatar} name={displayName || profile?.username} size={avatarSize.xl} style={styles.avatarXl} />
+          <Pressable style={styles.avatarWrap} accessibilityRole="button" accessibilityLabel={t('prof.chooseAvatar')} onPress={() => setPickerOpen(true)}>
+            <Avatar avatar={avatar} name={displayName || profile?.username} size={88} style={styles.avatarXl} />
             <View style={styles.avatarBadge}>
-              <Ionicons name="pencil" size={12} color={colors.onAccent} />
+              <Ionicons name="pencil" size={16} color={colors.bg} />
             </View>
           </Pressable>
           <Text style={styles.handle} numberOfLines={1}>
             {profile?.username ? `@${profile.username}` : ''}
           </Text>
 
-          <Text style={styles.label}>{t('prof.displayName')}</Text>
-          <TextInput
-            style={styles.input}
-            value={displayName}
-            onChangeText={(v) => setDisplayName(v.slice(0, MAX_NAME))}
-            placeholder={profile?.username || ''}
-            placeholderTextColor={colors.text3}
-            maxLength={MAX_NAME}
-          />
-
-          <Text style={styles.label}>{t('prof.bio')}</Text>
-          <TextInput
-            style={[styles.input, styles.inputMulti]}
-            value={bio}
-            onChangeText={(v) => setBio(v.slice(0, MAX_BIO))}
-            placeholder={t('prof.bioHint')}
-            placeholderTextColor={colors.text3}
-            multiline
-            maxLength={MAX_BIO}
-          />
-          {/* Sayaç SAĞDA ve sessiz: sınıra yaklaşmak hata değil, bilgi. */}
-          <Text style={[styles.counter, NUMERIC]}>{bio.length}/{MAX_BIO}</Text>
+          <View style={styles.fields}>
+            <TextField label={t('prof.displayName')} value={displayName}
+              onChangeText={setDisplayName} placeholder={profile?.username || ''}
+              maxLength={MAX_NAME} editable={!saving} />
+            <TextField label={t('soc.usernameLabel')} icon="hash"
+              value={profile?.username || ''} editable={false} />
+            <TextField label={t('prof.bio')} value={bio} onChangeText={setBio}
+              placeholder={t('prof.bioHint')} multiline counter
+              maxLength={MAX_BIO} editable={!saving} />
+          </View>
         </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAvoidingView>}
 
       <AvatarPicker
         visible={pickerOpen}
@@ -267,46 +242,24 @@ function AvatarPicker({ visible, current, onSelect, onClose }) {
 const makeStyles = (colors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
 
-  head: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: spacing.s12, paddingBottom: spacing.s8,
-  },
-  iconBtn: { width: TOUCH_MIN, height: TOUCH_MIN, alignItems: 'center', justifyContent: 'center' },
-  title: { flex: 1, textAlign: 'center', fontSize: type.body, fontWeight: '600', color: colors.text },
-  saveBtn: { minWidth: TOUCH_MIN, height: TOUCH_MIN, alignItems: 'flex-end', justifyContent: 'center', paddingRight: spacing.s8 },
-  saveText: { fontSize: type.subhead, fontWeight: '600', color: colors.accentText },
-
   body: { padding: spacing.s20 },
 
-  avatarWrap: { alignSelf: 'center' },
+  cancel: { minHeight: 44, justifyContent: 'center' },
+  avatarWrap: { alignSelf: 'flex-start' },
   avatarXl: { backgroundColor: colors.surfaceTile, borderWidth: 1, borderColor: colors.borderHover },
   avatarBadge: {
     position: 'absolute', right: 0, bottom: 0,
-    width: 28, height: 28, borderRadius: 14,
+    width: 32, height: 32, borderRadius: 16,
     alignItems: 'center', justifyContent: 'center',
-    backgroundColor: colors.accentFillStrong,
+    backgroundColor: colors.text,
     borderWidth: 2, borderColor: colors.bg,
   },
   handle: {
-    textAlign: 'center', marginTop: spacing.s8,
+    marginTop: spacing.s8,
     fontSize: type.footnote, fontWeight: '500', color: colors.text3,
   },
 
-  label: {
-    marginTop: spacing.s24, marginBottom: spacing.s8,
-    fontSize: type.footnote, fontWeight: '600', color: colors.text2,
-  },
-  input: {
-    minHeight: TOUCH_MIN, borderRadius: radius.md,
-    paddingHorizontal: spacing.s12, paddingVertical: spacing.s12,
-    backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder,
-    fontSize: type.subhead, color: colors.text,
-  },
-  inputMulti: { minHeight: 96, textAlignVertical: 'top' },
-  counter: {
-    alignSelf: 'flex-end', marginTop: spacing.s8,
-    fontSize: type.caption, fontWeight: '500', color: colors.text3,
-  },
+  fields: { gap: spacing.s16, marginTop: spacing.s20 },
 
   pickerOverlay: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },
   pickerSheet: {

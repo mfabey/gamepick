@@ -360,6 +360,7 @@ export const component = {
   search: { height: 40, radius: 12, paddingLeft: 12, paddingRight: 8, gap: 8, icon: 18, iconStroke: 2.2, clearArea: 28, clearCircle: 18, clearIcon: 11, clearStroke: 3, focusRing: 1.5, cancelGap: 10 },
   switchAndroid: { width: 51, height: 31, knob: 27, inset: 2 },
   toast: { width: 350, height: 52, radius: 14, paddingLeft: 14, paddingRight: 8, gap: 10, icon: 18, actionHeight: 36, actionPadding: 8, duration: 3000, lift: 12 },
+  settings: { profileHeight: 76, avatar: 52, profileGap: 14 },
   listRow: { iconBox: 30, iconBoxRadius: 8, icon: 17, separatorWithIcon: 60, separator: 16 },
   sectionHeader: { linkGap: 2, linkIcon: 16, linkStroke: 2.4, subtitleGap: 2 },
   homeHeader: { height: 44, markSize: 32, wordSize: 22, lockupGap: 9, actionGap: 2, edge: -6, avatar: 30 },

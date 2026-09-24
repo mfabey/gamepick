@@ -539,7 +539,6 @@ export default {
   'set.grpAccount': 'Konto',
   'set.grpGameData': 'Deine Spiele',
   'set.grpPrivacy': 'Privatsphäre',
-  'set.grpApp': 'App',
   'prof.emptyWishlist': 'Deine Merkliste ist leer',
   'prof.emptyWishlistDesc': 'Füge Spiele hinzu, auf die du wartest — wir melden uns bei Rabatten.',
   'prof.emptyPosts': 'Noch keine Beiträge',
@@ -629,7 +628,7 @@ export default {
   'auth.err.SYNC_FAILED': 'Die Verbindung konnte nicht in deinem Konto gespeichert werden. Prüf deine Internetverbindung und versuch es noch mal.',
   'auth.connectSteam': 'Mit Steam verbinden',
   'auth.connectXbox': 'Mit Xbox verbinden',
-  'auth.addSteam': '+ Steam-Konto hinzufügen',
+  'auth.addSteam': 'Steam-Konto hinzufügen',
   'auth.connected': 'Verbunden',
   'auth.disconnect': 'Trennen',
   'auth.loginFailed': 'Anmeldung fehlgeschlagen',
@@ -793,4 +792,6 @@ export default {
   'v2.likesCount': "{n} Likes",
   'v2.repliesCount': "{n} Antworten",
   'v2.gamingWorld': "Aus der Gaming-Welt",
+  'set.accountSummary': "Konto, Sicherheit und verknüpfte Konten",
+  'set.appearance': "Darstellung und Barrierefreiheit",
 };

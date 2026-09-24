@@ -53,6 +53,51 @@ const screens = [
 
 for (const file of screens) {
   const tree = ast(read(`app/${file}`));
+  // G-23: the shared ListGroup owns the 20 pt phone gutter. The ScrollView
+  // adds only the wide-window inset; adding the old phone padding doubles it.
+  if (file === 'settings.jsx') {
+    let content, localStyles;
+    traverse(tree, {
+      VariableDeclarator(p) {
+        if (p.node.id.name === 'styles') localStyles = p.node.init.arguments[0];
+      },
+      JSXAttribute(p) {
+        if (p.node.name.name === 'contentContainerStyle') content = p.node.value.expression;
+      },
+    });
+    const props = content?.properties || [];
+    const inset = props.find(p => p.key.name === 'paddingHorizontal');
+    assert.ok(inset, 'settings: wide-window inset missing');
+    for (const name of ['profile', 'signOut']) {
+      const style = localStyles.properties.find(p => p.key.name === name)?.value;
+      assert.equal(value(style)?.marginHorizontal, 20, `settings: ${name} gutter`);
+    }
+    const primitives = parse(read('src/components/ui/Primitives.tsx'), { sourceType: 'module', plugins: ['jsx', 'typescript'] });
+    let groupMargin;
+    traverse(primitives, {
+      ObjectProperty(p) {
+        if (p.node.key.name === 'listGroup') groupMargin = p.node.value.properties.find(prop => prop.key.name === 'marginHorizontal')?.value;
+      },
+    });
+    const tokens = parse(read('src/theme/tokens.ts'), { sourceType: 'module', plugins: ['typescript'] });
+    let gutter;
+    traverse(tokens, {
+      VariableDeclarator(p) {
+        if (p.node.id.name === 'layout') gutter = value(p.node.init.expression)?.gutter;
+      },
+    });
+    assert.equal(gutter, 20);
+    assert.equal(value(groupMargin, { layout: { gutter } }), 20);
+    for (const width of widths) {
+      const yan = vm.runInNewContext(`(${insetFunction})()`, {
+        ICERIK_MAX: constants.ICERIK_MAX, useWindowDimensions: () => ({ width }),
+      });
+      const actual = value(inset.value, { yan }) + gutter;
+      assert.equal(actual, yan + 20, `settings / ${width}: doubled or missing phone gutter`);
+      assert.ok(width - actual * 2 > 0);
+    }
+    continue;
+  }
   const styles = {};
   const containers = [];
   traverse(tree, {

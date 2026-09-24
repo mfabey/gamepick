@@ -530,7 +530,6 @@ export default {
   'set.grpAccount': 'Account',
   'set.grpGameData': 'Your games',
   'set.grpPrivacy': 'Privacy',
-  'set.grpApp': 'App',
   'prof.emptyWishlist': 'Your wishlist is empty',
   'prof.emptyWishlistDesc': 'Add the games you are waiting for and we will tell you when they go on sale.',
   'prof.emptyPosts': 'No posts yet',
@@ -620,7 +619,7 @@ export default {
   'auth.err.SYNC_FAILED': 'Could not save the connection to your account. Check your connection and try again.',
   'auth.connectSteam': 'Connect with Steam',
   'auth.connectXbox': 'Connect with Xbox',
-  'auth.addSteam': '+ Add Steam Account',
+  'auth.addSteam': 'Add Steam Account',
   'auth.connected': 'Connected',
   'auth.disconnect': 'Disconnect',
   'auth.loginFailed': 'Login failed',
@@ -784,4 +783,6 @@ export default {
   'v2.likesCount': "{n} likes",
   'v2.repliesCount': "{n} replies",
   'v2.gamingWorld': "From the Gaming World",
+  'set.accountSummary': "Account, security and connected accounts",
+  'set.appearance': "Appearance and accessibility",
 };

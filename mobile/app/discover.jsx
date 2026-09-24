@@ -8,9 +8,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { smartSearch } from '../src/api/games';
-import GameCard from '../src/components/GameCard';
+import GameCard from '../src/components/ui/GameCard';
 import { radius, spacing, TAB_SPACE, PRESSED, type } from '../src/theme';
-import { useKartSutun } from '../src/hooks/useIcerikAlani';
+import { useDesignGrid } from '../src/hooks/useDesignGrid';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 import { useOwnedGames } from '../src/hooks/useOwnedGames';
@@ -38,7 +38,7 @@ const EXAMPLES = {
 export default function DiscoverScreen() {
   const styles = useStyles(makeStyles);
   // Telefonda ölçülen hücre genişliği: 185 pt. Geniş ekranda sütun artar.
-  const sutun = useKartSutun(185, 2);
+  const { columns: sutun, padding: gridPadding } = useDesignGrid();
   const { colors } = useTheme();
   const router = useRouter();
   const { t, lang } = useLanguage();
@@ -165,7 +165,7 @@ export default function DiscoverScreen() {
         keyExtractor={keyExtractor}
         renderItem={renderItem}
         ListHeaderComponent={header}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, { paddingHorizontal: gridPadding }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         ListFooterComponent={<View style={{ height: TAB_SPACE }} />}
@@ -182,7 +182,7 @@ const makeStyles = (colors) => StyleSheet.create({
 
   listContent: { paddingHorizontal: 10 },
   headerWrap: { marginHorizontal: -10, paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
-  cell: { flex: 1, paddingHorizontal: 6, paddingBottom: spacing.md },
+  cell: { flex: 1, alignItems: 'center', paddingHorizontal: 6, paddingBottom: spacing.md },
 
   lead: { fontSize: type.subhead, color: colors.text2, lineHeight: 21, marginBottom: spacing.lg },
   inputBox: {

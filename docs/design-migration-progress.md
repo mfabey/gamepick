@@ -789,3 +789,137 @@ listesi) ama çerçevesi 2.0 öncesiydi:
 **Doğrulama:** `npm run check` (20), `npx expo export --platform ios` ve
 cihazda gerçek liste + "elden" araması (odak halkası, temizle düğmesi,
 süzülmüş sonuçlar).
+
+### 24 Eylül — Ayarlar, G-23 (Codex)
+
+Başlangıç: `a715616`, temiz çalışma ağacı. Claude'un ilerleme günlüğü ve
+son ekran değişiklikleri incelendi; mevcut 2.0 bileşenleri kullanıldı.
+
+**Uygulananlar:**
+- Kit `s4.py settings()` profil kartı: 76 pt minimum yükseklik, 52 pt
+  gerçek kullanıcı avatarı, hesap adı ve hesap/güvenlik alt metni.
+- Eski SettingsGroup/SettingsRow yerine 2.0 ListGroup/ListRow: 52 pt
+  minimum satır, ikon kutuları, içten ayraçlar; gruplar arasında 28 pt.
+- Bildirim, görünüm/erişilebilirlik, gizlilik, bağlı hesaplar, oyun araçları
+  ve destek grupları. Destek e-postası görünür tutuldu.
+- Tema: G-23 satırı ve seçim penceresi; açık/koyu/sistem seçeneklerinin
+  tamamı korunuyor. Dil seçicisi beş dili göstermeye devam ediyor.
+- Bildirimler, hareketi azalt ve otomatik oynat mevcut servislerine bağlı
+  ortak Switch kullanıyor. Bildirim isteği sürerken anahtar kilitleniyor;
+  izin reddi ve ayarlara gitme akışı korunuyor.
+- Ayrı kırmızı çıkış düğmesi; onay ve `signOut(items)` senkronu korundu.
+  Hesap silme, Steam/Xbox bağlama-ayırma ve tüm oyun aracı girişleri kaldı.
+- ListRow'a isteğe bağlı açıklama ve disabled desteği eklendi. Diğer
+  kullanımlarda bu alanlar zorunlu değil.
+- Profil kartı ve grup başlıkları için iki yeni metin beş dile eklendi;
+  artık kullanılmayan `set.grpApp` anahtarı kaldırıldı.
+
+**Verisi olmayan G-23 seçenekleri:** beş ayrı bildirim kategorisi, bildirim
+sıklığı/sessiz saat özeti, para birimi/bölge/platform/mağaza tercihleri,
+uygulama içi yazı boyutu ve Wi-Fi video önizleme ayarı eklenmedi. Mevcut
+tek indirim bildirimi anahtarı beş ayrı tercih gibi sunulmadı. Otomatik
+oynat seçeneği önizleme tercihi olarak yeniden adlandırılmadı.
+
+**Doğrulama:** `npm run check` (20 kontrol), iOS ve Android export başarılı;
+`git diff --check` temiz. Yerleşim testi yeni pay sahipliğini de kontrol
+ediyor: ScrollView geniş ekran payını, ListGroup 20 pt telefon payını
+veriyor; 11 genişlikte eksik/çift dolgu denetleniyor. Bu oturumda adb ve
+iOS simülatörü bulunmadığından cihazda görsel/dokunma doğrulaması yapılmadı.
+Önceki cihaz doğrulamalarına ait kayıtlar bu değişikliğin testi sayılmadı.
+
+**Devam sırası:** G-22 Profil Düzenle, G-12 Gönderi Oluştur, ReviewRoot,
+`/u/[username]` üst çubuğu. Kartlarda 2.0 ailesini mevcut davranışları
+koruyan adaptörlerle esas almak; birleşik aramayı ekran geçişlerinden
+sonra ayrı özellik olarak uygulamak önerildi. Bu iki iş henüz uygulanmadı.
+Haber tam içerik konusu kullanıcının kararıyla sonraya bırakılmış durumda;
+şimdilik özet ve “Kaynakta oku” devam ediyor.
+
+
+### 24 Eylül — G-22, G-12, ReviewRoot ve kullanıcı üst çubuğu (Codex)
+
+- **G-22 Profil Düzenle:** ortak NavBar, 34 pt nötr Kaydet, 44 pt dokunma
+  alanlı Vazgeç; 88 pt avatar ve 32 pt düzenleme rozeti. Form, 2.0 TextField
+  kullanıyor. Kullanıcı adı salt okunur; görünen ad 40, biyografi 150
+  karakter (sunucu sınırları). Profil alınamadığında hata ve tekrar deneme
+  var; veri gelmeden boş form veya etkin kaydet düğmesi gösterilmiyor.
+  Avatar ön ayarları mevcut servisle anında kaydediliyor; metinler Kaydet
+  ile gönderiliyor. Kullanılmayan fotoğraf yeteneği isteği kaldırıldı.
+- **G-12 Gönderi Oluştur:** alt pencere tam ekran Modal oldu. Kendi
+  SafeAreaProvider'ı, klavyeye uyumlu kaydırma, gerçek hesap avatarı/adı,
+  17/26 metin, 34 pt paylaş düğmesi ve 500 karakter sayacı kullanılıyor.
+  Yeni gönderi/yanıt aynı bileşende; game ve replyTo payload'ları aynı.
+  İstek sırasında alan ve eylemler kilitli; hata taslağı silmiyor.
+- **ReviewRoot:** Post/PostHeader/GameTag/Badge ortak ailesine geçti.
+  İnceleme metni tam uzunlukta; sunucudan gelen doğrulanmış saat,
+  olumlu/olumsuz öneri, geliştirici rozeti, oyun/yazar bağlantısı ve
+  şikâyet/engelleme menüsü korundu. Boş zaman alanı artık tek başına
+  ayırıcı nokta göstermiyor.
+- **/u/[username]:** bütün yükleme, hata ve profil durumları aynı NavBar
+  ve IconButton kullanıyor. Arkadaşlık/gizlilik/moderasyon verisi değişmedi.
+
+**Kapsam sınırları:** kapak yükleme ve gönderi medyası kapalı kararlara
+uyularak eklenmedi. Backend sözleşmesi bulunmayan konum/favori türler,
+anket, spoiler ve oyun durumu seçenekleri çalışıyormuş gibi gösterilmedi.
+Bağlı hesaplar ve gizlilik mevcut Ayarlar akışından yönetilmeye devam
+ediyor. Yeni paket veya SDK değişikliği yok. Açık/koyu/sistem korunuyor.
+
+**Doğrulama:** 20 otomatik kontrol başarılı; iOS ve Android export başarılı.
+Android emülatör görsel/dokunma testi tamamlanamadı: localhost:5037 ADB
+sunucusu host:devices-l isteğine boş cihaz listesi (OKAY0000) dönüyor.
+Gamerisen_API36 AVD kaydı mevcut, ancak ANDROID_HOME altında SDK/emulator
+çalıştırılabilir dosyaları bulunamıyor. Kullanıcıdan emülatörü açması
+istendi. Gerçek hesap üzerinde test gönderisi veya profil değişikliği
+oluşturulmadı. Cihaz bağlanınca bekleyenler: profil yükleme/hata/tekrar
+ deneme, biyografi klavye yerleşimi ve 150 sınırı, gönderi aç/kapat ve
+500 sınırı, açık/koyu görünüm, inceleme menüsü ve kullanıcı profili geri.
+
+**Ayrı kalan işler:** birleşik arama ve oyun liste kartı ailesi geçişi.
+Haber detayında özet + Kaynakta oku kararı geçerli.
+
+### 24 Eylül — Codex'in ekranlarının cihazda doğrulanması (Claude)
+
+Codex'in iki bölümü de "emülatör bulunamadı, cihaz doğrulaması yapılmadı"
+diyordu. Emülatör (Pixel 8, 411dp) açıldı; kurulu APK 4 Eylül tarihli 2.6.0
+çıktı, 2.7.2 hata ayıklama derlemesi yeniden kuruldu ve uygulama canlı
+Metro'ya bağlandı. Bekleyen listenin tamamı gözle görüldü.
+
+**Çalıştığı doğrulananlar.** Ayarlar: profil kartı, 52 pt gruplu satırlar,
+bildirim anahtarı + grup notu, Tema ve Dil seçim pencereleri, gizlilik,
+Steam/Xbox, oyun verim, destek, kırmızı çıkış, hesap silme, sürüm altlığı —
+koyu VE açık temada. Profil Düzenle: NavBar, 88 pt avatar + 32 pt rozet,
+alanlar, 0/150 sayacı. Gönderi Oluştur: tam ekran modal, gerçek kimlik,
+0/500 → 6/500, metin girilince Paylaş etkinleşiyor, İptal taslağı atıyor
+(gerçek hesapta gönderi paylaşılmadı). ReviewRoot: PostHeader + doğrulanmış
+saat rozeti + GameTag + tavsiye hapı, tam metin. `/u/[username]`: NavBar,
+kimlik bloğu, iki düğme, sekmeler.
+
+**Cihazda bulunan ve düzeltilen üç şey.**
+
+1. **Çift artı.** `auth.addSteam` metninin içinde eski tasarımdan kalma bir
+   `+` vardı; satıra `icon="plus"` eklenince ikon kutusu ve metin ikisi
+   birden artı gösterdi ("＋ + Steam Hesabı Ekle"). Beş dilde de metnin
+   başındaki işaret kaldırıldı — artıyı artık yalnız ikon kutusu çiziyor.
+2. **Kullanıcı adı iki kez.** `/u/[username]` üst çubuğunun başlığı
+   `@handle` idi ve iki satır altındaki kimlik bloğu aynı `@handle`'ı
+   yazıyordu; kendi profilimizde aynı sebeple kaldırılmış olan tekrar
+   buraya taşınmıştı. Başlık artık ADI gösteriyor (`displayName ||
+   username`, ProfileHeader ile aynı seçim); profil gelene kadar çubuk boş
+   kalmasın diye yoldaki kullanıcı adına düşüyor. Kullanıcı bulunamadı
+   ekranında başlık `@kullanıcıadı` kaldı — orada kimlik bloğu yok.
+3. **Ölü kod silindi.** `src/components/ui/SearchGameRow.jsx` ve
+   `src/hooks/useSearchHistory.js` hiçbir yerden çağrılmıyordu;
+   `tokens.ts` içindeki `component.searchScreen` bloğu da yalnız o yetim
+   bileşene hizmet ediyordu. Üçü de kaldırıldı — günlüğün kendisi birleşik
+   aramayı "ayrı kalan iş" sayıyor, yarım iskele ağaçta durmasın.
+   (`useDesignGrid` DURUYOR: discover.jsx ve games.jsx onu kullanıyor.)
+
+**Doğrulama:** `npm run check` 20/20, `npx expo export --platform ios`
+başarılı, iki düzeltme emülatörde tekrar görüldü ("Steam Hesabı Ekle" tek
+artı; başlık "Hasta Beşiktaşlı", `@fogrex` yalnız kimlik bloğunda). Tema
+"Sistem"e geri alındı. iOS'ta görsel doğrulama yapılamadı (Mac yok).
+
+**Karar bekleyenler.** `games.jsx` bu değişiklikte Faz-2 `GameCard` yerine
+2.0 `ui/GameCard`'a geçti — kart ailesi kararı kullanıcıya bırakılmıştı,
+diff'te verilmiş durumda. Kullanıcı adı alanındaki `#` ön eki kit'in kendi
+tercihi (`s4.py:145`, `icon_='hash'`) ama uygulama her yerde `@handle`
+gösteriyor. `check:spacing` tabanı 245 → 199'a düştü, güncellenmedi.

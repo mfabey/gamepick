@@ -47,8 +47,8 @@ type ButtonVariant = 'primary' | 'secondary' | 'tertiary' | 'destructive' | 'tin
 type ButtonProps = PressableProps & {
   title: string; variant?: ButtonVariant;
   /** COMPONENTS: 48/44/40/36. Kaynaklarda ayrıca 52 (Giriş yap), 50 (G-08 Mağazaya Git,
-   *  G-03 sosyal girişler) ve 30 (DS 2 Mini) var. */
-  height?: 52 | 50 | 48 | 44 | 40 | 36 | 30;
+   *  G-03 sosyal girişler), 34 (G-12/G-22 kaydet) ve 30 (DS 2 Mini) var. */
+  height?: 52 | 50 | 48 | 44 | 40 | 36 | 34 | 30;
   icon?: IconName; iconRight?: IconName; loading?: boolean;
   /** Görselin üstünde (HeroCard): renkler temadan bağımsız, tasarımın koyu paleti.
    *  Açık temada birincil koyulaşıyor; koyu degradeli görsel üstünde siyah buton kayboluyordu. */
@@ -294,8 +294,9 @@ export function ListGroup({ title, children, note }: { title?: string; children:
   </View>;
 }
 
-export function ListRow({ title, value, icon, iconBackground, onPress, trailing, destructive, accessibilityLabel }: {
+export function ListRow({ title, value, description, icon, iconBackground, onPress, trailing, destructive, disabled, accessibilityLabel }: {
   title: string; value?: string; icon?: IconName; iconBackground?: string; onPress?: () => void;
+  description?: string; disabled?: boolean;
   /** Sağdaki öğe; verilmezse dokunulabilir satırda ok. `false` oku gizler (ör. "Çıkış yap"). */
   trailing?: React.ReactNode; destructive?: boolean; accessibilityLabel?: string;
 }) {
@@ -304,12 +305,15 @@ export function ListRow({ title, value, icon, iconBackground, onPress, trailing,
     {icon && <View style={[s.listIconBox, { backgroundColor: iconBackground ?? colors.surface2 }]}>
       <Icon name={icon} size={K.listRow.icon} color={destructive ? colors.red : colors.text} />
     </View>}
-    <Txt variant="input" numberOfLines={2} style={[s.flex, destructive && { color: colors.red }]}>{title}</Txt>
+    <View style={s.flex}>
+      <Txt variant="input" numberOfLines={2} style={destructive && { color: colors.red }}>{title}</Txt>
+      {description && <Txt variant="footnote" style={{ color: colors.text2 }}>{description}</Txt>}
+    </View>
     {value && <Txt variant="bodyTight" numberOfLines={1} style={[s.listValue, { color: colors.text2 }]}>{value}</Txt>}
     {trailing ?? (onPress ? <Icon name="chev" size={K.sectionHeader.linkIcon} color={colors.text3} strokeWidth={K.sectionHeader.linkStroke} /> : null)}
   </>;
   return onPress
-    ? <PressableScale onPress={onPress} accessibilityRole="button" accessibilityLabel={accessibilityLabel} style={s.listRow}>{content}</PressableScale>
+    ? <PressableScale onPress={onPress} disabled={disabled} accessibilityRole="button" accessibilityState={{ disabled }} accessibilityLabel={accessibilityLabel} style={s.listRow}>{content}</PressableScale>
     : <View accessible={!!accessibilityLabel} accessibilityLabel={accessibilityLabel} style={s.listRow}>{content}</View>;
 }
 

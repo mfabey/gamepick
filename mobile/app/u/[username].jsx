@@ -28,13 +28,15 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
-import { spacing, type, PRESSED, TOUCH_MIN } from '../../src/theme';
+import { spacing } from '../../src/theme';
 import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { getUserProfile, friendAction } from '../../src/api/social';
 import { engelUygula } from '../../src/services/engel';
 import { getSession } from '../../src/services/session';
 
+import { NavBar } from '../../src/components/ui/Navigation';
+import { IconButton } from '../../src/components/ui/Primitives';
 import ProfileHeader from '../../src/components/ProfileHeader';
 import ProfileTabs from '../../src/components/ProfileTabs';
 import CoverCell, { coverWidth, gridCols, GRID_GAP } from '../../src/components/CoverGrid';
@@ -305,7 +307,11 @@ export default function UserProfileScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       <Ust
         onBack={() => router.back()}
-        title={profil?.username ? `@${profil.username}` : `@${username}`}
+        // Başlıkta AD var, kullanıcı adı DEĞİL: `@handle` iki satır altındaki
+        // kimlik bloğunda zaten yazıyor (kendi profilimizde de aynı sebeple
+        // kaldırılmıştı). Profil gelene kadar çubuk boş kalmasın diye yoldaki
+        // kullanıcı adına düşüyor. Ad seçimi ProfileHeader ile aynı.
+        title={profil ? (profil.displayName || profil.username) : `@${username}`}
         onMore={profil ? acBaslikMenu : undefined}
         colors={colors} styles={styles} t={t}
       />
@@ -379,35 +385,15 @@ export default function UserProfileScreen() {
   );
 }
 
-/** Üst çubuk — geri · kullanıcı adı · ⋯ */
-function Ust({ onBack, title, onMore, colors, styles, t }) {
-  return (
-    <View style={styles.topBar}>
-      <Pressable onPress={onBack} hitSlop={8} style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]}
-                 accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
-        <Ionicons name="chevron-back" size={24} color={colors.text} />
-      </Pressable>
-      <Text style={styles.handle} numberOfLines={1}>{title}</Text>
-      {onMore ? (
-        <Pressable onPress={onMore} hitSlop={8} style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]}
-                   accessibilityRole="button" accessibilityLabel={t('a11y.more')}>
-          <Ionicons name="ellipsis-horizontal" size={22} color={colors.text} />
-        </Pressable>
-      ) : <View style={styles.iconBtn} />}
-    </View>
-  );
+/** Üst çubuk — geri · ad · ⋯ */
+function Ust({ onBack, title, onMore, t }) {
+  return <NavBar title={title} onBack={onBack}
+    right={onMore ? <IconButton icon="more" label={t('a11y.more')} onPress={onMore} /> : undefined} />;
 }
 
 const makeStyles = (colors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-
-  topBar: {
-    height: TOUCH_MIN, flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: spacing.s4,
-  },
-  handle: { flex: 1, fontSize: type.body, fontWeight: '600', color: colors.text, textAlign: 'center' },
-  iconBtn: { width: TOUCH_MIN, height: TOUCH_MIN, alignItems: 'center', justifyContent: 'center' },
 
   // Sabitlenen şerit: altından içerik geçtiği için zemin OPAK olmak zorunda.
   seritSarmal: { backgroundColor: colors.bg },

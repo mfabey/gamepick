@@ -537,7 +537,6 @@ export default {
   'set.grpAccount': 'Hesap',
   'set.grpGameData': 'Oyun verim',
   'set.grpPrivacy': 'Gizlilik',
-  'set.grpApp': 'Uygulama',
   'prof.emptyWishlist': 'İstek listen boş',
   'prof.emptyWishlistDesc': 'Beklediğin oyunları ekle; indirime girdiğinde haber verelim.',
   'prof.emptyPosts': 'Henüz gönderi yok',
@@ -627,7 +626,7 @@ export default {
   'auth.err.SYNC_FAILED': 'Bağlantı hesabına kaydedilemedi. Bağlantını kontrol edip tekrar dene.',
   'auth.connectSteam': 'Steam ile Bağlan',
   'auth.connectXbox': 'Xbox ile Bağlan',
-  'auth.addSteam': '+ Steam Hesabı Ekle',
+  'auth.addSteam': 'Steam Hesabı Ekle',
   'auth.connected': 'Bağlı',
   'auth.disconnect': 'Çıkış',
   'auth.loginFailed': 'Giriş başarısız oldu',
@@ -791,4 +790,6 @@ export default {
   'v2.likesCount': "{n} beğeni",
   'v2.repliesCount': "{n} yanıt",
   'v2.gamingWorld': "Oyun Dünyasından",
+  'set.accountSummary': "Hesap, güvenlik ve bağlı hesaplar",
+  'set.appearance': "Görünüm ve erişilebilirlik",
 };
