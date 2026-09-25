@@ -1437,3 +1437,48 @@ sırası, Segmented'in liste üstündeki boşluğu gözle bakılmalı.
 başarılı. Cihazda görülmedi (emülatör yok): StatTile etiketinin en uzun
 çevirisi (de "Spiele in deinen Listen") 375 pt genişlikte sınırda — iPhone
 SE / iPad uyumluluk modunda kesiliyor mu bakılmalı.
+
+### 25 Eylül — Tasarım dışı ekranlar, Grup E: swipe, oyun kartları, reels (Claude)
+
+**Plan kalıbı: "karşılık yok — yalnız token ve ortak bileşenlerle yeni stil".**
+Reels'in de karşılığı yok: plan onu "Kısa Klipler"den açılan, korunan eski
+akış olarak tutuyor (ekran 14 kararı); G-15 oynatıcısı ayrı bir ekran.
+
+- `OverlayTag`'e `placement="inline"`: görselin üstündeki metin bloğunda
+  satır içi (swipe kartı ve reels türleri; eskiden elle beyaz %14–16 hap).
+- **swipe:** NavBar (başlık + sayaç alt başlığı), geri al 2.0 `reply`
+  IconButton (devre dışıyken PressableScale soluklaştırıyor). Kart kenarlıksız
+  surface1, köşe 20; ad `title1` beyaz, türler OverlayTag, puan altın yıldız.
+  Karar damgaları aynı (eğik çerçeve; yeşil / 2.0 kırmızı). Alt eylemler:
+  geç = marka kırmızısı dolgu, beğen = yeşil dolgu (2.0 ikonlar, kalp dolu),
+  bilgi 2.0 `filled` IconButton. Kart yan payı 16 → 20. Jest, eşik, uçuş
+  animasyonu, deste mantığı aynen.
+- **game-cards:** NavBar. Özet istatistik ekranıyla aynı dil (surface1,
+  köşe 18, `scoreLarge`; hücreler `statValue`, "oynamadıkların" turuncu,
+  Steam mavisi kalktı). **Şehir satırı elle çizilmiş anahtar taklidiydi**
+  (erişilebilirlikte durumsuz): artık `ListGroup` + `ListRow` + 2.0 `Switch`.
+  Sıra satırları surface1 kenarlıksız, yan pay 16 → 20; sıra rozeti
+  `badgeSmall` ölçüsünde; paylaş 2.0 IconButton. **Alt dolgu `TAB_SPACE` →
+  güvenli alan + 40** (plan §4.1'in dört ekranından biri; steam-friends
+  Grup A'da düzelmişti).
+- **reels:** yalnız video üstü katmanlar; renkler `designPalettes.dark`
+  (tema bağımsız — Button `onArt` kararı). Geri 2.0 `onArt` IconButton
+  (bulanıklıksız, plan §6.1); başlık `cardTitle`. Duraklatma → 2.0
+  `PlayButton` 60. Yan eylemler 2.0 cam daire (GlassView, 44 / yatayda 34),
+  etiket dokunma alanında kaldı; etkin durum kitin istek/beğeni dili (ikon
+  kırmızı, dolu — eskiden açık dolu daire). İkonlar 2.0 setinden (bell ·
+  bookmark · bag · send · mute/volume). Eylemlere erişilebilirlik etiketi
+  geldi (öncesinde yoktu). `RotateGlowButton` ve oynatma / yön / havuz
+  mantığı DOKUNULMADI.
+- Ölçüler `tokens.component.swipe` / `gameCards` / `reels`;
+  `check:spacing` 96 → 69, taban güncellendi.
+
+**Kalan:** `library.jsx` gövdesi (kilit ekranı, kaynak çipleri, arama /
+sıralama, hesap kartları) hâlâ eski — Grup C'de yalnız başlığı geçti. Eski
+`components/IconButton` yalnız `CollectionPicker`'da.
+
+**Doğrulama:** `npm run check` geçti, `npx expo export` iOS ve Android
+başarılı. Cihazda görülmedi (emülatör yok): swipe kartında türlerin ve
+damgaların okunurluğu, reels'te cam dairelerin açık sahnelerde seçilebilirliği
+ve etkin (kırmızı) ikonun videoda görünürlüğü, game-cards şehir anahtarı
+gözle bakılmalı.

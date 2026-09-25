@@ -13,14 +13,13 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState, useCallback, useRef, useEffect, useMemo, memo } from 'react';
 import {
-  View, Text, Pressable, StyleSheet, ActivityIndicator, useWindowDimensions, Platform,
+  View, Pressable, StyleSheet, ActivityIndicator, useWindowDimensions, Platform,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as WebBrowser from 'expo-web-browser';
 import { useVideoPlayer, VideoView } from 'expo-video';
@@ -40,10 +39,17 @@ import ShareToFriendSheet from '../src/components/ShareToFriendSheet';
 import { recordSignal } from '../src/services/tasteProfile';
 import { reportActivity } from '../src/api/social';
 import { recordSeen } from '../src/services/seenStore';
-import { radius, spacing, PRESSED, type, motion } from '../src/theme';
+import { spacing, motion } from '../src/theme';
+import { control as C, component as K, space } from '../src/theme/tokens';
+import { designPalettes } from '../src/theme/palettes';
+import { useDesignTheme } from '../src/theme/useDesignTheme';
+import { Icon } from '../src/components/Icon';
+import { IconButton, PressableScale, Txt } from '../src/components/ui/Primitives';
+import { OverlayTag, PlayButton } from '../src/components/ui/Media';
+import { GlassView } from '../src/components/ui/GlassView';
 
 
-import { useStyles, useTheme } from '../src/context/ThemeContext';
+import { useStyles } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 
 const POOL = 3;
@@ -59,9 +65,13 @@ const LANDSCAPE_TOP_PAD = 14;
 // Alt eylem rayı yeni çubukla aynı tabGeometry hesabını kullanır.
 const LANDSCAPE_SIDE_PAD = 22;
 
+// Video karesinin üstündeki katmanların renkleri — TEMA BAĞIMSIZ, 2.0 koyu
+// paleti (Button `onArt` ile aynı karar): açık temada da zemin videonun kendisi.
+const ART = designPalettes.dark;
+
 export default function VideosScreen() {
   const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
+  const { colors } = useDesignTheme();
   const router = useRouter();
   const { start } = useLocalSearchParams();
   const insets = useSafeAreaInsets();
@@ -403,9 +413,9 @@ export default function VideosScreen() {
 
   if (loading && items.length === 0) {
     return (
-      <View style={styles.loadingRoot}>
-        <ActivityIndicator color={colors.accent} size="large" />
-        <Text style={styles.loadingText}>{t('vid.loading')}</Text>
+      <View style={[styles.loadingRoot, { backgroundColor: colors.bg }]}>
+        <ActivityIndicator color={colors.text2} size="large" />
+        <Txt variant="footnote" style={[styles.loadingText, { color: colors.text2 }]}>{t('vid.loading')}</Txt>
       </View>
     );
   }
@@ -473,17 +483,17 @@ export default function VideosScreen() {
         </View>
         {/* Geri düğmesi sağdaki döndürme düğmesiyle AYNI paylarda: yatayda
             köşe kavisinden kurtulmak için aynı LANDSCAPE_* sayıları. */}
-        <Pressable onPress={() => router.back()} accessibilityRole="button" accessibilityLabel={t('common.back')}
-          style={{
-            position: 'absolute', width: 44, height: 44, alignItems: 'center', justifyContent: 'center',
-            top: insets.top + (isLandscape ? LANDSCAPE_TOP_PAD : 0),
-            left: spacing.md + insets.left + (isLandscape ? LANDSCAPE_SIDE_PAD : 0),
-          }}>
-          {/* tema-bagimsiz: zemin video karesi; ekrandaki diger katman ikonlari gibi beyaz */}
-          <Ionicons name="chevron-back" size={24} color="#fff" />
-        </Pressable>
+        <View style={{
+          position: 'absolute',
+          top: insets.top + (isLandscape ? LANDSCAPE_TOP_PAD : 0),
+          left: spacing.md + insets.left + (isLandscape ? LANDSCAPE_SIDE_PAD : 0),
+        }}>
+          {/* 2.0 görsel üstü cam düğme (G-15 oynatıcı kalıbı). Bulanıklık yok:
+              altında sürekli değişen video var (plan §6.1). */}
+          <IconButton icon="back" variant="onArt" blurred={false} label={t('common.back')} onPress={() => router.back()} />
+        </View>
         <View style={styles.titleWrap}>
-          <Text style={styles.topTitle}>{t('vid.title')}</Text>
+          <Txt variant="cardTitle" style={{ color: ART.white }}>{t('vid.title')}</Txt>
         </View>
       </SafeAreaView>
       </Animated.View>
@@ -670,9 +680,7 @@ const VideoItem = memo(function VideoItem({
           biliyor, simge yalnızca temiz görüntüyü bozardı. */}
       {isActive && paused && !holding ? (
         <View style={styles.pauseWrap} pointerEvents="none">
-          <View style={styles.pauseBadge}>
-            <Ionicons name="play" size={34} color="#fff" />
-          </View>
+          <PlayButton size={K.playButton.sizes[2]} blurred={false} />
         </View>
       ) : null}
 
@@ -689,30 +697,30 @@ const VideoItem = memo(function VideoItem({
       >
         <ActionBtn
           compact={isLandscape}
-          icon={watched ? 'notifications' : 'notifications-outline'}
+          icon="bell"
           active={watched}
           label={t('vid.follow')}
           onPress={onWishlist}
         />
         <ActionBtn
           compact={isLandscape}
-          icon={inCollections.size > 0 ? 'albums' : 'albums-outline'}
+          icon="bookmark"
           active={inCollections.size > 0}
           label={t('vid.save')}
           onPress={() => { if (requireAccount()) return; Haptics.selectionAsync(); setPickerOpen(true); }}
         />
-        <ActionBtn compact={isLandscape} icon="cart-outline" label={t('vid.buy')} onPress={onBuy} />
+        <ActionBtn compact={isLandscape} icon="bag" label={t('vid.buy')} onPress={onBuy} />
         {/* Arkadasa gonder. Hesap sart: gonderim arkadaslik gerektiriyor,
             arkadaslik da hesap gerektiriyor. */}
         <ActionBtn
           compact={isLandscape}
-          icon="paper-plane-outline"
+          icon="send"
           label={t('vid.share')}
           onPress={() => { if (requireAccount()) return; Haptics.selectionAsync(); setShareOpen(true); }}
         />
         <ActionBtn
           compact={isLandscape}
-          icon={muted ? 'volume-mute' : 'volume-high'}
+          icon={muted ? 'mute' : 'volume'}
           label={muted ? t('vid.unmute') : t('vid.mute')}
           onPress={onToggleMute}
         />
@@ -734,17 +742,17 @@ const VideoItem = memo(function VideoItem({
         pointerEvents={holding ? 'none' : 'auto'}
       >
       <Pressable onPress={openDetail}>
-        <Text numberOfLines={2} style={styles.name}>{item.name}</Text>
+        <Txt variant="cardTitle" numberOfLines={2} style={{ color: ART.white }}>{item.name}</Txt>
         {item.genres?.length > 0 && (
           <View style={styles.tags}>
             {item.genres.map((g) => (
-              <View key={g} style={styles.tag}><Text style={styles.tagText}>{g}</Text></View>
+              <OverlayTag key={g} label={g} placement="inline" />
             ))}
           </View>
         )}
         <View style={styles.detailHint}>
-          <Text style={styles.detailHintText}>{t('vid.detail')}</Text>
-          <Ionicons name="chevron-forward" size={13} color="rgba(255,255,255,0.75)" />
+          <Txt variant="footnoteMedium" style={{ color: ART.onArt }}>{t('vid.detail')}</Txt>
+          <Icon name="chev" size={K.reels.hintIcon} color={ART.onArt} />
         </View>
       </Pressable>
       </Animated.View>
@@ -770,42 +778,40 @@ const VideoItem = memo(function VideoItem({
   );
 });
 
-// compact: yatay modda daire 47 → 34, ikon 23 → 17. Dokunma hedefi hitSlop 6
+// compact: yatay modda daire 44 → 34, ikon 22 → 17. Dokunma hedefi hitSlop 6
 // ile birlikte 46pt kalıyor, yani HIG'in 44pt asgarisinin ALTINA DÜŞMÜYOR —
 // küçülen şey görsel ağırlık, dokunulabilirlik değil. 34'ün altına inilirse
 // hitSlop artırılmadan 44pt korunamaz.
+//
+// 2.0: daire görsel üstü cam (IconButton `onArt` ile aynı yüzey, bulanıklıksız —
+// liste öğesi, plan §6.1). IconButton'ın KENDİSİ DEĞİL: etiket de dokunma
+// alanının parçası kalmalı (eskisi gibi), iç içe düğme olmasın diye yüzey
+// doğrudan GlassView. Etkin durum kitin istek/beğeni dili: ikon kırmızı, dolu.
 function ActionBtn({ icon, label, active, onPress, compact }) {
   const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
   return (
-    <Pressable style={({ pressed }) => [styles.actionBtn, pressed && PRESSED]} onPress={onPress} hitSlop={6}>
-      <View style={[
-        styles.actionCircle,
-        compact && styles.actionCircleCompact,
-        active && styles.actionCircleOn,
-      ]}>
-        {/* Aktif yüzey açık olduğu için ikon koyuya dönüyor — oyun
-            detayındaki iconBtnActive ile aynı karar. */}
-        <Ionicons name={icon} size={compact ? 17 : 23} color={active ? colors.bg : '#fff'} />
-      </View>
-      <Text style={styles.actionLabel}>{label}</Text>
-    </Pressable>
+    <PressableScale style={styles.actionBtn} onPress={onPress} hitSlop={6}
+      accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ selected: !!active }}>
+      <GlassView blurred={false} style={[styles.actionCircle, compact && styles.actionCircleCompact]}>
+        <Icon
+          name={icon}
+          size={compact ? K.reels.actionIconCompact : C.iconButtonGlyph}
+          color={active ? ART.red : ART.white}
+          fill={active ? ART.red : 'none'}
+        />
+      </GlassView>
+      <Txt variant="caption2Strong" style={{ color: ART.white }}>{label}</Txt>
+    </PressableScale>
   );
 }
 
 const makeStyles = (colors) => StyleSheet.create({
   // Duraklatma göstergesi — ortada, yarı saydam daire
   pauseWrap: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
-  pauseBadge: {
-    width: 78, height: 78, borderRadius: 39,
-    // tema-bagimsiz: tam ekran video oynatici; zemin videonun kendisi, tema yuzeyi degil
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    alignItems: 'center', justifyContent: 'center',
-  },
   // tema-bagimsiz: tam ekran video oynatici; zemin videonun kendisi, tema yuzeyi degil
   root: { flex: 1, backgroundColor: '#000' },
-  loadingRoot: { flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' },
-  loadingText: { color: colors.text2, fontSize: type.footnote, marginTop: spacing.md },
+  loadingRoot: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  loadingText: { marginTop: space[12] },
 
   // tema-bagimsiz: tam ekran video oynatici; zemin videonun kendisi, tema yuzeyi degil
   item: { backgroundColor: '#000' },
@@ -821,9 +827,7 @@ const makeStyles = (colors) => StyleSheet.create({
     minHeight: 44,
   },
   titleWrap: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  // Maket ust cubugu: 15 / 700. Bizde 17 / 900 idi — video ustunde
-  // gereginden agir duruyordu; maket burayi sessiz tutuyor.
-  topTitle: { color: '#fff', fontSize: type.subhead, fontWeight: '700', letterSpacing: -0.2 },
+  // Maket ust cubugu 15 / 700 — video ustunde sessiz. 2.0 karsiligi cardTitle 15/20.
   // Maket olcusu: ray 35 genislikte, eylemler arasi 20, sag kenardan 20.
   // Bizde sag 12 / ara 17 idi — ikisi de olcek disi ve makete gore sikisik.
   actions: { position: 'absolute', right: spacing.s20, alignItems: 'center', gap: spacing.s20 },
@@ -834,33 +838,16 @@ const makeStyles = (colors) => StyleSheet.create({
     justifyContent: 'flex-end',
     alignItems: 'flex-end',
   },
-  actionBtn: { alignItems: 'center', gap: 5 },
+  actionBtn: { alignItems: 'center', gap: space[4] },
   actionCircle: {
-    width: 47, height: 47, borderRadius: 24,
-    // tema-bagimsiz: tam ekran video oynatici; zemin videonun kendisi, tema yuzeyi degil
-    backgroundColor: 'rgba(0,0,0,0.42)',
+    width: C.iconButton, height: C.iconButton, borderRadius: C.iconButton / 2,
     alignItems: 'center', justifyContent: 'center',
-    // tema-bagimsiz: tam ekran video oynatici; zemin videonun kendisi, tema yuzeyi degil
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.16)',
   },
-  actionCircleCompact: { width: 34, height: 34, borderRadius: 17 },
-  // "Takip"/"Kaydet" acikken: dolu notr yuzey. Video uzerinde durdugu icin
-  // acik yuzey her sahnede okunur; vurgu rengi burada durum degil dikkat
-  // cekiyordu.
-  actionCircleOn: { backgroundColor: colors.text, borderColor: colors.text },
-  actionLabel: { color: '#fff', fontSize: type.caption2, fontWeight: '700' },
+  actionCircleCompact: { width: K.reels.actionCompact, height: K.reels.actionCompact, borderRadius: K.reels.actionCompact / 2 },
 
   info: { position: 'absolute', left: spacing.lg, right: 84 },
-  // Maket: alt bilgi blogunda ad 15 / 600. Bizde 22 / 900 idi.
-  // Maket videoyu one cikariyor, ustundeki metni degil.
-  name: { color: '#fff', fontSize: type.subhead, fontWeight: '600', letterSpacing: -0.2, lineHeight: 20 },
-  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 9 },
-  tag: {
-    paddingHorizontal: 9, paddingVertical: spacing.xs, borderRadius: radius.pill,
-    // tema-bagimsiz: tam ekran video oynatici; zemin videonun kendisi, tema yuzeyi degil
-    backgroundColor: 'rgba(255,255,255,0.16)',
-  },
-  tagText: { color: '#fff', fontSize: type.caption2, fontWeight: '700' },
-  detailHint: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 11 },
-  detailHintText: { color: 'rgba(255,255,255,0.75)', fontSize: type.footnote, fontWeight: '600' },
+  // Maket: alt bilgi blogunda ad 15 / 600 (2.0 cardTitle). Maket videoyu one
+  // cikariyor, ustundeki metni degil. Turler 2.0 gorsel ustu etiketi (OverlayTag).
+  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: space[6], marginTop: space[8] },
+  detailHint: { flexDirection: 'row', alignItems: 'center', gap: space[2], marginTop: space[12] },
 });

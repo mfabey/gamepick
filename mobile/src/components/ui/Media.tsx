@@ -21,12 +21,15 @@ import { component as K, control, gradients, layout, radius, size } from '../../
 // yerleri boş kalmıyor, satır hiç yok (plan §6 — sahte veri yok).
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Görsel üstü etiket: 22 yükseklik, köşe 6, `rgba(0,0,0,.62)`, 11/700 beyaz; sol üst ya da sağ alt (10). */
-export function OverlayTag({ label, icon, placement = 'topLeft' }: { label: string; icon?: IconName; placement?: 'topLeft' | 'bottomRight' }) {
+/**
+ * Görsel üstü etiket: 22 yükseklik, köşe 6, `rgba(0,0,0,.62)`, 11/700 beyaz; sol üst ya da sağ alt (10).
+ * `inline`: mutlak konum yok — görselin üstündeki bir metin bloğunda satır içi (swipe kartı, reels türleri).
+ */
+export function OverlayTag({ label, icon, placement = 'topLeft' }: { label: string; icon?: IconName; placement?: 'topLeft' | 'bottomRight' | 'inline' }) {
   const { colors } = useDesignTheme();
   const O = K.overlayTag;
   return (
-    <View pointerEvents="none" style={[styles.overlay, placement === 'topLeft' ? styles.topLeft : styles.bottomRight, { backgroundColor: colors.overlayTag }]}>
+    <View pointerEvents="none" style={[styles.overlay, placement === 'topLeft' ? styles.topLeft : placement === 'bottomRight' ? styles.bottomRight : styles.inline, { backgroundColor: colors.overlayTag }]}>
       {icon ? <Icon name={icon} size={O.icon} color={colors.white} strokeWidth={control.iconStroke} /> : null}
       <Txt variant="badge" numberOfLines={1} style={[styles.num, { color: colors.white }]}>{label}</Txt>
     </View>
@@ -202,6 +205,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: K.overlayTag.gap },
   topLeft: { top: K.overlayTag.inset, left: K.overlayTag.inset },
   bottomRight: { right: K.overlayTag.inset, bottom: K.overlayTag.inset },
+  inline: { position: 'relative' },
   play: { alignItems: 'center', justifyContent: 'center' },
   videoThumb: { width: '100%', aspectRatio: size.cover.video.width / size.cover.video.height, borderRadius: radius.card, overflow: 'hidden' },
   videoTitle: { height: K.videoCard.titleHeight },

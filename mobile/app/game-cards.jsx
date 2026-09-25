@@ -11,30 +11,32 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState, useEffect, useCallback, memo } from 'react';
 import {
-  View, Text, Pressable, StyleSheet, ActivityIndicator, RefreshControl, Share, Alert,
+  View, StyleSheet, ActivityIndicator, RefreshControl, Share, Alert,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 import { getGameCards, getCardUrl } from '../src/api/social';
 import { resolveCity } from '../src/services/location';
 import { getSession, subscribeSession } from '../src/services/session';
 import EmptyState from '../src/components/EmptyState';
-import { radius, spacing, type, PRESSED, NUMERIC, TAB_SPACE } from '../src/theme';
+import { NavBar } from '../src/components/ui/Navigation';
+import { IconButton, ListGroup, ListRow, Switch, Txt } from '../src/components/ui/Primitives';
+import { spacing } from '../src/theme';
+import { component as K, control as C, layout, radius as dsRadius, space } from '../src/theme/tokens';
+import { useDesignTheme } from '../src/theme/useDesignTheme';
 import { useYanBosluk } from '../src/hooks/useIcerikAlani';
-import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 
 // Modul duzeyinde: satir ici verilseydi her render'da yeni kimlik olurdu.
 const anahtar = (c) => String(c.appid);
 
 export default function GameCardsScreen() {
-  const styles = useStyles(makeStyles);
   const yan = useYanBosluk();
-  const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
+  const { colors } = useDesignTheme();
   const router = useRouter();
   const { t, lang, locale } = useLanguage();
 
@@ -121,8 +123,8 @@ export default function GameCardsScreen() {
   } else if (loading) {
     body = (
       <View style={styles.center}>
-        <ActivityIndicator color={colors.accent} />
-        <Text style={styles.loadingText}>{t('gc.loading')}</Text>
+        <ActivityIndicator color={colors.text2} />
+        <Txt variant="footnote" style={{ color: colors.text3 }}>{t('gc.loading')}</Txt>
       </View>
     );
   } else if (error === 'STEAM_REQUIRED') {
@@ -139,23 +141,16 @@ export default function GameCardsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      {/* Başlık listenin DIŞINDA: içerik kolonuyla aynı hizaya
-          getiriliyor — başlık tam genişlikte kalsaydı sayfanın adı ile
-          anlattığı şey iki ayrı sütunda dururdu. */}
-      <View style={[styles.header, { marginHorizontal: yan }]}>
-        <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]}
-                   onPress={() => router.back()} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </Pressable>
-        <Text style={styles.title}>{t('gc.title')}</Text>
-      </View>
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
+      <NavBar title={t('gc.title')} />
 
       {body || (
         <FlashList
           data={data.cards}
           keyExtractor={anahtar}
-          contentContainerStyle={{ paddingBottom: TAB_SPACE, paddingHorizontal: yan }}
+          // Alt dolgu `TAB_SPACE` DEĞİL: bu ekranda sekme çubuğu yok (plan
+          // §4.1'in işaret ettiği dört ekrandan biri). Güvenli alan + 40.
+          contentContainerStyle={{ paddingBottom: insets.bottom + spacing.s40, paddingHorizontal: yan }}
           ListHeaderComponent={
             <Summary s={data.summary} t={t} locale={locale} city={city} busy={cityBusy} onToggleCity={toggleCity} />
           }
@@ -172,80 +167,71 @@ export default function GameCardsScreen() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function Summary({ s, t, locale, city, busy, onToggleCity }) {
-  const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
+  const { colors } = useDesignTheme();
   if (!s) return null;
   return (
-    <View>
-      <View style={styles.hero}>
-        <Text style={[styles.heroNum, NUMERIC]}>{s.totalHours.toLocaleString(locale)}</Text>
-        <Text style={styles.heroLabel}>{t('gc.totalHours')}</Text>
+    <View style={styles.summary}>
+      {/* Büyük sayı istatistik ekranıyla aynı dil: surface1 kart, 44/48. */}
+      <View style={[styles.hero, { backgroundColor: colors.surface1 }]}>
+        <Txt variant="scoreLarge" style={styles.num}>{s.totalHours.toLocaleString(locale)}</Txt>
+        <Txt variant="footnote" style={{ color: colors.text3 }}>{t('gc.totalHours')}</Txt>
 
         <View style={styles.heroRow}>
           <Cell n={s.games} label={t('gc.games')} />
           {/* "Alıp oynamadıkların" — kütüphane sahiplerinin en çok konuştuğu sayı */}
-          <Cell n={s.untouched} label={t('gc.untouched')} tint={colors.mid} />
-          <Cell n={s.friends} label={t('gc.friends')} tint={colors.steam} />
+          <Cell n={s.untouched} label={t('gc.untouched')} tint={colors.orange} />
+          <Cell n={s.friends} label={t('gc.friends')} />
         </View>
       </View>
 
       {/* Şehir etiketi. Çözülen şehir BURADA GÖRÜNÜYOR — kullanıcı paylaşmadan
           önce karta tam olarak neyin ekleneceğini görmeli. Koordinat hiçbir
-          zaman gönderilmiyor, çözümleme cihazda yapılıyor. */}
-      <Pressable
-        style={({ pressed }) => [styles.locRow, pressed && PRESSED]}
-        onPress={onToggleCity}
-        disabled={busy}
-      >
-        <Ionicons
-          name={city ? 'location' : 'location-outline'}
-          size={18}
-          color={city ? colors.green : colors.text3}
-        />
-        <View style={styles.locMid}>
-          <Text style={styles.locLabel}>{t('gc.addCity')}</Text>
-          <Text style={styles.locHint} numberOfLines={1}>
-            {busy ? t('gc.locResolving') : (city || t('gc.locOff'))}
-          </Text>
-        </View>
-        <View style={[styles.switch, city && styles.switchOn]}>
-          <View style={[styles.knob, city && styles.knobOn]} />
-        </View>
-      </Pressable>
+          zaman gönderilmiyor, çözümleme cihazda yapılıyor.
+          Eskiden elle çizilmiş bir anahtar taklidiydi (erişilebilirlikte
+          "düğme" okunuyordu, durum yoktu); artık 2.0 Switch. */}
+      <View style={styles.cityGroup}>
+        <ListGroup>
+          <ListRow
+            icon="pin"
+            title={t('gc.addCity')}
+            description={busy ? t('gc.locResolving') : (city || t('gc.locOff'))}
+            trailing={<Switch accessibilityLabel={t('gc.addCity')} value={!!city} onValueChange={onToggleCity} disabled={busy} />}
+          />
+        </ListGroup>
+      </View>
     </View>
   );
 }
 
 function Cell({ n, label, tint }) {
-  const styles = useStyles(makeStyles);
+  const { colors } = useDesignTheme();
   return (
     <View style={styles.cell}>
-      <Text style={[styles.cellNum, NUMERIC, tint && { color: tint }]}>{n}</Text>
-      <Text style={styles.cellLabel} numberOfLines={1}>{label}</Text>
+      <Txt variant="statValue" style={[styles.num, tint && { color: tint }]}>{n}</Txt>
+      <Txt variant="caption" numberOfLines={1} style={{ color: colors.text3 }}>{label}</Txt>
     </View>
   );
 }
 
 const CardRow = memo(function CardRow({ card, place, onShare, t, locale }) {
-  const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
+  const { colors } = useDesignTheme();
   const hasRank = Number.isFinite(card.rank) && card.owners > 1;
   // Ebeveyn kararli `share`i veriyor, satir kendi kartini ekliyor.
   const paylas = useCallback(() => onShare?.(card), [onShare, card]);
   return (
-    <View style={styles.row}>
-      <Text style={[styles.place, NUMERIC]}>{place}</Text>
+    <View style={[styles.row, { backgroundColor: colors.surface1 }]}>
+      <Txt variant="footnoteStrong" style={[styles.place, styles.num, { color: colors.text3 }]}>{place}</Txt>
 
       <View style={styles.rowMid}>
-        <Text style={styles.name} numberOfLines={1}>{card.name}</Text>
+        <Txt variant="cardTitle" numberOfLines={1}>{card.name}</Txt>
         <View style={styles.metaLine}>
-          <Text style={[styles.hours, NUMERIC]}>
+          <Txt variant="captionStrong" style={[styles.num, { color: colors.text2 }]}>
             {Math.round(card.hours).toLocaleString(locale)}{t('gc.hoursShort')}
-          </Text>
+          </Txt>
           {hasRank && (
-            <View style={styles.rankChip}>
-              <Text style={[styles.rankText, NUMERIC]}>{card.rank}/{card.owners}</Text>
-              <Text style={styles.rankLabel}>{t('gc.among')}</Text>
+            <View style={[styles.rankChip, { backgroundColor: colors.pillNeutralSoft }]}>
+              <Txt variant="badge" style={[styles.num, { color: colors.green }]}>{card.rank}/{card.owners}</Txt>
+              <Txt variant="caption2" style={{ color: colors.text3 }}>{t('gc.among')}</Txt>
             </View>
           )}
         </View>
@@ -254,83 +240,38 @@ const CardRow = memo(function CardRow({ card, place, onShare, t, locale }) {
       {/* shareUrl yoksa (sunucuda CARD_SECRET tanımsız) düğme HİÇ görünmüyor —
           bozuk bir bağlantıyla kullanıcıyı 403 sayfasına göndermektense yok. */}
       {!!card.shareUrl && (
-        <Pressable style={({ pressed }) => [styles.shareBtn, pressed && PRESSED]}
-                   onPress={paylas} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('a11y.share')}>
-          <Ionicons name="share-outline" size={19} color={colors.text2} />
-        </Pressable>
+        <IconButton icon="share" label={t('a11y.share')} onPress={paylas} color={colors.text2} />
       )}
     </View>
   );
 });
 
-const makeStyles = (colors) => StyleSheet.create({
-  safe:   { flex: 1, backgroundColor: colors.bg },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md },
-  loadingText: { color: colors.text3, fontSize: type.footnote },
+const styles = StyleSheet.create({
+  safe:   { flex: 1 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: space[12] },
+  num:    { fontVariant: ['tabular-nums'] },
 
-  header: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
-    paddingHorizontal: spacing.lg, paddingBottom: spacing.md,
-  },
-  iconBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginLeft: -10 },
-  title:   { flex: 1, color: colors.text, fontSize: type.title3, fontWeight: '800', letterSpacing: -0.4 },
-
-
+  // Kartlar 20'lik sayfa payında (ListGroup'un kendi payıyla aynı hiza).
+  summary: { paddingTop: space[8], paddingBottom: space[12] },
   hero: {
-    marginHorizontal: spacing.lg, marginBottom: spacing.md, padding: spacing.lg,
-    backgroundColor: colors.card, borderRadius: radius.lg,
-    borderWidth: 1, borderColor: colors.cardBorder,
+    marginHorizontal: layout.gutter, padding: space[16], borderRadius: dsRadius.group,
   },
-  heroNum:   { color: colors.text, fontSize: type.hero, fontWeight: '900', letterSpacing: -1.5 },
-  heroLabel: { color: colors.text3, fontSize: type.footnote, marginTop: -2 },
-  heroRow:   { flexDirection: 'row', marginTop: spacing.lg },
-
-  locRow: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.md,
-    marginHorizontal: spacing.lg, marginBottom: spacing.md,
-    paddingVertical: spacing.md, paddingHorizontal: spacing.md,
-    backgroundColor: colors.card, borderRadius: radius.md,
-    borderWidth: 1, borderColor: colors.cardBorder,
-  },
-  locMid:   { flex: 1, gap: 1 },
-  locLabel: { color: colors.text, fontSize: type.footnote, fontWeight: '700' },
-  locHint:  { color: colors.text3, fontSize: type.caption2 },
-
-  switch: {
-    width: 44, height: 26, borderRadius: 13, padding: 3,
-    backgroundColor: colors.bgInput, justifyContent: 'center',
-  },
-  switchOn: { backgroundColor: colors.green },
-  knob:     { width: 20, height: 20, borderRadius: 10, backgroundColor: colors.text3 },
-  // tema-bagimsiz: acik anahtarin zemini colors.green; topuz ona gore beyaz
-  knobOn:   { backgroundColor: '#fff', alignSelf: 'flex-end' },
-
-  cell:      { flex: 1 },
-  cellNum:   { color: colors.text, fontSize: type.title3, fontWeight: '800' },
-  cellLabel: { color: colors.text3, fontSize: type.caption, marginTop: 1 },
+  heroRow: { flexDirection: 'row', marginTop: space[16] },
+  cell: { flex: 1 },
+  cityGroup: { marginTop: space[12] },
 
   row: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.md,
-    marginHorizontal: spacing.lg, marginBottom: spacing.sm,
-    paddingVertical: spacing.md, paddingHorizontal: spacing.md,
-    backgroundColor: colors.card, borderRadius: radius.md,
-    borderWidth: 1, borderColor: colors.cardBorder,
+    flexDirection: 'row', alignItems: 'center', gap: space[12],
+    marginHorizontal: layout.gutter, marginBottom: space[8],
+    minHeight: K.gameCards.row, paddingLeft: C.listPadding, paddingRight: space[4],
+    borderRadius: dsRadius.button,
   },
-  place:  { width: 22, color: colors.text3, fontSize: type.footnote, fontWeight: '800' },
-  rowMid: { flex: 1, gap: 3 },
-  name:   { color: colors.text, fontSize: type.subhead, fontWeight: '700' },
+  place:  { width: K.gameCards.place },
+  rowMid: { flex: 1, minWidth: 0, gap: space[2] },
 
-  metaLine: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  hours:    { color: colors.text2, fontSize: type.caption, fontWeight: '700' },
-
+  metaLine: { flexDirection: 'row', alignItems: 'center', gap: space[8] },
   rankChip: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.xs,
-    paddingHorizontal: 7, paddingVertical: 2, borderRadius: radius.pill,
-    backgroundColor: colors.bgInput,
+    flexDirection: 'row', alignItems: 'center', gap: K.badgeSmall.gap,
+    height: K.badgeSmall.height, paddingHorizontal: K.badgeSmall.paddingH, borderRadius: K.badgeSmall.radius,
   },
-  rankText:  { color: colors.green, fontSize: type.caption2, fontWeight: '800' },
-  rankLabel: { color: colors.text3, fontSize: type.caption2 },
-
-  // 44×44 — HIG dokunma hedefi alt sınırı
-  shareBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
 });

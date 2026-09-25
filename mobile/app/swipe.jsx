@@ -12,10 +12,9 @@
 // hiç dokunulmaz, böylece kaydırma 60fps kalır.
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { View, Text, Pressable, StyleSheet, ActivityIndicator, useWindowDimensions } from 'react-native';
+import { View, Pressable, StyleSheet, ActivityIndicator, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -35,18 +34,20 @@ import { recordDismiss } from '../src/services/dismissStore';
 import { recordSeen } from '../src/services/seenStore';
 import { recordLike, removeLike } from '../src/services/likeStore';
 import EmptyState from '../src/components/EmptyState';
-import { radius, spacing, PRESSED, type } from '../src/theme';
-import { useStyles, useTheme } from '../src/context/ThemeContext';
+import { Icon } from '../src/components/Icon';
+import { NavBar } from '../src/components/ui/Navigation';
+import { IconButton, PressableScale, Txt } from '../src/components/ui/Primitives';
+import { OverlayTag } from '../src/components/ui/Media';
+import { component as K, layout, radius as dsRadius, space } from '../src/theme/tokens';
+import { useDesignTheme } from '../src/theme/useDesignTheme';
 import { useLanguage } from '../src/context/LanguageContext';
-import IconButton from '../src/components/IconButton';
 import GameCover from '../src/components/GameCover';
 
 const VISIBLE = 3;                         // aynı anda render edilen kart sayısı
 const REFILL_AT = 4;                       // deste bu sayıya inince yeni sayfa çek
 
 export default function SwipeScreen() {
-  const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
+  const { colors } = useDesignTheme();
   const router = useRouter();
   const { t } = useLanguage();
 
@@ -138,27 +139,19 @@ export default function SwipeScreen() {
   const altBosluk = useAltBosluk(18);
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      {/* Üst çubuk */}
-      <View style={styles.head}>
-        <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </Pressable>
-        <View style={styles.headText}>
-          <Text style={styles.title}>{t('swipe.title')}</Text>
-          <Text style={styles.subtitle}>
-            {stats.like + stats.pass > 0
-              ? `${stats.like} ${t('swipe.liked')} · ${stats.pass} ${t('swipe.passed')}`
-              : t('swipe.subtitle')}
-          </Text>
-        </View>
-        <IconButton icon='arrow-undo' size={20} color={colors.text} onPress={undo} disabled={history.length === 0} style={[styles.iconBtn, history.length === 0 && styles.iconBtnOff]} />
-      </View>
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
+      <NavBar
+        title={t('swipe.title')}
+        subtitle={stats.like + stats.pass > 0
+          ? `${stats.like} ${t('swipe.liked')} · ${stats.pass} ${t('swipe.passed')}`
+          : t('swipe.subtitle')}
+        right={<IconButton icon="reply" label={t('a11y.undo')} onPress={undo} disabled={history.length === 0} />}
+      />
 
       {/* Deste */}
       <View style={styles.deck}>
         {initialLoading ? (
-          <ActivityIndicator color={colors.accent} size="large" />
+          <ActivityIndicator color={colors.text2} size="large" />
         ) : remaining === 0 ? (
           <DeckEmpty t={t} loading={loadingMore} onBrowse={() => router.push('/games')} />
         ) : (
@@ -177,24 +170,24 @@ export default function SwipeScreen() {
         )}
       </View>
 
-      {/* Aksiyon butonları — kaydırmak istemeyen kullanıcı için */}
+      {/* Aksiyon butonları — kaydırmak istemeyen kullanıcı için. Tasarımda
+          karşılığı yok: iki karar dairesi dolgulu (geç = marka kırmızısı,
+          beğen = yeşil), ortadaki bilgi 2.0 `filled` IconButton. */}
       {remaining > 0 && !initialLoading && (
         <View style={[styles.actions, { paddingBottom: altBosluk }]}>
-          <Pressable
-            style={[styles.actionBtn, styles.passBtn]}
+          <PressableScale
+            style={[styles.actionBtn, { backgroundColor: colors.brand }]}
             onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); commit(top, false); }}
-           accessibilityRole="button" accessibilityLabel={t('a11y.close')}>
-            <Ionicons name="close" size={30} color="#fff" />
-          </Pressable>
-          <Pressable style={({ pressed }) => [styles.infoBtn, pressed && PRESSED]} onPress={() => openDetail(top)} accessibilityRole="button" accessibilityLabel={t('a11y.info')}>
-            <Ionicons name="information" size={20} color={colors.text2} />
-          </Pressable>
-          <Pressable
-            style={[styles.actionBtn, styles.likeBtn]}
+            accessibilityRole="button" accessibilityLabel={t('a11y.close')}>
+            <Icon name="x" size={K.swipe.actionIcon} color={colors.white} strokeWidth={K.swipe.actionStroke} />
+          </PressableScale>
+          <IconButton icon="info" variant="filled" label={t('a11y.info')} onPress={() => openDetail(top)} />
+          <PressableScale
+            style={[styles.actionBtn, { backgroundColor: colors.green }]}
             onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); commit(top, true); }}
-           accessibilityRole="button" accessibilityLabel={t('a11y.like')}>
-            <Ionicons name="heart" size={26} color="#fff" />
-          </Pressable>
+            accessibilityRole="button" accessibilityLabel={t('a11y.like')}>
+            <Icon name="heart" size={K.swipe.actionIcon} color={colors.white} fill={colors.white} />
+          </PressableScale>
         </View>
       )}
     </SafeAreaView>
@@ -203,10 +196,9 @@ export default function SwipeScreen() {
 
 // ─── Tek kart ────────────────────────────────────────────────────────────────
 function SwipeCard({ game, index, isTop, onDecide, onPress, t }) {
-  const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
+  const { colors } = useDesignTheme();
   const { width: SCREEN_W } = useWindowDimensions();
-  const cardWidth = Math.min(SCREEN_W - spacing.lg * 2, 420);
+  const cardWidth = Math.min(SCREEN_W - layout.gutter * 2, K.swipe.cardMaxWidth);
   const SWIPE_THRESHOLD = cardWidth * 0.28;
   const FLY_OUT = SCREEN_W * 1.6;
   const x = useSharedValue(0);
@@ -267,22 +259,22 @@ function SwipeCard({ game, index, isTop, onDecide, onPress, t }) {
 
   return (
     <GestureDetector gesture={pan}>
-      <Animated.View style={[styles.card, { width: cardWidth }, cardStyle]}>
+      <Animated.View style={[styles.card, { width: cardWidth, backgroundColor: colors.surface1 }, cardStyle]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onPress} disabled={!isTop}>
           <GameCover uri={game.image} name={game.name} style={StyleSheet.absoluteFill}>
+          {/* Metin görselin karartması üstünde: renkler TEMA BAĞIMSIZ beyaz
+              (açık temada da kapak karanlık uçla bitiyor). */}
           <View style={styles.cardBody}>
-            <Text numberOfLines={2} style={styles.cardName}>{game.name}</Text>
+            <Txt variant="title1" numberOfLines={2} style={{ color: colors.white }}>{game.name}</Txt>
             {game.genres?.length > 0 && (
               <View style={styles.tags}>
-                {game.genres.slice(0, 3).map((g) => (
-                  <View key={g} style={styles.tag}><Text style={styles.tagText}>{g}</Text></View>
-                ))}
+                {game.genres.slice(0, 3).map((g) => <OverlayTag key={g} label={g} placement="inline" />)}
               </View>
             )}
             {game.metacritic ? (
               <View style={styles.meta}>
-                <Ionicons name="star" size={12} color={colors.accent} />
-                <Text style={styles.metaText}>{game.metacritic}</Text>
+                <Icon name="star" size={K.overlayTag.icon} color={colors.gold} fill={colors.gold} />
+                <Txt variant="footnoteStrong" style={{ color: colors.onArt }}>{game.metacritic}</Txt>
               </View>
             ) : null}
           </View>
@@ -290,11 +282,11 @@ function SwipeCard({ game, index, isTop, onDecide, onPress, t }) {
           {/* Karar rozetleri (yalnızca üstteki kartta anlamlı) */}
           {isTop && (
             <>
-              <Animated.View style={[styles.badge, styles.badgeLike, likeStyle]}>
-                <Text style={styles.badgeText}>{t('swipe.like')}</Text>
+              <Animated.View style={[styles.badge, styles.badgeLike, { borderColor: colors.green }, likeStyle]}>
+                <Txt variant="headlineBold" style={[styles.badgeText, { color: colors.white }]}>{t('swipe.like')}</Txt>
               </Animated.View>
-              <Animated.View style={[styles.badge, styles.badgePass, passStyle]}>
-                <Text style={styles.badgeText}>{t('swipe.pass')}</Text>
+              <Animated.View style={[styles.badge, styles.badgePass, { borderColor: colors.red }, passStyle]}>
+                <Txt variant="headlineBold" style={[styles.badgeText, { color: colors.white }]}>{t('swipe.pass')}</Txt>
               </Animated.View>
             </>
           )}
@@ -306,12 +298,11 @@ function SwipeCard({ game, index, isTop, onDecide, onPress, t }) {
 }
 
 function DeckEmpty({ t, loading, onBrowse }) {
-  const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
+  const { colors } = useDesignTheme();
   if (loading) {
     return (
       <View style={styles.empty}>
-        <ActivityIndicator color={colors.accent} size="large" />
+        <ActivityIndicator color={colors.text2} size="large" />
       </View>
     );
   }
@@ -327,71 +318,39 @@ function DeckEmpty({ t, loading, onBrowse }) {
   );
 }
 
-const makeStyles = (colors) => StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
+const styles = StyleSheet.create({
+  safe: { flex: 1 },
 
-  head: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: spacing.md, paddingTop: 6, paddingBottom: 10, gap: 10,
-  },
-  headText: { flex: 1 },
-  title: { fontSize: type.headline, fontWeight: '900', color: colors.text, letterSpacing: -0.3 },
-  subtitle: { fontSize: type.footnote, color: colors.text2, marginTop: 2 },
-  iconBtn: {
-    width: 44, height: 44, borderRadius: 22, backgroundColor: colors.card,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  iconBtnOff: { opacity: 0.35 },
-
-  deck: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.lg },
+  deck: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: layout.gutter },
   card: {
     position: 'absolute',
-    height: '100%', maxHeight: 560,
-    borderRadius: radius.xl, overflow: 'hidden',
-    backgroundColor: colors.card,
-    borderWidth: 1, borderColor: colors.cardBorder,
+    height: '100%', maxHeight: K.swipe.cardMaxHeight,
+    borderRadius: dsRadius.cardLarge, overflow: 'hidden',
   },
 
-  cardBody: { position: 'absolute', left: 18, right: 18, bottom: 22 },
-  cardName: { color: '#fff', fontSize: type.title2, fontWeight: '900', letterSpacing: -0.5, lineHeight: 30 },
-  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 },
-  tag: {
-    paddingHorizontal: 10, paddingVertical: 4.5, borderRadius: radius.pill,
-    // tema-bagimsiz: kart gorselinin ustundeki etiket
-    backgroundColor: 'rgba(255,255,255,0.14)',
-  },
-  tagText: { color: '#fff', fontSize: type.caption, fontWeight: '700' },
-  meta: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: 9 },
-  metaText: { color: colors.text2, fontSize: type.footnote, fontWeight: '700' },
+  cardBody: { position: 'absolute', left: space[20], right: space[20], bottom: space[24] },
+  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: space[6], marginTop: space[8] },
+  meta: { flexDirection: 'row', alignItems: 'center', gap: space[4], marginTop: space[8] },
 
+  // Karar damgası — tasarımda karşılığı yok; eğik, çerçeveli, kenardan 20.
   badge: {
-    position: 'absolute', top: 28,
-    paddingHorizontal: 14, paddingVertical: 7,
-    borderRadius: radius.md, borderWidth: 3,
+    position: 'absolute', top: space[28],
+    paddingHorizontal: space[14], paddingVertical: space[6],
+    borderRadius: dsRadius.md, borderWidth: K.swipe.stampBorder,
   },
-  badgeLike: { left: 20, borderColor: colors.green, transform: [{ rotate: '-14deg' }] },
-  badgePass: { right: 20, borderColor: colors.accent, transform: [{ rotate: '14deg' }] },
-  badgeText: { color: '#fff', fontSize: type.headline, fontWeight: '900', letterSpacing: 1 },
+  badgeLike: { left: space[20], transform: [{ rotate: '-14deg' }] },
+  badgePass: { right: space[20], transform: [{ rotate: '14deg' }] },
+  badgeText: { letterSpacing: 1 },
 
   actions: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     // paddingBottom ÇALIŞMA ZAMANINDA (useAltBosluk) — alt kenar güvenli.
-    gap: 22, paddingTop: 18,
+    gap: space[24], paddingTop: space[16],
   },
   actionBtn: {
-    width: 62, height: 62, borderRadius: 31,
+    width: K.swipe.action, height: K.swipe.action, borderRadius: K.swipe.action / 2,
     alignItems: 'center', justifyContent: 'center',
   },
-  // accent-serbest: 62pt daire, yalniz simge
-  passBtn: { backgroundColor: colors.accent },
-  likeBtn: { backgroundColor: colors.green },
-  infoBtn: {
-    width: 42, height: 42, borderRadius: 21, backgroundColor: colors.card,
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1, borderColor: colors.cardBorder,
-  },
 
-  empty: { alignItems: 'center', paddingHorizontal: spacing.xl },
-
-
+  empty: { alignItems: 'center', paddingHorizontal: space[24] },
 });
