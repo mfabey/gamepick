@@ -244,7 +244,7 @@ export default function FriendsScreen() {
               </View>
             )
           ) : data.friends.length === 0 ? (
-            <EmptyState icon="people-outline" title={t('soc.noFriends')} text={t('soc.noFriendsText')} />
+            <EmptyState icon="users" title={t('soc.noFriends')} text={t('soc.noFriendsText')} />
           ) : (
             <>
               <View style={styles.sectionTop}>

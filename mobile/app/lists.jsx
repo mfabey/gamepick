@@ -150,11 +150,11 @@ export default function ListsScreen() {
            açılıyor ve "koleksiyonlarından birini paylaş" çağrısı hesapsız
            kullanıcıyı kilitli ekrana götürüyordu. */
         <EmptyState
-          icon="list-outline"
+          icon="book"
           title={t('pl.empty')}
           text={session ? t('pl.emptyText') : t('pl.emptyGuest')}
           actionLabel={session ? t('col.entry') : t('acc.goSignIn')}
-          actionIcon={session ? 'albums' : 'person-circle-outline'}
+          actionIcon={session ? 'layers' : 'userplus'}
           onAction={() => router.push(session ? '/collections' : '/account')}
         />
       ) : (

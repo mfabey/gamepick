@@ -188,7 +188,7 @@ export default function MessagesScreen() {
 
   let body = null;
   if (!session) {
-    body = <EmptyState icon="person-circle-outline" title={t('sf.needAccount')}
+    body = <EmptyState icon="userplus" title={t('sf.needAccount')}
       text={t('sf.needAccountText')} actionLabel={t('sf.goAccount')}
       onAction={() => router.push('/account')} />;
   } else if (loading) {
@@ -197,10 +197,10 @@ export default function MessagesScreen() {
   // duran geçerli listeyi geçersiz kılmıyor: bağlantı gidince kullanıcıyı
   // dolu bir listeden boş bir hata ekranına düşürmek gerileme olurdu.
   } else if (error && !rows) {
-    body = <EmptyState icon="cloud-offline-outline" title={t('common.error')} text={t('common.errorText')}
+    body = <EmptyState icon="wifioff" title={t('common.error')} text={t('common.errorText')}
       actionLabel={t('common.retry')} onAction={refetch} />;
   } else if (!rows?.length) {
-    body = <EmptyState icon="chatbubbles-outline" title={t('msg.empty')} text={t('msg.emptyText')}
+    body = <EmptyState icon="msg" title={t('msg.empty')} text={t('msg.emptyText')}
       actionLabel={t('msg.goFriends')} onAction={() => router.push('/friends')} />;
   }
 

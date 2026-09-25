@@ -116,7 +116,7 @@ export default function PublicListScreen() {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
         <NavBar />
-        <EmptyState icon="alert-circle-outline" title={t('soc.err.generic')} />
+        <EmptyState icon="alert" title={t('soc.err.generic')} />
       </SafeAreaView>
     );
   }
@@ -165,7 +165,7 @@ export default function PublicListScreen() {
           </View>
         }
         ListEmptyComponent={
-          <EmptyState icon="game-controller-outline" title={t('pl.emptyList')} compact />
+          <EmptyState icon="pad" title={t('pl.emptyList')} compact />
         }
       />
 

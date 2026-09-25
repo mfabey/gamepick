@@ -435,7 +435,7 @@ export default function ProfileScreen() {
     if (yok) {
       return (
         <EmptyState
-          icon="at-outline"
+          icon="at"
           title={t('prof.noUsername')}
           text={t('prof.needUsername')}
           actionLabel={t('prof.noUsername')}
@@ -444,10 +444,10 @@ export default function ProfileScreen() {
       );
     }
     const map = {
-      collection: { icon: 'albums-outline', title: t('col.empty'), text: t('col.emptyText'), label: t('nav.games'), go: '/games' },
-      wishlist:   { icon: 'heart-outline', title: t('prof.emptyWishlist'), text: t('prof.emptyWishlistDesc'), label: t('nav.games'), go: '/games' },
-      reviews:    { icon: 'shield-checkmark-outline', title: t('rev.mineEmpty'), text: t('rev.mineEmptyDesc'), label: t('tab.community'), go: '/(tabs)/reviews' },
-      posts:      { icon: 'chatbubble-outline', title: t('prof.emptyPosts'), text: t('prof.emptyPostsDesc'), label: t('tab.community'), go: '/(tabs)/reviews' },
+      collection: { icon: 'layers', title: t('col.empty'), text: t('col.emptyText'), label: t('nav.games'), go: '/games' },
+      wishlist:   { icon: 'heart', title: t('prof.emptyWishlist'), text: t('prof.emptyWishlistDesc'), label: t('nav.games'), go: '/games' },
+      reviews:    { icon: 'shield', title: t('rev.mineEmpty'), text: t('rev.mineEmptyDesc'), label: t('tab.community'), go: '/(tabs)/reviews' },
+      posts:      { icon: 'comment', title: t('prof.emptyPosts'), text: t('prof.emptyPostsDesc'), label: t('tab.community'), go: '/(tabs)/reviews' },
     }[tab];
     return (
       <EmptyState

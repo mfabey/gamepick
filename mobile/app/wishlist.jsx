@@ -113,11 +113,11 @@ function WishlistScreenContent() {
 
       {items.length === 0 ? (
         <EmptyState
-          icon="bookmark-outline"
+          icon="bookmark"
           title={t('wishlist.empty')}
           text={t('wishlist.emptyDesc')}
           actionLabel={t('wishlist.explore')}
-          actionIcon="pricetag-outline"
+          actionIcon="tag"
           // İNDİRİMLERE, tüm oyunlara değil. Bu listenin varlık sebebi indirim
           // haberi; boş listede kullanıcıyı doğrudan indirime götürmek listenin
           // ne işe yaradığını anlatmanın en kısa yolu.

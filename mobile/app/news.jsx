@@ -180,7 +180,7 @@ export default function NewsScreen() {
       <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
         {head}
         <EmptyState
-          icon="cloud-offline-outline"
+          icon="wifioff"
           title={t('common.error')}
           text={t('common.errorText')}
           actionLabel={t('common.retry')}
@@ -267,7 +267,7 @@ export default function NewsScreen() {
           lead ? null : (
             <EmptyState
               compact
-              icon="newspaper-outline"
+              icon="news"
               title={t('news.empty')}
               text={t('news.emptyDesc')}
               actionLabel={cat !== 'all' ? t('news.showAll') : undefined}

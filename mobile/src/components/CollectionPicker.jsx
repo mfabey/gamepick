@@ -1,26 +1,37 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Koleksiyon seçim sayfası — bir oyunu listelere ekle/çıkar.
 // Detay ekranından açılır; tek sorumluluğu seçim, veri yazımı store'da.
+//
+// 2.0: DS 4 Bottom Sheet (FilterSheet'le aynı yüzey — bg2, köşe 24, üst
+// gölge, 36×5 tutamaç). Koleksiyonlar tek bir gruplu kutuda (kit paylaş
+// sayfasının satır kutusu), sonda "Yeni koleksiyon" satırı. Seçim dairesi
+// seçiliyken kırmızı dolu + tik — TextField odağıyla aynı vurgu.
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState, useCallback } from 'react';
 import {
-  View, Text, Pressable, StyleSheet, Modal, TextInput, ScrollView,
-  KeyboardAvoidingView, Alert,
+  View, Pressable, StyleSheet, Modal, ScrollView, KeyboardAvoidingView, Alert,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 
-import { radius, spacing, PRESSED, type, SHEET_LAYOUT } from '../theme';
-import { useStyles, useTheme } from '../context/ThemeContext';
+import { Icon } from './Icon';
+import { Button, ListGroup, ListRow, PressableScale, TextField, Txt } from './ui/Primitives';
+import { SHEET_LAYOUT } from '../theme';
+import { component as K, control as C, layout, radius as dsRadius, shadow, space } from '../theme/tokens';
+import { useDesignTheme } from '../theme/useDesignTheme';
+import { useStyles } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
-import IconButton from './IconButton';
+
+const F = K.filterSheet;
+const P = K.collectionPicker;
 
 export default function CollectionPicker({
   visible, onClose, collections, selectedIds, game, onToggle, onCreate,
 }) {
   const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
+  const { colors } = useDesignTheme();
   const { t } = useLanguage();
+  const insets = useSafeAreaInsets();
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState('');
 
@@ -38,67 +49,76 @@ export default function CollectionPicker({
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={({ pressed }) => [styles.backdrop, pressed && PRESSED]} onPress={onClose}>
-        <KeyboardAvoidingView behavior="padding">
-          <Pressable style={({ pressed }) => [styles.sheet, pressed && PRESSED]} onPress={(e) => e.stopPropagation()}>
-            <View style={styles.grabber} />
-            <Text style={styles.title}>{t('col.addTo')}</Text>
-            <Text numberOfLines={1} style={styles.gameName}>{game?.name}</Text>
+      <Pressable style={styles.backdrop} onPress={onClose}>
+        <KeyboardAvoidingView behavior="padding" style={styles.kav}>
+          {/* İç yüzeyde onPress var ama HİÇBİR ŞEY YAPMIYOR: sayfanın boş bir
+              yerine dokunmak arkadaki Pressable'a ulaşıp sayfayı kapatırdı. */}
+          <Pressable style={[styles.sheet, { backgroundColor: colors.bg2, paddingBottom: insets.bottom + space[12] }]} onPress={(e) => e.stopPropagation()}>
+            <View style={[styles.grabber, { backgroundColor: colors.text3 }]} />
+            <View style={styles.head}>
+              <Txt variant="headline" accessibilityRole="header">{t('col.addTo')}</Txt>
+              <Txt variant="footnote" numberOfLines={1} style={{ color: colors.text2 }}>{game?.name}</Txt>
+            </View>
 
-            <ScrollView style={styles.list} keyboardShouldPersistTaps="handled">
+            <ScrollView style={styles.list} contentContainerStyle={styles.listContent} keyboardShouldPersistTaps="handled">
               {collections.length === 0 && !adding ? (
-                <Text style={styles.emptyText}>{t('col.emptyText')}</Text>
+                <Txt variant="footnote" style={[styles.emptyText, { color: colors.text2 }]}>{t('col.emptyText')}</Txt>
               ) : null}
 
-              {collections.map((c) => {
-                const on = selectedIds.has(c.id);
-                return (
-                  <Pressable
-                    key={c.id}
-                    style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}
-                    onPress={async () => {
-                      Haptics.selectionAsync();
-                      await onToggle(c.id);
-                    }}
-                  >
-                    <Text style={styles.rowEmoji}>{c.emoji}</Text>
-                    <View style={styles.rowBody}>
-                      <Text numberOfLines={1} style={styles.rowName}>{c.name}</Text>
-                      <Text style={styles.rowMeta}>{(c.games || []).length} {t('col.gameCount')}</Text>
-                    </View>
-                    <View style={[styles.check, on && styles.checkOn]}>
-                      {on ? <Ionicons name="checkmark" size={15} color="#fff" /> : null}
-                    </View>
-                  </Pressable>
-                );
-              })}
+              {/* Koleksiyon yokken form açıldıysa grup hiç çizilmiyor: satırsız
+                  bir kutu boşluk bırakırdı. */}
+              {collections.length > 0 || !adding ? (
+              <ListGroup>
+                {collections.map((c) => {
+                  const on = selectedIds.has(c.id);
+                  return (
+                    <PressableScale
+                      key={c.id}
+                      style={styles.row}
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked: on }}
+                      accessibilityLabel={c.name}
+                      onPress={async () => {
+                        Haptics.selectionAsync();
+                        await onToggle(c.id);
+                      }}
+                    >
+                      <Txt variant="headline">{c.emoji}</Txt>
+                      <View style={styles.rowBody}>
+                        <Txt variant="input" numberOfLines={1}>{c.name}</Txt>
+                        <Txt variant="footnote" style={{ color: colors.text2 }}>{(c.games || []).length} {t('col.gameCount')}</Txt>
+                      </View>
+                      <View style={[styles.check, on
+                        ? { backgroundColor: colors.red, borderColor: colors.red }
+                        : { borderColor: colors.text3 }]}>
+                        {on ? <Icon name="check" size={P.checkGlyph} color={colors.white} strokeWidth={C.iconStroke} /> : null}
+                      </View>
+                    </PressableScale>
+                  );
+                })}
+                {!adding ? (
+                  <ListRow icon="plus" title={t('col.new')} onPress={() => setAdding(true)} trailing={false} />
+                ) : null}
+              </ListGroup>
+              ) : null}
 
               {adding ? (
-                <View style={styles.newRow}>
-                  <TextInput
+                <View style={styles.newForm}>
+                  <TextField
+                    label={t('col.namePlaceholder')}
                     value={name}
                     onChangeText={setName}
-                    placeholder={t('col.namePlaceholder')}
-                    placeholderTextColor={colors.text3}
-                    style={styles.input}
                     maxLength={60}
                     autoFocus
                     returnKeyType="done"
                     onSubmitEditing={submitNew}
                   />
-                  <IconButton icon='checkmark' size={19} color="#fff" onPress={submitNew} disabled={!name.trim()} style={[styles.miniCta, !name.trim() && styles.ctaOff]} />
+                  <Button title={t('col.create')} height={44} onPress={submitNew} disabled={!name.trim()} />
                 </View>
-              ) : (
-                <Pressable style={({ pressed }) => [styles.addRow, pressed && PRESSED]} onPress={() => setAdding(true)}>
-                  <Ionicons name="add-circle-outline" size={21} color={colors.accent} />
-                  <Text style={styles.addText}>{t('col.new')}</Text>
-                </Pressable>
-              )}
+              ) : null}
             </ScrollView>
 
-            <Pressable style={({ pressed }) => [styles.done, pressed && PRESSED]} onPress={onClose}>
-              <Text style={styles.doneText}>{t('col.save')}</Text>
-            </Pressable>
+            <Button title={t('col.save')} height={F.cta} onPress={onClose} style={styles.done} />
           </Pressable>
         </KeyboardAvoidingView>
       </Pressable>
@@ -106,58 +126,38 @@ export default function CollectionPicker({
   );
 }
 
+// Karartma eski temadan (`colors.overlay`) — FilterSheet'le aynı kaynak.
 const makeStyles = (colors) => StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },
+  kav: { width: '100%' },
   sheet: {
     ...SHEET_LAYOUT,
-    backgroundColor: colors.bgElevated,
-    borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl,
-    paddingHorizontal: spacing.lg, paddingTop: 10, paddingBottom: 28,
+    borderTopLeftRadius: dsRadius.sheet, borderTopRightRadius: dsRadius.sheet,
+    boxShadow: shadow.sheet,
     maxHeight: '82%',
   },
   grabber: {
-    alignSelf: 'center', width: 38, height: 4, borderRadius: 2,
-    backgroundColor: colors.text3, opacity: 0.5, marginBottom: 14,
+    alignSelf: 'center', width: F.grabberWidth, height: F.grabberHeight,
+    borderRadius: F.grabberRadius, marginTop: F.grabberTop,
   },
-  title: { color: colors.text, fontSize: type.body, fontWeight: '900' },
-  gameName: { color: colors.text2, fontSize: type.footnote, marginTop: 3, marginBottom: spacing.md },
+  head: { paddingHorizontal: layout.gutter, paddingTop: space[12], gap: space[2] },
 
   list: { flexGrow: 0 },
-  emptyText: { color: colors.text2, fontSize: type.footnote, lineHeight: 20, paddingVertical: 10 },
+  listContent: { paddingTop: space[16], gap: space[12] },
+  emptyText: { paddingHorizontal: layout.gutter },
 
-  row: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 11 },
-  rowEmoji: { fontSize: type.title3 },
-  rowBody: { flex: 1 },
-  rowName: { color: colors.text, fontSize: type.subhead, fontWeight: '700' },
-  rowMeta: { color: colors.text3, fontSize: type.caption, marginTop: 2 },
+  // ListRow ölçüsü (52 / 16 / 14); emoji ikon kutusunun yerinde.
+  row: {
+    minHeight: C.listHeight, paddingHorizontal: C.listPadding, paddingVertical: space[8],
+    flexDirection: 'row', alignItems: 'center', gap: C.listGap,
+  },
+  rowBody: { flex: 1, minWidth: 0 },
   check: {
-    width: 25, height: 25, borderRadius: 13,
-    borderWidth: 2, borderColor: colors.cardBorder,
+    width: P.check, height: P.check, borderRadius: P.check / 2, borderWidth: C.fieldFocusWidth,
     alignItems: 'center', justifyContent: 'center',
   },
-  // accent-serbest: onay isareti simgesi, metin yok
-  checkOn: { backgroundColor: colors.accent, borderColor: colors.accent },
 
-  addRow: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingVertical: 13 },
-  addText: { color: colors.accentText, fontSize: type.subhead, fontWeight: '700' },
+  newForm: { paddingHorizontal: layout.gutter, gap: space[8] },
 
-  newRow: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingVertical: 10 },
-  input: {
-    flex: 1, backgroundColor: colors.bgInput, borderRadius: radius.md,
-    paddingHorizontal: 13, height: 46, color: colors.text, fontSize: type.subhead,
-    borderWidth: 1, borderColor: colors.cardBorder,
-  },
-  miniCta: {
-    // accent-serbest: 46pt daire, yalniz simge
-    width: 46, height: 46, borderRadius: radius.md, backgroundColor: colors.accent,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  ctaOff: { opacity: 0.4 },
-
-  done: {
-    height: 50, borderRadius: radius.lg, backgroundColor: colors.card,
-    alignItems: 'center', justifyContent: 'center', marginTop: 14,
-    borderWidth: 1, borderColor: colors.cardBorder,
-  },
-  doneText: { color: colors.text, fontSize: type.subhead, fontWeight: '800' },
+  done: { marginHorizontal: layout.gutter, marginTop: space[16] },
 });

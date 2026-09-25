@@ -94,7 +94,7 @@ function StatsScreenContent() {
           dalına konulabiliyor, ikisi de ifade bağlamı. */}
       {!report.hasActivity ? (
         <EmptyState
-          icon="stats-chart-outline"
+          icon="poll"
           title={t('stats.emptyTitle')}
           text={t('stats.emptyText')}
           actionLabel={t('stats.startBrowsing')}

@@ -105,7 +105,7 @@ export default function SteamFriendsScreen() {
   if (!session) {
     body = (
       <EmptyState
-        icon="person-circle-outline"
+        icon="userplus"
         title={t('sf.needAccount')}
         text={t('sf.needAccountText')}
         actionLabel={t('sf.goAccount')}
@@ -122,7 +122,7 @@ export default function SteamFriendsScreen() {
   } else if (error === 'STEAM_REQUIRED') {
     body = (
       <EmptyState
-        icon="logo-steam"
+        icon="link"
         title={t('sf.noSteam')}
         text={t('sf.noSteamText')}
         actionLabel={t('sf.goProfile')}
@@ -133,7 +133,7 @@ export default function SteamFriendsScreen() {
     // Düzeltilebilir bir durum — kullanıcıya TAM olarak hangi ayar olduğunu söyle.
     body = (
       <EmptyState
-        icon="lock-closed-outline"
+        icon="lock"
         title={t('sf.selfPrivate')}
         text={t('sf.selfPrivateText')}
       />
@@ -141,7 +141,7 @@ export default function SteamFriendsScreen() {
   } else if (error) {
     body = (
       <EmptyState
-        icon="cloud-offline-outline"
+        icon="wifioff"
         title={t('sf.error')}
         text={t('sf.errorText')}
         actionLabel={t('sf.retry')}
@@ -153,7 +153,7 @@ export default function SteamFriendsScreen() {
     // boş dönüyor, ayırt edemiyoruz. Metin her iki ihtimali de anlatıyor.
     body = (
       <EmptyState
-        icon="people-outline"
+        icon="users"
         title={t('sf.empty')}
         text={t('sf.emptyText')}
         actionLabel={t('sf.retry')}

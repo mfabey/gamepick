@@ -227,7 +227,7 @@ export default function UserProfileScreen() {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
         <Ust onBack={() => router.back()} title={`@${username}`} colors={colors} styles={styles} t={t} />
-        <EmptyState icon="person-outline" title={t('prof.notFound')} text={t('prof.notFoundDesc')} />
+        <EmptyState icon="users" title={t('prof.notFound')} text={t('prof.notFoundDesc')} />
       </SafeAreaView>
     );
   }
@@ -247,7 +247,7 @@ export default function UserProfileScreen() {
     if (item.__kilit) {
       return (
         <EmptyState
-          icon="lock-closed-outline"
+          icon="lock"
           title={t('prof.privateTitle')}
           text={t('prof.privateDesc')}
         />
@@ -258,7 +258,7 @@ export default function UserProfileScreen() {
       return (
         <EmptyState
           compact
-          icon={tab === 'reviews' ? 'shield-checkmark-outline' : tab === 'posts' ? 'chatbubble-outline' : 'albums-outline'}
+          icon={tab === 'reviews' ? 'shield' : tab === 'posts' ? 'comment' : 'layers'}
           title={t('prof.otherEmpty')}
           text={t('prof.otherEmptyDesc')}
         />

@@ -933,18 +933,18 @@ export default function ChatScreen() {
 
   let body = null;
   if (!session) {
-    body = <EmptyState icon="person-circle-outline" title={t('sf.needAccount')}
+    body = <EmptyState icon="userplus" title={t('sf.needAccount')}
       text={t('sf.needAccountText')} actionLabel={t('sf.goAccount')}
       onAction={() => router.push('/account')} />;
   } else if (loading) {
     body = <View style={styles.center}><ActivityIndicator color={colors.accent} /></View>;
   } else if (error === 'NOT_FRIENDS') {
-    body = <EmptyState icon="people-outline" title={t('msg.notFriends')} text={t('msg.notFriendsText')}
+    body = <EmptyState icon="users" title={t('msg.notFriends')} text={t('msg.notFriendsText')}
       actionLabel={t('msg.goFriends')} onAction={() => router.push('/friends')} />;
   } else if (error === 'BLOCKED') {
-    body = <EmptyState icon="ban-outline" title={t('msg.blocked')} text={t('msg.blockedText')} />;
+    body = <EmptyState icon="lock" title={t('msg.blocked')} text={t('msg.blockedText')} />;
   } else if (error) {
-    body = <EmptyState icon="cloud-offline-outline" title={t('common.error')} text={t('common.errorText')} />;
+    body = <EmptyState icon="wifioff" title={t('common.error')} text={t('common.errorText')} />;
   }
 
   return (

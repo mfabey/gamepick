@@ -69,7 +69,7 @@ export default function FriendRequestsScreen() {
       {data === null ? (
         <View style={styles.center}><ActivityIndicator color={colors.text2} /></View>
       ) : bos ? (
-        <EmptyState icon="mail-outline" title={t('soc.noRequests')} />
+        <EmptyState icon="mail" title={t('soc.noRequests')} />
       ) : (
         <ScrollView
           contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.s40, paddingHorizontal: yan + spacing.s20 }]}

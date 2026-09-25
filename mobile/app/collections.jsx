@@ -92,7 +92,7 @@ function CollectionsScreenContent() {
 
       {collections.length === 0 ? (
         <EmptyState
-          icon="albums-outline"
+          icon="layers"
           title={t('col.empty')}
           text={t('col.emptyText')}
         >

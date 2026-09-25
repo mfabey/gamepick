@@ -135,7 +135,7 @@ export default function CollectionDetailScreen() {
 
       {games.length === 0 ? (
         <EmptyState
-          icon="game-controller-outline"
+          icon="pad"
           title={t('col.emptyList')}
           text={t('col.emptyListText')}
           actionLabel={t('nav.games')}

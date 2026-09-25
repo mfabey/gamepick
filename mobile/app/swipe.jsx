@@ -308,7 +308,7 @@ function DeckEmpty({ t, loading, onBrowse }) {
   }
   return (
     <EmptyState
-      icon="checkmark-done-circle-outline"
+      icon="checkc"
       title={t('swipe.emptyTitle')}
       text={t('swipe.emptyText')}
       actionLabel={t('nav.games')}

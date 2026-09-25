@@ -1516,3 +1516,43 @@ yükleyiciler bu işin dışında kaldı.
 başarılı. Cihazda görülmedi (emülatör yok): kilit ekranı, Genel görünümün
 avatar yığını, dört hücreli Steam kartında değer sütununun sığması gözle
 bakılmalı.
+
+### 25 Eylül — Ortak eski bileşenler: EmptyState ve CollectionPicker (Claude)
+
+- **EmptyState → G-DS-4 "Boş durum"** (kit ds.py empty()): kutu 56 → 84
+  (köşe 26, surface1, kenarlık yok), ikon 36 `text2` çizgi 1.8, başlık
+  `title2` 20/26 (eski 22 pt ölçümünün yerine — kaynak kazanır), açıklama
+  `body` 15/22 (eski ölçümün vardığı 15 ile aynı), eylem 260 genişlikte 48 pt
+  2.0 `Button` **primary — nötr** (eskiden kırmızı dolgu; kırmızı CTA yalnız
+  G-03'ün). `compact` (liste içi) DS'de yok: kutu 64 / ikon 28 / headline /
+  eylem 44. Bileşen artık Ionicons değil 2.0 ikon adı alıyor.
+- **19 dosyadaki 38 çağrının ikonları kodmodla 2.0 adına çevrildi** (yalnız
+  `<EmptyState>` açılış etiketindeki icon / actionIcon dizgileri + profildeki
+  boş sekme eşlemesi). Kodmod ilk sürümde `onAction={() => …}` içindeki `>`'da
+  bloğu erken kesecekti; süslü parantez derinliği sayan tarayıcıyla yazıldı.
+  Denetim betiği önce 46 eski adı yakaladı, sonra 0 (kalan 2 uyarı üçlü
+  ifadedeki `tab === 'reviews'` karşılaştırması); fark yalnız ikon satırları
+  (41/41, ikon dışı değişen satır 0). Eşleme: person-circle / person-add →
+  userplus · people / person → users · cloud-offline → wifioff · chatbubbles
+  → msg · chatbubble → comment · game-controller → pad · albums → layers ·
+  logo-steam → link · lock-closed / ban → lock · list → book · newspaper →
+  news · stats-chart → poll · checkmark-done-circle → checkc ·
+  shield-checkmark → shield · pricetag → tag · alert-circle → alert.
+- **CollectionPicker → DS 4 Bottom Sheet** (FilterSheet'le aynı yüzey: bg2,
+  köşe 24, sheet gölgesi, 36×5 tutamaç). Koleksiyonlar tek `ListGroup`
+  kutusunda, satır ListRow ölçüsünde (emoji ikon kutusunun yerinde), seçim
+  dairesi 24 (seçili: kırmızı dolu + tik; erişilebilirlikte `checkbox` +
+  durum — eskiden durumsuzdu). "Yeni koleksiyon" grubun son satırı; form
+  2.0 `TextField` + 44 pt `Button`. "Kaydet" 52 pt primary. Alt pay güvenli
+  alan. Mantık aynen (oluşturunca oyunu içine koy, sınır uyarısı).
+- **Eski `components/IconButton` silindi** (son tüketicisi CollectionPicker'dı).
+  Yalnız onun ikon → etiket tablosunun kullandığı 7 `a11y.*` anahtarı beş
+  dilden kaldırıldı (check:i18n "tanımlı ama kullanılmıyor" diye düştü):
+  forward, settings, rename, follow, unfollow, confirm, signOut. 753 → 746.
+- Ölçüler `tokens.component.emptyState` / `collectionPicker`;
+  `check:spacing` 59 → 44.
+
+**Doğrulama:** `npm run check` geçti, `npx expo export` iOS ve Android
+başarılı. Cihazda görülmedi (emülatör yok). Boş durum 19 ekranda görünüyor:
+84'lük kutunun kısa ekranlarda (iPhone SE, klavye açık) sığması ve nötr
+eylem düğmesinin yeterince çağırıcı olup olmadığı gözle bakılmalı.

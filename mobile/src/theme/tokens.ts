@@ -525,6 +525,13 @@ export const component = {
   // Kütüphane: kilit ikonu 54, hata ikonu 44 (eski ekranla aynı); hesap kartı
   // avatarı 52, "Genel" görünümünde yığın 44 (üst üste 14, zemin halkası 2).
   library: { lockIcon: 54, errorIcon: 44, avatar: 52, stackAvatar: 44, stackOverlap: 14, stackRing: 2 },
+  // G-DS-4 Boş durum (kit ds.py empty()): kutu 84 köşe 26, ikon 36 çizgi 1.8,
+  // yanlar 30, eylem 260 genişlik ve açıklamadan 22. Kısa boy (liste içi) DS'de
+  // yok: kutu 64 köşe 20, ikon 28.
+  emptyState: { box: 84, boxRadius: 26, icon: 36, iconStroke: 1.8, paddingH: 30, actionWidth: 260, actionTop: 22,
+    boxCompact: 64, boxRadiusCompact: 20, iconCompact: 28 },
+  // Koleksiyon seçim sayfası: seçim dairesi 24 (tik 14). Yüzey ve tutamaç filterSheet'ten.
+  collectionPicker: { check: 24, checkGlyph: 14 },
   // G-06b Filtre sayfası — kit s2.py filters(): tutamaç 36×5 (köşe 3, üstte 8),
   // başlık satırı 44 (yan dolgu 12; Sıfırla tertiary 36 · başlık · 32 pt ×),
   // gövde üstü 10, bölümler arası 20, bölüm başlığı 20 yüksek ve içerikten 12,

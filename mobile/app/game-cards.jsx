@@ -117,7 +117,7 @@ export default function GameCardsScreen() {
   let body = null;
 
   if (!session) {
-    body = <EmptyState icon="person-circle-outline" title={t('sf.needAccount')}
+    body = <EmptyState icon="userplus" title={t('sf.needAccount')}
       text={t('sf.needAccountText')} actionLabel={t('sf.goAccount')}
       onAction={() => router.push('/account')} />;
   } else if (loading) {
@@ -128,15 +128,15 @@ export default function GameCardsScreen() {
       </View>
     );
   } else if (error === 'STEAM_REQUIRED') {
-    body = <EmptyState icon="logo-steam" title={t('sf.noSteam')} text={t('sf.noSteamText')}
+    body = <EmptyState icon="link" title={t('sf.noSteam')} text={t('sf.noSteamText')}
       actionLabel={t('sf.goProfile')} onAction={() => router.push('/(tabs)/profile')} />;
   } else if (error === 'SELF_PRIVATE') {
-    body = <EmptyState icon="lock-closed-outline" title={t('sf.selfPrivate')} text={t('sf.selfPrivateText')} />;
+    body = <EmptyState icon="lock" title={t('sf.selfPrivate')} text={t('sf.selfPrivateText')} />;
   } else if (error) {
-    body = <EmptyState icon="cloud-offline-outline" title={t('sf.error')} text={t('sf.errorText')}
+    body = <EmptyState icon="wifioff" title={t('sf.error')} text={t('sf.errorText')}
       actionLabel={t('sf.retry')} onAction={() => load()} />;
   } else if (!data?.cards?.length) {
-    body = <EmptyState icon="game-controller-outline" title={t('gc.empty')} text={t('gc.emptyText')}
+    body = <EmptyState icon="pad" title={t('gc.empty')} text={t('gc.emptyText')}
       actionLabel={t('sf.retry')} onAction={() => load()} />;
   }
 

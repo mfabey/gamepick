@@ -32,11 +32,11 @@ export default function ProfileGate({ children }) {
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={{ flex: 1 }}>
         <EmptyState
-          icon="lock-closed-outline"
+          icon="lock"
           title={t('prof.lockTitle')}
           text={t('prof.lockDesc')}
           actionLabel={t('prof.lockCta')}
-          actionIcon="person-add-outline"
+          actionIcon="userplus"
           onAction={() => router.push('/account')}
         />
       </View>
