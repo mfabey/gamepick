@@ -350,8 +350,6 @@ export default function NavBar() {
               );
             })}
 
-            <Link href="/news" className={`bottom-nav-link desktop-only ${isActive('/news') ? 'active' : ''}`} aria-current={isActive('/news') ? 'page' : undefined}>{lang === 'tr' ? 'Haberler' : 'News'}</Link>
-            <Link href="/discover" className={`bottom-nav-link desktop-only ${isActive('/discover') ? 'active' : ''}`} aria-current={isActive('/discover') ? 'page' : undefined}>{lang === 'tr' ? 'Keşfet' : 'Discover'}</Link>
             {/* Şu an incelenen oyun rozeti (Masaüstü) */}
             <div className="bottom-nav-viewing desktop-only" style={{
               display: 'flex', alignItems: 'center', gap: 9, position: 'relative', zIndex: 1, overflow: 'hidden',
