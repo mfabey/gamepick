@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../src/context/AuthContext';
-import { useStyles, useTheme } from '../src/context/ThemeContext';
+import { useDesignTheme } from '../src/theme/useDesignTheme';
 import { useLanguage } from '../src/context/LanguageContext';
-import { radius, spacing, type } from '../src/theme';
+import { component as K, space } from '../src/theme/tokens';
+import { Icon } from '../src/components/Icon';
+import { Txt } from '../src/components/ui/Primitives';
 
 function b64DecodeUtf8(b64) {
   try {
@@ -31,8 +32,7 @@ function decodePayload(dataStr) {
 }
 
 export default function AuthCallbackScreen() {
-  const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
+  const { colors } = useDesignTheme();
   const { t } = useLanguage();
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -106,57 +106,40 @@ export default function AuthCallbackScreen() {
     };
   }, [params.data, handleAuthPayload, router]);
 
+  // Dönüş ekranı: gezinme çubuğu YOK — kullanıcının burada yapacağı bir şey
+  // yok, 0,8–1,8 sn içinde profile yönlendiriliyor.
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.bg }]}>
       {status === 'processing' && (
         <View style={styles.box}>
-          <ActivityIndicator size="large" color={colors.accent} />
-          <Text style={styles.title}>{t('auth.connecting') || 'Hesabınız bağlanıyor…'}</Text>
-          <Text style={styles.sub}>{t('auth.pleaseWait') || 'Lütfen bekleyin'}</Text>
+          <ActivityIndicator size="large" color={colors.text2} />
+          <Txt variant="title2" style={styles.title}>{t('auth.connecting')}</Txt>
+          <Txt variant="body" style={[styles.sub, { color: colors.text2 }]}>{t('auth.pleaseWait')}</Txt>
         </View>
       )}
 
       {status === 'success' && (
         <View style={styles.box}>
-          <Ionicons name="checkmark-circle" size={54} color={colors.green} />
-          <Text style={styles.title}>{t('auth.connectedSuccess') || 'Hesap başarıyla bağlandı!'}</Text>
-          <Text style={styles.sub}>{t('auth.redirecting') || 'Yönlendiriliyorsunuz…'}</Text>
+          <Icon name="checkc" size={K.authCallback.icon} color={colors.green} />
+          <Txt variant="title2" style={styles.title}>{t('auth.connectedSuccess')}</Txt>
+          <Txt variant="body" style={[styles.sub, { color: colors.text2 }]}>{t('auth.redirecting')}</Txt>
         </View>
       )}
 
       {status === 'error' && (
         <View style={styles.box}>
-          <Ionicons name="alert-circle" size={54} color={colors.accent} />
-          <Text style={styles.title}>{t('auth.connectFailed') || 'Bağlantı kurulamadı'}</Text>
-          {errorMsg ? <Text style={styles.sub}>{errorMsg}</Text> : null}
+          <Icon name="alert" size={K.authCallback.icon} color={colors.red} />
+          <Txt variant="title2" style={styles.title}>{t('auth.connectFailed')}</Txt>
+          {errorMsg ? <Txt variant="body" style={[styles.sub, { color: colors.text2 }]}>{errorMsg}</Txt> : null}
         </View>
       )}
     </View>
   );
 }
 
-const makeStyles = (colors) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.bg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.xl,
-  },
-  box: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.md,
-  },
-  title: {
-    fontSize: type.title3,
-    fontWeight: '700',
-    color: colors.text,
-    textAlign: 'center',
-  },
-  sub: {
-    fontSize: type.subhead,
-    color: colors.text2,
-    textAlign: 'center',
-  },
+const styles = StyleSheet.create({
+  container: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: space[32] },
+  box: { alignItems: 'center', justifyContent: 'center', gap: space[12] },
+  title: { textAlign: 'center' },
+  sub: { textAlign: 'center' },
 });

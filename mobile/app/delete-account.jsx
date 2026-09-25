@@ -1,25 +1,26 @@
 import { useYanBosluk } from '../src/hooks/useIcerikAlani';
 import { useState, useCallback } from 'react';
 import {
-  View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator, Alert, Keyboard, Platform,
+  View, StyleSheet, ActivityIndicator, Alert, Keyboard, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { getValidToken, signOut } from '../src/services/session';
 import { deleteAccount } from '../src/api/account';
 import GoogleAuthButton, { GOOGLE_YAPILANDIRILDI } from '../src/components/GoogleAuthButton';
 import { useAuth } from '../src/context/AuthContext';
-import { radius, spacing, PRESSED, type } from '../src/theme';
-import { useStyles, useTheme } from '../src/context/ThemeContext';
+import { component as K, radius as dsRadius, space } from '../src/theme/tokens';
+import { useDesignTheme } from '../src/theme/useDesignTheme';
 import { useLanguage } from '../src/context/LanguageContext';
+import { Icon } from '../src/components/Icon';
+import { NavBar } from '../src/components/ui/Navigation';
+import { Button, TextField, Txt } from '../src/components/ui/Primitives';
 
 export default function DeleteAccountScreen() {
-  const styles = useStyles(makeStyles);
   const yan = useYanBosluk();
-  const { colors, isDark } = useTheme();
+  const { colors, isDark } = useDesignTheme();
   const router = useRouter();
   const { t } = useLanguage();
   const { account } = useAuth();
@@ -95,110 +96,101 @@ export default function DeleteAccountScreen() {
   }, [busy, t, runDelete]);
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={[styles.head, { marginHorizontal: yan }]}>
-        <Pressable style={({ pressed }) => [styles.back, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </Pressable>
-        <Text style={styles.title}>{t('acc.deleteTitle')}</Text>
-        <View style={{ width: 40 }} />
-      </View>
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
+      <NavBar title={t('acc.deleteTitle')} />
 
-      <View style={[styles.body, { paddingHorizontal: yan + spacing.lg }]}>
-        <View style={styles.warnBox}>
-          <Ionicons name="warning-outline" size={22} color={colors.danger} />
-          <Text style={styles.warnText}>{t('acc.deleteWarn')}</Text>
+      <View style={[styles.body, { paddingHorizontal: yan + space[20] }]}>
+        {/* Uyarı kırmızı tonda KALIYOR: geri alınamaz işlemin tek görsel
+            işareti bu kart. 2.0'da kenarlık yok, ton `redTint` (iki temada
+            aynı; açık zeminde pembe, koyuda koyu kırmızı). */}
+        <View style={[styles.uyari, { backgroundColor: colors.redTint }]}>
+          <Icon name="alert" size={K.deleteAccount.warnIcon} color={colors.red} />
+          <Txt variant="footnote" style={[styles.uyariMetin, { color: colors.text }]}>{t('acc.deleteWarn')}</Txt>
         </View>
 
-        {!!account?.email && <Text style={styles.email}>{account.email}</Text>}
+        {!!account?.email && <Txt variant="headline" style={styles.eposta}>{account.email}</Txt>}
 
         {isApple && Platform.OS === 'ios' ? (
           <>
-            <Text style={styles.label}>{t('acc.appleReauth')}</Text>
+            <Txt variant="footnoteStrong" style={[styles.etiket, { color: colors.text2 }]}>{t('acc.appleReauth')}</Txt>
             {/* Stil temadan — gerekçe account.jsx'teki ikizinde. Kısaca:
                 sabit `WHITE` açık temada görünmez bir düğme üretiyor ve
                 Guideline 4'ten ret sebebi. İnceleyici bu ekrana bakmamıştı
-                ama hata buradaydı. */}
+                ama hata buradaydı. Ölçü G-03'ün sağlayıcı düğmesi (50 / 12). */}
             <AppleAuthentication.AppleAuthenticationButton
               buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
               buttonStyle={isDark
                 ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
                 : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-              cornerRadius={radius.lg}
-              style={{ height: 52, marginTop: spacing.md }}
+              cornerRadius={dsRadius.button}
+              style={{ height: K.login.provider }}
               onPress={confirmApple}
             />
-            {busy && <ActivityIndicator color={colors.accent} style={{ marginTop: spacing.lg }} />}
+            {busy && <ActivityIndicator color={colors.text2} style={styles.bekle} />}
           </>
         ) : isGoogle && GOOGLE_YAPILANDIRILDI ? (
           <>
-            <Text style={styles.label}>{t('acc.googleReauth')}</Text>
+            <Txt variant="footnoteStrong" style={[styles.etiket, { color: colors.text2 }]}>{t('acc.googleReauth')}</Txt>
             <GoogleAuthButton
               title={t('acc.google')}
               onIdToken={onGoogleToken}
               onError={(m) => setError(m)}
               disabled={busy}
-              style={{ marginTop: spacing.md }}
+              height={K.login.provider}
             />
-            {busy && <ActivityIndicator color={colors.accent} style={{ marginTop: spacing.lg }} />}
+            {busy && <ActivityIndicator color={colors.text2} style={styles.bekle} />}
           </>
         ) : (
           <>
-            <Text style={styles.label}>{t('acc.password')}</Text>
-            <TextInput
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              autoCapitalize="none"
-              style={styles.input}
-              placeholderTextColor={colors.text3}
-            />
+            <View style={styles.alan}>
+              <TextField
+                label={t('acc.password')}
+                icon="lock"
+                value={password}
+                onChangeText={setPassword}
+                secure
+                autoCapitalize="none"
+                autoCorrect={false}
+                textContentType="password"
+                autoComplete="current-password"
+                returnKeyType="done"
+                onSubmitEditing={confirmPassword}
+              />
+            </View>
 
-            <Pressable
+            {/* 2.0'da dolu kırmızı düğme yok (primary nötr; kırmızı CTA kararı
+                yalnız G-03'e ait). `tinted` kırmızı tonlu zemin + kırmızı yazı:
+                eylemin yıkıcı olduğunu renk söylüyor, asıl onay Alert'te. */}
+            <Button
+              title={t('acc.deleteConfirm')}
+              variant="tinted"
+              height={52}
               onPress={confirmPassword}
-              disabled={!password || busy}
-              style={({ pressed }) => [styles.cta, (!password || busy) && styles.ctaOff, pressed && { opacity: 0.85 }]}
-            >
-              {busy ? <ActivityIndicator color="#fff" />
-                    : <Text style={styles.ctaText}>{t('acc.deleteConfirm')}</Text>}
-            </Pressable>
+              disabled={!password}
+              loading={busy}
+              style={styles.cta}
+            />
           </>
         )}
 
-        {!!error && <Text style={styles.err}>{error}</Text>}
+        {!!error && <Txt variant="footnote" accessibilityLiveRegion="polite" style={[styles.hata, { color: colors.red }]}>{error}</Txt>}
       </View>
     </SafeAreaView>
   );
 }
 
-const makeStyles = (colors) => StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
-  head: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.sm },
-  back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  title: { flex: 1, fontSize: type.headline, fontWeight: '800', color: colors.text, textAlign: 'center' },
+const styles = StyleSheet.create({
+  safe: { flex: 1 },
+  body: { paddingTop: space[16] },
 
-  body: { padding: spacing.lg },
-  warnBox: {
-    flexDirection: 'row', gap: spacing.md, alignItems: 'flex-start',
-    // tema-bagimsiz: tehlike tonu; uyari her iki temada da kirmizi kalmali
-    backgroundColor: 'rgba(248,113,113,0.08)', borderColor: 'rgba(248,113,113,0.35)',
-    borderWidth: 1, borderRadius: radius.md, padding: 14, marginBottom: 22,
-  },
-  warnText: { flex: 1, color: colors.text2, fontSize: type.footnote, lineHeight: 20 },
-  email: { color: colors.text, fontSize: type.subhead, fontWeight: '700', marginBottom: 20 },
+  uyari: { flexDirection: 'row', alignItems: 'flex-start', gap: space[12], padding: space[16], borderRadius: dsRadius.card },
+  uyariMetin: { flex: 1 },
+  eposta: { marginTop: space[20] },
 
-  label: { fontSize: type.footnote, color: colors.text3, fontWeight: '700', marginBottom: 7 },
-  input: {
-    backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1,
-    borderRadius: radius.md, paddingHorizontal: 14, height: 50,
-    color: colors.text, fontSize: type.subhead,
-  },
-  err: { color: colors.danger, fontSize: type.footnote, lineHeight: 20, marginTop: spacing.lg },
-
-  cta: {
-    height: 52, borderRadius: radius.lg, backgroundColor: colors.danger,
-    alignItems: 'center', justifyContent: 'center', marginTop: spacing.xl,
-  },
-  ctaOff: { opacity: 0.4 },
-  ctaText: { color: '#fff', fontSize: type.subhead, fontWeight: '800' },
+  // Etiket → düğme arası TextField'ın etiket aralığıyla aynı (6).
+  etiket: { marginTop: space[20], marginBottom: space[6] },
+  alan: { marginTop: space[20] },
+  bekle: { marginTop: space[16] },
+  cta: { marginTop: space[24] },
+  hata: { marginTop: space[16] },
 });

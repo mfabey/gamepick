@@ -496,6 +496,13 @@ export const component = {
   // Steam arkadaşları kartı: Gamerisen hapı 18 (ikon 10, aralık 3), açma oku 18,
   // açılan oyun satırı 28 (ikon 13).
   steamFriends: { chip: 18, chipIcon: 10, chipGap: 3, chevron: 18, gameIcon: 13, gameRow: 28 },
+  // Kullanıcı adı kurulumu (tasarım dışı, 2.0 dili): üst ikon 48 (eski ekranla
+  // aynı), açıklama en fazla 300 genişlik, gizlilik notu ikonu 16.
+  usernameSetup: { icon: 48, leadWidth: 300, noteIcon: 16 },
+  // Hesabı sil: uyarı kartı ikonu 20.
+  deleteAccount: { warnIcon: 20 },
+  // OAuth dönüş ekranı: durum ikonu 54 (eski ekranla aynı).
+  authCallback: { icon: 54 },
   // G-06b Filtre sayfası — kit s2.py filters(): tutamaç 36×5 (köşe 3, üstte 8),
   // başlık satırı 44 (yan dolgu 12; Sıfırla tertiary 36 · başlık · 32 pt ×),
   // gövde üstü 10, bölümler arası 20, bölüm başlığı 20 yüksek ve içerikten 12,

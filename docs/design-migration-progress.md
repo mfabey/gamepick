@@ -1317,3 +1317,49 @@ bağlanmaz.**
 **Doğrulama:** `npm run check` geçti, `npx expo export` iOS ve Android
 başarılı. Cihazda görülmedi (emülatör yok): uzun basma menüsü, istek
 bandının yüz yığını ve Steam kartının açılıp kapanması gözle bakılmalı.
+
+### 25 Eylül — Tasarım dışı ekranlar, Grup B: hesap/ayar (Claude)
+
+**Plan kalıbı: "G-23 ListGroup/ListRow + TextField"** (`social-settings`,
+`username-setup`, `delete-account`); `auth` için "G-22 Oyun hesapları
+satırları".
+
+- **social-settings:** Ayarlar'ın G-23 düzeni: NavBar, ScrollView yalnız
+  geniş ekran payı (`yan`), 20'lik telefon payı ListGroup'ta. Dört gizlilik
+  anahtarı `ListGroup` + `ListRow` (ikon · başlık · açıklama) + 2.0 `Switch`
+  (Android'de kit anahtarı; eskisi yerel Material). "Okunamadı" bandı
+  surface1 kart, "Tekrar dene" 36 pt secondary. Engellenenler `ListGroup`
+  (başlık "Engellenenler") içinde `UserRow` + "Engeli kaldır" 34 pt
+  secondary; boş liste tek satır ("Engellenen kimse yok"). Mantık aynen:
+  bilinmezlik yedeği, sunucu → yerel engel sırası, `?odak=engel` kaydırması.
+- **username-setup:** NavBar, `at` ikonu + `title2` başlık + açıklama, 2.0
+  `TextField` (G-03'teki kullanıcı adı alanının aynısı: kontrol sürerken
+  sağda gösterge, sonuç alanın altında hata/başarı/ipucu — eskiden durum
+  sağda ikon VE altta metinle iki kez söyleniyordu), gizlilik notu surface1,
+  CTA 2.0 primary 52 (`loading`).
+- **delete-account:** NavBar, uyarı kartı `redTint` (kenarlık yok, kırmızı
+  ton kaldı), şifre 2.0 `TextField` (`secure` → göster/gizle geldi), Apple ve
+  Google düğmeleri G-03 sağlayıcı ölçüsü (50 / 12), silme düğmesi 2.0
+  `tinted` 52 — 2.0'da dolu kırmızı düğme yok, kırmızı CTA kararı yalnız
+  G-03'ün.
+- **auth:** plan bu ekranı "Steam/Xbox bağlama" sanıyor; gerçekte yalnız
+  OAuth dönüşünde görünen durum ekranı (bağlanıyor / bağlandı / hata,
+  0,8–1,8 sn sonra profile). Liste kalıbı uymuyor: yalnız 2.0 `Txt`, 2.0
+  ikon (`checkc` / `alert`) ve renkler. `t(...) || 'Türkçe'` yedekleri
+  silindi (anahtarlar beş dilde var, yedek hiç çalışmıyordu).
+- `src/components/SettingsList.jsx` silindi: tek tüketicisi social-settings'ti.
+- `scripts/check-layout.mjs`: G-23 dalı yalnız `settings.jsx`'i tanıyordu;
+  `social-settings.jsx`'i de kapsıyor. Kap dizi olabiliyor ve taban stil
+  yatay dolgu eklerse (telefon payı ikiye katlanır) denetim düşüyor. İki
+  bozma denemesiyle doğrulandı (taban stile dolgu, banttan kenar payı).
+- Ölçüler `tokens.component.usernameSetup` / `deleteAccount` /
+  `authCallback`; `check:spacing` 168 → 155, taban güncellendi.
+
+**Dokunulmadı:** `auth.jsx` ve `delete-account.jsx`'teki sabit Türkçe hata
+metinleri ("Kimlik doğrulama verisi alınamadı.", "Oturum bulunamadı.",
+"Hesap silinemedi.") — beş dilde karşılıkları yok, ayrı iş.
+
+**Doğrulama:** `npm run check` geçti, `npx expo export` iOS ve Android
+başarılı. Cihazda görülmedi (emülatör yok): Android'de 2.0 anahtarın
+gizlilik satırlarında hizası, engellenenler satırında düğme genişliği,
+şifre göster/gizle, uyarı kartının açık temadaki tonu gözle bakılmalı.
