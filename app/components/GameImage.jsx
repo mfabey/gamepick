@@ -17,15 +17,23 @@ function isCleanImg(url) {
   if (!url) return false;
   const u = String(url);
   return !u.includes('storepagebackground') &&
-         !u.includes('header_alt_assets_') &&
+         !u.includes('alt_assets') &&
+         !u.includes('capsule_sm_120') &&
+         !u.includes('capsule_184x69') &&
+         !u.includes('capsule_231x87') &&
          !u.includes('placeholder');
 }
 
 function sanitizeSteamUrl(url) {
   if (!url) return url;
   const u = String(url);
-  if (u.includes('header_alt_assets_')) {
-    return u.replace(/header_alt_assets_\d+\.jpg/, 'header.jpg');
+  if (u.includes('storepagebackground')) return null;
+  const m = u.match(/\/apps\/(\d+)\//);
+  if (m && m[1]) {
+    const appid = m[1];
+    if (u.includes('alt_assets') || u.includes('capsule_sm_120') || u.includes('capsule_184x69') || u.includes('capsule_231x87') || u.includes('header_alt_assets_')) {
+      return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/header.jpg`;
+    }
   }
   return u;
 }
