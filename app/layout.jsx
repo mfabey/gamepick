@@ -1,5 +1,6 @@
 ﻿import './globals.css';
 import './redesign.css';
+import './desktop.css';
 import { Schibsted_Grotesk } from 'next/font/google';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';

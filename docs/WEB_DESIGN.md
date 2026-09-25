@@ -1,5 +1,29 @@
 # Gamerisen web tasarımı
 
+## Masaüstü revizyonu — 26 Eylül 2026
+
+Kullanıcının beğendiği mobil görünüm korunarak PC arayüzü Apple'ın sade yüzey
+ve tipografi yaklaşımına yaklaştırıldı. Görsel referans:
+[Apple Arcade](https://www.apple.com/apple-arcade/). Apple logosu, görselleri
+veya özel font dosyaları kopyalanmadı; Gamerisen kırmızısı korundu.
+
+- `app/desktop.css` içindeki **bütün kurallar** `min-width: 1024px` altında.
+  1024 pikselden dar görünüm mevcut `redesign.css` ile devam eder.
+- Masaüstünde sistem fontları, daha ferah başlıklar, yuvarlatılmış vitrin ve
+  kartlar, kapsül düğmeler ve hafif gölgeler kullanılır.
+- Üst menüde destekleyen tarayıcılarda buzlu cam; desteklemeyenlerde düz yüzey.
+  Başlığın yüksekliği korunur; katalog ve video yerleşimlerinin mevcut
+  yükseklik hesapları değişmez.
+- Katalog, topluluk, hesap kartları ve altbilgi aynı masaüstü stilini paylaşır.
+  Yeni animasyon eklenmedi; geçişler azaltılmış hareket tercihine uyar.
+- 390 pikselde menü, başlık, arama, vitrin ve oyun kapağının hesaplanan
+  font/renk/köşe/boşluk değerleri önceki sürümle birebir karşılaştırıldı.
+  1024 ve 1440 pikselde ana sayfada yatay taşma görülmedi; iki tema incelendi.
+- Üretim derlemesi (`npm run build`) başarılı; erişim politikası ve CORS
+  denetimleri geçti, 107 sayfa üretildi.
+- Değişiklik yalnızca bir CSS katmanı ve layout içindeki import'tur; React
+  bileşenlerinin işleyişi, API'ler ve mobil uygulama dosyaları değişmez.
+
 ## Tasarım yönü — 25 Eylül 2026
 
 Mevcut Next.js uygulamasının sunum katmanı yenilendi. Referanslar tarayıcıda
