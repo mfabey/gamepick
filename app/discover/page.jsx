@@ -148,7 +148,7 @@ function KesfetIcerik() {
     <div className="page-transition" style={{ minHeight: '100vh', background: 'var(--bg-body)', paddingBottom: 120 }}>
 
       {/* ── Başlık ── */}
-      <section style={{ padding: '58px 0 22px', background: 'var(--hero-bg)', borderBottom: '1px solid var(--border)' }}>
+      <section className="page-title-block" style={{ padding: '58px 0 22px', background: 'var(--hero-bg)', borderBottom: '1px solid var(--border)' }}>
         <div style={{ maxWidth: 780, margin: '0 auto', padding: '0 24px' }}>
           <p style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: 12 }}>
             ● {tr ? 'Ne istediğini yaz, oyunu biz bulalım' : 'Describe it, we find the game'}

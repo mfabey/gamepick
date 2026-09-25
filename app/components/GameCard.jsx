@@ -122,23 +122,9 @@ function GameCard({ game, compact = false, cardWidth, onPriceUpdate }) {
     return () => { if (ssInterval.current) clearInterval(ssInterval.current); };
   }, []);
 
-  // 3B eğilme (mouse takipli)
-  const handleTilt = (e) => {
-    const el = cardRef.current;
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    const px = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
-    const py = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
-    el.style.setProperty('--rx', ((0.5 - py) * 8).toFixed(2) + 'deg');
-    el.style.setProperty('--ry', ((px - 0.5) * 10).toFixed(2) + 'deg');
-    el.style.setProperty('--mx', (px * 100).toFixed(1) + '%');
-    el.style.setProperty('--my', (py * 100).toFixed(1) + '%');
-  };
-  const resetTilt = () => {
+  const resetHover = () => {
     setHovered(false);
     stopSlideshow();
-    const el = cardRef.current;
-    if (el) { el.style.setProperty('--rx', '0deg'); el.style.setProperty('--ry', '0deg'); }
   };
 
   // Kart görünüme girince Steam fiyatı lazy-load et
@@ -198,27 +184,21 @@ function GameCard({ game, compact = false, cardWidth, onPriceUpdate }) {
   const activeScreenshot = validSsUrls.length > 0 ? validSsUrls[ssIndex % validSsUrls.length] : null;
 
   return (
-    <Link draggable={false} onDragStart={(e) => e.preventDefault()} href={href} style={{ flexShrink: 0, width: compact ? (cardWidth || 220) : '100%', perspective: 1100, display: 'block' }}>
+    <Link className={`game-card ${compact ? 'game-card-compact' : ''}`} title={game.name} draggable={false} onDragStart={(e) => e.preventDefault()} href={href} style={{ flexShrink: 0, width: compact ? (cardWidth || 220) : '100%', perspective: 1100, display: 'block' }}>
       <div
+        className="game-card-cover"
         ref={cardRef}
         onMouseEnter={() => { setHovered(true); startSlideshow(); }}
-        onMouseMove={handleTilt}
-        onMouseLeave={resetTilt}
+        onMouseLeave={resetHover}
         style={{
           position: 'relative',
           width: '100%',
           aspectRatio: '3 / 4',
-          borderRadius: 20,
+          borderRadius: 8,
           overflow: 'hidden',
           background: '#0d0f12',
           cursor: 'pointer',
-          transformStyle: 'preserve-3d',
-          transform: `rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)) translateY(${hovered ? -8 : 0}px) scale(${hovered ? 1.035 : 1})`,
-          transition: 'transform 0.14s ease-out, box-shadow 0.35s ease',
-          boxShadow: hovered
-            ? '0 34px 70px -22px var(--accent-glow), 0 0 0 1px var(--accent-border), inset 0 0 0 1px rgba(255,255,255,0.10)'
-            : '0 8px 24px -14px rgba(0,0,0,0.7), inset 0 0 0 1px rgba(255,255,255,0.06)',
-          willChange: 'transform',
+          border: '1px solid var(--border)',
         }}
       >
         {/* Kapak görseli */}
@@ -226,13 +206,10 @@ function GameCard({ game, compact = false, cardWidth, onPriceUpdate }) {
           <GameImage game={game} alt={game.name} fill isVertical style={{ objectFit: 'cover', pointerEvents: 'none' }} />
         </div>
 
-        {/* Mouse takipli ışık */}
-        <div style={{ position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none', opacity: hovered ? 1 : 0, transition: 'opacity 0.35s ease', mixBlendMode: 'soft-light', background: 'radial-gradient(190px circle at var(--mx,50%) var(--my,40%), rgba(255,255,255,0.22), transparent 60%)' }} />
-
         {/* Alt karartma */}
         <div style={{ position: 'absolute', inset: 0, zIndex: 2, pointerEvents: 'none', background: hovered
           ? 'linear-gradient(to top, rgba(6,7,9,0.97) 24%, rgba(6,7,9,0.78) 52%, rgba(6,7,9,0.18) 90%)'
-          : 'linear-gradient(to top, rgba(6,7,9,0.94) 4%, rgba(6,7,9,0.55) 30%, rgba(6,7,9,0) 56%)', transition: 'background 0.35s ease' }} />
+          : 'linear-gradient(to bottom, rgba(6,7,9,0.2), transparent 35%)', transition: 'background 0.35s ease' }} />
 
         {/* Üst rozetler */}
         <div style={{ position: 'absolute', top: 12, left: 12, right: 12, zIndex: 10, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
@@ -246,12 +223,6 @@ function GameCard({ game, compact = false, cardWidth, onPriceUpdate }) {
           {game.metacritic ? (
             <span style={{ fontSize: 12, fontWeight: 800, padding: '3px 8px', borderRadius: 8, background: 'rgba(8,10,14,0.7)', backdropFilter: 'blur(6px)', border: '1px solid rgba(255,255,255,0.14)', color: mcColor }}>{game.metacritic}</span>
           ) : null}
-        </div>
-
-        {/* Alt bilgi (varsayılan) */}
-        <div style={{ position: 'absolute', left: 16, right: 16, bottom: 16, zIndex: 3, opacity: hovered ? 0 : 1, transform: hovered ? 'translateY(8px)' : 'translateY(0)', transition: 'opacity 0.28s ease, transform 0.3s cubic-bezier(0.2,0.9,0.3,1)' }}>
-          <p style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 17, lineHeight: 1.12, letterSpacing: '-0.4px', color: '#fff', textShadow: '0 2px 10px rgba(0,0,0,0.5)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{game.name}</p>
-          {genres && <p style={{ fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.66)', marginTop: 4 }}>{genres}</p>}
         </div>
 
         {/* Üzerine gelince: detay + fiyat + mağaza (ve yeni dinamik screenshot) */}
@@ -333,8 +304,9 @@ function GameCard({ game, compact = false, cardWidth, onPriceUpdate }) {
         </div>
       </div>
 
+      <div className="game-card-caption"><h3>{game.name}</h3>{genres && <p>{genres}</p>}</div>
       {/* Kart altı kalıcı fiyat satırı (hover olmadan her zaman görünür) */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '10px 4px 2px' }}>
+      <div className="game-card-price">
         <div style={{ display: 'flex', gap: 4, alignItems: 'center', minWidth: 0 }}>
           {(game.hasSteam || livePrice?.storeName === 'Steam') && (
             <span title="Steam" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20, borderRadius: 5, background: 'rgba(23,42,61,0.9)', color: '#c7d5e0', flexShrink: 0 }}><SteamIcon size={11} /></span>
@@ -345,12 +317,12 @@ function GameCard({ game, compact = false, cardWidth, onPriceUpdate }) {
         </div>
         <div style={{ textAlign: 'right', flexShrink: 0 }}>
           {isFree ? (
-            <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 15, color: '#19f0a0' }}>{t('card.free')}</span>
+            <span className="free-price" style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 15, color: 'var(--green)' }}>{t('card.free')}</span>
           ) : livePrice?.price != null ? (
             <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 6 }}>
               {isOnSale && <span style={{ fontSize: 11, fontWeight: 700, color: '#fff', background: 'var(--accent)', borderRadius: 5, padding: '1px 5px' }}>-%{livePrice.discount}</span>}
               {isOnSale && <span style={{ fontSize: 11.5, color: 'var(--text-3)', textDecoration: 'line-through' }}>{formatPrice(livePrice.original)}</span>}
-              <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 15, color: isOnSale ? '#fbbf24' : 'var(--text)' }}>{formatPrice(livePrice.price)}</span>
+              <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 15, color: 'var(--text)' }}>{formatPrice(livePrice.price)}</span>
             </span>
           ) : priceLoading ? (
             <span style={{ fontSize: 12, color: 'var(--text-3)' }}>…</span>

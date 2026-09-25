@@ -79,8 +79,8 @@ export default function Footer() {
           </Link>
           <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--text-2)', maxWidth: 300, margin: '0 0 16px' }}>
             {tr
-              ? '500.000+ oyunu keşfet; Steam, Epic, GOG ve Xbox fiyatlarını tek ekranda karşılaştır.'
-              : 'Discover 500,000+ games and compare Steam, Epic, GOG and Xbox prices on one screen.'}
+              ? 'Oyunları keşfet, mağaza fiyatlarını karşılaştır ve koleksiyonunu oyuncularla paylaş.'
+              : 'Discover games, compare store prices and share your collection with other players.'}
           </p>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap', marginTop: 6 }}>
             {/* Sosyal Medya İkonları */}

@@ -49,7 +49,7 @@ export default function NewsPage() {
     <div className="page-transition" style={{ minHeight: '100vh', background: 'var(--bg-body)', paddingBottom: 100 }}>
 
       {/* ── Hero ── */}
-      <section style={{ position: 'relative', overflow: 'hidden', padding: '48px 0 28px', background: 'var(--hero-bg)', borderBottom: '1px solid var(--border)' }}>
+      <section className="page-title-block" style={{ position: 'relative', overflow: 'hidden', padding: '48px 0 28px', background: 'var(--hero-bg)', borderBottom: '1px solid var(--border)' }}>
         <div style={{ maxWidth: 1180, margin: '0 auto', padding: '0 36px' }}>
           
           {/* Geri Dön Butonu */}

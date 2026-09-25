@@ -1,22 +1,16 @@
 ﻿import './globals.css';
-import { Bricolage_Grotesque, Schibsted_Grotesk } from 'next/font/google';
+import './redesign.css';
+import { Schibsted_Grotesk } from 'next/font/google';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { LanguageProvider } from './context/LanguageContext';
 import NavBar from './components/NavBar';
 import Footer from './components/Footer';
-import IntroSplash from './components/IntroSplash';
 import GamerisenAiWidget from './components/GamerisenAiWidget';
-
-const bricolage = Bricolage_Grotesque({
-  subsets: ['latin'],
-  variable: '--font-heading',
-  display: 'swap',
-});
 
 const schibsted = Schibsted_Grotesk({
   subsets: ['latin'],
-  variable: '--font-body',
+  variable: '--font-site',
   display: 'swap',
 });
 
@@ -35,7 +29,7 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="tr" className={`${bricolage.variable} ${schibsted.variable}`}>
+    <html lang="tr" className={schibsted.variable}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: `
           (function() {
@@ -82,7 +76,6 @@ export default function RootLayout({ children }) {
         ` }} />
       </head>
       <body>
-        <IntroSplash />
         <ThemeProvider>
           <LanguageProvider>
             <AuthProvider>

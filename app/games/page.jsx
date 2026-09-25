@@ -266,8 +266,12 @@ function GamesList() {
   const activeCount = [query, section, price !== 'all' ? price : '', genre, store !== 'all' ? store : '', mcMin > 0 ? 'mc' : '', mode !== 'all' ? mode : ''].filter(Boolean).length;
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-body)' }}>
-
+    <div className="games-page" style={{ minHeight: '100vh', background: 'var(--bg-body)' }}>
+      <div className="catalog-intro container">
+        <p className="eyebrow">GAMERISEN / {lang === 'tr' ? 'OYUNLAR' : 'GAMES'}</p>
+        <h1>{lang === 'tr' ? 'Oyun kataloğu' : 'Game catalog'}</h1>
+        <p>{lang === 'tr' ? 'Türüne, platformuna ve bütçene göre sıradaki oyununu bul.' : 'Find your next game by genre, platform and budget.'}</p>
+      </div>
       {/* ── Sticky üst arama çubuğu ── */}
       <div className="sticky-search-bar">
         <div className="container" style={{ paddingTop: 14, paddingBottom: 14 }}>
@@ -294,7 +298,8 @@ function GamesList() {
               onChange={e => { setQuery(e.target.value); setSection(''); setGenre(''); }}
               onFocus={() => setSearchFocus(true)}
               onBlur={() => setSearchFocus(false)}
-              placeholder={lang === 'tr' ? 'Oyun ara… (500.000+ oyun)' : 'Search games... (500,000+ games)'}
+              aria-label={lang === 'tr' ? 'Katalogda oyun ara' : 'Search the game catalog'}
+              placeholder={lang === 'tr' ? 'Oyun adı ile ara…' : 'Search by game title…'}
               style={{
                 flex: 1, border: 'none', outline: 'none',
                 fontSize: 15, color: 'var(--text)', background: 'transparent',
@@ -326,11 +331,11 @@ function GamesList() {
           {/* ── SOL: bölüm filtreleri + oyun grid ── */}
           <div>
             {/* Section chip'leri */}
-            <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
+            <div className="catalog-tabs" style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
               {localizedSections.map(s => {
                 const active = section === s.value;
                 return (
-                  <button key={s.value} onClick={() => handleSection(s.value)} style={{
+                  <button key={s.value} onClick={() => handleSection(s.value)} aria-pressed={active} style={{
                     display: 'flex', alignItems: 'center', gap: 6,
                     padding: '8px 18px', borderRadius: 999,
                     border: active ? '1.5px solid var(--accent)' : '1.5px solid var(--border)',
@@ -340,7 +345,6 @@ function GamesList() {
                     cursor: 'pointer', transition: 'all 0.15s',
                     boxShadow: active ? '0 4px 12px var(--accent-glow)' : 'none',
                   }}>
-                    <span>{s.icon}</span>
                     <span>{s.label}</span>
                   </button>
                 );

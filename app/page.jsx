@@ -4,25 +4,10 @@ export const dynamic = 'force-dynamic';
 import { useState, useEffect, useCallback, useRef, useMemo, memo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import GameCard from './components/GameCard';
 import GameImage from './components/GameImage';
 import { useAuth } from './context/AuthContext';
 import { useLanguage } from './context/LanguageContext';
-import { FALLBACK_GAMES } from './lib/fallback-games';
-
-const PLACEHOLDER_GAMES = [
-  'Elden Ring', 'GTA V', 'Cyberpunk 2077', 'Red Dead Redemption 2',
-  'The Witcher 3', "Baldur's Gate 3", 'God of War', 'Hollow Knight',
-];
-
-// Anasayfa haber özeti (tam liste /news sayfasında)
-const HOME_NEWS = [
-  { cat: 'İndirimler', date: '27 Haz 2026', art: 'linear-gradient(145deg,#6b4f1d 0%,#b8860b 55%,#1c1407 100%)', title: 'Steam Yaz İndirimleri başladı: 13.000+ oyunda dev fırsatlar' },
-  { cat: 'Çıkışlar', date: '26 Haz 2026', art: 'linear-gradient(145deg,#0d2b4a 0%,#1f8a8f 65%,#06121f 100%)', title: 'Hollow Knight: Silksong için çıkış tarihi nihayet doğrulandı' },
-  { cat: 'Güncellemeler', date: '24 Haz 2026', art: 'linear-gradient(145deg,#0f5e63 0%,#c0286b 60%,#1a0a24 100%)', title: 'Cyberpunk 2077’ye sürpriz 2.3 yaması: yeni araçlar ve foto modu' },
-  { cat: 'Endüstri', date: '22 Haz 2026', art: 'linear-gradient(145deg,#6b1a1a 0%,#3a4654 70%,#160a0a 100%)', title: 'FromSoftware yeni IP’sini duyurdu: George R. R. Martin yine sahnede' },
-];
 
 export default function Home() {
   const { user } = useAuth();
@@ -34,11 +19,6 @@ export default function Home() {
   const [suggestions, setSuggestions] = useState([]);
   const [showSug,     setShowSug]     = useState(false);
   const [sugLoading,  setSugLoading]  = useState(false);
-
-  // Typewriter placeholder
-  const [phIndex, setPhIndex] = useState(0);
-  const [phText,  setPhText]  = useState('');
-  const [phPhase, setPhPhase] = useState('typing');
 
   // Bölüm verileri
   const [trendGames,   setTrendGames]   = useState([]);
@@ -79,29 +59,6 @@ export default function Home() {
     fetchSection('sale',     setSaleGames,    setLoadingSale);
   }, [fetchSection]);
 
-  // ── Typewriter animasyonu ────────────────────────────────────────────────
-  useEffect(() => {
-    const target = PLACEHOLDER_GAMES[phIndex];
-    let t;
-    if (phPhase === 'typing') {
-      if (phText.length < target.length) {
-        t = setTimeout(() => setPhText(target.slice(0, phText.length + 1)), 70);
-      } else {
-        t = setTimeout(() => setPhPhase('pause'), 1800);
-      }
-    } else if (phPhase === 'pause') {
-      t = setTimeout(() => setPhPhase('erasing'), 400);
-    } else {
-      if (phText.length > 0) {
-        t = setTimeout(() => setPhText(phText.slice(0, -1)), 35);
-      } else {
-        setPhIndex(i => (i + 1) % PLACEHOLDER_GAMES.length);
-        setPhPhase('typing');
-      }
-    }
-    return () => clearTimeout(t);
-  }, [phText, phPhase, phIndex]);
-
   // ── Autocomplete ─────────────────────────────────────────────────────────
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -141,84 +98,6 @@ export default function Home() {
     router.push(game.rawgSlug ? `/game/${game.rawgSlug}` : `/game/${game.id}`);
   };
 
-  // Hero arka plan: trending + popular karışık, her açılışta farklı sıra (tekilleştirilmiş)
-  const heroPool = useMemo(() => {
-    const combined = [...trendGames, ...popularGames];
-    const cleaned = combined.filter(g => g && g.name);
-    const uniqueMap = new Map();
-
-    const addGameToMap = (game) => {
-      const nameKey = game.name
-        .toLowerCase()
-        .replace(/&amp;/g, 'and')
-        .replace(/[™®©]/g, '')
-        .trim()
-        .replace(/[^a-z0-9]/g, '');
-
-      const existing = uniqueMap.get(nameKey);
-      if (existing) {
-        // Eğer aynı isimde oyun varsa, görseli olan/daha zengin olanı tercih et
-        const existingHasImg = existing.image && !existing.image.includes('placeholder') && !existing.image.includes('capsule') && !existing.image.includes('logo');
-        const currentHasImg = game.image && !game.image.includes('placeholder') && !game.image.includes('capsule') && !game.image.includes('logo');
-        if (!existingHasImg && currentHasImg) {
-          uniqueMap.set(nameKey, game);
-        }
-      } else {
-        uniqueMap.set(nameKey, game);
-      }
-    };
-
-    // Önce API'den gelen güncel oyunları ekle
-    for (const game of cleaned) {
-      addGameToMap(game);
-    }
-
-    // Eğer tekil oyun sayısı 24'ten az ise, yerel yüksek kaliteli fallback oyun listesiyle doldur
-    if (uniqueMap.size < 24) {
-      const fallbacks = FALLBACK_GAMES || [];
-      for (const game of fallbacks) {
-        if (uniqueMap.size >= 24) break;
-        addGameToMap(game);
-      }
-    }
-
-    const arr = Array.from(uniqueMap.values());
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-    return arr;
-  }, [trendGames, popularGames]);
-
-  const PANELS = 24;
-  const heroTiles = useMemo(
-    () => heroPool
-      ? Array.from({ length: PANELS }, (_, i) => heroPool[i % heroPool.length])
-      : null,
-    [heroPool]
-  );
-
-  // Kayan kapak şeridi — yalnızca heroTiles değişince yeniden oluşur,
-  // typewriter/arama state güncellemelerinde ~38 Image yeniden render edilmez
-  const heroStrip = useMemo(() => {
-    if (!heroTiles) return null;
-    return (
-      <div style={{ marginTop: 54, WebkitMaskImage: 'linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent)', maskImage: 'linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent)' }}>
-        <div className="hero-strip" style={{ display: 'flex', gap: 16, width: 'max-content', padding: '6px 0 12px' }}>
-          {[...heroTiles, ...heroTiles].map((g, i) => (
-            <Link key={i} href={g.rawgSlug ? `/game/${g.rawgSlug}` : `/game/${g.id}`}
-              style={{ width: 280, aspectRatio: '16 / 9', borderRadius: 16, position: 'relative', overflow: 'hidden', flexShrink: 0, background: 'var(--bg-input)', boxShadow: '0 10px 28px rgba(74,52,28,0.16)' }}>
-              <GameImage game={g} alt="" fill style={{ objectFit: 'cover' }} isVertical={false} />
-              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'flex-end', padding: 13, background: 'linear-gradient(to top, rgba(8,8,16,0.62), transparent 58%)' }}>
-                <span style={{ color: '#fff', fontWeight: 700, fontSize: 13.5, lineHeight: 1.2, textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}>{g.name}</span>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </div>
-    );
-  }, [heroTiles]);
-
   // Sinematik vitrin için dinamik fırsat oyunları havuzu
   const showcaseGames = useMemo(() => {
     const pool = (saleGames.length >= 4 ? saleGames : popularGames).filter(g => g && g.name);
@@ -226,31 +105,15 @@ export default function Home() {
   }, [saleGames, popularGames]);
 
   return (
-    <div style={{ paddingBottom: 60 }}>
-
-      {/* ══ HERO: arama ══ */}
-      <section style={{ position: 'relative', overflow: 'visible', padding: '52px 0 12px', background: 'var(--hero-bg)' }}>
-        <div style={{ maxWidth: 880, margin: '0 auto', padding: '0 32px', textAlign: 'center' }}>
-
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '6px 14px', borderRadius: 999, background: 'var(--bg-card)', border: '1px solid var(--border)', fontSize: 13, fontWeight: 600, color: 'var(--text-2)', boxShadow: 'var(--shadow)', marginBottom: 26 }}>
-            <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--green)', boxShadow: '0 0 0 3px rgba(47,158,107,0.2)' }} /> {t('hero.badge')}
-          </span>
-
-          <h1 style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 'clamp(32px, 4.4vw, 54px)', lineHeight: 1.04, letterSpacing: '-1.5px', color: 'var(--text)', marginBottom: 16, textWrap: 'balance' }}>
-            {lang === 'tr' ? (
-              <>Sıradaki oyununu <span style={{ color: 'var(--accent)' }}>keşfet</span></>
-            ) : (
-              <>Discover your <span style={{ color: 'var(--accent)' }}>next game</span></>
-            )}
-          </h1>
-          <p style={{ fontSize: 17, color: 'var(--text-2)', maxWidth: 540, margin: '0 auto 28px', lineHeight: 1.55 }}>
-            {lang === 'tr'
-              ? 'Zevkine göre öneriler — Steam, Epic, GOG ve Humble fiyatlarını tek ekranda karşılaştır'
-              : 'Picks based on your taste — compare Steam, Epic, GOG and Humble prices on one screen'}
-          </p>
-
-          <div ref={wrapperRef} style={{ width: '100%', maxWidth: 640, position: 'relative', margin: '0 auto' }}>
-            <form onSubmit={handleSearch}>
+    <div className="home-page">
+      <section className="discovery-bar container" aria-labelledby="home-title">
+        <div className="discovery-intro">
+          <p className="eyebrow">{lang === 'tr' ? 'OYUNLAR · FIRSATLAR · TOPLULUK' : 'GAMES · DEALS · COMMUNITY'}</p>
+          <h1 id="home-title">{lang === 'tr' ? 'Oynamaya değer.' : 'Worth playing.'}</h1>
+          <p>{lang === 'tr' ? 'Sıradaki oyununu bul, fiyatları karşılaştır, deneyimini paylaş.' : 'Find your next game, compare prices, share your experience.'}</p>
+        </div>
+          <div className="discovery-search" ref={wrapperRef} style={{ width: '100%', maxWidth: 640, position: 'relative', margin: '0 auto' }}>
+            <form onSubmit={handleSearch} role="search">
               <div style={{
                 display: 'flex', alignItems: 'center', gap: 10,
                 background: 'var(--bg-card)',
@@ -266,12 +129,12 @@ export default function Home() {
                   strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
                   <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
                 </svg>
-                <input
+                <input aria-label={lang === 'tr' ? 'Oyun ara' : 'Search games'}
                   value={query}
                   onChange={e => setQuery(e.target.value)}
                   onFocus={() => { if (suggestions.length) setShowSug(true); }}
                   onKeyDown={e => { if (e.key === 'Escape') setShowSug(false); }}
-                  placeholder={query ? '' : (phText ? phText + '▍' : t('hero.searchPlaceholder'))}
+                  placeholder={lang === 'tr' ? 'Oyun adı ile ara…' : 'Search by game title…'}
                   autoComplete="off"
                   style={{
                     flex: 1, border: 'none', outline: 'none', fontSize: 17,
@@ -279,7 +142,7 @@ export default function Home() {
                   }}
                 />
                 {query && (
-                  <button type="button" onClick={() => { setQuery(''); setSuggestions([]); setShowSug(false); }}
+                  <button aria-label={lang === 'tr' ? 'Aramayı temizle' : 'Clear search'} type="button" onClick={() => { setQuery(''); setSuggestions([]); setShowSug(false); }}
                     style={{ background: 'none', border: 'none', color: 'var(--text-3)', fontSize: 22, cursor: 'pointer', lineHeight: 1, padding: 0, flexShrink: 0 }}>
                     ×
                   </button>
@@ -310,7 +173,7 @@ export default function Home() {
                 {sugLoading ? (
                   <div style={{ padding: '14px 20px', color: 'var(--text-3)', fontSize: 13 }}>{t('hero.searching')}</div>
                 ) : suggestions.map(g => (
-                  <button key={g.id} onMouseDown={() => handleSugClick(g)}
+                  <button key={g.id} onClick={() => handleSugClick(g)}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 12, width: '100%',
                       padding: '10px 16px', border: 'none', background: 'transparent',
@@ -335,7 +198,7 @@ export default function Home() {
                   </button>
                 ))}
                 <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)' }}>
-                  <button onMouseDown={handleSearch} style={{ fontSize: 12, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
+                  <button onClick={handleSearch} style={{ fontSize: 12, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
                     "{query}" {t('hero.allResults')}
                   </button>
                 </div>
@@ -343,54 +206,21 @@ export default function Home() {
             )}
           </div>
 
-          {/* Hızlı linkler */}
-          <div style={{
-            display: 'flex', gap: 9, marginTop: 22, flexWrap: 'wrap', justifyContent: 'center',
-            opacity: query ? 0 : 1,
-            pointerEvents: query ? 'none' : 'auto',
-            transition: 'opacity 0.25s ease',
-          }}>
-            {[t('hero.quick.popular'), t('hero.quick.sale'), t('hero.quick.new'), t('hero.quick.best')].map((label, i) => {
-              const sections = ['popular', 'sale', 'new', 'topscore'];
-              return (
-                <Link key={label} href={`/games?section=${sections[i]}`}
-                  style={{
-                    padding: '8px 16px', borderRadius: 999, fontSize: 13, fontWeight: 600,
-                    background: 'var(--bg-card)',
-                    color: 'var(--text-2)', border: '1px solid var(--border)',
-                    boxShadow: '0 1px 4px rgba(74,52,28,0.04)',
-                  }}
-                >
-                  {label}
-                </Link>
-              );
-            })}
-
-            {/* KEŞFET — diğer dördünden AYRI duruyor ve bilerek.
-                O dördü hazır bir listeye götürüyor; bu, ne aradığını
-                bilmeyen kullanıcıya "kelime bulmak zorunda değilsin" diyor.
-                Aynı görünümde olsaydı beşinci bir liste sanılırdı. */}
-            <Link href="/discover"
-              style={{
-                padding: '8px 16px', borderRadius: 999, fontSize: 13, fontWeight: 600,
-                background: 'var(--accent-bg)',
-                color: 'var(--accent-on-bg)', border: '1px solid var(--accent-border)',
-              }}
-            >
-              {t('hero.quick.discover')}
-            </Link>
-          </div>
-        </div>
-
-        {/* Kapak şeridi kaldırıldı — sayfa doğrudan sinematik vitrinle başlıyor (prototip düzeni) */}
       </section>
-
-      {/* ══ İÇERİK BÖLÜMLERİ ══════════════════════════════════════════════════ */}
-      <div className="container" style={{ paddingTop: 48 }}>
-
-        {/* Sinematik vitrin */}
-        <CinematicShowcase games={showcaseGames} />
-
+      <div className="container">
+        <nav className="browse-links" aria-label={lang === 'tr' ? 'Oyun koleksiyonları' : 'Game collections'}>
+          <span>{lang === 'tr' ? 'GÖZ AT' : 'BROWSE'}</span>
+          {(lang === 'tr' ? ['Popüler oyunlar', 'İndirimler', 'Yeni çıkanlar', 'En yüksek puanlı'] : ['Popular games', 'Deals', 'New releases', 'Top rated']).map((label, i) => (
+            <Link key={label} href={`/games?section=${['popular', 'sale', 'new', 'topscore'][i]}`}>{label}</Link>
+          ))}
+          <Link href="/discover" className="browse-discover">{lang === 'tr' ? 'Sana göre bir oyun' : 'Find your next favorite'} ↗</Link>
+        </nav>
+        <CinematicShowcase games={showcaseGames} loading={loadingPop || loadingSale} />
+        <div className="home-shortcuts">
+          <Link href="/games?section=sale"><span className="shortcut-index">01</span><span><strong>{lang === 'tr' ? 'Doğru oyuna, iyi fiyat.' : 'Great games. Better prices.'}</strong><small>{lang === 'tr' ? 'Mağazalardaki fırsatları karşılaştır' : 'Compare deals across stores'}</small></span><span aria-hidden="true">↗</span></Link>
+          <Link href="/reviews"><span className="shortcut-index">02</span><span><strong>{lang === 'tr' ? 'Oyuncudan oyuncuya.' : 'From one player to another.'}</strong><small>{lang === 'tr' ? 'İncelemeleri oku, sohbete katıl' : 'Read reviews, join the conversation'}</small></span><span aria-hidden="true">↗</span></Link>
+          <Link href={user ? '/library' : '/signup'}><span className="shortcut-index">03</span><span><strong>{lang === 'tr' ? 'Koleksiyonun burada.' : 'Your collection lives here.'}</strong><small>{lang === 'tr' ? 'Kütüphaneni tek yerden takip et' : 'Keep track of your game library'}</small></span><span aria-hidden="true">↗</span></Link>
+        </div>
         {/* Bu Hafta Trend — Yayıncıların oynadığı popüler oyunlar */}
         <Section
           title={lang === 'tr' ? 'Bu Hafta Trend' : 'Trending This Week'}
@@ -399,7 +229,7 @@ export default function Home() {
           games={trendGames}
           loading={loadingTrend}
           badge={lang === 'tr' ? 'CANLI' : 'LIVE'}
-          cardWidth={200}
+          cardWidth={188}
         />
 
         {/* Yeni Çıkanlar */}
@@ -409,7 +239,7 @@ export default function Home() {
           href="/games?section=new"
           games={newGames}
           loading={loadingNew}
-          cardWidth={200}
+          cardWidth={188}
         />
 
         {/* İndirimdekiler */}
@@ -419,14 +249,14 @@ export default function Home() {
           href="/games?section=sale"
           games={saleGames}
           loading={loadingSale}
-          cardWidth={248}
+          cardWidth={188}
         />
 
         {/* Haberler — oyunların altında ayrı bölme */}
         <HomeNews />
 
         {/* CTA */}
-        <div style={{
+        <div className="library-invite" style={{
           marginTop: 16, marginBottom: 8,
           background: 'var(--cta-bg)',
           border: '1px solid var(--accent-border)',
@@ -451,78 +281,12 @@ export default function Home() {
         </div>
       </div>
 
-      <style>{`
-        /* Glow animasyonlu başlık */
-        .hero-glow-title {
-          font-size: clamp(32px, 6vw, 58px);
-          font-weight: 900;
-          color: #fff;
-          letter-spacing: -1px;
-          margin-bottom: 32px;
-          text-align: center;
-          animation: glow-pulse 3s ease-in-out infinite;
-          text-shadow:
-            0 0 20px rgba(255,255,255,0.4),
-            0 0 60px rgba(232,68,46,0.3),
-            0 2px 8px rgba(0,0,0,0.8);
-        }
-        @keyframes glow-pulse {
-          0%, 100% {
-            text-shadow:
-              0 0 20px rgba(255,255,255,0.4),
-              0 0 60px rgba(232,68,46,0.3),
-              0 2px 8px rgba(0,0,0,0.8);
-          }
-          50% {
-            text-shadow:
-              0 0 30px rgba(255,255,255,0.7),
-              0 0 90px rgba(232,68,46,0.6),
-              0 0 120px rgba(200,48,30,0.3),
-              0 2px 8px rgba(0,0,0,0.8);
-          }
-        }
-
-        /* Arama çubuğu küçükten büyüme animasyonu */
-        .search-scale-in {
-          animation: scale-in 0.6s cubic-bezier(0.34,1.56,0.64,1) both;
-        }
-        @keyframes scale-in {
-          from { transform: scale(0.7); opacity: 0; }
-          to   { transform: scale(1);   opacity: 1; }
-        }
-
-        /* Cursor blink */
-        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
-
-        /* Canlı badge */
-        @keyframes pulse-badge {
-          0%,100% { opacity: 1; }
-          50%      { opacity: 0.5; }
-        }
-
-        /* Kapak şeridi kayma */
-        .hero-strip {
-          animation: hero-strip-scroll 48s linear infinite;
-          will-change: transform;
-        }
-        @keyframes hero-strip-scroll {
-          from { transform: translateX(0); }
-          to   { transform: translateX(-7104px); }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .hero-strip { animation: none; }
-        }
-        @media (max-width: 860px) {
-          .showcase-grid { grid-template-columns: 1fr !important; }
-          .showcase-thumbs { display: none !important; }
-        }
-      `}</style>
     </div>
   );
 }
 
 // ── Sürükleyerek kaydırma satırı ─────────────────────────────────────────────
-function ScrollRow({ children }) {
+function ScrollRow({ children, label }) {
   const rowRef = useRef(null);
   const drag   = useRef({ active: false, startX: 0, scrollLeft: 0, moved: false, velX: 0, lastX: 0, lastT: 0 });
   const raf    = useRef(null);
@@ -611,6 +375,9 @@ function ScrollRow({ children }) {
     <div
       ref={rowRef}
       className="scroll-row"
+      role="region"
+      aria-label={label}
+      tabIndex={0}
       style={{ cursor: 'grab', scrollbarWidth: 'none' }}
       onMouseDown={onMouseDown}
       onClickCapture={onClickCapture}
@@ -624,8 +391,8 @@ function ScrollRow({ children }) {
 const Section = memo(function Section({ title, subtitle, href, games, loading, badge, cardWidth }) {
   const { t, lang } = useLanguage();
   return (
-    <div style={{ marginBottom: 56 }}>
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 18 }}>
+    <section className="catalog-section">
+      <div className="section-heading">
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <h2 style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)' }}>{title}</h2>
@@ -646,7 +413,7 @@ const Section = memo(function Section({ title, subtitle, href, games, loading, b
           {lang === 'tr' ? 'Tümünü gör →' : 'See all →'}
         </Link>
       </div>
-      <ScrollRow>
+      <ScrollRow label={title}>
         {loading
           ? Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)
           : games.length === 0
@@ -654,15 +421,17 @@ const Section = memo(function Section({ title, subtitle, href, games, loading, b
             : games.map(g => <GameCard key={g.id} game={g} compact cardWidth={cardWidth} />)
         }
       </ScrollRow>
-    </div>
+    </section>
   );
 });
 
 // ── Sinematik vitrin (oyun afişinden atmosfer) ───────────────────────────────
 // ── Sinematik vitrin (oyun afişinden atmosfer) ───────────────────────────────
-function CinematicShowcase({ games }) {
+function CinematicShowcase({ games, loading }) {
   const { t, lang, formatPrice } = useLanguage();
   const [active, setActive] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const [interacting, setInteracting] = useState(false);
 
   const promoItem = useMemo(() => ({
     id: 'willsavor-promo',
@@ -685,132 +454,42 @@ function CinematicShowcase({ games }) {
   }, [games, promoItem]);
 
   useEffect(() => {
-    if (list.length < 2) return;
+    if (list.length < 2 || paused || interacting || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const iv = setInterval(() => setActive(a => (a + 1) % list.length), 6000);
     return () => clearInterval(iv);
-  }, [list.length, active]); // Reset timer when active game changes manually
+  }, [list.length, active, paused, interacting]); // Reset timer when active game changes manually
 
-  if (list.length === 0) {
-    return <div style={{ height: 454, borderRadius: 26, background: 'var(--bg-card)', border: '1px solid var(--border)', marginBottom: 40 }} />;
-  }
-
+  if (loading && !games.length) return <div className="showcase-loading" role="status">{lang === 'tr' ? 'Oyun vitrini hazırlanıyor…' : 'Loading featured games…'}</div>;
   const g = list[active] || list[0];
   const href = g.isPromo ? g.promoUrl : (g.rawgSlug ? `/game/${g.rawgSlug}` : `/game/${g.id}`);
-  const mcColor = g.metacritic >= 80 ? '#4ade80' : g.metacritic >= 60 ? '#fbbf24' : '#f87171';
-
   return (
-    <section style={{ display: 'grid', gridTemplateColumns: '1fr 226px', gap: 18, alignItems: 'stretch', marginBottom: 44 }} className="showcase-grid">
-      <style>{`
-        @keyframes showcaseProgress {
-          from { transform: scaleX(0); }
-          to   { transform: scaleX(1); }
-        }
-        .showcase-price-tag {
-          position: absolute;
-          right: 44px;
-          bottom: 40px;
-          display: inline-flex;
-          align-items: center;
-          gap: 10px;
-          background: rgba(8, 10, 14, 0.85);
-          border: 1px solid rgba(255, 255, 255, 0.16);
-          padding: 10px 18px;
-          border-radius: 16px;
-          backdrop-filter: blur(8px);
-          -webkit-backdrop-filter: blur(8px);
-          box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-          z-index: 5;
-        }
-        @media (max-width: 768px) {
-          .showcase-grid {
-            grid-template-columns: 1fr !important;
-          }
-          .showcase-thumbs {
-            display: none !important;
-          }
-        }
-        @media (max-width: 640px) {
-          .showcase-price-tag {
-            right: 20px;
-            top: 20px;
-            bottom: auto;
-            padding: 8px 14px;
-            border-radius: 12px;
-          }
-        }
-      `}</style>
-
-      {/* Ana sahne */}
-      <Link href={href} target={g.isPromo ? "_blank" : undefined} rel={g.isPromo ? "noopener noreferrer" : undefined} style={{ position: 'relative', borderRadius: 26, overflow: 'hidden', minHeight: 454, boxShadow: '0 40px 90px -36px rgba(0,0,0,0.8), inset 0 0 0 1px rgba(255,255,255,0.08)' }}>
-        {g.isPromo ? (
-          <img src={g.promoImage} alt={g.name} style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} />
-        ) : (
-          <GameImage key={g.id} game={g} alt={g.name} fill isHero style={{ objectFit: 'cover' }} />
-        )}
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, rgba(6,7,9,0.88) 0%, rgba(6,7,9,0.45) 45%, rgba(6,7,9,0.05) 85%)' }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(6,7,9,0.7) 0%, rgba(6,7,9,0.15) 30%, transparent 60%)' }} />
-        <div style={{ position: 'absolute', left: 0, bottom: 0, padding: '40px 44px', maxWidth: 620 }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '6px 13px', borderRadius: 999, background: g.isPromo ? 'rgba(251,191,36,0.15)' : 'color-mix(in srgb, var(--accent) 26%, transparent)', border: g.isPromo ? '1px solid rgba(251,191,36,0.35)' : '1px solid color-mix(in srgb, var(--accent) 55%, transparent)', fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', color: g.isPromo ? '#fbbf24' : '#fff', marginBottom: 16 }}>
-            {g.isPromo ? (lang === 'tr' ? '✦ SPONSOR' : '✦ SPONSOR') : (lang === 'tr' ? '✦ ÖNE ÇIKAN FIRSAT' : '✦ FEATURED DEAL')}
-          </span>
-          <h2 style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 'clamp(30px,4vw,52px)', lineHeight: 1.02, letterSpacing: '-1.4px', color: '#fff', marginBottom: 14, textWrap: 'balance' }}>{g.name}</h2>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 18 }}>
-            {!g.isPromo && g.metacritic ? <span style={{ fontSize: 12.5, fontWeight: 800, padding: '4px 9px', borderRadius: 8, background: 'rgba(8,10,14,0.6)', border: '1px solid rgba(255,255,255,0.14)', color: mcColor }}>{g.metacritic} Metacritic</span> : null}
-            <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.62)' }}>{g.isPromo ? g.promoSubtitle : (g.genres || []).slice(0, 3).join(' · ')}</span>
-          </div>
-          
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-            <span className="btn btn-red" style={{ padding: '13px 26px', fontSize: 15 }}>
-              {g.isPromo ? (lang === 'tr' ? 'Siteye Git →' : 'Go to Site →') : (lang === 'tr' ? 'İncele →' : 'View →')}
-            </span>
+    <section className="game-showcase" aria-label={lang === 'tr' ? 'Öne çıkanlar' : 'Featured games'} onMouseEnter={() => setInteracting(true)} onMouseLeave={() => setInteracting(false)} onFocusCapture={() => setInteracting(true)} onBlurCapture={e => { if (!e.currentTarget.contains(e.relatedTarget)) setInteracting(false); }}>
+      <div className="showcase-stage">
+        {g.isPromo ? <img className="showcase-art" src={g.promoImage} alt="" /> : <GameImage key={g.id} game={g} alt="" fill isHero style={{ objectFit: 'cover' }} />}
+        <div className="showcase-shade" />
+        <div className="showcase-copy">
+          <p className="showcase-kicker"><span />{g.isPromo ? 'SPONSOR' : (lang === 'tr' ? 'VİTRİNDE' : 'IN THE SPOTLIGHT')}</p>
+          <h2>{g.name}</h2>
+          <p className="showcase-description">{g.isPromo ? g.promoSubtitle : (g.genres || []).slice(0, 3).join(' / ')}</p>
+          <div className="showcase-actions">
+            <Link href={href} target={g.isPromo ? '_blank' : undefined} rel={g.isPromo ? 'noopener noreferrer' : undefined} className="btn btn-red">{g.isPromo ? (lang === 'tr' ? 'Fırsatı gör' : 'View offer') : (lang === 'tr' ? 'Oyunu incele' : 'Explore game')} ↗</Link>
+            {!g.isPromo && g.price != null && <span className="showcase-price">{g.discount > 0 && <del>{formatPrice(g.original)}</del>}<strong>{g.isFree ? t('card.free') : formatPrice(g.price)}</strong>{g.discount > 0 && <em>−{g.discount}%</em>}</span>}
           </div>
         </div>
-
-        {/* Sağ alta konumlandırılmış Fiyat Paneli (Mobil uyumlu) */}
-        {!g.isPromo && g.price !== null && g.discount > 0 && (
-          <div className="showcase-price-tag">
-            <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', textDecoration: 'line-through' }}>{formatPrice(g.original)}</span>
-            <span style={{ fontSize: 18, fontWeight: 900, color: '#fbbf24' }}>{formatPrice(g.price)}</span>
-            <span style={{ fontSize: 12, fontWeight: 800, padding: '3px 8px', borderRadius: 6, background: '#fbbf24', color: '#000', boxShadow: '0 2px 10px rgba(251,191,36,0.3)' }}>-%{g.discount}</span>
-          </div>
-        )}
-      </Link>
-
-      {/* Dikey küçük resimler */}
-      <div className="showcase-thumbs" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {list.map((it, i) => {
-          const on = i === active;
-          return (
-            <button key={it.id} onClick={() => setActive(i)} style={{ position: 'relative', flex: 1, minHeight: 0, border: 'none', padding: 0, borderRadius: 16, overflow: 'hidden', cursor: 'pointer', background: 'var(--bg-input)', opacity: on ? 1 : 0.62, boxShadow: on ? '0 14px 30px -12px var(--accent-glow)' : '0 8px 18px -12px rgba(0,0,0,0.6)', transition: 'opacity 0.25s, box-shadow 0.25s, transform 0.25s', outline: on ? '2px solid var(--accent)' : 'none', outlineOffset: -2 }}
-              onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-3px) scale(1.04)'}
-              onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
-              {it.isPromo ? (
-                <img src={it.promoImage || it.promoLogo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} />
-              ) : (
-                <GameImage game={it} alt="" fill style={{ objectFit: 'cover' }} />
-              )}
-              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(6,7,9,0.85) 0%, rgba(6,7,9,0.2) 40%, transparent 70%)' }} />
-              <span style={{ position: 'absolute', left: 12, right: 12, bottom: 10, fontSize: 12.5, fontWeight: 700, lineHeight: 1.15, color: '#fff', textAlign: 'left', textShadow: '0 1px 5px rgba(0,0,0,0.6)' }}>{it.name}</span>
-              
-              {/* İndirim yüzdesi rozeti */}
-              {it.discount > 0 && (
-                <span style={{ position: 'absolute', right: 8, top: 8, fontSize: 10, fontWeight: 800, padding: '2px 5px', borderRadius: 4, background: '#fbbf24', color: '#000', zIndex: 5, boxShadow: '0 2px 5px rgba(0,0,0,0.4)' }}>
-                  -%{it.discount}
-                </span>
-              )}
-
-              {/* Ekran kalma süresine eşdeğer ilerleme çizgisi */}
-              {on && (
-                <div style={{
-                  position: 'absolute', left: 0, bottom: 0, right: 0, height: 3, background: 'var(--accent)',
-                  animation: 'showcaseProgress 6s linear forwards',
-                  zIndex: 10,
-                  transformOrigin: 'left',
-                }} />
-              )}
-            </button>
-          );
-        })}
+        <div className="showcase-controls">
+          <span>{String(Math.min(active + 1, list.length)).padStart(2, '0')} / {String(list.length).padStart(2, '0')}</span>
+          <button onClick={() => setPaused(p => !p)} aria-label={paused ? (lang === 'tr' ? 'Vitrini oynat' : 'Play slideshow') : (lang === 'tr' ? 'Vitrini duraklat' : 'Pause slideshow')}>{paused ? '▶' : 'Ⅱ'}</button>
+          <button onClick={() => setActive(a => (a - 1 + list.length) % list.length)} aria-label={lang === 'tr' ? 'Önceki oyun' : 'Previous game'}>←</button>
+          <button onClick={() => setActive(a => (a + 1) % list.length)} aria-label={lang === 'tr' ? 'Sonraki oyun' : 'Next game'}>→</button>
+        </div>
+      </div>
+      <div className="showcase-list">
+        <p className="showcase-list-title">{lang === 'tr' ? 'ÖNE ÇIKANLAR' : 'FEATURED'}<span>{list.length}</span></p>
+        {list.map((it, i) => <button key={it.id} className={`showcase-item ${i === active ? 'is-selected' : ''}`} onClick={() => setActive(i)} aria-pressed={i === active}>
+          <span className="showcase-item-art">{it.isPromo ? <img src={it.promoImage} alt="" /> : <GameImage game={it} alt="" fill style={{ objectFit: 'cover' }} />}</span>
+          <span className="showcase-item-info"><strong>{it.name}</strong><small>{it.isPromo ? 'Sponsor' : it.discount > 0 ? (lang === 'tr' ? `%${it.discount} indirim` : `${it.discount}% off`) : (it.genres || []).slice(0, 1).join('')}</small></span>
+          <span className="showcase-item-arrow" aria-hidden="true">↗</span>
+        </button>)}
       </div>
     </section>
   );
@@ -830,16 +509,16 @@ function HomeNews() {
         if (d.results && Array.isArray(d.results)) {
           setNewsList(d.results.slice(0, 4));
         } else {
-          setNewsList(HOME_NEWS);
+          setNewsList([]);
         }
       })
-      .catch(() => setNewsList(HOME_NEWS))
+      .catch(() => setNewsList([]))
       .finally(() => setLoading(false));
   }, [lang]);
 
   return (
     <div style={{ marginTop: 8, marginBottom: 48, paddingTop: 34, borderTop: '1px solid var(--border)' }}>
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 20, gap: 12 }}>
+      <div className="section-heading">
         <div>
           <h2 style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)' }}>
             {lang === 'tr' ? 'Oyun Haberleri' : 'Gaming News'}
@@ -852,9 +531,11 @@ function HomeNews() {
           {lang === 'tr' ? 'Tümünü gör →' : 'See all →'}
         </Link>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: 20 }}>
-        {(loading ? HOME_NEWS : newsList).map((n, i) => (
-          <a key={i} href={n.url || "/news"} target={n.url ? "_blank" : "_self"} rel="noopener noreferrer" className="gr-glass" style={{ borderRadius: 18, overflow: 'hidden', cursor: 'pointer', transition: 'transform 0.3s, box-shadow 0.3s', display: 'block' }}
+      <div className="home-news-grid">
+        {loading && Array.from({ length: 4 }, (_, i) => <div key={i} className="news-skeleton" aria-hidden="true" />)}
+        {!loading && !newsList.length && <p className="news-empty">{lang === 'tr' ? 'Haberler şu anda yüklenemedi. Tüm haberler sayfasını ziyaret edebilirsin.' : 'News is currently unavailable. You can visit the news page.'}</p>}
+        {newsList.map((n, i) => (
+          <a key={i} href={n.url || "/news"} target={n.url ? "_blank" : "_self"} rel="noopener noreferrer" className="news-card" style={{ borderRadius: 8, overflow: 'hidden', cursor: 'pointer', transition: 'transform 0.3s, box-shadow 0.3s', display: 'block' }}
             onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-5px)'; }}
             onMouseLeave={e => { e.currentTarget.style.transform = 'none'; }}>
             <div style={{ position: 'relative', height: 148, background: n.art, backgroundSize: 'cover', backgroundPosition: 'center', overflow: 'hidden' }}>
@@ -879,10 +560,10 @@ function HomeNews() {
 function SkeletonCard() {
   return (
     <div style={{
-      flexShrink: 0, width: 232, borderRadius: 12,
+      flexShrink: 0, width: 188, borderRadius: 8,
       background: 'var(--bg-card)', border: '1.5px solid var(--border)', overflow: 'hidden',
     }}>
-      <div style={{ height: 130, background: 'var(--bg-input)' }} />
+      <div style={{ aspectRatio: '3 / 4', background: 'var(--bg-input)' }} />
       <div style={{ padding: '13px 15px' }}>
         <div style={{ height: 14, background: 'var(--border)', borderRadius: 4, marginBottom: 9 }} />
         <div style={{ height: 12, background: 'var(--bg-input)', borderRadius: 4, width: '60%' }} />

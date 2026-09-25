@@ -206,31 +206,32 @@ export default function ReviewsPage() {
   const bos = items !== null && items.length === 0 && !loading;
 
   return (
-    <div className="page-transition" style={{ minHeight: '100vh', background: 'var(--bg-body)', paddingBottom: 120 }}>
+    <div className="page-transition community-page" style={{ minHeight: '100vh', background: 'var(--bg-body)', paddingBottom: 120 }}>
 
       {/* ── Başlık ── */}
-      <section style={{ padding: '54px 0 26px', background: 'var(--hero-bg)', borderBottom: '1px solid var(--border)' }}>
+      <section className="page-title-block" style={{ padding: '54px 0 26px', background: 'var(--hero-bg)', borderBottom: '1px solid var(--border)' }}>
         <div style={{ maxWidth: 820, margin: '0 auto', padding: '0 24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
             <div>
               <p style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: 8 }}>
-                ● {tr ? 'Oyuncular ne diyor' : 'What players say'}
+                {tr ? 'OYUNCULARIN BULUŞMA NOKTASI' : 'THE PLAYER COMMUNITY'}
               </p>
               <h1 style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 'clamp(30px,4vw,46px)', lineHeight: 1.1, letterSpacing: '-1.2px', color: 'var(--text)', marginBottom: 8 }}>
                 {tr ? 'Topluluk & Akış' : 'Community & Feed'}
               </h1>
               <p style={{ fontSize: 15.5, color: 'var(--text-2)', maxWidth: 540, lineHeight: 1.5 }}>
                 {tr
-                  ? 'Gamerisen kullanıcılarının incelemeleri, oyun önerileri ve anlık tartışmaları — web & mobil eşzamanlı.'
-                  : 'Reviews, game recommendations, and discussions from Gamerisen users — synced across web & mobile.'}
+                  ? 'Son oynadığını anlat. Bir oyun öner. Yeni bir sohbete katıl.'
+                  : 'Share what you played. Recommend a game. Join a new conversation.'}
               </p>
             </div>
           </div>
 
           {/* ── Sekmeler ── */}
-          <div style={{ display: 'flex', gap: 8, marginTop: 24, overflowX: 'auto', paddingBottom: 4 }}>
+          <div className="community-tabs" style={{ display: 'flex', gap: 8, marginTop: 24, overflowX: 'auto', paddingBottom: 4 }}>
             <button
               onClick={() => setTab('all')}
+              aria-pressed={tab === 'all'}
               style={{
                 ...K.tabBtn,
                 background: tab === 'all' ? 'var(--accent)' : 'var(--bg-card)',
@@ -238,10 +239,11 @@ export default function ReviewsPage() {
                 borderColor: tab === 'all' ? 'var(--accent)' : 'var(--border)',
               }}
             >
-              🌟 {tr ? 'Keşfet' : 'Discover'}
+              {tr ? 'Keşfet' : 'Discover'}
             </button>
             <button
               onClick={() => setTab('posts')}
+              aria-pressed={tab === 'posts'}
               style={{
                 ...K.tabBtn,
                 background: tab === 'posts' ? 'var(--accent)' : 'var(--bg-card)',
@@ -249,10 +251,11 @@ export default function ReviewsPage() {
                 borderColor: tab === 'posts' ? 'var(--accent)' : 'var(--border)',
               }}
             >
-              💬 {tr ? 'Tartışmalar' : 'Discussions'}
+              {tr ? 'Tartışmalar' : 'Discussions'}
             </button>
             <button
               onClick={() => setTab('reviews')}
+              aria-pressed={tab === 'reviews'}
               style={{
                 ...K.tabBtn,
                 background: tab === 'reviews' ? 'var(--accent)' : 'var(--bg-card)',
@@ -260,11 +263,12 @@ export default function ReviewsPage() {
                 borderColor: tab === 'reviews' ? 'var(--accent)' : 'var(--border)',
               }}
             >
-              ⭐ {tr ? 'İncelemeler' : 'Reviews'}
+              {tr ? 'İncelemeler' : 'Reviews'}
             </button>
             {user ? (
               <button
                 onClick={() => setTab('friends')}
+                aria-pressed={tab === 'friends'}
                 style={{
                   ...K.tabBtn,
                   background: tab === 'friends' ? 'var(--accent)' : 'var(--bg-card)',
@@ -272,7 +276,7 @@ export default function ReviewsPage() {
                   borderColor: tab === 'friends' ? 'var(--accent)' : 'var(--border)',
                 }}
               >
-                👥 {tr ? 'Arkadaşlar' : 'Friends'}
+                {tr ? 'Arkadaşlar' : 'Friends'}
               </button>
             ) : null}
           </div>
@@ -608,7 +612,7 @@ function GuestPrompt({ tr }) {
   return (
     <div style={{ ...K.kart, padding: 18, marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <span style={{ fontSize: 28 }}>✨</span>
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" strokeWidth="1.5" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l-2 2V11.5a9.5 9.5 0 0 1 19 0Z"/><path d="M7 9h9M7 13h6"/></svg>
         <div>
           <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>
             {tr ? 'Topluluğa sen de katıl!' : 'Join the conversation!'}
@@ -1248,7 +1252,7 @@ function Iskelet() {
 
 const K = {
   kart: {
-    borderRadius: 14,
+    borderRadius: 8,
     overflow: 'hidden',
     background: 'var(--bg-card)',
     border: '1px solid var(--border)',
