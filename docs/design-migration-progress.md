@@ -1409,3 +1409,31 @@ eski kalan başlıklar, liste satırları, pencereler ve düğmelerdi.
 başarılı. Cihazda görülmedi (emülatör yok): mozaik kapakların kırpılması,
 ad penceresinin klavyeyle konumu, "daha fazla" menüsünün Android'deki düğme
 sırası, Segmented'in liste üstündeki boşluğu gözle bakılmalı.
+
+### 25 Eylül — Tasarım dışı ekranlar, Grup D: istatistik (Claude)
+
+**Plan kalıbı: "StatTile + ListGroup".**
+
+- NavBar: başlık "Bu Haftan" + alt başlık, sağda 2.0 `share` (eski
+  `components/IconButton` bu ekrandan kalktı; yalnız swipe kullanıyor).
+- Yerleşim Ayarlar'ın G-23 düzeni: 20'lik pay blokta ve ListGroup'ta,
+  ScrollView yalnız geniş ekran payı; bloklar arası 28. `check-layout` G-23
+  listesine `stats.jsx` (`ozet`) eklendi, iki bozma denemesiyle doğrulandı.
+- Kahraman sayı surface1 kart (köşe 18), sayı `scoreLarge` 44/48 — oyun
+  detayındaki inceleme özetiyle aynı ölçü. Kırmızı zemin/kenarlık kalktı.
+- Dört renkli kart → 2×2 DS `StatTile` (nötr ikon: heart · x · bell ·
+  layers). Sabit mor `#a78bfa` ve kart başına renkler gitti.
+- En çok incelenen tür → `ListGroup` + `ListRow` (değer sağda).
+- Tür dağılımı → `ListGroup` başlığı + tek kutu; çubuklar `ReviewSummary`
+  dili (6 kalınlık, nötr iz `pillNeutralSoft`, metin renginde dolgu).
+- İndirim özeti → `ListGroup` üç satır (tag · flame · bag); ortalama
+  indirim yeşil `headline` değer. StatTile'a sığmıyordu: etiket tek satır,
+  "Takip listendeki ortalama indirim" üçte bir genişliğe girmiyor.
+- Ölçüler `tokens.component.stats`; `check:spacing` 112 → 96.
+
+**Mantık aynen:** rapor, tek toplu fiyat isteği, paylaşım metni.
+
+**Doğrulama:** `npm run check` geçti, `npx expo export` iOS ve Android
+başarılı. Cihazda görülmedi (emülatör yok): StatTile etiketinin en uzun
+çevirisi (de "Spiele in deinen Listen") 375 pt genişlikte sınırda — iPhone
+SE / iPad uyumluluk modunda kesiliyor mu bakılmalı.

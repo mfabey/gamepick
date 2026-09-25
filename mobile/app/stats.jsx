@@ -6,10 +6,9 @@
 // fiyat çağrısıdır (oyun başına ayrı istek değil).
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { View, Text, Pressable, StyleSheet, ScrollView, Share } from 'react-native';
+import { View, StyleSheet, ScrollView, Share } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 import { useWishlist } from '../src/context/WishlistContext';
@@ -20,12 +19,13 @@ import { useDismissed } from '../src/hooks/useDismissed';
 import { weeklyReport } from '../src/services/stats';
 import { fetchSteamPrices } from '../src/api/library';
 import EmptyState from '../src/components/EmptyState';
-import { radius, spacing, PRESSED, type } from '../src/theme';
+import { NavBar } from '../src/components/ui/Navigation';
+import { IconButton, ListGroup, ListRow, Txt } from '../src/components/ui/Primitives';
+import { StatTile } from '../src/components/ui/Commerce';
+import { component as K, control as C, layout, radius as dsRadius, space } from '../src/theme/tokens';
+import { useDesignTheme } from '../src/theme/useDesignTheme';
 import { useYanBosluk } from '../src/hooks/useIcerikAlani';
-import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
-import IconButton from '../src/components/IconButton';
-
 import ProfileGate from '../src/components/ProfileGate';
 export default function StatsScreen() {
   return (
@@ -36,10 +36,9 @@ export default function StatsScreen() {
 }
 
 function StatsScreenContent() {
-  const styles = useStyles(makeStyles);
   const yan = useYanBosluk();
   const insets = useSafeAreaInsets();
-  const { colors } = useTheme();
+  const { colors } = useDesignTheme();
   const router = useRouter();
   const { t } = useLanguage();
   const { items } = useWishlist();
@@ -82,22 +81,12 @@ function StatsScreenContent() {
   }, [report, t]);
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      {/* Başlık listenin DIŞINDA: içerik kolonuyla aynı hizaya
-          getiriliyor — başlık tam genişlikte kalsaydı sayfanın adı ile
-          anlattığı şey iki ayrı sütunda dururdu. */}
-      <View style={[styles.head, { marginHorizontal: yan }]}>
-        <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </Pressable>
-        <View style={styles.headText}>
-          <Text style={styles.title}>{t('stats.title')}</Text>
-          <Text style={styles.subtitle}>{t('stats.subtitle')}</Text>
-        </View>
-        {report.hasActivity && (
-          <IconButton icon='share-outline' size={20} color={colors.text} onPress={onShare} style={styles.iconBtn} />
-        )}
-      </View>
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
+      <NavBar
+        title={t('stats.title')}
+        subtitle={t('stats.subtitle')}
+        right={report.hasActivity ? <IconButton icon="share" label={t('stats.share')} onPress={onShare} /> : undefined}
+      />
 
       {/* Swipe arşive alındı; boş durum artık oyun listesine yönlendiriyor —
           rapor için gereken sinyal oradan da toplanıyor.
@@ -113,65 +102,65 @@ function StatsScreenContent() {
           onAction={() => router.replace('/games')}
         />
       ) : (
-        <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 40, paddingHorizontal: yan + spacing.lg }]} showsVerticalScrollIndicator={false}>
-          {/* Kahraman sayı — haftanın ana metriği */}
-          <View style={styles.hero}>
-            <Text style={styles.heroNum}>{report.discovered}</Text>
-            <Text style={styles.heroLabel}>{t('stats.discovered')}</Text>
-          </View>
+        // G-23 düzeni: 20'lik telefon payı blokların ve ListGroup'un kendisinde,
+        // ScrollView yalnız geniş ekran payı (`yan`) — Ayarlar'la aynı.
+        <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + space[32], paddingHorizontal: yan }]} showsVerticalScrollIndicator={false}>
+          {/* Kahraman sayı — haftanın ana metriği. Oyun detayındaki inceleme
+              özetinin büyük sayısıyla aynı ölçü (44/48). Kırmızı yok: 2.0'da
+              marka kırmızısı logo, seçili sekme, kalp gibi yerlere ayrılmış. */}
+          <View style={styles.ozet}>
+            <View style={[styles.hero, { backgroundColor: colors.surface1 }]}>
+              <Txt variant="scoreLarge" style={styles.num}>{report.discovered}</Txt>
+              <Txt variant="cardTitle">{t('stats.discovered')}</Txt>
+            </View>
 
-          {/* İkili kartlar */}
-          <View style={styles.grid}>
-            <StatCard icon="heart" value={report.liked} label={t('stats.liked')} tint={colors.green} />
-            <StatCard icon="close-circle" value={report.passed} label={t('stats.passed')} tint={colors.accent} />
-            <StatCard icon="notifications" value={report.wishlistCount} label={t('stats.wishlist')} tint={colors.steam} />
-            <StatCard icon="albums" value={report.collectedGames} label={t('stats.collected')} tint="#a78bfa" />
+            {/* İkili kutular — DS StatTile (84 pt, nötr ikon). */}
+            <View style={styles.grid}>
+              <StatTile icon="heart" value={String(report.liked)} label={t('stats.liked')} style={styles.tile} />
+              <StatTile icon="x" value={String(report.passed)} label={t('stats.passed')} style={styles.tile} />
+              <StatTile icon="bell" value={String(report.wishlistCount)} label={t('stats.wishlist')} style={styles.tile} />
+              <StatTile icon="layers" value={String(report.collectedGames)} label={t('stats.collected')} style={styles.tile} />
+            </View>
           </View>
 
           {/* En çok incelenen tür */}
           {report.topGenre ? (
-            <View style={styles.banner}>
-              <Text style={styles.bannerLabel}>{t('stats.topGenre')}</Text>
-              <Text style={styles.bannerValue}>{report.topGenre}</Text>
-            </View>
+            <ListGroup>
+              <ListRow icon="star" title={t('stats.topGenre')} value={report.topGenre} />
+            </ListGroup>
           ) : null}
 
-          {/* Tür dağılımı — basit yatay çubuklar (svg gerekmiyor) */}
+          {/* Tür dağılımı — basit yatay çubuklar (svg gerekmiyor). Çubuk dili
+              oyun detayındaki puan dağılımının (ReviewSummary): nötr iz, metin
+              renginde dolgu, sayı sağda. Tek çocuk: grup ayraç çizmiyor. */}
           {report.genreBreakdown.length > 0 && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>{t('stats.genreTitle')}</Text>
-              {report.genreBreakdown.map((g) => {
-                const max = report.genreBreakdown[0].count || 1;
-                return (
-                  <View key={g.name} style={styles.barRow}>
-                    <Text numberOfLines={1} style={styles.barLabel}>{g.name}</Text>
-                    <View style={styles.barTrack}>
-                      <View style={[styles.barFill, { width: `${Math.max(8, (g.count / max) * 100)}%` }]} />
+            <ListGroup title={t('stats.genreTitle')}>
+              <View style={styles.bars}>
+                {report.genreBreakdown.map((g) => {
+                  const max = report.genreBreakdown[0].count || 1;
+                  return (
+                    <View key={g.name} style={styles.barRow}>
+                      <Txt variant="footnote" numberOfLines={1} style={[styles.barLabel, { color: colors.text2 }]}>{g.name}</Txt>
+                      <View style={[styles.barTrack, { backgroundColor: colors.pillNeutralSoft }]}>
+                        <View style={[styles.barFill, { width: `${Math.max(8, (g.count / max) * 100)}%`, backgroundColor: colors.text }]} />
+                      </View>
+                      <Txt variant="caption" style={[styles.barValue, styles.num, { color: colors.text3 }]}>{g.count}</Txt>
                     </View>
-                    <Text style={styles.barCount}>{g.count}</Text>
-                  </View>
-                );
-              })}
-            </View>
+                  );
+                })}
+              </View>
+            </ListGroup>
           )}
 
-          {/* İndirim özeti — yalnızca veri varsa */}
+          {/* İndirim özeti — yalnızca veri varsa. Üç sayı üç satır: etiketler
+              ("Takip listendeki ortalama indirim") StatTile'ın tek satırlık
+              etiketine sığmıyor. İndirim yeşili yalnız değerde. */}
           {report.discount?.onSaleCount > 0 && (
-            <View style={styles.section}>
-              <View style={styles.saleRow}>
-                <View style={styles.saleBig}>
-                  <Text style={styles.saleNum}>%{report.discount.avgDiscount}</Text>
-                  <Text style={styles.saleLabel}>{t('stats.avgDiscount')}</Text>
-                </View>
-                <View style={styles.saleSide}>
-                  <Text style={styles.saleSideNum}>%{report.discount.bestDiscount}</Text>
-                  <Text style={styles.saleSideLabel}>{t('stats.bestDiscount')}</Text>
-                  <Text style={styles.saleSideMeta}>
-                    {report.discount.onSaleCount} {t('stats.onSale')}
-                  </Text>
-                </View>
-              </View>
-            </View>
+            <ListGroup>
+              <ListRow icon="tag" title={t('stats.avgDiscount')} trailing={<Txt variant="headline" style={[styles.num, { color: colors.green }]}>%{report.discount.avgDiscount}</Txt>} />
+              <ListRow icon="flame" title={t('stats.bestDiscount')} value={`%${report.discount.bestDiscount}`} />
+              <ListRow icon="bag" title={`${report.discount.onSaleCount} ${t('stats.onSale')}`} />
+            </ListGroup>
           )}
         </ScrollView>
       )}
@@ -179,85 +168,26 @@ function StatsScreenContent() {
   );
 }
 
-function StatCard({ icon, value, label, tint }) {
-  const styles = useStyles(makeStyles);
-  return (
-    <View style={styles.card}>
-      <Ionicons name={icon} size={19} color={tint} />
-      <Text style={styles.cardNum}>{value}</Text>
-      <Text style={styles.cardLabel}>{label}</Text>
-    </View>
-  );
-}
+const styles = StyleSheet.create({
+  safe: { flex: 1 },
+  // Bloklar arası 28 — Ayarlar'la aynı.
+  body: { paddingTop: space[8], gap: space[28] },
+  num: { fontVariant: ['tabular-nums'] },
 
-const makeStyles = (colors) => StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
-
-  head: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: spacing.md, paddingTop: 6, paddingBottom: 10, gap: spacing.sm,
-  },
-  headText: { flex: 1 },
-  title: { fontSize: type.headline, fontWeight: '900', color: colors.text, letterSpacing: -0.3 },
-  subtitle: { fontSize: type.footnote, color: colors.text2, marginTop: 2 },
-  iconBtn: {
-    width: 44, height: 44, borderRadius: 22, backgroundColor: colors.card,
-    alignItems: 'center', justifyContent: 'center',
-  },
-
-  body: { paddingHorizontal: spacing.lg },
-
+  // Kahraman + kutular TEK blok (aralık 8); bloklar arası 28.
+  ozet: { marginHorizontal: layout.gutter, gap: space[8] },
   hero: {
-    alignItems: 'center', paddingVertical: 28,
-    backgroundColor: colors.accentBg, borderRadius: radius.xl,
-    borderWidth: 1, borderColor: colors.accentBorder, marginTop: 6,
+    alignItems: 'center', paddingVertical: space[24],
+    borderRadius: dsRadius.group, gap: space[4],
   },
-  heroNum: { color: colors.accentText, fontSize: type.display, fontWeight: '900', letterSpacing: -2, lineHeight: 66 },
-  heroLabel: { color: colors.text, fontSize: type.subhead, fontWeight: '700', marginTop: 2 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space[8] },
+  // İki sütun: (genişlik − 8) / 2. flexBasis yüzde + flexGrow eski kartın kuralı.
+  tile: { flexGrow: 1, flexBasis: '46%' },
 
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: spacing.md },
-  card: {
-    flexGrow: 1, flexBasis: '46%',
-    backgroundColor: colors.card, borderRadius: radius.lg, padding: 15,
-    borderWidth: 1, borderColor: colors.cardBorder,
-  },
-  cardNum: { color: colors.text, fontSize: type.title1, fontWeight: '900', marginTop: 7, letterSpacing: -0.8 },
-  cardLabel: { color: colors.text2, fontSize: type.caption, marginTop: 2, fontWeight: '600' },
-
-  banner: {
-    marginTop: spacing.md, backgroundColor: colors.card, borderRadius: radius.lg,
-    padding: spacing.lg, borderWidth: 1, borderColor: colors.cardBorder,
-  },
-  bannerLabel: { color: colors.text2, fontSize: type.footnote, fontWeight: '600' },
-  bannerValue: { color: colors.text, fontSize: type.title2, fontWeight: '900', marginTop: spacing.xs, letterSpacing: -0.5 },
-
-  section: {
-    marginTop: spacing.md, backgroundColor: colors.card, borderRadius: radius.lg,
-    padding: spacing.lg, borderWidth: 1, borderColor: colors.cardBorder,
-  },
-  sectionTitle: { color: colors.text, fontSize: type.subhead, fontWeight: '800', marginBottom: spacing.md },
-
-  barRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 9 },
-  barLabel: { width: 88, color: colors.text2, fontSize: type.footnote, fontWeight: '600' },
-  barTrack: { flex: 1, height: 8, borderRadius: 4, backgroundColor: colors.bgInput, overflow: 'hidden' },
-  // accent-serbest: cubuk dolgusu — renk DEGERE bagli, etikete degil
-  barFill: { height: '100%', borderRadius: 4, backgroundColor: colors.accent },
-  barCount: { width: 22, textAlign: 'right', color: colors.text3, fontSize: type.caption, fontWeight: '700' },
-
-  saleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
-  saleBig: { flex: 1 },
-  saleNum: { color: colors.green, fontSize: type.hero, fontWeight: '900', letterSpacing: -1.5 },
-  saleLabel: { color: colors.text2, fontSize: type.caption, fontWeight: '600', marginTop: 2 },
-  saleSide: { alignItems: 'flex-end' },
-  saleSideNum: { color: colors.text, fontSize: type.headline, fontWeight: '900' },
-  saleSideLabel: { color: colors.text2, fontSize: type.caption, fontWeight: '600' },
-  saleSideMeta: { color: colors.text3, fontSize: type.caption2, marginTop: 5 },
-
-
-  cta: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
-    height: 50, paddingHorizontal: 22, borderRadius: radius.lg,
-    backgroundColor: colors.accentFillStrong, marginTop: 22,
-  },
-  ctaText: { color: '#fff', fontSize: type.subhead, fontWeight: '800' },
+  bars: { padding: C.listPadding, gap: space[8] },
+  barRow: { height: K.stats.barRow, flexDirection: 'row', alignItems: 'center', gap: space[8] },
+  barLabel: { width: K.stats.barLabel },
+  barTrack: { flex: 1, height: K.stats.bar, borderRadius: K.stats.bar / 2, overflow: 'hidden' },
+  barFill: { height: K.stats.bar, borderRadius: K.stats.bar / 2 },
+  barValue: { width: K.stats.barValue, textAlign: 'right' },
 });

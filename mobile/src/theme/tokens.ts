@@ -511,6 +511,9 @@ export const component = {
   nameDialog: { maxWidth: 420, emoji: 44 },
   // Topluluk listesi beğenisi: kalp 20, sayıyla arası 2 (satırda dikey, başlıkta yatay 6).
   listLike: { icon: 20, gap: 2, inlineGap: 6 },
+  // İstatistik tür çubukları — ReviewSummary çubuk dili (6 kalınlık); ad sütunu 88
+  // (tür adları puan etiketinden uzun), satır 20, sayı sütunu 30.
+  stats: { bar: 6, barRow: 20, barLabel: 88, barValue: 30 },
   // G-06b Filtre sayfası — kit s2.py filters(): tutamaç 36×5 (köşe 3, üstte 8),
   // başlık satırı 44 (yan dolgu 12; Sıfırla tertiary 36 · başlık · 32 pt ×),
   // gövde üstü 10, bölümler arası 20, bölüm başlığı 20 yüksek ve içerikten 12,

@@ -56,6 +56,7 @@ const screens = [
 const G23 = {
   'settings.jsx': ['profile', 'signOut'],
   'social-settings.jsx': ['bozukBant'],
+  'stats.jsx': ['ozet'],
 };
 
 for (const file of screens) {
