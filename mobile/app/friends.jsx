@@ -16,34 +16,47 @@
 // SATIRA DOKUNMAK PROFİLE GİDİYOR. Öncesinde satır hiçbir şey yapmıyordu;
 // kişiye ulaşmanın tek yolu sağdaki mesaj düğmesiydi — yani birini tanımadan
 // önce ona yazmak gerekiyordu.
+//
+// 2.0 (tasarım dışı ekran, plan: "NavBar + UserRow listesi"): NavBar,
+// SearchField, UserRow (60 pt, avatar 44), SectionHeader. Arkadaşlık eylemi
+// arkadaşlık eylemi olarak kalıyor — FollowButton'a bağlanmıyor (plan).
 // ─────────────────────────────────────────────────────────────────────────────
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  View, Text, Pressable, StyleSheet, TextInput, ActivityIndicator,
+  View, Pressable, StyleSheet, ActivityIndicator,
   ScrollView, RefreshControl, Alert,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
-import Avatar from '../src/components/Avatar';
 import DevBadge from '../src/components/DevBadge';
 import EmptyState from '../src/components/EmptyState';
 import PersonMenu from '../src/components/PersonMenu';
 import ReportSheet from '../src/components/ReportSheet';
-import { radius, spacing, type, PRESSED, NUMERIC, SECTION_TITLE, TOUCH_MIN, avatar as avatarSize } from '../src/theme';
+import { Icon } from '../src/components/Icon';
+import { NavBar } from '../src/components/ui/Navigation';
+import { SearchField } from '../src/components/ui/SearchField';
+import { Button, IconButton, SectionHeader, Txt } from '../src/components/ui/Primitives';
+import { UserAvatar, UserRow } from '../src/components/ui/Social';
+import { spacing } from '../src/theme';
+import { component as K, radius as dsRadius } from '../src/theme/tokens';
+import { useDesignTheme } from '../src/theme/useDesignTheme';
 import { useYanBosluk } from '../src/hooks/useIcerikAlani';
-import { useStyles, useTheme } from '../src/context/ThemeContext';
+import { useStyles } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 import { getFriends, searchUsers, friendAction } from '../src/api/social';
 import { engelUygula } from '../src/services/engel';
 import { getSession } from '../src/services/session';
 
+// Gelen istek bandındaki yığın: UserRow'un avatarı (44), 12 pt örtüşme.
+const BANT_AVATAR = K.userRow.avatar;
+const BANT_ORTUSME = 12;
+
 export default function FriendsScreen() {
   const styles = useStyles(makeStyles);
   const yan = useYanBosluk();
-  const { colors } = useTheme();
+  const { colors } = useDesignTheme();
   const { t } = useLanguage();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -135,44 +148,21 @@ export default function FriendsScreen() {
   const arama = results !== null;
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      {/* Başlık listenin DIŞINDA: içerik kolonuyla aynı hizaya
-          getiriliyor — başlık tam genişlikte kalsaydı sayfanın adı ile
-          anlattığı şey iki ayrı sütunda dururdu. */}
-      <View style={[styles.head, { marginHorizontal: yan }]}>
-        <Pressable onPress={() => router.back()} hitSlop={8}
-                   style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]}
-                   accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </Pressable>
-        <Text style={styles.title} numberOfLines={1}>
-          {t('soc.tabFriends')}
-          {data ? <Text style={NUMERIC}>{` · ${data.friends.length}`}</Text> : null}
-        </Text>
-        <View style={styles.iconBtn} />
-      </View>
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
+      <NavBar title={data ? `${t('soc.tabFriends')} · ${data.friends.length}` : t('soc.tabFriends')} />
 
-      <View style={styles.searchWrap}>
-        <Ionicons name="search-outline" size={17} color={colors.text3} />
-        <TextInput
+      <View style={[styles.searchWrap, { marginHorizontal: yan + spacing.s20 }]}>
+        <SearchField
           value={q}
           onChangeText={setQ}
           placeholder={t('soc.searchPlaceholder')}
-          placeholderTextColor={colors.text3}
-          style={styles.searchInput}
           autoCapitalize="none"
           autoCorrect={false}
         />
-        {q ? (
-          <Pressable onPress={() => setQ('')} hitSlop={8}
-                     accessibilityRole="button" accessibilityLabel={t('a11y.clear')}>
-            <Ionicons name="close-circle" size={17} color={colors.text3} />
-          </Pressable>
-        ) : null}
       </View>
 
       {data === null ? (
-        <View style={styles.center}><ActivityIndicator color={colors.accent} /></View>
+        <View style={styles.center}><ActivityIndicator color={colors.text2} /></View>
       ) : (
         <ScrollView
           contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.s40, paddingHorizontal: yan + spacing.s20 }]}
@@ -190,11 +180,15 @@ export default function FriendsScreen() {
               SAYILI KIRMIZI ROZET YALNIZ BURADA. Kural: sayılı kırmızı ancak
               EYLEME DÖNÜŞEN bilgi için (kabul et / yoksay). Profil
               sayaçlarında rozet yok — iki rakam yan yana yarışırdı.
-              Kaydırınca yukarı gidiyor, sabit değil: acil değil, bekleyebilir. */}
+              Kaydırınca yukarı gidiyor, sabit değil: acil değil, bekleyebilir.
+              2.0: surface1 kart (köşe 16); vurguyu artık kırmızı zemin değil
+              yalnız sayı rozeti taşıyor. */}
           {!arama && bekleyen > 0 ? (
             <Pressable
               onPress={() => router.push('/friend-requests')}
-              style={({ pressed }) => [styles.band, pressed && PRESSED]}
+              accessibilityRole="button"
+              accessibilityLabel={`${t('soc.incoming')}, ${bekleyen}`}
+              style={({ pressed }) => [styles.band, { backgroundColor: colors.surface1 }, pressed && styles.pressed]}
             >
               {/* YIĞILMIŞ AVATARLAR — örtüşme NEGATİF BOŞLUKLA DEĞİL, mutlak
                   konumla kuruluyor. İkisi de aynı görüntüyü verir ama üst üste
@@ -202,72 +196,74 @@ export default function FriendsScreen() {
                   (ölçekte negatif basamak yok ve olması da doğru olmaz). */}
               {(() => {
                 const kisiler = data.incoming.slice(0, 3);
-                const adim = avatarSize.md - 10;       // 10pt örtüşme
+                const adim = BANT_AVATAR - BANT_ORTUSME;
                 return (
-                  <View style={{ width: avatarSize.md + (kisiler.length - 1) * adim, height: avatarSize.md }}>
+                  <View style={{ width: BANT_AVATAR + (kisiler.length - 1) * adim, height: BANT_AVATAR }}>
                     {kisiler.map((p, i) => (
-                      <View key={p.uid} style={[styles.bandAvatar, { left: i * adim }]}>
-                        <Avatar avatar={p.avatar} name={p.displayName || p.username} size={avatarSize.md} />
+                      /* Halka kartın zemini: üst üste binen yüzler birbirinden ayrılsın. */
+                      <View key={p.uid} style={[styles.bandAvatar, { left: i * adim, borderColor: colors.surface1 }]}>
+                        <UserAvatar avatar={p.avatar} name={p.displayName || p.username} size={BANT_AVATAR} />
                       </View>
                     ))}
                   </View>
                 );
               })()}
               <View style={styles.bandText}>
-                <Text style={styles.bandTitle} numberOfLines={1}>{t('soc.incoming')}</Text>
-                <Text style={styles.bandSub} numberOfLines={1}>
+                <Txt variant="cardTitle" numberOfLines={1}>{t('soc.incoming')}</Txt>
+                <Txt variant="footnote" numberOfLines={1} style={{ color: colors.text2 }}>
                   {data.incoming.slice(0, 2).map((p) => p.displayName || p.username).join(', ')}
-                </Text>
+                </Txt>
               </View>
-              <View style={styles.badge}>
-                <Text style={[styles.badgeText, NUMERIC]}>{bekleyen > 9 ? '9+' : bekleyen}</Text>
+              <View style={[styles.badge, { backgroundColor: colors.brand }]}>
+                <Txt variant="badge" style={[styles.num, { color: colors.white }]}>{bekleyen > 9 ? '9+' : bekleyen}</Txt>
               </View>
-              <Ionicons name="chevron-forward" size={16} color={colors.text3} />
+              <Icon name="chev" size={K.sectionHeader.linkIcon} color={colors.text3} strokeWidth={K.sectionHeader.linkStroke} />
             </Pressable>
           ) : null}
 
           {arama ? (
             results.length === 0 ? (
-              <Text style={styles.inlineEmpty}>{t('soc.noResults')}</Text>
+              <Txt variant="footnote" style={[styles.inlineEmpty, { color: colors.text3 }]}>{t('soc.noResults')}</Txt>
             ) : (
-              results.map((r) => (
-                <PersonRow
-                  key={r.uid}
-                  person={r}
-                  onPress={() => router.push(`/u/${r.username}`)}
-                  onLongPress={() => setMenu({ person: r, arkadas: r.relation === 'friends' })}
-                  right={
-                    r.relation === 'friends' ? <Tag text={t('soc.friends')} />
-                    : r.relation === 'requested' ? <Tag text={t('soc.requested')} />
-                    : r.relation === 'incoming'
-                      ? <SmallBtn label={t('soc.accept')} onPress={() => act(r.uid, 'accept')} />
-                      : <SmallBtn label={t('soc.add')} onPress={() => act(r.uid, 'request')} />
-                  }
-                />
-              ))
+              <View style={styles.list}>
+                {results.map((r) => (
+                  <KisiSatiri
+                    key={r.uid}
+                    person={r}
+                    onPress={() => router.push(`/u/${r.username}`)}
+                    onLongPress={() => setMenu({ person: r, arkadas: r.relation === 'friends' })}
+                    right={
+                      r.relation === 'friends' ? <Durum text={t('soc.friends')} />
+                      : r.relation === 'requested' ? <Durum text={t('soc.requested')} />
+                      : r.relation === 'incoming'
+                        ? <Button title={t('soc.accept')} height={K.friends.action} onPress={() => act(r.uid, 'accept')} style={styles.action} />
+                        : <Button title={t('soc.add')} variant="tinted" height={K.friends.action} onPress={() => act(r.uid, 'request')} style={styles.action} />
+                    }
+                  />
+                ))}
+              </View>
             )
           ) : data.friends.length === 0 ? (
             <EmptyState icon="people-outline" title={t('soc.noFriends')} text={t('soc.noFriendsText')} />
           ) : (
             <>
-              <Text style={styles.sectionLabel}>
-                {t('soc.all')}<Text style={NUMERIC}>{` · ${data.friends.length}`}</Text>
-              </Text>
-              {data.friends.map((f) => (
-                <PersonRow
-                  key={f.uid}
-                  person={f}
-                  onPress={() => router.push(`/u/${f.username}`)}
-                  onLongPress={() => setMenu({ person: f, arkadas: true })}
-                  right={
-                    <Pressable onPress={() => router.push(`/chat/${f.uid}`)} hitSlop={8}
-                               style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]}
-                               accessibilityRole="button" accessibilityLabel={t('soc.menu.message')}>
-                      <Ionicons name="mail-outline" size={19} color={colors.text3} />
-                    </Pressable>
-                  }
-                />
-              ))}
+              <View style={styles.sectionTop}>
+                <SectionHeader title={`${t('soc.all')} · ${data.friends.length}`} />
+              </View>
+              <View style={styles.list}>
+                {data.friends.map((f) => (
+                  <KisiSatiri
+                    key={f.uid}
+                    person={f}
+                    onPress={() => router.push(`/u/${f.username}`)}
+                    onLongPress={() => setMenu({ person: f, arkadas: true })}
+                    right={
+                      <IconButton icon="msg" label={t('soc.menu.message')} iconSize={K.friends.messageIcon}
+                        color={colors.text2} onPress={() => router.push(`/chat/${f.uid}`)} />
+                    }
+                  />
+                ))}
+              </View>
             </>
           )}
         </ScrollView>
@@ -292,102 +288,50 @@ export default function FriendsScreen() {
   );
 }
 
-/** Kişi satırı — h64, avatar 44. Dokunuş profile gider. */
-export function PersonRow({ person, right, onPress, onLongPress, sub }) {
-  const styles = useStyles(makeStyles);
+/** Kişi satırı — 2.0 UserRow (60 pt, avatar 44); ad yanında geliştirici rozeti. */
+function KisiSatiri({ person, right, onPress, onLongPress }) {
+  const ad = person.displayName || person.username;
   return (
-    <Pressable
-      style={({ pressed }) => [styles.row, pressed && PRESSED]}
+    <UserRow
+      avatar={person.avatar}
+      name={ad}
+      handle={`@${person.username}`}
       onPress={onPress}
       onLongPress={onLongPress}
-      delayLongPress={400}
-    >
-      <Avatar avatar={person.avatar} name={person.displayName || person.username} size={avatarSize.list} />
-      <View style={styles.rowBody}>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Text numberOfLines={1} style={styles.rowName}>{person.displayName || person.username}</Text>
-          <DevBadge user={person} username={person.username} isDeveloper={person.isDeveloper} size={12} />
-        </View>
-        <Text numberOfLines={1} style={styles.rowSub}>{sub || `@${person.username}`}</Text>
-      </View>
-      {right}
-    </Pressable>
+      nameAccessory={<DevBadge user={person} username={person.username} isDeveloper={person.isDeveloper} size={12} />}
+      right={right}
+    />
   );
 }
 
-export function SmallBtn({ label, onPress, ghost }) {
-  const styles = useStyles(makeStyles);
-  return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.smallBtn, ghost && styles.smallBtnGhost, pressed && PRESSED]}>
-      <Text style={[styles.smallBtnText, ghost && styles.smallBtnTextGhost]}>{label}</Text>
-    </Pressable>
-  );
+/** Eylem olmayan ilişki durumu ("Arkadaşsınız", "İstek gönderildi"): düz metin, düğme gibi görünmüyor. */
+function Durum({ text }) {
+  const { colors } = useDesignTheme();
+  return <Txt variant="footnote" numberOfLines={1} style={{ color: colors.text2 }}>{text}</Txt>;
 }
 
-function Tag({ text }) {
-  const styles = useStyles(makeStyles);
-  return <View style={styles.tag}><Text style={styles.tagText}>{text}</Text></View>;
-}
-
-const makeStyles = (colors) => StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
+const makeStyles = () => StyleSheet.create({
+  safe: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   body: { paddingHorizontal: spacing.s20 },
 
-  head: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.s4 },
-  title: { flex: 1, textAlign: 'center', fontSize: type.body, fontWeight: '600', color: colors.text },
-  iconBtn: { width: TOUCH_MIN, height: TOUCH_MIN, alignItems: 'center', justifyContent: 'center' },
-
-  searchWrap: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.s8,
-    height: TOUCH_MIN, marginHorizontal: spacing.s20, marginTop: spacing.s12,
-    paddingHorizontal: spacing.s12, borderRadius: radius.md,
-    backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder,
-  },
-  searchInput: { flex: 1, fontSize: type.subhead, color: colors.text, padding: 0 },
+  searchWrap: { marginTop: spacing.s8 },
 
   band: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.s12,
-    marginTop: spacing.s16, padding: spacing.s16, borderRadius: radius.lg,
-    backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accentBorder,
+    marginTop: spacing.s16, padding: spacing.s16, borderRadius: dsRadius.card,
   },
-  bandAvatar: {
-    position: 'absolute', top: 0,
-    borderWidth: 2, borderColor: colors.bg, borderRadius: radius.pill,
-  },
+  pressed: { opacity: 0.85 },
+  bandAvatar: { position: 'absolute', top: 0, borderWidth: K.friends.stackRing, borderRadius: dsRadius.pill },
   bandText: { flex: 1, minWidth: 0 },
-  bandTitle: { fontSize: type.subhead, fontWeight: '600', color: colors.text },
-  bandSub: { fontSize: type.footnote, fontWeight: '500', color: colors.text2, marginTop: spacing.s4 },
   badge: {
-    minWidth: 24, height: 24, paddingHorizontal: spacing.s8, borderRadius: radius.pill,
-    alignItems: 'center', justifyContent: 'center',
-    // Metin taşıyan dolgu → accentFillStrong (bkz. check-accent.mjs).
-    backgroundColor: colors.accentFillStrong,
+    minWidth: K.iconButton.badgeSize, height: K.iconButton.badgeSize, borderRadius: K.iconButton.badgeSize / 2,
+    paddingHorizontal: K.iconButton.badgePadding, alignItems: 'center', justifyContent: 'center',
   },
-  badgeText: { fontSize: type.footnote, fontWeight: '600', color: colors.onAccent },
+  num: { fontVariant: ['tabular-nums'] },
 
-  sectionLabel: { ...SECTION_TITLE, color: colors.text3, marginTop: spacing.s20, marginBottom: spacing.s8 },
-  inlineEmpty: { fontSize: type.footnote, color: colors.text3, textAlign: 'center', marginTop: spacing.s24 },
-
-  // h64 ritmi ayırıcının işini yapıyor; çizgi eklemek listeyi ağırlaştırırdı.
-  row: { height: 64, flexDirection: 'row', alignItems: 'center', gap: spacing.s12 },
-  rowBody: { flex: 1, minWidth: 0 },
-  rowName: { fontSize: type.subhead, fontWeight: '600', color: colors.text },
-  rowSub: { fontSize: type.footnote, fontWeight: '500', color: colors.text3, marginTop: spacing.s4 },
-
-  smallBtn: {
-    height: 32, paddingHorizontal: spacing.s12, borderRadius: radius.pill,
-    alignItems: 'center', justifyContent: 'center',
-    backgroundColor: colors.accentFillStrong,
-  },
-  smallBtnGhost: { backgroundColor: colors.bgInput },
-  smallBtnText: { fontSize: type.footnote, fontWeight: '600', color: colors.onAccent },
-  smallBtnTextGhost: { color: colors.text },
-
-  tag: {
-    height: 28, paddingHorizontal: spacing.s12, borderRadius: radius.pill,
-    alignItems: 'center', justifyContent: 'center',
-    backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder,
-  },
-  tagText: { fontSize: type.footnote, fontWeight: '500', color: colors.text2 },
+  sectionTop: { marginTop: spacing.s20, marginBottom: spacing.s4 },
+  list: { marginTop: spacing.s4 },
+  inlineEmpty: { textAlign: 'center', marginTop: spacing.s24 },
+  action: { paddingHorizontal: spacing.s12 },
 });

@@ -489,7 +489,13 @@ export const component = {
   actions: { height: 40, edge: -10, minWidth: 44, paddingH: 10, gap: 6, icon: 20 },
   badgeSmall: { height: 18, paddingH: 6, radius: 5, gap: 3, icon: 11 },
   comment: { avatar: 40, replyAvatar: 32, gap: 10, headHeight: 20, nameGap: 6, textTop: 4, actionsTop: 6, actionsHeight: 28, actionsGap: 18, heart: 15, heartGap: 5, replyIndent: 52 },
-  userRow: { height: 60, gap: 12, avatar: 44, thumb: 44, thumbRadius: 12 },
+  userRow: { height: 60, gap: 12, avatar: 44, thumb: 44, thumbRadius: 12, nameGap: 4 },
+  // Arkadaşlar (tasarım dışı ekran, 2.0 dili): satır içi eylem düğmesi 34 (kit
+  // comm_row "Katıl"), mesaj ikonu 20, istek bandındaki yüz halkası 2.
+  friends: { action: 34, messageIcon: 20, stackRing: 2, requestButton: 44 },
+  // Steam arkadaşları kartı: Gamerisen hapı 18 (ikon 10, aralık 3), açma oku 18,
+  // açılan oyun satırı 28 (ikon 13).
+  steamFriends: { chip: 18, chipIcon: 10, chipGap: 3, chevron: 18, gameIcon: 13, gameRow: 28 },
   // G-06b Filtre sayfası — kit s2.py filters(): tutamaç 36×5 (köşe 3, üstte 8),
   // başlık satırı 44 (yan dolgu 12; Sıfırla tertiary 36 · başlık · 32 pt ×),
   // gövde üstü 10, bölümler arası 20, bölüm başlığı 20 yüksek ve içerikten 12,

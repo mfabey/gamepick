@@ -8,26 +8,33 @@
 //
 // GÖNDERİLEN BÖLÜMÜNDE ROZET YOK: bekleyen istek KARŞI TARAFIN eylemi,
 // bizde yapılacak bir şey yok. Kırmızı sayaç yalnız eyleme dönüşen bilgi için.
+//
+// 2.0 (tasarım dışı ekran, plan: "NavBar + UserRow listesi"): NavBar,
+// UserRow, SectionHeader, 2.0 Button. Arkadaşlık eylemi FollowButton'a
+// bağlanmıyor (plan).
 // ─────────────────────────────────────────────────────────────────────────────
 import { useCallback, useEffect, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
-import Avatar from '../src/components/Avatar';
 import EmptyState from '../src/components/EmptyState';
-import { radius, spacing, type, PRESSED, NUMERIC, SECTION_TITLE, TOUCH_MIN, avatar as avatarSize } from '../src/theme';
+import { NavBar } from '../src/components/ui/Navigation';
+import { Button, SectionHeader } from '../src/components/ui/Primitives';
+import { UserRow } from '../src/components/ui/Social';
+import { spacing } from '../src/theme';
+import { component as K } from '../src/theme/tokens';
+import { useDesignTheme } from '../src/theme/useDesignTheme';
 import { useYanBosluk } from '../src/hooks/useIcerikAlani';
-import { useStyles, useTheme } from '../src/context/ThemeContext';
+import { useStyles } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 import { getFriends, friendAction } from '../src/api/social';
 
 export default function FriendRequestsScreen() {
   const styles = useStyles(makeStyles);
   const yan = useYanBosluk();
-  const { colors } = useTheme();
+  const { colors } = useDesignTheme();
   const { t } = useLanguage();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -56,22 +63,11 @@ export default function FriendRequestsScreen() {
   const bos = data && data.incoming.length === 0 && data.outgoing.length === 0;
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      {/* Başlık listenin DIŞINDA: içerik kolonuyla aynı hizaya
-          getiriliyor — başlık tam genişlikte kalsaydı sayfanın adı ile
-          anlattığı şey iki ayrı sütunda dururdu. */}
-      <View style={[styles.head, { marginHorizontal: yan }]}>
-        <Pressable onPress={() => router.back()} hitSlop={8}
-                   style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]}
-                   accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </Pressable>
-        <Text style={styles.title} numberOfLines={1}>{t('soc.tabRequests')}</Text>
-        <View style={styles.iconBtn} />
-      </View>
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
+      <NavBar title={t('soc.tabRequests')} />
 
       {data === null ? (
-        <View style={styles.center}><ActivityIndicator color={colors.accent} /></View>
+        <View style={styles.center}><ActivityIndicator color={colors.text2} /></View>
       ) : bos ? (
         <EmptyState icon="mail-outline" title={t('soc.noRequests')} />
       ) : (
@@ -81,33 +77,26 @@ export default function FriendRequestsScreen() {
         >
           {data.incoming.length > 0 ? (
             <>
-              <Text style={styles.sectionLabel}>
-                {t('soc.incoming')}<Text style={NUMERIC}>{` · ${data.incoming.length}`}</Text>
-              </Text>
-              {data.incoming.map((p) => (
-                <View key={p.uid} style={styles.card}>
-                  <Pressable style={styles.person} onPress={() => router.push(`/u/${p.username}`)}>
-                    <Avatar avatar={p.avatar} name={p.displayName || p.username} size={avatarSize.list} />
-                    <View style={styles.personBody}>
-                      <Text numberOfLines={1} style={styles.name}>{p.displayName || p.username}</Text>
-                      <Text numberOfLines={1} style={styles.handle}>@{p.username}</Text>
-                    </View>
-                  </Pressable>
+              <View style={styles.sectionTop}>
+                <SectionHeader title={`${t('soc.incoming')} · ${data.incoming.length}`} />
+              </View>
+              {data.incoming.map((p, i) => (
+                <View key={p.uid} style={[styles.card, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line }]}>
+                  <UserRow
+                    avatar={p.avatar}
+                    name={p.displayName || p.username}
+                    handle={`@${p.username}`}
+                    onPress={() => router.push(`/u/${p.username}`)}
+                  />
                   {/* İki düğme EŞİT GENİŞLİKTE ve 44 yüksekliğinde: kabul
                       birincil ama reddetmek de meşru bir seçim, küçültülmüyor.
                       "Yoksay" kopyası bilinçli — "reddet" kişiyi yargılıyormuş
                       ve karşı tarafa bildirim gidiyormuş gibi okunuyor. */}
                   <View style={styles.btnRow}>
-                    <Pressable onPress={() => act(p.uid, 'accept')} disabled={islemde === p.uid}
-                               style={({ pressed }) => [styles.btn, styles.btnPrimary, pressed && PRESSED]}>
-                      {islemde === p.uid
-                        ? <ActivityIndicator size="small" color={colors.onAccent} />
-                        : <Text style={styles.btnTextPrimary}>{t('soc.accept')}</Text>}
-                    </Pressable>
-                    <Pressable onPress={() => act(p.uid, 'reject')} disabled={islemde === p.uid}
-                               style={({ pressed }) => [styles.btn, styles.btnQuiet, pressed && PRESSED]}>
-                      <Text style={styles.btnText}>{t('soc.ignore')}</Text>
-                    </Pressable>
+                    <Button title={t('soc.accept')} height={K.friends.requestButton} loading={islemde === p.uid}
+                      disabled={islemde === p.uid} onPress={() => act(p.uid, 'accept')} style={styles.flex} />
+                    <Button title={t('soc.ignore')} variant="secondary" height={K.friends.requestButton}
+                      disabled={islemde === p.uid} onPress={() => act(p.uid, 'reject')} style={styles.flex} />
                   </View>
                 </View>
               ))}
@@ -116,22 +105,21 @@ export default function FriendRequestsScreen() {
 
           {data.outgoing.length > 0 ? (
             <>
-              <Text style={styles.sectionLabel}>
-                {t('soc.outgoing')}<Text style={NUMERIC}>{` · ${data.outgoing.length}`}</Text>
-              </Text>
+              <View style={styles.sectionTop}>
+                <SectionHeader title={`${t('soc.outgoing')} · ${data.outgoing.length}`} />
+              </View>
               {data.outgoing.map((p) => (
-                <Pressable key={p.uid} style={({ pressed }) => [styles.row, pressed && PRESSED]}
-                           onPress={() => router.push(`/u/${p.username}`)}>
-                  <Avatar avatar={p.avatar} name={p.displayName || p.username} size={avatarSize.list} />
-                  <View style={styles.personBody}>
-                    <Text numberOfLines={1} style={styles.name}>{p.displayName || p.username}</Text>
-                    <Text numberOfLines={1} style={styles.handle}>@{p.username}</Text>
-                  </View>
-                  <Pressable onPress={() => act(p.uid, 'cancel')} hitSlop={8}
-                             style={({ pressed }) => [styles.cancelBtn, pressed && PRESSED]}>
-                    <Text style={styles.cancelText}>{t('soc.cancel')}</Text>
-                  </Pressable>
-                </Pressable>
+                <UserRow
+                  key={p.uid}
+                  avatar={p.avatar}
+                  name={p.displayName || p.username}
+                  handle={`@${p.username}`}
+                  onPress={() => router.push(`/u/${p.username}`)}
+                  right={
+                    <Button title={t('soc.cancel')} variant="secondary" height={K.friends.action}
+                      onPress={() => act(p.uid, 'cancel')} style={styles.action} />
+                  }
+                />
               ))}
             </>
           ) : null}
@@ -141,40 +129,13 @@ export default function FriendRequestsScreen() {
   );
 }
 
-const makeStyles = (colors) => StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
+const makeStyles = () => StyleSheet.create({
+  safe: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   body: { paddingHorizontal: spacing.s20 },
-
-  head: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.s4 },
-  title: { flex: 1, textAlign: 'center', fontSize: type.body, fontWeight: '600', color: colors.text },
-  iconBtn: { width: TOUCH_MIN, height: TOUCH_MIN, alignItems: 'center', justifyContent: 'center' },
-
-  sectionLabel: { ...SECTION_TITLE, color: colors.text3, marginTop: spacing.s20, marginBottom: spacing.s8 },
-
-  card: {
-    paddingVertical: spacing.s16,
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.cardBorder,
-  },
-  person: { flexDirection: 'row', alignItems: 'center', gap: spacing.s12 },
-  personBody: { flex: 1, minWidth: 0 },
-  name: { fontSize: type.subhead, fontWeight: '600', color: colors.text },
-  handle: { fontSize: type.footnote, fontWeight: '500', color: colors.text3, marginTop: spacing.s4 },
-
-  btnRow: { flexDirection: 'row', gap: spacing.s8, marginTop: spacing.s12 },
-  btn: {
-    flex: 1, height: TOUCH_MIN, borderRadius: radius.md,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  btnPrimary: { backgroundColor: colors.accentFillStrong },
-  btnQuiet: { backgroundColor: colors.bgInput },
-  btnText: { fontSize: type.subhead, fontWeight: '600', color: colors.text },
-  btnTextPrimary: { fontSize: type.subhead, fontWeight: '600', color: colors.onAccent },
-
-  row: { height: 64, flexDirection: 'row', alignItems: 'center', gap: spacing.s12 },
-  cancelBtn: {
-    height: 32, paddingHorizontal: spacing.s12, borderRadius: radius.pill,
-    alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bgInput,
-  },
-  cancelText: { fontSize: type.footnote, fontWeight: '600', color: colors.text2 },
+  sectionTop: { marginTop: spacing.s20, marginBottom: spacing.s4 },
+  card: { paddingBottom: spacing.s16 },
+  btnRow: { flexDirection: 'row', gap: spacing.s8, marginTop: spacing.s4 },
+  flex: { flex: 1 },
+  action: { paddingHorizontal: spacing.s12 },
 });

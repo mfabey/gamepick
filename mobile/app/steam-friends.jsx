@@ -11,14 +11,16 @@
 // Sıralama sunucuda yapılıyor ve co-op önceliklidir: saate göre sıralayınca
 // her arkadaşta aynı oyun tepeye çıkıyordu (Counter-Strike 2) — doğru ama
 // işe yaramaz bir cevap.
+//
+// 2.0 (tasarım dışı ekran): NavBar (alt başlıkta sayılar), surface1 kartlar,
+// UserAvatar (Steam avatarı bir URL; Avatar onu fotoğraf olarak çiziyor),
+// 2.0 ikonlar. Liste alt dolgusu TAB_SPACE değil güvenli alan: bu ekranda
+// sekme çubuğu yok (plan §4.1).
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState, useEffect, useCallback, memo } from 'react';
-import {
-  View, Text, Pressable, StyleSheet, ActivityIndicator, RefreshControl,
-} from 'react-native';
+import { View, Pressable, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { Image } from 'expo-image';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -26,11 +28,19 @@ import * as Haptics from 'expo-haptics';
 import { getSteamFriends } from '../src/api/social';
 import { getSession, subscribeSession } from '../src/services/session';
 import EmptyState from '../src/components/EmptyState';
+import { Icon } from '../src/components/Icon';
+import { NavBar } from '../src/components/ui/Navigation';
+import { Txt } from '../src/components/ui/Primitives';
+import { UserAvatar } from '../src/components/ui/Social';
 import { getAvatarPreset } from '../src/utils/avatar';
-import { radius, spacing, type, PRESSED, NUMERIC, TAB_SPACE, motion } from '../src/theme';
+import { spacing } from '../src/theme';
+import { component as K, radius as dsRadius } from '../src/theme/tokens';
+import { useDesignTheme } from '../src/theme/useDesignTheme';
 import { useYanBosluk } from '../src/hooks/useIcerikAlani';
-import { useStyles, useTheme } from '../src/context/ThemeContext';
+import { useStyles } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
+
+const S = K.steamFriends;
 
 // Modul duzeyinde: satir ici verilseydi her render'da yeni kimlik olurdu.
 const anahtar = (f) => f.steamId;
@@ -38,7 +48,8 @@ const anahtar = (f) => f.steamId;
 export default function SteamFriendsScreen() {
   const styles = useStyles(makeStyles);
   const yan = useYanBosluk();
-  const { colors } = useTheme();
+  const { colors } = useDesignTheme();
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { t } = useLanguage();
 
@@ -104,8 +115,8 @@ export default function SteamFriendsScreen() {
   } else if (loading) {
     body = (
       <View style={styles.center}>
-        <ActivityIndicator color={colors.accent} />
-        <Text style={styles.loadingText}>{t('sf.loading')}</Text>
+        <ActivityIndicator color={colors.text2} />
+        <Txt variant="footnote" style={{ color: colors.text3 }}>{t('sf.loading')}</Txt>
       </View>
     );
   } else if (error === 'STEAM_REQUIRED') {
@@ -154,35 +165,19 @@ export default function SteamFriendsScreen() {
   const stats = data?.stats;
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      {/* Başlık listenin DIŞINDA: içerik kolonuyla aynı hizaya
-          getiriliyor — başlık tam genişlikte kalsaydı sayfanın adı ile
-          anlattığı şey iki ayrı sütunda dururdu. */}
-      <View style={[styles.header, { marginHorizontal: yan }]}>
-        <Pressable
-          style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]}
-          onPress={() => router.back()}
-          hitSlop={10}
-         accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </Pressable>
-        <View style={styles.headerMid}>
-          <Text style={styles.title}>{t('sf.title')}</Text>
-          {!!stats && (
-            <Text style={styles.subtitle} numberOfLines={1}>
-              <Text style={NUMERIC}>{stats.total}</Text>
-              {` ${t('sf.friends')}`}
-              {stats.private > 0 ? ` · ${stats.private} ${t('sf.hidden')}` : ''}
-            </Text>
-          )}
-        </View>
-      </View>
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
+      <NavBar
+        title={t('sf.title')}
+        subtitle={stats
+          ? `${stats.total} ${t('sf.friends')}${stats.private > 0 ? ` · ${stats.private} ${t('sf.hidden')}` : ''}`
+          : undefined}
+      />
 
       {body || (
         <FlashList
           data={data.friends}
           keyExtractor={anahtar}
-          contentContainerStyle={{ paddingBottom: TAB_SPACE, paddingHorizontal: yan }}
+          contentContainerStyle={{ paddingTop: spacing.s8, paddingBottom: insets.bottom + spacing.s40, paddingHorizontal: yan }}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.text2} />
           }
@@ -197,72 +192,73 @@ export default function SteamFriendsScreen() {
 
 const FriendRow = memo(function FriendRow({ item, open, onToggle, t }) {
   const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
+  const { colors } = useDesignTheme();
   const preset = getAvatarPreset(item.gamerisen?.avatar);
   const locked = item.private;
   // Ebeveyn kararli `toggle`i veriyor, satir kendi kimligini ekliyor.
   const ac = useCallback(() => onToggle?.(item.steamId), [onToggle, item.steamId]);
 
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, { backgroundColor: colors.surface1 }]}>
       <Pressable
-        style={({ pressed }) => [styles.row, pressed && !locked && PRESSED]}
+        style={({ pressed }) => [styles.row, pressed && !locked && styles.pressed]}
         onPress={locked ? undefined : ac}
         disabled={locked}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: !!open, disabled: !!locked }}
+        accessibilityLabel={item.name}
       >
-        {/* Steam avatarı bir URL; Gamerisen ön ayarı ise ikon. İkisi farklı
-            kaynak, o yüzden ayrı çiziliyor. */}
-        {item.avatar
-          ? <Image source={item.avatar} style={styles.avatar} contentFit="cover" transition={motion.image} />
-          : <View style={[styles.avatar, styles.avatarFallback]}>
-              <Text style={styles.avatarLetter}>{(item.name || '?').charAt(0).toUpperCase()}</Text>
-            </View>}
+        {/* Steam avatarı bir URL; Avatar onu fotoğraf olarak çiziyor, yoksa
+            baş harfe düşüyor (eskiden burada elle yazılmış bir kopyası vardı). */}
+        <UserAvatar avatar={item.avatar || null} name={item.name} size={K.userRow.avatar} />
 
         <View style={styles.rowMid}>
           <View style={styles.nameLine}>
-            <Text style={[styles.name, locked && styles.dim]} numberOfLines={1}>{item.name}</Text>
+            <Txt variant="cardTitle" numberOfLines={1} style={[styles.shrink, locked && { color: colors.text3 }]}>{item.name}</Txt>
             {!!item.gamerisen && (
-              <View style={styles.grChip}>
+              <View style={[styles.grChip, { backgroundColor: colors.surface2 }]}>
+                {/* Ön ayar ikonu VERİ (utils/avatar → Ionicons adı): 2.0 ikon
+                    setinde karşılığı yok, o yüzden Ionicons burada kalıyor. */}
                 {preset
-                  ? <Ionicons name={preset.icon} size={10} color={preset.iconColor} />
-                  : <Ionicons name="checkmark-circle" size={10} color={colors.green} />}
-                <Text style={styles.grChipText}>Gamerisen</Text>
+                  ? <Ionicons name={preset.icon} size={S.chipIcon} color={preset.iconColor} />
+                  : <Icon name="checkc" size={S.chipIcon} color={colors.green} strokeWidth={2.4} />}
+                <Txt variant="caption2Strong" style={{ color: colors.text2 }}>Gamerisen</Txt>
               </View>
             )}
           </View>
 
           {locked ? (
-            <Text style={styles.metaDim}>{t('sf.rowPrivate')}</Text>
+            <Txt variant="footnote" style={[styles.italic, { color: colors.text3 }]}>{t('sf.rowPrivate')}</Txt>
           ) : (
-            <Text style={styles.meta}>
-              <Text style={[styles.metaStrong, NUMERIC]}>{item.coop}</Text>
+            <Txt variant="footnote" numberOfLines={1} style={{ color: colors.text2 }}>
+              <Txt variant="footnote" style={[styles.num, styles.strong, { color: colors.green }]}>{item.coop}</Txt>
               {` ${t('sf.together')} · `}
-              <Text style={NUMERIC}>{item.shared}</Text>
+              <Txt variant="footnote" style={[styles.num, { color: colors.text2 }]}>{item.shared}</Txt>
               {` ${t('sf.shared')}`}
-            </Text>
+            </Txt>
           )}
         </View>
 
         {!locked && (
-          <Ionicons
-            name={open ? 'chevron-up' : 'chevron-down'}
-            size={18}
-            color={colors.text3}
-          />
+          <View style={open ? styles.flip : null}>
+            <Icon name="chevd" size={S.chevron} color={colors.text3} strokeWidth={2.4} />
+          </View>
         )}
       </Pressable>
 
       {open && !!item.top?.length && (
-        <View style={styles.games}>
+        <View style={[styles.games, { borderTopColor: colors.line }]}>
           {item.top.map((g) => (
             <View key={g.appid} style={styles.game}>
-              <Ionicons
-                name={g.coop ? 'people' : g.together ? 'flash' : 'person'}
-                size={13}
-                color={g.coop ? colors.green : g.together ? colors.steam : colors.text3}
+              <Icon
+                name={g.coop ? 'users' : g.together ? 'zap' : 'pad'}
+                size={S.gameIcon}
+                color={g.coop ? colors.green : g.together ? colors.text : colors.text3}
+                strokeWidth={2.2}
               />
-              <Text style={styles.gameName} numberOfLines={1}>{g.name}</Text>
-              <Text style={[styles.gameHours, NUMERIC]}>{Math.round(g.totalHours)}s</Text>
+              <Txt variant="footnote" numberOfLines={1} style={[styles.flex, { color: colors.text2 }]}>{g.name}</Txt>
+              {/* "46 sa" — kütüphane kutucuğuyla aynı birim (home.hoursShort). */}
+              <Txt variant="caption" style={[styles.num, { color: colors.text3 }]}>{`${Math.round(g.totalHours)} ${t('home.hoursShort')}`}</Txt>
             </View>
           ))}
         </View>
@@ -271,54 +267,35 @@ const FriendRow = memo(function FriendRow({ item, open, onToggle, t }) {
   );
 });
 
-const makeStyles = (colors) => StyleSheet.create({
-  safe:   { flex: 1, backgroundColor: colors.bg },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md },
-  loadingText: { color: colors.text3, fontSize: type.footnote },
-
-  header: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
-    paddingHorizontal: spacing.lg, paddingBottom: spacing.md,
-  },
-  // 44×44 — HIG dokunma hedefi alt sınırı
-  iconBtn:   { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginLeft: -10 },
-  headerMid: { flex: 1 },
-  title:     { color: colors.text, fontSize: type.title3, fontWeight: '800', letterSpacing: -0.4 },
-  subtitle:  { color: colors.text3, fontSize: type.caption, marginTop: 1 },
-
+const makeStyles = () => StyleSheet.create({
+  safe:   { flex: 1 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.s12 },
 
   card: {
-    marginHorizontal: spacing.lg, marginBottom: spacing.sm,
-    backgroundColor: colors.card, borderRadius: radius.lg,
-    borderWidth: 1, borderColor: colors.cardBorder, overflow: 'hidden',
+    marginHorizontal: spacing.s20, marginBottom: spacing.s8,
+    borderRadius: dsRadius.card, overflow: 'hidden',
   },
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md },
+  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.s12, padding: spacing.s12 },
+  pressed: { opacity: 0.85 },
 
-  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.bgInput },
-  avatarFallback: { alignItems: 'center', justifyContent: 'center' },
-  avatarLetter: { color: colors.text2, fontSize: type.subhead, fontWeight: '800' },
-
-  rowMid:   { flex: 1, gap: 3 },
-  nameLine: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  name:     { color: colors.text, fontSize: type.subhead, fontWeight: '700', flexShrink: 1 },
-  dim:      { color: colors.text3 },
+  rowMid:   { flex: 1, minWidth: 0 },
+  nameLine: { flexDirection: 'row', alignItems: 'center', gap: spacing.s8 },
+  shrink:   { flexShrink: 1 },
+  flex:     { flex: 1, minWidth: 0 },
+  italic:   { fontStyle: 'italic' },
+  strong:   { fontWeight: '700' },
+  num:      { fontVariant: ['tabular-nums'] },
+  // Açıkken ok yukarı: aynı ikonun ters çevrilmişi (sette ayrı "yukarı ok" yok).
+  flip:     { transform: [{ rotate: '180deg' }] },
 
   grChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 3,
-    paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.pill,
-    backgroundColor: colors.bgInput,
+    flexDirection: 'row', alignItems: 'center', gap: S.chipGap,
+    height: S.chip, paddingHorizontal: spacing.s8, borderRadius: dsRadius.pill,
   },
-  grChipText: { color: colors.text2, fontSize: type.caption2, fontWeight: '700' },
-
-  meta:       { color: colors.text3, fontSize: type.caption },
-  metaStrong: { color: colors.green, fontWeight: '800' },
-  metaDim:    { color: colors.text3, fontSize: type.caption, fontStyle: 'italic' },
 
   games: {
-    borderTopWidth: 1, borderTopColor: colors.cardBorder,
-    paddingVertical: spacing.sm, paddingHorizontal: spacing.md, gap: 2,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingVertical: spacing.s8, paddingHorizontal: spacing.s12,
   },
-  game:      { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: 5 },
-  gameName:  { flex: 1, color: colors.text2, fontSize: type.footnote },
-  gameHours: { color: colors.text3, fontSize: type.caption2 },
+  game: { flexDirection: 'row', alignItems: 'center', gap: spacing.s8, height: S.gameRow },
 });

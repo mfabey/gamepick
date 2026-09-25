@@ -268,16 +268,26 @@ export function Comment({ avatar, name, time, text, lines, likes, liked = false,
 }
 
 /** Kullanıcı satırı: 60 yükseklik; 44 avatar, ad 15/20 600, "kullanıcı adı · bilgi" 13/18; sağda takip butonu. */
-export function UserRow({ avatar, name, handle, meta, online, right, onPress }: {
+export function UserRow({ avatar, name, handle, meta, online, right, onPress, onLongPress, nameAccessory }: {
   avatar?: string | null; name: string; handle: string; meta?: string; online?: boolean; right?: ReactNode; onPress?: () => void;
+  /** Uzun basma — kişi menüsü (profil / mesaj / çıkar / engelle / şikâyet). */
+  onLongPress?: () => void;
+  /** Adın hemen sağındaki küçük öğe (ör. geliştirici rozeti); ad kısalır, öğe kesilmez. */
+  nameAccessory?: ReactNode;
 }) {
   const { colors } = useDesignTheme();
   return (
     <View style={styles.row60}>
-      <Pressable accessibilityRole="button" accessibilityLabel={name} onPress={onPress} style={styles.rowMain}>
+      <Pressable accessibilityRole="button" accessibilityLabel={name} onPress={onPress} onLongPress={onLongPress}
+        delayLongPress={400} style={styles.rowMain}>
         <UserAvatar avatar={avatar} name={name} size={K.userRow.avatar} online={online} />
         <View style={styles.flex}>
-          <Txt variant="cardTitle" numberOfLines={1}>{name}</Txt>
+          {nameAccessory
+            ? <View style={styles.nameLine}>
+                <Txt variant="cardTitle" numberOfLines={1} style={styles.shrink}>{name}</Txt>
+                {nameAccessory}
+              </View>
+            : <Txt variant="cardTitle" numberOfLines={1}>{name}</Txt>}
           <Txt variant="footnote" numberOfLines={1} style={{ color: colors.text2 }}>{meta ? `${handle} · ${meta}` : handle}</Txt>
         </View>
       </Pressable>
@@ -455,6 +465,7 @@ export function LiveTime({ text, live, style }: { text: string; live?: boolean; 
 const styles = StyleSheet.create({
   flex: { flex: 1, minWidth: 0 },
   shrink: { flexShrink: 1 },
+  nameLine: { flexDirection: 'row', alignItems: 'center', gap: K.userRow.nameGap },
   num: { fontVariant: ['tabular-nums'] },
   online: { position: 'absolute', right: -1, bottom: -1 },
   game: { position: 'absolute', right: K.avatar.gameOffset, bottom: K.avatar.gameOffset },

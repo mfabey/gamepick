@@ -1275,3 +1275,45 @@ kapsamları) sunucu ucu gerektiriyor — ayrı iş.
 başarılı. Cihazda görülmedi (emülatör yok): bölüm satırının yatay
 kaydırması, hap rozeti ve 34 pt çiplerle katlanan başlığın yüksekliği
 gözle bakılmalı.
+
+### 25 Eylül — Tasarım dışı ekranlar, Grup A: arkadaşlar (Claude)
+
+Tarama: 15 ekran 2.0 kütüphanesinden hiçbir şey kullanmıyordu (önceki "14"
+sayımı `auth` ve `delete-account`'ı atlamış, `reels`'i saymıştı). Gruplar:
+A arkadaşlar · B hesap/ayar · C koleksiyon/liste (+ kütüphane başlığı) ·
+D istatistik · E kendine özgü (swipe, game-cards, reels). Bu kayıt A.
+
+**Plan kalıbı: "NavBar + UserRow listesi"; arkadaşlık eylemi FollowButton'a
+bağlanmaz.**
+
+- `UserRow`'a iki ek: `onLongPress` (kişi menüsü) ve `nameAccessory` (adın
+  yanında geliştirici rozeti; ad kısalır, rozet kesilmez).
+- **friends:** NavBar ("Arkadaşlar · 12"), 2.0 `SearchField`, gelen istek
+  bandı surface1 kart (köşe 16; kırmızı zemin kalktı, vurguyu yalnız sayı
+  rozeti taşıyor; yüz yığını `UserAvatar` + zemin renginde halka),
+  `SectionHeader`, `UserRow` satırları (64 → 60), mesaj 2.0 `IconButton`
+  `msg`. Aramada eylem: "Kabul et" primary / "Ekle" tinted, 34 pt (kit
+  comm_row "Katıl"); eylem olmayan durum ("Arkadaşsınız", "İstek
+  gönderildi") düz metin — düğme gibi görünmüyor. Hiçbir yerden çağrılmayan
+  `PersonRow`/`SmallBtn` dışa aktarımları kalktı.
+- **friend-requests:** NavBar, `SectionHeader`, gelen istekte `UserRow` +
+  iki EŞİT 44 pt 2.0 düğme (Kabul et primary, işlem sürerken `loading`;
+  Yoksay secondary; yalnız işlemdeki satır devre dışı — eski davranış),
+  kartlar arası saç teli; gönderilende `UserRow` + "İptal" secondary 34.
+- **steam-friends:** NavBar (alt başlıkta "13 arkadaş · 1 gizli"), surface1
+  kartlar (köşe 16), `UserAvatar` (Steam URL'sini fotoğraf çiziyor; elle
+  yazılmış baş harf kopyası kalktı), 2.0 ikonlar (`chevd` açıkken 180°,
+  `users`/`zap`/`pad`), Gamerisen hapı surface2. Ön ayar ikonu VERİ olduğu
+  için (Ionicons adı) orada Ionicons kaldı. Saat "46 sa" (`home.hoursShort`;
+  eskiden sabit "46s"). **Liste alt dolgusu `TAB_SPACE` (104) → güvenli
+  alan + 40:** bu ekranda sekme çubuğu yok (plan §4.1'in işaret ettiği
+  dört ekrandan biri).
+- Ölçüler `tokens.component.friends` / `steamFriends`; `check:spacing`
+  176 → 168, taban güncellendi.
+
+**Dokunulmadı:** `EmptyState` (DS 4 işi, ortak bileşen), `PersonMenu`,
+`ReportSheet` (App Store 1.2 akışı aynen).
+
+**Doğrulama:** `npm run check` geçti, `npx expo export` iOS ve Android
+başarılı. Cihazda görülmedi (emülatör yok): uzun basma menüsü, istek
+bandının yüz yığını ve Steam kartının açılıp kapanması gözle bakılmalı.
