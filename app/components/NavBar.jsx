@@ -5,8 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { useLanguage } from '../context/LanguageContext';
-import { LOGO_SRC } from '../lib/logo';
+import { LOGO_SRC, LOGO_DARK_SRC, LOGO_LIGHT_SRC } from '../lib/logo';
 
 export default function NavBar() {
   const pathname = usePathname();
@@ -172,7 +171,14 @@ export default function NavBar() {
 
           {/* Ortalı logo */}
           <Link href="/" className="nav-logo">
-            <img src={LOGO_SRC} alt="" className="nav-logo-img" width={36} height={36} style={{ display: 'block', filter: 'none' }} />
+            <img
+              src={mounted && theme === 'light' ? LOGO_LIGHT_SRC : LOGO_DARK_SRC}
+              alt=""
+              className="nav-logo-img"
+              width={36}
+              height={36}
+              style={{ display: 'block', filter: 'none' }}
+            />
             <span className="nav-logo-text">Gamerisen</span>
           </Link>
 
