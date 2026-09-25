@@ -3,23 +3,25 @@
 // Oluştur / aç / sil. Düzenleme koleksiyon detayında.
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState, useCallback } from 'react';
-import {
-  View, Text, Pressable, StyleSheet, TextInput, Alert, Modal, KeyboardAvoidingView, 
-} from 'react-native';
+import { View, StyleSheet, Alert } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { Image } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 import { useCollections } from '../src/hooks/useCollections';
 import { createCollection, deleteCollection } from '../src/services/collectionsStore';
 import EmptyState from '../src/components/EmptyState';
-import { posterImage } from '../src/utils/images';
-import { radius, spacing, PRESSED, type, motion } from '../src/theme';
+import NameDialog, { EmojiPicker } from '../src/components/NameDialog';
+import { Icon } from '../src/components/Icon';
+import { NavBar } from '../src/components/ui/Navigation';
+import { IconButton, PressableScale, Txt } from '../src/components/ui/Primitives';
+import { CoverMosaic } from '../src/components/ui/GameCards';
+import { spacing } from '../src/theme';
+import { component as K, control as C, radius as dsRadius, space } from '../src/theme/tokens';
+import { useDesignTheme } from '../src/theme/useDesignTheme';
 import { useYanBosluk } from '../src/hooks/useIcerikAlani';
-import { useStyles, useTheme } from '../src/context/ThemeContext';
+import { useStyles } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 import ProfileGate from '../src/components/ProfileGate';
 
@@ -37,7 +39,7 @@ function CollectionsScreenContent() {
   const styles = useStyles(makeStyles);
   const yan = useYanBosluk();
   const insets = useSafeAreaInsets();
-  const { colors } = useTheme();
+  const { colors } = useDesignTheme();
   const router = useRouter();
   const { t } = useLanguage();
   const collections = useCollections();
@@ -82,19 +84,11 @@ function CollectionsScreenContent() {
   ), [router, confirmDelete, t]);
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      {/* Başlık listenin DIŞINDA: içerik kolonuyla aynı hizaya
-          getiriliyor — başlık tam genişlikte kalsaydı sayfanın adı ile
-          anlattığı şey iki ayrı sütunda dururdu. */}
-      <View style={[styles.head, { marginHorizontal: yan }]}>
-        <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </Pressable>
-        <Text style={styles.title}>{t('col.title')}</Text>
-        <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => setCreating(true)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.add')}>
-          <Ionicons name="add" size={26} color={colors.accent} />
-        </Pressable>
-      </View>
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
+      <NavBar
+        title={t('col.title')}
+        right={<IconButton icon="plus" label={t('a11y.add')} onPress={() => setCreating(true)} />}
+      />
 
       {collections.length === 0 ? (
         <EmptyState
@@ -105,9 +99,10 @@ function CollectionsScreenContent() {
           {/* Hazır öneriler — boş ekranı eyleme çevirir */}
           <View style={styles.suggests}>
             {[t('col.suggest1'), t('col.suggest2'), t('col.suggest3')].map((s, i) => (
-              <Pressable
+              <PressableScale
                 key={s}
-                style={({ pressed }) => [styles.suggest, pressed && PRESSED]}
+                accessibilityRole="button"
+                style={[styles.suggest, { backgroundColor: colors.surface1 }]}
                 onPress={async () => {
                   const id = await createCollection(s, EMOJIS[i + 1] || EMOJIS[0]);
                   if (id) {
@@ -116,10 +111,10 @@ function CollectionsScreenContent() {
                   }
                 }}
               >
-                <Text style={styles.suggestEmoji}>{EMOJIS[i + 1]}</Text>
-                <Text style={styles.suggestText}>{s}</Text>
-                <Ionicons name="add" size={17} color={colors.text3} />
-              </Pressable>
+                <Txt variant="body">{EMOJIS[i + 1]}</Txt>
+                <Txt variant="input" numberOfLines={1} style={styles.suggestText}>{s}</Txt>
+                <Icon name="plus" size={K.listRow.icon} color={colors.text3} />
+              </PressableScale>
             ))}
           </View>
         </EmptyState>
@@ -128,167 +123,66 @@ function CollectionsScreenContent() {
           data={collections}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
-          contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 30, paddingHorizontal: yan + spacing.md }]}
+          contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + space[32], paddingHorizontal: yan + spacing.s20 }]}
           showsVerticalScrollIndicator={false}
         />
       )}
 
-      {/* Oluşturma sayfası */}
-      <Modal visible={creating} transparent animationType="fade" onRequestClose={() => setCreating(false)}>
-        <Pressable style={({ pressed }) => [styles.backdrop, pressed && PRESSED]} onPress={() => setCreating(false)}>
-          <KeyboardAvoidingView behavior="padding">
-            <Pressable style={({ pressed }) => [styles.sheet, pressed && PRESSED]} onPress={(e) => e.stopPropagation()}>
-              <Text style={styles.sheetTitle}>{t('col.new')}</Text>
-
-              <View style={styles.emojiRow}>
-                {EMOJIS.map((e) => (
-                  <Pressable
-                    key={e}
-                    onPress={() => setEmoji(e)}
-                    style={[styles.emojiBtn, emoji === e && styles.emojiBtnOn]}
-                  >
-                    <Text style={styles.emojiText}>{e}</Text>
-                  </Pressable>
-                ))}
-              </View>
-
-              <TextInput
-                value={name}
-                onChangeText={setName}
-                placeholder={t('col.namePlaceholder')}
-                placeholderTextColor={colors.text3}
-                style={styles.input}
-                maxLength={60}
-                autoFocus
-                returnKeyType="done"
-                onSubmitEditing={submit}
-              />
-
-              <View style={styles.sheetActions}>
-                <Pressable style={({ pressed }) => [styles.ghostBtn, pressed && PRESSED]} onPress={() => setCreating(false)}>
-                  <Text style={styles.ghostText}>{t('col.cancel')}</Text>
-                </Pressable>
-                <Pressable
-                  style={[styles.cta, !name.trim() && styles.ctaOff]}
-                  onPress={submit}
-                  disabled={!name.trim()}
-                >
-                  <Text style={styles.ctaText}>{t('col.create')}</Text>
-                </Pressable>
-              </View>
-            </Pressable>
-          </KeyboardAvoidingView>
-        </Pressable>
-      </Modal>
+      <NameDialog
+        visible={creating}
+        title={t('col.new')}
+        value={name}
+        onChangeText={setName}
+        onClose={() => setCreating(false)}
+        onSubmit={submit}
+        submitLabel={t('col.create')}
+      >
+        <EmojiPicker emojis={EMOJIS} value={emoji} onChange={setEmoji} />
+      </NameDialog>
     </SafeAreaView>
   );
 }
 
+/**
+ * Koleksiyon satırı — detaydaki GameRow'la aynı ölçü (60 yükseklik, aralık 12,
+ * satırlar arası 8): liste ile içi aynı ritimde. Uzun basma = silme.
+ */
 function CollectionRow({ col, onPress, onLongPress, t }) {
   const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
-  const covers = (col.games || []).slice(0, 4);
+  const { colors } = useDesignTheme();
+  const games = col.games || [];
   return (
-    <Pressable
-      style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}
+    <PressableScale
+      style={styles.row}
       onPress={onPress}
       onLongPress={onLongPress}
+      delayLongPress={350}
+      accessibilityRole="button"
+      accessibilityLabel={col.name}
     >
-      <View style={styles.thumbs}>
-        {covers.length === 0 ? (
-          <View style={styles.thumbEmpty}><Text style={styles.rowEmoji}>{col.emoji}</Text></View>
-        ) : (
-          covers.map((g) => (
-            <Image
-              key={g.id}
-              source={posterImage(g.image)}
-              cachePolicy="memory-disk"
-              style={styles.thumb}
-              contentFit="cover"
-              transition={motion.image}
-            />
-          ))
-        )}
-      </View>
-
+      <CoverMosaic covers={games.map((g) => g.image)} emoji={col.emoji} />
       <View style={styles.rowBody}>
-        <Text numberOfLines={1} style={styles.rowName}>{col.emoji} {col.name}</Text>
-        <Text style={styles.rowMeta}>{(col.games || []).length} {t('col.gameCount')}</Text>
+        <Txt variant="cardTitle" numberOfLines={1}>{col.emoji} {col.name}</Txt>
+        <Txt variant="footnote" style={{ color: colors.text2 }}>{games.length} {t('col.gameCount')}</Txt>
       </View>
-
-      <Ionicons name="chevron-forward" size={18} color={colors.text3} />
-    </Pressable>
+      <Icon name="chev" size={K.gameRow.chevron} color={colors.text3} strokeWidth={K.gameRow.chevronStroke} />
+    </PressableScale>
   );
 }
 
-const makeStyles = (colors) => StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
+const makeStyles = () => StyleSheet.create({
+  safe: { flex: 1 },
 
-  head: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: spacing.md, paddingTop: 6, paddingBottom: 10, gap: spacing.sm,
-  },
-  title: { flex: 1, fontSize: type.headline, fontWeight: '900', color: colors.text, letterSpacing: -0.3 },
-  iconBtn: {
-    width: 44, height: 44, borderRadius: 22, backgroundColor: colors.card,
-    alignItems: 'center', justifyContent: 'center',
-  },
+  list: { paddingTop: space[8], paddingHorizontal: spacing.s20 },
+  row: { minHeight: K.gameRow.height, marginBottom: K.gameRow.rowGap, flexDirection: 'row', alignItems: 'center', gap: K.gameRow.gap },
+  rowBody: { flex: 1, minWidth: 0 },
 
-  list: { paddingHorizontal: spacing.md },
-  row: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.md,
-    paddingVertical: 10, paddingRight: 6,
-  },
-  thumbs: {
-    width: 62, height: 62, borderRadius: radius.md, overflow: 'hidden',
-    flexDirection: 'row', flexWrap: 'wrap', backgroundColor: colors.card,
-  },
-  thumb: { width: '50%', height: '50%' },
-  thumbEmpty: { width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' },
-  rowEmoji: { fontSize: type.title1 },
-  rowBody: { flex: 1 },
-  rowName: { color: colors.text, fontSize: type.subhead, fontWeight: '800' },
-  rowMeta: { color: colors.text2, fontSize: type.footnote, marginTop: 3 },
-
-
-
-  suggests: { alignSelf: 'stretch', marginTop: 22, gap: spacing.sm },
+  // Öneriler ListRow ölçüsünde (52, iç boşluk 16, aralık 14) ama ayrı kartlar:
+  // her biri kendi başına bir eylem, bir listenin satırları değil.
+  suggests: { alignSelf: 'stretch', marginTop: space[24], gap: space[8] },
   suggest: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    backgroundColor: colors.card, borderRadius: radius.md,
-    paddingHorizontal: 14, paddingVertical: 13,
-    borderWidth: 1, borderColor: colors.cardBorder,
+    flexDirection: 'row', alignItems: 'center', gap: C.listGap,
+    minHeight: C.listHeight, paddingHorizontal: C.listPadding, borderRadius: dsRadius.button,
   },
-  suggestEmoji: { fontSize: type.body },
-  suggestText: { flex: 1, color: colors.text, fontSize: type.subhead, fontWeight: '600' },
-
-  backdrop: { flex: 1, backgroundColor: colors.overlay, alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
-  sheet: {
-    width: '100%', maxWidth: 420, backgroundColor: colors.bgElevated,
-    borderRadius: radius.xl, padding: spacing.lg,
-    borderWidth: 1, borderColor: colors.cardBorder,
-  },
-  sheetTitle: { color: colors.text, fontSize: type.body, fontWeight: '900', marginBottom: 14 },
-  emojiRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginBottom: 14 },
-  emojiBtn: {
-    width: 44, height: 44, borderRadius: radius.md, backgroundColor: colors.card,
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: 'transparent',
-  },
-  emojiBtnOn: { borderColor: colors.accent },
-  emojiText: { fontSize: type.headline },
-  input: {
-    backgroundColor: colors.bgInput, borderRadius: radius.md,
-    paddingHorizontal: 14, height: 50, color: colors.text, fontSize: type.subhead,
-    borderWidth: 1, borderColor: colors.cardBorder,
-  },
-  sheetActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: spacing.lg },
-  ghostBtn: { paddingHorizontal: spacing.lg, height: 46, alignItems: 'center', justifyContent: 'center' },
-  ghostText: { color: colors.text2, fontSize: type.subhead, fontWeight: '700' },
-  cta: {
-    minWidth: 110, height: 46, borderRadius: radius.lg, backgroundColor: colors.accentFillStrong,
-    alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18,
-  },
-  ctaOff: { opacity: 0.4 },
-  ctaText: { color: '#fff', fontSize: type.subhead, fontWeight: '800' },
+  suggestText: { flex: 1 },
 });

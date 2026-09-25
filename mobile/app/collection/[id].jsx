@@ -2,35 +2,34 @@
 // Koleksiyon detayı — içindeki oyunlar, yeniden adlandırma, oyun çıkarma.
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState, useCallback } from 'react';
-import {
-  View, Text, Pressable, StyleSheet, TextInput, Alert, Modal,
-  KeyboardAvoidingView, 
-} from 'react-native';
+import { StyleSheet, Alert } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 import { useCollection } from '../../src/hooks/useCollections';
 import PublishSheet from '../../src/components/PublishSheet';
 import EmptyState from '../../src/components/EmptyState';
+import NameDialog from '../../src/components/NameDialog';
 import {
   renameCollection, deleteCollection, removeGameFromCollection,
 } from '../../src/services/collectionsStore';
-import { posterImage } from '../../src/utils/images';
-import { radius, spacing, PRESSED, type } from '../../src/theme';
+import { spacing } from '../../src/theme';
+import { space } from '../../src/theme/tokens';
+import { useDesignTheme } from '../../src/theme/useDesignTheme';
 import { useYanBosluk } from '../../src/hooks/useIcerikAlani';
-import { useStyles, useTheme } from '../../src/context/ThemeContext';
+import { useStyles } from '../../src/context/ThemeContext';
 import { useLanguage } from '../../src/context/LanguageContext';
-import IconButton from '../../src/components/IconButton';
+import { NavBar } from '../../src/components/ui/Navigation';
+import { IconButton } from '../../src/components/ui/Primitives';
 import GameRow, { SATIR_Y } from '../../src/components/GameRow';
 
 export default function CollectionDetailScreen() {
   const styles = useStyles(makeStyles);
   const yan = useYanBosluk();
   const insets = useSafeAreaInsets();
-  const { colors } = useTheme();
+  const { colors } = useDesignTheme();
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const { t } = useLanguage();
@@ -92,6 +91,19 @@ export default function CollectionDetailScreen() {
     ]);
   }, [id, t]);
 
+  // ÜÇ EYLEM, İKİ YUVA. 2.0 NavBar'ın sağ sütunu 96 pt: iki 44'lük düğme
+  // sığıyor, eskisi gibi üçü (paylaş · adlandır · sil) sığmıyor ve başlığın
+  // üstüne taşıyordu. Paylaş görünür kalıyor (asıl eylem); adlandırma ve
+  // silme "daha fazla"da — iOS'un albüm menüsü kalıbı. Silme onayı aynen.
+  // Alert üç düğme taşıyor: Android'in sınırı tam üç (bkz. ChoiceSheet).
+  const openMenu = useCallback(() => {
+    Alert.alert(col?.name || '', undefined, [
+      { text: t('col.rename'), onPress: openRename },
+      { text: t('col.delete'), style: 'destructive', onPress: confirmDelete },
+      { text: t('col.cancel'), style: 'cancel' },
+    ]);
+  }, [col, openRename, confirmDelete, t]);
+
   // FAZ 2 — E bedeni. Bkz. list/[id]: ad kapak üstünden çıktı.
   // GameRow içeride GameCover kullanıyor, o da PosterImage'a düşüyor —
   // dikey kapak 404 verirse orijinale dönme davranışı korunuyor.
@@ -102,15 +114,8 @@ export default function CollectionDetailScreen() {
   if (!col) {
     // Koleksiyon silinmiş olabilir (bu ekran açıkken) — sessizce geri dön
     return (
-      <SafeAreaView style={styles.safe} edges={['top']}>
-        {/* Başlık listenin DIŞINDA: içerik kolonuyla aynı hizaya
-          getiriliyor — başlık tam genişlikte kalsaydı sayfanın adı ile
-          anlattığı şey iki ayrı sütunda dururdu. */}
-      <View style={[styles.head, { marginHorizontal: yan }]}>
-          <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
-            <Ionicons name="chevron-back" size={24} color={colors.text} />
-          </Pressable>
-        </View>
+      <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
+        <NavBar />
       </SafeAreaView>
     );
   }
@@ -118,23 +123,15 @@ export default function CollectionDetailScreen() {
   const games = col.games || [];
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.head}>
-        <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </Pressable>
-        <View style={styles.headText}>
-          <Text numberOfLines={1} style={styles.title}>{col.emoji} {col.name}</Text>
-          <Text style={styles.subtitle}>{games.length} {t('col.gameCount')}</Text>
-        </View>
-        {games.length > 0 && (
-          <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => setPublishing(true)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.share')}>
-            <Ionicons name="share-social-outline" size={19} color={colors.accent} />
-          </Pressable>
-        )}
-        <IconButton icon='create-outline' size={20} color={colors.text} onPress={openRename} style={styles.iconBtn} />
-        <IconButton icon='trash-outline' size={19} color={colors.danger} onPress={confirmDelete} style={styles.iconBtn} />
-      </View>
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
+      <NavBar
+        title={`${col.emoji} ${col.name}`}
+        subtitle={`${games.length} ${t('col.gameCount')}`}
+        right={<>
+          {games.length > 0 && <IconButton icon="share" label={t('a11y.share')} onPress={() => setPublishing(true)} />}
+          <IconButton icon="more" label={t('a11y.more')} onPress={openMenu} />
+        </>}
+      />
 
       {games.length === 0 ? (
         <EmptyState
@@ -150,7 +147,7 @@ export default function CollectionDetailScreen() {
           data={games}
           keyExtractor={(item) => String(item.id)}
           renderItem={renderItem}
-          contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 30, paddingHorizontal: yan + spacing.s20 }]}
+          contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + space[32], paddingHorizontal: yan + spacing.s20 }]}
           estimatedItemSize={SATIR_Y}
           showsVerticalScrollIndicator={false}
         />
@@ -162,81 +159,20 @@ export default function CollectionDetailScreen() {
         collection={col}
       />
 
-      <Modal visible={editing} transparent animationType="fade" onRequestClose={() => setEditing(false)}>
-        <Pressable style={({ pressed }) => [styles.backdrop, pressed && PRESSED]} onPress={() => setEditing(false)}>
-          <KeyboardAvoidingView behavior="padding">
-            <Pressable style={({ pressed }) => [styles.sheet, pressed && PRESSED]} onPress={(e) => e.stopPropagation()}>
-              <Text style={styles.sheetTitle}>{t('col.rename')}</Text>
-              <TextInput
-                value={name}
-                onChangeText={setName}
-                placeholder={t('col.namePlaceholder')}
-                placeholderTextColor={colors.text3}
-                style={styles.input}
-                maxLength={60}
-                autoFocus
-                returnKeyType="done"
-                onSubmitEditing={saveName}
-              />
-              <View style={styles.sheetActions}>
-                <Pressable style={({ pressed }) => [styles.ghostBtn, pressed && PRESSED]} onPress={() => setEditing(false)}>
-                  <Text style={styles.ghostText}>{t('col.cancel')}</Text>
-                </Pressable>
-                <Pressable
-                  style={[styles.cta, !name.trim() && styles.ctaOff]}
-                  onPress={saveName}
-                  disabled={!name.trim()}
-                >
-                  <Text style={styles.ctaText}>{t('col.save')}</Text>
-                </Pressable>
-              </View>
-            </Pressable>
-          </KeyboardAvoidingView>
-        </Pressable>
-      </Modal>
+      <NameDialog
+        visible={editing}
+        title={t('col.rename')}
+        value={name}
+        onChangeText={setName}
+        onClose={() => setEditing(false)}
+        onSubmit={saveName}
+        submitLabel={t('col.save')}
+      />
     </SafeAreaView>
   );
 }
 
-const makeStyles = (colors) => StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
-
-  head: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: spacing.md, paddingTop: 6, paddingBottom: 10, gap: 6,
-  },
-  headText: { flex: 1, paddingHorizontal: spacing.xs },
-  title: { fontSize: type.body, fontWeight: '900', color: colors.text, letterSpacing: -0.3 },
-  subtitle: { fontSize: type.footnote, color: colors.text2, marginTop: 2 },
-  iconBtn: {
-    width: 44, height: 44, borderRadius: 22, backgroundColor: colors.card,
-    alignItems: 'center', justifyContent: 'center',
-  },
-
-  list: { paddingHorizontal: spacing.s20 },
-
-
-
-
-  backdrop: { flex: 1, backgroundColor: colors.overlay, alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
-  sheet: {
-    width: '100%', maxWidth: 420, backgroundColor: colors.bgElevated,
-    borderRadius: radius.xl, padding: spacing.lg,
-    borderWidth: 1, borderColor: colors.cardBorder,
-  },
-  sheetTitle: { color: colors.text, fontSize: type.body, fontWeight: '900', marginBottom: 14 },
-  input: {
-    backgroundColor: colors.bgInput, borderRadius: radius.md,
-    paddingHorizontal: 14, height: 50, color: colors.text, fontSize: type.subhead,
-    borderWidth: 1, borderColor: colors.cardBorder,
-  },
-  sheetActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: spacing.lg },
-  ghostBtn: { paddingHorizontal: spacing.lg, height: 46, alignItems: 'center', justifyContent: 'center' },
-  ghostText: { color: colors.text2, fontSize: type.subhead, fontWeight: '700' },
-  cta: {
-    minWidth: 110, height: 46, borderRadius: radius.lg, backgroundColor: colors.accentFillStrong,
-    alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18,
-  },
-  ctaOff: { opacity: 0.4 },
-  ctaText: { color: '#fff', fontSize: type.subhead, fontWeight: '800' },
+const makeStyles = () => StyleSheet.create({
+  safe: { flex: 1 },
+  list: { paddingTop: space[8], paddingHorizontal: spacing.s20 },
 });

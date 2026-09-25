@@ -6,29 +6,33 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState, useEffect, useCallback } from 'react';
 import {
-  View, Text, Pressable, StyleSheet, ActivityIndicator, RefreshControl,
+  View, Pressable, StyleSheet, ActivityIndicator, RefreshControl,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { Image } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 import { fetchListFeed, toggleListLike } from '../src/api/social';
 import { getSession, subscribeSession } from '../src/services/session';
 import EmptyState from '../src/components/EmptyState';
-import { posterImage } from '../src/utils/images';
-import { radius, spacing, type, PRESSED, motion } from '../src/theme';
+import { Icon } from '../src/components/Icon';
+import { NavBar } from '../src/components/ui/Navigation';
+import { PressableScale, Segmented, Txt } from '../src/components/ui/Primitives';
+import { CoverMosaic } from '../src/components/ui/GameCards';
+import { Badge } from '../src/components/ui/Social';
+import { spacing } from '../src/theme';
+import { component as K, space } from '../src/theme/tokens';
+import { useDesignTheme } from '../src/theme/useDesignTheme';
 import { useYanBosluk } from '../src/hooks/useIcerikAlani';
-import { useStyles, useTheme } from '../src/context/ThemeContext';
+import { useStyles } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 
 export default function ListsScreen() {
   const styles = useStyles(makeStyles);
   const yan = useYanBosluk();
   const insets = useSafeAreaInsets();
-  const { colors } = useTheme();
+  const { colors } = useDesignTheme();
   const router = useRouter();
   const { t } = useLanguage();
 
@@ -112,37 +116,35 @@ export default function ListsScreen() {
     />
   ), [router, onLike, t]);
 
+  // AYNI SEKMEYE BASMAK HİÇBİR ŞEY YAPMAMALI. Öncesinde liste boşaltılıyor
+  // (`setItems(null)`) ama `sort` değişmediği için yükleme etkisi yeniden
+  // koşmuyordu: seçili sekmeye basan kullanıcı sonsuz bir dönen göstergede
+  // kalıyordu. 2.0 `Segmented` de seçili öğede onChange çağırıyor.
+  const onSort = useCallback((k) => {
+    if (k === sort) return;
+    Haptics.selectionAsync();
+    setSort(k);
+    setItems(null);
+  }, [sort]);
+
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      {/* Başlık listenin DIŞINDA: içerik kolonuyla aynı hizaya
-          getiriliyor — başlık tam genişlikte kalsaydı sayfanın adı ile
-          anlattığı şey iki ayrı sütunda dururdu. */}
-      <View style={[styles.head, { marginHorizontal: yan }]}>
-        <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </Pressable>
-        <View style={styles.titleWrap}>
-          <Text style={styles.title}>{t('pl.title')}</Text>
-        </View>
-        <View style={styles.iconBtn} />
-      </View>
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
+      <NavBar title={t('pl.title')} />
 
       <View style={[styles.tabs, { marginHorizontal: yan }]}>
-        {['popular', 'new'].map((k) => (
-          <Pressable
-            key={k}
-            style={[styles.tab, sort === k && styles.tabOn]}
-            onPress={() => { Haptics.selectionAsync(); setSort(k); setItems(null); }}
-          >
-            <Text style={[styles.tabText, sort === k && styles.tabTextOn]}>
-              {t(k === 'popular' ? 'pl.sortPopular' : 'pl.sortNew')}
-            </Text>
-          </Pressable>
-        ))}
+        <Segmented
+          accessibilityLabel={t('pl.title')}
+          items={[
+            { value: 'popular', label: t('pl.sortPopular') },
+            { value: 'new', label: t('pl.sortNew') },
+          ]}
+          value={sort}
+          onChange={onSort}
+        />
       </View>
 
       {items === null ? (
-        <View style={styles.center}><ActivityIndicator color={colors.accent} /></View>
+        <View style={styles.center}><ActivityIndicator color={colors.text2} /></View>
       ) : items.length === 0 ? (
         /* Boş durum izleyiciye göre değişiyor: sayfa artık hesapsız da
            açılıyor ve "koleksiyonlarından birini paylaş" çağrısı hesapsız
@@ -160,7 +162,7 @@ export default function ListsScreen() {
           data={items}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
-          contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 30, paddingHorizontal: yan + spacing.md }]}
+          contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + space[32], paddingHorizontal: yan + spacing.s20 }]}
           showsVerticalScrollIndicator={false}
           onEndReached={onEnd}
           onEndReachedThreshold={0.5}
@@ -173,113 +175,65 @@ export default function ListsScreen() {
   );
 }
 
+/**
+ * Topluluk listesi satırı — koleksiyon satırıyla aynı kapak (CoverMosaic 60)
+ * ve aralık; altında açıklama ve künye, sağda beğeni.
+ */
 function ListCard({ item, onPress, onLike, t }) {
   const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
+  const { colors } = useDesignTheme();
+  const liked = !!item.likedByMe;
   return (
-    <Pressable style={({ pressed }) => [styles.card, pressed && { opacity: 0.85 }]} onPress={onPress}>
-      <View style={styles.covers}>
-        {item.covers.length === 0 ? (
-          <View style={styles.coverEmpty}><Text style={styles.coverEmoji}>{item.emoji}</Text></View>
-        ) : (
-          item.covers.slice(0, 4).map((src, i) => (
-            <Image
-              key={`${item.id}_${i}`}
-              source={posterImage(src)}
-              cachePolicy="memory-disk"
-              style={styles.cover}
-              contentFit="cover"
-              transition={motion.image}
-            />
-          ))
-        )}
-      </View>
+    <PressableScale style={styles.card} onPress={onPress} accessibilityRole="button" accessibilityLabel={item.title}>
+      <CoverMosaic covers={item.covers} emoji={item.emoji} />
 
       <View style={styles.cardBody}>
-        <Text numberOfLines={1} style={styles.cardTitle}>{item.emoji} {item.title}</Text>
+        <Txt variant="cardTitle" numberOfLines={1}>{item.emoji} {item.title}</Txt>
         {item.description ? (
-          <Text numberOfLines={2} style={styles.cardDesc}>{item.description}</Text>
+          <Txt variant="footnote" numberOfLines={2} style={{ color: colors.text2 }}>{item.description}</Txt>
         ) : null}
         <View style={styles.metaRow}>
           {/* Editör listeleri açıkça işaretleniyor — kullanıcı yapımı gibi
-              görünmemeleri şart. */}
-          {item.official ? (
-            <View style={styles.officialChip}>
-              <Ionicons name="ribbon" size={11} color={colors.accentText} />
-              <Text style={styles.officialText}>{t('pl.official')}</Text>
-            </View>
-          ) : null}
-          <Text numberOfLines={1} style={styles.cardMeta}>
+              görünmemeleri şart. 2.0 rozeti: kalkan + "EDİTÖR". */}
+          {item.official ? <Badge label={t('pl.official')} kind="mod" /> : null}
+          <Txt variant="caption" numberOfLines={1} style={[styles.meta, { color: colors.text3 }]}>
             {item.gameCount} {t('pl.games')}
             {item.official ? '' : ` · ${t('pl.by')} @${item.ownerUsername}`}
-          </Text>
+          </Txt>
         </View>
       </View>
 
       {/* Editör listesi beğenilemez: sahibi bir kullanıcı değil. Düğmeyi
           gösterip çalışmamasındansa hiç göstermemek doğru. */}
       {item.official ? null : (
-        <Pressable style={({ pressed }) => [styles.likeBtn, pressed && PRESSED]} onPress={onLike} hitSlop={8}>
-          <Ionicons
-            name={item.likedByMe ? 'heart' : 'heart-outline'}
-            size={21}
-            color={item.likedByMe ? colors.danger : colors.text3}
-          />
-          <Text style={[styles.likeCount, item.likedByMe && { color: colors.danger }]}>
-            {item.likeCount}
-          </Text>
+        <Pressable
+          onPress={onLike}
+          hitSlop={space[8]}
+          accessibilityRole="button"
+          accessibilityLabel={t('a11y.like')}
+          accessibilityState={{ selected: liked }}
+          style={styles.likeBtn}
+        >
+          <Icon name="heart" size={K.listLike.icon} color={liked ? colors.red : colors.text3} fill={liked ? colors.red : 'none'} />
+          <Txt variant="captionStrong" style={[styles.num, { color: liked ? colors.red : colors.text3 }]}>{item.likeCount}</Txt>
         </Pressable>
       )}
-    </Pressable>
+    </PressableScale>
   );
 }
 
-const makeStyles = (colors) => StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xl },
+const makeStyles = () => StyleSheet.create({
+  safe: { flex: 1 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  head: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: spacing.md, paddingTop: 6, paddingBottom: 10,
-  },
-  titleWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
-  title: { fontSize: type.body, fontWeight: '900', color: colors.text, letterSpacing: -0.3 },
-  iconBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  tabs: { paddingHorizontal: spacing.s20, paddingTop: space[4], paddingBottom: space[12] },
 
-  tabs: { flexDirection: 'row', gap: 6, paddingHorizontal: spacing.md, paddingBottom: 10 },
-  tab: {
-    flex: 1, height: 44, borderRadius: radius.md, backgroundColor: colors.card,
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1, borderColor: colors.cardBorder,
-  },
-  // social.jsx sekmeleriyle ayni dil: dolu notr yuzey, koyu metin.
-  tabOn: { backgroundColor: colors.text, borderColor: colors.text },
-  tabText: { color: colors.text2, fontSize: type.footnote, fontWeight: '700' },
-  tabTextOn: { color: colors.bg },
+  list: { paddingHorizontal: spacing.s20 },
+  card: { flexDirection: 'row', alignItems: 'center', gap: K.gameRow.gap, paddingVertical: space[8] },
+  cardBody: { flex: 1, minWidth: 0, gap: space[2] },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: space[6], marginTop: space[2] },
+  meta: { flexShrink: 1 },
 
-  list: { paddingHorizontal: spacing.md },
-  card: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: 11 },
-  covers: {
-    width: 66, height: 66, borderRadius: radius.md, overflow: 'hidden',
-    flexDirection: 'row', flexWrap: 'wrap', backgroundColor: colors.card,
-  },
-  cover: { width: '50%', height: '50%' },
-  coverEmpty: { width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' },
-  coverEmoji: { fontSize: type.title1 },
-
-  cardBody: { flex: 1 },
-  cardTitle: { color: colors.text, fontSize: type.subhead, fontWeight: '800' },
-  cardDesc: { color: colors.text2, fontSize: type.footnote, marginTop: 3, lineHeight: 17 },
-  cardMeta: { color: colors.text3, fontSize: type.caption, marginTop: spacing.xs },
-
-  likeBtn: { alignItems: 'center', gap: 2, paddingHorizontal: spacing.xs },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 },
-  officialChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 3,
-    backgroundColor: colors.accentSoft, borderColor: colors.accentBorder, borderWidth: 1,
-    borderRadius: radius.pill, paddingHorizontal: 7, paddingVertical: 2,
-  },
-  // 11pt Apple'ın mutlak minimumu (HIG). Önceki turda 10pt yazmıştım — ihlaldi.
-  officialText: { color: colors.accentText, fontSize: type.caption2, fontWeight: '800', letterSpacing: 0.3 },
-  likeCount: { color: colors.text3, fontSize: type.caption, fontWeight: '700' },
+  likeBtn: { alignItems: 'center', gap: K.listLike.gap, paddingHorizontal: space[4] },
+  num: { fontVariant: ['tabular-nums'] },
 });

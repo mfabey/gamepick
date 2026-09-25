@@ -503,6 +503,14 @@ export const component = {
   deleteAccount: { warnIcon: 20 },
   // OAuth dönüş ekranı: durum ikonu 54 (eski ekranla aynı).
   authCallback: { icon: 54 },
+  // Koleksiyon / topluluk listesi kapağı: 60 kare 2×2 mozaik (satır GameRow'la
+  // aynı yükseklikte), köşe 12 (userRow.thumbRadius).
+  coverMosaic: { size: 60, radius: 12 },
+  // Ad penceresi (koleksiyon oluştur / yeniden adlandır): en fazla 420 genişlik
+  // (eski pencereyle aynı), emoji düğmesi 44.
+  nameDialog: { maxWidth: 420, emoji: 44 },
+  // Topluluk listesi beğenisi: kalp 20, sayıyla arası 2 (satırda dikey, başlıkta yatay 6).
+  listLike: { icon: 20, gap: 2, inlineGap: 6 },
   // G-06b Filtre sayfası — kit s2.py filters(): tutamaç 36×5 (köşe 3, üstte 8),
   // başlık satırı 44 (yan dolgu 12; Sıfırla tertiary 36 · başlık · 32 pt ×),
   // gövde üstü 10, bölümler arası 20, bölüm başlığı 20 yüksek ve içerikten 12,

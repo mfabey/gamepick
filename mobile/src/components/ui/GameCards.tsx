@@ -7,6 +7,7 @@ import Monogram from '../Monogram';
 import { Button, CoverImage, PressableScale, Txt } from './Primitives';
 import { DiscountTag, OldPrice, Price, PriceDrop, StoreBadge } from './Commerce';
 import { useLanguage } from '../../context/LanguageContext';
+import { posterImage } from '../../utils/images';
 import { useDesignTheme } from '../../theme/useDesignTheme';
 import { component as K, layout, radius, size, typography } from '../../theme/tokens';
 
@@ -159,7 +160,27 @@ export function Rail<T>({ kind, data, renderItem, keyExtractor, initialNumToRend
   );
 }
 
+/**
+ * Koleksiyon / topluluk listesi kapağı: 60 kare, en fazla dört kapak 2×2
+ * (köşe 12 — UserRow küçük görseliyle aynı); kapak yoksa listenin emojisi.
+ * Satırın geri kalanı ekranda: GameRow ölçüsüyle (60 yükseklik, aralık 12).
+ */
+export function CoverMosaic({ covers, emoji }: { covers: readonly (string | null | undefined)[]; emoji?: string }) {
+  const { colors } = useDesignTheme();
+  const shown = covers.filter((src): src is string => !!src).slice(0, 4);
+  return (
+    <View style={[styles.mosaic, { backgroundColor: colors.surface2 }]}>
+      {shown.length === 0
+        ? <View style={styles.mosaicEmpty}><Txt variant="title1">{emoji}</Txt></View>
+        : shown.map((src, i) => <CoverImage key={`${i}_${src}`} source={posterImage(src)} radius={0} style={styles.mosaicCell} />)}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  mosaic: { width: K.coverMosaic.size, height: K.coverMosaic.size, borderRadius: K.coverMosaic.radius, overflow: 'hidden', flexDirection: 'row', flexWrap: 'wrap' },
+  mosaicEmpty: { width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' },
+  mosaicCell: { width: '50%', height: '50%' },
   flex: { flex: 1, minWidth: 0 },
   rail: { paddingHorizontal: layout.gutter },
   smallCover: { borderRadius: radius.cover, overflow: 'hidden' },

@@ -13,9 +13,10 @@ import EmptyState from '../src/components/EmptyState';
 import CevrimdisiBant from '../src/components/CevrimdisiBant';
 import { GameCardSmall } from '../src/components/ui/GameCards';
 import { OverlayTag } from '../src/components/ui/Media';
+import { NavBar } from '../src/components/ui/Navigation';
 import { coverWidth, gridCols, GRID_GAP, GRID_PAD } from '../src/components/CoverGrid';
 import { prefetchImages } from '../src/utils/prefetch';
-import { radius, spacing, TAB_SPACE, type, CHIP, CHIP_TEXT, PRESSED, TOUCH_MIN } from '../src/theme';
+import { radius, spacing, TAB_SPACE, type, CHIP, CHIP_TEXT } from '../src/theme';
 import { useYanBosluk } from '../src/hooks/useIcerikAlani';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
@@ -218,13 +219,7 @@ export default function LibraryScreen() {
   if (sources.length === 0) {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
-        <View style={[styles.head, { marginHorizontal: yan }]}>
-          <Pressable style={({ pressed }) => [styles.back, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
-            <Ionicons name="chevron-back" size={24} color={colors.text} />
-          </Pressable>
-          <Text style={styles.title}>{t('nav.library')}</Text>
-          <View style={{ width: 24 }} />
-        </View>
+        <NavBar title={t('nav.library')} />
         <View style={styles.center}>
           <Ionicons name="library-outline" size={54} color={colors.text3} />
           <Text style={styles.h1}>{t('nav.library')}</Text>
@@ -263,13 +258,7 @@ export default function LibraryScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={[styles.head, { marginHorizontal: yan }]}>
-        <Pressable style={({ pressed }) => [styles.back, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </Pressable>
-        <Text style={styles.title}>{t('nav.library')}</Text>
-        <View style={{ width: 24 }} />
-      </View>
+      <NavBar title={t('nav.library')} />
 
       {/* Kaynak seçici */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll} contentContainerStyle={styles.chipsRow}>
@@ -510,9 +499,6 @@ const GameTile = memo(function GameTile({ game, steam, price, width, onPress }) 
 
 const makeStyles = (colors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
-  head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.s8, minHeight: TOUCH_MIN },
-  back: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', borderRadius: radius.full },
-  title: { fontSize: type.title3, fontWeight: '700', color: colors.text, letterSpacing: -0.22 },
   header: { fontSize: type.title1, fontWeight: '800', color: colors.text, letterSpacing: -0.6, paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.xs },
   chipsScroll: { flexGrow: 0, flexShrink: 0, maxHeight: 56 },
   chipsRow: { paddingHorizontal: spacing.lg, gap: spacing.sm, paddingVertical: 10, alignItems: 'center' },

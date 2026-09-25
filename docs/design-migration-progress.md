@@ -1363,3 +1363,49 @@ metinleri ("Kimlik doğrulama verisi alınamadı.", "Oturum bulunamadı.",
 başarılı. Cihazda görülmedi (emülatör yok): Android'de 2.0 anahtarın
 gizlilik satırlarında hizası, engellenenler satırında düğme genişliği,
 şifre göster/gizle, uyarı kartının açık temadaki tonu gözle bakılmalı.
+
+### 25 Eylül — Tasarım dışı ekranlar, Grup C: koleksiyon/liste (Claude)
+
+**Plan kalıbı: "NavBar + GameCardSmall ızgarası ya da GameRow".** Detay
+ekranlarının oyun satırları (`GameRow`) kart ailesi 2/4'te zaten 2.0'dı;
+eski kalan başlıklar, liste satırları, pencereler ve düğmelerdi.
+
+- **Yeni ortak parçalar:**
+  - `CoverMosaic` (ui/GameCards): 60 kare 2×2 kapak mozaiği, kapak yoksa
+    emoji. collections ve lists aynı mozaiği ayrı ayrı (62 / 66) çiziyordu.
+  - `NameDialog` + `EmojiPicker` (components/NameDialog): koleksiyon
+    oluşturma ve yeniden adlandırma penceresi iki ekranda birebir kopyaydı.
+    2.0 yüzeyi (bg2, köşe 24, popover gölgesi — sheet gölgesi yukarı
+    vuruyor), 2.0 `TextField`, eşit iki 44 pt düğme (Vazgeç secondary ·
+    Oluştur/Kaydet primary). Seçili emoji TextField odak halkası dilinde.
+    `sheet` stili ortak `SHEET_LAYOUT`'u yayıyor (check-layout şartı).
+- **collections:** NavBar + `plus` IconButton. Satır GameRow ölçüsünde
+  (60, aralık 12, satırlar arası 8) — liste ile içi aynı ritimde. Boş
+  durum önerileri ListRow ölçüsünde surface1 kartlar.
+- **collection/[id]:** NavBar başlık "emoji ad" + alt başlık "n oyun".
+  **Üç eylem iki yuvaya indi:** NavBar sağ sütunu 96 pt, eski üç düğme
+  (paylaş · adlandır · sil) sığmıyordu. Paylaş görünür; adlandır ve sil
+  "daha fazla" menüsünde (Alert, üç düğme — Android sınırı tam üç). Silme
+  onayı aynen.
+- **lists:** NavBar, sıralama 2.0 `Segmented`. **Hata düzeltmesi:** seçili
+  sekmeye basmak listeyi boşaltıyor ama `sort` değişmediği için yeniden
+  yüklemiyordu → sonsuz dönen gösterge. Artık aynı sekme yok sayılıyor.
+  Satır: `CoverMosaic` + başlık/açıklama/künye; editör listesi 2.0 `Badge`
+  (`mod`, kalkan + "EDİTÖR"); beğeni 2.0 kalp (dolu = kırmızı).
+- **list/[id]:** NavBar + "daha fazla" (2.0 ikon setinde çöp kutusu ve
+  bayrak yok): sahibi için yayından kaldırma onayı, diğerleri için
+  "Şikâyet et" → ReportSheet (G-02 gönderi başlığı kalıbı). Yükleniyor ve
+  bulunamadı durumlarına da NavBar geldi (öncesinde yükleniyorken geri
+  düğmesi yoktu). Başlık `title1`, gizlenmiş liste bildirimi surface1 kart.
+- **library:** yalnız başlık → NavBar (görev tanımı buydu). Kilit ekranı,
+  kaynak çipleri, arama/sıralama ve hesap kartı HÂLÂ ESKİ — ayrı iş.
+- Ölçüler `tokens.component.coverMosaic` / `nameDialog` / `listLike`;
+  `check:spacing` 155 → 112, taban güncellendi.
+
+**Dokunulmadı:** `EmptyState` (ortak, DS 4 işi), `PublishSheet`,
+`ReportSheet`, eski `components/IconButton` (stats ve swipe kullanıyor).
+
+**Doğrulama:** `npm run check` geçti, `npx expo export` iOS ve Android
+başarılı. Cihazda görülmedi (emülatör yok): mozaik kapakların kırpılması,
+ad penceresinin klavyeyle konumu, "daha fazla" menüsünün Android'deki düğme
+sırası, Segmented'in liste üstündeki boşluğu gözle bakılmalı.

@@ -3,29 +3,32 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState, useEffect, useCallback } from 'react';
 import {
-  View, Text, Pressable, StyleSheet, ActivityIndicator, Alert,
+  View, Pressable, StyleSheet, ActivityIndicator, Alert,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 import { fetchList, toggleListLike, deletePublicList } from '../../src/api/social';
 import ReportSheet from '../../src/components/ReportSheet';
 import EmptyState from '../../src/components/EmptyState';
-import { radius, spacing, PRESSED, type } from '../../src/theme';
+import { Icon } from '../../src/components/Icon';
+import { NavBar } from '../../src/components/ui/Navigation';
+import { IconButton, Txt } from '../../src/components/ui/Primitives';
+import { spacing } from '../../src/theme';
+import { component as K, radius as dsRadius, space } from '../../src/theme/tokens';
+import { useDesignTheme } from '../../src/theme/useDesignTheme';
 import { useYanBosluk } from '../../src/hooks/useIcerikAlani';
-import { useStyles, useTheme } from '../../src/context/ThemeContext';
+import { useStyles } from '../../src/context/ThemeContext';
 import { useLanguage } from '../../src/context/LanguageContext';
-import IconButton from '../../src/components/IconButton';
 import GameRow, { SATIR_Y } from '../../src/components/GameRow';
 
 export default function PublicListScreen() {
   const styles = useStyles(makeStyles);
   const yan = useYanBosluk();
   const insets = useSafeAreaInsets();
-  const { colors } = useTheme();
+  const { colors } = useDesignTheme();
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const { t } = useLanguage();
@@ -74,6 +77,17 @@ export default function PublicListScreen() {
     ]);
   }, [list, router, t]);
 
+  // Şikâyet "daha fazla"nın arkasında (G-02 gönderi başlığındaki kalıp);
+  // 2.0 ikon setinde bayrak yok. Sahibi için aynı düğme doğrudan yayından
+  // kaldırma onayını açıyor — tek eylemli bir menü, onay metniyle birlikte.
+  const openMenu = useCallback(() => {
+    if (list?.isOwner) { onUnpublish(); return; }
+    Alert.alert(list?.title || '', undefined, [
+      { text: t('a11y.report'), onPress: () => setReporting(true) },
+      { text: t('pl.cancel'), style: 'cancel' },
+    ]);
+  }, [list, onUnpublish, t]);
+
   const openGame = useCallback((g) => {
     router.push({
       pathname: '/game/[id]',
@@ -91,79 +105,61 @@ export default function PublicListScreen() {
 
   if (list === undefined) {
     return (
-      <SafeAreaView style={styles.safe} edges={['top']}>
-        <View style={styles.center}><ActivityIndicator color={colors.accent} /></View>
+      <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
+        <NavBar />
+        <View style={styles.center}><ActivityIndicator color={colors.text2} /></View>
       </SafeAreaView>
     );
   }
 
   if (list === null) {
     return (
-      <SafeAreaView style={styles.safe} edges={['top']}>
-        {/* Başlık listenin DIŞINDA: içerik kolonuyla aynı hizaya
-          getiriliyor — başlık tam genişlikte kalsaydı sayfanın adı ile
-          anlattığı şey iki ayrı sütunda dururdu. */}
-      <View style={[styles.head, { marginHorizontal: yan }]}>
-          <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
-            <Ionicons name="chevron-back" size={24} color={colors.text} />
-          </Pressable>
-        </View>
-        <View style={styles.center}>
-          <Ionicons name="alert-circle-outline" size={50} color={colors.text3} />
-          <Text style={styles.emptyTitle}>{t('soc.err.generic')}</Text>
-        </View>
+      <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
+        <NavBar />
+        <EmptyState icon="alert-circle-outline" title={t('soc.err.generic')} />
       </SafeAreaView>
     );
   }
 
+  const liked = !!list.likedByMe;
+
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.head}>
-        <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </Pressable>
-        <View style={{ flex: 1 }} />
-        {list.isOwner ? (
-          <IconButton icon='trash-outline' size={19} color={colors.danger} onPress={onUnpublish} style={styles.iconBtn} />
-        ) : (
-          <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => setReporting(true)} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.report')}>
-            <Ionicons name="flag-outline" size={19} color={colors.text2} />
-          </Pressable>
-        )}
-      </View>
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
+      <NavBar right={<IconButton icon="more" label={t('a11y.more')} onPress={openMenu} />} />
 
       <FlashList
         data={list.games || []}
         keyExtractor={(item, i) => `${item.id}_${i}`}
         renderItem={renderItem}
-        contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 30, paddingHorizontal: yan + spacing.s20 }]}
+        contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + space[32], paddingHorizontal: yan + spacing.s20 }]}
         estimatedItemSize={SATIR_Y}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <View style={styles.header}>
             {list.status === 'hidden' && (
-              <View style={styles.notice}>
-                <Ionicons name="eye-off-outline" size={16} color={colors.accent} />
-                <Text style={styles.noticeText}>{t('pl.hiddenNotice')}</Text>
+              <View style={[styles.notice, { backgroundColor: colors.surface1 }]}>
+                <Icon name="eyeoff" size={K.listLike.icon} color={colors.red} />
+                <Txt variant="footnote" style={styles.noticeText}>{t('pl.hiddenNotice')}</Txt>
               </View>
             )}
 
-            <Text style={styles.title}>{list.emoji} {list.title}</Text>
-            {list.description ? <Text style={styles.desc}>{list.description}</Text> : null}
+            <Txt variant="title1" accessibilityRole="header">{list.emoji} {list.title}</Txt>
+            {list.description ? <Txt variant="body" style={[styles.desc, { color: colors.text2 }]}>{list.description}</Txt> : null}
 
             <View style={styles.metaRow}>
-              <Text style={styles.meta}>
+              <Txt variant="footnote" style={[styles.meta, { color: colors.text3 }]}>
                 {list.gameCount} {t('pl.games')} · {t('pl.by')} @{list.ownerUsername}
-              </Text>
-              <Pressable style={({ pressed }) => [styles.likeBtn, pressed && PRESSED]} onPress={onLike} hitSlop={8}>
-                <Ionicons
-                  name={list.likedByMe ? 'heart' : 'heart-outline'}
-                  size={20}
-                  color={list.likedByMe ? colors.danger : colors.text3}
-                />
-                <Text style={[styles.likeCount, list.likedByMe && { color: colors.danger }]}>
-                  {list.likeCount}
-                </Text>
+              </Txt>
+              <Pressable
+                onPress={onLike}
+                hitSlop={space[8]}
+                accessibilityRole="button"
+                accessibilityLabel={t('a11y.like')}
+                accessibilityState={{ selected: liked }}
+                style={styles.likeBtn}
+              >
+                <Icon name="heart" size={K.listLike.icon} color={liked ? colors.red : colors.text3} fill={liked ? colors.red : 'none'} />
+                <Txt variant="footnoteMedium" style={[styles.num, { color: liked ? colors.red : colors.text3 }]}>{list.likeCount}</Txt>
               </Pressable>
             </View>
           </View>
@@ -184,37 +180,23 @@ export default function PublicListScreen() {
   );
 }
 
-const makeStyles = (colors) => StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 50 },
+const makeStyles = () => StyleSheet.create({
+  safe: { flex: 1 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  head: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: spacing.md, paddingTop: 6, paddingBottom: spacing.xs,
-  },
-  iconBtn: {
-    width: 44, height: 44, borderRadius: 22, backgroundColor: colors.card,
-    alignItems: 'center', justifyContent: 'center',
-  },
-
-  header: { paddingHorizontal: 5, paddingBottom: 14 },
+  header: { paddingTop: space[8], paddingBottom: space[16] },
+  // Gizlenmiş liste bildirimi — 2.0 kart yüzeyi; vurgu yalnız ikonda.
   notice: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
-    backgroundColor: colors.accentBg, borderRadius: radius.md,
-    borderWidth: 1, borderColor: colors.accentBorder,
-    padding: spacing.md, marginBottom: 14,
+    flexDirection: 'row', alignItems: 'center', gap: space[8],
+    padding: space[12], borderRadius: dsRadius.button, marginBottom: space[16],
   },
-  noticeText: { flex: 1, color: colors.text, fontSize: type.footnote, lineHeight: 18 },
+  noticeText: { flex: 1 },
 
-  title: { color: colors.text, fontSize: type.title2, fontWeight: '900', letterSpacing: -0.5 },
-  desc: { color: colors.text2, fontSize: type.subhead, marginTop: 7, lineHeight: 20 },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: spacing.md },
-  meta: { flex: 1, color: colors.text3, fontSize: type.footnote },
-  likeBtn: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  likeCount: { color: colors.text3, fontSize: type.footnote, fontWeight: '700' },
+  desc: { marginTop: space[8] },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: space[12], marginTop: space[12] },
+  meta: { flex: 1 },
+  likeBtn: { flexDirection: 'row', alignItems: 'center', gap: K.listLike.inlineGap },
+  num: { fontVariant: ['tabular-nums'] },
 
   list: { paddingHorizontal: spacing.s20 },
-
-  emptyTitle: { color: colors.text, fontSize: type.body, fontWeight: '800', marginTop: spacing.md },
-
 });
