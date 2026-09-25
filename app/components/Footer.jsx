@@ -1,3 +1,5 @@
+'use client';
+
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
 import { LOGO_SRC, LOGO_DARK_SRC, LOGO_LIGHT_SRC } from '../lib/logo';

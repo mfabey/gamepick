@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { LOGO_SRC, LOGO_DARK_SRC, LOGO_LIGHT_SRC } from '../lib/logo';
 
 export default function NavBar() {
