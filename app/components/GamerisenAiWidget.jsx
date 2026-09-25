@@ -106,8 +106,40 @@ export default function GamerisenAiWidget() {
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const promptsRef = useRef(null);
+  const messagesRef = useRef(messages);
+  const sessionIdRef = useRef(sessionId);
+  const userGpuRef = useRef(userGpu);
+  const isAuthenticatedRef = useRef(isAuthenticated);
+  const sendMessageRef = useRef(null);
+
+  useEffect(() => { messagesRef.current = messages; }, [messages]);
+  useEffect(() => { sessionIdRef.current = sessionId; }, [sessionId]);
+  useEffect(() => { userGpuRef.current = userGpu; }, [userGpu]);
+  useEffect(() => { isAuthenticatedRef.current = isAuthenticated; }, [isAuthenticated]);
 
   const API_BASE = process.env.NEXT_PUBLIC_AI_API_URL || '';
+
+  // Global event listener: /discover ve anasayfadan gelen doğrudan AI sorguları
+  useEffect(() => {
+    const handleOpenAi = (e) => {
+      const q = e?.detail?.query || '';
+      setIsOpen(true);
+      setHasAcknowledgedBeta(true);
+      if (q && q.trim()) {
+        setTimeout(() => {
+          if (sendMessageRef.current) {
+            sendMessageRef.current(q.trim());
+          }
+        }, 120);
+      }
+    };
+    window.addEventListener('gamerisen:open-ai', handleOpenAi);
+    window.addEventListener('gamerisen:ai:query', handleOpenAi);
+    return () => {
+      window.removeEventListener('gamerisen:open-ai', handleOpenAi);
+      window.removeEventListener('gamerisen:ai:query', handleOpenAi);
+    };
+  }, []);
 
   // Load saved user GPU from localStorage
   useEffect(() => {
@@ -189,12 +221,16 @@ export default function GamerisenAiWidget() {
   };
 
   const sendMessage = async (textToSend) => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticatedRef.current && !isAuthenticated) {
+      setIsOpen(true);
+      return;
+    }
     const text = (textToSend || inputValue).trim();
     if (!text || isLoading) return;
 
     setInputValue('');
-    const newMessages = [...messages, { role: 'user', text }];
+    const curMsgs = messagesRef.current || [];
+    const newMessages = [...curMsgs, { role: 'user', text }];
     setMessages(newMessages);
     setIsLoading(true);
 
@@ -205,9 +241,10 @@ export default function GamerisenAiWidget() {
         if (savedProfile) userProfile = JSON.parse(savedProfile);
       } catch (e) {}
 
-      if (userGpu) {
+      const currentGpu = userGpuRef.current || userGpu;
+      if (currentGpu) {
         if (!userProfile.hardware) userProfile.hardware = {};
-        userProfile.hardware.gpu = userGpu;
+        userProfile.hardware.gpu = currentGpu;
       }
 
       const res = await fetch(`${API_BASE}/api/ai/chat`, {
@@ -215,7 +252,7 @@ export default function GamerisenAiWidget() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: text,
-          session_id: sessionId || undefined,
+          session_id: sessionIdRef.current || undefined,
           profile: userProfile || undefined,
           history: newMessages.slice(-8)
         })
@@ -322,6 +359,8 @@ export default function GamerisenAiWidget() {
       setIsLoading(false);
     }
   };
+
+  sendMessageRef.current = sendMessage;
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {

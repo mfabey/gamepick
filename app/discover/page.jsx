@@ -130,12 +130,16 @@ function KesfetIcerik() {
     ara(adresQ);
   }, [adresQ, ara]);
 
-  // Gönderim ADRESİ değiştiriyor, doğrudan aramıyor — tek kaynak kalsın.
-  // `push` değil `replace`: her arama geçmişe bir kayıt eklerse geri tuşu
-  // sayfadan çıkmak için art arda basmayı gerektirirdi.
+  // Gönderim ADRESİ değiştiriyor ve Gamerisen AI asistan penceresini canlı açıyor
   const gonder = useCallback((metin) => {
     const q = (metin ?? query).trim();
     if (!q || loading) return;
+
+    // Gamerisen AI widget'ına sorguyu gönder ve pencereyi otomatik aç
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('gamerisen:open-ai', { detail: { query: q } }));
+    }
+
     if (q === adresQ) { ara(q); return; }   // aynı sorgu → adres değişmez, elle çalıştır
     router.replace(`/discover?q=${encodeURIComponent(q.slice(0, MAX_UZUNLUK))}`);
   }, [query, loading, adresQ, ara, router]);
@@ -151,15 +155,15 @@ function KesfetIcerik() {
       <section className="page-title-block" style={{ padding: '58px 0 22px', background: 'var(--hero-bg)', borderBottom: '1px solid var(--border)' }}>
         <div style={{ maxWidth: 780, margin: '0 auto', padding: '0 24px' }}>
           <p style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: 12 }}>
-            ● {tr ? 'Ne istediğini yaz, oyunu biz bulalım' : 'Describe it, we find the game'}
+            ● {tr ? 'Gamerisen AI ile Sana Göre Bir Oyun Keşfet' : 'Discover Your Next Game with Gamerisen AI'}
           </p>
           <h1 style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: 'clamp(32px,4.2vw,50px)', lineHeight: 1.05, letterSpacing: '-1.4px', color: 'var(--text)', marginBottom: 12 }}>
-            {tr ? 'Keşfet' : 'Discover'}
+            {tr ? 'Sana Göre Bir Oyun' : 'Discover'}
           </h1>
           <p style={{ fontSize: 16.5, color: 'var(--text-2)', maxWidth: 540, lineHeight: 1.55 }}>
             {tr
-              ? 'Tür adı bilmene gerek yok. Nasıl bir şey istediğini kendi cümlelerinle anlat.'
-              : 'No need to know genre names. Just describe what you feel like playing.'}
+              ? 'Tür adı bilmene gerek yok. Nasıl bir his, hikaye veya bütçe istediğini yaz; Gamerisen AI anında cevaplasın.'
+              : 'No need to know genre names. Just describe what you feel like playing and Gamerisen AI will respond.'}
           </p>
         </div>
       </section>
@@ -205,9 +209,60 @@ function KesfetIcerik() {
                 cursor: (!query.trim() || loading) ? 'not-allowed' : 'pointer',
                 opacity: (!query.trim() || loading) ? 0.55 : 1,
                 boxShadow: '0 6px 18px var(--accent-bg)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
               }}
             >
-              {loading ? (tr ? 'Aranıyor…' : 'Searching…') : (tr ? 'Oyun bul' : 'Find games')}
+              <span>🤖</span>
+              <span>{loading ? (tr ? 'AI Aranıyor…' : 'AI Searching…') : (tr ? 'Gamerisen AI ile Bul' : 'Ask Gamerisen AI')}</span>
+            </button>
+          </div>
+
+          {/* AI Entegrasyon Bilgi Kartı */}
+          <div style={{
+            marginTop: 18,
+            padding: '12px 16px',
+            borderRadius: 12,
+            background: 'linear-gradient(135deg, rgba(229, 9, 20, 0.12) 0%, rgba(20, 20, 25, 0.4) 100%)',
+            border: '1px solid rgba(229, 9, 20, 0.28)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+            flexWrap: 'wrap',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 20 }}>⚡</span>
+              <div>
+                <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
+                  {tr ? 'Canlı Gamerisen AI Yanıtı' : 'Live Gamerisen AI Responses'}
+                </p>
+                <p style={{ fontSize: 11.5, color: 'var(--text-3)', margin: '2px 0 0 0' }}>
+                  {tr ? 'Yazdığınız her cümle sağ alttaki yapay zeka asistanımıza bağlanır ve anında oyun/fiyat çıkarır.' : 'Everything you type connects directly to our AI assistant with live price and FPS estimates.'}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('gamerisen:open-ai', { detail: { query: query.trim() || (tr ? 'Canım sıkıldı, bana harika bir oyun öner' : 'Recommend me a great game') } }));
+                }
+              }}
+              style={{
+                padding: '6px 14px',
+                borderRadius: 8,
+                background: 'rgba(255,255,255,0.08)',
+                border: '1px solid rgba(255,255,255,0.15)',
+                color: 'var(--text)',
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {tr ? 'Asistanı Aç 💬' : 'Open Chat 💬'}
             </button>
           </div>
 
