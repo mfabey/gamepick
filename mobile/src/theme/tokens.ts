@@ -522,6 +522,9 @@ export const component = {
   // Reels (tasarımda karşılığı yok): yan eylem dairesi dikeyde IconButton 44,
   // yatayda 34 (ikon 17); "Detay" okunun boyu 13.
   reels: { actionCompact: 34, actionIconCompact: 17, hintIcon: 13 },
+  // Kütüphane: kilit ikonu 54, hata ikonu 44 (eski ekranla aynı); hesap kartı
+  // avatarı 52, "Genel" görünümünde yığın 44 (üst üste 14, zemin halkası 2).
+  library: { lockIcon: 54, errorIcon: 44, avatar: 52, stackAvatar: 44, stackOverlap: 14, stackRing: 2 },
   // G-06b Filtre sayfası — kit s2.py filters(): tutamaç 36×5 (köşe 3, üstte 8),
   // başlık satırı 44 (yan dolgu 12; Sıfırla tertiary 36 · başlık · 32 pt ×),
   // gövde üstü 10, bölümler arası 20, bölüm başlığı 20 yüksek ve içerikten 12,

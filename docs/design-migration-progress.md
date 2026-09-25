@@ -1482,3 +1482,37 @@ başarılı. Cihazda görülmedi (emülatör yok): swipe kartında türlerin ve
 damgaların okunurluğu, reels'te cam dairelerin açık sahnelerde seçilebilirliği
 ve etkin (kırmızı) ikonun videoda görünürlüğü, game-cards şehir anahtarı
 gözle bakılmalı.
+
+### 25 Eylül — Tasarım dışı ekranlar: kütüphane gövdesi (Claude)
+
+Grup C'de yalnız başlığı geçmişti; gövde de 2.0'a geçti.
+
+- **Kilit ekranı:** 2.0 `grid` ikonu + `title2` + açıklama. Bağlama
+  satırları Ayarlar'ın "Hesap" grubuyla AYNI (`ListGroup` + `ListRow`,
+  Steam `bag` · Xbox `pad`, meşgulken gösterge) — eskiden burada ayrı, sabit
+  marka renkli düğmeler vardı. Profil yokken 2.0 `Button` (userplus).
+  Profil kilidi kuralı aynen.
+- **Kaynak seçici:** 2.0 `Chip` (Genel `layers` · Steam `bag` · Xbox `pad`).
+- **Hesap kartı:** istatistik ekranı dili — surface1 köşe 18, renkli üst
+  şerit ve kenarlık kalktı; `UserAvatar` (Genel'de zemin halkalı yığın,
+  friends bandı kalıbı); hücreler `statValue` + caption, değer yeşil.
+  **Saat soneki** `lang === 'tr' ? 's' : 'h'` idi → `home.hoursShort`
+  ("46 sa"; kutucuk alt satırıyla aynı).
+- **Arama / sıralama:** 2.0 `SearchField` (temizle düğmesi kendi), sıralama
+  kısa boy `Segmented` + sağda süzülmüş sayı.
+- **Alt dolgu `TAB_SPACE` → güvenli alan + 40** (plan §4.1'in dört
+  ekranından sonuncusu; steam-friends ve game-cards önceden düzeldi).
+- Ölçüler `tokens.component.library`; `check:spacing` 69 → 59.
+
+**Mantık aynen:** fiyat isteği, widget verisi, birleşik istatistik, süzme ve
+sıralama, çevrimdışı bandı, aşağı çekip yenileme.
+
+**Tasarım dışı ekranlar tamamlandı:** tarama listesindeki 15 ekranın hepsi
+2.0 kütüphanesini kullanıyor. Ortak `EmptyState`, `CevrimdisiBant`,
+`CollectionPicker` (eski `IconButton`'ın son tüketicisi) ve iskelet
+yükleyiciler bu işin dışında kaldı.
+
+**Doğrulama:** `npm run check` geçti, `npx expo export` iOS ve Android
+başarılı. Cihazda görülmedi (emülatör yok): kilit ekranı, Genel görünümün
+avatar yığını, dört hücreli Steam kartında değer sütununun sığması gözle
+bakılmalı.
