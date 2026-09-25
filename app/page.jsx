@@ -430,7 +430,6 @@ const Section = memo(function Section({ title, subtitle, href, games, loading, b
 function CinematicShowcase({ games, loading }) {
   const { t, lang, formatPrice } = useLanguage();
   const [active, setActive] = useState(0);
-  const [paused, setPaused] = useState(false);
   const [interacting, setInteracting] = useState(false);
 
   const promoItem = useMemo(() => ({
@@ -454,10 +453,10 @@ function CinematicShowcase({ games, loading }) {
   }, [games, promoItem]);
 
   useEffect(() => {
-    if (list.length < 2 || paused || interacting || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (list.length < 2 || interacting || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const iv = setInterval(() => setActive(a => (a + 1) % list.length), 6000);
     return () => clearInterval(iv);
-  }, [list.length, active, paused, interacting]); // Reset timer when active game changes manually
+  }, [list.length, active, interacting]); // Reset timer when active game changes manually
 
   if (loading && !games.length) return <div className="showcase-loading" role="status">{lang === 'tr' ? 'Oyun vitrini hazırlanıyor…' : 'Loading featured games…'}</div>;
   const g = list[active] || list[0];
@@ -475,12 +474,6 @@ function CinematicShowcase({ games, loading }) {
             <Link href={href} target={g.isPromo ? '_blank' : undefined} rel={g.isPromo ? 'noopener noreferrer' : undefined} className="btn btn-red">{g.isPromo ? (lang === 'tr' ? 'Fırsatı gör' : 'View offer') : (lang === 'tr' ? 'Oyunu incele' : 'Explore game')} ↗</Link>
             {!g.isPromo && g.price != null && <span className="showcase-price">{g.discount > 0 && <del>{formatPrice(g.original)}</del>}<strong>{g.isFree ? t('card.free') : formatPrice(g.price)}</strong>{g.discount > 0 && <em>−{g.discount}%</em>}</span>}
           </div>
-        </div>
-        <div className="showcase-controls">
-          <span>{String(Math.min(active + 1, list.length)).padStart(2, '0')} / {String(list.length).padStart(2, '0')}</span>
-          <button onClick={() => setPaused(p => !p)} aria-label={paused ? (lang === 'tr' ? 'Vitrini oynat' : 'Play slideshow') : (lang === 'tr' ? 'Vitrini duraklat' : 'Pause slideshow')}>{paused ? '▶' : 'Ⅱ'}</button>
-          <button onClick={() => setActive(a => (a - 1 + list.length) % list.length)} aria-label={lang === 'tr' ? 'Önceki oyun' : 'Previous game'}>←</button>
-          <button onClick={() => setActive(a => (a + 1) % list.length)} aria-label={lang === 'tr' ? 'Sonraki oyun' : 'Next game'}>→</button>
         </div>
       </div>
       <div className="showcase-list">
