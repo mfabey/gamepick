@@ -1,6 +1,6 @@
 {
   "name": "gamerisen-mobile",
-  "version": "2.7.2",
+  "version": "2.8.0",
   "main": "expo-router/entry",
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",

@@ -5,61 +5,63 @@ için yazıldı. Yalnızca koddan/git'ten okunamayacak şeyler burada.
 
 ---
 
-## GÜNCEL — 25 Eylül 2026 (Windows oturumundan Mac'e devir)
+## GÜNCEL — 27 Eylül 2026 (Mac, 2.8.0 mağaza derlemesi)
 
 **Önce bunu oku; aşağıdaki "Eski devir" bölümü tarihsel.**
 
 ### Durum
 - Dal **`design-v2`**, `origin` ile eşit. Mobil 2.0 işi burada; site yalnız
   `main`'den yayınlanıyor ve bu işin hiçbiri `main`'e gitmedi.
-- 25 Eylül'de: tasarım dışı 15 ekranın hepsi, kütüphane gövdesi, `EmptyState`
-  ve `CollectionPicker` 2.0'a geçti. Ayrıntı ve gerekçeler:
-  `docs/design-migration-progress.md` → "25 Eylül" kayıtları.
-- **Hiçbiri cihazda görülmedi.** Kontrol listesi:
-  `docs/cihaz-kontrol-2026-09-25.md` — Mac'te İLK İŞ bu.
+- Sürüm **2.8.0** (app.json + package.json). Mağazadaki 2.7.2'de olmayan yerli
+  modüller var (`expo-blur`, Google Sign-In): runtime politikası `appVersion`
+  olduğu için **bu daldan 2.7.2'ye OTA GÖNDERİLEMEZ** — çöker. 2.8.0 ayrı runtime.
+- 27 Eylül: 2.8.0 için EAS **production** derlemesi başlatıldı — kullanıcı
+  kararı "yalnız derle": App Store Connect'e yükleme / incelemeye gönderme
+  YAPILMADI. Durum: `cd mobile && npx eas-cli build:list --platform ios --limit 3`.
+- 25–26 Eylül 2.0 geçişlerinin cihaz turu yapıldı (iOS simülatör, oturumlu ve
+  oturumsuz): `docs/cihaz-kontrol-2026-09-25.md` — bulgular ve düzeltmeler orada.
+- **Canlı Çubuk** (yeni navbar, `fcb7e1a`): tasarım tuvali
+  https://claude.ai/artifact/AS3srUgnzw3EoNPxAWyKca (özel). Kod:
+  `src/components/navigation/{TabBar.tsx,CanliCubuk.tsx}`,
+  `src/services/canliCubuk.js`. Android yalnız `expo export` ile paketlendi —
+  **görsel olarak doğrulanmadı** (bu Mac'te Android SDK yok).
 
-### iOS'ta görmek
-- **Expo Go KULLANILAMAZ:** proje Expo SDK 54, App Store'daki Expo Go SDK 57
-  (iOS'ta eski Expo Go kurulamıyor).
-- EAS **development build** alındı: `31e669b0-bb34-42b0-b929-d7676baad0d1`
-  (commit `a2ea7bc`, dahili dağıtım). Kullanıcının iPhone'u EAS'e kayıtlı
-  (Apple ekibi `KFH2UBR5AP`). Bu build **gerçek cihaz** içindir, simülatörde
-  çalışmaz. Telefona kurulup kurulmadığı belirsiz kaldı.
-- Cihazda: `cd mobile && npx expo start --dev-client` → QR / uygulamada URL.
-- **Simülatörde** (Mac): yerel derleme — `docs/DURUM.md` → macOS bölümü
-  (`npx expo prebuild -p ios`, `pod install`, `LANG=en_US.UTF-8`).
-  Ekran görüntüsü: `xcrun simctl io <UDID> screenshot` (iki simülatör açıksa
-  `booted` yanlış olana gider).
+### iOS'ta görmek (Mac)
+- Expo Go kullanılamaz (SDK 54). `npx expo run:ios` bu makinede çalışmıyor
+  (simülatörü fiziksel cihaz sanıyor) — işleyen yol `docs/DURUM.md` → macOS:
+  `npx expo prebuild -p ios --clean`, `LANG=en_US.UTF-8 pod install`, Release
+  `xcodebuild … -sdk iphonesimulator`, `simctl install/launch`.
+- Simülatörler: iPhone 17 Pro `30A5F08D…` (oturumsuz, açık tema) ve
+  **"Gamerisen SE"** `978B2F6D…` (375×667 = iPad uyumluluk kanvası; oturumlu
+  test hesabı, Almanca). İki simülatör açıkken `booted` yerine UDID ver.
+- Dokunma / kaydırma / erişilebilirlik ağacı: **AXe** CLI (Homebrew Xcode 27
+  istediği için GitHub sürüm ikilisi, scratchpad'e indirildi). Push denemesi:
+  `xcrun simctl push <UDID> com.gamerisen.app x.json` — veri `body` altında.
 
-### Kullanıcının kuralları (Windows'taki Claude belleğindeydi, Mac'e taşınmaz)
+### Kullanıcının kuralları
 - **Mobil çalışırken kökteki `app/` (web, Next.js) koduna dokunma.** Web'de
-  sorun görülürse yalnız okuyarak teşhis et; düzeltme için önce sor. `main`'e
-  başka biri de doğrudan commit atıyor.
-- Her iş sonunda dur, onay bekle (`CLAUDE.md`). Kullanıcının kalıbı:
-  "commit et pushla, sonra X'e geç" — push onayı her iş için ayrı.
+  sorun görülürse yalnız okuyarak teşhis et; düzeltme için önce sor.
+- Her iş sonunda dur, onay bekle (`CLAUDE.md`). Push onayı her iş için ayrı.
 
 ### Sıradaki
-1. Cihaz / simülatör kontrolü (yukarıdaki liste), bulunanları düzelt.
-2. Kod tarafında kalan 2.0 işleri (sunucu gerektirmeyen), önerilen sıra:
-   alt sayfalar (`ReportSheet`, `PersonMenu`, `ShareToFriendSheet`,
-   `PublishSheet`, `ChoiceSheet` → DS 4 Bottom Sheet) · hata durumları
-   (`CevrimdisiBant`, `LimitedMode`) · gönderi/inceleme ailesi
-   (`GamePostCard`, `GameReviews`, `ReviewComposer`, `ProfileReviewRow`,
-   `DevBadge` → Badge, `OwnershipBand` → StatusPill) · sohbet (`MessageMenu`,
-   `GifPicker`) · G-02 Tanıtım (`AcilisPerdesi`, `IpucuSeridi`) · artıklar
-   (`discover` başlığı, birkaç Ionicons, 2 sütunlu iskelet, `auth` /
-   `delete-account` sabit Türkçe hata metinleri, ölü `FloatingTabBar.jsx` ve
-   `StoreLogo.jsx` — `AGENTS.md` hâlâ FloatingTabBar'ı anlatıyor).
-3. Sunucu gerektirenler: birleşik arama (G-05/06), fiyat geçmişi (G-08),
+1. 2.8.0 derlemesi bitince: kullanıcı App Store Connect'e yükleme/inceleme
+   kararını verecek (sürüm notları, ekran görüntüleri — ekran görüntüleri
+   yeni tasarımla yeniden çekilmeli).
+2. Açık kalanlar: basılı tut + kaydırarak sekme tarama (Canlı Çubuk) ·
+   Swipe kartında sunucudan Türkçe gelen tür etiketleri · filtre sayfası
+   açıkken gelen derin bağlantı Modal'ın altında açılıyor · büyüme geçişinde
+   sekme çubuğu bindirmenin üstünde · Android görsel doğrulaması (Mac'te SDK
+   yok; Windows'ta da SDK silinmiş, `Gamerisen_API36` AVD tanımı duruyor).
+3. Kalan 2.0 işleri (sunucusuz): alt sayfalar (`PersonMenu`,
+   `ShareToFriendSheet`, `PublishSheet`, `ChoiceSheet` → DS 4) · hata
+   durumları (`CevrimdisiBant`, `LimitedMode`) · gönderi/inceleme ailesi ·
+   sohbet (`MessageMenu`, `GifPicker`) · G-02 Tanıtım · artıklar (ölü
+   `FloatingTabBar.jsx` / `StoreLogo.jsx` — `AGENTS.md` hâlâ FloatingTabBar'ı
+   anlatıyor).
+4. Sunucu gerektirenler: birleşik arama (G-05/06), fiyat geçmişi (G-08),
    bildirimler (G-20), oyun toplulukları (G-11).
-4. Kullanıcı kararı bekleyenler: `docs/design-migration.md` §7 — özellikle
-   12 (profil sekmeleri metin/ikon), 3 (G-02b), 4 (Google/Steam girişi),
-   16 (2.8.0), 17 (sunucu sırası), 11 (web 2.0).
-
-### Windows makinesi notu
-Android SDK silinmiş (`ANDROID_HOME` = `%LOCALAPPDATA%\Android\Sdk` yok);
-`Gamerisen_API36` AVD tanımı duruyor. Android emülatörü için SDK yeniden
-kurulmalı.
+5. Kullanıcı kararı bekleyenler: `docs/design-migration.md` §7 — 12, 3, 4,
+   17, 11. (16 kapandı: 2.8.0.)
 
 ---
 

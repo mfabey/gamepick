@@ -2,7 +2,7 @@
   "expo": {
     "name": "Gamerisen",
     "slug": "gamerisen",
-    "version": "2.7.2",
+    "version": "2.8.0",
     "orientation": "default",
     "icon": "./assets/brand/app-icon/ios-light.png",
     "scheme": "gamerisen",
