@@ -430,7 +430,6 @@ const Section = memo(function Section({ title, subtitle, href, games, loading, b
 function CinematicShowcase({ games, loading }) {
   const { t, lang, formatPrice } = useLanguage();
   const [active, setActive] = useState(0);
-  const [interacting, setInteracting] = useState(false);
 
   const promoItem = useMemo(() => ({
     id: 'willsavor-promo',
@@ -452,19 +451,26 @@ function CinematicShowcase({ games, loading }) {
     return [...raw.slice(0, 2), promoItem, ...raw.slice(2)].slice(0, 6);
   }, [games, promoItem]);
 
+  // Otomatik vitrin geçişi (arkada yavaş yavaş ve kesintisiz)
   useEffect(() => {
-    if (list.length < 2 || interacting || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const iv = setInterval(() => setActive(a => (a + 1) % list.length), 6000);
+    if (list.length < 2) return;
+    const iv = setInterval(() => {
+      setActive(a => (a + 1) % list.length);
+    }, 6000);
     return () => clearInterval(iv);
-  }, [list.length, active, interacting]); // Reset timer when active game changes manually
+  }, [list.length, active]); // active değiştiğinde sayacı sıfırlar ve 6 saniye sonra bir sonrakine geçer
 
   if (loading && !games.length) return <div className="showcase-loading" role="status">{lang === 'tr' ? 'Oyun vitrini hazırlanıyor…' : 'Loading featured games…'}</div>;
   const g = list[active] || list[0];
   const href = g.isPromo ? g.promoUrl : (g.rawgSlug ? `/game/${g.rawgSlug}` : `/game/${g.id}`);
   return (
-    <section className="game-showcase" aria-label={lang === 'tr' ? 'Öne çıkanlar' : 'Featured games'} onMouseEnter={() => setInteracting(true)} onMouseLeave={() => setInteracting(false)} onFocusCapture={() => setInteracting(true)} onBlurCapture={e => { if (!e.currentTarget.contains(e.relatedTarget)) setInteracting(false); }}>
-      <div className="showcase-stage">
-        {g.isPromo ? <img className="showcase-art" src={g.promoImage} alt="" /> : <GameImage key={g.id} game={g} alt="" fill isHero style={{ objectFit: 'cover' }} />}
+    <section className="game-showcase" aria-label={lang === 'tr' ? 'Öne çıkanlar' : 'Featured games'}>
+      <div className="showcase-stage" key={g.id || active}>
+        {g.isPromo ? (
+          <img className="showcase-art showcase-fade" src={g.promoImage} alt="" />
+        ) : (
+          <GameImage key={g.id} game={g} alt="" fill isHero className="showcase-fade" style={{ objectFit: 'cover' }} />
+        )}
         <div className="showcase-shade" />
         <div className="showcase-copy">
           <p className="showcase-kicker"><span />{g.isPromo ? 'SPONSOR' : (lang === 'tr' ? 'VİTRİNDE' : 'IN THE SPOTLIGHT')}</p>
