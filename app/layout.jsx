@@ -1,4 +1,4 @@
-﻿import './globals.css';
+import './globals.css';
 import './redesign.css';
 import './desktop.css';
 import { Schibsted_Grotesk } from 'next/font/google';
@@ -8,6 +8,7 @@ import { LanguageProvider } from './context/LanguageContext';
 import NavBar from './components/NavBar';
 import Footer from './components/Footer';
 import GamerisenAiWidget from './components/GamerisenAiWidget';
+import IntroSplash from './components/IntroSplash';
 
 const schibsted = Schibsted_Grotesk({
   subsets: ['latin'],
@@ -78,6 +79,7 @@ export default function RootLayout({ children }) {
       </head>
       <body>
         <ThemeProvider>
+          <IntroSplash />
           <LanguageProvider>
             <AuthProvider>
               <NavBar />
