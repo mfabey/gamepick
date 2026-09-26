@@ -444,7 +444,11 @@ export default function ProfileScreen() {
       );
     }
     const map = {
-      collection: { icon: 'layers', title: t('col.empty'), text: t('col.emptyText'), label: t('nav.games'), go: '/games' },
+      // Koleksiyon VAR ama hepsi boşsa "henüz koleksiyon yok" yanlış konuşuyordu
+      // (26 Eyl, SE: bir boş koleksiyonla profil "Koleksiyon yok" diyordu).
+      collection: (collections?.length || 0) > 0
+        ? { icon: 'layers', title: t('prof.colNoGames'), text: t('col.emptyListText'), label: t('nav.games'), go: '/games' }
+        : { icon: 'layers', title: t('col.empty'), text: t('col.emptyText'), label: t('nav.games'), go: '/games' },
       wishlist:   { icon: 'heart', title: t('prof.emptyWishlist'), text: t('prof.emptyWishlistDesc'), label: t('nav.games'), go: '/games' },
       reviews:    { icon: 'shield', title: t('rev.mineEmpty'), text: t('rev.mineEmptyDesc'), label: t('tab.community'), go: '/(tabs)/reviews' },
       posts:      { icon: 'comment', title: t('prof.emptyPosts'), text: t('prof.emptyPostsDesc'), label: t('tab.community'), go: '/(tabs)/reviews' },

@@ -223,6 +223,7 @@ export default {
   'col.gameCountOne': 'Spiel',
   'col.emptyList': 'Diese Sammlung ist leer',
   'col.emptyListText': 'Du kannst Spiele über jede Spieleseite hinzufügen.',
+  'prof.colNoGames': 'Deine Sammlungen sind noch leer',
   'col.addTo': 'Zur Sammlung hinzufügen',
   'col.added': 'Hinzugefügt',
   'col.removeGame': 'Aus der Liste entfernen',

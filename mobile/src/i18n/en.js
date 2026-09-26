@@ -214,6 +214,7 @@ export default {
   'col.gameCountOne': 'game',
   'col.emptyList': 'This collection is empty',
   'col.emptyListText': 'You can add games from any game detail page.',
+  'prof.colNoGames': 'Your collections are empty',
   'col.addTo': 'Add to collection',
   'col.added': 'Added',
   'col.removeGame': 'Remove from list',

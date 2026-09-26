@@ -221,6 +221,7 @@ export default {
   'col.gameCountOne': 'oyun',
   'col.emptyList': 'Bu koleksiyon boş',
   'col.emptyListText': 'Oyun detay sayfasından koleksiyona ekleyebilirsin.',
+  'prof.colNoGames': 'Koleksiyonların henüz boş',
   'col.addTo': 'Koleksiyona ekle',
   'col.added': 'Eklendi',
   'col.removeGame': 'Listeden çıkar',

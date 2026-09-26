@@ -221,6 +221,7 @@ export default {
   'col.gameCountOne': 'jogo',
   'col.emptyList': 'Esta coleção está vazia',
   'col.emptyListText': 'Você pode adicionar jogos pela página de qualquer jogo.',
+  'prof.colNoGames': 'Suas coleções estão vazias',
   'col.addTo': 'Adicionar à coleção',
   'col.added': 'Adicionado',
   'col.removeGame': 'Remover da lista',
