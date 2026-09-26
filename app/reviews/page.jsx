@@ -16,6 +16,7 @@ import Link from 'next/link';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { isAvatarPhoto } from '../lib/avatar-presets';
+import { LOGO_SRC } from '../lib/logo';
 
 // Sunucunun sayfa boyutu
 const SAYFA = 20;
@@ -466,6 +467,8 @@ function PostComposer({ user, onPostCreated, tr }) {
     setLoading(false);
   };
 
+  const isUserDev = isPrivilegedUser(user);
+  const userAvatarSrc = isUserDev ? (user?.avatar || LOGO_SRC) : user?.avatar;
   const ad = user.displayName || user.name || user.username || (tr ? 'Kullanıcı' : 'User');
   const bas = (ad || '?').trim().charAt(0).toUpperCase();
 
@@ -474,9 +477,9 @@ function PostComposer({ user, onPostCreated, tr }) {
       <div style={{ display: 'flex', gap: 12 }}>
         {/* Kullanıcı Avatarı */}
         <div style={{ width: 40, height: 40, borderRadius: '50%', overflow: 'hidden', flexShrink: 0, background: 'var(--bg-hover)', display: 'grid', placeItems: 'center' }}>
-          {isAvatarPhoto(user.avatar)
+          {isAvatarPhoto(userAvatarSrc)
             /* eslint-disable-next-line @next/next/no-img-element */
-            ? <img src={user.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ? <img src={userAvatarSrc} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             : <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--accent)' }}>{bas}</span>}
         </div>
 
@@ -645,12 +648,13 @@ function Yazar({ author, at, tr }) {
   const bas = (ad || '?').trim().charAt(0).toUpperCase();
   const tarih = new Date(Number(at) || 0);
   const isDev = isPrivilegedUser(author);
+  const avatarSrc = isDev ? (author?.avatar || LOGO_SRC) : author?.avatar;
 
   const avatar = (
     <div style={{ width: 38, height: 38, borderRadius: '50%', overflow: 'hidden', flexShrink: 0, background: 'var(--bg-hover)', display: 'grid', placeItems: 'center' }}>
-      {isAvatarPhoto(author?.avatar)
+      {isAvatarPhoto(avatarSrc)
         /* eslint-disable-next-line @next/next/no-img-element */
-        ? <img src={author.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        ? <img src={avatarSrc} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         : <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-3)' }}>{bas}</span>}
     </div>
   );

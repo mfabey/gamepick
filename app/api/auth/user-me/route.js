@@ -3,6 +3,7 @@ import { signValue, readValue, SESSION_TTL_SEC, LINK_TTL_SEC } from '../../../li
 import { cookies } from 'next/headers';
 import { redisCmd, redisGetJSON, redisSetJSON } from '../../../lib/redis';
 import { mergeProfile, getProfile } from '../../../lib/social-store';
+import { LOGO_SRC } from '../../../lib/logo';
 
 export const dynamic = 'force-dynamic';
 
@@ -79,12 +80,13 @@ export async function GET() {
       profile = await getProfile(user.uid);
     } catch {}
 
+    const isPrivilegedAdmin = ['batuta', 'test'].includes(String(profile?.username || user.username || '').toLowerCase().trim());
     const enrichedUser = {
       ...user,
       ...(profile || {}),
       username: profile?.username || user.username || null,
       displayName: profile?.displayName || user.displayName || user.name || null,
-      avatar: profile?.avatar || user.avatar || user.photoURL || null,
+      avatar: isPrivilegedAdmin ? (profile?.avatar || LOGO_SRC) : (profile?.avatar || user.avatar || user.photoURL || null),
       bio: profile?.bio || user.bio || null,
     };
 

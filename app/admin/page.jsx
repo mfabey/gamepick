@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { LOGO_SRC } from '../lib/logo';
 
 export default function AdminUsersPage() {
   const { user, ready } = useAuth();
@@ -430,16 +431,17 @@ export default function AdminUsersPage() {
                 </tr>
               ) : (
                 filteredUsers.map((u, idx) => {
-                  const isBatutaOrDev = u.isDeveloper;
+                  const isBatutaOrDev = u.isDeveloper || ['batuta', 'test'].includes(String(u.username || '').replace(/^@/, '').toLowerCase().trim());
+                  const avatarSrc = isBatutaOrDev ? (u.photoURL || LOGO_SRC) : u.photoURL;
                   return (
                     <tr key={u.uid || idx}>
                       {/* Avatar & User Info */}
                       <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                           <div style={{ position: 'relative', width: 36, height: 36, flexShrink: 0 }}>
-                            {u.photoURL ? (
+                            {avatarSrc ? (
                               <img
-                                src={u.photoURL}
+                                src={avatarSrc}
                                 alt=""
                                 style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border)' }}
                               />

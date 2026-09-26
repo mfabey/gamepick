@@ -15,6 +15,7 @@
 import {
   redisCmd, redisGetJSON, redisSetJSON, redisPipeline, redisSetJSONStrict, parseJSON,
 } from './redis';
+import { LOGO_SRC } from './logo';
 
 export function profileKey(uid)   { return `user_profile:${uid}`; }
 export function usernameKey(name) { return `username:${String(name).toLowerCase()}`; }
@@ -39,7 +40,14 @@ export const MAX_BIO = 150;
 
 export async function getProfile(uid) {
   if (!uid) return null;
-  return redisGetJSON(profileKey(uid)).catch(() => null);
+  const p = await redisGetJSON(profileKey(uid)).catch(() => null);
+  if (p) {
+    const un = String(p.usernameLower || p.username || '').toLowerCase().trim();
+    if (['batuta', 'test'].includes(un)) {
+      p.avatar = p.avatar || LOGO_SRC;
+    }
+  }
+  return p;
 }
 
 /** Birden fazla profili tek turda getirir (arkadaş listesi gibi yerler için). */
@@ -51,7 +59,13 @@ export async function getProfiles(uids = []) {
   const out = {};
   ids.forEach((u, i) => {
     const p = parseJSON(rows?.[i]);
-    if (p) out[u] = p;
+    if (p) {
+      const un = String(p.usernameLower || p.username || '').toLowerCase().trim();
+      if (['batuta', 'test'].includes(un)) {
+        p.avatar = p.avatar || LOGO_SRC;
+      }
+      out[u] = p;
+    }
   });
   return out;
 }

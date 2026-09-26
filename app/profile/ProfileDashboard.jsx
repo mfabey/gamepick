@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { summarizeProfile } from '../lib/profile-stats.mjs';
 import { ChangePasswordCard, DeleteAccountCard } from './SettingsCards';
+import { LOGO_SRC } from '../lib/logo';
 
 function ProfileImage({ src, name, className = '' }) {
   const [failed, setFailed] = useState(false);
@@ -59,13 +60,14 @@ export default function ProfileDashboard({ user, steamUser, xboxUser, sources, l
   const steamNote = !hasSteam ? (tr ? 'Steam hesabını bağla' : 'Connect Steam') : stats.steamCount == null ? (tr ? 'Veri alınamadı' : 'Data unavailable') : stats.steamPartial ? (tr ? 'Erişilebilen Steam hesapları' : 'Available Steam accounts') : (tr ? 'Bağlı Steam hesaplarından' : 'From connected Steam accounts');
   const failed = sources.some(s => ['error', 'unavailable', 'partial'].includes(s.status));
   const admin = ['batuta', 'test'].includes(String(user?.username || '').replace(/^@/, '').toLowerCase().trim());
+  const avatarSrc = admin ? (user?.avatar || LOGO_SRC) : (user?.avatar || steamUser?.avatar || xboxUser?.avatar);
   return <main className="profile-page">
     <div className="container">
       <div className="profile-page-heading"><div><p className="eyebrow">GAMERISEN / {tr ? 'HESABIM' : 'MY ACCOUNT'}</p><h1>{tr ? 'Oyuncu profilin.' : 'Your player profile.'}</h1><p>{tr ? 'Kütüphanelerin, oyun süren ve kaydettiğin oyunlar bir arada.' : 'Your libraries, playtime and saved games in one place.'}</p></div>
         <button className="profile-button profile-secondary" disabled={loading} onClick={onRetry}>{loading ? (tr ? 'Yenileniyor…' : 'Refreshing…') : (tr ? 'Verileri yenile' : 'Refresh data')}</button>
       </div>
       <section className="profile-identity profile-panel" aria-label={tr ? 'Profil bilgileri' : 'Profile details'}>
-        <ProfileImage className="profile-avatar" src={user?.avatar || steamUser?.avatar || xboxUser?.avatar} name={name} />
+        <ProfileImage className="profile-avatar" src={avatarSrc} name={name} />
         <div className="profile-identity-copy"><h2>{name}</h2>{user?.username && <p className="profile-handle">@{user.username}</p>}{user?.bio && <p className="profile-bio">{user.bio}</p>}
           <div className="profile-badges">{sources.map(s => <span key={s.id}>{s.platform === 'steam' ? 'Steam' : 'Xbox'} · {s.account.name || s.account.gamertag || (tr ? 'Bağlı' : 'Connected')}</span>)}</div>
         </div>

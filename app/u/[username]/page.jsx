@@ -9,6 +9,7 @@ import { countUserPosts } from '../../lib/post-store';
 import { redisCmd, redisGetJSON } from '../../lib/redis';
 import { isAvatarPhoto } from '../../lib/avatar-presets';
 import { readValue } from '../../lib/session-cookie';
+import { LOGO_SRC } from '../../lib/logo';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Herkese açık profil — WEB.
@@ -128,6 +129,8 @@ export default async function UserProfilePage({ params }) {
   if (!veri) notFound();
 
   const { profile, gizli, isPrivate, isSelf, oyunlar, incelemeler, sayac } = veri;
+  const isPrivilegedAdmin = ['batuta', 'test'].includes(String(profile.username || '').replace(/^@/, '').toLowerCase().trim());
+  const avatarSrc = isPrivilegedAdmin ? (profile.avatar || LOGO_SRC) : profile.avatar;
   const ad = profile.displayName || profile.username;
   const bas = (ad || '?').trim().charAt(0).toUpperCase();
 
@@ -146,9 +149,9 @@ export default async function UserProfilePage({ params }) {
 
       <section style={S.kimlik}>
         <div style={S.avatar}>
-          {isAvatarPhoto(profile.avatar)
+          {isAvatarPhoto(avatarSrc)
             /* eslint-disable-next-line @next/next/no-img-element */
-            ? <img src={profile.avatar} alt="" style={S.avatarImg} />
+            ? <img src={avatarSrc} alt="" style={S.avatarImg} />
             : <span style={S.avatarHarf}>{bas}</span>}
         </div>
 
@@ -156,7 +159,7 @@ export default async function UserProfilePage({ params }) {
           <h1 style={S.ad}>{ad}</h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginTop: 4, marginBottom: 8 }}>
             <p style={{ ...S.kullanici, margin: 0 }}>@{profile.username}</p>
-            {['batuta', 'test'].includes(profile.username?.toLowerCase()) && (
+            {isPrivilegedAdmin && (
               <span style={{ padding: '3px 9px', borderRadius: 999, background: 'rgba(201,133,10,0.18)', border: '1px solid rgba(201,133,10,0.45)', fontSize: 11, color: 'var(--accent)', fontWeight: 750, boxShadow: '0 0 10px rgba(201,133,10,0.18)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                 🛡️ Gamerisen Dev
               </span>
