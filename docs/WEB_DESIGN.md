@@ -1,5 +1,38 @@
 # Gamerisen web tasarımı
 
+## Profil revizyonu — 26 Eylül 2026
+
+`/profile` yeni web tasarımının nötr yüzeyleri, Gamerisen kırmızısı, sade
+başlıkları ve uyarlanabilir kart düzeniyle yenilendi. Boş kapak alanı,
+parlayan rozetler ve sabit çevrimiçi göstergesi kaldırıldı. Görsel yüklenemezse
+profil adı baş harfleri gösterilir. Hesap bağlantıları, herkese açık profil,
+kütüphane, istek listesi ve mevcut hesap işlemleri korunur.
+
+Veri doğruluğu düzeltmeleri:
+
+- Kullanıcı kimliğinden rastgele saat üreten `ActivityHeatmap` kaldırıldı.
+  Son 14 gün için yalnızca Steam'in `hoursRecent` değerleri, oyun bazında gösterilir.
+- Tahmini tamamlama yüzdesi, oyun adından tahmin edilen tür dağılımı,
+  hazır “AI analizi” ve sabit günlük öneri kaldırıldı.
+- Her bağlı Steam hesabı ayrı sorgulanır. Oyun sayısı `appid` ile tekilleştirilir;
+  hesapların süreleri toplanır. Xbox geçmişi ayrı gösterilir ve sahiplik olarak sunulmaz.
+- Xbox örnek bağlantıları istatistiklere katılmaz. API örnek yanıtı `isMock`
+  ile işaretler; mevcut oyun alanları korunur. Gerçek Xbox başarımları yalnızca
+  iki sayacın da mevcut olduğu oyunlar üzerinden gösterilir.
+- Steam'in erişilemeyen yanıtı boş kütüphane olarak önbelleğe alınmaz.
+  Xbox geçmiş sorgusunun başarısızlığı başarıya çevrilmez; sayfa sınırında
+  `partial` bilgisi eklenir. Sıfır ve eksik veri ayrı gösterilir.
+- İstek listesindeki koşulsuz “fiyat alarmı aktif” iddiası kaldırıldı.
+  Oturum açmış kullanıcının listesi sunucudan alınır; yükleme/kaydetme hatası gösterilir.
+  Hesap değişiminde eski profilin kütüphane/istek listesi sonuçları gösterilmez.
+
+Doğrulama: `node --test --test-isolation=none scripts/profile-stats.test.mjs scripts/profile-providers.test.cjs`
+ile 11 kontrol geçti. Gerçek bileşenin yerel, açıkça işaretlenmiş test profiliyle
+390, 768, 1024 ve 1440 piksel genişlikleri; açık/koyu tema; dolu, boş, hata ve
+yüklenme durumları incelendi. Test profili uygulama rotalarına eklenmedi.
+Gerçek hesapla giriş, bağlantı kesme veya parola/silme işlemi yapılmadı.
+Mobil uygulama kaynakları değiştirilmedi; paylaşılan API alanları geriye uyumludur.
+
 ## Masaüstü revizyonu — 26 Eylül 2026
 
 Kullanıcının beğendiği mobil görünüm korunarak PC arayüzü Apple'ın sade yüzey

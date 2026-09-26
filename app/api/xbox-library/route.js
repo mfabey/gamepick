@@ -70,15 +70,16 @@ async function fetchAllTitles(authHeader, xuid) {
       signal: AbortSignal.timeout(12000),
     });
 
-    if (!res.ok) break;
+    if (!res.ok) throw new Error(`Xbox title history unavailable (${res.status})`);
     const data = await res.json();
-    const batch = data.titles || [];
+    if (!Array.isArray(data.titles)) throw new Error('Xbox title history missing');
+    const batch = data.titles;
     titles.push(...batch);
     continuationToken = data.pagingInfo?.continuationToken || null;
     page++;
   } while (continuationToken && page < MAX_PAGES);
 
-  return titles;
+  return { titles, partial: !!continuationToken };
 }
 
 // ── Oyun nesnesini formatla ──────────────────────────────────────────────────
@@ -105,6 +106,7 @@ function formatTitle(t) {
     totalGamerscore:    ach.totalGamerscore    ?? 0,
     currentAchievements: ach.currentAchievements ?? 0,
     totalAchievements:  ach.totalAchievements  ?? 0,
+    achievementDataAvailable: typeof ach.currentAchievements === 'number' && typeof ach.totalAchievements === 'number',
     isGamePass,
     storeUrl: `https://www.xbox.com/tr-TR/games/store/-/${t.titleId}`,
   };
@@ -244,6 +246,7 @@ export async function GET(request) {
 
     return NextResponse.json({
       games,
+      isMock: true,
       total:         games.length,
       gamePassCount,
       totalGamerscore: games.reduce((s, g) => s + (g.currentGamerscore || 0), 0),
@@ -303,7 +306,7 @@ export async function GET(request) {
     const authHeader = `XBL3.0 x=${userHash};${xstsData.Token}`;
 
     // Oyun listesini çek
-    const rawTitles = await fetchAllTitles(authHeader, session.xuid);
+    const { titles: rawTitles, partial } = await fetchAllTitles(authHeader, session.xuid);
 
     // Sadece gerçek oyunları al (uygulama, medya, Windows sistem/masaüstü wrapper vs. filtrele)
     const games = rawTitles
@@ -327,6 +330,7 @@ export async function GET(request) {
 
     return NextResponse.json({
       games,
+      partial,
       total:         games.length,
       gamePassCount,
       totalGamerscore: games.reduce((s, g) => s + (g.currentGamerscore || 0), 0),
