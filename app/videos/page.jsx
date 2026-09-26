@@ -101,32 +101,51 @@ export default function VideosPage() {
   const [error, setError]     = useState(false);
   const [active, setActive]   = useState(0);
   const [muted, setMuted]             = useState(true);
-  const [volume, setVolume]           = useState(0.8);
-  const [savedVolume, setSavedVolume] = useState(0.8);
+  const [volume, setVolume]           = useState(1.0);
+  const [savedVolume, setSavedVolume] = useState(1.0);
   const [paused, setPaused]           = useState(false);
 
-  const toggleMute = useCallback(() => {
-    if (muted) {
-      const targetVol = volume > 0 ? volume : (savedVolume > 0 ? savedVolume : 0.8);
-      setVolume(targetVol);
-      setMuted(false);
-    } else {
-      if (volume > 0) setSavedVolume(volume);
-      setMuted(true);
+  const applyAudioToVideo = useCallback((v, isMuted, vol) => {
+    if (!v) return;
+    try {
+      v.muted = isMuted;
+      if (!isMuted) {
+        const target = Math.max(0.01, Math.min(1, vol));
+        v.volume = target;
+      }
+    } catch (err) {
+      try { v.muted = isMuted; } catch {}
     }
-  }, [muted, volume, savedVolume]);
+  }, []);
+
+  const toggleMute = useCallback(() => {
+    setMuted((prevMuted) => {
+      const nextMuted = !prevMuted;
+      const targetVol = nextMuted ? 0 : (volume > 0 ? volume : (savedVolume > 0 ? savedVolume : 1.0));
+      if (!nextMuted && volume <= 0) {
+        setVolume(targetVol);
+      }
+      const cur = videoRefs.current[active];
+      if (cur) {
+        applyAudioToVideo(cur, nextMuted, targetVol);
+        if (!paused) cur.play().catch(() => {});
+      }
+      return nextMuted;
+    });
+  }, [active, volume, savedVolume, paused, applyAudioToVideo]);
 
   const handleVolumeChange = useCallback((newVol) => {
     const clamped = Math.max(0, Math.min(1, newVol));
-    if (clamped <= 0.01) {
-      setVolume(0);
-      setMuted(true);
-    } else {
-      setVolume(clamped);
-      setSavedVolume(clamped);
-      setMuted(false);
+    const isMutedNow = clamped <= 0.01;
+    setVolume(clamped);
+    if (!isMutedNow) setSavedVolume(clamped);
+    setMuted(isMutedNow);
+
+    const cur = videoRefs.current[active];
+    if (cur) {
+      applyAudioToVideo(cur, isMutedNow, clamped);
     }
-  }, []);
+  }, [active, applyAudioToVideo]);
 
   // Oturum başına tek tohum — mobildeki ile aynı sözleşme: aynı oturumda
   // sayfalama tutarlı, farklı oturumda sıra değişiyor.
@@ -292,16 +311,15 @@ export default function VideosPage() {
         // Oynatmayı BURADA da tetiklemek şart: motor bağlandığında hiçbir
         // durum değişmiyor, dolayısıyla aşağıdaki oynat/duraklat etkisi
         // yeniden koşmuyor ve aktif video sessizce duruyordu.
-        if (i === active && !paused) {
-          v.muted = muted;
-          v.volume = muted ? 0 : volume;
-          v.play().catch(() => {});
+        if (i === active) {
+          applyAudioToVideo(v, muted, volume);
+          if (!paused) v.play().catch(() => {});
         }
       }
     })();
 
     return () => { iptal = true; };
-  }, [active, items, paused, muted, volume]);
+  }, [active, items, paused, muted, volume, applyAudioToVideo]);
 
   // Bileşen sökülürken açık kalan her motoru yık.
   useEffect(() => {
@@ -319,15 +337,14 @@ export default function VideosPage() {
     videoRefs.current.forEach((v, i) => {
       if (!v) return;
       if (i === active) {
-        v.muted = muted;
-        v.volume = muted ? 0 : volume;
+        applyAudioToVideo(v, muted, volume);
         if (paused) v.pause();
         else v.play().catch(() => {});   // otomatik oynatma reddi sessiz geçilir
       } else {
         try { v.pause(); v.currentTime = 0; } catch {}
       }
     });
-  }, [active, paused, muted, volume, items.length]);
+  }, [active, paused, muted, volume, items.length, applyAudioToVideo]);
 
   // Sekme arkaplana düşünce durdur. Görünmeyen videoyu indirmeye devam etmek
   // hem bant genişliği hem pil.
@@ -356,10 +373,17 @@ export default function VideosPage() {
       else if (e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); git(active - 1); }
       else if (e.key === ' ') { e.preventDefault(); setPaused((p) => !p); }
       else if (e.key === 'm' || e.key === 'M') toggleMute();
+      else if (e.key === 'ArrowRight' || e.key === '+') {
+        e.preventDefault();
+        handleVolumeChange(Math.min(1, (muted ? 0 : volume) + 0.1));
+      } else if (e.key === 'ArrowLeft' || e.key === '-') {
+        e.preventDefault();
+        handleVolumeChange(Math.max(0, (muted ? 0 : volume) - 0.1));
+      }
     };
     window.addEventListener('keydown', onTus);
     return () => window.removeEventListener('keydown', onTus);
-  }, [active, git, toggleMute]);
+  }, [active, git, toggleMute, handleVolumeChange, muted, volume]);
 
   // ── Durumlar ───────────────────────────────────────────────────────────────
   if (loading && items.length === 0) {
@@ -435,7 +459,7 @@ export default function VideosPage() {
           <video
             ref={(el) => { videoRefs.current[i] = el; }}
             poster={it.thumbnail || it.image}
-            muted
+            muted={muted}
             playsInline
             loop
             preload="none"
@@ -581,21 +605,35 @@ function RayDugmesi({ etiket, onClick, children }) {
 
 /**
  * Dikey ses seviyesi barı ve sessize alma / ses açma kontrolü.
+ * Mobilde cihazın donanımsal ses düzeyine doğrudan tam entegre çalışır.
  */
 function SesKontrolu({ muted, volume, onToggleMute, onVolumeChange, tr }) {
   const [showSlider, setShowSlider] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const hideTimerRef = useRef(null);
   const trackRef = useRef(null);
 
   const effectiveVol = muted ? 0 : volume;
   const displayPercent = Math.round(effectiveVol * 100);
 
+  useEffect(() => {
+    const detectMobile = () => {
+      setIsMobile(
+        typeof window !== 'undefined' &&
+        (window.innerWidth < 768 || 'ontouchstart' in window || (navigator.maxTouchPoints && navigator.maxTouchPoints > 0))
+      );
+    };
+    detectMobile();
+    window.addEventListener('resize', detectMobile);
+    return () => window.removeEventListener('resize', detectMobile);
+  }, []);
+
   const resetHideTimer = useCallback(() => {
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
     hideTimerRef.current = setTimeout(() => {
       setShowSlider(false);
-    }, 2500);
+    }, 2200);
   }, []);
 
   const handlePointerDown = (e) => {
@@ -605,18 +643,18 @@ function SesKontrolu({ muted, volume, onToggleMute, onVolumeChange, tr }) {
     setShowSlider(true);
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
 
-    const updateFromEvent = (evt) => {
+    const updateFromClientY = (clientY) => {
       if (!trackRef.current) return;
       const rect = trackRef.current.getBoundingClientRect();
-      const raw = (rect.bottom - evt.clientY) / rect.height;
+      const raw = (rect.bottom - clientY) / rect.height;
       const clamped = Math.max(0, Math.min(1, raw));
       onVolumeChange(clamped);
     };
 
-    updateFromEvent(e);
+    updateFromClientY(e.clientY);
 
     const onPointerMove = (evt) => {
-      updateFromEvent(evt);
+      updateFromClientY(evt.clientY);
     };
 
     const onPointerUp = () => {
@@ -645,8 +683,10 @@ function SesKontrolu({ muted, volume, onToggleMute, onVolumeChange, tr }) {
   const handleButtonClick = (e) => {
     e.stopPropagation();
     onToggleMute();
-    setShowSlider(true);
-    resetHideTimer();
+    if (!isMobile) {
+      setShowSlider(true);
+      resetHideTimer();
+    }
   };
 
   useEffect(() => {
@@ -659,119 +699,123 @@ function SesKontrolu({ muted, volume, onToggleMute, onVolumeChange, tr }) {
     <div
       style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
       onMouseEnter={() => {
-        if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-        setShowSlider(true);
+        if (!isMobile) {
+          if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+          setShowSlider(true);
+        }
       }}
       onMouseLeave={() => {
         if (!isDragging) setShowSlider(false);
       }}
     >
-      {/* Dikey Ses Seviyesi Barı Popover */}
-      <div
-        onWheel={handleWheel}
-        style={{
-          position: 'absolute',
-          bottom: 'calc(100% + 10px)',
-          left: '50%',
-          transform: `translateX(-50%) scale(${showSlider || isDragging ? 1 : 0.85})`,
-          opacity: showSlider || isDragging ? 1 : 0,
-          pointerEvents: showSlider || isDragging ? 'auto' : 'none',
-          transformOrigin: 'bottom center',
-          transition: isDragging ? 'none' : 'opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-          width: 44,
-          padding: '12px 0 10px',
-          borderRadius: 22,
-          background: 'rgba(15, 15, 20, 0.88)',
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
-          boxShadow: '0 12px 36px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(255,255,255,0.18)',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 10,
-          zIndex: 30,
-          userSelect: 'none',
-          touchAction: 'none',
-        }}
-      >
-        {/* Yüzde metni */}
-        <span
-          style={{
-            fontSize: 10.5,
-            fontWeight: 700,
-            fontFamily: 'monospace, system-ui, sans-serif',
-            color: effectiveVol > 0 ? '#fff' : 'rgba(255,255,255,0.5)',
-            letterSpacing: '-0.3px',
-            lineHeight: 1,
-          }}
-        >
-          {effectiveVol > 0 ? `${displayPercent}%` : (tr ? 'KAPALI' : 'OFF')}
-        </span>
-
-        {/* Dikey Kaydırıcı Dokunma / Tıklama Alanı */}
+      {/* Masaüstü için Dikey Ses Seviyesi Barı Popover */}
+      {!isMobile && (
         <div
-          ref={trackRef}
-          onPointerDown={handlePointerDown}
+          onWheel={handleWheel}
           style={{
-            position: 'relative',
-            width: 28,
-            height: 96,
+            position: 'absolute',
+            bottom: 'calc(100% + 10px)',
+            left: '50%',
+            transform: `translateX(-50%) scale(${showSlider || isDragging ? 1 : 0.85})`,
+            opacity: showSlider || isDragging ? 1 : 0,
+            pointerEvents: showSlider || isDragging ? 'auto' : 'none',
+            transformOrigin: 'bottom center',
+            transition: isDragging ? 'none' : 'opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+            width: 44,
+            padding: '12px 0 10px',
+            borderRadius: 22,
+            background: 'rgba(15, 15, 20, 0.88)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            boxShadow: '0 12px 36px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(255,255,255,0.18)',
             display: 'flex',
-            justifyContent: 'center',
-            cursor: 'pointer',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 10,
+            zIndex: 30,
+            userSelect: 'none',
             touchAction: 'none',
           }}
         >
-          {/* Arka Plan Çubuğu */}
-          <div
+          {/* Yüzde metni */}
+          <span
             style={{
-              position: 'absolute',
-              top: 0,
-              bottom: 0,
-              width: 6,
-              borderRadius: 3,
-              background: 'rgba(255, 255, 255, 0.22)',
-              overflow: 'hidden',
+              fontSize: 10.5,
+              fontWeight: 700,
+              fontFamily: 'monospace, system-ui, sans-serif',
+              color: effectiveVol > 0 ? '#fff' : 'rgba(255,255,255,0.5)',
+              letterSpacing: '-0.3px',
+              lineHeight: 1,
             }}
           >
-            {/* Doluluk Çubuğu (Aşağıdan Yukarıya) */}
+            {effectiveVol > 0 ? `%${displayPercent}` : (tr ? 'KAPALI' : 'OFF')}
+          </span>
+
+          {/* Dikey Kaydırıcı Dokunma / Tıklama Alanı */}
+          <div
+            ref={trackRef}
+            onPointerDown={handlePointerDown}
+            style={{
+              position: 'relative',
+              width: 28,
+              height: 96,
+              display: 'flex',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              touchAction: 'none',
+            }}
+          >
+            {/* Arka Plan Çubuğu */}
             <div
               style={{
                 position: 'absolute',
+                top: 0,
                 bottom: 0,
-                left: 0,
-                right: 0,
-                height: `${effectiveVol * 100}%`,
-                background: 'linear-gradient(to top, var(--accent, #6366f1), #a855f7)',
-                boxShadow: effectiveVol > 0 ? '0 0 8px var(--accent, #6366f1)' : 'none',
-                transition: isDragging ? 'none' : 'height 0.08s ease-out',
+                width: 6,
+                borderRadius: 3,
+                background: 'rgba(255, 255, 255, 0.22)',
+                overflow: 'hidden',
+              }}
+            >
+              {/* Doluluk Çubuğu (Aşağıdan Yukarıya) */}
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  height: `${effectiveVol * 100}%`,
+                  background: 'linear-gradient(to top, var(--accent, #dc3c3c), #f87171)',
+                  boxShadow: effectiveVol > 0 ? '0 0 8px rgba(220,60,60,0.6)' : 'none',
+                  transition: isDragging ? 'none' : 'height 0.08s ease-out',
+                }}
+              />
+            </div>
+
+            {/* Sürükleyici Tutamak (Thumb) */}
+            <div
+              style={{
+                position: 'absolute',
+                bottom: `calc(${effectiveVol * 100}% - 7px)`,
+                width: 15,
+                height: 15,
+                borderRadius: '50%',
+                background: '#fff',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,0,0,0.1)',
+                pointerEvents: 'none',
+                transition: isDragging ? 'none' : 'bottom 0.08s ease-out',
               }}
             />
           </div>
-
-          {/* Sürükleyici Tutamak (Thumb) */}
-          <div
-            style={{
-              position: 'absolute',
-              bottom: `calc(${effectiveVol * 100}% - 7px)`,
-              width: 15,
-              height: 15,
-              borderRadius: '50%',
-              background: '#fff',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,0,0,0.1)',
-              pointerEvents: 'none',
-              transition: isDragging ? 'none' : 'bottom 0.08s ease-out',
-            }}
-          />
         </div>
-      </div>
+      )}
 
       {/* Ses Açma / Kısma Butonu */}
       <RayDugmesi
         etiket={
           effectiveVol === 0
-            ? (tr ? 'Sesi aç' : 'Unmute')
-            : (tr ? `Sesi kapat (%${displayPercent})` : `Mute (${displayPercent}%)`)
+            ? (tr ? 'Sesi aç (Cihaz sesiyle çal)' : 'Unmute (Play with device audio)')
+            : (tr ? (isMobile ? 'Sesi kapat' : `Sesi kapat (%${displayPercent})`) : (isMobile ? 'Mute' : `Mute (${displayPercent}%)`))
         }
         onClick={handleButtonClick}
       >
