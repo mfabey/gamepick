@@ -80,13 +80,13 @@ export async function GET() {
       profile = await getProfile(user.uid);
     } catch {}
 
-    const isPrivilegedAdmin = ['batuta', 'test'].includes(String(profile?.username || user.username || '').toLowerCase().trim());
+    const isPrivilegedAdmin = ['batuta', 'test'].includes(String(profile?.username || user.username || '').replace(/^@/, '').toLowerCase().trim());
     const enrichedUser = {
       ...user,
       ...(profile || {}),
       username: profile?.username || user.username || null,
       displayName: profile?.displayName || user.displayName || user.name || null,
-      avatar: isPrivilegedAdmin ? (profile?.avatar || LOGO_SRC) : (profile?.avatar || user.avatar || user.photoURL || null),
+      avatar: isPrivilegedAdmin ? LOGO_SRC : (profile?.avatar || user.avatar || user.photoURL || null),
       bio: profile?.bio || user.bio || null,
     };
 

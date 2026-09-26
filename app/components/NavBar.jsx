@@ -253,7 +253,7 @@ export default function NavBar() {
                   background: 'var(--accent-bg)', border: '1px solid var(--accent-border)', fontSize: 13, fontWeight: 600, color: 'var(--accent)',
                 }}>
                   {['batuta', 'test'].includes(String(user.username || '').replace(/^@/, '').toLowerCase().trim()) ? (
-                    <img src={user.avatar || LOGO_SRC} className="nav-user-avatar" alt="" style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover' }} />
+                    <img src={LOGO_SRC} className="nav-user-avatar" alt="" style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover' }} />
                   ) : user.avatar ? (
                     <img src={user.avatar} className="nav-user-avatar" alt="" style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover' }} />
                   ) : steamUser?.avatar ? (

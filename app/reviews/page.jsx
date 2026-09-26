@@ -468,7 +468,7 @@ function PostComposer({ user, onPostCreated, tr }) {
   };
 
   const isUserDev = isPrivilegedUser(user);
-  const userAvatarSrc = isUserDev ? (user?.avatar || LOGO_SRC) : user?.avatar;
+  const userAvatarSrc = isUserDev ? LOGO_SRC : user?.avatar;
   const ad = user.displayName || user.name || user.username || (tr ? 'Kullanıcı' : 'User');
   const bas = (ad || '?').trim().charAt(0).toUpperCase();
 
@@ -648,7 +648,7 @@ function Yazar({ author, at, tr }) {
   const bas = (ad || '?').trim().charAt(0).toUpperCase();
   const tarih = new Date(Number(at) || 0);
   const isDev = isPrivilegedUser(author);
-  const avatarSrc = isDev ? (author?.avatar || LOGO_SRC) : author?.avatar;
+  const avatarSrc = isDev ? LOGO_SRC : author?.avatar;
 
   const avatar = (
     <div style={{ width: 38, height: 38, borderRadius: '50%', overflow: 'hidden', flexShrink: 0, background: 'var(--bg-hover)', display: 'grid', placeItems: 'center' }}>

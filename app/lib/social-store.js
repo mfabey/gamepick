@@ -42,9 +42,9 @@ export async function getProfile(uid) {
   if (!uid) return null;
   const p = await redisGetJSON(profileKey(uid)).catch(() => null);
   if (p) {
-    const un = String(p.usernameLower || p.username || '').toLowerCase().trim();
+    const un = String(p.usernameLower || p.username || '').replace(/^@/, '').toLowerCase().trim();
     if (['batuta', 'test'].includes(un)) {
-      p.avatar = p.avatar || LOGO_SRC;
+      p.avatar = LOGO_SRC;
     }
   }
   return p;
@@ -60,9 +60,9 @@ export async function getProfiles(uids = []) {
   ids.forEach((u, i) => {
     const p = parseJSON(rows?.[i]);
     if (p) {
-      const un = String(p.usernameLower || p.username || '').toLowerCase().trim();
+      const un = String(p.usernameLower || p.username || '').replace(/^@/, '').toLowerCase().trim();
       if (['batuta', 'test'].includes(un)) {
-        p.avatar = p.avatar || LOGO_SRC;
+        p.avatar = LOGO_SRC;
       }
       out[u] = p;
     }

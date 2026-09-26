@@ -129,8 +129,8 @@ export default async function UserProfilePage({ params }) {
   if (!veri) notFound();
 
   const { profile, gizli, isPrivate, isSelf, oyunlar, incelemeler, sayac } = veri;
-  const isPrivilegedAdmin = ['batuta', 'test'].includes(String(profile.username || '').replace(/^@/, '').toLowerCase().trim());
-  const avatarSrc = isPrivilegedAdmin ? (profile.avatar || LOGO_SRC) : profile.avatar;
+  const isPrivilegedAdmin = ['batuta', 'test'].includes(String(profile.username || username || '').replace(/^@/, '').toLowerCase().trim());
+  const avatarSrc = isPrivilegedAdmin ? LOGO_SRC : profile.avatar;
   const ad = profile.displayName || profile.username;
   const bas = (ad || '?').trim().charAt(0).toUpperCase();
 

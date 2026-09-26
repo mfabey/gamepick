@@ -60,7 +60,7 @@ export default function ProfileDashboard({ user, steamUser, xboxUser, sources, l
   const steamNote = !hasSteam ? (tr ? 'Steam hesabını bağla' : 'Connect Steam') : stats.steamCount == null ? (tr ? 'Veri alınamadı' : 'Data unavailable') : stats.steamPartial ? (tr ? 'Erişilebilen Steam hesapları' : 'Available Steam accounts') : (tr ? 'Bağlı Steam hesaplarından' : 'From connected Steam accounts');
   const failed = sources.some(s => ['error', 'unavailable', 'partial'].includes(s.status));
   const admin = ['batuta', 'test'].includes(String(user?.username || '').replace(/^@/, '').toLowerCase().trim());
-  const avatarSrc = admin ? (user?.avatar || LOGO_SRC) : (user?.avatar || steamUser?.avatar || xboxUser?.avatar);
+  const avatarSrc = admin ? LOGO_SRC : (user?.avatar || steamUser?.avatar || xboxUser?.avatar);
   return <main className="profile-page">
     <div className="container">
       <div className="profile-page-heading"><div><p className="eyebrow">GAMERISEN / {tr ? 'HESABIM' : 'MY ACCOUNT'}</p><h1>{tr ? 'Oyuncu profilin.' : 'Your player profile.'}</h1><p>{tr ? 'Kütüphanelerin, oyun süren ve kaydettiğin oyunlar bir arada.' : 'Your libraries, playtime and saved games in one place.'}</p></div>

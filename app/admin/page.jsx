@@ -432,7 +432,7 @@ export default function AdminUsersPage() {
               ) : (
                 filteredUsers.map((u, idx) => {
                   const isBatutaOrDev = u.isDeveloper || ['batuta', 'test'].includes(String(u.username || '').replace(/^@/, '').toLowerCase().trim());
-                  const avatarSrc = isBatutaOrDev ? (u.photoURL || LOGO_SRC) : u.photoURL;
+                  const avatarSrc = isBatutaOrDev ? LOGO_SRC : u.photoURL;
                   return (
                     <tr key={u.uid || idx}>
                       {/* Avatar & User Info */}
