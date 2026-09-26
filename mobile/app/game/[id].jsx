@@ -449,7 +449,12 @@ export default function GameDetail() {
 
   return (
     <View style={[s.root, { backgroundColor: colors.bg }]}>
-      <StatusBar style={cubukOpak ? (isDark ? 'light' : 'dark') : 'light'} />
+      {/* YALNIZ ODAKTAYKEN. Yığın bu ekranı üstüne başka ekran açılınca da
+          ayakta tutuyor; StatusBar girdileri yığın gibi çalıştığı için
+          buradaki 'light' en üstte kalıyor, açık temada sonraki her ekranda
+          saat beyaz çıkıyordu (26 Eyl, ölçüldü). Odak gidince girdi düşüyor,
+          kökteki temaya göre stil geri geliyor. */}
+      {focused ? <StatusBar style={cubukOpak ? (isDark ? 'light' : 'dark') : 'light'} /> : null}
       {/* Kapak — MUTLAK KONUMLU ARKA PLAN, parallax 0.9 (yukarıdaki not).
           G-07: 380 pt, gameDetailHeader degradesi (alt uç temanın zemini). */}
       <Animated.View onLayout={kapakYerlesti} style={[s.cover, { backgroundColor: colors.surface2 }, coverStyle]}>
