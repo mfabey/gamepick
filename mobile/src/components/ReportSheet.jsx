@@ -1,21 +1,26 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Şikayet sayfası — App Store Guideline 1.2'nin ikinci şartının kullanıcıya
-// görünen yüzü. Kullanıcı veya içerik şikayet edilebilir.
+// Şikâyet — 2.0 / G-DS-4 (27 Eyl). Guideline 1.2: kullanıcı içeriğinin
+// gösterildiği her yüzeyden açılabilmeli.
+//
+// Ortak AltSayfa (klavyeli, ekranın %85'i): başlık + neyin şikâyet edildiği,
+// nedenler tek seçimli 2.0 listesi (radyo), isteğe bağlı not, alt çubukta
+// birincil düğme. Eski sürümde düğme kırmızı dolguydu; 2.0'da birincil eylem
+// nötr. Gönderim, hata ve onSent davranışı AYNEN.
+//
+// Not alanı listenin EN ALTINDA: klavye açılınca liste küçülüyor, odaktaki
+// alan görünür kalsın diye liste o an sona kaydırılıyor (26 Eyl ölçümü).
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState, useCallback, useRef } from 'react';
-import {
-  View, Text, Pressable, StyleSheet, Modal, TextInput, ScrollView,
-  KeyboardAvoidingView, ActivityIndicator, Alert,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, StyleSheet, ScrollView, Alert } from 'react-native';
 import * as Haptics from 'expo-haptics';
-
 import { reportContent } from '../api/social';
-import { radius, spacing, PRESSED, type, SHEET_LAYOUT } from '../theme';
-import { useStyles, useTheme } from '../context/ThemeContext';
+import { AltSayfa } from './ui/AltSayfa';
+import { Button, ListGroup, ListRow, TextField } from './ui/Primitives';
+import { useDesignTheme } from '../theme/useDesignTheme';
 import { useLanguage } from '../context/LanguageContext';
-import { useAltSayfaSiniri } from '../hooks/useAltSayfaSiniri';
+import { layout, space } from '../theme/tokens';
 
+// Sunucudaki REPORT_REASONS ile birebir aynı sıra ve anahtarlar.
 const REASONS = [
   'spam', 'harassment', 'hate', 'sexual', 'violence', 'impersonation', 'illegal', 'other',
 ];
@@ -27,21 +32,16 @@ const REASONS = [
  *   kanıt vermiyordu. `onClose`tan ayrı, çünkü iptal de kapanış.
  */
 export default function ReportSheet({ visible, onClose, onSent, targetType, targetId, targetLabel }) {
-  const styles = useStyles(makeStyles);
-  const sinir = useAltSayfaSiniri(0.85);
-  // Not alanı listenin EN ALTINDA. Klavye açılınca sayfa küçülüyor ve
-  // odaktaki alan görünür alanın dışında kalıyordu (26 Eyl, SE). Liste
-  // küçüldüğü an (onLayout) alan odaktaysa sona kaydırılıyor.
+  const { colors } = useDesignTheme();
+  const { t } = useLanguage();
+  const [reason, setReason] = useState(null);
+  const [note, setNote] = useState('');
+  const [sending, setSending] = useState(false);
   const listeRef = useRef(null);
   const notOdakta = useRef(false);
   const listeYerlesti = useCallback(() => {
     if (notOdakta.current) listeRef.current?.scrollToEnd({ animated: true });
   }, []);
-  const { colors } = useTheme();
-  const { t } = useLanguage();
-  const [reason, setReason] = useState(null);
-  const [note, setNote] = useState('');
-  const [sending, setSending] = useState(false);
 
   const close = useCallback(() => {
     setReason(null);
@@ -66,116 +66,34 @@ export default function ReportSheet({ visible, onClose, onSent, targetType, targ
   }, [reason, note, sending, targetType, targetId, close, onSent, t]);
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={close}>
-      {/* FAZ 6, KUSUR — YÜZEYDEKİ `PRESSED` KALKTI.
-          Hem zemine hem sayfaya `pressed && PRESSED` verilmişti: sayfanın
-          HERHANGİ BİR YERİNE dokunmak tüm yüzeyi %65 opaklığa düşürüyordu.
-          Bir sebep seçmek, hatta metin alanına dokunmak sayfayı yanıp
-          söndürüyordu.
-
-          İlke: basma geri bildirimi DOKUNULABİLİR ÖĞEYE aittir, onu taşıyan
-          yüzeye değil. İkisi de hâlâ Pressable — biri kapatıyor, öteki
-          dokunuşu yutuyor — ama görsel tepki vermiyorlar. */}
-      <Pressable style={styles.backdrop} onPress={close}>
-        <KeyboardAvoidingView behavior="padding" style={sinir.kav}>
-          <Pressable style={[styles.sheet, sinir.sayfa]} onPress={(e) => e.stopPropagation()}>
-            <View style={styles.grabber} />
-            <Text style={styles.title}>{t('soc.reportTitle')}</Text>
-            {targetLabel ? <Text numberOfLines={1} style={styles.target}>{targetLabel}</Text> : null}
-
-            <ScrollView ref={listeRef} onLayout={listeYerlesti} style={styles.list} keyboardShouldPersistTaps="handled">
-              {REASONS.map((r) => {
-                const on = reason === r;
-                return (
-                  <Pressable
-                    key={r}
-                    style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}
-                    onPress={() => { Haptics.selectionAsync(); setReason(r); }}
-                  >
-                    <Text style={styles.rowText}>{t(`soc.reason.${r}`)}</Text>
-                    <View style={[styles.radio, on && styles.radioOn]}>
-                      {on ? <Ionicons name="checkmark" size={14} color={colors.bg} /> : null}
-                    </View>
-                  </Pressable>
-                );
-              })}
-
-              <TextInput
-                value={note}
-                onChangeText={setNote}
-                placeholder={t('soc.reportNote')}
-                placeholderTextColor={colors.text3}
-                style={styles.input}
-                maxLength={500}
-                multiline
-                onFocus={() => { notOdakta.current = true; }}
-                onBlur={() => { notOdakta.current = false; }}
-              />
-            </ScrollView>
-
-            <Pressable
-              style={[styles.cta, (!reason || sending) && styles.ctaOff]}
-              onPress={submit}
-              disabled={!reason || sending}
-            >
-              {sending
-                ? <ActivityIndicator color="#fff" />
-                : <Text style={[styles.ctaText, (!reason || sending) && styles.ctaTextOff]}>{t('soc.reportSubmit')}</Text>}
-            </Pressable>
-          </Pressable>
-        </KeyboardAvoidingView>
-      </Pressable>
-    </Modal>
+    <AltSayfa visible={visible} onClose={close} title={t('soc.reportTitle')} subtitle={targetLabel || undefined} klavye oran={0.85}
+      footer={<Button title={t('soc.reportSubmit')} height={52} onPress={submit} disabled={!reason} loading={sending} />}>
+      <ScrollView ref={listeRef} onLayout={listeYerlesti} style={styles.liste} contentContainerStyle={styles.listeIc} keyboardShouldPersistTaps="handled">
+        <ListGroup>
+          {REASONS.map((r) => {
+            const on = reason === r;
+            return (
+              <ListRow key={r} title={t(`soc.reason.${r}`)} selected={on}
+                onPress={() => { Haptics.selectionAsync(); setReason(r); }}
+                trailing={<View style={[styles.radyo, { borderColor: on ? colors.red : colors.lineStrong, backgroundColor: on ? colors.red : 'transparent' }]}>
+                  {on ? <View style={[styles.radyoIc, { backgroundColor: colors.white }]} /> : null}
+                </View>} />
+            );
+          })}
+        </ListGroup>
+        <View style={styles.not}>
+          <TextField label={t('soc.reportNote')} value={note} onChangeText={setNote} maxLength={500} multiline
+            onFocus={() => { notOdakta.current = true; }} onBlur={() => { notOdakta.current = false; }} />
+        </View>
+      </ScrollView>
+    </AltSayfa>
   );
 }
 
-const makeStyles = (colors) => StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },
-  sheet: {
-    ...SHEET_LAYOUT,
-    backgroundColor: colors.bgElevated,
-    borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl,
-    paddingHorizontal: spacing.lg, paddingTop: 10, paddingBottom: 28,
-    // maxHeight BURADA DEĞİL: KAV içinde yüzde yanlış çözülüyor (useAltSayfaSiniri).
-  },
-  grabber: {
-    alignSelf: 'center', width: 38, height: 4, borderRadius: 2,
-    backgroundColor: colors.text3, opacity: 0.5, marginBottom: 14,
-  },
-  title: { color: colors.text, fontSize: type.body, fontWeight: '900' },
-  target: { color: colors.text2, fontSize: type.footnote, marginTop: 3 },
-
-  list: { flexGrow: 0, marginTop: 10 },
-  row: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.md },
-  rowText: { flex: 1, color: colors.text, fontSize: type.subhead, fontWeight: '600' },
-  radio: {
-    width: 24, height: 24, borderRadius: 12,
-    borderWidth: 2, borderColor: colors.cardBorder,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  // FAZ 6 — SEÇİM NÖTR. Ekranda İKİ farklı kırmızı vardı: seçili radyo
-  // `accent`, CTA `danger` — biri bilgi biri eylem. Kırmızı bir sebebi
-  // işaretlemiyor; seçim Faz 4/5'in nötr dolgu diline geçti.
-  radioOn: { backgroundColor: colors.text, borderColor: colors.text },
-
-  input: {
-    backgroundColor: colors.bgInput, borderRadius: radius.md,
-    paddingHorizontal: 13, paddingTop: spacing.md, paddingBottom: spacing.md,
-    minHeight: 78, color: colors.text, fontSize: type.subhead,
-    borderWidth: 1, borderColor: colors.cardBorder,
-    marginTop: spacing.sm, textAlignVertical: 'top',
-  },
-
-  // FAZ 6 — TEK GÖNDER DİLİ: 44pt · radius.md · subhead 15/600.
-  // Dolgu `danger` KALIYOR: bu ekranın eylemi gerçekten yıkıcı. Anlam
-  // farkı RENKTE, biçimde değil — kullanıcı yıkıcı eylemi renkten ayırt
-  // ediyor, boyuttan değil.
-  cta: {
-    height: 44, borderRadius: radius.md, backgroundColor: colors.danger,
-    alignItems: 'center', justifyContent: 'center', marginTop: 14,
-  },
-  ctaOff: { backgroundColor: colors.bgInput },
-  // tema-bagimsiz: dolu danger dugmesinin uzerinde
-  ctaText: { color: '#fff', fontSize: type.subhead, fontWeight: '600' },
-  ctaTextOff: { color: colors.text3 },
+const styles = StyleSheet.create({
+  liste: { flexGrow: 0 },
+  listeIc: { paddingBottom: space[8] },
+  radyo: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  radyoIc: { width: 8, height: 8, borderRadius: 4 },
+  not: { paddingHorizontal: layout.gutter, paddingTop: space[16] },
 });

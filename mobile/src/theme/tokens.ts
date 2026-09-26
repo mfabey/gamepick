@@ -63,6 +63,7 @@ export const colors = {
   chartHalo: 'rgba(255,255,255,0.16)',
   ticketDash: 'rgba(255,255,255,0.14)', // DealCard kesikli ayraç (kit deal_card())
   overlayTag: 'rgba(0,0,0,0.62)', // görsel üstü süre / tür etiketi (kit ovl()) — tema bağımsız
+  scrim: 'rgba(0,0,0,0.6)', // alt sayfa / modal zemin karartması (DS 4: 0.6)
   unreadRow: 'rgba(255,255,255,0.04)', // okunmamış bildirim satırı (kit notif())
 
   // Logo

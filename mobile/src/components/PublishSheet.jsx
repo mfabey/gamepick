@@ -1,31 +1,30 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Koleksiyonu toplulukla paylaşma sayfası.
+// Koleksiyonu topluluk listesi olarak yayınla — 2.0 / G-DS-4 (27 Eyl).
 //
-// Yayınlama SUNUCUDA içerik süzgecinden geçer (başlık + açıklama); buradaki
-// doğrulama yalnızca boş göndermeyi engelliyor, güvenlik sınırı sunucuda.
+// Ortak AltSayfa (klavyeli): bilgi kutusu (herkese açık olacak), 2.0 metin
+// alanları, alt çubukta birincil düğme. Eski CTA kırmızı dolguydu; 2.0'da
+// birincil eylem NÖTR (kit: marka kırmızısı logo/seçili sekme/kalp içindir).
+// Davranış aynen: başlık zorunlu, açıklama isteğe bağlı, sunucu hata kodu
+// `pl.err.*` ile çevriliyor.
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState, useCallback, useEffect } from 'react';
-import {
-  View, Text, Pressable, StyleSheet, Modal, TextInput,
-  KeyboardAvoidingView, ActivityIndicator, Alert,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, StyleSheet, Alert } from 'react-native';
 import * as Haptics from 'expo-haptics';
-
 import { publishList } from '../api/social';
-import { radius, spacing, PRESSED, type, SHEET_LAYOUT } from '../theme';
-import { useStyles, useTheme } from '../context/ThemeContext';
+import { AltSayfa } from './ui/AltSayfa';
+import { Button, TextField, Txt } from './ui/Primitives';
+import { Icon } from './Icon';
+import { useDesignTheme } from '../theme/useDesignTheme';
 import { useLanguage } from '../context/LanguageContext';
+import { layout, radius, space } from '../theme/tokens';
 
 export default function PublishSheet({ visible, onClose, collection, publishedId, onPublished }) {
-  const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
+  const { colors } = useDesignTheme();
   const { t } = useLanguage();
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
   const [busy, setBusy] = useState(false);
 
-  // Sayfa her açılışında koleksiyonun güncel adıyla başlasın
   useEffect(() => {
     if (visible && collection) {
       setTitle(collection.name || '');
@@ -60,84 +59,23 @@ export default function PublishSheet({ visible, onClose, collection, publishedId
   }, [title, desc, busy, collection, publishedId, onPublished, onClose, t]);
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={({ pressed }) => [styles.backdrop, pressed && PRESSED]} onPress={onClose}>
-        <KeyboardAvoidingView behavior="padding">
-          <Pressable style={({ pressed }) => [styles.sheet, pressed && PRESSED]} onPress={(e) => e.stopPropagation()}>
-            <View style={styles.grabber} />
-            <Text style={styles.title}>{t('pl.publishTitle')}</Text>
-
-            <View style={styles.notice}>
-              <Ionicons name="globe-outline" size={15} color={colors.text2} />
-              <Text style={styles.noticeText}>{t('pl.publishText')}</Text>
-            </View>
-
-            <TextInput
-              value={title}
-              onChangeText={setTitle}
-              placeholder={t('pl.listTitle')}
-              placeholderTextColor={colors.text3}
-              style={styles.input}
-              maxLength={80}
-            />
-            <TextInput
-              value={desc}
-              onChangeText={setDesc}
-              placeholder={t('pl.listDesc')}
-              placeholderTextColor={colors.text3}
-              style={[styles.input, styles.multiline]}
-              maxLength={300}
-              multiline
-            />
-
-            <Pressable
-              style={[styles.cta, (!title.trim() || busy) && styles.ctaOff]}
-              onPress={submit}
-              disabled={!title.trim() || busy}
-            >
-              {busy
-                ? <ActivityIndicator color="#fff" />
-                : <Text style={styles.ctaText}>{publishedId ? t('pl.update') : t('pl.publishBtn')}</Text>}
-            </Pressable>
-          </Pressable>
-        </KeyboardAvoidingView>
-      </Pressable>
-    </Modal>
+    <AltSayfa visible={visible} onClose={onClose} title={t('pl.publishTitle')} klavye oran={0.85}
+      footer={<Button title={publishedId ? t('pl.update') : t('pl.publishBtn')} height={52}
+        onPress={submit} disabled={!title.trim()} loading={busy} />}>
+      <View style={styles.govde}>
+        <View style={[styles.bilgi, { backgroundColor: colors.surface1 }]}>
+          <Icon name="globe" size={18} color={colors.text2} />
+          <Txt variant="footnote" style={[styles.bilgiMetni, { color: colors.text2 }]}>{t('pl.publishText')}</Txt>
+        </View>
+        <TextField label={t('pl.listTitle')} value={title} onChangeText={setTitle} maxLength={80} />
+        <TextField label={t('pl.listDesc')} value={desc} onChangeText={setDesc} maxLength={300} multiline counter />
+      </View>
+    </AltSayfa>
   );
 }
 
-const makeStyles = (colors) => StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },
-  sheet: {
-    ...SHEET_LAYOUT,
-    backgroundColor: colors.bgElevated,
-    borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl,
-    paddingHorizontal: spacing.lg, paddingTop: 10, paddingBottom: 28,
-  },
-  grabber: {
-    alignSelf: 'center', width: 38, height: 4, borderRadius: 2,
-    backgroundColor: colors.text3, opacity: 0.5, marginBottom: 14,
-  },
-  title: { color: colors.text, fontSize: type.body, fontWeight: '900' },
-
-  notice: {
-    flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-start',
-    backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.md,
-    borderWidth: 1, borderColor: colors.cardBorder, marginTop: spacing.md, marginBottom: 14,
-  },
-  noticeText: { flex: 1, color: colors.text2, fontSize: type.footnote, lineHeight: 18 },
-
-  input: {
-    backgroundColor: colors.bgInput, borderRadius: radius.md,
-    paddingHorizontal: 13, height: 50, color: colors.text, fontSize: type.subhead,
-    borderWidth: 1, borderColor: colors.cardBorder, marginBottom: 10,
-  },
-  multiline: { height: 88, paddingTop: 13, textAlignVertical: 'top' },
-
-  cta: {
-    height: 52, borderRadius: radius.lg, backgroundColor: colors.accentFillStrong,
-    alignItems: 'center', justifyContent: 'center', marginTop: 6,
-  },
-  ctaOff: { opacity: 0.4 },
-  ctaText: { color: '#fff', fontSize: type.subhead, fontWeight: '800' },
+const styles = StyleSheet.create({
+  govde: { paddingHorizontal: layout.gutter, gap: space[12], paddingBottom: space[4] },
+  bilgi: { flexDirection: 'row', alignItems: 'flex-start', gap: space[8], padding: space[12], borderRadius: radius.card },
+  bilgiMetni: { flex: 1 },
 });

@@ -572,7 +572,7 @@ export default function ChatScreen() {
     const rows = [];
     if (msg.text) {
       rows.push({
-        key: 'copy', icon: 'copy-outline', label: t('msg.copy'),
+        key: 'copy', icon: 'copy', label: t('msg.copy'),
         onPress: () => {
           Clipboard.setString(msg.text);
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
@@ -582,7 +582,7 @@ export default function ChatScreen() {
     // YANITLA en üstte: menünün en sık kullanılan eylemi ve iOS bağlam
     // menülerinde de ilk sırada duruyor.
     rows.unshift({
-      key: 'reply', icon: 'arrow-undo-outline', label: t('msg.reply'),
+      key: 'reply', icon: 'reply', label: t('msg.reply'),
       onPress: () => setReplyTo(msg),
     });
     // SABİTLE her iki tarafın mesajında da var: sabit ortak bir işaret,
@@ -595,12 +595,12 @@ export default function ChatScreen() {
     });
     if (mine) {
       rows.push({
-        key: 'delete', icon: 'trash-outline', label: t('msg.undo'),
+        key: 'delete', icon: 'trash', label: t('msg.undo'),
         destructive: true, onPress: () => confirmDelete(msg),
       });
     } else {
       rows.push({
-        key: 'report', icon: 'flag-outline', label: t('msg.reportMessage'),
+        key: 'report', icon: 'flag', label: t('msg.reportMessage'),
         destructive: true, onPress: () => setReportTarget(`${cid || other}:${msg.id}`),
       });
     }

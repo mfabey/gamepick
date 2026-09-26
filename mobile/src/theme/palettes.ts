@@ -19,6 +19,7 @@ export const lightColors: DesignColors = {
   starOff: '#AEAEB2', segmentedThumb: '#FFFFFF',
   switchOff: 'rgba(120,120,128,0.20)', tabBar: 'rgba(244,244,244,0.96)',
   pillNeutral: 'rgba(0,0,0,0.08)', pillNeutralSoft: 'rgba(0,0,0,0.06)',
+  scrim: 'rgba(0,0,0,0.35)',
   pageDotOff: 'rgba(0,0,0,0.22)',
   chartGrid: 'rgba(0,0,0,0.07)', chartArea: 'rgba(0,0,0,0.05)', chartHalo: 'rgba(0,0,0,0.12)',
   ticketDash: 'rgba(0,0,0,0.14)',

@@ -1,42 +1,25 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// GIF seçici (sohbet) — 2.0 / G-DS-4 (27 Eyl).
+//
+// Ortak AltSayfa (klavyeli, sabit %68 yükseklik: ızgara boşken de sayfa
+// zıplamasın). Üstte 2.0 arama alanı, altında iki sütunlu ızgara, en altta
+// sağlayıcı ibaresi. Arama davranışı aynen: açılışta öne çıkanlar, yazınca
+// 350 ms bekleme, sağlayıcı kapalıysa açıklama.
+// ─────────────────────────────────────────────────────────────────────────────
 import { useState, useEffect, useCallback, useRef } from 'react';
-import {
-  View, Text, Pressable, StyleSheet, TextInput, Modal,
-  ActivityIndicator, FlatList,
-} from 'react-native';
+import { View, StyleSheet, ActivityIndicator, FlatList } from 'react-native';
 import { Image } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
-
 import { searchGifs } from '../services/klipy';
-import { radius, spacing, type, PRESSED, motion, SHEET_LAYOUT } from '../theme';
-import { useStyles, useTheme } from '../context/ThemeContext';
+import { AltSayfa } from './ui/AltSayfa';
+import { PressableScale, Txt } from './ui/Primitives';
+import { SearchField } from './ui/SearchField';
+import { useDesignTheme } from '../theme/useDesignTheme';
 import { useLanguage } from '../context/LanguageContext';
-
-// ─────────────────────────────────────────────────────────────────────────────
-// GIF seçici — KLIPY.
-//
-// ARAMA KUTUSU ŞART, liste değil: insanlar GIF'i arayarak buluyor ("gülme",
-// "tamam", "şok"). Kategorilere bölünmüş bir tarama ekranı, aradığını bilen
-// kullanıcıyı yavaşlatıyor.
-//
-// GECİKTİRME (debounce) 350 ms: her tuş vuruşunda istek atmak sağlayıcı
-// kotasını gereksiz yere tüketiyor. İstek artık doğrudan cihazdan gittiği
-// için sunucu tarafı hız sınırımız da devrede değil — geciktirme tek fren.
-//
-// ÖNİZLEMEDE `tinygif` KULLANILIYOR, tam boy değil. Izgarada 24 tane tam boy
-// GIF oynatmak hem veriyi hem pili bitirir; gönderilen ise tam boy.
-//
-// ATIF ŞARTLARIN GEREĞİ, kozmetik bir tercih değil: KLIPY hem arama
-// kutusunda "Search KLIPY" yazmasını hem de markasının görünmesini
-// istiyor. İkisi de çevrilmiyor — marka adı her dilde aynı.
-//
-// SONUÇLAR OLDUĞU SIRADA çiziliyor. Şartlar arama ve trend sonuçlarının
-// yeniden sıralanmasını, süzülmesini veya araya başka içerik sokulmasını
-// yasaklıyor.
-// ─────────────────────────────────────────────────────────────────────────────
+import { motion } from '../theme';
+import { layout, radius, space } from '../theme/tokens';
 
 export default function GifPicker({ visible, onClose, onPick }) {
-  const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
+  const { colors } = useDesignTheme();
   const { t, lang } = useLanguage();
   const [q, setQ] = useState('');
   const [gifs, setGifs] = useState([]);
@@ -51,8 +34,6 @@ export default function GifPicker({ visible, onClose, onPick }) {
       setGifs(r?.gifs || []);
       setDisabled(false);
     } catch (e) {
-      // Sağlayıcı anahtarı tanımlı değilse özellik kapalı; kullanıcıya boş bir
-      // ızgara yerine sebebini söylüyoruz.
       if (e?.code === 'GIFS_DISABLED') setDisabled(true);
       setGifs([]);
     } finally {
@@ -72,98 +53,50 @@ export default function GifPicker({ visible, onClose, onPick }) {
     timer.current = setTimeout(() => run(v.trim()), 350);
   }, [run]);
 
-  // Ekran kapanınca bekleyen aramayı iptal et — aksi hâlde kapalı sayfa için
-  // istek gidiyor.
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose} />
-      <View style={styles.sheet}>
-        <View style={styles.grab} />
-
-        <View style={styles.searchRow}>
-          <Ionicons name="search" size={17} color={colors.text3} />
-          <TextInput
-            style={styles.input}
-            value={q}
-            onChangeText={onChange}
-            placeholder="Search KLIPY"
-            placeholderTextColor={colors.text3}
-            autoCorrect={false}
-            returnKeyType="search"
-          />
-        </View>
-
-        {disabled ? (
-          <Text style={styles.hint}>{t('gif.disabled')}</Text>
-        ) : loading && gifs.length === 0 ? (
-          <View style={styles.center}><ActivityIndicator color={colors.text3} /></View>
-        ) : gifs.length === 0 ? (
-          <Text style={styles.hint}>{t('gif.empty')}</Text>
-        ) : (
-          <FlatList
-            data={gifs}
-            keyExtractor={(g) => g.id}
-            numColumns={2}
-            columnWrapperStyle={{ gap: spacing.sm }}
-            contentContainerStyle={styles.grid}
-            keyboardShouldPersistTaps="handled"
-            renderItem={({ item }) => (
-              <Pressable
-                style={({ pressed }) => [styles.cell, pressed && PRESSED]}
-                onPress={() => onPick(item)}
-              >
-                <Image
-                  source={item.preview}
-                  style={styles.gif}
-                  contentFit="cover"
-                  transition={motion.image}
-                />
-              </Pressable>
-            )}
-          />
-        )}
-
-        {/* Sağlayıcının kullanım şartlarının gereği — kaldırılamaz. */}
-        <Text style={styles.attribution}>Powered by KLIPY</Text>
+    <AltSayfa visible={visible} onClose={onClose} klavye sabitOran={0.68} oran={0.68} accessibilityLabel={t('gif.search')}>
+      <View style={styles.arama}>
+        <SearchField value={q} onChangeText={onChange} placeholder={t('gif.search')} accessibilityLabel={t('gif.search')}
+          autoCorrect={false} returnKeyType="search" onClear={() => onChange('')} />
       </View>
-    </Modal>
+      {disabled ? (
+        <Txt variant="footnote" style={[styles.ipucu, { color: colors.text2 }]}>{t('gif.disabled')}</Txt>
+      ) : loading && gifs.length === 0 ? (
+        <View style={styles.merkez}><ActivityIndicator color={colors.text2} /></View>
+      ) : gifs.length === 0 ? (
+        <Txt variant="footnote" style={[styles.ipucu, { color: colors.text2 }]}>{t('gif.empty')}</Txt>
+      ) : (
+        <FlatList
+          data={gifs}
+          keyExtractor={(g) => g.id}
+          numColumns={2}
+          style={styles.esnek}
+          columnWrapperStyle={{ gap: space[8] }}
+          contentContainerStyle={styles.izgara}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          renderItem={({ item }) => (
+            <PressableScale style={styles.hucre} onPress={() => onPick(item)} accessibilityRole="button" accessibilityLabel="GIF">
+              <Image source={item.preview} style={[styles.gif, { backgroundColor: colors.surface2 }]} contentFit="cover" transition={motion.image} />
+            </PressableScale>
+          )}
+        />
+      )}
+      {/* Sağlayıcının kullanım şartlarının gereği — kaldırılamaz. */}
+      <Txt variant="caption2" style={[styles.ibare, { color: colors.text3 }]}>Powered by KLIPY</Txt>
+    </AltSayfa>
   );
 }
 
-const makeStyles = (colors) => StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: colors.overlay },
-  sheet: {
-    ...SHEET_LAYOUT,
-    height: '68%', backgroundColor: colors.bgElevated,
-    borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl,
-    paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.md,
-  },
-  grab: {
-    width: 38, height: 4, borderRadius: 2, alignSelf: 'center',
-    backgroundColor: colors.cardBorder, marginBottom: spacing.md,
-  },
-
-  searchRow: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
-    backgroundColor: colors.bgInput, borderRadius: radius.md,
-    paddingHorizontal: spacing.md, minHeight: 44, marginBottom: spacing.md,
-  },
-  input: { flex: 1, color: colors.text, fontSize: type.subhead },
-
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  hint: {
-    color: colors.text3, fontSize: type.footnote, textAlign: 'center',
-    paddingHorizontal: spacing.lg, paddingVertical: spacing.xl,
-  },
-
-  grid: { gap: spacing.sm, paddingBottom: spacing.md },
-  cell: { flex: 1 },
-  gif:  { width: '100%', height: 110, borderRadius: radius.sm, backgroundColor: colors.bgInput },
-
-  attribution: {
-    color: colors.text3, fontSize: type.caption2,
-    textAlign: 'center', paddingTop: spacing.xs,
-  },
+const styles = StyleSheet.create({
+  arama: { paddingHorizontal: layout.gutter, paddingBottom: space[12] },
+  esnek: { flex: 1 },
+  merkez: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  ipucu: { textAlign: 'center', paddingHorizontal: layout.gutter, paddingVertical: space[24] },
+  izgara: { gap: space[8], paddingHorizontal: layout.gutter, paddingBottom: space[12] },
+  hucre: { flex: 1 },
+  gif: { width: '100%', height: 110, borderRadius: radius.sm },
+  ibare: { textAlign: 'center', paddingTop: space[4] },
 });

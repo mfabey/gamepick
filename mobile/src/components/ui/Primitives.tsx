@@ -299,11 +299,13 @@ export function ListGroup({ title, children, note }: { title?: string; children:
   </View>;
 }
 
-export function ListRow({ title, value, description, icon, iconBackground, onPress, trailing, destructive, disabled, accessibilityLabel }: {
+export function ListRow({ title, value, description, icon, iconBackground, onPress, trailing, destructive, disabled, accessibilityLabel, selected }: {
   title: string; value?: string; icon?: IconName; iconBackground?: string; onPress?: () => void;
   description?: string; disabled?: boolean;
   /** Sağdaki öğe; verilmezse dokunulabilir satırda ok. `false` oku gizler (ör. "Çıkış yap"). */
   trailing?: React.ReactNode; destructive?: boolean; accessibilityLabel?: string;
+  /** Tek seçimli liste (dil, şikâyet nedeni): ekran okuyucuda radyo + seçili. */
+  selected?: boolean;
 }) {
   const { colors } = useDesignTheme();
   const content = <>
@@ -318,7 +320,8 @@ export function ListRow({ title, value, description, icon, iconBackground, onPre
     {trailing ?? (onPress ? <Icon name="chev" size={K.sectionHeader.linkIcon} color={colors.text3} strokeWidth={K.sectionHeader.linkStroke} /> : null)}
   </>;
   return onPress
-    ? <PressableScale onPress={onPress} disabled={disabled} accessibilityRole="button" accessibilityState={{ disabled }} accessibilityLabel={accessibilityLabel} style={s.listRow}>{content}</PressableScale>
+    ? <PressableScale onPress={onPress} disabled={disabled} accessibilityRole={selected === undefined ? 'button' : 'radio'}
+        accessibilityState={selected === undefined ? { disabled } : { disabled, selected }} accessibilityLabel={accessibilityLabel} style={s.listRow}>{content}</PressableScale>
     : <View accessible={!!accessibilityLabel} accessibilityLabel={accessibilityLabel} style={s.listRow}>{content}</View>;
 }
 
