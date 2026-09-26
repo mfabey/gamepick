@@ -1,0 +1,5 @@
+{
+  "ios": {
+    "NSLocationWhenInUseUsageDescription": "Gamerisen verwendet deinen Standort nur, um den Namen deiner Stadt zu einer geteilten Spielkarte hinzuzufügen. Dein Standort verlässt dein Gerät nicht."
+  }
+}

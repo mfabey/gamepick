@@ -11,6 +11,13 @@
     "runtimeVersion": {
       "policy": "appVersion"
     },
+    "locales": {
+      "tr": "./locales/tr.json",
+      "en": "./locales/en.json",
+      "de": "./locales/de.json",
+      "es": "./locales/es.json",
+      "pt": "./locales/pt.json"
+    },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.gamerisen.app",
