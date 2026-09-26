@@ -636,7 +636,6 @@ export default {
   'auth.games': 'oyun',
   'library.connectPrompt': 'Oyunlarını görmek için Steam veya Xbox hesabını bağla.',
   'library.hoursPlayed': 'saat oynandı',
-  'library.notPlayed': 'Oynanmadı',
   'lib.overview': 'Genel',
   'lib.accounts': 'hesap',
   'lib.games': 'Oyun',

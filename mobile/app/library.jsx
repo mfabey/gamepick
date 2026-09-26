@@ -1,6 +1,6 @@
-import { memo, useState, useEffect, useMemo, useCallback } from 'react';
+import { memo, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
-  View, ScrollView, StyleSheet, Alert, RefreshControl, useWindowDimensions, ActivityIndicator,
+  View, ScrollView, StyleSheet, Alert, RefreshControl, useWindowDimensions, ActivityIndicator, Keyboard,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -65,6 +65,21 @@ export default function LibraryScreen() {
 
   const [view, setView]     = useState('all');   // 'all' | 'steam_<id>' | 'xbox'
   const [search, setSearch] = useState('');
+
+  // ── ARAMA + KLAVYE ──
+  // Arama kutusu listenin başlığında, başlık kartının ALTINDA. Klavye açılınca
+  // sonuç ya da "sonuç yok" durumu klavyenin arkasında kalıyordu (SE, 26 Eyl).
+  // Klavye açıldığında (liste iç boşluğunu aldıktan sonra) kutu üste kaydırılıyor.
+  const listeRef = useRef(null);
+  const aramaY = useRef(0);
+  const aramaOdakta = useRef(false);
+  useEffect(() => {
+    const sub = Keyboard.addListener('keyboardDidShow', () => {
+      if (!aramaOdakta.current) return;
+      listeRef.current?.scrollToOffset({ offset: Math.max(0, aramaY.current - space[8]), animated: true });
+    });
+    return () => sub.remove();
+  }, []);
   const [sort, setSort]     = useState('hours');  // hours | name | value
 
   const steamIdsKey = steamAccounts.map(a => a.steamId).join(',');
@@ -282,6 +297,10 @@ export default function LibraryScreen() {
       ) : (
         <Reveal style={{ flex: 1 }}>
         <FlashList
+          ref={listeRef}
+          automaticallyAdjustKeyboardInsets
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
           data={filtered}
           keyExtractor={keyExtractor}
           numColumns={sutun}
@@ -297,12 +316,16 @@ export default function LibraryScreen() {
               />
               <LibraryHeaderCard header={header} formatPrice={formatPrice} pricesLoading={pricesLoading} t={t} locale={locale} />
               {/* Arama + sıralama */}
-              <SearchField
-                value={search}
-                onChangeText={setSearch}
-                placeholder={t('lib.search')}
-                accessibilityLabel={t('lib.search')}
-              />
+              <View onLayout={(e) => { aramaY.current = styles.listContent.paddingTop + e.nativeEvent.layout.y; }}>
+                <SearchField
+                  value={search}
+                  onChangeText={setSearch}
+                  placeholder={t('lib.search')}
+                  accessibilityLabel={t('lib.search')}
+                  onFocus={() => { aramaOdakta.current = true; }}
+                  onBlur={() => { aramaOdakta.current = false; }}
+                />
+              </View>
               {/* Sıralama tek seçimli ve ikincil: kısa boy Segmented; sağda
                   süzülmüş oyun sayısı. */}
               <View style={styles.sortRow}>
@@ -359,7 +382,8 @@ function LibraryHeaderCard({ header, formatPrice, pricesLoading, t, locale }) {
   if (!header) return null;
 
   const saat = (h) => `${h} ${t('home.hoursShort')}`;
-  const deger = (v) => (pricesLoading && !v ? '…' : v ? formatPrice(v.sum) : '—');
+  // Kuruşsuz: 4 hücreli satırda "$162.93" SE'de kesiliyordu (26 Eyl).
+  const deger = (v) => (pricesLoading && !v ? '…' : v ? formatPrice(v.sum, { tam: true }) : '—');
 
   let bas;
   let hucreler;
@@ -419,7 +443,9 @@ function LibraryHeaderCard({ header, formatPrice, pricesLoading, t, locale }) {
       <View style={styles.statsRow}>
         {hucreler.map((h) => (
           <View key={h.label} style={styles.statCell}>
-            <Txt variant="statValue" numberOfLines={1} style={[styles.num, h.color && { color: h.color }]}>{h.value}</Txt>
+            {/* Güvenlik ağı: çok büyük kütüphanede ("₺123.456") hücre yine
+                dolarsa kesmek yerine hafif küçülüyor. */}
+            <Txt variant="statValue" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[styles.num, h.color && { color: h.color }]}>{h.value}</Txt>
             <Txt variant="caption" numberOfLines={1} style={{ color: colors.text2 }}>{h.label}</Txt>
           </View>
         ))}
@@ -446,14 +472,20 @@ function HeaderName({ tag, name }) {
 // olunan oyunda indirim bir karar değiştirmiyor. Fiyat, indirimdeyse güncel
 // fiyat (eski davranış). Game Pass kapak üstünde 2.0 `OverlayTag`.
 const GameTile = memo(function GameTile({ game, steam, price, width, onPress }) {
-  const { t, formatPrice } = useLanguage();
+  const { t, locale, formatPrice } = useLanguage();
   const isFree = price?.isFree;
   const onSale = price?.discount > 0 && !isFree;
   let alt;
   if (steam) {
-    const saat = game.hours > 0 ? `${game.hours} ${t('home.hoursShort')}` : t('library.notPlayed');
-    const fiyat = !price ? null
-      : isFree ? t('card.free')
+    // Kit tam saat gösteriyor ("134 sa"). Ham değer "43.3" idi: dar kutucukta
+    // alt satırı taşırıyordu, DE/TR'de ondalık ayraç da yanlıştı. 10 saatin
+    // altında tek ondalık, yerel ayraçla ("2,5 Std"). Oynanmamış oyun "0 Std":
+    // "Nicht gespielt · $5.14" 375 pt'de fiyatı tamamen yutuyordu (26 Eyl).
+    const saat = `${Number(game.hours || 0).toLocaleString(locale, { maximumFractionDigits: game.hours >= 10 ? 0 : 1 })} ${t('home.hoursShort')}`;
+    // Ücretsiz oyunda fiyat YOK: başlıktaki "değer" toplamı onları zaten
+    // saymıyor (computeValue), "Kostenlos" sahip olunan oyunda bilgi değil ve
+    // alt satırı kesiyordu.
+    const fiyat = !price || isFree ? null
       : price.original != null ? formatPrice(onSale ? price.current : price.original)
       : null;
     alt = fiyat ? `${saat} · ${fiyat}` : saat;

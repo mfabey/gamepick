@@ -68,9 +68,18 @@ export function LanguageProvider({ children }) {
   // Gamerisen 2.0 biçimi (kullanıcı kararı, 22 Eylül): ₺ ÖNDE, binlik ayraç
   // nokta — tasarımdaki "₺599", "₺1.199". Önceden web'le aynı "599₺" idi;
   // web bu geçişin kapsamında değil, iki yüzey artık farklı yazıyor.
-  const formatPrice = useCallback((priceTry) => {
+  //
+  // `{ tam: true }` → kuruşsuz, en yakın tama yuvarlanmış ("₺5.350", "$163").
+  // Toplamlar için (kütüphane değeri): tahmini bir toplamda kuruş gürültü ve
+  // dar istatistik hücresine sığmıyordu ("$162.93", SE 375 pt, 26 Eyl).
+  const formatPrice = useCallback((priceTry, { tam = false } = {}) => {
     if (priceTry == null) return '';
     if (priceTry === 0) return t('card.free');
+    if (tam) {
+      return lang === 'tr'
+        ? `₺${Math.round(Number(priceTry)).toLocaleString('tr-TR')}`
+        : `$${Math.round(priceTry / (rate || 1))}`;
+    }
     if (lang === 'tr') {
       const val = Number(priceTry);
       const formatted = val % 1 === 0

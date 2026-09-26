@@ -638,7 +638,6 @@ export default {
   'auth.games': 'Spiele',
   'library.connectPrompt': 'Verbinde dein Steam- oder Xbox-Konto, um deine Spiele zu sehen.',
   'library.hoursPlayed': 'Stunden gespielt',
-  'library.notPlayed': 'Nicht gespielt',
   'lib.overview': 'Übersicht',
   'lib.accounts': 'Konten',
   'lib.games': 'Spiele',
