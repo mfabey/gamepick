@@ -767,10 +767,12 @@ const HomeCard = memo(function HomeCard({ game, router, onDismiss, onExpand }) {
       // çerçevesi ölçülüp büyüme geçişi başlıyor (bkz. CardExpand).
       onPress={() => go(router, game)}
       onExpand={onExpand}
-      // FAZ 1: eleme artık GÖRÜNÜR bir "×". `onDismiss` yalnızca "Senin için"
-      // şeridinden geliyor — Yeni ve İndirim şeritleri onu göndermiyor,
-      // dolayısıyla orada daire de çıkmıyor.
-      onDismiss={onDismiss}
+      // ELEME UZUN BASMADA — kapaktaki "×" kaldırıldı (kullanıcı: "kötü
+      // duruyor", 26 Eyl). Akıştaki GamePostCard ile aynı sözleşme: uzun
+      // basma → "İlgilenmiyorum" onayı. `onDismiss` yalnızca "Senin için"
+      // şeridinden geliyor; Yeni ve İndirim şeritlerinde uzun basma boş.
+      // GameCard'a `onDismiss` VERİLMİYOR: verilirse daireyi yine çizer.
+      onLongPress={onDismiss ? () => onDismiss(game) : undefined}
     />
   );
 });
