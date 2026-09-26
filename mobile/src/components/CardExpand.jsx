@@ -16,8 +16,11 @@
 // cover, component.detail.heroHeight). Yani iniş noktası tahmin değil, ölçü.
 //
 // DEVİR ANI. Bindirme, detay ekranı ilk karesini çizene kadar duruyor.
-// İkisi AYNI görseli AYNI çerçevede gösterdiği için devir görünmüyor;
-// bindirme erken kaldırılsaydı bir kare boyunca boşluk görünürdü.
+// İkisi AYNI görseli AYNI çerçevede gösterdiği için devir görünmüyor.
+// Bu eskiden VARSAYIMDI ve tutmuyordu: bindirme anasayfanın odak kaybında
+// kalkıyordu, detay ~50 ms sonra çiziliyordu — 3 kare anasayfa göründü
+// (26 Eyl, 60 fps kayıt). Artık detay `devirTamam()` ile haber veriyor
+// (services/gecisKaynak.js → DEVİR).
 //
 // REDUCE MOTION: animasyon hiç kurulmuyor, çağrı yeri doğrudan gidiyor.
 // Hareket bir bilgi taşımıyor — yalnız sürekliliği anlatıyor — o yüzden
@@ -62,9 +65,9 @@ const EGRI = Easing.bezier(0.2, 0.9, 0.2, 1);
  * `kaynak.hedefGorsel` — detayın gösterdiği kapak. Verilmezse ham `image`
  * kullanılıyor: detay da veri gelene kadar zaten onu basıyor.
  */
-// Bindirme KENDİSİ kalkmıyor: anasayfa, odağı kaybettiğinde temizliyor
-// (useFocusEffect). Böylece bindirme, detay ekranı devralana kadar
-// duruyor — erken kalksaydı bir kare boyunca boşluk görünürdü.
+// Bindirme KENDİSİ kalkmıyor: anasayfa, detay ilk karesini çizdiğini
+// bildirince temizliyor (useFocusEffect + devirBekle). Odak kaybında
+// hemen temizlemek YETMİYOR — ölçüldü, bkz. yukarıdaki DEVİR ANI.
 export default function CardExpand({ kaynak, onVar, yon = 'buyu' }) {
   const { colors } = useTheme();
   const ilerleme = useSharedValue(0);

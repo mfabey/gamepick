@@ -32,7 +32,7 @@ import { reportActivity } from '../../src/api/social';
 import { useQuery } from '../../src/hooks/useQuery';
 import { useGamePrices } from '../../src/hooks/useGamePrices';
 import { useReducedMotion } from '../../src/hooks/useReducedMotion';
-import { kaynakOku, kaynakSil, kucultmeIste } from '../../src/services/gecisKaynak';
+import { kaynakOku, kaynakSil, kucultmeIste, devirTamam } from '../../src/services/gecisKaynak';
 import { GenreChipsSkeleton, ShotStripSkeleton, TextBlockSkeleton, PriceListSkeleton } from '../../src/components/Skeleton';
 import { recordSignal } from '../../src/services/tasteProfile';
 import { recordSeen } from '../../src/services/seenStore';
@@ -82,7 +82,7 @@ export default function GameDetail() {
   const { colors, isDark } = useDesignTheme();
   const insets = useSafeAreaInsets();
   const stickyInset = useStickyBarInset();
-  const { id, name, image, slug, hasSteam, appid } = useLocalSearchParams();
+  const { id, name, image, slug, hasSteam, appid, buyume } = useLocalSearchParams();
   const router = useRouter();
   const { t, lang, formatPrice, formatDiscount, formatStoreAt, formatCompact } = useLanguage();
   const { isWatched, toggle } = useWishlist();
@@ -332,6 +332,17 @@ export default function GameDetail() {
 
   const cikiliyor = useRef(false);
 
+  // ── BÜYÜME DEVRİ ──
+  // Anasayfanın bindirmesi bu ekran ilk karesini çizene kadar duruyor
+  // (gecisKaynak.js → DEVİR). `onLayout` çizimden ÖNCE geliyor; bir kare
+  // beklenince kapak gerçekten ekranda oluyor. Büyümesiz açılışta sessiz.
+  const devirYapildi = useRef(false);
+  const kapakYerlesti = useCallback(() => {
+    if (buyume !== '1' || devirYapildi.current) return;
+    devirYapildi.current = true;
+    requestAnimationFrame(() => devirTamam());
+  }, [buyume]);
+
   const geriDon = useCallback(() => {
     if (cikiliyor.current) return;   // çift dokunuş koruması
     const cerceve = kaynakOku(id);
@@ -441,8 +452,12 @@ export default function GameDetail() {
       <StatusBar style={cubukOpak ? (isDark ? 'light' : 'dark') : 'light'} />
       {/* Kapak — MUTLAK KONUMLU ARKA PLAN, parallax 0.9 (yukarıdaki not).
           G-07: 380 pt, gameDetailHeader degradesi (alt uç temanın zemini). */}
-      <Animated.View style={[s.cover, { backgroundColor: colors.surface2 }, coverStyle]}>
-        {cover ? <Image source={cover} priority="high" cachePolicy="memory-disk" style={StyleSheet.absoluteFill} contentFit="cover" transition={motion.image} /> : null}
+      <Animated.View onLayout={kapakYerlesti} style={[s.cover, { backgroundColor: colors.surface2 }, coverStyle]}>
+        {/* Büyümeyle gelindiyse ilk görsel SOLMADAN basılıyor: aynı adres
+            bindirmede zaten ekrandaydı; 200 ms solma devirde kapağı karartıp
+            geri getiriyordu (26 Eyl, 60 fps kayıt). Veri gelip adres
+            değişirse (`g.image`) solma geri geliyor. */}
+        {cover ? <Image source={cover} priority="high" cachePolicy="memory-disk" style={StyleSheet.absoluteFill} contentFit="cover" transition={buyume === '1' && cover === image ? null : motion.image} /> : null}
         <LinearGradient colors={kapakDegradesi.colors} locations={kapakDegradesi.locations} style={StyleSheet.absoluteFill} />
       </Animated.View>
 

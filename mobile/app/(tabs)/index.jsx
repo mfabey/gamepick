@@ -42,7 +42,7 @@ import { suz } from '../../src/services/engel';
 import { useEngelliler } from '../../src/hooks/useEngelliler';
 import { useModerasyon } from '../../src/hooks/useModerasyon';
 import CardExpand from '../../src/components/CardExpand';
-import { kaynakYaz, kucultmeAl } from '../../src/services/gecisKaynak';
+import { kaynakYaz, kucultmeAl, devirBekle } from '../../src/services/gecisKaynak';
 import { fetchForYouCandidates } from '../../src/api/recommend';
 import { getReviewFeed, getFriendActivity, fetchPosts } from '../../src/api/social';
 import { getSession, subscribeSession } from '../../src/services/session';
@@ -55,6 +55,11 @@ import { useReducedMotion } from '../../src/hooks/useReducedMotion';
 // Stabil fetcher'lar (key'in saf fonksiyonu)
 const fetchNewGames = () => fetchGames({ section: 'new', num: 12 });
 const fetchSaleGames = () => fetchGames({ section: 'sale', num: 12 });
+
+// Detay devir sinyali gelmezse büyüme bindirmesi en geç bu kadar sonra kalkar.
+// Detayın ilk karesi ölçüldü: ~50 ms. Bindirme o arada detayın altında
+// kaldığı için cömert tutmanın görünür bir bedeli yok.
+const DEVIR_YEDEK_MS = 1000;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SOĞUK KULLANICI İÇİN YEDEK TÜRLER.
@@ -503,10 +508,27 @@ export default function HomeScreen() {
   const kucultmeBitti = useCallback(() => setKuculen(null), []);
 
   useFocusEffect(useCallback(() => {
+    // Geri gelindiğinde büyüme bindirmesi kesin yok (devir sinyali hiç
+    // gelmediyse bile yedek zamanlayıcıyı beklemeden).
+    setBuyuyen(null);
     const bekleyen = kucultmeAl();
     if (bekleyen) setKuculen(bekleyen);
-    // Ekrandan çıkarken BÜYÜME bindirmesi kalmasın (detay devraldı).
-    return () => setBuyuyen(null);
+    // Ekrandan çıkarken BÜYÜME bindirmesi HEMEN kalkmıyor: odak kaybı detay
+    // çizilmeden oluyor ve arada 3 kare anasayfa görünüyordu (ölçüm:
+    // gecisKaynak.js → DEVİR). Detay ilk karesini çizince `devirTamam()`
+    // çağırıyor; gelmezse (büyümesiz gezinme, hata) yedek zamanlayıcı.
+    return () => {
+      let bitti = false;
+      let yedek = null;
+      const birak = () => {
+        if (bitti) return;
+        bitti = true;
+        clearTimeout(yedek);
+        setBuyuyen(null);
+      };
+      devirBekle(birak);
+      yedek = setTimeout(birak, DEVIR_YEDEK_MS);
+    };
   }, []));
 
   const keyExtractor = useCallback((item) => item.key, []);
