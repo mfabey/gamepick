@@ -48,8 +48,9 @@ import ProfileGate from '../src/components/ProfileGate';
 const W = K.wishlist;
 
 export default function WishlistScreen() {
+  const { t } = useLanguage();
   return (
-    <ProfileGate>
+    <ProfileGate title={t('wishlist.title')}>
       <WishlistScreenContent />
     </ProfileGate>
   );

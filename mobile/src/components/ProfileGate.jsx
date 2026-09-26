@@ -9,18 +9,24 @@
 //
 // Kilitli ekran ÖLÜ UÇ DEĞİL: ne yapılması gerektiğini söyleyip kayıt
 // ekranına götürüyor.
+//
+// NAVBAR ŞART. İlk sürüm yalnız boş durumu çiziyordu: geri oku da başlık da
+// yoktu, çıkış yalnız kenar kaydırmasıydı (26 Eyl, simülatörde görüldü).
+// Çağıran ekran kendi başlığını `title` ile veriyor; kapı ile gerçek ekran
+// aynı üst çubuğu taşıyor. İkon `userplus`: uygulamada "hesap gerekli" bu,
+// `lock` gizli/kilitli içerik için (bkz. game-cards).
 // ─────────────────────────────────────────────────────────────────────────────
 import { View, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
 import EmptyState from './EmptyState';
+import { NavBar } from './ui/Navigation';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import {  } from '../theme';
-import { useStyles, useTheme } from '../context/ThemeContext';
+import { useStyles } from '../context/ThemeContext';
 
-export default function ProfileGate({ children }) {
+export default function ProfileGate({ title, children }) {
   const styles = useStyles(makeStyles);
   const { account } = useAuth();
   const { t } = useLanguage();
@@ -30,9 +36,10 @@ export default function ProfileGate({ children }) {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
+      <NavBar title={title} />
       <View style={{ flex: 1 }}>
         <EmptyState
-          icon="lock"
+          icon="userplus"
           title={t('prof.lockTitle')}
           text={t('prof.lockDesc')}
           actionLabel={t('prof.lockCta')}

@@ -28,8 +28,9 @@ import ProfileGate from '../src/components/ProfileGate';
 const EMOJIS = ['🎮', '🏆', '❤️', '🔥', '👾', '🗡️', '🚀', '🧩', '🌙', '⚡'];
 
 export default function CollectionsScreen() {
+  const { t } = useLanguage();
   return (
-    <ProfileGate>
+    <ProfileGate title={t('col.title')}>
       <CollectionsScreenContent />
     </ProfileGate>
   );

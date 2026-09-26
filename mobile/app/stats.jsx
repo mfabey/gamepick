@@ -28,8 +28,9 @@ import { useYanBosluk } from '../src/hooks/useIcerikAlani';
 import { useLanguage } from '../src/context/LanguageContext';
 import ProfileGate from '../src/components/ProfileGate';
 export default function StatsScreen() {
+  const { t } = useLanguage();
   return (
-    <ProfileGate>
+    <ProfileGate title={t('stats.title')}>
       <StatsScreenContent />
     </ProfileGate>
   );
