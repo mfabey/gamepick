@@ -256,14 +256,29 @@ export const tabBar = {
     shadow: '0 12px 32px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3)',
     lens: { width: 60, height: 52, fill: 'rgba(255,255,255,0.12)', edge: 'inset 0 0 0 0.5px rgba(255,255,255,0.16), inset 0 1px 0 rgba(255,255,255,0.12)' },
     badge: { size: 18, top: -5, left: 17, ring: '#2A2A2D' },
+    // Canlı Çubuk (26 Eyl tasarımı): bağlamda sekmeler bu boyda daireye iner,
+    // yanındaki aksesuar kapsülü de aynı yükseklikte.
+    mini: 52,
+    alertFill: 'rgba(38,38,41,0.9)', // bildirim kapsülü: bulanıklık üstü opak dolgu (okunaklılık)
   },
   android: {
-    height: 64, // + alt sistem alanı (insets.bottom)
+    // Canlı Çubuk: Android de YÜZEN kapsül (iOS hissi). Tam genişlik çubuktan
+    // farkı: kenardan 16, gezinme alanının 8 üstünde, köşe tam yarıçap.
+    // Bulanıklık YOK — düz dolgu + gölge; orta/alt segmentte kare düşürmez.
+    height: 64,
+    side: 16,
+    aboveNav: 8,
+    mini: 56,
     icon: 24,
     iconOff: '#A1A1A6',
     cutout: '#3C1113', // gösterge üstü renk
-    fill: '#131315',
-    indicator: { width: 56, height: 32, fill: 'rgba(188,12,12,0.24)' },
+    fill: '#19191C',
+    alertFill: '#232326',
+    shadow: 'inset 0 1px 0 rgba(255,255,255,0.06), 0 8px 20px rgba(0,0,0,0.55), 0 2px 6px rgba(0,0,0,0.4)',
+    indicator: { width: 56, height: 32, top: 7, fill: 'rgba(188,12,12,0.24)' },
+    // Seçili ikon göstergeyle birlikte YUKARI çıkıyor, etiket altında beliriyor.
+    iconLift: 9,
+    labelTop: 42,
     badge: { size: 16, top: -4, left: 13 },
   },
 } as const;

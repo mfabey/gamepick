@@ -2,6 +2,7 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
+import { canliOlayGoster, cubukGorunur } from './services/canliCubuk';
 
 // Bildirim geldiğinde uygulama açıkken de göster
 // ── Açık sohbet ──
@@ -22,8 +23,28 @@ Notifications.setNotificationHandler({
   handleNotification: async (notification) => {
     // Gelen mesaj, ŞU AN AÇIK olan sohbetten mi? Sunucu bildirim verisine
     // gönderenin uid'sini koyuyor (data: { type: "dm", from }).
-    const data = notification?.request?.content?.data || {};
+    const content = notification?.request?.content || {};
+    const data = content.data || {};
     const sessiz = data.type === 'dm' && data.from && data.from === activeChatUid;
+
+    // ── CANLI ÇUBUK ──
+    // Bir çubuk ekrandaysa fiyat düşüşü ve mesaj afiş olarak değil, çubuğun
+    // üstündeki kapsülde gösteriliyor (26 Eyl tasarımı). Çubuk yoksa (ör.
+    // Ayarlar) afiş eskisi gibi — yoksa olay görünmeden kaybolurdu.
+    // Bildirim merkezine yine düşüyor (shouldShowList).
+    if (!sessiz && (data.type === 'price-alert' || data.type === 'dm') && cubukGorunur()) {
+      const fiyat = data.type === 'price-alert';
+      canliOlayGoster({
+        anahtar: fiyat ? `fiyat:${data.slug || data.name}:${content.body || ''}` : notification?.request?.identifier,
+        tur: fiyat ? 'fiyat' : 'mesaj',
+        baslik: content.title,
+        metin: content.body,
+        veri: data,
+      });
+      return {
+        shouldShowBanner: false, shouldShowList: true, shouldPlaySound: false, shouldSetBadge: false, shouldShowAlert: false,
+      };
+    }
 
     return {
       shouldShowBanner: !sessiz,

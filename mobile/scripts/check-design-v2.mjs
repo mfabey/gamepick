@@ -56,7 +56,8 @@ for (const [scheme, palette] of Object.entries(designPalettes)) {
 }
 for (const [platform, safe, occupied] of [
   ['ios', 0, 74], ['ios', 21, 74], ['ios', 34, 83],
-  ['android', 0, 64], ['android', 24, 88], ['android', 48, 112],
+  // Canlı Çubuk: Android yüzen kapsül, gezinme alanının 8 üstünde (64 + safe + 8).
+  ['android', 0, 72], ['android', 24, 96], ['android', 48, 120],
 ]) {
   const geometry = tabGeometry(platform, safe);
   assert.equal(geometry.occupied, occupied);

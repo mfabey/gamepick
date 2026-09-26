@@ -41,7 +41,8 @@ import { Icon } from '../../src/components/Icon';
 import { Button, IconButton, PressableScale, SectionHeader, Txt } from '../../src/components/ui/Primitives';
 import { HeartButton } from '../../src/components/ui/HeartButton';
 import { GlassView } from '../../src/components/ui/GlassView';
-import { StickyBottomBar, useStickyBarInset } from '../../src/components/ui/Navigation';
+import { BildirimKapsulu, FiyatAksesuari, KucukCubuk, SekmeDairesi, useCubukGeometri, useKucukCubukBoslugu } from '../../src/components/navigation/CanliCubuk';
+import { useCubukSahibi } from '../../src/services/canliCubuk';
 import { GamePriceCard, GenreChips, InfoCells, OutlineBadge, ReviewSummary, ScreenshotRail, TrailerCard } from '../../src/components/ui/GameDetailParts';
 import { useDesignTheme } from '../../src/theme/useDesignTheme';
 import { component as K, gradients, layout, space } from '../../src/theme/tokens';
@@ -81,7 +82,9 @@ export default function GameDetail() {
   const yan = useYanBosluk();
   const { colors, isDark } = useDesignTheme();
   const insets = useSafeAreaInsets();
-  const stickyInset = useStickyBarInset();
+  // Canlı Çubuk: alttaki daire + fiyat kapsülünün kapladığı alan (tabGeometry).
+  const cubukBoslugu = useKucukCubukBoslugu(0);
+  const cubukG = useCubukGeometri();
   const { id, name, image, slug, hasSteam, appid, buyume } = useLocalSearchParams();
   const router = useRouter();
   const { t, lang, formatPrice, formatDiscount, formatStoreAt, formatCompact } = useLanguage();
@@ -174,6 +177,8 @@ export default function GameDetail() {
       return () => setFocused(false);
     }, [])
   );
+  // Canlı Çubuk: odaktayken fiyat/mesaj olayları afiş yerine buradaki kapsülde.
+  useCubukSahibi(focused);
 
   // Kullanıcı başlattıysa: yalnızca ekran odaktayken VE lightbox kapalıyken
   // oynasın (pil/CPU). Bu koşul korundu, üstüne `fragmanAcik` eklendi.
@@ -494,7 +499,7 @@ export default function GameDetail() {
       <Animated.ScrollView
         ref={scrollRef}
         style={s.body}
-        contentContainerStyle={{ paddingTop: COVER_H, paddingBottom: (best ? stickyInset : insets.bottom) + layout.sectionGap, paddingHorizontal: yan }}
+        contentContainerStyle={{ paddingTop: COVER_H, paddingBottom: cubukBoslugu + layout.sectionGap, paddingHorizontal: yan }}
         showsVerticalScrollIndicator={false}
         onScroll={onScroll}
         scrollEventThrottle={16}
@@ -615,16 +620,26 @@ export default function GameDetail() {
         ) : null}
       </Animated.ScrollView>
 
-      {/* Sabit alt çubuk (kit sticky_bar): en ucuz fiyat + "Steam'de en ucuz · -%50". */}
+      {/* CANLI ÇUBUK (26 Eyl): eski sabit fiyat çubuğunun yerine daire (sekmelere
+          dön) + fiyat kapsülü — ekranın altında tek çubuk. Fiyat yoksa yalnız
+          daire; canlı olay kapsülü her iki durumda da dairenin üstünde. */}
       {best ? (
-        <StickyBottomBar
-          price={best.isFree ? t('card.free') : formatPrice(best.price)}
-          subtitle={[t('v2.cheapestAt').replace('{at}', formatStoreAt(best.name)), !best.isFree && best.discount > 0 ? formatDiscount(best.discount) : null].filter(Boolean).join(' · ')}
-          actionLabel={t('v2.goToStore')}
-          onAction={() => open(best.url)}
-          disabled={!best.url}
-        />
-      ) : null}
+        <KucukCubuk sagPay={8}>
+          <FiyatAksesuari
+            fiyat={best.isFree ? t('card.free') : formatPrice(best.price)}
+            indirim={!best.isFree ? best.discount : 0}
+            altYazi={t('v2.cheapestAt').replace('{at}', formatStoreAt(best.name))}
+            eylem={t('v2.goToStore')}
+            onEylem={() => open(best.url)}
+            disabled={!best.url}
+          />
+        </KucukCubuk>
+      ) : (
+        <>
+          <BildirimKapsulu alt={cubukG.bottom + cubukG.mini + 8} />
+          <SekmeDairesi />
+        </>
+      )}
 
       {/* Ekran görüntüsü ışık kutusu */}
       <Modal

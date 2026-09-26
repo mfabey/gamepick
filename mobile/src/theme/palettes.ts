@@ -38,9 +38,12 @@ export const lightTabBar = {
     shadow: '0 12px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)',
     lens: { ...tabBar.ios.lens, fill: 'rgba(0,0,0,0.06)', edge: 'inset 0 0 0 0.5px rgba(0,0,0,0.06)' },
     badge: { ...tabBar.ios.badge, ring: '#EFEFF2' },
+    alertFill: 'rgba(255,255,255,0.92)',
   },
   android: {
-    ...tabBar.android, iconOff: lightColors.text2, cutout: '#E2B6B6', fill: lightColors.bg2,
+    ...tabBar.android, iconOff: lightColors.text2, cutout: '#E2B6B6', fill: lightColors.surface1,
+    alertFill: lightColors.surface1,
+    shadow: 'inset 0 0 0 0.5px rgba(0,0,0,0.06), 0 8px 20px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.08)',
     indicator: { ...tabBar.android.indicator, fill: 'rgba(188,12,12,0.16)' },
   },
 };

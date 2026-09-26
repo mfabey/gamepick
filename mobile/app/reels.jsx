@@ -21,7 +21,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import * as WebBrowser from 'expo-web-browser';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
@@ -51,6 +50,11 @@ import { GlassView } from '../src/components/ui/GlassView';
 
 import { useStyles } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
+import { KucukCubuk, OyunAksesuari } from '../src/components/navigation/CanliCubuk';
+import FiyatSayfasi from '../src/components/FiyatSayfasi';
+import { useCubukSahibi } from '../src/services/canliCubuk';
+import { requestPrice } from '../src/services/priceService';
+import { tabGeometry } from '../src/theme/tabGeometry';
 
 const POOL = 3;
 
@@ -159,6 +163,41 @@ export default function VideosScreen() {
   // değil gerçek ölçüden okunuyor: kilit uygulanana kadar ikisi ayrışıyor ve
   // geçiş anında düğme yanlış yere sıçrardı.
   const isLandscape = winW > winH;
+
+  // ── CANLI ÇUBUK ──
+  // Reels sekme dışı bir yığın ekranı: sekme çubuğu burada görünmüyor. Ekran
+  // kendi küçük çubuğunu çiziyor — daire (sekmelere dön) + izlenen oyunun
+  // fiyatı. "Satın al" raydan kalktı: aksesuara dokununca bütün mağazaların
+  // fiyat sayfası açılıyor. Yatayda çubuk yok (video tam ekran).
+  useCubukSahibi(focused && !isLandscape);
+  const { account } = useAuth();
+  const { isWatched, toggle } = useWishlist();
+  const [fiyatAcik, setFiyatAcik] = useState(false);
+  const aktifOyun = items[active] || null;
+  const aktifIzleniyor = aktifOyun ? isWatched(aktifOyun) : false;
+  // Sonraki iki videonun fiyatı ÖNCEDEN: kaydırınca kapsül iskelette
+  // beklemesin. Ölçüldü: önyüklemesiz fiyat yeni oyun geldikten ~600 ms sonra
+  // düşüyordu. requestPrice önbellekli ve eşzamanlılık limitli; isabet ağsız.
+  useEffect(() => {
+    [items[active + 1], items[active + 2]].forEach((o) => {
+      if (o?.name) requestPrice({ name: o.name, slug: '', hasSteam: true });
+    });
+  }, [active, items]);
+  // VideoItem'daki "Takip" ile AYNI işlem ve aynı durum: ikisi de istek listesi.
+  const kalpDegistir = useCallback(() => {
+    const item = aktifOyun;
+    if (!item) return;
+    if (!account) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      router.push('/account');
+      return;
+    }
+    const ekle = !aktifIzleniyor;
+    Haptics.impactAsync(ekle ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light);
+    toggle({ id: item.id, name: item.name, image: item.image, appid: item.appid, hasSteam: true, slug: '' });
+    if (ekle && item.genres?.length) recordSignal({ genres: item.genres, type: 'wishlist' });
+    if (ekle) reportActivity({ type: 'wishlist', gameId: item.id, gameName: item.name || '', gameImage: item.image || '' });
+  }, [aktifOyun, aktifIzleniyor, account, router, toggle]);
 
   // ── Sabit oynatıcı havuzu ───────────────────────────────────────────────
   const cfg = useCallback((p) => {
@@ -497,6 +536,18 @@ export default function VideosScreen() {
         </View>
       </SafeAreaView>
       </Animated.View>
+
+      {!isLandscape && aktifOyun ? (
+        <KucukCubuk stil={topBarStyle}>
+          <OyunAksesuari
+            oyun={{ id: String(aktifOyun.id), name: aktifOyun.name, image: aktifOyun.image }}
+            izleniyor={aktifIzleniyor}
+            onKalp={kalpDegistir}
+            onAc={() => { Haptics.selectionAsync(); setFiyatAcik(true); }}
+          />
+        </KucukCubuk>
+      ) : null}
+      <FiyatSayfasi visible={fiyatAcik} onClose={() => setFiyatAcik(false)} oyun={aktifOyun} />
     </View>
   );
 }
@@ -536,7 +587,11 @@ const VideoItem = memo(function VideoItem({
   const itemInsets = useSafeAreaInsets();
   // Dikey kaplamalar sekme çubuğunun üstünde duruyor; çubuğun yüksekliği
   // alt inset'e bağlı, sabit sayı üç düğmeli gezinmede kısa kalıyordu.
-  const tabBosluk = itemInsets.bottom + spacing.s12;
+  // Kaplamalar Canlı Çubuğun (daire + oyun kapsülü) ÜSTÜNDE duruyor; çubuğun
+  // üst kenarı güvenli alana bağlı, tek kaynak tabGeometry. Tasarım: bilgi
+  // bloğu çubuğun 23, ray 30 pt üstünde.
+  const cubuk = tabGeometry(Platform.OS, itemInsets.bottom);
+  const cubukUstu = cubuk.bottom + cubuk.mini;
 
   // Daireler ve boşluk küçülünce sütun 315 → ~254pt: 402'lik ekrana rahat
   // sığıyor, üstelik video için ortada daha çok yer kalıyor.
@@ -551,8 +606,8 @@ const VideoItem = memo(function VideoItem({
   // üstüne 12pt nefes payı. Aksi hâlde yatay şerit çubuğun altında kalıyordu.
   const railBottom = isLandscape
     ? itemInsets.bottom + spacing.s12
-    : tabBosluk + 90;
-  const infoBottom = isLandscape ? 80 : tabBosluk + 6;
+    : cubukUstu + 30;
+  const infoBottom = isLandscape ? 80 : cubukUstu + 23;
   const { isWatched, toggle } = useWishlist();
   const { account } = useAuth();
   const collections = useCollections();
@@ -611,10 +666,6 @@ const VideoItem = memo(function VideoItem({
     }
   }, [requireAccount, watched, toggle, item]);
 
-  const onBuy = useCallback(() => {
-    Haptics.selectionAsync();
-    if (item.steamUrl) WebBrowser.openBrowserAsync(item.steamUrl);
-  }, [item]);
 
   const openDetail = useCallback(() => {
     router.push({
@@ -709,7 +760,6 @@ const VideoItem = memo(function VideoItem({
           label={t('vid.save')}
           onPress={() => { if (requireAccount()) return; Haptics.selectionAsync(); setPickerOpen(true); }}
         />
-        <ActionBtn compact={isLandscape} icon="bag" label={t('vid.buy')} onPress={onBuy} />
         {/* Arkadasa gonder. Hesap sart: gonderim arkadaslik gerektiriyor,
             arkadaslik da hesap gerektiriyor. */}
         <ActionBtn
@@ -742,7 +792,7 @@ const VideoItem = memo(function VideoItem({
         pointerEvents={holding ? 'none' : 'auto'}
       >
       <Pressable onPress={openDetail}>
-        <Txt variant="cardTitle" numberOfLines={2} style={{ color: ART.white }}>{item.name}</Txt>
+        {/* Oyun adı aksesuarda (Canlı Çubuk); burada türler ve detay bağlantısı. */}
         {item.genres?.length > 0 && (
           <View style={styles.tags}>
             {item.genres.map((g) => (
