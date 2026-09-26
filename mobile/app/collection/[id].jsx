@@ -32,7 +32,7 @@ export default function CollectionDetailScreen() {
   const { colors } = useDesignTheme();
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  const { t } = useLanguage();
+  const { t, tSay } = useLanguage();
   const col = useCollection(String(id));
 
   const [editing, setEditing] = useState(false);
@@ -126,7 +126,7 @@ export default function CollectionDetailScreen() {
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
       <NavBar
         title={`${col.emoji} ${col.name}`}
-        subtitle={`${games.length} ${t('col.gameCount')}`}
+        subtitle={tSay(games.length, 'col.gameCountOne', 'col.gameCount')}
         right={<>
           {games.length > 0 && <IconButton icon="share" label={t('a11y.share')} onPress={() => setPublishing(true)} />}
           <IconButton icon="more" label={t('a11y.more')} onPress={openMenu} />

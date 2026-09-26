@@ -149,6 +149,7 @@ function CollectionsScreenContent() {
  * satırlar arası 8): liste ile içi aynı ritimde. Uzun basma = silme.
  */
 function CollectionRow({ col, onPress, onLongPress, t }) {
+  const { tSay } = useLanguage();
   const styles = useStyles(makeStyles);
   const { colors } = useDesignTheme();
   const games = col.games || [];
@@ -164,7 +165,7 @@ function CollectionRow({ col, onPress, onLongPress, t }) {
       <CoverMosaic covers={games.map((g) => g.image)} emoji={col.emoji} />
       <View style={styles.rowBody}>
         <Txt variant="cardTitle" numberOfLines={1}>{col.emoji} {col.name}</Txt>
-        <Txt variant="footnote" style={{ color: colors.text2 }}>{games.length} {t('col.gameCount')}</Txt>
+        <Txt variant="footnote" style={{ color: colors.text2 }}>{tSay(games.length, 'col.gameCountOne', 'col.gameCount')}</Txt>
       </View>
       <Icon name="chev" size={K.gameRow.chevron} color={colors.text3} strokeWidth={K.gameRow.chevronStroke} />
     </PressableScale>

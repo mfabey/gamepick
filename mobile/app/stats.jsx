@@ -41,7 +41,7 @@ function StatsScreenContent() {
   const insets = useSafeAreaInsets();
   const { colors } = useDesignTheme();
   const router = useRouter();
-  const { t } = useLanguage();
+  const { t, tSay, formatPercent } = useLanguage();
   const { items } = useWishlist();
 
   // Bu hook'lar depo değişince yeniden render tetikler → rapor tazelenir
@@ -73,13 +73,13 @@ function StatsScreenContent() {
     Haptics.selectionAsync();
     const lines = [
       `📊 ${t('stats.title')} — Gamerisen`,
-      `🔍 ${report.discovered} ${t('stats.discovered')}`,
+      `🔍 ${tSay(report.discovered, 'stats.discoveredOne', 'stats.discovered')}`,
       `❤️ ${report.liked} ${t('stats.liked')}`,
     ];
     if (report.topGenre) lines.push(`🎮 ${t('stats.topGenre')}: ${report.topGenre}`);
-    if (report.discount?.avgDiscount) lines.push(`🏷️ ${t('stats.avgDiscount')}: %${report.discount.avgDiscount}`);
+    if (report.discount?.avgDiscount) lines.push(`🏷️ ${t('stats.avgDiscount')}: ${formatPercent(report.discount.avgDiscount)}`);
     try { await Share.share({ message: lines.join('\n') }); } catch { /* iptal */ }
-  }, [report, t]);
+  }, [report, t, tSay, formatPercent]);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
@@ -112,7 +112,7 @@ function StatsScreenContent() {
           <View style={styles.ozet}>
             <View style={[styles.hero, { backgroundColor: colors.surface1 }]}>
               <Txt variant="scoreLarge" style={styles.num}>{report.discovered}</Txt>
-              <Txt variant="cardTitle">{t('stats.discovered')}</Txt>
+              <Txt variant="cardTitle">{t(report.discovered === 1 ? 'stats.discoveredOne' : 'stats.discovered')}</Txt>
             </View>
 
             {/* İkili kutular — DS StatTile (84 pt, nötr ikon). */}
@@ -158,8 +158,8 @@ function StatsScreenContent() {
               etiketine sığmıyor. İndirim yeşili yalnız değerde. */}
           {report.discount?.onSaleCount > 0 && (
             <ListGroup>
-              <ListRow icon="tag" title={t('stats.avgDiscount')} trailing={<Txt variant="headline" style={[styles.num, { color: colors.green }]}>%{report.discount.avgDiscount}</Txt>} />
-              <ListRow icon="flame" title={t('stats.bestDiscount')} value={`%${report.discount.bestDiscount}`} />
+              <ListRow icon="tag" title={t('stats.avgDiscount')} trailing={<Txt variant="headline" style={[styles.num, { color: colors.green }]}>{formatPercent(report.discount.avgDiscount)}</Txt>} />
+              <ListRow icon="flame" title={t('stats.bestDiscount')} value={formatPercent(report.discount.bestDiscount)} />
               <ListRow icon="bag" title={`${report.discount.onSaleCount} ${t('stats.onSale')}`} />
             </ListGroup>
           )}

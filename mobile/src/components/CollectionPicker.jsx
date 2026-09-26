@@ -31,7 +31,7 @@ export default function CollectionPicker({
 }) {
   const styles = useStyles(makeStyles);
   const { colors } = useDesignTheme();
-  const { t } = useLanguage();
+  const { t, tSay } = useLanguage();
   const insets = useSafeAreaInsets();
   const sinir = useAltSayfaSiniri(0.82);
   const [adding, setAdding] = useState(false);
@@ -88,7 +88,7 @@ export default function CollectionPicker({
                       <Txt variant="headline">{c.emoji}</Txt>
                       <View style={styles.rowBody}>
                         <Txt variant="input" numberOfLines={1}>{c.name}</Txt>
-                        <Txt variant="footnote" style={{ color: colors.text2 }}>{(c.games || []).length} {t('col.gameCount')}</Txt>
+                        <Txt variant="footnote" style={{ color: colors.text2 }}>{tSay((c.games || []).length, 'col.gameCountOne', 'col.gameCount')}</Txt>
                       </View>
                       <View style={[styles.check, on
                         ? { backgroundColor: colors.red, borderColor: colors.red }

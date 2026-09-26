@@ -180,6 +180,7 @@ export default function ListsScreen() {
  * ve aralık; altında açıklama ve künye, sağda beğeni.
  */
 function ListCard({ item, onPress, onLike, t }) {
+  const { tSay } = useLanguage();
   const styles = useStyles(makeStyles);
   const { colors } = useDesignTheme();
   const liked = !!item.likedByMe;
@@ -197,7 +198,7 @@ function ListCard({ item, onPress, onLike, t }) {
               görünmemeleri şart. 2.0 rozeti: kalkan + "EDİTÖR". */}
           {item.official ? <Badge label={t('pl.official')} kind="mod" /> : null}
           <Txt variant="caption" numberOfLines={1} style={[styles.meta, { color: colors.text3 }]}>
-            {item.gameCount} {t('pl.games')}
+            {tSay(item.gameCount, 'pl.gamesOne', 'pl.games')}
             {item.official ? '' : ` · ${t('pl.by')} @${item.ownerUsername}`}
           </Txt>
         </View>

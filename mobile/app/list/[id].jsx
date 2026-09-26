@@ -31,7 +31,7 @@ export default function PublicListScreen() {
   const { colors } = useDesignTheme();
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  const { t } = useLanguage();
+  const { t, tSay } = useLanguage();
 
   const [list, setList] = useState(undefined);   // undefined=yükleniyor, null=bulunamadı
   const [reporting, setReporting] = useState(false);
@@ -148,7 +148,7 @@ export default function PublicListScreen() {
 
             <View style={styles.metaRow}>
               <Txt variant="footnote" style={[styles.meta, { color: colors.text3 }]}>
-                {list.gameCount} {t('pl.games')} · {t('pl.by')} @{list.ownerUsername}
+                {tSay(list.gameCount, 'pl.gamesOne', 'pl.games')} · {t('pl.by')} @{list.ownerUsername}
               </Txt>
               <Pressable
                 onPress={onLike}

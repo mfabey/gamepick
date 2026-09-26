@@ -239,7 +239,7 @@ export default function ProfileHeader({
           </View>
           <View style={styles.weekText}>
             <Txt variant="subhead" numberOfLines={1}>
-              <Txt variant="subhead" style={NUMERIC}>{week.discovered}</Txt> {t('prof.weekDiscovered')}
+              <Txt variant="subhead" style={NUMERIC}>{week.discovered}</Txt> {t(week.discovered === 1 ? 'prof.weekDiscoveredOne' : 'prof.weekDiscovered')}
             </Txt>
             <Txt variant="footnoteMedium" numberOfLines={1} style={{ color: colors.text3 }}>{t('prof.weekOnlyYou')}</Txt>
           </View>

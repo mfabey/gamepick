@@ -99,12 +99,12 @@ export default function GameCardsScreen() {
       // iOS'ta `url` ayrı bir alan: paylaşım sayfası önizlemeyi ondan üretiyor.
       await Share.share({
         url,
-        message: `${card.name} — ${Math.round(card.hours)}${t('gc.hoursShort')}`,
+        message: `${card.name} — ${Math.round(card.hours).toLocaleString(locale)} ${t('home.hoursShort')}`,
       });
     } catch {
       Alert.alert(t('gc.shareFailed'));
     }
-  }, [t, city, lang]);
+  }, [t, city, lang, locale]);
 
   // ── Kapılar ───────────────────────────────────────────────────────────────
   // `onShare={() => share(item)}` her render'da her satir icin yeni bir
@@ -226,7 +226,9 @@ const CardRow = memo(function CardRow({ card, place, onShare, t, locale }) {
         <Txt variant="cardTitle" numberOfLines={1}>{card.name}</Txt>
         <View style={styles.metaLine}>
           <Txt variant="captionStrong" style={[styles.num, { color: colors.text2 }]}>
-            {Math.round(card.hours).toLocaleString(locale)}{t('gc.hoursShort')}
+            {/* Ortak kısaltma + boşluk ("43 Std", "43 sa"). Ayrı `gc.hoursShort`
+                boşluksuz "43Std." basıyordu, TR'de "43s" saniye gibi okunuyordu. */}
+            {Math.round(card.hours).toLocaleString(locale)} {t('home.hoursShort')}
           </Txt>
           {hasRank && (
             <View style={[styles.rankChip, { backgroundColor: colors.pillNeutralSoft }]}>

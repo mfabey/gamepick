@@ -114,6 +114,22 @@ export function LanguageProvider({ children }) {
     return `${name}'${hard ? 't' : 'd'}${'aıou'.includes(vowel) ? 'a' : 'e'}`;
   }, [lang, t]);
 
+  // Sayı + isim, tekil/çoğul doğru: "1 Spiel", "7 Spiele"; Türkçe'de iki
+  // anahtar aynı ("1 oyun", "7 oyun"). Eskiden hep çoğul basılıyordu:
+  // "1 Spiele", "1 games", "1 juegos" (26 Eyl). Anahtarlar çağrı yerinde DÜZ
+  // DİZE verilmeli — check:i18n kullanımı öyle görüyor.
+  const tSay = useCallback((n, tekil, cogul) => {
+    const sayi = Number(n) || 0;
+    return `${sayi.toLocaleString(bcp47(lang))} ${t(sayi === 1 ? tekil : cogul)}`;
+  }, [lang, t]);
+
+  // Yüzde: Türkçe'de işaret ÖNDE ("%65"), diğer dillerde sonda ("65%") —
+  // formatDiscount'la aynı kural. Eskiden her dilde "%65" basılıyordu.
+  const formatPercent = useCallback((n) => {
+    const v = Math.round(Number(n) || 0);
+    return lang === 'tr' ? `%${v}` : `${v}%`;
+  }, [lang]);
+
   // Kısa sayı (kit "38,2 B oy"): 1.000 ve üstü bin, 1.000.000 ve üstü milyon;
   // bir ondalık. Intl'in `notation: 'compact'` seçeneği Hermes'te her
   // platformda yok, eşikler elle; ondalık ayraç dilin yerel ayarından.
@@ -134,8 +150,8 @@ export function LanguageProvider({ children }) {
   const locale = bcp47(lang);
 
   const value = useMemo(
-    () => ({ lang, locale, setLang, t, formatPrice, formatDiscount, formatStoreAt, formatCompact, rate, setRate }),
-    [lang, locale, setLang, t, formatPrice, formatDiscount, formatStoreAt, formatCompact, rate]
+    () => ({ lang, locale, setLang, t, tSay, formatPrice, formatDiscount, formatPercent, formatStoreAt, formatCompact, rate, setRate }),
+    [lang, locale, setLang, t, tSay, formatPrice, formatDiscount, formatPercent, formatStoreAt, formatCompact, rate]
   );
 
   return (
