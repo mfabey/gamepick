@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import * as WebBrowser from 'expo-web-browser';
@@ -9,7 +9,9 @@ import { useWishlist } from '../../../src/context/WishlistContext';
 import { useGamePrices } from '../../../src/hooks/useGamePrices';
 import { bagilZaman } from '../../../src/utils/relativeTime';
 import { reportActivity } from '../../../src/api/social';
-import { NavBar, StickyBottomBar, useStickyBarInset } from '../../../src/components/ui/Navigation';
+import { NavBar } from '../../../src/components/ui/Navigation';
+import { useCubukSahibi } from '../../../src/services/canliCubuk';
+import { BildirimKapsulu, FiyatAksesuari, KucukCubuk, SekmeDairesi, useCubukGeometri, useKucukCubukBoslugu } from '../../../src/components/navigation/CanliCubuk';
 import { Chip, CoverImage, IconButton, Txt } from '../../../src/components/ui/Primitives';
 import { BestPriceCard, DiscountTag, StoreRow } from '../../../src/components/ui/Commerce';
 import { PriceAlertCard } from '../../../src/components/ui/GameDetailParts';
@@ -41,8 +43,14 @@ export default function PriceCompare() {
   const { colors } = useDesignTheme();
   const { t, formatPrice } = useLanguage();
   const { isWatched, toggle } = useWishlist();
-  const stickyInset = useStickyBarInset();
+  // Canlı Çubuk: daire + fiyat kapsülünün kapladığı alan (oyun detayıyla aynı).
+  const cubukBoslugu = useKucukCubukBoslugu(0);
+  const cubukG = useCubukGeometri();
   const [siralama, setSiralama] = useState('price');
+  // Canlı Çubuk: odaktayken fiyat/mesaj olayları afiş yerine kapsülde.
+  const [odakta, setOdakta] = useState(true);
+  useFocusEffect(useCallback(() => { setOdakta(true); return () => setOdakta(false); }, []));
+  useCubukSahibi(odakta);
 
   const { stores, loaded, ts } = useGamePrices({
     queryKey: appid || slug || id,
@@ -81,7 +89,7 @@ export default function PriceCompare() {
     <SafeAreaView edges={['top']} style={[s.root, { backgroundColor: colors.bg }]}>
       <NavBar title={t('v2.priceCompare')} onBack={() => router.back()} border
         right={<IconButton icon="bell" label={t('v2.priceAlert')} selected={watched} fill={watched ? colors.red : undefined} onPress={alarmDegistir} />} />
-      <ScrollView contentContainerStyle={{ paddingBottom: (best ? stickyInset : 0) + layout.sectionGap }} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={{ paddingBottom: cubukBoslugu + layout.sectionGap }} showsVerticalScrollIndicator={false}>
         <View style={[s.pad, s.header]}>
           <CoverImage source={image || undefined} radius={K.prices.thumbRadius} style={s.thumb} />
           <Txt variant="headline" numberOfLines={2} style={s.flex}>{name}</Txt>
@@ -137,10 +145,19 @@ export default function PriceCompare() {
         </View>
       </ScrollView>
 
+      {/* Canlı Çubuk — oyun detayıyla aynı: daire (sekmelere dön) + fiyat kapsülü. */}
       {best ? (
-        <StickyBottomBar price={yaz(best)} subtitle={`${best.name} · ${t('v2.bestPriceShort')}`}
-          actionLabel={t('v2.goToStore')} onAction={() => open(best.url)} disabled={!best.url} />
-      ) : null}
+        <KucukCubuk sagPay={8}>
+          <FiyatAksesuari fiyat={yaz(best)} indirim={!best.isFree ? best.discount : 0}
+            altYazi={`${best.name} · ${t('v2.bestPriceShort')}`}
+            eylem={t('v2.goToStore')} onEylem={() => open(best.url)} disabled={!best.url} />
+        </KucukCubuk>
+      ) : (
+        <>
+          <BildirimKapsulu alt={cubukG.bottom + cubukG.mini + 8} />
+          <SekmeDairesi />
+        </>
+      )}
     </SafeAreaView>
   );
 }
