@@ -9,6 +9,7 @@ import { writeReview, removeReview } from '../api/social';
 import { radius, spacing, type, PRESSED, NUMERIC, SHEET_LAYOUT } from '../theme';
 import { useStyles, useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useAltSayfaSiniri } from '../hooks/useAltSayfaSiniri';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // İnceleme yazma penceresi.
@@ -29,6 +30,7 @@ const ESIK = 40;
 
 export default function ReviewComposer({ visible, onClose, appid, gameName, existing, onSaved }) {
   const styles = useStyles(makeStyles);
+  const sinir = useAltSayfaSiniri(0.82);
   const { colors } = useTheme();
   const { t } = useLanguage();
   const [text, setText] = useState('');
@@ -93,9 +95,9 @@ export default function ReviewComposer({ visible, onClose, appid, gameName, exis
       <Pressable style={styles.backdrop} onPress={onClose} />
       <KeyboardAvoidingView
         behavior="padding"
-        style={styles.sheetWrap}
+        style={[styles.sheetWrap, sinir.kav]}
       >
-        <View style={styles.sheet}>
+        <View style={[styles.sheet, sinir.sayfa]}>
           <View style={styles.grab} />
           <Text style={styles.title} numberOfLines={1}>{gameName || ''}</Text>
 
@@ -167,7 +169,8 @@ const makeStyles = (colors) => StyleSheet.create({
   sheetWrap: { justifyContent: 'flex-end' },
   sheet: {
     ...SHEET_LAYOUT,
-    maxHeight: '82%', backgroundColor: colors.bgElevated,
+    // maxHeight BURADA DEĞİL: KAV içinde yüzde yanlış çözülüyor (useAltSayfaSiniri).
+    backgroundColor: colors.bgElevated,
     borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl,
     paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.xl,
   },

@@ -2,7 +2,7 @@
 // Şikayet sayfası — App Store Guideline 1.2'nin ikinci şartının kullanıcıya
 // görünen yüzü. Kullanıcı veya içerik şikayet edilebilir.
 // ─────────────────────────────────────────────────────────────────────────────
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import {
   View, Text, Pressable, StyleSheet, Modal, TextInput, ScrollView,
   KeyboardAvoidingView, ActivityIndicator, Alert,
@@ -14,6 +14,7 @@ import { reportContent } from '../api/social';
 import { radius, spacing, PRESSED, type, SHEET_LAYOUT } from '../theme';
 import { useStyles, useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useAltSayfaSiniri } from '../hooks/useAltSayfaSiniri';
 
 const REASONS = [
   'spam', 'harassment', 'hate', 'sexual', 'violence', 'impersonation', 'illegal', 'other',
@@ -27,6 +28,15 @@ const REASONS = [
  */
 export default function ReportSheet({ visible, onClose, onSent, targetType, targetId, targetLabel }) {
   const styles = useStyles(makeStyles);
+  const sinir = useAltSayfaSiniri(0.85);
+  // Not alanı listenin EN ALTINDA. Klavye açılınca sayfa küçülüyor ve
+  // odaktaki alan görünür alanın dışında kalıyordu (26 Eyl, SE). Liste
+  // küçüldüğü an (onLayout) alan odaktaysa sona kaydırılıyor.
+  const listeRef = useRef(null);
+  const notOdakta = useRef(false);
+  const listeYerlesti = useCallback(() => {
+    if (notOdakta.current) listeRef.current?.scrollToEnd({ animated: true });
+  }, []);
   const { colors } = useTheme();
   const { t } = useLanguage();
   const [reason, setReason] = useState(null);
@@ -67,13 +77,13 @@ export default function ReportSheet({ visible, onClose, onSent, targetType, targ
           yüzeye değil. İkisi de hâlâ Pressable — biri kapatıyor, öteki
           dokunuşu yutuyor — ama görsel tepki vermiyorlar. */}
       <Pressable style={styles.backdrop} onPress={close}>
-        <KeyboardAvoidingView behavior="padding">
-          <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+        <KeyboardAvoidingView behavior="padding" style={sinir.kav}>
+          <Pressable style={[styles.sheet, sinir.sayfa]} onPress={(e) => e.stopPropagation()}>
             <View style={styles.grabber} />
             <Text style={styles.title}>{t('soc.reportTitle')}</Text>
             {targetLabel ? <Text numberOfLines={1} style={styles.target}>{targetLabel}</Text> : null}
 
-            <ScrollView style={styles.list} keyboardShouldPersistTaps="handled">
+            <ScrollView ref={listeRef} onLayout={listeYerlesti} style={styles.list} keyboardShouldPersistTaps="handled">
               {REASONS.map((r) => {
                 const on = reason === r;
                 return (
@@ -98,6 +108,8 @@ export default function ReportSheet({ visible, onClose, onSent, targetType, targ
                 style={styles.input}
                 maxLength={500}
                 multiline
+                onFocus={() => { notOdakta.current = true; }}
+                onBlur={() => { notOdakta.current = false; }}
               />
             </ScrollView>
 
@@ -124,7 +136,7 @@ const makeStyles = (colors) => StyleSheet.create({
     backgroundColor: colors.bgElevated,
     borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl,
     paddingHorizontal: spacing.lg, paddingTop: 10, paddingBottom: 28,
-    maxHeight: '85%',
+    // maxHeight BURADA DEĞİL: KAV içinde yüzde yanlış çözülüyor (useAltSayfaSiniri).
   },
   grabber: {
     alignSelf: 'center', width: 38, height: 4, borderRadius: 2,

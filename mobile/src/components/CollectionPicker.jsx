@@ -21,6 +21,7 @@ import { component as K, control as C, layout, radius as dsRadius, shadow, space
 import { useDesignTheme } from '../theme/useDesignTheme';
 import { useStyles } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useAltSayfaSiniri } from '../hooks/useAltSayfaSiniri';
 
 const F = K.filterSheet;
 const P = K.collectionPicker;
@@ -32,6 +33,7 @@ export default function CollectionPicker({
   const { colors } = useDesignTheme();
   const { t } = useLanguage();
   const insets = useSafeAreaInsets();
+  const sinir = useAltSayfaSiniri(0.82);
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState('');
 
@@ -50,10 +52,10 @@ export default function CollectionPicker({
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose}>
-        <KeyboardAvoidingView behavior="padding" style={styles.kav}>
+        <KeyboardAvoidingView behavior="padding" style={[styles.kav, sinir.kav]}>
           {/* İç yüzeyde onPress var ama HİÇBİR ŞEY YAPMIYOR: sayfanın boş bir
               yerine dokunmak arkadaki Pressable'a ulaşıp sayfayı kapatırdı. */}
-          <Pressable style={[styles.sheet, { backgroundColor: colors.bg2, paddingBottom: insets.bottom + space[12] }]} onPress={(e) => e.stopPropagation()}>
+          <Pressable style={[styles.sheet, sinir.sayfa, { backgroundColor: colors.bg2, paddingBottom: insets.bottom + space[12] }]} onPress={(e) => e.stopPropagation()}>
             <View style={[styles.grabber, { backgroundColor: colors.text3 }]} />
             <View style={styles.head}>
               <Txt variant="headline" accessibilityRole="header">{t('col.addTo')}</Txt>
@@ -134,7 +136,7 @@ const makeStyles = (colors) => StyleSheet.create({
     ...SHEET_LAYOUT,
     borderTopLeftRadius: dsRadius.sheet, borderTopRightRadius: dsRadius.sheet,
     boxShadow: shadow.sheet,
-    maxHeight: '82%',
+    // maxHeight BURADA DEĞİL: KAV içinde yüzde yanlış çözülüyor (useAltSayfaSiniri).
   },
   grabber: {
     alignSelf: 'center', width: F.grabberWidth, height: F.grabberHeight,
