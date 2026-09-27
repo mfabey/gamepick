@@ -151,6 +151,46 @@ export function GamerisenTabBar(props: Props) {
     .onEnd(() => { runOnJS(taramaBitir)(true); })
     .onFinalize((_e, basarili) => { if (!basarili) runOnJS(taramaBitir)(false); });
 
+  // ── Aktif sekmeden BEKLEMEDEN sürükleme (Instagram / iOS 26) ──
+  // Kullanıcı geri bildirimi (27 Eyl, TestFlight 59): 300 ms basılı tutma
+  // şartı fark edilmiyordu, sekme değiştirmenin tek yolu dokunmak sanıldı.
+  // Artık aktif sekmenin (merceğin) ÜSTÜNDEN başlayan yatay sürükleme hemen
+  // etkinleşiyor. Aktif sekmenin üstünde ayrı, saydam bir tutamaç var;
+  // kısa dokunuş orada da eskisi gibi başa sarıyor (tabPress), uzun basış
+  // adı gösteriyor. Diğer sekmelerde davranış değişmedi.
+  const aktifSol = pad + props.state.index * itemWidth;
+  const aktifeDokun = () => {
+    const route = props.state.routes[props.state.index];
+    if (route) props.navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+  };
+  const aktifUzun = () => {
+    const route = props.state.routes[props.state.index];
+    if (!route) return;
+    showLabel(route.key);
+    props.navigation.emit({ type: 'tabLongPress', target: route.key });
+  };
+  const aktifSurukle = Gesture.Pan()
+    .enabled(!mini && itemWidth > 0)
+    .activeOffsetX([-6, 6])
+    .failOffsetY([-16, 16])
+    .onStart((e) => {
+      const x = aktifSol + e.x;
+      if (ios) lensX.value = Math.min(Math.max(x - T.ios.lens.width / 2, lensSol), lensSag);
+      runOnJS(taramaGuncelle)(Math.min(sekmeSayisi - 1, Math.max(0, Math.floor((x - pad) / itemWidth))));
+    })
+    .onUpdate((e) => {
+      const x = aktifSol + e.x;
+      if (ios) lensX.value = Math.min(Math.max(x - T.ios.lens.width / 2, lensSol), lensSag);
+      runOnJS(taramaGuncelle)(Math.min(sekmeSayisi - 1, Math.max(0, Math.floor((x - pad) / itemWidth))));
+    })
+    .onEnd(() => { runOnJS(taramaBitir)(true); })
+    .onFinalize((_e, basarili) => { if (!basarili) runOnJS(taramaBitir)(false); });
+  const aktifTutamac = Gesture.Race(
+    aktifSurukle,
+    Gesture.LongPress().minDuration(500).onStart(() => { runOnJS(aktifUzun)(); }),
+    Gesture.Tap().maxDuration(400).onEnd((_e, basarili) => { if (basarili) runOnJS(aktifeDokun)(); }),
+  );
+
   // ── Daralma morfu ──
   // Kapsül sola yaslı küçülüyor: genişlik tam boy → daire, boy 62/64 → 52/56.
   // Sekmeler ilk %40'ta sönüyor, daire ikonu son yarıda beliriyor; ikisi aynı
@@ -257,6 +297,15 @@ export function GamerisenTabBar(props: Props) {
               {buttons}
             </Animated.View>
           </GestureDetector>
+          {/* Aktif sekmenin tutamacı — satırın KARDEŞİ (çocuğu değil): satırın
+              uzun-bas jesti buradan başlayan dokunuşu görmüyor, çakışma yok.
+              Erişilebilirlik ağacında yok: VoiceOver alttaki sekmeyi etkinleştiriyor. */}
+          {!mini && itemWidth > 0 ? (
+            <GestureDetector gesture={aktifTutamac}>
+              <View accessible={false} importantForAccessibility="no-hide-descendants"
+                style={[styles.tutamac, { left: aktifSol, width: itemWidth }]} />
+            </GestureDetector>
+          ) : null}
           <Animated.View pointerEvents={mini ? 'auto' : 'none'} style={[styles.daire, { width: g.mini, height: g.mini }, daireStil]}>
             <Pressable accessibilityRole="button" accessibilityLabel={String(props.descriptors[props.state.routes[props.state.index].key].options.title ?? '')}
               onPress={ac} style={StyleSheet.absoluteFill}>
@@ -313,6 +362,7 @@ const styles = StyleSheet.create({
   wrap: { position: 'absolute', justifyContent: 'flex-end' },
   kapsul: { alignSelf: 'flex-start' },
   row: { flexDirection: 'row', position: 'absolute', left: 0, bottom: 0, top: 0 },
+  tutamac: { position: 'absolute', top: 0, bottom: 0 },
   item: { flex: 1, alignItems: 'center', justifyContent: 'center' }, pressed: { transform: [{ scale: 0.92 }] },
   lensWrap: { ...StyleSheet.absoluteFillObject },
   lens: { position: 'absolute', top: (T.ios.height - T.ios.lens.height) / 2,
