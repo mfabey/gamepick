@@ -22,7 +22,6 @@ import { View, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 import { getSteamFriends } from '../src/api/social';
@@ -32,7 +31,7 @@ import { Icon } from '../src/components/Icon';
 import { NavBar } from '../src/components/ui/Navigation';
 import { Txt } from '../src/components/ui/Primitives';
 import { UserAvatar } from '../src/components/ui/Social';
-import { getAvatarPreset } from '../src/utils/avatar';
+import { getAvatarPreset, PRESET_IKON } from '../src/utils/avatar';
 import { spacing } from '../src/theme';
 import { component as K, radius as dsRadius } from '../src/theme/tokens';
 import { useDesignTheme } from '../src/theme/useDesignTheme';
@@ -219,10 +218,9 @@ const FriendRow = memo(function FriendRow({ item, open, onToggle, t }) {
             <Txt variant="cardTitle" numberOfLines={1} style={[styles.shrink, locked && { color: colors.text3 }]}>{item.name}</Txt>
             {!!item.gamerisen && (
               <View style={[styles.grChip, { backgroundColor: colors.surface2 }]}>
-                {/* Ön ayar ikonu VERİ (utils/avatar → Ionicons adı): 2.0 ikon
-                    setinde karşılığı yok, o yüzden Ionicons burada kalıyor. */}
+                {/* Ön ayar ikonu VERİ (utils/avatar → eski ad); çizim 2.0 karşılığından. */}
                 {preset
-                  ? <Ionicons name={preset.icon} size={S.chipIcon} color={preset.iconColor} />
+                  ? <Icon name={PRESET_IKON[preset.icon] || 'pad'} size={S.chipIcon} color={preset.iconColor} strokeWidth={2.2} />
                   : <Icon name="checkc" size={S.chipIcon} color={colors.green} strokeWidth={2.4} />}
                 <Txt variant="caption2Strong" style={{ color: colors.text2 }}>Gamerisen</Txt>
               </View>

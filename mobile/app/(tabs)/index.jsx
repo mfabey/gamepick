@@ -659,7 +659,7 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         ListFooterComponent={
           <View style={{ height: tabBosluk, alignItems: 'center', justifyContent: 'center' }}>
-            {loadingMore ? <ActivityIndicator color={colors.accent} /> : null}
+            {loadingMore ? <ActivityIndicator color={colors.text2} /> : null}
           </View>
         }
       />

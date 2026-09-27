@@ -29,7 +29,6 @@ import {
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 
 import { TopFade, BottomFade } from '../../src/components/EdgeFade';
 import { Skeleton } from '../../src/components/Skeleton';
@@ -58,7 +57,7 @@ import { GameCardSmall, smallCardHeight } from '../../src/components/ui/GameCard
 import { useYanBosluk } from '../../src/hooks/useIcerikAlani';
 import ProfileReviewRow from '../../src/components/ProfileReviewRow';
 import PostCard from '../../src/components/PostCard';
-import { IconButton } from '../../src/components/ui/Primitives';
+import { Button, IconButton } from '../../src/components/ui/Primitives';
 import EmptyState from '../../src/components/EmptyState';
 import { YenileIsareti, YenileKontrol } from '../../src/components/ui/Yenile';
 
@@ -401,30 +400,22 @@ export default function ProfileScreen() {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
         <TopFade top={insets.top} />
+        {/* 2.0 (27 Eyl): ortak EmptyState (DS 4 boş durum) — kişi+ ikonu
+            (hesap gerekli), birincil "Giriş yap" + üçüncül "Hesap oluştur".
+            ÜÇ EŞİT DÜĞME DEĞİL: giriş dolu, kayıt sessiz. HER DÜĞME KENDİ
+            FORMUNA GİDİYOR (mode=signin / mode=signup) — ikisi aynı yere
+            gidince "Hesap oluştur" giriş formuna düşüyordu. */}
         <View style={styles.gate}>
-          <View style={styles.gateIcon}>
-            <Ionicons name="person-outline" size={34} color={colors.text3} />
-          </View>
-          <Text style={styles.gateTitle}>{t('prof.lockTitle')}</Text>
-          <Text style={styles.gateText}>{t('prof.lockDesc')}</Text>
-          {/* ÜÇ EŞİT DÜĞME DEĞİL: giriş dolu, kayıt sessiz, üçüncüsü metin
-              bağlantısı. Hiyerarşi olmadan kullanıcı hangisinin ana yol
-              olduğunu seçemiyordu.
-
-              HER DÜĞME KENDİ FORMUNA GİDİYOR. İkisi de çıplak `/account`a
-              gidiyordu ve ekran sabit giriş modunda açıldığı için "Hesap
-              oluştur" kaydolma formuna DEĞİL giriş formuna düşürüyordu;
-              kullanıcı altta bir bağlantı daha bulup ikinci kez dokunmak
-              zorundaydı. İki ayrı düğme sunup ikisini aynı yere göndermek
-              hiyerarşinin verdiği sözü tutmamaktı. */}
-          <Pressable style={({ pressed }) => [styles.gateBtn, pressed && PRESSED]}
-                     onPress={() => router.push('/account?mode=signin')}>
-            <Text style={styles.gateBtnText}>{t('acc.signIn')}</Text>
-          </Pressable>
-          <Pressable style={({ pressed }) => [styles.gateBtn2, pressed && PRESSED]}
-                     onPress={() => router.push('/account?mode=signup')}>
-            <Text style={styles.gateBtn2Text}>{t('acc.signUp')}</Text>
-          </Pressable>
+          <EmptyState
+            icon="userplus"
+            title={t('prof.lockTitle')}
+            text={t('prof.lockDesc')}
+            actionLabel={t('acc.signIn')}
+            onAction={() => router.push('/account?mode=signin')}
+          >
+            <Button title={t('acc.signUp')} variant="tertiary" height={40}
+              onPress={() => router.push('/account?mode=signup')} style={styles.gateAlt} />
+          </EmptyState>
         </View>
       </SafeAreaView>
     );
@@ -574,7 +565,7 @@ export default function ProfileScreen() {
         ListFooterComponent={(
           <View style={{ height: tabBosluk, alignItems: 'center', paddingTop: spacing.s12 }}>
             {dahaYukleniyor || (yukleniyor && veri.length > 0)
-              ? <ActivityIndicator color={colors.accent} />
+              ? <ActivityIndicator color={colors.text2} />
               : null}
           </View>
         )}
@@ -666,30 +657,6 @@ const makeStyles = (colors) => StyleSheet.create({
   },
 
   // ── Oturum yok ──
-  gate: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.s32 },
-  gateIcon: {
-    width: 88, height: 88, borderRadius: 44,
-    alignItems: 'center', justifyContent: 'center',
-    backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder,
-  },
-  gateTitle: {
-    fontSize: type.title3, fontWeight: '700', color: colors.text,
-    marginTop: spacing.s24, textAlign: 'center',
-  },
-  gateText: {
-    fontSize: type.subhead, color: colors.text2, textAlign: 'center',
-    lineHeight: 22, marginTop: spacing.s12, maxWidth: 300,
-  },
-  gateBtn: {
-    height: TOUCH_MIN, alignSelf: 'stretch', borderRadius: radius.md,
-    alignItems: 'center', justifyContent: 'center', marginTop: spacing.s24,
-    backgroundColor: colors.accentFillStrong,
-  },
-  gateBtnText: { fontSize: type.subhead, fontWeight: '600', color: colors.onAccent },
-  gateBtn2: {
-    height: TOUCH_MIN, alignSelf: 'stretch', borderRadius: radius.md,
-    alignItems: 'center', justifyContent: 'center', marginTop: spacing.s8,
-    backgroundColor: colors.bgInput,
-  },
-  gateBtn2Text: { fontSize: type.subhead, fontWeight: '600', color: colors.text },
+  gate: { flex: 1, justifyContent: 'center' },
+  gateAlt: { alignSelf: 'center', width: 260, marginTop: spacing.s4 },
 });

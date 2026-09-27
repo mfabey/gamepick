@@ -5,7 +5,7 @@
 // başa sarar. Kullanıcı bunu bekliyor; olmayınca uzun listelerde yukarı çıkmak
 // için elle kaydırmak gerekiyor.
 //
-// FloatingTabBar her basışta `tabPress` yayınlıyor (odakta olmayan sekmede
+// Sekme çubuğu (navigation/TabBar.tsx) her basışta `tabPress` yayınlıyor (odakta olmayan sekmede
 // ayrıca navigasyon yapıyor). Burada YALNIZCA ekran odaktayken tepki
 // veriyoruz — aksi hâlde sekme değiştirirken de tetiklenir ve daha ekran
 // açılmadan listeyi başa sarmaya çalışırdı.

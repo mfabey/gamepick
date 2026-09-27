@@ -11,7 +11,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { useEffect } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon } from './Icon';
 import Animated, {
   useAnimatedStyle, useSharedValue, withRepeat, withTiming, interpolate, Easing,
 } from 'react-native-reanimated';
@@ -65,7 +65,7 @@ export default function RotateGlowButton({ active, onPress, accessibilityLabel }
       <Animated.View pointerEvents="none" style={[styles.halo, haloStyle]} />
       <View style={styles.core}>
         <Animated.View style={iconStyle}>
-          <Ionicons name="phone-landscape-outline" size={20} color="#fff" />
+          <Icon name="landscape" size={20} color="#fff" strokeWidth={2} />
         </Animated.View>
       </View>
     </Pressable>

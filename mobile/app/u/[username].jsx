@@ -24,7 +24,6 @@ import {
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 import { spacing } from '../../src/theme';
@@ -320,7 +319,7 @@ export default function UserProfileScreen() {
       />
 
       {yukleniyor && !profil ? (
-        <View style={styles.center}><ActivityIndicator color={colors.accent} /></View>
+        <View style={styles.center}><ActivityIndicator color={colors.text2} /></View>
       ) : (
         <FlashList
           ref={listRef}
@@ -352,7 +351,7 @@ export default function UserProfileScreen() {
           )}
           ListFooterComponent={(
             <View style={{ height: insets.bottom + spacing.s40, alignItems: 'center', paddingTop: spacing.s12 }}>
-              {dahaYukleniyor ? <ActivityIndicator color={colors.accent} /> : null}
+              {dahaYukleniyor ? <ActivityIndicator color={colors.text2} /> : null}
             </View>
           )}
           onEndReached={dahaYukle}

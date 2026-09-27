@@ -15,7 +15,6 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import * as Haptics from 'expo-haptics';
@@ -937,7 +936,7 @@ export default function ChatScreen() {
       text={t('sf.needAccountText')} actionLabel={t('sf.goAccount')}
       onAction={() => router.push('/account')} />;
   } else if (loading) {
-    body = <View style={styles.center}><ActivityIndicator color={colors.accent} /></View>;
+    body = <View style={styles.center}><ActivityIndicator color={colors.text2} /></View>;
   } else if (error === 'NOT_FRIENDS') {
     body = <EmptyState icon="users" title={t('msg.notFriends')} text={t('msg.notFriendsText')}
       actionLabel={t('msg.goFriends')} onAction={() => router.push('/friends')} />;
@@ -1002,7 +1001,7 @@ export default function ChatScreen() {
             accessibilityRole="button"
             accessibilityLabel={t('msg.pinned')}
           >
-            <Ionicons name="pin" size={14} color={colors.accentText} />
+            <Icon name="pin" size={14} color={colors.accentText} strokeWidth={2.2} />
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={styles.pinLabel}>{t('msg.pinned')}</Text>
               <Text style={styles.pinText} numberOfLines={1}>
@@ -1017,7 +1016,7 @@ export default function ChatScreen() {
             accessibilityRole="button"
             accessibilityLabel={t('msg.unpin')}
           >
-            <Ionicons name="close" size={16} color={colors.text3} />
+            <Icon name="x" size={16} color={colors.text3} strokeWidth={2.4} />
           </Pressable>
         </Animated.View>
       ) : null}
@@ -1102,7 +1101,7 @@ export default function ChatScreen() {
                 accessibilityRole="button"
                 accessibilityLabel={t('msg.cancel')}
               >
-                <Ionicons name="close" size={17} color={colors.text2} />
+                <Icon name="x" size={17} color={colors.text2} strokeWidth={2.4} />
               </Pressable>
             </Animated.View>
           ) : null}

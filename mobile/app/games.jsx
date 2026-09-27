@@ -6,7 +6,6 @@ import {
 import { FlashList } from '@shopify/flash-list';
 import Animated, { useAnimatedStyle, interpolate, Extrapolation } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { fetchGames } from '../src/api/games';
 import { fetchQuery, getEntry, isFresh, cacheTs } from '../src/services/queryCache';
@@ -490,7 +489,7 @@ export default function GamesScreen() {
               // bant bırakırdı. Kalan tek gereksinim güvenli alan + göstergeye
               // yer.
               <View style={{ height: insets.bottom + 48, alignItems: 'center', justifyContent: 'center' }}>
-                {loadingMore ? <ActivityIndicator color={colors.accent} /> : null}
+                {loadingMore ? <ActivityIndicator color={colors.text2} /> : null}
               </View>
             }
           />

@@ -1,11 +1,11 @@
 import { memo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon } from './Icon';
 
 import { type, motion } from '../theme';
 import { useStyles, useTheme } from '../context/ThemeContext';
-import { getAvatarPreset } from '../utils/avatar';
+import { getAvatarPreset, PRESET_IKON } from '../utils/avatar';
 import { avatarPalette, component, fontFor } from '../theme/tokens';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -73,7 +73,7 @@ function Avatar({ avatar, name, size = 36, style }) {
       <View style={[styles.base, box, { backgroundColor: preset.bg }, style]}>
         {/* Simge çapla ölçekleniyor: sabit boyut, 22pt'lik avatarda taşıyor
             56pt'likte kayboluyordu. */}
-        <Ionicons name={preset.icon} size={Math.round(size * 0.5)} color={preset.iconColor} />
+        <Icon name={PRESET_IKON[preset.icon] || 'pad'} size={Math.round(size * 0.5)} color={preset.iconColor} strokeWidth={2.2} />
       </View>
     );
   }

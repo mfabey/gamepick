@@ -121,7 +121,7 @@ export default function VideosScreen() {
   // KAYDIRMA ALANININ yüksekliğine göre sayfalar. İkisi bir piksel ayrışsa
   // fark her sayfada BİRİKİYOR — videolar giderek kayıyordu.
   //
-  // Pencere ile liste görünümü eşit olmak zorunda değil: FloatingTabBar
+  // Pencere ile liste görünümü eşit olmak zorunda değil: sekme çubuğu
   // mutlak konumlu ama Tabs'ın screenOptions'ında
   // `tabBarStyle: { position: 'absolute' }` yok, yani react-navigation
   // çubuğa yer ayırabiliyor. Ölçülen yüksekliği kullanmak bu belirsizliği
