@@ -326,7 +326,6 @@ export default {
   'rev.write': 'Escrever uma análise',
   'rev.edit': 'Editar sua análise',
   'detail.userReviews': 'Análises de jogadores',
-  'rev.openThread': 'abrir tópico',
   'rev.hoursShort': 'h',
   'rev.inviteTitle': 'Você jogou isto. Escreva a primeira análise.',
   'rev.inviteDesc': 'Suas horas vêm da Steam, então sua análise aparece verificada.',

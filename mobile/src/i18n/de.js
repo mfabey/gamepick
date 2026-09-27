@@ -328,7 +328,6 @@ export default {
   'rev.write': 'Review schreiben',
   'rev.edit': 'Review bearbeiten',
   'detail.userReviews': 'Spieler-Bewertungen',
-  'rev.openThread': 'Thread öffnen',
   'rev.hoursShort': 'Std',
   'rev.inviteTitle': 'Du hast das gespielt. Schreib die erste Bewertung.',
   'rev.inviteDesc': 'Deine Stunden kommen von Steam — deine Bewertung erscheint verifiziert.',

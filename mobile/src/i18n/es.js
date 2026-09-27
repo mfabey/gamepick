@@ -327,7 +327,6 @@ export default {
   'rev.write': 'Escribir una reseña',
   'rev.edit': 'Editar tu reseña',
   'detail.userReviews': 'Reseñas de jugadores',
-  'rev.openThread': 'abrir hilo',
   'rev.hoursShort': 'h',
   'rev.inviteTitle': 'Has jugado a esto. Escribe la primera reseña.',
   'rev.inviteDesc': 'Tus horas vienen de Steam, así que tu reseña aparece verificada.',

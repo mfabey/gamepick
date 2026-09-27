@@ -326,7 +326,6 @@ export default {
   'rev.write': 'İnceleme yaz',
   'rev.edit': 'İncelemeni düzenle',
   'detail.userReviews': 'Oyuncu incelemeleri',
-  'rev.openThread': 'konuyu aç',
   'rev.hoursShort': 'saat',
   'rev.inviteTitle': 'Bu oyunu oynadın. İlk incelemeyi sen yaz.',
   'rev.inviteDesc': 'Saatin Steam\'den okunuyor; incelemen doğrulanmış olarak görünür.',

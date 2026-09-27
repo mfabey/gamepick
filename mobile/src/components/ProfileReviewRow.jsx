@@ -1,10 +1,14 @@
-import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
 
-import { radius, spacing, type, PRESSED, NUMERIC, motion } from '../theme';
-import { useStyles, useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { Icon } from './Icon';
+import { Txt } from './ui/Primitives';
+import { Badge } from './ui/Social';
+import { StatusPill } from './ui/Commerce';
+import { PRESSED, NUMERIC, motion } from '../theme';
+import { useDesignTheme } from '../theme/useDesignTheme';
+import { control, layout, radius, space } from '../theme/tokens';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Profildeki inceleme satırı.
@@ -31,52 +35,29 @@ import { useLanguage } from '../context/LanguageContext';
 // varlığı, kullanıldığının kanıtı değil.
 // ─────────────────────────────────────────────────────────────────────────────
 
+// 2.0 (27 Eyl): 2.0 kapak köşesi, doğrulanmış saat `Badge verified`, öneri
+// `StatusPill`, 2.0 ikonlar (⋯, yanıt, düzenle). Düzen ve davranış aynen.
 export default function ProfileReviewRow({ review, onPress, onLongPress, onMenu, onEdit, onReplies }) {
-  const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
-  const { t, lang } = useLanguage();
+  const { colors } = useDesignTheme();
+  const { t } = useLanguage();
   if (!review) return null;
-
   const saat = Math.round(Number(review.hours) || 0);
-
   return (
     <Pressable
       onPress={onPress}
       onLongPress={onLongPress}
       delayLongPress={400}
-      style={({ pressed }) => [styles.row, pressed && PRESSED]}
+      accessibilityRole="button"
+      style={({ pressed }) => [styles.row, { borderBottomColor: colors.line }, pressed && PRESSED]}
     >
-      <View style={styles.cover}>
+      <View style={[styles.cover, { backgroundColor: colors.surface2 }]}>
         {review.image ? (
           <Image source={review.image} style={StyleSheet.absoluteFill} contentFit="cover" transition={motion.image} />
         ) : null}
       </View>
-
       <View style={styles.body}>
-        <Text style={styles.game} numberOfLines={1}>{review.gameName || review.appid}</Text>
-
-        <View style={styles.meta}>
-          {/* Doğrulanmış saat rozeti — yeşil, marka kırmızısı DEĞİL: kırmızı
-              kotası (ekran başına 3) aktif sekme ve birincil eyleme ayrılmış
-              durumda, ayrıca "doğrulandı" ile "dikkat" aynı renkte olmamalı. */}
-          <View style={styles.verified}>
-            <Ionicons name="shield-checkmark" size={11} color={colors.green} />
-            <Text style={[styles.verifiedText, NUMERIC]}>
-              {saat}{lang === 'tr' ? ' SA' : ' H'}
-            </Text>
-          </View>
-          <Ionicons
-            name={review.recommended ? 'thumbs-up-outline' : 'thumbs-down-outline'}
-            size={13}
-            color={colors.text2}
-          />
-          <Text style={styles.rec} numberOfLines={1}>
-            {review.recommended ? t('rev.yes') : t('rev.no')}
-          </Text>
-
-          {/* Meta satırının sonunda. `rec` metni numberOfLines=1 ve satır
-              yeri kalmadığında kırpılıyor, yani düğme her genişlikte
-              görünür kalıyor. */}
+        <View style={styles.baslik}>
+          <Txt variant="headline" numberOfLines={1} style={styles.game}>{review.gameName || review.appid}</Txt>
           {onMenu ? (
             <Pressable
               onPress={() => onMenu(review.author)}
@@ -85,35 +66,36 @@ export default function ProfileReviewRow({ review, onPress, onLongPress, onMenu,
               accessibilityLabel={t('a11y.more')}
               style={({ pressed }) => [pressed && PRESSED]}
             >
-              <Ionicons name="ellipsis-horizontal" size={15} color={colors.text3} />
+              <Icon name="more" size={20} color={colors.text3} />
             </Pressable>
           ) : null}
         </View>
-
+        <View style={styles.meta}>
+          {/* Doğrulanmış saat rozeti — yeşil, marka kırmızısı DEĞİL: "doğrulandı"
+              ile "dikkat" aynı renkte olmamalı. */}
+          <Badge kind="verified" label={`${saat} ${t('rev.hoursShort')}`} />
+          <StatusPill kind={review.recommended ? 'recommends' : 'notRecommends'} />
+        </View>
         {review.text ? (
-          <Text style={styles.text} numberOfLines={3}>{review.text}</Text>
+          <Txt variant="footnote" numberOfLines={3} style={[styles.text, { color: colors.text2 }]}>{review.text}</Txt>
         ) : null}
-
         <View style={styles.actions}>
-          {/* Yanıtlar OYUN SAYFASINDA DEĞİL topluluk konusunda okunuyor;
-              buradaki satır o konuyu açan kapı — ve KOŞULSUZ çiziliyor.
-              Yalnız sayı varken çizmek, ilk yanıtı yazmayı imkânsız
-              kılıyordu (bkz. GameReviews'taki aynı düzeltme). Sayı yoksa
-              satır "Yanıtla" diyor; hiçbir yerde "0 yanıt" yazmıyor. */}
+          {/* Yanıtlar topluluk konusunda okunuyor; bu satır o konuyu açan kapı
+              ve KOŞULSUZ çiziliyor — sayı yoksa "Yanıtla", hiçbir yerde "0 yanıt". */}
           {onReplies ? (
-            <Pressable onPress={onReplies} hitSlop={8} style={({ pressed }) => [styles.action, pressed && PRESSED]}>
-              <Ionicons name="arrow-undo-outline" size={13} color={colors.text3} />
-              <Text style={styles.actionText}>
+            <Pressable onPress={onReplies} hitSlop={8} accessibilityRole="button" style={({ pressed }) => [styles.action, pressed && PRESSED]}>
+              <Icon name="reply" size={15} color={colors.text2} strokeWidth={control.iconStroke} />
+              <Txt variant="footnoteStrong" style={{ color: colors.text2 }}>
                 {Number(review.replyCount) > 0
                   ? <><Text style={NUMERIC}>{review.replyCount}</Text> {t('post.repliesCount')}</>
                   : t('post.replyTitle')}
-              </Text>
+              </Txt>
             </Pressable>
           ) : null}
           {onEdit ? (
-            <Pressable onPress={onEdit} hitSlop={8} style={({ pressed }) => [styles.action, pressed && PRESSED]}>
-              <Ionicons name="create-outline" size={13} color={colors.text3} />
-              <Text style={styles.actionText}>{t('rev.edit')}</Text>
+            <Pressable onPress={onEdit} hitSlop={8} accessibilityRole="button" style={({ pressed }) => [styles.action, pressed && PRESSED]}>
+              <Icon name="edit" size={15} color={colors.text2} strokeWidth={control.iconStroke} />
+              <Txt variant="footnoteStrong" style={{ color: colors.text2 }}>{t('rev.edit')}</Txt>
             </Pressable>
           ) : null}
         </View>
@@ -122,32 +104,19 @@ export default function ProfileReviewRow({ review, onPress, onLongPress, onMenu,
   );
 }
 
-const makeStyles = (colors) => StyleSheet.create({
+const styles = StyleSheet.create({
   row: {
-    flexDirection: 'row', gap: spacing.s12,
-    paddingHorizontal: spacing.s20, paddingVertical: spacing.s16,
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.cardBorder,
+    flexDirection: 'row', gap: space[12],
+    paddingHorizontal: layout.gutter, paddingVertical: space[16],
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   // 66×88 — maket ölçüsü, 3:4 oranını koruyor (66 × 4/3 = 88).
-  cover: {
-    width: 66, height: 88, borderRadius: radius.md,
-    backgroundColor: colors.surfaceTile, overflow: 'hidden',
-  },
+  cover: { width: 66, height: 88, borderRadius: radius.md, overflow: 'hidden' },
   body: { flex: 1, minWidth: 0 },
-
-  game: { fontSize: type.subhead, fontWeight: '600', color: colors.text },
-  meta: { flexDirection: 'row', alignItems: 'center', gap: spacing.s8, marginTop: spacing.s8 },
-  verified: {
-    height: 24, flexDirection: 'row', alignItems: 'center', gap: spacing.s4,
-    paddingHorizontal: spacing.s8, borderRadius: radius.pill,
-    backgroundColor: colors.greenWash, borderWidth: 1, borderColor: colors.greenWashBorder,
-  },
-  verifiedText: { fontSize: type.caption2, fontWeight: '600', color: colors.green },
-  rec: { flex: 1, minWidth: 0, fontSize: type.footnote, fontWeight: '500', color: colors.text2 },
-
-  text: { fontSize: type.footnote, fontWeight: '400', color: colors.text2, lineHeight: 19, marginTop: spacing.s8 },
-
-  actions: { flexDirection: 'row', gap: spacing.s16, marginTop: spacing.s12 },
-  action: { flexDirection: 'row', alignItems: 'center', gap: spacing.s4 },
-  actionText: { fontSize: type.footnote, fontWeight: '500', color: colors.text3 },
+  baslik: { flexDirection: 'row', alignItems: 'center', gap: space[8] },
+  game: { flex: 1 },
+  meta: { flexDirection: 'row', alignItems: 'center', gap: space[8], marginTop: space[8] },
+  text: { marginTop: space[8] },
+  actions: { flexDirection: 'row', gap: space[16], marginTop: space[12] },
+  action: { flexDirection: 'row', alignItems: 'center', gap: space[4], minHeight: 28 },
 });

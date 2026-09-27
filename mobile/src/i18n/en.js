@@ -319,7 +319,6 @@ export default {
   'rev.write': 'Write a review',
   'rev.edit': 'Edit your review',
   'detail.userReviews': 'Player reviews',
-  'rev.openThread': 'open thread',
   'rev.hoursShort': 'h',
   'rev.inviteTitle': 'You have played this. Write the first review.',
   'rev.inviteDesc': 'Your hours come from Steam, so your review shows up as verified.',

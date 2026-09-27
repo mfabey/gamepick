@@ -1,13 +1,9 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 
-import Avatar from './Avatar';
 import DevBadge from './DevBadge';
 import ReviewComposer from './ReviewComposer';
-import { radius, spacing, type, PRESSED, NUMERIC, TOUCH_MIN, avatar as avatarSize } from '../theme';
-import { useStyles, useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useQuery } from '../hooks/useQuery';
 import { useModerasyon } from '../hooks/useModerasyon';
@@ -16,6 +12,13 @@ import { suz } from '../services/engel';
 import ModerasyonKatmani from './ModerasyonKatmani';
 import { getGameReviews } from '../api/social';
 import { getSession } from '../services/session';
+import { Icon } from './Icon';
+import { Button, Txt } from './ui/Primitives';
+import { Badge, PostHeader } from './ui/Social';
+import { StatusPill } from './ui/Commerce';
+import { PRESSED, NUMERIC } from '../theme';
+import { useDesignTheme } from '../theme/useDesignTheme';
+import { control, radius, space } from '../theme/tokens';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Oyun sayfasındaki KULLANICI incelemeleri.
@@ -43,69 +46,46 @@ const GOSTERILEN = 3;
 
 /** Tek inceleme satırı — oyun sayfasında oyun adı YOK, zaten o sayfadayız. */
 function Row({ review, onOpenThread, onAuthor, onMenu }) {
-  const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
-  const { t, lang } = useLanguage();
-
+  const { colors } = useDesignTheme();
+  const { t } = useLanguage();
   const ad = review.author?.displayName || review.author?.username || '';
   const saat = Math.round(Number(review.hours) || 0);
-
+  const kullanici = review.author?.username;
+  // 2.0 (27 Eyl): Topluluk'taki ReviewCard ile aynı parçalar — PostHeader
+  // (avatar, ad, geliştirici + doğrulanmış saat rozeti, ⋯), metin, öneri
+  // StatusPill'i ve yanıt bağlantısı. ⋯ PostHeader'ın kendi düğmesi: başlığa
+  // basmak profile, ⋯ menüye gidiyor (iç içe Pressable sorunu yok).
+  // Guideline 1.2: oyun sayfasındaki incelemeler de kullanıcı içeriği; ⋯ şikâyet yolu.
   return (
-    <View style={styles.row}>
-      <View style={styles.rowHeadWrap}>
-      <Pressable style={styles.rowHead} onPress={onAuthor}>
-        <Avatar avatar={review.author?.avatar} name={ad} size={avatarSize.md} />
-        <Text style={styles.name} numberOfLines={1}>{ad}</Text>
-        <DevBadge user={review.author} username={review.author?.username} isDeveloper={review.author?.isDeveloper} size={11} />
-        <View style={styles.verified}>
-          <Ionicons name="shield-checkmark" size={11} color={colors.green} />
-          <Text style={[styles.verifiedText, NUMERIC]}>
-            {saat}{lang === 'tr' ? ' SA' : ' H'}
-          </Text>
-        </View>
-        <Ionicons
-          name={review.recommended ? 'thumbs-up-outline' : 'thumbs-down-outline'}
-          size={15}
-          color={review.recommended ? colors.green : colors.text3}
-        />
-      </Pressable>
-
-      {/* ⋯ BAŞLIK PRESSABLE'ININ DIŞINDA. İçine konsaydı menüye basmak
-          aynı anda 'yazarın profiline git' basmasını da tetiklerdi —
-          iç içe Pressable'da dış olan da ateşliyor.
-          Guideline 1.2: oyun sayfasındaki incelemeler de kullanıcı içeriği
-          ve burada hiçbir şikâyet yolu yoktu. */}
-      {onMenu ? (
-        <Pressable
-          onPress={() => onMenu(review.author)}
-          hitSlop={10}
-          accessibilityRole="button"
-          accessibilityLabel={t('a11y.more')}
-          style={({ pressed }) => [pressed && PRESSED]}
-        >
-          <Ionicons name="ellipsis-horizontal" size={16} color={colors.text3} />
+    <View style={[styles.row, { borderTopColor: colors.line }]}>
+      <PostHeader
+        avatar={review.author?.avatar}
+        name={ad}
+        handle={kullanici ? `@${kullanici}` : ''}
+        time=""
+        badge={<>
+          <DevBadge user={review.author} username={kullanici} isDeveloper={review.author?.isDeveloper} size={11} />
+          <Badge kind="verified" label={`${saat} ${t('rev.hoursShort')}`} />
+        </>}
+        onProfile={onAuthor}
+        onMore={onMenu ? () => onMenu(review.author) : undefined}
+      />
+      <Txt variant="body" numberOfLines={3} style={[styles.text, { color: colors.text }]}>{review.text}</Txt>
+      <View style={styles.altSatir}>
+        <StatusPill kind={review.recommended ? 'recommends' : 'notRecommends'} />
+        {/* ── YANIT KAPISI HER ZAMAN AÇIK ──
+            Bir sürüm boyunca YALNIZ `replyCount > 0` iken çizildi: ilk yanıtı
+            yazmanın yolu yoktu. Sayı yoksa satır bir DAVET: "Yanıtla". */}
+        <Pressable onPress={onOpenThread} hitSlop={8} accessibilityRole="button"
+                   style={({ pressed }) => [styles.threadBtn, pressed && PRESSED]}>
+          <Icon name="reply" size={15} color={colors.text2} strokeWidth={control.iconStroke} />
+          <Txt variant="footnoteStrong" style={{ color: colors.text2 }}>
+            {Number(review.replyCount) > 0 ? (
+              <><Text style={NUMERIC}>{review.replyCount}</Text> {t('post.repliesCount')}</>
+            ) : t('post.replyTitle')}
+          </Txt>
         </Pressable>
-      ) : null}
       </View>
-
-      <Text style={styles.text} numberOfLines={3}>{review.text}</Text>
-
-      {/* ── YANIT KAPISI HER ZAMAN AÇIK ──
-          Bu satır bir sürüm boyunca YALNIZ `replyCount > 0` iken çizildi ve
-          sonuç kısır döngüydü: ilk yanıtı yazmanın yolu yoktu, kapı ancak
-          birileri ondan geçtikten sonra beliriyordu.
-          Kural "0 yanıt yazma"ydı ve SAYIYA aitti — eylemi de birlikte
-          silmek yanlıştı. Sayı yoksa satır bir sayı değil, bir DAVET:
-          "Yanıtla". */}
-      <Pressable onPress={onOpenThread} hitSlop={8}
-                 style={({ pressed }) => [styles.threadBtn, pressed && PRESSED]}>
-        <Ionicons name="arrow-undo-outline" size={13} color={colors.text3} />
-        <Text style={styles.threadText}>
-          {Number(review.replyCount) > 0 ? (
-            <><Text style={NUMERIC}>{review.replyCount}</Text> {t('post.repliesCount')} · {t('rev.openThread')}</>
-          ) : t('post.replyTitle')}
-        </Text>
-      </Pressable>
     </View>
   );
 }
@@ -117,8 +97,7 @@ function Row({ review, onOpenThread, onAuthor, onMenu }) {
 // `hideTitle`: oyun detayı (G-07) bölümü kendi "Oyuncu İncelemeleri" başlığıyla
 // açıyor; ikinci bir başlık tekrar olurdu. Düzenle düğmesi yine görünüyor.
 export default function GameReviews({ appid, gameName, hideTitle = false }) {
-  const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
+  const { colors } = useDesignTheme();
   const { t } = useLanguage();
   const router = useRouter();
   const [yazma, setYazma] = useState(false);
@@ -183,17 +162,11 @@ export default function GameReviews({ appid, gameName, hideTitle = false }) {
     if (!data || saat <= 0) return null;
 
     return (
-      <View style={styles.invite}>
-        <View style={styles.verified}>
-          <Ionicons name="shield-checkmark" size={11} color={colors.green} />
-          <Text style={[styles.verifiedText, NUMERIC]}>{saat} {t('rev.hoursShort')}</Text>
-        </View>
-        <Text style={styles.inviteTitle}>{t('rev.inviteTitle')}</Text>
-        <Text style={styles.inviteText}>{t('rev.inviteDesc')}</Text>
-        <Pressable onPress={yaz} style={({ pressed }) => [styles.inviteBtn, pressed && PRESSED]}>
-          <Ionicons name="create-outline" size={17} color={colors.onAccent} />
-          <Text style={styles.inviteBtnText}>{t('rev.write')}</Text>
-        </Pressable>
+      <View style={[styles.invite, { backgroundColor: colors.surface1 }]}>
+        <Badge kind="verified" label={`${saat} ${t('rev.hoursShort')}`} />
+        <Txt variant="headline" style={[styles.inviteTitle, { color: colors.text }]}>{t('rev.inviteTitle')}</Txt>
+        <Txt variant="footnote" style={[styles.inviteText, { color: colors.text2 }]}>{t('rev.inviteDesc')}</Txt>
+        <Button title={t('rev.write')} icon="edit" onPress={yaz} style={styles.inviteBtn} />
 
         <ReviewComposer
           visible={yazma}
@@ -210,14 +183,11 @@ export default function GameReviews({ appid, gameName, hideTitle = false }) {
   return (
     <View>
       <View style={styles.head}>
-        {hideTitle ? <View /> : <Text style={styles.title}>{t('detail.userReviews')}</Text>}
+        {hideTitle ? <View /> : <Txt variant="title2" accessibilityRole="header">{t('detail.userReviews')}</Txt>}
         {/* Düzenleme çağrısı yalnız kendi incelemesi olanda; olmayan ve
             oynamış olan kullanıcı aşağıdaki davet bloğunu görüyor. */}
         {data?.mine ? (
-          <Pressable onPress={yaz} hitSlop={8} style={({ pressed }) => [styles.editBtn, pressed && PRESSED]}>
-            <Ionicons name="create-outline" size={13} color={colors.text} />
-            <Text style={styles.editText}>{t('rev.edit')}</Text>
-          </Pressable>
+          <Button title={t('rev.edit')} variant="secondary" height={32} icon="edit" onPress={yaz} />
         ) : null}
       </View>
 
@@ -232,24 +202,21 @@ export default function GameReviews({ appid, gameName, hideTitle = false }) {
       ))}
 
       {!hepsiAcik && liste.length > GOSTERILEN ? (
-        <Pressable onPress={() => setHepsiAcik(true)}
-                   style={({ pressed }) => [styles.moreBtn, pressed && PRESSED]}>
-          <Text style={styles.moreText}>
+        <Pressable onPress={() => setHepsiAcik(true)} accessibilityRole="button"
+                   style={({ pressed }) => [styles.moreBtn, { backgroundColor: colors.surface2 }, pressed && PRESSED]}>
+          <Txt variant="subhead" style={{ color: colors.text, fontWeight: '600' }}>
             {/* AYRI EKRAN AÇILMIYOR: sunucu zaten en çok 20 kayıt döndürüyor
                 ve hepsi elde. Bir liste ekranı için ikinci bir uç, ikinci bir
                 sayfalama ve geri gelince kaybolan kaydırma konumu demekti. */}
             <Text style={NUMERIC}>{liste.length}</Text> {t('rev.seeAll')}
-          </Text>
+          </Txt>
         </Pressable>
       ) : null}
 
       {/* Oynadığı hâlde yazmamış kullanıcıya davet, listenin ALTINDA:
           önce başkaları ne demiş okunuyor, sonra yazma teklifi geliyor. */}
       {!data?.mine && Math.round(Number(data?.eligible?.hours) || 0) > 0 ? (
-        <Pressable onPress={yaz} style={({ pressed }) => [styles.inlineInvite, pressed && PRESSED]}>
-          <Ionicons name="create-outline" size={15} color={colors.accentText} />
-          <Text style={styles.inlineInviteText}>{t('rev.inviteShort')}</Text>
-        </Pressable>
+        <Button title={t('rev.inviteShort')} variant="tertiary" icon="edit" onPress={yaz} style={styles.inlineInvite} />
       ) : null}
 
       <ReviewComposer
@@ -266,62 +233,22 @@ export default function GameReviews({ appid, gameName, hideTitle = false }) {
   );
 }
 
-const makeStyles = (colors) => StyleSheet.create({
+const styles = StyleSheet.create({
   head: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    marginBottom: spacing.s8,
+    marginBottom: space[8],
   },
-  title: { fontSize: type.body, fontWeight: '600', color: colors.text },
-  editBtn: {
-    height: 32, flexDirection: 'row', alignItems: 'center', gap: spacing.s4,
-    paddingHorizontal: spacing.s12, borderRadius: radius.pill,
-    backgroundColor: colors.bgInput,
-  },
-  editText: { fontSize: type.footnote, fontWeight: '600', color: colors.text },
-
-  row: {
-    paddingVertical: spacing.s16,
-    borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.cardBorder,
-  },
-  // Sarmalayıcı YATAY: başlık satırı ile ⋯ yan yana. rowHead flex:1
-  // alıyor, yani ad ve rozetler yeri doldurup düğmeyi sağa itiyor.
-  rowHeadWrap: { flexDirection: 'row', alignItems: 'center', gap: spacing.s8 },
-  rowHead: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: spacing.s8 },
-  name: { flex: 1, minWidth: 0, fontSize: type.subhead, fontWeight: '600', color: colors.text },
-  verified: {
-    alignSelf: 'flex-start', height: 24, flexDirection: 'row', alignItems: 'center',
-    gap: spacing.s4, paddingHorizontal: spacing.s8, borderRadius: radius.pill,
-    backgroundColor: colors.greenWash, borderWidth: 1, borderColor: colors.greenWashBorder,
-  },
-  verifiedText: { fontSize: type.caption2, fontWeight: '600', color: colors.green },
-  text: { fontSize: type.subhead, color: colors.text2, lineHeight: 22, marginTop: spacing.s8 },
-  threadBtn: { flexDirection: 'row', alignItems: 'center', gap: spacing.s4, marginTop: spacing.s12 },
-  threadText: { fontSize: type.footnote, fontWeight: '500', color: colors.text3 },
-
+  row: { paddingVertical: space[16], borderTopWidth: StyleSheet.hairlineWidth },
+  text: { marginTop: space[8] },
+  altSatir: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: space[12] },
+  threadBtn: { flexDirection: 'row', alignItems: 'center', gap: space[4], minHeight: 32 },
   moreBtn: {
-    height: TOUCH_MIN, alignItems: 'center', justifyContent: 'center',
-    marginTop: spacing.s12, borderRadius: radius.md, backgroundColor: colors.bgInput,
+    height: 44, alignItems: 'center', justifyContent: 'center',
+    marginTop: space[12], borderRadius: radius.button,
   },
-  moreText: { fontSize: type.subhead, fontWeight: '600', color: colors.text },
-
-  invite: {
-    padding: spacing.s16, borderRadius: radius.lg,
-    backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accentBorder,
-    alignItems: 'flex-start',
-  },
-  inviteTitle: { fontSize: type.body, fontWeight: '600', color: colors.text, marginTop: spacing.s12 },
-  inviteText: { fontSize: type.footnote, color: colors.text2, lineHeight: 19, marginTop: spacing.s4 },
-  inviteBtn: {
-    alignSelf: 'stretch', height: TOUCH_MIN, flexDirection: 'row',
-    alignItems: 'center', justifyContent: 'center', gap: spacing.s8,
-    marginTop: spacing.s16, borderRadius: radius.md,
-    backgroundColor: colors.accentFillStrong,
-  },
-  inviteBtnText: { fontSize: type.subhead, fontWeight: '600', color: colors.onAccent },
-
-  inlineInvite: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.s8,
-    minHeight: TOUCH_MIN, marginTop: spacing.s8,
-  },
-  inlineInviteText: { fontSize: type.subhead, fontWeight: '600', color: colors.accentText },
+  invite: { padding: space[16], borderRadius: 18, alignItems: 'flex-start' },
+  inviteTitle: { marginTop: space[12] },
+  inviteText: { marginTop: space[4] },
+  inviteBtn: { alignSelf: 'stretch', marginTop: space[16] },
+  inlineInvite: { alignSelf: 'center', marginTop: space[8] },
 });

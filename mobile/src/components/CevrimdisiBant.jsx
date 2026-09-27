@@ -1,12 +1,12 @@
-import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-
-import { useStyles, useTheme } from '../context/ThemeContext';
+import { View, StyleSheet } from 'react-native';
+import { Icon } from './Icon';
+import { Button, Txt } from './ui/Primitives';
+import { useDesignTheme } from '../theme/useDesignTheme';
 import { useLanguage } from '../context/LanguageContext';
 import { useCevrimdisi } from '../hooks/useCevrimdisi';
 import { agTazele } from '../services/net';
 import { bagilZaman } from '../utils/relativeTime';
-import { type, radius, spacing, PRESSED } from '../theme';
+import { radius, space } from '../theme/tokens';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ÇEVRİMDIŞI BANDI — gösterilen içeriğin BAYAT olduğunu söyleyen tek satır.
@@ -36,6 +36,10 @@ import { type, radius, spacing, PRESSED } from '../theme';
 // `null` dönüyor. Bu bir eksiklik değil, sınırla ÖRTÜŞÜYOR: queryCache
 // 7 günden (OFFLINE_MAX_AGE) eski kaydı zaten geri yüklemiyor.
 // ─────────────────────────────────────────────────────────────────────────────
+//
+// 2.0 / G-DS-4 "Hata · Satır içi" (27 Eyl): son bilinen veriyi göster, suçlama
+// yok. surface1 kutu, turuncu ikon (wifioff / alert), ikincil metin, sağda
+// üçüncül "Tekrar dene". Eski sürüm eski temanın kenarlıklı kartıydı.
 
 /**
  * @param {number}  ts        önbellekteki verinin zaman damgası (epoch ms)
@@ -47,62 +51,30 @@ import { type, radius, spacing, PRESSED } from '../theme';
  *   olunca `null` dönüşüyle birlikte o da yok oluyor.
  */
 export default function CevrimdisiBant({ ts, hata = false, onRetry, style }) {
-  const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
+  const { colors } = useDesignTheme();
   const { t } = useLanguage();
   const cevrimdisi = useCevrimdisi();
-
   if (!ts || (!cevrimdisi && !hata)) return null;
-
   const ne = bagilZaman(ts, t);
-
   return (
-    <View style={[styles.bant, style]} accessibilityRole="alert">
-      <Ionicons
-        name={cevrimdisi ? 'cloud-offline-outline' : 'alert-circle-outline'}
-        size={16}
-        color={colors.text3}
-      />
-      <Text style={styles.metin} numberOfLines={1}>
+    <View style={[styles.bant, { backgroundColor: colors.surface1 }, style]} accessibilityRole="alert">
+      <Icon name={cevrimdisi ? 'wifioff' : 'alert'} size={18} color={colors.orange} strokeWidth={2.2} />
+      <Txt variant="footnote" numberOfLines={2} style={[styles.metin, { color: colors.text2 }]}>
         {cevrimdisi ? t('offline.title') : t('offline.failed')}
         {ne ? ` · ${t('offline.updated').replace('{n}', ne)}` : ''}
-      </Text>
+      </Txt>
       {onRetry ? (
-        // Önce AĞ YENİDEN ÖLÇÜLÜYOR, sonra tazeleniyor: kullanıcı düğmeye
-        // bastığında bağlantı geri gelmiş ama sistem olayı henüz düşmemiş
-        // olabilir. Ölçmeden tazeleseydik queryCache hâlâ "çevrimdışı" sanıp
-        // isteği atlar, düğme hiçbir şey yapmamış görünürdü.
-        <Pressable
-          onPress={() => { agTazele().finally(() => onRetry()); }}
-          hitSlop={12}
-          accessibilityRole="button"
-          style={({ pressed }) => [pressed && PRESSED]}
-        >
-          <Text style={styles.eylem}>{t('common.retry')}</Text>
-        </Pressable>
+        <Button title={t('common.retry')} variant="tertiary" height={32}
+          onPress={() => { agTazele().finally(() => onRetry()); }} />
       ) : null}
     </View>
   );
 }
 
-const makeStyles = (colors) => StyleSheet.create({
-  // Nötr yüzey, marka rengi DEĞİL: bu bir durum bildirimi, bir çağrı değil.
-  // Kırmızı bütçesi "içerik katmanında bir tane" diyor (bkz. theme.js) ve o
-  // bütçe bandın üstündeki içeriğe ait.
+const styles = StyleSheet.create({
   bant: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.s8,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.s12,
-    paddingVertical: spacing.s8,
+    flexDirection: 'row', alignItems: 'center', gap: space[8],
+    borderRadius: radius.card, paddingLeft: space[12], paddingRight: space[4], minHeight: 44,
   },
-  // text2/card çifti kontrast denetiminin kapsadığı kombinasyon (≥4.5).
-  metin: { flex: 1, color: colors.text2, fontSize: type.footnote },
-  // Dokunma alanı yükseklikle DEĞİL hitSlop ile büyütülüyor: bant tek satır
-  // ve 44pt'lik bir düğme onu iki katına çıkarıp listenin tepesini yerdi.
-  eylem: { color: colors.accentText, fontSize: type.footnote, fontWeight: '700' },
+  metin: { flex: 1 },
 });
