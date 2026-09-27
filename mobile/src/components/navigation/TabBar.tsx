@@ -4,6 +4,7 @@ import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useSegments } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   interpolate, runOnJS, useAnimatedReaction, useAnimatedStyle, useSharedValue, withTiming, Extrapolation,
 } from 'react-native-reanimated';
@@ -99,6 +100,57 @@ export function GamerisenTabBar(props: Props) {
   }, [props.state.index, itemWidth, reduced, lensX, pad]);
   const lensStyle = useAnimatedStyle(() => ({ transform: [{ translateX: lensX.value }] }));
 
+  // ── Basılı tut + kaydır: sekme tarama ──
+  // iOS 26 sekme çubuğunun davranışı (Canlı Çubuk tasarımı): çubuğa 300 ms
+  // basılı tutunca mercek parmağa yapışıyor, kaydırdıkça üstünden geçilen
+  // sekmenin adı balonda çıkıyor ve her geçişte seçim titreşimi var;
+  // bırakınca o sekmeye gidiliyor. Android'de mercek yok: gösterge gezilen
+  // sekmeye geçiyor. Tek dokunuş ve kısa basış eskisi gibi Pressable'da —
+  // jest etkinleşince RNGH onların dokunuşunu iptal ediyor.
+  const sekmeSayisi = props.state.routes.length;
+  const [tarama, setTarama] = useState<number | null>(null);
+  const taramaRef = useRef<number | null>(null);
+  const lensHedef = (i: number) => pad + i * itemWidth + (itemWidth - T.ios.lens.width) / 2;
+  const taramaGuncelle = (i: number) => {
+    if (taramaRef.current === i) return;
+    if (taramaRef.current === null && timer.current) clearTimeout(timer.current);
+    taramaRef.current = i;
+    setTarama(i);
+    setTooltip(props.state.routes[i]?.key ?? null);
+    void Haptics.selectionAsync().catch(() => {});
+  };
+  const taramaBitir = (git: boolean) => {
+    const i = taramaRef.current;
+    if (i === null) return;
+    taramaRef.current = null;
+    setTarama(null);
+    setTooltip(null);
+    const route = props.state.routes[i];
+    let hedef = props.state.index;
+    if (git && route && i !== props.state.index) {
+      const event = props.navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+      if (!event.defaultPrevented) { props.navigation.navigate(route.name, route.params); hedef = i; }
+    }
+    // Gidilmediyse (aynı sekme / engellendi) mercek yerine dönüyor; gidildiyse
+    // indeks efekti de aynı hedefe götürüyor.
+    lensX.value = reduced ? lensHedef(hedef) : withTiming(lensHedef(hedef), { duration: motion.duration.transition, easing: motion.easing.standard });
+  };
+  const lensSol = pad;
+  const lensSag = width - pad - T.ios.lens.width;
+  const tarayici = Gesture.Pan()
+    .enabled(!mini && itemWidth > 0)
+    .activateAfterLongPress(300)
+    .onStart((e) => {
+      if (ios) lensX.value = withTiming(Math.min(Math.max(e.x - T.ios.lens.width / 2, lensSol), lensSag), { duration: 120 });
+      runOnJS(taramaGuncelle)(Math.min(sekmeSayisi - 1, Math.max(0, Math.floor((e.x - pad) / itemWidth))));
+    })
+    .onUpdate((e) => {
+      if (ios) lensX.value = Math.min(Math.max(e.x - T.ios.lens.width / 2, lensSol), lensSag);
+      runOnJS(taramaGuncelle)(Math.min(sekmeSayisi - 1, Math.max(0, Math.floor((e.x - pad) / itemWidth))));
+    })
+    .onEnd(() => { runOnJS(taramaBitir)(true); })
+    .onFinalize((_e, basarili) => { if (!basarili) runOnJS(taramaBitir)(false); });
+
   // ── Daralma morfu ──
   // Kapsül sola yaslı küçülüyor: genişlik tam boy → daire, boy 62/64 → 52/56.
   // Sekmeler ilk %40'ta sönüyor, daire ikonu son yarıda beliriyor; ikisi aynı
@@ -135,15 +187,18 @@ export function GamerisenTabBar(props: Props) {
 
   const buttons = props.state.routes.map((route, index) => {
     const focused = props.state.index === index;
+    // Görsel vurgu taramada parmağın altındaki sekmede; erişilebilirlik durumu
+    // ve basış mantığı gerçek odakta kalıyor.
+    const vurgulu = (tarama ?? props.state.index) === index;
     const options = props.descriptors[route.key].options;
     const label = options.tabBarAccessibilityLabel ?? options.title ?? route.name;
     const badge = options.tabBarBadge;
     const spec = props.tabs[route.name];
     const icon = spec && 'icon' in spec
-      ? <TabIcon name={spec.icon} active={focused} color={focused ? colors.red : config.iconOff} size={config.icon} cutout={config.cutout} />
+      ? <TabIcon name={spec.icon} active={vurgulu} color={vurgulu ? colors.red : config.iconOff} size={config.icon} cutout={config.cutout} />
       : <Avatar avatar={spec && 'avatarUri' in spec ? spec.avatarUri : undefined}
           name={spec && 'name' in spec ? spec.name : label} size={ios ? 28 : 24}
-          style={{ borderWidth: 2, borderColor: focused ? colors.red : colors.lineStrong }} />;
+          style={{ borderWidth: 2, borderColor: vurgulu ? colors.red : colors.lineStrong }} />;
     const rozet = badge != null && badge !== 0 ? (
       <View pointerEvents="none" style={[styles.badge, { backgroundColor: colors.brand,
         minWidth: config.badge.size, height: config.badge.size, borderRadius: config.badge.size,
@@ -168,7 +223,7 @@ export function GamerisenTabBar(props: Props) {
         style={({ pressed }) => [styles.item, { height: g.height }, pressed && ios && styles.pressed]}>
         {ios
           ? <View>{icon}{rozet}</View>
-          : <AndroidSekme focused={focused} reduced={reduced} fill={tabBar.android.indicator.fill}
+          : <AndroidSekme focused={vurgulu} reduced={reduced} fill={tabBar.android.indicator.fill}
               label={etiketGoster ? String(options.title ?? label) : null} labelColor={colors.text}>
               <View>{icon}{rozet}</View>
             </AndroidSekme>}
@@ -196,10 +251,12 @@ export function GamerisenTabBar(props: Props) {
               <Animated.View style={[styles.lens, { backgroundColor: tabBar.ios.lens.fill, boxShadow: tabBar.ios.lens.edge }, lensStyle]} />
             </Animated.View>
           )}
-          <Animated.View accessibilityRole="tablist" pointerEvents={mini ? 'none' : 'auto'}
-            style={[styles.row, { width: width || undefined, paddingHorizontal: pad }, sekmelerStil]}>
-            {buttons}
-          </Animated.View>
+          <GestureDetector gesture={tarayici}>
+            <Animated.View accessibilityRole="tablist" pointerEvents={mini ? 'none' : 'auto'}
+              style={[styles.row, { width: width || undefined, paddingHorizontal: pad }, sekmelerStil]}>
+              {buttons}
+            </Animated.View>
+          </GestureDetector>
           <Animated.View pointerEvents={mini ? 'auto' : 'none'} style={[styles.daire, { width: g.mini, height: g.mini }, daireStil]}>
             <Pressable accessibilityRole="button" accessibilityLabel={String(props.descriptors[props.state.routes[props.state.index].key].options.title ?? '')}
               onPress={ac} style={StyleSheet.absoluteFill}>
