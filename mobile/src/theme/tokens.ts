@@ -487,7 +487,8 @@ export const component = {
   discount: { paddingH: 7, radius: 6, sizes: { xs: [11, 20], sm: [12, 22], md: [13, 24], lg: [14, 26], card: [15, 26] } },
   oldPrice: 13,
   priceDrop: { icon: 2, gap: 4, stroke: 2.4 },
-  storeBadge: { size: 16, radius: 5, font: 9, gap: 5, row: { size: 40, radius: 11, font: 16 }, small: { size: 32, radius: 9, font: 13 }, large: { size: 44, radius: 12, font: 18 } },
+  // logoScale: rozetin içindeki mağaza logosu kutunun %62'si (16 pt'de 10 pt).
+  storeBadge: { size: 16, radius: 5, font: 9, gap: 5, logoScale: 0.62, row: { size: 40, radius: 11, font: 16 }, small: { size: 32, radius: 9, font: 13 }, large: { size: 44, radius: 12, font: 18 } },
   storeRow: { height: 64, paddingLeft: 16, paddingRight: 14, gap: 12, separator: 68, chevron: 16, rightGap: 3 },
   statTile: { height: 84, padding: 12, radius: 14, icon: 18, gap: 2, valueTopWithIcon: 4, valueTopNoIcon: 20 },
   statusPill: { height: 22, paddingH: 8, radius: 6, gap: 4, dot: 6, icon: 12, star: 11 },

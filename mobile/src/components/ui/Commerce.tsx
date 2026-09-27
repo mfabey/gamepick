@@ -6,6 +6,7 @@ import { Button, PressableScale, Txt } from './Primitives';
 import { useLanguage } from '../../context/LanguageContext';
 import { useDesignTheme } from '../../theme/useDesignTheme';
 import { component as K, control, layout, priceStyle, storeBadges, typography } from '../../theme/tokens';
+import { STORE_LOGOS } from './storeLogos';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FİYAT VE MAĞAZA — COMPONENTS.md §4. Kaynak: kit k.py disc/old/price/drop/
@@ -65,6 +66,9 @@ export function PriceDrop({ text, direction = 'down', size = 12, color: tone }: 
 
 // Sunucu mağaza adları tasarımın anahtarlarıyla birebir değil ("Xbox", "Humble Bundle").
 // Eşleşmeyen mağaza baş harfiyle, nötr zeminde çiziliyor.
+// tema-bagimsiz: magaza zemini kendi renginde, isaret her zaman acik (monoText ile ayni ton)
+const STORE_MARK = '#F5F5F7';
+
 export function storeInfo(name?: string | null) {
   const raw = String(name || '').trim();
   const n = raw.toLowerCase();
@@ -76,16 +80,25 @@ export function storeInfo(name?: string | null) {
   return { key, label: raw || key || '', letter: known?.letter ?? (raw.charAt(0).toUpperCase() || '?'), bg: known?.bg ?? null };
 }
 
-/** Mağaza monogramı (16/5/9); `withName` ile yanında 12/500 `text2` ad, aralık 5. */
+/**
+ * Mağaza rozeti (16/5); `withName` ile yanında 12/500 `text2` ad, aralık 5.
+ * 27 Eyl: kutunun içinde mağazanın GERÇEK logosu (storeLogos, gömülü SVG),
+ * kutunun %62'si. Logosu olmayan mağazada (Nintendo, Fanatical, bilinmeyen)
+ * eskisi gibi baş harf.
+ */
 export function StoreBadge({ store, size = K.storeBadge.size, radius = K.storeBadge.radius, font = K.storeBadge.font, withName, label }: {
   store?: string | null; size?: number; radius?: number; font?: number; withName?: boolean; label?: string;
 }) {
   const { colors } = useDesignTheme();
   const info = storeInfo(store);
+  const logo = info.key ? STORE_LOGOS[info.key] : null;
+  const isaret = Math.round(size * K.storeBadge.logoScale);
   const mono = (
-    // Monogram renkleri mağaza kimliği (tokens.storeBadges): tema bağımsız, harf her zaman açık.
+    // Zemin renkleri mağaza kimliği (tokens.storeBadges): tema bağımsız, işaret her zaman açık.
     <View accessible={false} style={[styles.mono, { width: size, height: size, borderRadius: radius, backgroundColor: info.bg ?? colors.surface3 }]}>
-      <Text allowFontScaling={false} style={[styles.monoText, { fontSize: font }]}>{info.letter}</Text>
+      {logo
+        ? <Svg width={isaret} height={isaret} viewBox={logo.viewBox}><Path d={logo.d} fill={STORE_MARK} /></Svg>
+        : <Text allowFontScaling={false} style={[styles.monoText, { fontSize: font }]}>{info.letter}</Text>}
     </View>
   );
   if (!withName) return mono;
