@@ -7,9 +7,10 @@
 // oyununu göstermeli; farklı edisyona düşerse grafik ile güncel fiyat
 // birbirini tutmaz.
 //
-// Birim: api/prices `deal.price.amount`'u olduğu gibi kullanıyor (country=TR).
-// Geçmiş de aynı alanı kullanıyor — grafiğin son noktası karşılaştırmadaki
-// fiyatla aynı sayı olmalı.
+// Birim: ITAD her kaydı KENDİ para biriminde veriyor (country=TR'de Steam
+// USD, bazı mağazalar TRY). Çeviri route'ta, api/prices ve card-price ile
+// aynı yoldan (lib/exchange → amountToTRY, kuruş/cent + kur): grafiğin son
+// noktası karşılaştırmadaki ₺ fiyatla aynı ölçekte olmalı.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const ITAD = 'https://api.isthereanydeal.com';
@@ -80,27 +81,12 @@ export async function itadHistory(id, sinceMs) {
   return rows.map((x) => ({
     t: Date.parse(x?.timestamp),
     shop: Number(x?.shop?.id),
-    price: Number(x?.deal?.price?.amount),
-    regular: Number(x?.deal?.regular?.amount ?? x?.deal?.price?.amount),
+    currency: x?.deal?.price?.currency || null,
+    // Kuruş/cent: amountToTRY bunu bekliyor.
+    priceInt: Number(x?.deal?.price?.amountInt),
+    regularInt: Number(x?.deal?.regular?.amountInt ?? x?.deal?.price?.amountInt),
     cut: Number(x?.deal?.cut) || 0,
   }))
-    .filter((x) => Number.isFinite(x.t) && Number.isFinite(x.price) && RESMI_MAGAZA[x.shop])
+    .filter((x) => Number.isFinite(x.t) && Number.isFinite(x.priceInt) && x.currency && RESMI_MAGAZA[x.shop])
     .sort((a, b) => a.t - b.t);
-}
-
-/** Tüm zamanların en düşüğü (ITAD /games/historylow/v1), resmî mağazalar arasında. */
-export async function itadHistoryLow(id) {
-  const r = await fetch(`${ITAD}/games/historylow/v1?key=${ITAD_KEY}&country=TR`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify([id]),
-  });
-  if (!r.ok) return null;
-  const low = ((await r.json()) || [])[0]?.low;
-  if (!low || !RESMI_MAGAZA[Number(low.shop?.id)]) return null;
-  return {
-    price: Number(low.price?.amount),
-    regular: Number(low.regular?.amount ?? low.price?.amount),
-    cut: Number(low.cut) || 0,
-    t: Date.parse(low.timestamp) || null,
-    shop: RESMI_MAGAZA[Number(low.shop?.id)],
-  };
 }

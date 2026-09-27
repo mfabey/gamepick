@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { rateLimit, tooManyRequests } from '../../lib/rate-limit';
 import { clientIp } from '../../lib/client-ip';
-import { ITAD_KEY, RESMI_MAGAZA, itadGameId, itadHistory, itadHistoryLow } from '../../lib/itad';
+import { ITAD_KEY, RESMI_MAGAZA, itadGameId, itadHistory } from '../../lib/itad';
+import { getUsdToTry, amountToTRY } from '../../lib/exchange';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FİYAT GEÇMİŞİ — mobil G-08 "Rekor düşük", "12 aylık ortalama" ve
@@ -15,6 +16,15 @@ import { ITAD_KEY, RESMI_MAGAZA, itadGameId, itadHistory, itadHistoryLow } from 
 // mağazaları karıştırıp "en ucuz" çizgisi çizmek, bir mağaza verisi eksik
 // olduğunda sahte düşüşler üretirdi. Steam varsa Steam, yoksa en çok kaydı
 // olan resmî mağaza. Rekor düşük ise TÜM resmî mağazalar arasında.
+//
+// ₺ VE PARA BİRİMİ DÖNEMİ (ölçüldü, 27 Eyl, Hades): Steam Türkiye Kasım
+// 2023'te dolara geçti. ITAD günlüğü eski kayıtları ₺ ("20", Aralık 2022),
+// yenileri USD ("2.06") veriyor. İkisini aynı eksende göstermek yanlış:
+// eski ₺ fiyatı bugünkü ₺'ye çevrilmiş dolar fiyatıyla kıyaslanamaz ve
+// "rekor düşük ₺20" yanıltıcı olurdu. Her mağazada yalnız SON kaydın para
+// birimindeki kayıtlar tutuluyor, sonra ₺'ye çevriliyor (api/prices ile
+// aynı kur). ITAD'ın historylow ucu bu yüzden kullanılmıyor: dönem ayrımı
+// yapmıyor.
 //
 // Örnekleme (3A/6A/1Y/Tümü) ve ortalama İSTEMCİDE: günlük seyrek (fiyat
 // değişince bir kayıt), aralık değiştirmek yeni istek gerektirmesin.
@@ -46,7 +56,17 @@ export async function GET(request) {
     const id = await itadGameId({ appid, title });
     if (!id) return bos('oyun-bulunamadi', debug);
 
-    const [events, lowAll] = await Promise.all([itadHistory(id, Date.now() - UC_YIL), itadHistoryLow(id).catch(() => null)]);
+    const [ham, kur] = await Promise.all([itadHistory(id, Date.now() - UC_YIL), getUsdToTry()]);
+    // Mağaza başına güncel para birimi = son kaydınki (liste artan sırada).
+    const guncelPara = {};
+    for (const e of ham) guncelPara[e.shop] = e.currency;
+    const events = ham
+      .filter((e) => e.currency === guncelPara[e.shop])
+      .map((e) => ({
+        t: e.t, shop: e.shop, cut: e.cut,
+        price: amountToTRY(e.priceInt, e.currency, kur),
+        regular: amountToTRY(e.regularInt, e.currency, kur),
+      }));
     if (!events.length) return bos('gecmis-bos', debug);
 
     const sayim = {};
@@ -54,13 +74,9 @@ export async function GET(request) {
     const shop = sayim[61] ? 61 : Number(Object.entries(sayim).sort((a, b) => b[1] - a[1])[0][0]);
     const secili = events.filter((e) => e.shop === shop).map(({ t, price, regular, cut }) => ({ t, price, regular, cut }));
 
-    // ITAD'ın rekoru resmî olmayan bir mağazadaysa (itadHistoryLow null
-    // döndürür) günlükteki resmî mağazaların en düşüğü.
-    let low = lowAll;
-    if (!low) {
-      const enDusuk = events.reduce((m, e) => (e.price < m.price ? e : m), events[0]);
-      low = { price: enDusuk.price, regular: enDusuk.regular, cut: enDusuk.cut, t: enDusuk.t, shop: RESMI_MAGAZA[enDusuk.shop] };
-    }
+    // Rekor düşük: güncel para birimi dönemindeki tüm resmî mağazalar.
+    const enDusuk = events.reduce((m, e) => (e.price < m.price ? e : m), events[0]);
+    const low = { price: enDusuk.price, regular: enDusuk.regular, cut: enDusuk.cut, t: enDusuk.t, shop: RESMI_MAGAZA[enDusuk.shop] };
 
     return NextResponse.json(
       { available: true, shop: { id: shop, name: RESMI_MAGAZA[shop] }, events: secili, low },
