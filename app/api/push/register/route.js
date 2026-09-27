@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { hasRedis, redisCmd, redisGetJSON, redisSetJSON } from '../../../lib/redis.js';
 import { rateLimit, tooManyRequests } from '../../../lib/rate-limit';
 import { clientIp } from '../../../lib/client-ip';
+import { verifyMobileToken } from '../../../lib/mobile-auth';
 
 const TOKENS_SET = 'push:tokens';
 const tokenKey = (t) => `push:token:${t}`;
@@ -38,7 +39,7 @@ export async function POST(request) {
   let body;
   try { body = await request.json(); } catch { return NextResponse.json({ error: 'Geçersiz istek' }, { status: 400 }); }
 
-  const { token, platform = 'unknown', watch = [] } = body || {};
+  const { token, platform = 'unknown', watch = [], lang = 'tr' } = body || {};
   if (!isValidExpoToken(token)) {
     return NextResponse.json({ error: 'Geçersiz push token' }, { status: 400 });
   }
@@ -73,21 +74,34 @@ export async function POST(request) {
   const cleanWatch = watch.slice(0, 200).map(g => {
     const key = String(g.appid || g.slug || g.name || '').toLowerCase();
     const prev = prevByKey[key];
+    // HEDEF FİYAT (G-08, 27 Eyl): /api/card-price ile AYNI birimde (₺ tam
+    // sayı). Hedef değişince "bildirildi" bayrağı sıfırlanıyor: yeni hedefin
+    // altındaysa ilk kontrolde bir kez bildirim gider.
+    const target = Number(g.target) > 0 && Number(g.target) < 1e6 ? Math.round(Number(g.target)) : null;
     return {
       key,
       appid: g.appid || null,
       slug: g.slug || null,
-      name: g.name || '',
+      name: String(g.name || '').slice(0, 120),
+      image: /^https:\/\//.test(String(g.image || '')) ? String(g.image).slice(0, 500) : null,
       hasSteam: !!g.hasSteam,
       // Yeni eklenen oyunda baseline null → ilk kontrolde bildirim gönderilmez
       lastDiscount: prev ? prev.lastDiscount : null,
       lastPrice: prev ? prev.lastPrice : null,
+      target,
+      targetHit: prev && prev.target === target ? !!prev.targetHit : false,
     };
   }).filter(w => w.key);
+
+  // Oturum VARSA kayıt uid'e bağlanıyor: cron fiyat bildirimini bildirim
+  // merkezine (G-20) de yazabilsin. Oturumsuz kayıt eskisi gibi çalışıyor.
+  const user = await verifyMobileToken(request).catch(() => null);
 
   const record = {
     token,
     platform,
+    lang: ['tr', 'en', 'de', 'es', 'pt'].includes(lang) ? lang : 'tr',
+    uid: user?.uid || null,
     watch: cleanWatch,
     updatedAt: Date.now(),
   };

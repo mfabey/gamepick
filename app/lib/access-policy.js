@@ -43,6 +43,13 @@ export const PUBLIC_ROUTES = new Set([
   'game-news', 'game-screenshots', 'game-lookup', 'rawg-game', 'for-you',
   'steam', 'steam-genres', 'steam-price', 'steam-prices', 'steam-reviews',
   'usd-rate', 'video-feed', 'ai-game', 'ai/chat', 'recommend', 'smart-search',
+  // FİYAT GEÇMİŞİ (G-08, 27 Eyl): ITAD katalog verisi, kişisel veri yok.
+  'price-history',
+
+  // TREND ARAMALAR (G-05, 27 Eyl): YAZMA DA AÇIK — hesapsız kullanıcı da
+  // arıyor. Kullanıcı metni saklanmıyor (yalnız appid, ad sunucuda Steam'den
+  // çözülüyor); IP başına günlük tekilleştirme + saatlik sınır.
+  'search-trends',
 
   // KART GÖRSELİ: kimlik doğrulamasız olmak ZORUNDA — paylaşılan bağlantıyı
   // karşı taraf açıyor. Parametreler CARD_SECRET ile HMAC imzalı, yani uç
@@ -124,6 +131,10 @@ export const AUTH_ROUTES = new Set([
   'social/profile', 'social/push-token', 'social/report', 'social/reviews',
   'social/reviews/eligible', 'social/reviews/feed', 'social/search',
   'social/steam-friends', 'social/username',
+  // BİLDİRİM MERKEZİ (G-20) ve OYUN TOPLULUKLARI (G-11), 27 Eyl.
+  // community GET hesapsız da okunuyor (posts ile aynı kural: okuma açık,
+  // yazma kimlikli); notifications tamamen kimlikli.
+  'social/notifications', 'social/community',
 ]);
 
 /** Yalnızca CRON_SECRET ile. Kapalı başarısız oluyor: secret yoksa 503. */
@@ -131,10 +142,6 @@ export const CRON_ROUTES = new Set([
   'cron/price-alerts',
 ]);
 
-  // BİLDİRİM MERKEZİ (G-20) ve OYUN TOPLULUKLARI (G-11), 27 Eyl.
-  // community GET hesapsız da okunuyor (posts ile aynı kural: okuma açık,
-  // yazma kimlikli); notifications tamamen kimlikli.
-  'social/notifications', 'social/community',
 /** Üretimde 404. Kimlik doğrulaması yok ve teşhis verisi döküyorlar. */
 export const DEV_ONLY_ROUTES = new Set([
   'debug-prices', 'debug-rawg',
