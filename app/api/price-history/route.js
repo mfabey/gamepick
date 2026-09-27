@@ -74,9 +74,14 @@ export async function GET(request) {
     const shop = sayim[61] ? 61 : Number(Object.entries(sayim).sort((a, b) => b[1] - a[1])[0][0]);
     const secili = events.filter((e) => e.shop === shop).map(({ t, price, regular, cut }) => ({ t, price, regular, cut }));
 
-    // Rekor düşük: güncel para birimi dönemindeki tüm resmî mağazalar.
-    const enDusuk = events.reduce((m, e) => (e.price < m.price ? e : m), events[0]);
-    const low = { price: enDusuk.price, regular: enDusuk.regular, cut: enDusuk.cut, t: enDusuk.t, shop: RESMI_MAGAZA[enDusuk.shop] };
+    // Rekor düşük: GRAFİKTEKİ mağazanın serisinden (grafiğin yeşil noktasıyla
+    // aynı sayı). Tüm mağazalardan alınıyordu; ölçüldü (27 Eyl, Hades): ₺ ile
+    // satan Epic'in 2023 fiyatı "₺25" rekor çıktı — ₺ enflasyonu yüzünden
+    // bugünkü ₺235'le kıyaslanamaz, ayrıca grafik Steam'i gösterirken kutu
+    // Epic'i gösteriyordu. Steam (USD dönemi) kura çevrildiği için enflasyondan
+    // bağımsız.
+    const enDusuk = secili.reduce((m, e) => (e.price < m.price ? e : m), secili[0]);
+    const low = { price: enDusuk.price, regular: enDusuk.regular, cut: enDusuk.cut, t: enDusuk.t, shop: RESMI_MAGAZA[shop] };
 
     return NextResponse.json(
       { available: true, shop: { id: shop, name: RESMI_MAGAZA[shop] }, events: secili, low },
