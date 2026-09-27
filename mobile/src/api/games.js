@@ -2,8 +2,12 @@ import { apiGet, apiPost } from './client';
 
 // Doğal dil ile oyun arama — /api/smart-search
 // Dönen oyunlar /api/games ile aynı şekilde, yani GameCard doğrudan kullanılabilir.
+// Sunucu şeması `lang` için yalnız 'tr' | 'en' kabul ediyor (yalnız özet
+// cümlesinin dili). de/es/pt olduğu gibi gönderilince 400 dönüyordu ve
+// Keşfet o dillerde HİÇ çalışmıyordu (ölçüldü 27 Eyl). Sorgunun kendisi
+// her dilde anlaşılıyor; yalnız özet dili İngilizceye düşüyor.
 export function smartSearch(query, lang = 'tr') {
-  return apiPost('/api/smart-search', { query, lang });
+  return apiPost('/api/smart-search', { query, lang: lang === 'tr' ? 'tr' : 'en' });
 }
 
 // Oyun listesi — /api/games (RAWG + Steam merge, mod filtresi dahil)
