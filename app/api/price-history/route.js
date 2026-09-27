@@ -23,7 +23,13 @@ import { ITAD_KEY, RESMI_MAGAZA, itadGameId, itadHistory, itadHistoryLow } from 
 // ─────────────────────────────────────────────────────────────────────────────
 
 const UC_YIL = 3 * 365 * 24 * 3600 * 1000;
-const bos = () => NextResponse.json({ available: false }, { headers: { 'Cache-Control': 's-maxage=3600' } });
+// `neden` yalnız debug=1 ile (smart-search'teki gibi): ilk dağıtımda uç her
+// oyunda boş döndü ve sunucu günlüğü olmadan sebebi görmek mümkün değildi.
+// Teşhisli yanıt önbelleğe alınmıyor.
+const bos = (neden, debug) => NextResponse.json(
+  debug ? { available: false, neden } : { available: false },
+  { headers: { 'Cache-Control': debug ? 'no-store' : 's-maxage=3600' } },
+);
 
 export async function GET(request) {
   const rl = await rateLimit(`rl:pricehist:${clientIp(request)}`, 240, 3600);
@@ -32,14 +38,16 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const appid = /^\d{1,10}$/.test(searchParams.get('appid') || '') ? searchParams.get('appid') : null;
   const title = String(searchParams.get('title') || '').trim().slice(0, 120);
-  if ((!appid && !title) || !ITAD_KEY) return bos();
+  const debug = searchParams.get('debug') === '1';
+  if (!appid && !title) return bos('parametre-yok', debug);
+  if (!ITAD_KEY) return bos('anahtar-yok', debug);
 
   try {
     const id = await itadGameId({ appid, title });
-    if (!id) return bos();
+    if (!id) return bos('oyun-bulunamadi', debug);
 
     const [events, lowAll] = await Promise.all([itadHistory(id, Date.now() - UC_YIL), itadHistoryLow(id).catch(() => null)]);
-    if (!events.length) return bos();
+    if (!events.length) return bos('gecmis-bos', debug);
 
     const sayim = {};
     for (const e of events) sayim[e.shop] = (sayim[e.shop] || 0) + 1;
@@ -60,6 +68,7 @@ export async function GET(request) {
     );
   } catch (e) {
     console.warn('price-history:', e?.message);
-    return bos();
+    // İleti ITAD'ın durum kodu ve hata gövdesi; URL (anahtar) içermiyor.
+    return bos(String(e?.message || 'hata').replace(/key=[^&\s]+/g, 'key=***').slice(0, 200), debug);
   }
 }

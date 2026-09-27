@@ -62,10 +62,20 @@ export async function itadGameId({ appid, title }) {
  * @returns {Promise<Array<{t:number, shop:number, price:number, regular:number, cut:number}>>}
  */
 export async function itadHistory(id, sinceMs) {
-  const since = new Date(sinceMs).toISOString();
+  // MİLİSANİYESİZ, "+00:00" ile. toISOString() "…T16:47:12.345Z" veriyor;
+  // ITAD belgesindeki biçim "2022-12-27T11:21:08+01:00" ve PHP'nin katı
+  // RFC 3339 ayrıştırıcısı kesirli saniyeyi kabul etmiyor. Üretimde ilk
+  // dağıtımda bu uç her oyunda boş döndü (27 Eyl) — en olası sebep bu.
+  // Güne yuvarlı: URL gün boyu aynı kalsın, fetch önbelleği (6 sa) tutsun.
+  const since = new Date(Math.floor(sinceMs / 864e5) * 864e5).toISOString().replace(/\.\d{3}Z$/, '+00:00');
   const r = await fetch(`${ITAD}/games/history/v2?key=${ITAD_KEY}&id=${encodeURIComponent(id)}&country=TR&since=${encodeURIComponent(since)}`,
     { next: { revalidate: 21600 } });
-  if (!r.ok) throw new Error(`ITAD history ${r.status}`);
+  if (!r.ok) {
+    // Gövde teşhis için (debug=1): ITAD hata iletisi anahtarı içermiyor.
+    let govde = '';
+    try { govde = (await r.text()).slice(0, 160); } catch { /* gövdesiz */ }
+    throw new Error(`ITAD history ${r.status} ${govde}`);
+  }
   const rows = (await r.json()) || [];
   return rows.map((x) => ({
     t: Date.parse(x?.timestamp),
