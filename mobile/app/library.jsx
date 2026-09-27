@@ -289,7 +289,7 @@ export default function LibraryScreen() {
 
       <View style={{ flex: 1 }}>
       {loading && filtered.length === 0 ? (
-        <GamesGridSkeleton />
+        <GamesGridSkeleton kucuk />
       ) : errorMsg ? (
         <View style={styles.center}>
           <Icon name="alert" size={K.library.errorIcon} color={colors.red} />
