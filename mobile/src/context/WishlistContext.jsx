@@ -216,7 +216,10 @@ export function WishlistProvider({ children }) {
   // (RAWG id ↔ Steam appid; ölçüm ve gerekçe: services/oyunKimlik.js). Birebir
   // karşılaştırma yüzünden trend'den eklenen oyun aramada "listede değil"
   // görünüyor, ikinci kez eklenebiliyordu.
-  const add = useCallback(async (game) => {
+  // `ek.hedef`: eklerken hedef fiyat (G-08 fiyat sayfası). Ayrı bir
+  // setTarget çağrısı YETMİYORDU: aynı olay döngüsünde eski listeyi gören
+  // kapanış oyunu henüz listede bulamıyor, hedef yazılmıyordu.
+  const add = useCallback(async (game, ek = {}) => {
     if (items.some(i => ayniOyun(i, game))) return;
     const g = {
       id: game.id,
@@ -225,6 +228,7 @@ export function WishlistProvider({ children }) {
       appid: game.appid || null,
       hasSteam: !!game.hasSteam,
       image: game.image || '',
+      ...(Number(ek.hedef) > 0 ? { hedef: Math.round(Number(ek.hedef)) } : null),
     };
     await persist([...items, g]);
   }, [items, persist]);
@@ -236,9 +240,9 @@ export function WishlistProvider({ children }) {
     await persist(items.filter(i => !ayniOyun(i, oyun)));
   }, [items, persist]);
 
-  const toggle = useCallback(async (game) => {
+  const toggle = useCallback(async (game, ek) => {
     if (items.some(i => ayniOyun(i, game))) await remove(game);
-    else await add(game);
+    else await add(game, ek);
   }, [items, add, remove]);
 
   // HEDEF FİYAT (G-08): listedeki oyunun `hedef` alanı (₺). null → hedef

@@ -74,19 +74,6 @@ export default function PriceCompare() {
     id, name, slug, image, rawgSlug: slug, appid: appid || null, hasSteam: hasSteam === 'true' || hasSteam === '1',
   }), [id, name, slug, image, appid, hasSteam]);
   const watched = isWatched(gameObj);
-  const alarmDegistir = useCallback(() => {
-    const ekle = !watched;
-    Haptics.impactAsync(ekle ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    toggle(gameObj);
-    // Alarm açılırken fiyat biliniyorsa hedef önerisi: güncelin %80'i
-    // (görüntü biriminde yuvarlak). Kullanıcı adımlayıcıyla değiştirir.
-    if (ekle && best && !best.isFree && best.price > 0) {
-      const g = onerilenHedef(lira ? best.price : best.price / (rate || 1), lira);
-      setTimeout(() => setTarget(gameObj, Math.round(lira ? g : g * (rate || 1))), 0);
-    }
-    // Detaydaki gibi: yalnız EKLEME arkadaş akışına düşüyor.
-    if (ekle) reportActivity({ type: 'wishlist', gameId: String(id), gameName: name || '', gameImage: image || '' });
-  }, [watched, toggle, gameObj, id, name, image, best, lira, rate, setTarget]);
 
   // ── Fiyat geçmişi ──
   const { data: gecmis } = useQuery(`ph:${appid || name}`, () => fetchPriceHistory({ appid, title: name }),
@@ -114,6 +101,22 @@ export default function PriceCompare() {
   const gorunen = (tl) => (lira ? tl : tl / (rate || 1));
   const tlYap = (g) => Math.round(lira ? g : g * (rate || 1));
   const hedefTl = targetOf(gameObj);
+  const alarmDegistir = useCallback(() => {
+    const ekle = !watched;
+    Haptics.impactAsync(ekle ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    // Alarm açılırken fiyat biliniyorsa hedef önerisi: güncelin %80'i
+    // (görüntü biriminde yuvarlak). Eklemeyle AYNI yazımda — kullanıcı
+    // adımlayıcıyla değiştirir.
+    let hedef = null;
+    if (ekle && best && !best.isFree && best.price > 0) {
+      const g = onerilenHedef(lira ? best.price : best.price / (rate || 1), lira);
+      hedef = Math.round(lira ? g : g * (rate || 1));
+    }
+    toggle(gameObj, { hedef });
+    // Detaydaki gibi: yalnız EKLEME arkadaş akışına düşüyor.
+    if (ekle) reportActivity({ type: 'wishlist', gameId: String(id), gameName: name || '', gameImage: image || '' });
+  }, [watched, toggle, gameObj, id, name, image, best, lira, rate]);
+
   const hedefDegistir = (yon) => {
     if (!best || best.price == null) return;
     const simdi = gorunen(hedefTl ?? best.price);

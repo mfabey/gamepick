@@ -24,7 +24,7 @@ import FilterSheet, { FilterButton, countFilters, EtkinFiltreler } from '../src/
 import LimitedMode from '../src/components/LimitedMode';
 import EmptyState from '../src/components/EmptyState';
 import { SearchField } from '../src/components/ui/SearchField';
-import { Button, Chip as UIChip, IconButton, Segmented, Txt } from '../src/components/ui/Primitives';
+import { Button, Chip as UIChip, IconButton, Txt } from '../src/components/ui/Primitives';
 import { AramaOnerileri, AramaSonuclari } from '../src/components/BirlesikArama';
 import { Icon } from '../src/components/Icon';
 import { aramaEkle } from '../src/services/sonAramalar';
@@ -372,14 +372,16 @@ export default function GamesScreen() {
         </View>
       </View>
 
-      {/* Kapsam (G-06): yalnız sorgu varken. */}
+      {/* Kapsam (G-05/06): yalnız sorgu varken. Segment DEĞİL çip satırı
+          (kit search()): beş kapsam 375 pt'de segmente sığmıyor, Almanca
+          "Communitys" okunmayacak kadar küçülüyordu (SE, 27 Eyl). */}
       {searchTerm ? (
-        <View style={styles.kapsam}>
-          <Segmented value={kapsam} onChange={setKapsam} accessibilityLabel={t('srch.scope')}
-            items={[{ value: 'all', label: t('srch.all') }, { value: 'games', label: t('srch.games') },
-              { value: 'people', label: t('srch.people') }, { value: 'communities', label: t('comm.communities') },
-              { value: 'news', label: t('srch.news') }]} />
-        </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} accessibilityLabel={t('srch.scope')}
+          style={styles.chipsScroll} contentContainerStyle={[styles.chipsRow, { paddingBottom: spacing.s8 }]}>
+          {[['all', 'srch.all'], ['games', 'srch.games'], ['people', 'srch.people'], ['communities', 'comm.communities'], ['news', 'srch.news']].map(([v, k]) => (
+            <Chip key={v} active={kapsam === v} label={t(k)} onPress={() => setKapsam(v)} />
+          ))}
+        </ScrollView>
       ) : null}
 
       {/* Bölüm chip'leri.
@@ -594,7 +596,6 @@ const makeStyles = (colors) => StyleSheet.create({
   },
   bozukSatir: { flexDirection: 'row', alignItems: 'center', gap: spacing.s8 },
   bozukEylem: { flexDirection: 'row', marginTop: spacing.s4 },
-  kapsam: { paddingHorizontal: spacing.s20, paddingBottom: spacing.s8 },
 
   safe: { flex: 1, backgroundColor: colors.bg },
   // Mutlak konum: gizlenirken listenin yüksekliğini değiştirmesin.

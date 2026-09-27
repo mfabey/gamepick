@@ -37,11 +37,12 @@ import { component as K, layout, shadow, space } from '../../src/theme/tokens';
 
 const C = K.gameCommunity;
 
-function saydam(hex) {
+/** '#0A0A0B' + 0.45 → 'rgba(10,10,11,0.45)' — degrade duraklarını zeminden türetir. */
+function tonla(hex, a) {
   const h = String(hex).replace('#', '');
   if (h.length !== 6) return 'transparent';
   const [r, g, b] = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
-  return `rgba(${r},${g},${b},0)`;
+  return `rgba(${r},${g},${b},${a})`;
 }
 
 export default function OyunToplulugu() {
@@ -113,10 +114,15 @@ export default function OyunToplulugu() {
 
   const baslik = (
     <View>
+      {/* Yenileme işareti başlığın EN ÜSTÜNDE: opak örtüsü yukarı doğru
+          uzanıyor, ortada dursa altındaki içeriği örterdi. */}
+      <YenileIsareti yenileniyor={yenileniyor} />
       {/* Kapak: tam genişlik 240, üstten ve alttan zemine sönen degrade (kit). */}
       <View style={{ height: C.hero }}>
         <CoverImage source={gorsel ?? undefined} radius={0} style={StyleSheet.absoluteFill} />
-        <LinearGradient colors={[saydam(colors.bg), colors.bg]} locations={[0.35, 1]} style={StyleSheet.absoluteFill} />
+        {/* Kit: 0 %45 → 35 %0 → 60 %20 → 100 zemin (üstte düğmeler okunsun, altta zemine erisin). */}
+        <LinearGradient colors={[tonla(colors.bg, 0.45), tonla(colors.bg, 0), tonla(colors.bg, 0.2), colors.bg]}
+          locations={[0, 0.35, 0.6, 1]} style={StyleSheet.absoluteFill} />
         <View style={[styles.ustCubuk, { top: insets.top + space[8] }]}>
           <IconButton icon="back" label={t('a11y.back')} variant="onArt" onPress={() => router.back()} />
         </View>
@@ -160,7 +166,6 @@ export default function OyunToplulugu() {
       ) : null}
 
       <View style={[styles.pad, styles.bolum]}>
-        <YenileIsareti yenileniyor={yenileniyor} />
         <SectionHeader title={t('comm.recent')} />
       </View>
     </View>
