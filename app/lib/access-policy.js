@@ -131,6 +131,10 @@ export const CRON_ROUTES = new Set([
   'cron/price-alerts',
 ]);
 
+  // BİLDİRİM MERKEZİ (G-20) ve OYUN TOPLULUKLARI (G-11), 27 Eyl.
+  // community GET hesapsız da okunuyor (posts ile aynı kural: okuma açık,
+  // yazma kimlikli); notifications tamamen kimlikli.
+  'social/notifications', 'social/community',
 /** Üretimde 404. Kimlik doğrulaması yok ve teşhis verisi döküyorlar. */
 export const DEV_ONLY_ROUTES = new Set([
   'debug-prices', 'debug-rawg',

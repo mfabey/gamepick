@@ -6,6 +6,7 @@ import {
   sendFriendRequest, acceptFriendRequest, rejectFriendRequest,
   cancelFriendRequest, removeFriend,
 } from '../../../lib/social-store';
+import { addNotif } from '../../../lib/notif-store';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Arkadaşlık.
@@ -70,6 +71,14 @@ export async function POST(request) {
   const res = await ACTIONS[action](user.uid, targetUid);
   if (!res?.ok) {
     return NextResponse.json({ error: res?.error || 'FAILED' }, { status: 400 });
+  }
+
+  // Bildirim merkezi (G-20): istek karşı tarafa, kabul isteği gönderene.
+  // Karşılıklı istek anında arkadaşlık yapıyor (status 'friends') → kabul.
+  if (action === 'request' && res.status === 'requested') {
+    await addNotif(targetUid, { type: 'friend_request', actor: user.uid, key: `freq:${user.uid}` });
+  } else if ((action === 'accept' || action === 'request') && res.status === 'friends') {
+    await addNotif(targetUid, { type: 'friend_accept', actor: user.uid, key: `facc:${user.uid}` });
   }
 
   return NextResponse.json({ ok: true, status: res.status, targetUid });

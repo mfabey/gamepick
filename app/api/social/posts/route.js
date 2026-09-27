@@ -3,7 +3,10 @@ import { verifyMobileToken } from '../../../lib/mobile-auth';
 import { rateLimit, tooManyRequests } from '../../../lib/rate-limit';
 import { validateFreeText } from '../../../lib/content-filter';
 import { getProfiles, getHiddenUids, getFriends, filterVisibleByPrivacy } from '../../../lib/social-store';
-import { createPost, deletePost, listFeed, listFriendFeed, toggleLike } from '../../../lib/post-store';
+import { createPost, deletePost, getPost, listFeed, listFriendFeed, toggleLike } from '../../../lib/post-store';
+import { notifyLike, notifyReply } from '../../../lib/notif-store';
+import { shapePost } from '../../../lib/post-shape';
+import { indexCommunityPost, unindexCommunityPost } from '../../../lib/community-store';
 import { clientIp as clientKey } from '../../../lib/client-ip';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -18,21 +21,8 @@ import { clientIp as clientKey } from '../../../lib/client-ip';
 
 const MAX_POST_LEN = 500;
 
-function shape(post, profiles) {
-  const p = profiles[post.uid];
-  const uname = String(p?.username || '').replace(/^@/, '').toLowerCase().trim();
-  const isDev = ['batuta', 'test'].includes(uname);
-  return {
-    ...post,
-    author: {
-      uid: post.uid,
-      username: p?.username || null,
-      displayName: p?.displayName || p?.username || null,
-      avatar: p?.avatar || null,
-      isDeveloper: isDev,
-    },
-  };
-}
+// Yazar bilgisi ortak biçimlendiricide (lib/post-shape) — topluluk akışı da kullanıyor.
+const shape = shapePost;
 
 export async function GET(request) {
   const user = await verifyMobileToken(request);
@@ -85,12 +75,19 @@ export async function POST(request) {
 
     const r = await toggleLike(String(body.id || ''), user.uid);
     if (!r) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
+    // Bildirim merkezi: yalnız BEĞENİLDİĞİNDE (geri almada değil). Yanıtı
+    // bekletmiyor — bildirim yan etki.
+    if (r.liked) getPost(String(body.id || '')).then((post) => notifyLike(post, user.uid, r.likeCount)).catch(() => {});
     return NextResponse.json(r);
   }
 
   if (action === 'delete') {
+    // Kayıt silinmeden ÖNCE okunuyor: topluluk dizininden de düşmesi için
+    // oyun etiketi gerekiyor.
+    const once = await getPost(String(body.id || ''));
     const okDel = await deletePost(String(body.id || ''), user.uid);
     if (!okDel) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
+    if (once) await unindexCommunityPost(once);
     return NextResponse.json({ ok: true });
   }
 
@@ -113,6 +110,9 @@ export async function POST(request) {
   });
   // createPost yalnızca hedef gönderi yoksa null döner (silinmiş bir şeye yanıt).
   if (!post) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
+  if (post.replyTo) await notifyReply(post);
+  // Oyun etiketli kök gönderi o oyunun topluluğuna düşüyor (G-11).
+  if (!post.replyTo && post.game?.appid) await indexCommunityPost(post);
 
   const profiles = await getProfiles([user.uid]);
   return NextResponse.json({ post: shape({ ...post, likeCount: 0, replyCount: 0, likedByMe: false, isMine: true }, profiles) });

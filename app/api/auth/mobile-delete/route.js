@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { guard, penalize } from '../../../lib/rate-guard';
 import { verifyMobileToken, invalidateMobileToken } from '../../../lib/mobile-auth';
 import { redisCmd } from '../../../lib/redis';
+import { deleteNotifs } from '../../../lib/notif-store';
+import { deleteUserCommunities } from '../../../lib/community-store';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Mobil hesap silme. Apple, hesap açtıran uygulamalarda UYGULAMA İÇİNDEN
@@ -85,6 +87,8 @@ export async function POST(request) {
       `user_wishlist:${user.uid}`,
     ];
     await Promise.all(keys.map(k => redisCmd(['DEL', k]).catch(() => {})));
+    // Bildirim merkezi (G-20) ve topluluk üyelikleri (G-11) de kişisel veri.
+    await Promise.all([deleteNotifs(user.uid), deleteUserCommunities(user.uid)]).catch(() => {});
 
     // 3) Firebase hesabını sil
     const delRes = await fetch(

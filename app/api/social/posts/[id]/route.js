@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { verifyMobileToken } from '../../../../lib/mobile-auth';
 import { rateLimit, tooManyRequests } from '../../../../lib/rate-limit';
 import { getProfiles, getHiddenUids, canViewUserContent, filterVisibleByPrivacy } from '../../../../lib/social-store';
-import { getPostWithCounts, listReplies, parseReviewRef, countReplies, deletePost } from '../../../../lib/post-store';
+import { getPost, getPostWithCounts, listReplies, parseReviewRef, countReplies, deletePost } from '../../../../lib/post-store';
+import { unindexCommunityPost } from '../../../../lib/community-store';
 import { getReview } from '../../../../lib/review-store';
 import { getSteamDetailsCached } from '../../../../lib/steam-cache.js';
 import { clientIp } from '../../../../lib/client-ip';
@@ -113,8 +114,11 @@ export async function DELETE(request, { params }) {
   const postId = String(id || '');
   if (!postId) return NextResponse.json({ error: 'BAD_REQUEST' }, { status: 400 });
 
+  // Oyun etiketi silmeden önce okunuyor: topluluk dizininden de düşsün.
+  const once = await getPost(postId);
   const ok = await deletePost(postId, user.uid);
   if (!ok) return NextResponse.json({ error: 'NOT_FOUND_OR_FORBIDDEN' }, { status: 404 });
+  if (once) await unindexCommunityPost(once);
 
   return NextResponse.json({ ok: true });
 }
