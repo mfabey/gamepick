@@ -367,6 +367,9 @@ export const gameCard = { priceGap: 6, badgePaddingH: 6, badgePaddingV: 2 } as c
 
 /* Kit ölçüleri — bileşenlerde sayı yazılmasın diye (kaynak: design/kit/k.py, c.py, s1.py; DS 2 ve DS 4). */
 export const component = {
+  // G-02 Tanıtım (kaynak/G-02-Onboarding): kolaj kart aralığı, bildirim kartı
+  // iç payları, adım noktaları üst payı ve iki düğme arası.
+  onboarding: { cardGap: 10, notifGap: 10, notifPadL: 10, notifPadR: 14, dotsTop: 22, actionsGap: 6 },
   iconButton: { dotSize: 8, dotTop: 9, dotRight: 10, dotRing: 2, badgeSize: 18, badgeTop: 4, badgeRight: 2, badgePadding: 5 },
   heart: { size: 36, icon: 18, card: { size: 34, icon: 17, inset: 8 }, hero: { size: 44, icon: 20 } },
   follow: { height: 34, radius: 10, paddingH: 14, gap: 5, check: 14, checkStroke: 2.6 },

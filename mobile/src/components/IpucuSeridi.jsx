@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { View, Text, Pressable, StyleSheet, Animated, Easing, Platform } from 'react-native';
+import { View, Pressable, StyleSheet, Animated, Easing, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, usePathname } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { spacing, radius, type, TAB_BAR, PRESSED } from '../theme';
-import { useStyles, useTheme } from '../context/ThemeContext';
+import { Icon } from './Icon';
+import { Txt } from './ui/Primitives';
+import { useDesignTheme } from '../theme/useDesignTheme';
+import { radius as dsRadius, shadow, space } from '../theme/tokens';
+import { PRESSED } from '../theme';
 import { useLanguage } from '../context/LanguageContext';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { tabGeometry } from '../theme/tabGeometry';
@@ -86,8 +88,7 @@ const KATALOG = [
 ];
 
 export default function IpucuSeridi() {
-  const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
+  const { colors } = useDesignTheme();
   const { t } = useLanguage();
   const router = useRouter();
   const pathname = usePathname();
@@ -96,7 +97,8 @@ export default function IpucuSeridi() {
   // kaynaktan geliyor (tabGeometry): eski 58/24 sabitleriyle yeni çubuğun
   // üstünde Android'de 2, iOS'ta 17 pt boşluk kalıyordu; hedef NEFES (8).
   const insets = useSafeAreaInsets();
-  const cubukUstu = tabGeometry(Platform.OS, insets.bottom).occupied;
+  const cubukG = tabGeometry(Platform.OS, insets.bottom);
+  const cubukUstu = cubukG.occupied;
 
   // Anahtarlar DÜZ YAZILIYOR — katalogdan okunsalardı dil denetimi üçünü de
   // "tanımlı ama kullanılmıyor" diye raporlardı.
@@ -212,7 +214,7 @@ export default function IpucuSeridi() {
     <Animated.View
       style={[
         styles.sarmal,
-        { bottom: cubukUstu + NEFES, opacity: opak, transform: [{ translateY: kaydir }] },
+        { left: cubukG.side, right: cubukG.side, bottom: cubukUstu + NEFES, opacity: opak, transform: [{ translateY: kaydir }] },
       ]}
       // Şerit ekranın SAHİBİ değil: altındaki içerik erişilebilir kalmalı.
       pointerEvents="box-none"
@@ -221,14 +223,16 @@ export default function IpucuSeridi() {
           "götür", çarpıya dokunmak "reddet" demek — biri diğerinin içinde
           olsaydı hangi niyetin kaydedildiği dokunmanın kaç piksel kaydığına
           bağlı kalırdı ve reddetme sayacı yalan söylerdi. */}
-      <View style={styles.serit}>
+      {/* 2.0 / G-DS-4 Toast (27 Eyl): surface3, 14 köşe, toast gölgesi, 2.0 ikon. */}
+      <View style={[styles.serit, { backgroundColor: colors.surface3, boxShadow: shadow.toast }]}>
+        <Icon name="spark" size={18} color={colors.text2} strokeWidth={2.2} />
         <Pressable
           onPress={git}
           accessibilityRole="button"
           accessibilityLabel={METIN[aday.id]}
           style={({ pressed }) => [styles.govde, pressed && PRESSED]}
         >
-          <Text style={styles.metin} numberOfLines={2}>{METIN[aday.id]}</Text>
+          <Txt variant="subhead" numberOfLines={2} style={[styles.metin, { color: colors.text }]}>{METIN[aday.id]}</Txt>
         </Pressable>
 
         <Pressable
@@ -238,20 +242,18 @@ export default function IpucuSeridi() {
           accessibilityLabel={t('ipucu.kapat')}
           style={({ pressed }) => [styles.kapat, pressed && PRESSED]}
         >
-          <Ionicons name="close" size={16} color={colors.text3} />
+          <Icon name="x" size={16} color={colors.text2} strokeWidth={2.4} />
         </Pressable>
       </View>
     </Animated.View>
   );
 }
 
-const makeStyles = (colors) => StyleSheet.create({
+const styles = StyleSheet.create({
   sarmal: {
     position: 'absolute',
-    // Sekme çubuğuyla AYNI kenar payı (TAB_BAR.side): iki yüzen yüzey aynı
-    // dikey eksende hizalanmazsa şerit çubuğa ait değilmiş gibi durur.
-    left: TAB_BAR.side,
-    right: TAB_BAR.side,
+    // Sekme çubuğuyla AYNI kenar payı (tabGeometry.side, satır içi): iki yüzen
+    // yüzey aynı dikey eksende hizalanmazsa şerit çubuğa ait değilmiş gibi durur.
 
     // ── KATMAN SIRASI — İKİ PLATFORM İÇİN AYRI ──
     // ÖLÇÜLDÜ (Android 16 emülatör, uiautomator dökümü): şerit görünüm
@@ -271,16 +273,11 @@ const makeStyles = (colors) => StyleSheet.create({
     elevation: 24,
   },
   serit: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.s12,
-    paddingHorizontal: spacing.s16, paddingVertical: spacing.s12,
-    backgroundColor: colors.bgElevated,
-    borderWidth: 1, borderColor: colors.cardBorder,
-    borderRadius: radius.lg,
+    minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: space[12],
+    paddingLeft: space[16], paddingRight: space[12], paddingVertical: space[8],
+    borderRadius: dsRadius.cover, // 14 — DS 4 toast köşesi
   },
   govde: { flex: 1 },
-  metin: {
-    color: colors.text, fontSize: type.subhead,
-    fontWeight: '600', lineHeight: 20,
-  },
-  kapat: { alignItems: 'center', justifyContent: 'center' },
+  metin: { fontWeight: '500' },
+  kapat: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
 });

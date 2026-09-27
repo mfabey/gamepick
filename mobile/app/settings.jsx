@@ -194,6 +194,7 @@ export default function SettingsScreen() {
             <ListRow icon="grid" title={t('prof.gLibrary')} value={gameCount > 0 ? String(gameCount) : undefined} onPress={() => router.push('/library')} />
             <ListRow icon="book" title={t('prof.gLists')} onPress={() => router.push('/lists')} />
             <ListRow icon="layers" title={t('prof.gCollections')} onPress={() => router.push('/collections')} />
+            <ListRow icon="spark" title={t('ilgi.entry')} onPress={() => router.push('/ilgiler')} />
             <ListRow icon="image" title={t('prof.gCards')} onPress={() => router.push(account ? '/game-cards' : '/account')} />
             <ListRow icon="poll" title={t('prof.gStats')} onPress={() => router.push(account ? '/stats' : '/account')} />
             <ListRow icon="spark" title={t('prof.gDiscover')} onPress={() => router.push('/discover')} />
