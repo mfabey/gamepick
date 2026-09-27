@@ -62,8 +62,10 @@ const SEKME_ETIKETI: Record<string, string> = {
 // GÖLGE DIŞ katmanda, cam İÇ katmanda: kapsül köşeyi kırpmak için
 // overflow:hidden taşıyor ve iOS bunu clipsToBounds'a çeviriyor; aynı
 // katmandaki gölge kırpılırdı (TabBar.tsx'teki ölçülmüş not).
-export function CubukYuzey({ radius, style, vurgu = false, children }: {
-  radius: number; style?: StyleProp<ViewStyle>; vurgu?: boolean; children?: React.ReactNode;
+export function CubukYuzey({ radius, style, vurgu = false, metin = false, children }: {
+  radius: number; style?: StyleProp<ViewStyle>; vurgu?: boolean;
+  /** Yüzey METİN taşıyor (aksesuar): iOS'ta cam yerine okunur yüzey. Android zaten opak. */
+  metin?: boolean; children?: React.ReactNode;
 }) {
   const { tabBar, isDark } = useDesignTheme();
   if (!IOS) {
@@ -76,14 +78,17 @@ export function CubukYuzey({ radius, style, vurgu = false, children }: {
   return (
     <Animated.View style={[{ borderRadius: radius, boxShadow: tabBar.ios.shadow }, style]}>
       <View pointerEvents="none" style={[StyleSheet.absoluteFill, { borderRadius: radius, overflow: 'hidden' }]}>
-        {/* Bildirim (vurgu) YERLİ CAM DEĞİL: iOS 26 camı parlak içeriğin üstünde
-            çok şeffaf kalıyor, kapsülün metni okunmuyordu (26 Eyl, SE). Bulanıklık
-            + opak dolgu okunaklılığı garanti ediyor. */}
-        {GLASS_OK && !vurgu
+        {/* Bildirim (vurgu) ve aksesuar (metin) YERLİ CAM DEĞİL: iOS 26 camı
+            parlak içeriğin üstünde çok şeffaf kalıyor, kapsülün metni okunmuyordu
+            (26 Eyl bildirim; 27 Eyl oyun detayında fiyat aksesuarı açık renkli
+            "En ucuz fiyat" düğmesinin üstünden geçerken fiyat kayboldu, SE).
+            Bulanıklık + opak dolgu okunaklılığı garanti ediyor. Yalnız ikon
+            taşıyan kapsül ve daire camda kalıyor. */}
+        {GLASS_OK && !vurgu && !metin
           ? <GlassView glassEffectStyle="regular" tintColor={tabBar.ios.glassTint} style={StyleSheet.absoluteFill} />
           : <>
               <BlurView tint={isDark ? 'dark' : 'light'} intensity={60} style={StyleSheet.absoluteFill} />
-              <View style={[StyleSheet.absoluteFill, { backgroundColor: vurgu ? tabBar.ios.alertFill : tabBar.ios.fallbackFill }]} />
+              <View style={[StyleSheet.absoluteFill, { backgroundColor: vurgu || metin ? tabBar.ios.alertFill : tabBar.ios.fallbackFill }]} />
             </>}
         <View style={[StyleSheet.absoluteFill, { borderRadius: radius, boxShadow: tabBar.ios.edge }]} />
       </View>
@@ -155,7 +160,7 @@ export function AksesuarKapsul({ children, style, sagPay = 8 }: {
   return (
     <Animated.View entering={FadeInDown.duration(320)}
       style={[{ position: 'absolute', left: g.side + g.mini + 8, right: g.side, bottom: g.bottom, height: g.mini }, style]}>
-      <CubukYuzey radius={g.mini / 2} style={StyleSheet.absoluteFill} />
+      <CubukYuzey radius={g.mini / 2} metin style={StyleSheet.absoluteFill} />
       <View style={[styles.aksesuarSatir, { paddingLeft: 8, paddingRight: sagPay }]}>{children}</View>
     </Animated.View>
   );
