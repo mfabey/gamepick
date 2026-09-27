@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { guard } from '../../lib/rate-guard';
 import { parseBody, smartSearchBody } from '../../lib/schemas';
-import { isAdultContent } from '../../lib/adult-filter.js';
+import { isAdultContent, isAdultTitleOrSlug } from '../../lib/adult-filter.js';
 
 const RAWG_KEY = process.env.RAWG_API_KEY;
 const RAWG_BASE = 'https://api.rawg.io/api';
@@ -47,32 +47,93 @@ const MODES = ['singleplayer', 'multiplayer', 'coop'];
 
 // LLM bazı ifadeleri kaçırıyor ("sakin" → relaxing gibi). Bu deterministik eşleme
 // modelden bağımsız çalışır ve sonucu LLM'in çıkardıklarıyla birleştirilir.
+//
+// BEŞ DİL (27 Eyl): mobil örnek istemleri tr/en/de/es/pt. Model düştüğünde
+// (ölçüldü: özet boş, tür boş dönüyordu) elde kalan TEK sinyal bu eşleme;
+// yalnız tr/en olunca "Etwas Entspannendes zum Abschalten" hiçbir etikete
+// dönüşmüyordu. de/es/pt kökleri eklendi.
 const KEYWORD_TAGS = [
-  [/sakin|rahatla|stressiz|stressiz|huzur|relax|chill|calm|unwind/i, 'relaxing'],
-  [/korku|korkut|ürküt|urkut|gerilim|horror|scary|creepy/i, 'horror'],
+  [/sakin|rahatla|stressiz|stressiz|huzur|relax|chill|calm|unwind|entspann|abschalt|gemütlich|gemutlich|relaj|tranquil|desestress/i, 'relaxing'],
+  [/korku|korkut|ürküt|urkut|gerilim|horror|scary|creepy|grusel|unheimlich|terror|miedo|medo|assustador/i, 'horror'],
   [/zombi|zombie/i, 'zombies'],
-  [/hikaye|hikâye|senaryo|story|narrative/i, 'story-rich'],
-  [/açık dünya|acik dunya|open.?world/i, 'open-world'],
-  [/hayatta kal|survival/i, 'survival'],
-  [/keşf|kesf|explor/i, 'exploration'],
-  [/zor|çetin|cetin|meydan oku|hard|difficult|challeng/i, 'difficult'],
-  [/müzik|muzik|ses|soundtrack|music/i, 'great-soundtrack'],
-  [/atmosfer|atmospher/i, 'atmospheric'],
-  [/gizli|sinsi|stealth/i, 'stealth'],
-  [/uzay|space|sci.?fi|bilim kurgu/i, 'sci-fi'],
-  [/fantast|fantasy|büyü|buyu/i, 'fantasy'],
-  [/kıyamet|kiyamet|post.?apocal/i, 'post-apocalyptic'],
-  [/inşa|insa|üs kur|us kur|base.?build/i, 'base-building'],
+  [/hikaye|hikâye|senaryo|story|narrative|geschichte|handlung|historia|história/i, 'story-rich'],
+  [/açık dünya|acik dunya|open.?world|offene.? welt|mundo abierto|mundo aberto/i, 'open-world'],
+  [/hayatta kal|survival|überleb|uberleb|superviv|sobreviv/i, 'survival'],
+  [/keşf|kesf|explor|erkund/i, 'exploration'],
+  [/zor|çetin|cetin|meydan oku|hard|difficult|challeng|schwer|fordernd|difícil|dificil|desafi/i, 'difficult'],
+  [/müzik|muzik|ses|soundtrack|music|musik|música|musica/i, 'great-soundtrack'],
+  [/atmosfer|atmospher|atmosphär|atmosphar/i, 'atmospheric'],
+  [/gizli|sinsi|stealth|schleich|sigilo|furtiv/i, 'stealth'],
+  [/uzay|space|sci.?fi|bilim kurgu|weltraum|espacio|espaço|ciencia ficción|ficção científica/i, 'sci-fi'],
+  [/fantast|fantasy|büyü|buyu|fantas/i, 'fantasy'],
+  [/kıyamet|kiyamet|post.?apocal|apokalyp|apocal/i, 'post-apocalyptic'],
+  [/inşa|insa|üs kur|us kur|base.?build|basisbau|construir|construção|construcao/i, 'base-building'],
   [/karakter geliştir|karakter gelistir|seviye atla|rpg/i, 'character-customization'],
   [/soulslike|souls.?like|dark souls|elden ring/i, 'souls-like'],
-  [/rekabet|competitive|pvp/i, 'pvp'],
+  [/rekabet|competitive|pvp|wettkampf|kompetitiv|competitiv/i, 'pvp'],
 ];
 
 const KEYWORD_MODES = [
-  [/eşli|esli|arkadaş|arkadas|birlikte|beraber|co.?op|with a friend/i, 'coop'],
-  [/tek başıma|tek basima|yalnız|yalniz|solo|single.?player/i, 'singleplayer'],
-  [/online|rekabet|competitive|multiplayer/i, 'multiplayer'],
+  [/eşli|esli|arkadaş|arkadas|birlikte|beraber|co.?op|with a friend|freund|zusammen|koop|amigo|juntos|cooperativ/i, 'coop'],
+  [/tek başıma|tek basima|yalnız|yalniz|solo|single.?player|allein|einzelspieler|un jugador|um jogador/i, 'singleplayer'],
+  [/online|rekabet|competitive|multiplayer|mehrspieler|multijugador|multijogador/i, 'multiplayer'],
 ];
+
+// ── STEAM YEDEĞİ ──
+// RAWG çöktüğünde (3 Ağu, 522) ya da aylık kotası dolduğunda (27 Eyl ölçüldü:
+// HTTP 401 "The monthly API limit reached") bu uç HİÇ sonuç döndürmüyordu.
+// Steam mağaza araması etiketle süzebiliyor (`tags=` VE mantığıyla). Kimlikler
+// Steam'in kendi listesinden: store.steampowered.com/tagdata/populartags/english
+// (27 Eyl) — tahmin değil. Tür slug'ları da Steam'de etiket.
+const STEAM_TAG = {
+  singleplayer: 4182, multiplayer: 3859, 'co-op': 1685, 'online-co-op': 3843, 'local-co-op': 3841,
+  pvp: 1775, 'story-rich': 1742, 'choices-matter': 6426, atmospheric: 4166, 'open-world': 1695,
+  exploration: 3834, survival: 1662, horror: 1667, zombies: 1659, 'post-apocalyptic': 3835,
+  sandbox: 3810, crafting: 1702, 'sci-fi': 3942, fantasy: 1684, 'dark-fantasy': 4604,
+  cyberpunk: 4115, space: 1755, medieval: 4172, 'first-person': 3839, 'third-person': 1697,
+  stealth: 1687, tactical: 1708, roguelike: 1716, 'souls-like': 29482, difficult: 4026,
+  relaxing: 1654, funny: 4136, 'great-soundtrack': 1756, 'pixel-graphics': 3964, anime: 4085,
+  realistic: 4175, 'female-protagonist': 7208, 'character-customization': 4747,
+  'base-building': 7332, 'turn-based': 1677, metroidvania: 1628, 'hack-and-slash': 1646,
+  'battle-royale': 176981, racing: 699, simulation: 599,
+  action: 19, adventure: 21, 'role-playing-games-rpg': 122, shooter: 1774, strategy: 9,
+  puzzle: 1664, platformer: 1625, sports: 701, fighting: 1743, indie: 492, arcade: 1773,
+  'massively-multiplayer': 128, casual: 597, family: 5350, card: 1666,
+};
+
+async function steamQuery(slugs) {
+  const ids = [...new Set(slugs.map((s) => STEAM_TAG[s]).filter(Boolean))];
+  if (!ids.length) return [];
+  const url = `https://store.steampowered.com/search/results/?tags=${ids.join(',')}`
+    // Sıralama Steam'in varsayılanı (alaka): "en çok satan" etiketi zayıf
+    // taşıyan dev oyunları (CS2, PUBG → "Difficult") öne alıyordu (ölçüldü).
+    + '&category1=998&cc=tr&l=english&json=1&count=25';
+  try {
+    const res = await fetch(url, { next: { revalidate: 1800 }, signal: AbortSignal.timeout(6000) });
+    if (!res.ok) { lastError = `Steam ${res.status}`; return []; }
+    const data = await res.json();
+    return (data.items || []).map((item) => {
+      const appid = Number((item.logo || '').match(/\/apps\/(\d+)\//)?.[1]) || null;
+      if (!appid) return null;
+      const slug = String(item.name || '').toLowerCase().normalize('NFKD')
+        .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      if (isAdultTitleOrSlug(item.name, slug)) return null;
+      // Biçim /api/games'in Steam kaynaklı öğeleriyle aynı (fetchSteamByMode).
+      const header = `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/header.jpg`;
+      return {
+        id: 'rawg_' + appid, rawgId: appid, rawgSlug: slug, appid, name: item.name,
+        image: header,
+        coverImage: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/library_600x900.jpg`,
+        metacritic: null, reviewScore: 0, totalReviews: 0, isFree: false, onSale: false,
+        price: null, noData: false, platforms: ['pc'], source: 'steam',
+        hasSteam: true, hasEpic: false, hasStores: true, genres: [], released: null,
+      };
+    }).filter(Boolean);
+  } catch (e) {
+    lastError = `Steam: ${e.message?.slice(0, 80) || 'bilinmeyen'}`;
+    return [];
+  }
+}
 
 // Neredeyse her büyük oyunda bulunan etiketler. Ayırt edici değiller; eşit
 // sayılırsa Witcher 3 (singleplayer+atmospheric+story-rich+open-world = 4 puan)
@@ -322,7 +383,7 @@ export async function POST(request) {
 
   let filters;
   try {
-    filters = await extractFilters(query, lang);
+    filters = await extractFilters(query, lang === 'tr' ? 'tr' : 'en');
   } catch (err) {
     console.error('smart-search filtre çıkarımı başarısız:', err.message);
     return NextResponse.json({ error: 'analiz-basarisiz', results: [] }, { status: 502 });
@@ -330,13 +391,15 @@ export async function POST(request) {
 
   const { genres, tags, mode } = filters;
   const strong = new Set(filters.strongTags || []);
-  if (genres.length === 0 && tags.length === 0) {
-    return NextResponse.json({ filters, results: [], count: 0 });
-  }
 
   // Mod (co-op / tek oyunculu) RAWG'da bir ETİKET olduğu için tags'e katılır
   const MODE_TAG = { coop: 'co-op', singleplayer: 'singleplayer', multiplayer: 'multiplayer' };
   const allTags = [...new Set([...tags, ...(MODE_TAG[mode] ? [MODE_TAG[mode]] : [])])];
+  // Yalnız mod çıkan sorgu ("un juego para jugar con un amigo" → coop) da
+  // aranabilir: eskiden tür ve etiket boş diye burada boş dönüyordu.
+  if (genres.length === 0 && allTags.length === 0) {
+    return NextResponse.json({ filters, results: [], count: 0 });
+  }
 
   // Dar → geniş kademeler. RAWG çoklu etiketi VE olarak yorumlar; dar sorgu
   // boş dönerse alttaki geniş kademeler listeyi doldurur.
@@ -377,15 +440,39 @@ export async function POST(request) {
   }
 
   // Kaç etiketin tuttuğuna göre sırala; eşitlikte daha çok oylanan önde
-  const results = [...map.values()]
+  let results = [...map.values()]
     .sort((a, b) => (b.hits - a.hits) || ((b.game.totalReviews || 0) - (a.game.totalReviews || 0)))
     .slice(0, 60)
     .map(x => x.game);
+
+  // RAWG'dan HİÇ sonuç yoksa Steam (bkz. STEAM_TAG). Aynı dar → geniş
+  // kademeler: Steam etiketleri VE ile birleştiriyor, fazla etiket boş döner.
+  // Kullanıcının kendi kelimesinden gelen etiketler (strong) öncelikli.
+  let kaynak = 'rawg';
+  const steamTiers = [];
+  if (!results.length) {
+    kaynak = 'steam';
+    const oncelik = [...new Set([...(filters.strongTags || []), ...allTags])];
+    const kademeler = [
+      [...genres.slice(0, 1), ...oncelik.slice(0, 2)],
+      oncelik.slice(0, 2),
+      oncelik.slice(0, 1),
+      genres.slice(0, 1),
+    ].filter((k) => k.length);
+    const gorulen = new Set();
+    for (const k of kademeler) {
+      if (results.length >= MIN_RESULTS) break;
+      const liste = await steamQuery(k);
+      steamTiers.push(liste.length);
+      for (const g of liste) if (!gorulen.has(g.id)) { gorulen.add(g.id); results.push(g); }
+    }
+    results = results.slice(0, 60);
+  }
 
   return NextResponse.json({
     filters,
     results,
     count: results.length,
-    ...(debug ? { debug: { lastError, tiers: lists.map(l => l.length) } } : {}),
+    ...(debug ? { debug: { lastError, tiers: lists.map(l => l.length), kaynak, steamTiers } } : {}),
   });
 }

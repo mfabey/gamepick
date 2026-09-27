@@ -75,7 +75,10 @@ export const aiGameQuery = z.object({
 
 export const smartSearchBody = z.object({
   query: z.string().trim().min(1, 'query gerekli').max(500),
-  lang: dil,
+  // BEŞ DİL (27 Eyl): mobil arayüz tr/en/de/es/pt; de/es/pt `dil` şemasına
+  // takılıp 400 alıyordu ve Keşfet o dillerde HİÇ çalışmıyordu (mağazadaki
+  // 2.7.2 dahil). `lang` yalnız özet cümlesinin dili: tr dışı İngilizce.
+  lang: z.enum(['tr', 'en', 'de', 'es', 'pt']).default('tr'),
   // Yanıta teşhis bloğu ekliyor (route sonundaki `debug` alanı).
   debug: z.coerce.boolean().optional(),
 });
