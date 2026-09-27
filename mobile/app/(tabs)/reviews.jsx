@@ -25,7 +25,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 
-import { getReviewFeed, getEligibleGames, fetchPosts, getFriends } from '../../src/api/social';
+import { getReviewFeed, getEligibleGames, fetchPosts, getFriends, fetchMyCommunities, discoverCommunities } from '../../src/api/social';
+import { useQuery } from '../../src/hooks/useQuery';
 import { getSession, subscribeSession } from '../../src/services/session';
 import ReviewComposer from '../../src/components/ReviewComposer';
 import ReviewCard from '../../src/components/ReviewCard';
@@ -73,8 +74,20 @@ export default function ReviewsScreen() {
   const { colors } = useDesignTheme();
   // Yazma kartındaki avatar — başlık ve sekme çubuğuyla aynı kaynak.
   const { account } = useAuth();
+
+  // ── Toplulukların (G-11, 27 Eyl) ── katıldıkların önce ("n yeni"), sonra
+  // keşfet önerileri. Sunucu yanıt vermezse (eski dağıtım) ray çizilmiyor.
+  const { data: benimTop } = useQuery(account?.uid ? `communities:mine:${account.uid}` : null, fetchMyCommunities,
+    { ttl: 60 * 1000, enabled: !!account?.uid });
+  const { data: kesifTop } = useQuery('communities:discover', discoverCommunities, { ttl: 10 * 60 * 1000 });
+  const topluluklar = useMemo(() => {
+    const benim = benimTop?.communities || [];
+    const var_ = new Set(benim.map((c) => c.appid));
+    return [...benim, ...(kesifTop?.communities || []).filter((c) => !var_.has(c.appid))].slice(0, 10);
+  }, [benimTop, kesifTop]);
+  const katildigimVar = (benimTop?.communities || []).length > 0;
   const router = useRouter();
-  const { t, lang } = useLanguage();
+  const { t, lang, tSay } = useLanguage();
 
   const [session, setSession] = useState(() => getSession());
   useEffect(() => subscribeSession(() => setSession(getSession())), []);
@@ -325,7 +338,8 @@ export default function ReviewsScreen() {
     <View>
       {/* ── İki akış (G-10 Segmented) ──
           Tasarım dört bölüm çiziyor (Senin İçin · Takip · Trend · Topluluklar);
-          takip modeli, trend sıralaması ve topluluk üyeliği sunucuda yok.
+          takip modeli ve trend sıralaması sunucuda yok; topluluklar aşağıdaki
+          rayda (27 Eyl).
           Veri olan iki akış tasarımın kontrolüyle: Keşfet (herkes) ve
           Arkadaşlar. "Benimkiler" profilde (dosya başı notu). */}
       <View style={[s.pad, s.segTop]}>
@@ -357,6 +371,38 @@ export default function ReviewsScreen() {
           </View>
         </View>
       </Pressable>
+
+      {/* ── Toplulukların (kit community() s_c) ── */}
+      {topluluklar.length > 0 && (
+        <View style={s.railTop}>
+          <View style={s.pad}>
+            <SectionHeader title={t(katildigimVar ? 'comm.yours' : 'comm.communities')} action={t('home.viewAll')}
+              onAction={() => router.push('/communities')} />
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.tiles}>
+            {topluluklar.map((c) => (
+              <PressableScale key={c.appid} accessibilityRole="button" accessibilityLabel={c.name}
+                onPress={() => router.push({ pathname: '/community/[appid]', params: { appid: c.appid, name: c.name, image: c.image || '' } })}
+                style={s.tile}>
+                <View>
+                  <CoverImage source={c.image || undefined} radius={K.community.tile.radius} style={s.tileImg} />
+                  {c.newCount > 0 ? <View style={[s.tileDot, { backgroundColor: colors.brand, boxShadow: `0 0 0 2.5px ${colors.bg}` }]} /> : null}
+                </View>
+                <Txt variant="captionStrong" numberOfLines={1} style={s.tileName}>{c.name}</Txt>
+                <Txt variant="caption2Medium" numberOfLines={1} style={[s.tileSub, s.num, { color: c.newCount > 0 ? colors.brand : colors.text3 }]}>
+                  {c.newCount > 0 ? t('comm.new').replace('{n}', String(c.newCount)) : c.joined ? t('comm.upToDate') : tSay(c.memberCount, 'comm.memberOne', 'comm.members')}
+                </Txt>
+              </PressableScale>
+            ))}
+            <PressableScale accessibilityRole="button" accessibilityLabel={t('comm.discoverTitle')} onPress={() => router.push('/communities')} style={s.tile}>
+              <View style={[s.tileImg, s.tileAdd, { borderRadius: K.community.tile.radius, boxShadow: `inset 0 0 0 1.5px ${colors.lineStrong}` }]}>
+                <Icon name="plus" size={K.community.tile.addIcon} color={colors.text2} strokeWidth={2.2} />
+              </View>
+              <Txt variant="captionStrong" numberOfLines={1} style={[s.tileName, { color: colors.text2 }]}>{t('comm.discover')}</Txt>
+            </PressableScale>
+          </ScrollView>
+        </View>
+      )}
 
       {/* ── Yazabileceğin oyunlar (kit "Toplulukların" rayının kutucukları) ──
           Oyun toplulukları sunucuda yok; bu rayın gerçek karşılığı Steam'den
@@ -507,6 +553,9 @@ const s = StyleSheet.create({
   tileImg: { width: C.tile.image, height: C.tile.image },
   tileName: { width: C.tile.width, marginTop: C.tile.nameTop, textAlign: 'center' },
   tileSub: { marginTop: C.tile.subTop },
+  // Yeni gönderi noktası (kit ctile): sağ üst köşede 12 pt, zemin halkalı.
+  tileDot: { position: 'absolute', top: C.tile.dotOffset, right: C.tile.dotOffset, width: C.tile.dot, height: C.tile.dot, borderRadius: C.tile.dot / 2 },
+  tileAdd: { alignItems: 'center', justifyContent: 'center' },
   hint: { marginTop: C.railTop, textAlign: 'center' },
   bozuk: { marginHorizontal: layout.gutter, marginTop: C.railTop, padding: K.prices.alert.padding, borderRadius: C.composer.radius, gap: K.comment.textTop },
   bozukEylem: { alignSelf: 'flex-start' },

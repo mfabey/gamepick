@@ -457,11 +457,18 @@ export const component = {
   // G-10 Topluluk (kit s1.py community()).
   community: { segTop: 4, composerTop: 16, railTop: 24, feedTop: 28, feedGap: 28,
     composer: { padding: 14, radius: 18, row: 36, avatar: 36, gap: 10, chipsTop: 12, chipHeight: 32, chipPadding: 10, chipRadius: 10, chipGap: 5, chipIcon: 15 },
-    tile: { width: 72, image: 60, radius: 18, nameTop: 8, subTop: 2 } },
+    tile: { width: 72, image: 60, radius: 18, nameTop: 8, subTop: 2, dot: 12, dotOffset: -2, addIcon: 22 } },
   // G-08 Fiyat Karşılaştırma (kit s1.py prices()).
   prices: { headerTop: 16, headerHeight: 64, headerGap: 12, thumbWidth: 48, thumbHeight: 64, thumbRadius: 10, cardTop: 16, alertTop: 24,
     storesTop: 28, storesHead: 28, chipsTop: 12, listTop: 12, listRadius: 18, listPaddingV: 4, trustTop: 16, trustGap: 10, trustIcon: 18,
-    alert: { padding: 16, radius: 18, row: 44, gap: 12, icon: 40, glyph: 19 } },
+    alert: { padding: 16, radius: 18, row: 44, gap: 12, icon: 40, glyph: 19,
+      // Hedef fiyat satırı (kit prices() alert): 16 aşağıda 38 pt satır; adımlayıcı
+      // surface2 hap (iç 3, köşe 12, aralık 4), düğmeler 36×32 köşe 9, değer 72 geniş.
+      stepper: { rowTop: 16, row: 38, pad: 3, radius: 12, gap: 4, buttonW: 36, buttonH: 32, buttonRadius: 9, value: 72, minus: 14 } },
+    // "Rekor düşük" / "12 aylık ortalama" kutuları: 84 yükseklik, iç 12/14, köşe 16, aralık 10.
+    tile: { top: 12, height: 84, padV: 12, padH: 14, radius: 16, gap: 10, valueTop: 2 },
+    // Fiyat geçmişi kartı: başlıktan 12 aşağıda, iç 16, köşe 18; grafik 120, ay etiketleri 8 aşağıda 16 pt.
+    history: { top: 28, cardTop: 12, padding: 16, radius: 18, labelsTop: 8, labels: 16, segWidth: 196 } },
   // G-07 Oyun Detayı (kit s1.py game_detail()).
   detail: { heroHeight: 380, barSide: 16, barGap: 10, barIcon: 20, backIcon: 22, backStroke: 2.4,
     subTop: 4, ratingRow: 24, ratingTop: 12, ratingGap: 6, ratingStar: 16, badgeHeight: 20, badgePadding: 6, badgeRadius: 5, badgeRing: 1,
@@ -559,6 +566,15 @@ export const component = {
     header: 44, headerPadding: 12, reset: 36, close: 32, closeGlyph: 20,
     bodyTop: 10, sectionGap: 20, sectionTitle: 20, sectionTitleGap: 12, chipGap: 8,
     footerTop: 12, cta: 52 },
+  // G-05 Arama (kit s2.py search()): bölüm başlığı 28, "Temizle" 32; son arama satırı 44 (saat 18,
+  // kaldır 36 alanda 16 ikon, sağa -8); trend hapı 36 (köşe 10, ikon 14, aralık 6).
+  searchScreen: { headRow: 28, clear: 32, recentTop: 6, recentIcon: 18, remove: 36, removeIcon: 16, removeInset: -8,
+    trend: 36, trendIcon: 14, trendGap: 6, chevron: 18 },
+  // G-11 Oyun Topluluğu (kit s3.py game_community()): kapak 240; simge 80 (köşe 22, 4 pt
+  // zemin halkası) kapağın 44 pt içine biner; Katıl 40; tartışma grubu köşe 18; FAB 56 köşe 18.
+  gameCommunity: { hero: 240, icon: 80, iconRadius: 22, iconRing: 4, overlap: -44, idRow: 84, join: 40, joinPadH: 22,
+    infoTop: 12, metaTop: 4, sectionTop: 24, groupTop: 12, groupRadius: 18, groupPadV: 4, thread: 64, threadPadH: 16,
+    fab: 56, fabRadius: 18, fabIcon: 26, fabInset: 20 },
   // G-03 Giriş — kit s2.py login(): işaret 52, başlık üstü 22, alt metin 8,
   // sağlayıcılar 26 (50 pt, aralık 10), ayraç 22 (18 yükseklik, 12 boşluk),
   // alanlar 20 (aralık 14), "şifreni mi unuttun" 4 (36 pt), CTA 8 (52 pt),
@@ -575,7 +591,9 @@ export const component = {
   // anlamın çizimi olduğu için ölçüsü oradan alındı.
   messageRow: { height: 72, paddingH: 20, gap: 12, avatar: 52, lineGap: 4, lineHeight: 20, previewGap: 5, check: 15, dot: 8 },
   notification: { minHeight: 76, paddingTop: 12, paddingRight: 20, paddingBottom: 12, paddingLeft: 22, gap: 12, dot: 8, dotLeft: 8,
-    lead: 44, leadIcon: 20, leadRadius: 12, corner: 22, cornerIcon: 12, cornerRing: 2.5, cornerOffset: -4, thumb: 44, thumbRadius: 10, textGap: 2 },
+    lead: 44, leadIcon: 20, leadRadius: 12, corner: 22, cornerIcon: 12, cornerRing: 2.5, cornerOffset: -4, thumb: 44, thumbRadius: 10, textGap: 2,
+    // Kit stackav: 44 kutuda iki 30'luk avatar (sol üst / sağ alt), sağ üstte 20'lik kalp rozeti.
+    stack: { avatar: 30, badge: 20, badgeIcon: 11, badgeRight: -4, badgeTop: -2 } },
   countBadge: { size: 20, paddingH: 6 },
   liveTime: { dot: 7, gap: 6, pulse: 6 },
 

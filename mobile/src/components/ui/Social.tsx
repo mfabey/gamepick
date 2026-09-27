@@ -394,6 +394,29 @@ export function NotificationLead({ kind, image, avatar, name }: { kind: LeadKind
   );
 }
 
+/**
+ * İki kişilik öncü (kit stackav): beğeni / yanıt toplanmış bildirimde en son
+ * iki aktör üst üste, sağ üstte tür rozeti. Tek aktörde düz 44'lük avatar.
+ */
+export function NotificationAvatars({ actors, kind }: { actors: { avatar?: string | null; name?: string }[]; kind: 'like' | 'comm' }) {
+  const { colors } = useDesignTheme();
+  const N = K.notification;
+  const St = N.stack;
+  if (actors.length < 2) return <UserAvatar avatar={actors[0]?.avatar ?? null} name={actors[0]?.name} size={N.lead} />;
+  return (
+    <View style={{ width: N.lead, height: N.lead }}>
+      <View style={styles.stackTop}><UserAvatar avatar={actors[1].avatar ?? null} name={actors[1].name} size={St.avatar} /></View>
+      <View style={[styles.stackBottom, { borderRadius: St.avatar, boxShadow: shadow.ring(N.cornerRing, colors.bg) }]}>
+        <UserAvatar avatar={actors[0].avatar ?? null} name={actors[0].name} size={St.avatar} />
+      </View>
+      <View style={[styles.stackBadge, { backgroundColor: kind === 'like' ? colors.red : colors.surface2, boxShadow: shadow.ring(N.cornerRing, colors.bg) }]}>
+        <Icon name={kind === 'like' ? 'heart' : 'comment'} size={St.badgeIcon} color={kind === 'like' ? colors.white : colors.text}
+          fill={kind === 'like' ? colors.white : undefined} strokeWidth={2} />
+      </View>
+    </View>
+  );
+}
+
 /** Bildirim satırı: en az 76; okunmamışta hafif zemin + 8 pt kırmızı nokta; metin 14/20 iki satır, zaman 12/16; sağda 44 küçük resim. */
 export function NotificationRow({ lead, text, time, unread, action, thumb, onPress }: {
   lead: ReactNode; text: ReactNode; time: string; unread?: boolean; action?: ReactNode; thumb?: string | null; onPress?: () => void;
@@ -508,4 +531,9 @@ const styles = StyleSheet.create({
   live: { flexDirection: 'row', alignItems: 'center', gap: K.liveTime.gap },
   liveDotBox: { width: K.liveTime.dot, height: K.liveTime.dot },
   liveDot: { position: 'absolute', width: K.liveTime.dot, height: K.liveTime.dot, borderRadius: K.liveTime.dot / 2 },
+  stackTop: { position: 'absolute', left: 0, top: 0 },
+  stackBottom: { position: 'absolute', right: 0, bottom: 0 },
+  stackBadge: { position: 'absolute', right: K.notification.stack.badgeRight, top: K.notification.stack.badgeTop,
+    width: K.notification.stack.badge, height: K.notification.stack.badge, borderRadius: K.notification.stack.badge / 2,
+    alignItems: 'center', justifyContent: 'center' },
 });

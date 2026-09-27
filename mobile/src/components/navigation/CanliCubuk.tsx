@@ -297,8 +297,9 @@ function BildirimIcerik({ olay, alt }: { olay: NonNullable<ReturnType<typeof use
 
   const gor = () => {
     canliOlayKapat();
-    if (fiyatTuru && veri.slug) {
-      router.push({ pathname: '/game/[id]', params: { id: String(veri.slug), name: veri.name || '', slug: String(veri.slug) } });
+    if (fiyatTuru && (veri.slug || veri.appid)) {
+      const id = veri.appid ? `rawg_${veri.appid}` : String(veri.slug);
+      router.push({ pathname: '/game/[id]', params: { id, name: veri.name || '', slug: String(veri.slug || ''), appid: String(veri.appid || '') } });
     } else if (!fiyatTuru && veri.from) {
       router.push('/chat/' + String(veri.from));
     }

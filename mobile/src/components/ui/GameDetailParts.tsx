@@ -133,19 +133,45 @@ export function GamePriceCard({ stores, updated, onOpen, onCompareAll }: {
  * Anahtar İSTEK LİSTESİ bildirimi (cron/price-alerts: listedeki oyun ucuzlayınca push). Tasarımın
  * "hedef fiyat" adımlayıcısı YOK: sunucuda hedef fiyat sözleşmesi yok (plan §6, soru 17).
  */
-export function PriceAlertCard({ on, onChange, title, description }: {
+/**
+ * Fiyat alarmı kartı (kit prices() alert). `target` verilirse (alarm açıkken)
+ * altta "Hedef fiyat [− ₺500 +]" satırı: kit'in 130 pt'lik hâli.
+ */
+export function PriceAlertCard({ on, onChange, title, description, target, targetLabel, onDecrease, onIncrease, decreaseLabel, increaseLabel }: {
   on: boolean; onChange: (value: boolean) => void; title: string; description: string;
+  target?: string | null; targetLabel?: string; onDecrease?: () => void; onIncrease?: () => void;
+  decreaseLabel?: string; increaseLabel?: string;
 }) {
   const { colors } = useDesignTheme();
   const A = K.prices.alert;
+  const St = A.stepper;
   return (
-    <View style={[styles.alert, { backgroundColor: colors.surface1 }]}>
-      <View style={[styles.alertIcon, { backgroundColor: colors.surface2 }]}><Icon name="bell" size={A.glyph} color={colors.text} /></View>
-      <View style={styles.flex}>
-        <Txt variant="cardTitleLarge" numberOfLines={1}>{title}</Txt>
-        <Txt variant="footnote" numberOfLines={2} style={{ color: colors.text2 }}>{description}</Txt>
+    <View style={[styles.alertCard, { backgroundColor: colors.surface1 }]}>
+      <View style={styles.alertRow}>
+        <View style={[styles.alertIcon, { backgroundColor: colors.surface2 }]}><Icon name="bell" size={A.glyph} color={colors.text} /></View>
+        <View style={styles.flex}>
+          <Txt variant="cardTitleLarge" numberOfLines={1}>{title}</Txt>
+          <Txt variant="footnote" numberOfLines={2} style={{ color: colors.text2 }}>{description}</Txt>
+        </View>
+        <Switch accessibilityLabel={title} value={on} onValueChange={onChange} />
       </View>
-      <Switch accessibilityLabel={title} value={on} onValueChange={onChange} />
+      {on && target ? (
+        <View style={styles.stepRow}>
+          <Txt variant="subheadRegular" style={{ color: colors.text2 }}>{targetLabel}</Txt>
+          <View style={[styles.stepper, { backgroundColor: colors.surface2 }]}>
+            <Pressable accessibilityRole="button" accessibilityLabel={decreaseLabel} onPress={onDecrease} hitSlop={4}
+              style={({ pressed }) => [styles.stepButton, pressed && { backgroundColor: colors.surface3 }]}>
+              <View style={[styles.minus, { backgroundColor: colors.text }]} />
+            </Pressable>
+            <Txt variant="headline" numberOfLines={1} adjustsFontSizeToFit accessibilityLiveRegion="polite"
+              style={[styles.stepValue, { color: colors.text }]}>{target}</Txt>
+            <Pressable accessibilityRole="button" accessibilityLabel={increaseLabel} onPress={onIncrease} hitSlop={4}
+              style={({ pressed }) => [styles.stepButton, pressed && { backgroundColor: colors.surface3 }]}>
+              <Icon name="plus" size={16} color={colors.text} strokeWidth={2.4} />
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -259,8 +285,15 @@ const styles = StyleSheet.create({
   otherRight: { alignItems: 'flex-end' },
   link: { height: D.card.linkHeight, marginTop: D.card.linkTop, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   flip: { transform: [{ rotate: '180deg' }] },
-  alert: { minHeight: K.prices.alert.row + K.prices.alert.padding * 2, padding: K.prices.alert.padding, borderRadius: K.prices.alert.radius,
-    flexDirection: 'row', alignItems: 'center', gap: K.prices.alert.gap },
+  alertCard: { minHeight: K.prices.alert.row + K.prices.alert.padding * 2, padding: K.prices.alert.padding, borderRadius: K.prices.alert.radius },
+  alertRow: { minHeight: K.prices.alert.row, flexDirection: 'row', alignItems: 'center', gap: K.prices.alert.gap },
+  stepRow: { height: K.prices.alert.stepper.row, marginTop: K.prices.alert.stepper.rowTop, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  stepper: { flexDirection: 'row', alignItems: 'center', gap: K.prices.alert.stepper.gap, padding: K.prices.alert.stepper.pad, borderRadius: K.prices.alert.stepper.radius },
+  stepButton: { width: K.prices.alert.stepper.buttonW, height: K.prices.alert.stepper.buttonH, borderRadius: K.prices.alert.stepper.buttonRadius,
+    alignItems: 'center', justifyContent: 'center' },
+  // Kit eksi işaretini ikon değil 14×2 çubuk olarak çiziyor.
+  minus: { width: K.prices.alert.stepper.minus, height: 2, borderRadius: 1 },
+  stepValue: { width: K.prices.alert.stepper.value, textAlign: 'center', fontVariant: ['tabular-nums'] },
   alertIcon: { width: K.prices.alert.icon, height: K.prices.alert.icon, borderRadius: K.prices.alert.icon / 2, alignItems: 'center', justifyContent: 'center' },
   trailer: { overflow: 'hidden' },
   trailerTag: { position: 'absolute', left: D.trailerTag.inset, bottom: D.trailerTag.inset, height: D.trailerTag.height, paddingHorizontal: D.trailerTag.paddingH,

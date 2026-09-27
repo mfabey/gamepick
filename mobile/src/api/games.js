@@ -62,3 +62,21 @@ export function fetchSteamReviews(appid) {
   if (!appid) return Promise.resolve(null);
   return apiGet('/api/steam-reviews', { appid });
 }
+
+// ── Fiyat geçmişi (G-08, 27 Eyl) ────────────────────────────────────────────
+// { available, shop: {id,name}, events: [{t, price, regular, cut}], low }.
+// Sunucu yayında değilse ya da ITAD oyunu bulamazsa available:false — ekran
+// ilgili bölümleri çizmiyor.
+export function fetchPriceHistory({ appid, title }) {
+  return apiGet('/api/price-history', { appid, title });
+}
+
+// ── Trend aramalar (G-05, 27 Eyl) ───────────────────────────────────────────
+// Yalnız aramadan açılan oyunun Steam appid'i gidiyor; sorgu metni gitmiyor.
+export function fetchSearchTrends() {
+  return apiGet('/api/search-trends');
+}
+export function recordSearchPick(appid) {
+  if (!appid) return Promise.resolve(null);
+  return apiPost('/api/search-trends', { appid: String(appid) }, { timeout: 6000 }).catch(() => null);
+}

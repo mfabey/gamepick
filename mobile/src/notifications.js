@@ -32,8 +32,10 @@ Notifications.setNotificationHandler({
     // üstündeki kapsülde gösteriliyor (26 Eyl tasarımı). Çubuk yoksa (ör.
     // Ayarlar) afiş eskisi gibi — yoksa olay görünmeden kaybolurdu.
     // Bildirim merkezine yine düşüyor (shouldShowList).
-    if (!sessiz && (data.type === 'price-alert' || data.type === 'dm') && cubukGorunur()) {
-      const fiyat = data.type === 'price-alert';
+    // price-target: hedef fiyat alarmı (27 Eyl) — fiyat olayıyla aynı kapsül.
+    const fiyatTuru = data.type === 'price-alert' || data.type === 'price-target';
+    if (!sessiz && (fiyatTuru || data.type === 'dm') && cubukGorunur()) {
+      const fiyat = fiyatTuru;
       canliOlayGoster({
         anahtar: fiyat ? `fiyat:${data.slug || data.name}:${content.body || ''}` : notification?.request?.identifier,
         tur: fiyat ? 'fiyat' : 'mesaj',

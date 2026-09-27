@@ -28,7 +28,8 @@ import CevrimdisiBant from '../../src/components/CevrimdisiBant';
 import { oyunuOnbellektenBul } from '../../src/services/queryCache';
 import CollectionPicker from '../../src/components/CollectionPicker';
 import ShareToFriendSheet from '../../src/components/ShareToFriendSheet';
-import { reportActivity } from '../../src/api/social';
+import { fetchCommunity, reportActivity } from '../../src/api/social';
+import { CommunityRow } from '../../src/components/ui/Social';
 import { useQuery } from '../../src/hooks/useQuery';
 import { useGamePrices } from '../../src/hooks/useGamePrices';
 import { useReducedMotion } from '../../src/hooks/useReducedMotion';
@@ -87,7 +88,7 @@ export default function GameDetail() {
   const cubukG = useCubukGeometri();
   const { id, name, image, slug, hasSteam, appid, buyume } = useLocalSearchParams();
   const router = useRouter();
-  const { t, lang, formatPrice, formatDiscount, formatStoreAt, formatCompact } = useLanguage();
+  const { t, tSay, lang, formatPrice, formatDiscount, formatStoreAt, formatCompact } = useLanguage();
   const { isWatched, toggle } = useWishlist();
 
   // Koleksiyonlar — bu oyunun hangi listelerde olduğunu göster
@@ -150,6 +151,16 @@ export default function GameDetail() {
     { ttl: 60 * 60 * 1000, enabled: !!detail?.steamAppId }
   );
   const reviewTier = reviews?.total ? tierFor(reviews.positivePct, colors) : null;
+
+  // Oyun topluluğu (G-11, 27 Eyl): topluluk ekranıyla AYNI sorgu anahtarı —
+  // detaydan girilince ekran önbellekten açılıyor. Sunucu yanıt vermezse
+  // (eski dağıtım) bölüm çizilmiyor.
+  const toplulukAppid = detail?.steamAppId || appid || null;
+  const { data: topluluk } = useQuery(
+    `community:${toplulukAppid || ''}`,
+    () => fetchCommunity(toplulukAppid),
+    { ttl: 30 * 1000, enabled: !!toplulukAppid }
+  );
 
   // ── FRAGMAN (Faz 3, KIRILMA #2) ──
   // Otomatik oynatma KALKTI. `p.play()` mount'ta çağrılıyordu: sessiz,
@@ -593,6 +604,18 @@ export default function GameDetail() {
                   <Icon name="ext" size={K.chip.chevron} color={colors.red} strokeWidth={K.chip.chevronStroke} />
                 </Pressable>
               ) : null}
+            </View>
+          </FadeIn>
+        ) : null}
+
+        {topluluk?.community ? (
+          <FadeIn delay={240} style={s.section}>
+            <View style={s.pad}><SectionHeader title={t('comm.section')} /></View>
+            <View style={[s.pad, s.headGap]}>
+              <CommunityRow image={detail?.image || image || null} name={t('comm.title').replace('{name}', detail?.name || name || '')}
+                meta={`${tSay(topluluk.community.memberCount, 'comm.memberOne', 'comm.members')} · ${tSay(topluluk.community.postCount, 'comm.postOne', 'comm.posts')}`}
+                onPress={() => router.push({ pathname: '/community/[appid]', params: { appid: String(toplulukAppid), name: detail?.name || name || '', image: detail?.image || image || '' } })}
+                right={<Icon name="chev" size={18} color={colors.text3} strokeWidth={2.4} />} />
             </View>
           </FadeIn>
         ) : null}

@@ -228,8 +228,11 @@ export default function RootLayout() {
       router.push('/chat/' + String(data.from));
       return;
     }
-    if (data.slug) {
-      router.push({ pathname: '/game/[id]', params: { id: String(data.slug), name: data.name || '', slug: String(data.slug) } });
+    // Fiyat bildirimi: sunucu artık appid de gönderiyor (27 Eyl); slug'ı
+    // olmayan (Steam kaynaklı) oyun da açılabilsin.
+    if (data.slug || data.appid) {
+      const id = data.appid ? `rawg_${data.appid}` : String(data.slug);
+      router.push({ pathname: '/game/[id]', params: { id, name: data.name || '', slug: String(data.slug || ''), appid: String(data.appid || '') } });
     }
   }, [router]);
 

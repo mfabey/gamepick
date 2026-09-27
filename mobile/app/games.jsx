@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
-  View, Text, Pressable, ActivityIndicator,
+  View, ActivityIndicator,
   StyleSheet, ScrollView,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
@@ -16,7 +16,7 @@ import { GamesGridSkeleton, Reveal } from '../src/components/Skeleton';
 import { TopFade, BottomFade } from '../src/components/EdgeFade';
 import { prefetchImages } from '../src/utils/prefetch';
 import { useTimeToData } from '../src/dev/perf';
-import { radius, spacing, type, PRESSED, TOUCH_MIN } from '../src/theme';
+import { spacing } from '../src/theme';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useScrollCollapse } from '../src/context/TabBarContext';
 import { useLanguage } from '../src/context/LanguageContext';
@@ -24,7 +24,12 @@ import FilterSheet, { FilterButton, countFilters, EtkinFiltreler } from '../src/
 import LimitedMode from '../src/components/LimitedMode';
 import EmptyState from '../src/components/EmptyState';
 import { SearchField } from '../src/components/ui/SearchField';
-import { Chip as UIChip, IconButton, Txt } from '../src/components/ui/Primitives';
+import { Button, Chip as UIChip, IconButton, Segmented, Txt } from '../src/components/ui/Primitives';
+import { AramaOnerileri, AramaSonuclari } from '../src/components/BirlesikArama';
+import { Icon } from '../src/components/Icon';
+import { aramaEkle } from '../src/services/sonAramalar';
+import { recordSearchPick } from '../src/api/games';
+import { useDesignTheme } from '../src/theme/useDesignTheme';
 import { component as K } from '../src/theme/tokens';
 
 // Maketin sütun sayısı ve o sayının 390 pt'de verdiği hücre genişliği:
@@ -69,6 +74,11 @@ export default function GamesScreen() {
   ], [t]);
 
   const [query, setQuery]       = useState('');   // arama kutusundaki canlı değer
+  // G-05/06 birleşik arama: kutu odakta ve boşken öneriler; sorgu varken
+  // kapsam (Tümü · Oyunlar · Kişiler · Topluluklar · Haberler). Oyunlar
+  // kapsamı bu ekranın kendi ızgarası.
+  const [odak, setOdak]         = useState(false);
+  const [kapsam, setKapsam]     = useState('all');
   const [searchTerm, setSearchTerm] = useState(''); // isteğe giden değer (yalnızca bu debounce'lu)
   // Bölüm rota parametresinden TOHUMLANABİLİYOR. Öncesinde bu ekran hiç
   // parametre okumuyordu (useLocalSearchParams yoktu), yani "indirimdekilere
@@ -259,9 +269,24 @@ export default function GamesScreen() {
 
   // FlashList için stabil referanslar (her render'da yeniden oluşmasın)
   const keyExtractor = useCallback((item) => String(item.id), []);
+  // Aramadan açılan oyun: sorgu son aramalara, Steam appid'i trend
+  // aramalara (yalnız appid gidiyor, sorgu metni değil). Gezinme GameCard'ın
+  // varsayılanıyla aynı parametreler.
+  const oyunAc = useCallback((g) => {
+    if (searchTerm) {
+      aramaEkle(searchTerm);
+      const appid = g.appid || (g.source === 'steam' ? g.rawgId : null);
+      if (appid) recordSearchPick(appid);
+    }
+    router.push({ pathname: '/game/[id]', params: { id: String(g.id), name: g.name, image: g.image || '',
+      slug: g.rawgSlug || '', appid: g.appid ? String(g.appid) : '', hasSteam: g.hasSteam ? '1' : '' } });
+  }, [searchTerm, router]);
   const renderGame = useCallback(({ item }) => (
-    <View style={styles.cell}><GameCard game={item} /></View>
-  ), [styles]);
+    <View style={styles.cell}><GameCard game={item} onPress={searchTerm ? () => oyunAc(item) : undefined} /></View>
+  ), [styles, searchTerm, oyunAc]);
+  // Sorgu silinince kapsam başa döner: sonraki arama yine "Tümü"yle açılır.
+  useEffect(() => { if (!searchTerm) setKapsam('all'); }, [searchTerm]);
+  const { colors: dc } = useDesignTheme();
 
   return (
     <View style={styles.safe}>
@@ -339,15 +364,29 @@ export default function GamesScreen() {
               onChangeText={setQuery}
               placeholder={t('games.searchPlaceholder')}
               returnKeyType="search"
+              onFocus={() => setOdak(true)}
+              onBlur={() => setOdak(false)}
+              onSubmitEditing={() => aramaEkle(query)}
             />
           </View>
         </View>
       </View>
 
+      {/* Kapsam (G-06): yalnız sorgu varken. */}
+      {searchTerm ? (
+        <View style={styles.kapsam}>
+          <Segmented value={kapsam} onChange={setKapsam} accessibilityLabel={t('srch.scope')}
+            items={[{ value: 'all', label: t('srch.all') }, { value: 'games', label: t('srch.games') },
+              { value: 'people', label: t('srch.people') }, { value: 'communities', label: t('comm.communities') },
+              { value: 'news', label: t('srch.news') }]} />
+        </View>
+      ) : null}
+
       {/* Bölüm chip'leri.
           MOD SATIRI BURADAN KALKTI — filtre sayfasına taşındı. Bölüm burada
           kaldı çünkü o bir filtre değil, listenin ne olduğunu söyleyen ana
           kip (indirimdekiler ayrı bir Steam yolundan geliyor). */}
+      {!searchTerm || kapsam === 'games' ? (
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll} contentContainerStyle={[styles.chipsRow, { paddingBottom: 6 }]}>
         {/* Filtre hapı satırın İLK öğesi (kit results() "Filtrele ②"; kullanıcı
             kararı, 25 Eylül). Arama kutusu böylece kitteki gibi tam genişlik. */}
@@ -356,6 +395,7 @@ export default function GamesScreen() {
           <Chip key={s.v} active={section === s.v} label={s.label} onPress={() => setSection(s.v)} />
         ))}
       </ScrollView>
+      ) : null}
 
       {/* FAZ 4 — ETKİN FİLTRE ÇİPLERİ. Rozetteki sayı artık ne olduğunu
           söylüyor ve tek dokunuşla kalkıyor. Başlık yüksekliği ÖLÇÜLDÜĞÜ
@@ -393,14 +433,19 @@ export default function GamesScreen() {
           // dokunulabilir kalmalı. Bayatlığı listenin tepesindeki bant
           // söylüyor. Bu dala yalnızca elde HİÇBİR ŞEY yokken düşülüyor.
           <View style={{ flex: 1, paddingTop: headerH }}>
-            <View style={styles.bozukBant}>
-              {/* Uçak modunda "oyun servisi yanıt vermiyor" demek yanlış:
-                  servis ayakta olabilir, telefon bağlı değil. */}
-              <Text style={styles.bozukBaslik}>{t(cevrimdisi ? 'offline.title' : 'games.degraded')}</Text>
-              <Text style={styles.bozukMetin}>{t(cevrimdisi ? 'offline.noCache' : 'games.degradedDesc')}</Text>
-              <Pressable onPress={() => load(true)} hitSlop={8} style={({ pressed }) => [styles.bozukEylem, pressed && PRESSED]}>
-                <Text style={styles.bozukEylemText}>{t('common.retry')}</Text>
-              </Pressable>
+            {/* 2.0 / DS 4 "Hata · Satır içi" (LimitedMode ile aynı dil):
+                surface1 kart, turuncu ikon, ikincil "Tekrar dene". Uçak
+                modunda "oyun servisi yanıt vermiyor" demek yanlış: servis
+                ayakta olabilir, telefon bağlı değil. */}
+            <View style={[styles.bozukBant, { backgroundColor: dc.surface1 }]}>
+              <View style={styles.bozukSatir}>
+                <Icon name={cevrimdisi ? 'wifioff' : 'alert'} size={18} color={dc.orange} strokeWidth={2.2} />
+                <Txt variant="subhead" style={styles.flex}>{t(cevrimdisi ? 'offline.title' : 'games.degraded')}</Txt>
+              </View>
+              <Txt variant="footnote" style={{ color: dc.text2 }}>{t(cevrimdisi ? 'offline.noCache' : 'games.degradedDesc')}</Txt>
+              <View style={styles.bozukEylem}>
+                <Button title={t('common.retry')} variant="secondary" height={36} icon="refresh" onPress={() => load(true)} />
+              </View>
             </View>
 
             {/* Önbellekteki liste SİLİNMİYOR — %55 opaklıkta duruyor.
@@ -497,6 +542,20 @@ export default function GamesScreen() {
         )}
       </View>
 
+      {/* ── Birleşik arama katmanları (G-05/06) ── başlığın altından başlıyor,
+          ızgaranın ÜSTÜNE zeminle çiziliyor: ızgara ve sayfalama durumu
+          korunuyor, katman kalkınca kullanıcı kaldığı yerde. */}
+      {!query.trim() && odak && headerH > 0 ? (
+        <AramaOnerileri onSec={(q) => setQuery(q)}
+          style={[StyleSheet.absoluteFill, { top: headerH, backgroundColor: dc.bg }]} />
+      ) : null}
+      {searchTerm && kapsam !== 'games' && headerH > 0 ? (
+        <View style={[StyleSheet.absoluteFill, { top: headerH, backgroundColor: dc.bg }]}>
+          <AramaSonuclari q={searchTerm} kapsam={kapsam} onKapsam={setKapsam} oyunlar={games}
+            oyunlarYukleniyor={loading} oyunAc={oyunAc} altBosluk={insets.bottom + 48} />
+        </View>
+      ) : null}
+
       <FilterSheet
         unavailable={limited?.unavailable || []}
         visible={sheetOpen}
@@ -531,13 +590,11 @@ const makeStyles = (colors) => StyleSheet.create({
   // istemiyor. Tek eylem "Yeniden dene" ve o da metin (44pt hedef).
   bozukBant: {
     marginHorizontal: spacing.s20, marginBottom: spacing.s16,
-    padding: spacing.s16, borderRadius: radius.md,
-    backgroundColor: colors.bgInput, gap: spacing.s4,
+    padding: spacing.s16, borderRadius: 18, gap: spacing.s8,
   },
-  bozukBaslik: { color: colors.text, fontSize: type.subhead, fontWeight: '700' },
-  bozukMetin: { color: colors.text2, fontSize: type.footnote, lineHeight: 19 },
-  bozukEylem: { minHeight: TOUCH_MIN, justifyContent: 'center', alignSelf: 'flex-start' },
-  bozukEylemText: { color: colors.accentText, fontSize: type.subhead, fontWeight: '700' },
+  bozukSatir: { flexDirection: 'row', alignItems: 'center', gap: spacing.s8 },
+  bozukEylem: { flexDirection: 'row', marginTop: spacing.s4 },
+  kapsam: { paddingHorizontal: spacing.s20, paddingBottom: spacing.s8 },
 
   safe: { flex: 1, backgroundColor: colors.bg },
   // Mutlak konum: gizlenirken listenin yüksekliğini değiştirmesin.

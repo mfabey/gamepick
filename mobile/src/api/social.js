@@ -220,6 +220,25 @@ export const deletePost   = (id) =>
 export const togglePostLike = (id) =>
   authed('/api/social/posts', { method: 'POST', body: { action: 'like', id } });
 
+// ── Oyun toplulukları (G-11, 27 Eyl) ────────────────────────────────────────
+// Topluluk = oyun etiketli kök gönderiler + üyelik. Okuma hesapsız, katılma
+// jetonlu. Gönderi yazmak createPost'tan: `game` ekli kök gönderi o oyunun
+// topluluğuna düşüyor.
+export const fetchCommunity = (appid, offset = 0) =>
+  openRead(`/api/social/community?appid=${encodeURIComponent(appid)}${offset ? `&offset=${offset}` : ''}`);
+export const fetchMyCommunities = () => openRead('/api/social/community?mine=1');
+export const discoverCommunities = () => openRead('/api/social/community?discover=1');
+export const searchCommunities = (q) => openRead(`/api/social/community?q=${encodeURIComponent(q)}`);
+export const communityAction = (action, { appid, name, image }) =>
+  authed('/api/social/community', { method: 'POST', body: { action, appid: String(appid), name, image } });
+
+// ── Bildirim merkezi (G-20, 27 Eyl) ─────────────────────────────────────────
+export const fetchNotifications = () => authed('/api/social/notifications');
+export const fetchNotifCount = () => authed('/api/social/notifications?count=1');
+/** `ids` yoksa tümü okundu. */
+export const markNotificationsRead = (ids) =>
+  authed('/api/social/notifications', { method: 'POST', body: { action: 'read', ...(ids ? { ids } : null) } });
+
 // ── Sohbet ──────────────────────────────────────────────────────────────────
 // Mesajlaşma YALNIZCA arkadaşlar arasında; sunucu NOT_FRIENDS ile reddediyor.
 export const getChatList   = ()  => authed('/api/social/chat/list');

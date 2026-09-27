@@ -18,7 +18,8 @@ import HeroRail from '../../src/components/ui/HeroRail';
 import HomeMedia from '../../src/components/ui/HomeMedia';
 import GameCard from '../../src/components/ui/GameCard';
 import { HomeHeader } from '../../src/components/ui/Navigation';
-import { IconButton, SectionHeader } from '../../src/components/ui/Primitives';
+import { SectionHeader } from '../../src/components/ui/Primitives';
+import { bildirimSayisiTazele, useBildirimSayisi } from '../../src/services/bildirimSayaci';
 import { DealCard, PriceDropCard, Rail } from '../../src/components/ui/GameCards';
 import { FriendTile } from '../../src/components/ui/Social';
 import { usePrice } from '../../src/hooks/usePrice';
@@ -88,6 +89,9 @@ export default function HomeScreen() {
   const router = useRouter();
   // Başlıktaki avatar (G-04) — sekme çubuğundaki profil avatarıyla aynı kaynak.
   const { account } = useAuth();
+  // Zilin noktası (G-20): ekran odaklanınca tazeleniyor, aralıklı yoklama yok.
+  const bildirimSayisi = useBildirimSayisi();
+  useFocusEffect(useCallback(() => { bildirimSayisiTazele(); }, []));
 
   const { data: trendData, ts: trendTs, refetch: trendTazele } = useQuery('home:trending', fetchTrending, { ttl: 3 * 60 * 1000 });
   const { data: newData, ts: newTs, refetch: newTazele }       = useQuery('home:new', fetchNewGames, { ttl: 5 * 60 * 1000 });
@@ -574,16 +578,17 @@ export default function HomeScreen() {
   const header = (
     <View style={styles.headerWrap}>
 
-        {/* G-04 başlığı: arama · bildirim · avatar. Bildirim merkezi (G-20)
-            henüz yok; sahte bir zil yerine çalışan haber girişi duruyor. */}
+        {/* G-04 başlığı: arama · bildirim · avatar (kit). Bildirim merkezi
+            (G-20) geldi; haber girişi başlıktan kalktı — "Oyun Dünyası"
+            rayının "Tümü" bağlantısı /news'e gidiyor. */}
         <HomeHeader
           onSearch={() => router.push('/games')}
+          onNotifications={() => router.push('/notifications')}
+          hasUnread={bildirimSayisi > 0}
           avatar={account?.avatar}
           name={account?.displayName || account?.username}
           onProfile={() => router.push('/profile')}
-        >
-          <IconButton icon="news" label={t('news.title')} onPress={() => router.push('/news')} />
-        </HomeHeader>
+        />
 
         {/* Bant marka satırının ALTINDA: bu ekranda listenin tepesinde
             sabit bant için yer yok (yukarıdaki nota bkz.), ama başlıkla
