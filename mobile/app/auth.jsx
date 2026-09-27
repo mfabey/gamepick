@@ -52,7 +52,7 @@ export default function AuthCallbackScreen() {
       const dataParam = params.data;
       if (!dataParam) {
         setStatus('error');
-        setErrorMsg('Kimlik doğrulama verisi alınamadı.');
+        setErrorMsg(t('auth.err.NO_DATA'));
         setTimeout(() => {
           if (!cancelled) router.replace('/(tabs)/profile');
         }, 1500);
@@ -62,7 +62,7 @@ export default function AuthCallbackScreen() {
       const payload = decodePayload(dataParam);
       if (!payload) {
         setStatus('error');
-        setErrorMsg('Geçersiz kimlik doğrulama verisi.');
+        setErrorMsg(t('auth.err.INVALID_PAYLOAD'));
         setTimeout(() => {
           if (!cancelled) router.replace('/(tabs)/profile');
         }, 1500);
@@ -82,7 +82,12 @@ export default function AuthCallbackScreen() {
         } else {
           if (!cancelled) {
             setStatus('error');
-            setErrorMsg(res.error || 'Bağlantı kaydedilemedi.');
+            // handleAuthPayload KOD döndürüyor (SYNC_FAILED, STEAM_LIMIT…);
+            // eskiden kodun kendisi ekrana basılıyordu. Bilinmeyen kodda
+            // başlık ("Bağlantı kurulamadı") yeterli, ikinci satır yok.
+            const anahtar = `auth.err.${res.error}`;
+            const metin = res.error ? t(anahtar) : '';
+            setErrorMsg(metin && metin !== anahtar ? metin : null);
             setTimeout(() => {
               if (!cancelled) router.replace('/(tabs)/profile');
             }, 1800);

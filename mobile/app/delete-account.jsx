@@ -18,6 +18,13 @@ import { Icon } from '../src/components/Icon';
 import { NavBar } from '../src/components/ui/Navigation';
 import { Button, TextField, Txt } from '../src/components/ui/Primitives';
 
+const SILME_HATASI = {
+  SESSION: 'acc.err.session',
+  UNAUTHORIZED: 'acc.err.session',
+  'Şifre hatalı.': 'acc.err.wrongPassword',
+  'Apple doğrulaması başarısız.': 'acc.err.appleFailed',
+};
+
 export default function DeleteAccountScreen() {
   const yan = useYanBosluk();
   const { colors, isDark } = useDesignTheme();
@@ -39,18 +46,20 @@ export default function DeleteAccountScreen() {
     setBusy(true); setError('');
     try {
       const token = await getValidToken();
-      if (!token) throw new Error('Oturum bulunamadı.');
+      if (!token) throw new Error('SESSION');
       await deleteAccount(token, reauth);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       await signOut();
       router.replace('/(tabs)/profile');
     } catch (e) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setError(e?.message || 'Hesap silinemedi.');
+      // Sunucu (main, mobile-delete) hata METNİNİ Türkçe döndürüyor: bilinen
+      // ikisi arayüz diline çevriliyor, gerisi genel mesaj.
+      setError(t(SILME_HATASI[e?.message] || 'acc.err.deleteFailed'));
     } finally {
       setBusy(false);
     }
-  }, [router]);
+  }, [router, t]);
 
   // E-posta/şifre hesapları: şifre tekrar girilir
   const confirmPassword = useCallback(() => {
