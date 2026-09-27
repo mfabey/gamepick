@@ -582,22 +582,22 @@ Soru numaraları ilk sürümdekilerle aynı; yeni sorular 10'dan başlıyor.
 1. **Tema:** Açık/koyu/sistem korunur. Açık palet türetilmiş bir uyarlamadır; "birebir" iddiası yalnız koyu tema için geçerli (§3.1).
 2. **Eksik ürün bölümleri** uygulama kapsamına alındı. Bunların çoğu sunucu işi: yeni uçlar, erişim manifesti kaydı, Redis şeması. Bu yüzden ekran işinden ayrı planlanmalı (soru 17).
 5. **Videolar:** Katalog + ayrı oynatıcı. Reels, "Kısa Klipler" rayından açılan tam ekran akış olarak korunur (ekran 14).
+3. **G-02b ilgi seçimi** (27 Eylül): isteğe bağlı adım olarak geri geldi — tanıtımın 2. adımı ve Ayarlar → İlgi alanları. Seçilen türler zevk profiline `pick` sinyali olarak yazılıyor (yalnız yeni seçilenler).
+4. **Google girişi** (27 Eylül): kapalı kalıyor. Apple/e-posta girişi ile Steam/Xbox bağlama ayrımı sürüyor.
+12. **Profil segmentleri** (27 Eylül): ikon-only kalıyor, 2.0 ikonlarıyla (grid · heart · shield · comment).
+16. **Sürüm** (27 Eylül): 2.8.0, ayrı runtime; 2.7.2'ye OTA yok.
+17. **Sunucu işleri** (27 Eylül, "hepsini yap"): fiyat geçmişi + hedef alarm, bildirim merkezi, oyun toplulukları (takip = topluluğa katılma; kullanıcı takibi kapsam dışı), birleşik arama (trend aramalar + topluluk araması). Sunucu `main` için `sunucu-2.0` dalında, yayını kullanıcı onayına bağlı.
 
 ### Açık
 
-3. G-02b ilgi seçimi, kaldırılmış onboarding'in yerine isteğe bağlı yeni bir adım olarak geri gelecek mi? Seçimler öneri algoritmasını nasıl etkileyecek?
-4. Girişteki Google ve Steam düğmeleri korunacaksa bunlar yeni giriş yöntemleri mi olacak? Mevcut Apple/e-posta girişi ile Steam/Xbox bağlama ayrımı sürecek mi?
 6. G-11 ve G-16'da sekme çubuğu, önerilen nested Stack düzeniyle mi görünecek? DS7'nin sabit boyu için eski kaydırmada daralma kaldırılsın mı? (Çalışma ağacında kaldırılmış, henüz onaylanmadı.)
 7. Haber detayı için tam makale kaynağı ve kalıcı id sağlanacak mı, yoksa mevcut kaynak tarayıcısı davranışı mı korunacak? (Bugünkü id liste sırası.)
 8. Bio 150 sınırı, kullanıcı adı düzenleme kısıtı, yalnız preset avatar ve kapalı fotoğraf yükleme kararları tasarım tarafında da revize edilecek mi? Plan bunları koruyor.
 9. Piksel karşılaştırması için iPhone 16 simülatörlü bir Mac mi, yoksa cihaz görüntüleri mi kullanılacak?
 10. Çalışma ağacındaki commit'lenmemiş Faz 1 işi ne olacak? Öneri: önce `design-v2` dalına alınsın, sonra ayrı bir oturumda bu revizyona göre denetlensin. Özellikle bakılacak yerler: §5.2 hataları, §4.1 bağımlıları ve §3.3 denetimleri.
 11. Web (Next.js) de 2.0'a geçecek mi? Teslim paketi yalnız mobil için.
-12. Profil segmentleri: tasarımdaki metin etiketli Segmented mi, yoksa beş dil yüzünden alınmış ikon-only karar mı?
 13. Kaydırılan liste öğelerinde bulanık cam yerine bulanıklıksız `darkGlass` dolgu kabul mü? FPS ölçümüyle doğrulanacak (§6.1).
 14. Bölüm başlığı: 2.0'daki 20/26 başlık, daha önce "üstyazı daha doğru" diye geri alınmış bir kararı yeniden çeviriyor. Onay?
 15. `design-handoff/` commit'lensin mi, yoksa referans PNG'ler (~27 MB) `.gitignore`'a mı alınsın? Her iki durumda da `.easignore`'a eklenmeli.
-16. Native değişiklikler için sürüm 2.8.0 mı olacak? OTA güvenliği buna bağlı (§5.3).
-17. Sunucu işleri için önerilen sıra: fiyat geçmişi + hedef alarm (G-08'den önce gerekli) → bildirim merkezi → takip modeli → oyun toplulukları. Uygun mu?
 
 Bu sorular keşif planını engellemez, ama ilgili uygulama adımlarından önce çözülmelidir.
