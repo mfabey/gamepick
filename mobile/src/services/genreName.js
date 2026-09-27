@@ -40,10 +40,24 @@ const SLUG = {
   'Board Games': 'board-games',
 };
 
+// Yedek listede tür yerine duran Türkçe ETİKET adları (fallback-games:
+// Meccha Chameleon "Gizlilik · Parti"). RAWG türü değiller, zevk profiline
+// girmiyorlar; yalnız görünen adları çevriliyor.
+const ETIKET = {
+  Gizlilik: 'tag.stealth',
+  Parti: 'genre.party',
+  'Hayatta Kalma': 'tag.survival',
+  'Açık Dünya': 'tag.open-world',
+};
+
 /** @param {string} ad ham tür adı · @param {func} t i18n çevirici */
 export function turAdi(ad, t) {
   const ham = String(ad || '').trim();
   if (!ham) return '';
+  if (ETIKET[ham]) {
+    const c = t(ETIKET[ham]);
+    return c === ETIKET[ham] ? ham : c;
+  }
   const kanonik = GENRE_CANON[ham] || ham;
   const slug = SLUG[kanonik];
   if (!slug) return ham;

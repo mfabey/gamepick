@@ -50,6 +50,7 @@ import { GlassView } from '../src/components/ui/GlassView';
 
 import { useStyles } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
+import { turAdi } from '../src/services/genreName';
 import { KucukCubuk, OyunAksesuari } from '../src/components/navigation/CanliCubuk';
 import FiyatSayfasi from '../src/components/FiyatSayfasi';
 import { useCubukSahibi } from '../src/services/canliCubuk';
@@ -795,7 +796,7 @@ const VideoItem = memo(function VideoItem({
         {/* Oyun adı aksesuarda (Canlı Çubuk); burada türler ve detay bağlantısı. */}
         {item.genres?.length > 0 && (
           <View style={styles.tags}>
-            {item.genres.map((g) => (
+            {[...new Set(item.genres.map((g) => turAdi(g, t)))].map((g) => (
               <OverlayTag key={g} label={g} placement="inline" />
             ))}
           </View>

@@ -29,6 +29,7 @@ import { useDismissed } from '../src/hooks/useDismissed';
 import { useForYouFeed } from '../src/hooks/useForYouFeed';
 import { useAltBosluk } from '../src/hooks/useAltBosluk';
 import { genreSlugsFor } from '../src/services/recommend';
+import { turAdi } from '../src/services/genreName';
 import { recordSignal } from '../src/services/tasteProfile';
 import { recordDismiss } from '../src/services/dismissStore';
 import { recordSeen } from '../src/services/seenStore';
@@ -268,7 +269,9 @@ function SwipeCard({ game, index, isTop, onDecide, onPress, t }) {
             <Txt variant="title1" numberOfLines={2} style={{ color: colors.white }}>{game.name}</Txt>
             {game.genres?.length > 0 && (
               <View style={styles.tags}>
-                {game.genres.slice(0, 3).map((g) => <OverlayTag key={g} label={g} placement="inline" />)}
+                {/* Kaynaklar tür adını karışık dilde veriyor (Steam/yedek liste
+                    Türkçe, RAWG İngilizce): görünen ad arayüz dilinde. */}
+                {[...new Set(game.genres.map((g) => turAdi(g, t)))].slice(0, 3).map((g) => <OverlayTag key={g} label={g} placement="inline" />)}
               </View>
             )}
             {game.metacritic ? (
