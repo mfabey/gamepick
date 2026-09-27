@@ -37,12 +37,13 @@
 import { useEffect } from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
 import Animated, {
-  useSharedValue, useAnimatedStyle, withTiming, interpolate, Easing, runOnJS,
+  useSharedValue, useAnimatedStyle, useAnimatedReaction, withTiming, interpolate, Easing, runOnJS,
 } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 
 import GameCover from './GameCover';
 import { useTheme } from '../context/ThemeContext';
+import { useTabBarHidden } from '../context/TabBarContext';
 import { radius } from '../theme';
 import { component } from '../theme/tokens';
 
@@ -85,6 +86,23 @@ export default function CardExpand({ kaynak, onVar, yon = 'buyu' }) {
       if (bitti) runOnJS(onVar)();
     });
   }, [kaynak, kucul, ilerleme, onVar]);
+
+  // ── SEKME ÇUBUĞU GEÇİŞLE BİRLİKTE İNİYOR ──
+  // Bindirme sekme EKRANININ içinde, çubuk ise gezgin seviyesinde: zIndex
+  // ne olursa olsun çubuk bindirmenin üstünde çiziliyordu — büyüyen kapağın
+  // önünde yüzen kapsül (cihaz turu, 25 Eyl). Çubuğun gizleme değeri
+  // ilerlemeye bağlı: büyürken aşağı kayıyor, küçülürken geri geliyor.
+  // Bindirme kalkınca sıfırlanıyor (o anda detay zaten her şeyi örtüyor).
+  const cubukGizli = useTabBarHidden();
+  const kaynakVar = !!kaynak;
+  useAnimatedReaction(
+    () => (kaynakVar ? ilerleme.value : -1),
+    (v) => { if (cubukGizli && v >= 0) cubukGizli.value = v; },
+    [kaynakVar, cubukGizli],
+  );
+  useEffect(() => {
+    if (!kaynakVar && cubukGizli) cubukGizli.value = 0;
+  }, [kaynakVar, cubukGizli]);
 
   const kutuStil = useAnimatedStyle(() => {
     if (!kaynak) return { opacity: 0 };
