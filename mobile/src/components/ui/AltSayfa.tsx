@@ -13,11 +13,16 @@
 //
 // Klavyeli sayfalar `klavye` ile KeyboardAvoidingView alıyor; tavan
 // useAltSayfaSiniri'den (KAV içinde yüzde maxHeight yanlış çözülüyordu).
+//
+// EKRAN ODAĞI KAYBEDİNCE KAPANIR. Modal kökte çiziliyor; sayfa açıkken
+// gelen bir derin bağlantı (bildirim) yeni ekranı Modal'ın ALTINDA açıyordu
+// ve kullanıcı eski ekranın sayfasına bakakalıyordu (cihaz turu, 25 Eyl).
 // ─────────────────────────────────────────────────────────────────────────────
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Pressable, StyleSheet, View, useWindowDimensions, type StyleProp, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
+import { NavigationContext } from '@react-navigation/native';
 import Animated, { Easing, runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { Txt } from './Primitives';
 import { useDesignTheme } from '../../theme/useDesignTheme';
@@ -62,6 +67,16 @@ export function AltSayfa({ visible, onClose, title, subtitle, leading, trailing,
   const { height: ekranH } = useWindowDimensions();
   const azalt = useReducedMotion();
   const sinir = useAltSayfaSiniri(oran);
+
+  // Barındıran ekran odağı kaybedince (başka ekrana gidildi) kapan. Gezinme
+  // bağlamı dışında çizilen sayfada bağlam yok — o zaman dinleyici de yok.
+  const gezinme = useContext(NavigationContext);
+  const kapatRef = useRef(onClose);
+  kapatRef.current = onClose;
+  useEffect(() => {
+    if (!visible || !gezinme) return undefined;
+    return gezinme.addListener('blur', () => kapatRef.current());
+  }, [visible, gezinme]);
 
   // Modal görünürlüğü prop'tan AYRI: kapanış animasyonu bitene kadar açık kalır.
   const [acik, setAcik] = useState(visible);

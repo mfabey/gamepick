@@ -18,15 +18,14 @@
 // silerdi. "Ücretsiz" zaten bölüm çipi olarak var ve sunucu destekliyor.
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState, useEffect, useCallback } from 'react';
-import { View, Pressable, StyleSheet, Modal, ScrollView } from 'react-native';
+import { View, StyleSheet, ScrollView } from 'react-native';
 import * as Haptics from 'expo-haptics';
 
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-import { spacing, SHEET_LAYOUT } from '../theme';
-import { component as K, radius as dsRadius, shadow } from '../theme/tokens';
+import { spacing } from '../theme';
+import { component as K } from '../theme/tokens';
 import { useDesignTheme } from '../theme/useDesignTheme';
 import { Button, Chip, IconButton, Txt } from './ui/Primitives';
+import { AltSayfa } from './ui/AltSayfa';
 import { useStyles } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -149,7 +148,6 @@ export function countFilters({ genre, mode, store, mc, tags }) {
 export default function FilterSheet({ visible, onClose, value, onApply, unavailable = [] }) {
   const styles = useStyles(makeStyles);
   const { colors } = useDesignTheme();
-  const insets = useSafeAreaInsets();
   const { t } = useLanguage();
   const [draft, setDraft] = useState(value);
 
@@ -194,75 +192,71 @@ export default function FilterSheet({ visible, onClose, value, onApply, unavaila
   const n = countFilters(draft);
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose}>
-        {/* İç yüzeyde onPress var ama HİÇBİR ŞEY YAPMIYOR: sayfanın boş bir
-            yerine dokunmak arkadaki Pressable'a ulaşıp sayfayı kapatıyordu. */}
-        <Pressable style={[styles.sheet, { backgroundColor: colors.bg2 }]} onPress={() => {}}>
-          <View style={[styles.grabber, { backgroundColor: colors.text3 }]} />
+    // 2.0 kabuk (27 Eyl): AltSayfa — zemin söner, sayfa kayar, aşağı çekince
+    // kapanır; ekran odağı kaybedince (derin bağlantı) kendiliğinden kapanır.
+    // Eski `Modal slide` karartmayı da sayfayla birlikte kaydırıyordu. Kitteki
+    // ortalı başlık satırı AltSayfa'nın standart başlığı yerine içerikte.
+    <AltSayfa visible={visible} onClose={onClose} oran={0.85} accessibilityLabel={t('filter.title')}>
+      {/* Başlık ORTADA SABİT, yanlar serbest: kit iki yana 90 pt veriyor
+          ama "Zurücksetzen" 90 pt'ye sığmıyor. Başlık mutlak ortalı,
+          "Sıfırla" solda kendi genişliğinde. */}
+      <View style={styles.head}>
+        <Txt variant="headline" accessibilityRole="header" numberOfLines={1} style={styles.headTitle}>{t('filter.title')}</Txt>
+        {/* Seçim yokken SOLUK, gizli değil: kitte hep orada duruyor ve
+            yeri değişmeyen bir düğme aranmıyor. */}
+        <Button title={t('filter.reset')} variant="tertiary" height={F.reset}
+          disabled={n === 0} onPress={clear} style={styles.reset} />
+        <IconButton icon="x" label={t('a11y.close')} onPress={onClose} variant="filled"
+          size={F.close} iconSize={F.closeGlyph} color={colors.text2} />
+      </View>
 
-          {/* Başlık ORTADA SABİT, yanlar serbest: kit iki yana 90 pt veriyor
-              ama "Zurücksetzen" 90 pt'ye sığmıyor. Başlık mutlak ortalı,
-              "Sıfırla" solda kendi genişliğinde. */}
-          <View style={styles.head}>
-            <Txt variant="headline" accessibilityRole="header" numberOfLines={1} style={styles.headTitle}>{t('filter.title')}</Txt>
-            {/* Seçim yokken SOLUK, gizli değil: kitte hep orada duruyor ve
-                yeri değişmeyen bir düğme aranmıyor. */}
-            <Button title={t('filter.reset')} variant="tertiary" height={F.reset}
-              disabled={n === 0} onPress={clear} style={styles.reset} />
-            <IconButton icon="x" label={t('a11y.close')} onPress={onClose} variant="filled"
-              size={F.close} iconSize={F.closeGlyph} color={colors.text2} />
-          </View>
+      <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent} showsVerticalScrollIndicator={false}>
+        <Section title={t('filter.genre')}>
+          {GENRES.map((g) => (
+            <Chip key={g} title={t('genre.' + g)} selected={draft.genre === g}
+              onPress={() => toggle('genre', g)} />
+          ))}
+        </Section>
 
-          <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent} showsVerticalScrollIndicator={false}>
-            <Section title={t('filter.genre')}>
-              {GENRES.map((g) => (
-                <Chip key={g} title={t('genre.' + g)} selected={draft.genre === g}
-                  onPress={() => toggle('genre', g)} />
-              ))}
-            </Section>
+        <Section title={t('filter.mode')}>
+          {MODES.map((m) => (
+            <Chip key={m} title={t('mode.' + m)} selected={draft.mode === m}
+              onPress={() => toggle('mode', m)} />
+          ))}
+        </Section>
 
-            <Section title={t('filter.mode')}>
-              {MODES.map((m) => (
-                <Chip key={m} title={t('mode.' + m)} selected={draft.mode === m}
-                  onPress={() => toggle('mode', m)} />
-              ))}
-            </Section>
+        {/* DEVRE DIŞI GÖRÜNÜYOR, GİZLENMİYOR (kontrol listesi). Gizlemek
+            "böyle bir özellik yok" der; soluk göstermek "var ama şu an
+            çalışmıyor" der. Veri kaynağı düşünce sunucu hangi filtrelerin
+            uygulanmadığını bildiriyor. */}
+        <Section title={t('filter.store')} kapali={kapali('store')}>
+          {STORES.map((s) => (
+            <Chip key={s} title={t('store.' + s)} selected={draft.store === s}
+              onPress={() => toggle('store', s)} />
+          ))}
+        </Section>
 
-            {/* DEVRE DIŞI GÖRÜNÜYOR, GİZLENMİYOR (kontrol listesi). Gizlemek
-                "böyle bir özellik yok" der; soluk göstermek "var ama şu an
-                çalışmıyor" der. Veri kaynağı düşünce sunucu hangi filtrelerin
-                uygulanmadığını bildiriyor. */}
-            <Section title={t('filter.store')} kapali={kapali('store')}>
-              {STORES.map((s) => (
-                <Chip key={s} title={t('store.' + s)} selected={draft.store === s}
-                  onPress={() => toggle('store', s)} />
-              ))}
-            </Section>
+        <Section title={t('filter.score')} kapali={kapali('metacritic')}>
+          {SCORES.map((s) => (
+            <Chip key={s} title={`${s}+`} selected={draft.mc === s}
+              onPress={() => toggle('mc', s)} />
+          ))}
+        </Section>
 
-            <Section title={t('filter.score')} kapali={kapali('metacritic')}>
-              {SCORES.map((s) => (
-                <Chip key={s} title={`${s}+`} selected={draft.mc === s}
-                  onPress={() => toggle('mc', s)} />
-              ))}
-            </Section>
+        {/* Sınır BAŞLIĞIN SAĞINDA (kitin bölüm başlığı sağ yuvası):
+            kullanıcı altıncı etikete basıp reddedilmeden önce görüyor. */}
+        <Section title={t('filter.tags')} sag={`${draft.tags.length}/${MAX_TAGS}`} kapali={kapali('tags')}>
+          {TAGS.map((tag) => (
+            <Chip key={tag} title={t('tag.' + tag)} selected={draft.tags.includes(tag)}
+              onPress={() => toggleTag(tag)} />
+          ))}
+        </Section>
+      </ScrollView>
 
-            {/* Sınır BAŞLIĞIN SAĞINDA (kitin bölüm başlığı sağ yuvası):
-                kullanıcı altıncı etikete basıp reddedilmeden önce görüyor. */}
-            <Section title={t('filter.tags')} sag={`${draft.tags.length}/${MAX_TAGS}`} kapali={kapali('tags')}>
-              {TAGS.map((tag) => (
-                <Chip key={tag} title={t('tag.' + tag)} selected={draft.tags.includes(tag)}
-                  onPress={() => toggleTag(tag)} />
-              ))}
-            </Section>
-          </ScrollView>
-
-          <View style={[styles.footer, { borderTopColor: colors.line, paddingBottom: Math.max(insets.bottom, F.footerTop) }]}>
-            <Button title={n > 0 ? `${t('filter.apply')} (${n})` : t('filter.applyNone')} height={F.cta} onPress={apply} />
-          </View>
-        </Pressable>
-      </Pressable>
-    </Modal>
+      <View style={[styles.footer, { borderTopColor: colors.line }]}>
+        <Button title={n > 0 ? `${t('filter.apply')} (${n})` : t('filter.applyNone')} height={F.cta} onPress={apply} />
+      </View>
+    </AltSayfa>
   );
 }
 
@@ -308,18 +302,6 @@ export function FilterButton({ count, onPress }) {
 }
 
 const makeStyles = (colors) => StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },
-  // Zemin (bg2) JSX'te, 2.0 temasından. Köşe ve gölge kitin (DS 4 Bottom Sheet).
-  sheet: {
-    ...SHEET_LAYOUT,
-    borderTopLeftRadius: dsRadius.sheet, borderTopRightRadius: dsRadius.sheet,
-    boxShadow: shadow.sheet,
-    maxHeight: '85%',
-  },
-  grabber: {
-    alignSelf: 'center', width: F.grabberWidth, height: F.grabberHeight,
-    borderRadius: F.grabberRadius, marginTop: F.grabberTop,
-  },
   head: {
     height: F.header, paddingHorizontal: F.headerPadding,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -329,7 +311,8 @@ const makeStyles = (colors) => StyleSheet.create({
   // Kit: tertiary düğme, yatay dolgu 8.
   reset: { paddingHorizontal: spacing.s8 },
 
-  body: { flexGrow: 0 },
+  // Başlık ve alt çubuk sabit; taşarsa yalnız gövde kısalıp kayıyor.
+  body: { flexGrow: 0, flexShrink: 1 },
   bodyContent: { paddingTop: F.bodyTop, paddingHorizontal: spacing.s20, paddingBottom: spacing.s20, gap: F.sectionGap },
   section: { gap: F.sectionTitleGap },
   sectionHead: { height: F.sectionTitle, flexDirection: 'row', alignItems: 'center', gap: spacing.s8 },
