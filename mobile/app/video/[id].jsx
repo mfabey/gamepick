@@ -21,7 +21,7 @@ import { useCallback, useEffect, useMemo } from 'react';
 import { AppState, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
-import { useVideoPlayer, VideoView } from 'expo-video';
+import { createVideoPlayer, VideoView } from 'expo-video';
 import { useEvent } from 'expo';
 import { fetchVideo, fetchVideoFeed } from '../../src/api/videoFeed';
 import { useQuery } from '../../src/hooks/useQuery';
@@ -94,10 +94,23 @@ function Player({ item, bottom }) {
   });
   const enUcuz = stores[0] || null;
 
-  const player = useVideoPlayer({ uri: item.hls, contentType: 'hls' }, instance => {
-    instance.loop = false;
-    instance.staysActiveInBackground = false;
-  });
+  // ── OYNATICI ELLE YÖNETİLİYOR (27 Eyl, çökme düzeltmesi) ──
+  // ÖLÇÜLDÜ (SE simülatör, AXe): normal videoyu açıp geri çıkınca uygulama
+  // SIGSEGV ile kapanıyordu (Hermes belleği bozuluyor, çökme sonradan
+  // Reanimated'ın serileştiricisinde patlıyordu — rapor ilgisiz yeri
+  // gösteriyordu). Deneyle daraltıldı: VideoView ve olay dinleyicileri
+  // çıkarılınca SÜRÜYOR; oynatıcı hiç oynatılmazsa YOK; odak temizliğindeki
+  // `pause()` çıkarılınca YOK. useVideoPlayer oynatıcıyı söküm anında
+  // serbest bırakıyor ve aynı anda odak temizliği ona `pause()` gönderiyor.
+  // Artık serbest bırakma söküm sonrasına ERTELENİYOR (aşağıda, en son
+  // efekt): pause ve doğurduğu yerli olaylar oynatıcı canlıyken işleniyor.
+  // Reels etkilenmedi (üç giriş-çıkış denendi).
+  const player = useMemo(() => {
+    const p = createVideoPlayer({ uri: item.hls, contentType: 'hls' });
+    p.loop = false;
+    p.staysActiveInBackground = false;
+    return p;
+  }, [item.hls]);
   const { status } = useEvent(player, 'statusChange', { status: player.status });
   const open = useCallback(video => router.replace({ pathname: '/video/[id]', params: { id: video.id } }), [router]);
   useFocusEffect(useCallback(() => {
@@ -111,6 +124,13 @@ function Player({ item, bottom }) {
     });
     return () => sub.remove();
   }, [player, autoplay, next, open]);
+
+  // Serbest bırakma EN SON efekt (temizlikler tanım sırasıyla çalışıyor) ve
+  // 1 sn ERTELİ: ekran söküldükten sonra, bekleyen pause/olaylar bitince.
+  useEffect(() => () => {
+    const p = player;
+    setTimeout(() => { try { p.release(); } catch { /* zaten bırakılmış */ } }, 1000);
+  }, [player]);
 
   const izlendi = isWatched(oyun);
 
