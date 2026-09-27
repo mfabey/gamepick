@@ -18,7 +18,7 @@
 // sekme çubuğu yok (plan §4.1).
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState, useEffect, useCallback, memo } from 'react';
-import { View, Pressable, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -39,6 +39,7 @@ import { useDesignTheme } from '../src/theme/useDesignTheme';
 import { useYanBosluk } from '../src/hooks/useIcerikAlani';
 import { useStyles } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
+import { YenileIsareti, YenileKontrol } from '../src/components/ui/Yenile';
 
 const S = K.steamFriends;
 
@@ -177,9 +178,10 @@ export default function SteamFriendsScreen() {
         <FlashList
           data={data.friends}
           keyExtractor={anahtar}
+          ListHeaderComponent={<YenileIsareti yenileniyor={refreshing} />}
           contentContainerStyle={{ paddingTop: spacing.s8, paddingBottom: insets.bottom + spacing.s40, paddingHorizontal: yan }}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.text2} />
+            <YenileKontrol refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.text2} />
           }
           renderItem={satirCiz}
         />

@@ -18,7 +18,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
-  View, Pressable, StyleSheet, ScrollView, ActivityIndicator, RefreshControl,
+  View, Pressable, StyleSheet, ScrollView, ActivityIndicator,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -48,6 +48,7 @@ import { useDesignTheme } from '../../src/theme/useDesignTheme';
 import { component as K, control, layout } from '../../src/theme/tokens';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useTimeToData } from '../../src/dev/perf';
+import { YenileIsareti, YenileKontrol } from '../../src/components/ui/Yenile';
 
 // Sunucunun sayfa boyutu (listFeed / listRecentReviews / listUserReviews
 // hepsi limit=20). "Devamı var mı" kararı bu sayıya bakıyor, o yüzden
@@ -425,7 +426,7 @@ export default function ReviewsScreen() {
           // değişince veri de değiştiği için pratikte yeniden çiziliyor ama
           // bunu veriye bağlı bırakmak sessiz bir varsayım olurdu.
           extraData={tab}
-          ListHeaderComponent={header}
+          ListHeaderComponent={<><YenileIsareti yenileniyor={refreshing} />{header}</>}
           // GENİŞ EKRANDA KOLON ORTALANIYOR (bkz. theme → ICERIK_MAX).
           contentContainerStyle={{ paddingHorizontal: yan }}
           // BOZUKSA "kimse yazmamış" DEMİYORUZ; bant `header` İÇİNDE (aynı
@@ -442,7 +443,7 @@ export default function ReviewsScreen() {
           onEndReachedThreshold={0.6}
           showsVerticalScrollIndicator={false}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.text2} />
+            <YenileKontrol refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.text2} />
           }
         />
         </Reveal>

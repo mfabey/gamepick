@@ -11,7 +11,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState, useEffect, useCallback, memo } from 'react';
 import {
-  View, StyleSheet, ActivityIndicator, RefreshControl, Share, Alert,
+  View, StyleSheet, ActivityIndicator, Share, Alert,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -29,6 +29,7 @@ import { component as K, control as C, layout, radius as dsRadius, space } from 
 import { useDesignTheme } from '../src/theme/useDesignTheme';
 import { useYanBosluk } from '../src/hooks/useIcerikAlani';
 import { useLanguage } from '../src/context/LanguageContext';
+import { YenileIsareti, YenileKontrol } from '../src/components/ui/Yenile';
 
 // Modul duzeyinde: satir ici verilseydi her render'da yeni kimlik olurdu.
 const anahtar = (c) => String(c.appid);
@@ -152,10 +153,13 @@ export default function GameCardsScreen() {
           // §4.1'in işaret ettiği dört ekrandan biri). Güvenli alan + 40.
           contentContainerStyle={{ paddingBottom: insets.bottom + spacing.s40, paddingHorizontal: yan }}
           ListHeaderComponent={
+            <>
+            <YenileIsareti yenileniyor={refreshing} />
             <Summary s={data.summary} t={t} locale={locale} city={city} busy={cityBusy} onToggleCity={toggleCity} />
+            </>
           }
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.text2} />
+            <YenileKontrol refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.text2} />
           }
           renderItem={satirCiz}
         />

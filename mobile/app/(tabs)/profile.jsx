@@ -24,8 +24,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { useRef, useCallback, useEffect, useState, useMemo } from 'react';
 import {
-  View, Text, Pressable, StyleSheet, ActivityIndicator, RefreshControl,
-  useWindowDimensions, Share,
+  View, Text, Pressable, StyleSheet, ActivityIndicator, useWindowDimensions, Share,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -61,6 +60,7 @@ import ProfileReviewRow from '../../src/components/ProfileReviewRow';
 import PostCard from '../../src/components/PostCard';
 import { IconButton } from '../../src/components/ui/Primitives';
 import EmptyState from '../../src/components/EmptyState';
+import { YenileIsareti, YenileKontrol } from '../../src/components/ui/Yenile';
 
 // Sunucunun sayfa boyutu (`/api/social/profile` PAGE). "Devamı var mı" kararı
 // bu sayıya bakıyor, o yüzden sunucuyla AYNI kalmak zorunda.
@@ -549,6 +549,7 @@ export default function ProfileScreen() {
         estimatedItemSize={izgara ? Math.round(smallCardHeight(kapakEn)) + GRID_GAP : 140}
         ListHeaderComponent={(
           <View>
+            <YenileIsareti yenileniyor={tazeleniyor} zemin={colors.bg} />
             {/* İLK AÇILIŞTA YER TUTUCU. Önbellek boşken (hesabın bu cihazdaki
                 ilk profil açılışı) başlık hâlâ yanıtı bekliyor. Önceden bu
                 sürede HİÇBİR ŞEY çiziliyordu; içerik en üstte duruyor, başlık
@@ -583,7 +584,7 @@ export default function ProfileScreen() {
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
         refreshControl={(
-          <RefreshControl refreshing={tazeleniyor} onRefresh={onTazele}
+          <YenileKontrol refreshing={tazeleniyor} onRefresh={onTazele}
                           tintColor={colors.text2} />
         )}
       />

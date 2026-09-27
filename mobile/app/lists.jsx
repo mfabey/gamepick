@@ -6,7 +6,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState, useEffect, useCallback } from 'react';
 import {
-  View, Pressable, StyleSheet, ActivityIndicator, RefreshControl,
+  View, Pressable, StyleSheet, ActivityIndicator,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -27,6 +27,7 @@ import { useDesignTheme } from '../src/theme/useDesignTheme';
 import { useYanBosluk } from '../src/hooks/useIcerikAlani';
 import { useStyles } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
+import { YenileIsareti, YenileKontrol } from '../src/components/ui/Yenile';
 
 export default function ListsScreen() {
   const styles = useStyles(makeStyles);
@@ -162,12 +163,13 @@ export default function ListsScreen() {
           data={items}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
+          ListHeaderComponent={<YenileIsareti yenileniyor={refreshing} />}
           contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + space[32], paddingHorizontal: yan + spacing.s20 }]}
           showsVerticalScrollIndicator={false}
           onEndReached={onEnd}
           onEndReachedThreshold={0.5}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text3} />
+            <YenileKontrol refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text3} />
           }
         />
       )}

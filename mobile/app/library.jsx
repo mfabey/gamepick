@@ -1,6 +1,6 @@
 import { memo, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
-  View, ScrollView, StyleSheet, Alert, RefreshControl, useWindowDimensions, ActivityIndicator, Keyboard,
+  View, ScrollView, StyleSheet, Alert, useWindowDimensions, ActivityIndicator, Keyboard,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,6 +24,7 @@ import { useLanguage } from '../src/context/LanguageContext';
 import { useAuth } from '../src/context/AuthContext';
 import { fetchSteamPrices } from '../src/api/library';
 import { useConnectedLibrary } from '../src/hooks/useConnectedLibrary';
+import { YenileIsareti, YenileKontrol } from '../src/components/ui/Yenile';
 
 function computeValue(games, prices) {
   if (!games) return null;
@@ -309,6 +310,7 @@ export default function LibraryScreen() {
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             <View style={styles.listHeader}>
+              <YenileIsareti yenileniyor={refreshing} />
               <CevrimdisiBant
                 ts={libTs}
                 onRetry={libTazele}
@@ -353,7 +355,7 @@ export default function LibraryScreen() {
           // §4.1'in işaret ettiği dört ekrandan biri). Güvenli alan + 40.
           ListFooterComponent={<View style={{ height: insets.bottom + spacing.s40 }} />}
           refreshControl={(
-            <RefreshControl
+            <YenileKontrol
               refreshing={refreshing}
               onRefresh={async () => {
                 setRefreshing(true);

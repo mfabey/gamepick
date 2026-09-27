@@ -19,8 +19,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  View, Text, Pressable, StyleSheet, ActivityIndicator, RefreshControl,
-  useWindowDimensions, Alert,
+  View, Text, Pressable, StyleSheet, ActivityIndicator, useWindowDimensions, Alert,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -47,6 +46,7 @@ import PostCard from '../../src/components/PostCard';
 import EmptyState from '../../src/components/EmptyState';
 import PersonMenu from '../../src/components/PersonMenu';
 import ReportSheet from '../../src/components/ReportSheet';
+import { YenileIsareti, YenileKontrol } from '../../src/components/ui/Yenile';
 
 const PAGE = 20;
 
@@ -333,6 +333,7 @@ export default function UserProfileScreen() {
           estimatedItemSize={izgara ? Math.round(smallCardHeight(kapakEn)) + GRID_GAP : 140}
           ListHeaderComponent={(
             <View>
+              <YenileIsareti yenileniyor={tazeleniyor} zemin={colors.bg} />
               <ProfileHeader
                 profile={profil}
                 friendship={sunucu?.friendship || 'none'}
@@ -358,7 +359,7 @@ export default function UserProfileScreen() {
           onEndReachedThreshold={0.6}
           showsVerticalScrollIndicator={false}
           refreshControl={(
-            <RefreshControl refreshing={tazeleniyor} onRefresh={() => yukle(tab, { tazele: true })}
+            <YenileKontrol refreshing={tazeleniyor} onRefresh={() => yukle(tab, { tazele: true })}
                             tintColor={colors.text2} />
           )}
         />

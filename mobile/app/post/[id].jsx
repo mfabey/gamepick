@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, Pressable, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -23,6 +23,7 @@ import ModerasyonKatmani from '../../src/components/ModerasyonKatmani';
 import { suz } from '../../src/services/engel';
 import { useEngelliler } from '../../src/hooks/useEngelliler';
 import { useModerasyon } from '../../src/hooks/useModerasyon';
+import { YenileIsareti, YenileKontrol } from '../../src/components/ui/Yenile';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Konuşma görünümü — bir gönderi ve yanıtları.
@@ -172,6 +173,7 @@ export default function PostThread() {
           renderItem={satirCiz}
           ListHeaderComponent={
             <View>
+              <YenileIsareti yenileniyor={refreshing} />
               {/* KÖK İKİ TÜRDEN BİRİ OLABİLİYOR: sıradan gönderi ya da
                   İNCELEME. Ayrımı sunucu söylüyor (`type: 'review'`) —
                   istemci kök kimliğini ayrıştırmıyor, çünkü kimliğin biçimi
@@ -242,7 +244,7 @@ export default function PostThread() {
           // yanıt kutusu için: son yanıt kutunun altında kalmamalı.
           contentContainerStyle={{ paddingBottom: DOCK + (insets.bottom || space[12]), paddingHorizontal: yan }}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.text2} />
+            <YenileKontrol refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.text2} />
           }
           showsVerticalScrollIndicator={false}
         />

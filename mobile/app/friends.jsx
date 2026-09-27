@@ -23,8 +23,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  View, Pressable, StyleSheet, ActivityIndicator,
-  ScrollView, RefreshControl, Alert,
+  View, Pressable, StyleSheet, ActivityIndicator, ScrollView, Alert,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -48,6 +47,7 @@ import { useLanguage } from '../src/context/LanguageContext';
 import { getFriends, searchUsers, friendAction } from '../src/api/social';
 import { engelUygula } from '../src/services/engel';
 import { getSession } from '../src/services/session';
+import { YenileIsareti, YenileKontrol } from '../src/components/ui/Yenile';
 
 // Gelen istek bandındaki yığın: UserRow'un avatarı (44), 12 pt örtüşme.
 const BANT_AVATAR = K.userRow.avatar;
@@ -169,13 +169,14 @@ export default function FriendsScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           refreshControl={(
-            <RefreshControl
+            <YenileKontrol
               refreshing={tazeleniyor}
               onRefresh={async () => { setTazeleniyor(true); await load(); setTazeleniyor(false); }}
               tintColor={colors.text2}
             />
           )}
         >
+          <YenileIsareti yenileniyor={tazeleniyor} />
           {/* ── Gelen istek bandı ──
               SAYILI KIRMIZI ROZET YALNIZ BURADA. Kural: sayılı kırmızı ancak
               EYLEME DÖNÜŞEN bilgi için (kabul et / yoksay). Profil

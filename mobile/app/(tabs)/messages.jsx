@@ -27,7 +27,7 @@
 // istemci içi süzme).
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { View, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, StyleSheet, ActivityIndicator } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -49,6 +49,7 @@ import { useYanBosluk } from '../../src/hooks/useIcerikAlani';
 import { useTabBarScroll } from '../../src/context/TabBarContext';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useTabPressAction, scrollRefToTop } from '../../src/hooks/useTabPressAction';
+import { YenileIsareti, YenileKontrol } from '../../src/components/ui/Yenile';
 
 // Modul duzeyinde: satir ici verilseydi her render'da yeni kimlik olurdu.
 const anahtar = (r) => r.cid;
@@ -251,7 +252,7 @@ export default function MessagesScreen() {
           scrollEventThrottle={16}
           data={gorunen}
           keyExtractor={anahtar}
-          ListHeaderComponent={ust}
+          ListHeaderComponent={<><YenileIsareti yenileniyor={refreshing} />{ust}</>}
           // Arama sonuç vermediğinde liste boş kalıyor; sessiz boşluk
           // "bağlantı gitti" gibi okunur.
           ListEmptyComponent={
@@ -261,7 +262,7 @@ export default function MessagesScreen() {
           }
           contentContainerStyle={{ paddingBottom: tabBosluk, paddingHorizontal: yan }}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={cek} tintColor={colors.text2} />
+            <YenileKontrol refreshing={refreshing} onRefresh={cek} tintColor={colors.text2} />
           }
           renderItem={satirCiz}
         />
