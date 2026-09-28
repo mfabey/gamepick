@@ -80,12 +80,15 @@ async function fetchSteamDetails(appid, slug, lang = 'en') {
       }
     }
     
+    const heroImage = `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/library_hero.jpg`;
+    const firstScreenshot = d.screenshots?.[0]?.path_full;
+
     return {
       id:           `rawg_${appid}`,
       rawgId:       appid,
       rawgSlug:     slug,
       name:         d.name,
-      image:        d.header_image,
+      image:        heroImage || firstScreenshot || d.header_image,
       description:  d.about_the_game || d.detailed_description || '',
       metacritic:   d.metacritic?.score || null,
       rating:       d.recommendations?.total ? 4.5 : 0,
@@ -366,7 +369,7 @@ export async function GET(request) {
           rawgId:       rawgDetail.id,
           rawgSlug:     rawgDetail.slug,
           name:         rawgDetail.name,
-          image:        rawgDetail.background_image,
+          image:        (rawgDetail.background_image || '').replace(/media\/(crop\/\d+\/\d+\/|resize\/\d+\/-\/)/i, 'media/'),
           description:  steamData?.about_the_game || steamData?.detailed_description || rawgDetail.description_raw || '',
           metacritic:   rawgDetail.metacritic   || null,
           rating:       rawgDetail.rating       || 0,
@@ -525,7 +528,7 @@ export async function GET(request) {
       rawgId:       detail.id,
       rawgSlug:     detail.slug,
       name:         detail.name,
-      image:        detail.background_image,
+      image:        (detail.background_image || '').replace(/media\/(crop\/\d+\/\d+\/|resize\/\d+\/-\/)/i, 'media/'),
       description:  steamData?.about_the_game || steamData?.detailed_description || detail.description_raw || '',
       metacritic:   detail.metacritic   || null,
       rating:       detail.rating       || 0,

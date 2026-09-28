@@ -19,6 +19,7 @@ import { radius, spacing, PRESSED, type, scale, metacriticColor, motion, TOUCH_M
 import { useYanBosluk } from '../../src/hooks/useIcerikAlani';
 import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { stripHtml } from '../../src/utils/text';
+import { heroImage } from '../../src/utils/images';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useTimeToData } from '../../src/dev/perf';
 import { useWishlist } from '../../src/context/WishlistContext';
@@ -352,7 +353,8 @@ export default function GameDetail() {
   // alıyor ve bağımlılık dizisi RENDER SIRASINDA değerlendiriliyor. Aşağıda
   // kalsaydı const'ın geçici ölü bölgesine (TDZ) düşer, ekran açılır açılmaz
   // ReferenceError verirdi.
-  const cover = g?.image || image;
+  const rawCover = detail?.screenshots?.[0] || g?.image || image;
+  const cover = heroImage(rawCover, detail?.steamAppId || appid);
 
   const cikiliyor = useRef(false);
 
