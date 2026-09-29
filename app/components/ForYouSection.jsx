@@ -114,10 +114,11 @@ export default function ForYouSection() {
             ? (tr ? 'Oynadıklarından ve ilgi duyduğun türlerden yola çıkarak.' : 'Based on your library and the genres you enjoy.')
             : (tr ? 'Başlangıç önerileri. Sevdiğin türü seç, sana göre şekillensin.' : 'A starting selection. Choose a genre to make it yours.')}</p>
         </div>
-        <div className={styles.actions}>
-          {personal && <button type="button" aria-expanded={choosing} onClick={() => setChoosing(v => !v)}>{tr ? 'Tercihlerim' : 'My interests'}</button>}
-          <button type="button" onClick={() => setRevision(n => n + 1)} disabled={loading}>{tr ? 'Yenile' : 'Refresh'} ↻</button>
-        </div>
+        {personal && (
+          <div className={styles.actions}>
+            <button type="button" aria-expanded={choosing} onClick={() => setChoosing(v => !v)}>{tr ? 'Tercihlerim' : 'My interests'}</button>
+          </div>
+        )}
       </div>
       {(!personal || choosing) && <div className={styles.choices} aria-label={tr ? 'Sevdiğin türler' : 'Genres you enjoy'}>
         {CHOICES.map(([genre, label]) => <button key={genre} type="button" disabled={!ready || taste.owner !== owner} aria-pressed={!!weights[genre]}
