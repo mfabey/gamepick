@@ -4,7 +4,7 @@ import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomFade } from '../../src/components/EdgeFade';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { fetchTrending, fetchGames } from '../../src/api/games';
+import { fetchGames } from '../../src/api/games';
 import { spacing } from '../../src/theme';
 import { useTabBosluk } from '../../src/hooks/useAltBosluk';
 import { useYanBosluk } from '../../src/hooks/useIcerikAlani';
@@ -49,9 +49,10 @@ import { getReviewFeed, getFriendActivity, fetchPosts } from '../../src/api/soci
 import { getSession, subscribeSession } from '../../src/services/session';
 import { getCollections, subscribeCollections } from '../../src/services/collectionsStore';
 import { genreSlugsFor, rankCandidates } from '../../src/services/recommend';
-import { interleaveReviews, mergeSocial, orderHighlights, mergeHighlights, highlightIds } from '../../src/services/homeFeed';
+import { interleaveReviews, mergeSocial } from '../../src/services/homeFeed';
 import { useTabPressAction, scrollRefToTop } from '../../src/hooks/useTabPressAction';
 import { useReducedMotion } from '../../src/hooks/useReducedMotion';
+import { YenileIsareti, YenileKontrol } from '../../src/components/ui/Yenile';
 
 // Stabil fetcher'lar (key'in saf fonksiyonu)
 const fetchNewGames = () => fetchGames({ section: 'new', num: 12 });
@@ -87,29 +88,19 @@ export default function HomeScreen() {
   const onTabScroll = useTabBarScroll();
   const { t, lang, formatPrice } = useLanguage();
   const router = useRouter();
+  const [session, setSession] = useState(() => getSession());
+  useEffect(() => subscribeSession(() => setSession(getSession())), []);
+  const owner = session?.user?.uid || 'guest';
+  const [day, setDay] = useState(() => Math.floor(Date.now() / 86400000));
+  useFocusEffect(useCallback(() => { setDay(Math.floor(Date.now() / 86400000)); }, []));
   // Başlıktaki avatar (G-04) — sekme çubuğundaki profil avatarıyla aynı kaynak.
   const { account } = useAuth();
   // Zilin noktası (G-20): ekran odaklanınca tazeleniyor, aralıklı yoklama yok.
   const bildirimSayisi = useBildirimSayisi();
   useFocusEffect(useCallback(() => { bildirimSayisiTazele(); }, []));
 
-  const { data: trendData, ts: trendTs, refetch: trendTazele } = useQuery('home:trending', fetchTrending, { ttl: 3 * 60 * 1000 });
   const { data: newData, ts: newTs, refetch: newTazele }       = useQuery('home:new', fetchNewGames, { ttl: 5 * 60 * 1000 });
   const { data: saleData, ts: saleTs, refetch: saleTazele }    = useQuery('home:sale', fetchSaleGames, { ttl: 5 * 60 * 1000 });
-
-  // ── BANDIN OKUDUĞU DAMGA: ÜÇÜNÜN EN ESKİSİ ──
-  // Anasayfa üç ayrı sorgudan besleniyor ve üçü ayrı anlarda tazeleniyor.
-  // En YENİSİ yazılsaydı bant, ekrandaki en bayat şeridi gizleyerek
-  // olduğundan taze gösterirdi. En eskisi "içerik EN AZ bu kadar eski"
-  // diyor — eksik tarafta yanılmak, fazla tarafta yanılmaktan iyidir.
-  const enEskiTs = useMemo(() => {
-    const hepsi = [trendTs, newTs, saleTs].filter(Boolean);
-    return hepsi.length ? Math.min(...hepsi) : 0;
-  }, [trendTs, newTs, saleTs]);
-
-  const hepsiniTazele = useCallback(() => {
-    trendTazele(); newTazele(); saleTazele();
-  }, [trendTazele, newTazele, saleTazele]);
 
   // ── ŞERİT HAZIRLIĞI ──
   // Boş `image` alanı SÜZÜLÜYOR (aşağıdaki `kapakVar`) — ama ölçüldü: alan
@@ -131,19 +122,8 @@ export default function HomeScreen() {
       .slice(0, n);
   }, []);
 
-  const trend = useMemo(
-    () => hazirla(trendData?.results || trendData?.games || [], 14), [trendData, hazirla]);
   const fresh = useMemo(() => hazirla(newData?.results || [], 12), [newData, hazirla]);
   const sale  = useMemo(() => hazirla(saleData?.results || [], 12), [saleData, hazirla]);
-
-  // ── HERO RAYI TRENDİN BAŞINI ALIYOR, GERİSİ AŞAĞIDA ──
-  // G-04'ün öne çıkan kartları trend listesinin ilk beşi. Aynı beş oyun
-  // aşağıda (lider trend şeridi ya da akışa karışan trend) ikinci kez
-  // görünmesin diye oralara yalnız KALANI gidiyor: "lider olarak kullanılan
-  // liste akışa tekrar girmiyor" kuralının hero için karşılığı. Kayan kapak
-  // şeridi bir kez tam bu tekrar yüzünden kaldırılmıştı.
-  const heroGames = useMemo(() => trend.slice(0, 5), [trend]);
-  const trendRest = useMemo(() => trend.slice(heroGames.length), [trend, heroGames]);
 
   // Haber ve video verisi BURADA DEĞİL, `HomeMedia` içinde çekiliyor: G-04'te
   // "Oyun Dünyasından" ve "İzlemeye Değer" bölümleri var. Önbellek anahtarları
@@ -184,43 +164,35 @@ export default function HomeScreen() {
   // Bağlı Steam kütüphanesini türle eşle → saat-ağırlıklı zevk sinyali (en güçlü)
   useLibraryTaste();
   const { isCold, topGenres, normalizedGenres, profile } = useTasteProfile();
-  // ── TÜR İMZASI OTURUM BOYUNCA SABİT ──────────────────────────────────────
-  // ÖLÇÜLDÜ, ÜÇ AŞAMADA. "Senin için" şeridi her geri dönüşte değişiyordu ve
-  // arkasında üç ayrı mekanizma vardı; ikisini kapatınca üçüncüsü kaldı:
-  //   1. useForYouFeed'in SIRALI sıfırlama imzası      → sırasız yapıldı
-  //   2. rankCandidates'ın seenIds/profile bağımlılığı → bağımlılıktan çıktı
-  //   3. topGenres(4)'ün KÜMESİ                        → burası
-  //
-  // Detay her açılışta `recordSignal({type:'view'})` çağırıyor; ağırlıklar
-  // oynayınca 4. sıradaki tür değişebiliyor, aday sorgusunun anahtarı farklı
-  // çıkıyor ve şerit baştan çekiliyordu. Ölçüm: ilk karta girip çıkınca şerit
-  // Manor Lords · SUPERHOT VR · Baldur's iken Crusader Kings III · Sayonara
-  // Wild Hearts · Red Alert oluyordu.
-  //
-  // İLK DOLU DEĞER DONUYOR: profil AsyncStorage'dan asenkron geliyor, ilk
-  // render'da boş olabiliyor — boş değeri dondurmak şeridi kalıcı olarak
-  // yedek türlere kilitlerdi.
-  //
-  // Öneri KAYBOLMUYOR: profil birikmeye devam ediyor ve uygulamanın bir
-  // sonraki açılışında yeni imza kullanılıyor. Değişen tek şey, kullanıcı
-  // ekrandayken listenin ayağının altından kaymaması.
+  const [recommendationEpoch, setRecommendationEpoch] = useState(0);
+  const lastRefresh = useRef(Date.now());
+  // Keep the shelf stable while returning from a game, but reset for a new
+  // account, a new day or an explicit refresh. A cold profile still gets a shelf.
   const canliSluglar = genreSlugsFor(topGenres(4));
-  const sluglarRef = useRef(null);
-  if (!sluglarRef.current && canliSluglar.length > 0) sluglarRef.current = canliSluglar;
-  const forYouSlugs = sluglarRef.current || canliSluglar;
-  // Adaylar tür imzasına göre cache'li.
-  //
-  // ANAHTAR SIRASIZ — bkz. useForYouFeed'deki aynı gerekçe. Sıralı anahtar,
-  // her detay ziyaretinden sonra tür ağırlıkları oynayınca DEĞİŞİYOR ve
-  // önbelleği ıskalıyordu: "Senin için" şeridi her dönüşte baştan çekiliyor,
-  // farklı oyunlar gösteriyordu. Küme aynıysa adaylar da aynı; sıra yalnızca
-  // sıralamayı etkiliyor, o da aşağıda `genreWeights` ile ayrıca yapılıyor.
-  const candKey = `foryou-cand:${[...forYouSlugs].sort().join(',')}`;
-  const { data: candData } = useQuery(
-    candKey,
-    () => fetchForYouCandidates(forYouSlugs),
-    { ttl: 5 * 60 * 1000, enabled: !isCold }
+  const sluglarRef = useRef({ owner: null, day: null, slugs: null });
+  if (sluglarRef.current.owner !== owner || sluglarRef.current.day !== day) {
+    sluglarRef.current = { owner, day, slugs: null };
+  }
+  if (!sluglarRef.current.slugs && canliSluglar.length) sluglarRef.current.slugs = canliSluglar;
+  const forYouSlugs = sluglarRef.current.slugs || [];
+  const candKey = `foryou-v2:${day}:${[...forYouSlugs].sort().join(',')}`;
+  const { data: candData, ts: candTs, loading: candLoading, isValidating: candRefreshing, refetch: candTazele } = useQuery(
+    candKey, () => fetchForYouCandidates(forYouSlugs), { ttl: 5 * 60 * 1000 }
   );
+  const enEskiTs = useMemo(() => {
+    const values = [candTs, newTs, saleTs].filter(Boolean);
+    return values.length ? Math.min(...values) : 0;
+  }, [candTs, newTs, saleTs]);
+  const hepsiniTazele = useCallback(() => {
+    lastRefresh.current = Date.now();
+    sluglarRef.current.slugs = canliSluglar.length ? canliSluglar : null;
+    setRecommendationEpoch(n => n + 1);
+    candTazele(); newTazele(); saleTazele();
+  }, [candTazele, newTazele, saleTazele, canliSluglar.join(',')]);
+  useFocusEffect(useCallback(() => {
+    // Return trips from a detail stay stable; longer absences refresh the shelf.
+    if (Date.now() - lastRefresh.current > 5 * 60 * 1000) hepsiniTazele();
+  }, [hepsiniTazele]));
   // Sahip olunan oyunlar (owned filtresi) — bağlıysa daima
   const ownedNames = useOwnedGames();
   // Görülen oyunlar (tazelik cezası)
@@ -249,8 +221,10 @@ export default function HomeScreen() {
   const forYou = useMemo(
     () => (candData ? rankCandidates(candData, { genreWeights: normalizedGenres(), ownedNames, seenIds, dismissedIds, limit: 12 }) : []),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [candData, ownedNames, dismissedIds]
+    [candData, ownedNames, dismissedIds, owner, isCold, recommendationEpoch]
   );
+
+  const heroGames = useMemo(() => forYou.slice(0, 5), [forYou]);
 
   // ── Sonsuz keşif akışı ──
   // AKIŞ ARTIK HER ZAMAN AÇIK. Önceden `enabled: !isCold` ile kapalıydı ve
@@ -269,10 +243,11 @@ export default function HomeScreen() {
   // Şeritlerde gösterilen her şey akıştan elenir: aynı oyunu hem şeritte hem
   // akışta görmek listeyi bozuk gösteriyor.
   const excludeIds = useMemo(
-    () => new Set([...forYou, ...fresh, ...sale].map((g) => String(g.id))),
-    [forYou, fresh, sale]
+    () => new Set([...heroGames, ...fresh, ...sale].map((g) => String(g.id))),
+    [heroGames, fresh, sale]
   );
   const { items: feedItems, loadMore, loadingMore } = useForYouFeed({
+    ownerKey: `${owner}:${day}:${recommendationEpoch}`,
     enabled: true,
     slugs: feedSlugs,
     genreWeights,
@@ -284,14 +259,13 @@ export default function HomeScreen() {
   // ── Topluluk incelemeleri ──
   // İki uç PARALEL: biri diğerini beklemiyor ve ikisi de akışı bağlamıyor —
   // düşerlerse anasayfa yalnızca incelemesiz açılıyor, boş değil.
-  const [session, setSession] = useState(() => getSession());
-  useEffect(() => subscribeSession(() => setSession(getSession())), []);
+
   const [reviews, setReviews] = useState([]);
   const [posts, setPosts] = useState([]);
   const [friendGames, setFriendGames] = useState([]);
   const mod = useModerasyon();
   // Dev-only ölçüm: iskelet gerekli mi kararını sayıya bağlamak için.
-  useTimeToData('Home', trend.length > 0);
+  useTimeToData('Home', forYou.length > 0);
 
   const loadSocial = useCallback(() => {
     // İncelemeler HESAPSIZ da okunuyor (bkz. api/social/reviews/feed). Eskiden
@@ -373,29 +347,7 @@ export default function HomeScreen() {
     router.push('/reviews');
   }, [router]);
 
-  // ── Bölüm düzeni ──
-  // 1.x'te TEK lider vardı (arkadaşlar / Senin İçin / trend; kişiye en özel
-  // olan) çünkü dört aynı biçimli şerit gözü yoruyor ve sosyal akışı kıvrımın
-  // ~1000pt altına itiyordu. 2.0'da bölümler FARKLI kart aileleri (oyun kartı,
-  // fiyat kartı, arkadaş, bilet) — tasarımın hiyerarşi çözümü bu.
-  //
-  // 2.0 (G-04): bölümlerin SIRASI tasarımdan geliyor, lider seçimi kalktı:
-  // Senin İçin → Fiyatı Düşenler → Arkadaşlar → Fırsatlar. Veri olan her
-  // bölüm görünüyor; eskiden arkadaş şeridi liderken "Senin İçin" hiç
-  // çizilmiyordu. Trend şeridi yalnız "Senin İçin" boşken (soğuk kullanıcı)
-  // onun yerini tutuyor — hero zaten trendin ilk beşi.
-  const showForYou = !isCold && forYou.length > 0;
   const showFriends = hasFriendSignal(friendGames);
-  const showTrendRail = !showForYou;
-
-  // Lider olarak kullanılan liste akışa TEKRAR girmiyor.
-  // Yeni Çıkanlar ve İndirimdekiler AKIŞTAN ÇIKTI, kendi şeritlerine döndüler:
-  // ikisi de niyetle aranan bölümler ("indirime ne girmiş?") ve akışın içine
-  // dağılınca o niyet karşılanamıyordu. Akışa karışan tek şey trend — o zaten
-  // "şuna da bak" cinsinden, aranan bir şey değil.
-  const highlights = useMemo(() => orderHighlights({
-    trend: showTrendRail ? [] : trendRest,
-  }), [showTrendRail, trendRest]);
 
   // "Çünkü RPG oyunlarını seviyorsun": adaylar hangi tür imzasıyla çekildiyse
   // (donmuş `forYouSlugs`) onun ilki. Uydurma gerekçe yok — şeridi gerçekten
@@ -421,9 +373,8 @@ export default function HomeScreen() {
   const engelSurumu = useEngelliler();
 
   const feed = useMemo(() => {
-    const hlIds = highlightIds(highlights);
     const games = feedItems.filter(
-      (g) => !dismissedIds.has(String(g.id)) && !hlIds.has(String(g.id))
+      (g) => !dismissedIds.has(String(g.id))
     );
     // Görseli olanları başa al, görseli olmayanları en sona at
     const sortedGames = [...games].sort((a, b) => {
@@ -443,8 +394,8 @@ export default function HomeScreen() {
       suz(reviews, (r) => r?.author?.uid || r?.uid),
       suz(posts, (x) => x?.author?.uid || x?.uid),
     );
-    return mergeHighlights(interleaveReviews(sortedGames, social), highlights);
-  }, [feedItems, dismissedIds, reviews, posts, highlights, engelSurumu]);
+    return interleaveReviews(sortedGames, social);
+  }, [feedItems, dismissedIds, reviews, posts, engelSurumu]);
 
   // ── Paylaşım BU EKRANDA DEĞİL ──
   // Şerit kartlarının kapağında bir "arkadaşa gönder" dairesi vardı; dört
@@ -577,6 +528,7 @@ export default function HomeScreen() {
   // Mevcut bölümlerin tamamı listenin başlığı olur → tek kaydırma, tek liste.
   const header = (
     <View style={styles.headerWrap}>
+        <YenileIsareti yenileniyor={candRefreshing} />
 
         {/* G-04 başlığı: arama · bildirim · avatar (kit). Bildirim merkezi
             (G-20) geldi; haber girişi başlıktan kalktı — "Oyun Dünyası"
@@ -615,7 +567,15 @@ export default function HomeScreen() {
           />
         </FadeIn>
 
-        <HeroRail games={heroGames} onExpand={kartAc} />
+        <View style={sec.section}>
+          <View style={sec.heading}>
+            <SectionHeader title={t('home.forYou')}
+              subtitle={heroGames.length ? (isCold ? t('home.forYouStart') : forYouReason || t('home.forYouPersonal')) : candLoading ? t('home.forYouStart') : t('home.forYouEmpty')}
+              action={heroGames.length ? t('home.viewAll') : candLoading ? undefined : t('common.retry')}
+              onAction={heroGames.length ? () => router.push('/swipe') : hepsiniTazele} />
+          </View>
+          {candLoading && !heroGames.length ? <ActivityIndicator color={colors.accent} /> : <HeroRail games={heroGames} onExpand={kartAc} />}
+        </View>
 
         {/* G-04 sırası (kit home()): Senin İçin → Fiyatı Düşenler → Arkadaşların
             Ne Oynuyor? → Kaçırılmayacak Fırsatlar → Oyun Dünyasından → İzlemeye
@@ -623,12 +583,6 @@ export default function HomeScreen() {
             "Toplulukta Popüler" (gönderiler akışta), "Belki Bunu Seversin"
             (gerekçe kaynağı yok). Yeni Çıkanlar tasarımda yok ama niyetle
             aranan bir bölüm; fırsatların altında kalıyor. */}
-        {showForYou && (
-          <FadeIn delay={140}><Section title={t('home.forYou')} subtitle={forYouReason} games={forYou} router={router} onDismiss={handleDismiss} onExpand={kartAc} /></FadeIn>
-        )}
-        {showTrendRail && (
-          <FadeIn delay={140}><Section title={t('home.trend')} games={trendRest} router={router} onExpand={kartAc} /></FadeIn>
-        )}
         {drops.length > 0
           ? <FadeIn delay={200}><DropSection games={drops} router={router} /></FadeIn>
           : <FadeIn delay={200}><Section title={t('home.sale')} games={deals.length ? [] : sale} router={router} onExpand={kartAc} /></FadeIn>}
@@ -658,6 +612,7 @@ export default function HomeScreen() {
         renderItem={renderFeedItem}
         ListHeaderComponent={header}
         onEndReached={loadMore}
+        refreshControl={<YenileKontrol refreshing={candRefreshing} onRefresh={hepsiniTazele} />}
         onEndReachedThreshold={0.6}
         // Geniş ekranda kolon ortalanıyor (bkz. theme → ICERIK_MAX).
         contentContainerStyle={[styles.listContent, { paddingHorizontal: yan }]}

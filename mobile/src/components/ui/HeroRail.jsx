@@ -42,7 +42,7 @@ function HeroCard({ game, width, onExpand }) {
     <LinearGradient {...gradients.heroCard} style={StyleSheet.absoluteFill} />
     <GlassView style={s.tag}>
       <Icon name="spark" size={K.hero.tagIcon} color={colors.white} strokeWidth={2} />
-      <Txt variant="captionStrong" numberOfLines={1} style={{ color: colors.white }}>{t('home.trend')}</Txt>
+      <Txt variant="captionStrong" numberOfLines={1} style={{ color: colors.white }}>{t('home.forYou')}</Txt>
     </GlassView>
     <View style={s.content}>
       <Txt variant="heroTitle" numberOfLines={2} style={{ color: colors.white }}>{game.name}</Txt>

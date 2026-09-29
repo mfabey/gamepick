@@ -9,6 +9,7 @@ import { pushUserData } from '../api/account';
 import { scopedKey, ownerReady, subscribeOwner, registerScopedStore } from '../services/owner';
 import { ayniOyun } from '../services/oyunKimlik';
 import { useLanguage } from './LanguageContext';
+import { subscribeProfile } from '../services/tasteProfile';
 
 // Taban adlar — gerçek anahtarlar sahibe göre türetilir (owner.js).
 const WISH_KEY  = 'gr_wishlist';
@@ -33,6 +34,8 @@ export function WishlistProvider({ children }) {
   const [enabled, setEnabled] = useState(false);
   const [ready, setReady]     = useState(false);
   const tokenRef = useRef(null);
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
 
   // Oturum değişimini izle → giriş/çıkışta senkron tetiklensin
   const [sessionTick, setSessionTick] = useState(0);
@@ -170,7 +173,7 @@ export function WishlistProvider({ children }) {
     if (!ready) return;
     let alive = true;
     const doSync = (force = false) => {
-      syncAccountData(items, async (merged) => {
+      syncAccountData(itemsRef.current, async (merged) => {
         if (!alive || !Array.isArray(merged)) return;
         setItems(merged);
         try { await AsyncStorage.setItem(scopedKey(WISH_KEY), JSON.stringify(merged)); } catch {}
@@ -178,6 +181,13 @@ export function WishlistProvider({ children }) {
     };
 
     doSync(false);
+    // Only local changes trigger a push; remote merges must not form a loop.
+    let tasteTimer;
+    const unsubscribeTaste = subscribeProfile(reason => {
+      if (reason !== 'local') return;
+      clearTimeout(tasteTimer);
+      tasteTimer = setTimeout(() => doSync(true), 2000);
+    });
 
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'active') {
@@ -188,6 +198,8 @@ export function WishlistProvider({ children }) {
     return () => {
       alive = false;
       sub.remove();
+      clearTimeout(tasteTimer);
+      unsubscribeTaste();
     };
     // Oturum ya da sahip değişince (giriş/çıkış/devir) tekrar dene
     // eslint-disable-next-line react-hooks/exhaustive-deps

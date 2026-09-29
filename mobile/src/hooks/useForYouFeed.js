@@ -16,6 +16,7 @@ const PAGE_SIZE = 24;
  * @param excludeIds "Senin İçin" şeridinde zaten gösterilenler (String id seti)
  */
 export function useForYouFeed({
+  ownerKey = 'guest',
   enabled = false,
   slugs = [],
   genreWeights = {},
@@ -55,7 +56,8 @@ export function useForYouFeed({
   useEffect(() => {
     ref.current = { page: 0, canMore: true, fetching: false, ids: new Set() };
     setItems([]);
-  }, [slugsKey]);
+    setLoadingMore(false);
+  }, [slugsKey, ownerKey]);
 
   const loadMore = useCallback(async () => {
     const r = ref.current;
@@ -68,6 +70,7 @@ export function useForYouFeed({
       const slug = sl[i % sl.length];                 // türler arasında dön
       const rawgPage = Math.floor(i / sl.length) + 1;  // her tur bir sonraki sayfa
       const data = await fetchGames({ genres: slug, page: rawgPage, num: PAGE_SIZE });
+      if (r !== ref.current) return;
       const raw = data.results || [];
 
       // Tekrarları, şeritte zaten gösterilenleri ve görseli olmayanları ele
@@ -94,19 +97,20 @@ export function useForYouFeed({
       if (raw.length === 0) r.canMore = false;
       if (ranked.length) setItems((prev) => [...prev, ...ranked]);
     } catch {
+      if (r !== ref.current) return;
       r.canMore = false;
     } finally {
       r.fetching = false;
-      setLoadingMore(false);
+      if (r === ref.current) setLoadingMore(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, slugsKey, genreWeights, ownedNames, seenIds, excludeIds]);
+  }, [enabled, slugsKey, ownerKey, genreWeights, ownedNames, seenIds, excludeIds]);
 
   // İlk sayfayı otomatik getir
   useEffect(() => {
     if (enabled && ref.current.page === 0 && !ref.current.fetching) loadMore();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, slugsKey]);
+  }, [enabled, slugsKey, ownerKey]);
 
   return { items, loadMore, loadingMore };
 }
