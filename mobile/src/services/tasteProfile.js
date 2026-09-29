@@ -5,6 +5,7 @@
 //
 // Sinyal → decay(mevcut) → türlere ağırlık ekle → kaydet → abonelere bildir.
 // ─────────────────────────────────────────────────────────────────────────────
+import { profileWeights } from './recommendProfile';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { scopedKey, ownerReady, registerScopedStore } from './owner';
 
@@ -12,7 +13,6 @@ const STORAGE_KEY   = 'gr_taste_profile';   // taban ad — anahtar sahibe göre
 const HALF_LIFE_DAYS = 30;     // 30 günde ağırlık yarıya düşer (tazelik)
 const COLD_THRESHOLD = 3;      // bu kadar sinyalden az → "soğuk" (kişiselleştirme güvenilmez)
 const MAX_GENRES     = 50;     // bellek koruması
-const LIBRARY_WEIGHT = 0.5;    // harmanda kütüphane (oynanan) payı; kalanı etkileşim
 const DAY            = 86400000;
 
 // Sinyal türü → temel ağırlık
@@ -35,8 +35,8 @@ function emptyProfile() {
   return { genres: {}, events: 0, updatedAt: Date.now(), library: { genres: {}, sig: '', updatedAt: 0 } };
 }
 
-function emit() {
-  listeners.forEach((l) => l());
+function emit(reason) {
+  listeners.forEach((l) => l(reason));
 }
 
 // Geçen süreye göre üstel azalım uygula (lazy: her okuma/yazmada)
@@ -89,7 +89,7 @@ function scheduleSave() {
 }
 
 // Zevk profili sunucuya da gidiyor (sync.js → PUT /api/user/data, tür
-// ağırlıkları TOPLANIYOR). Kapsamsız kaldığı sürece A'nın zevki B'nin
+// ağırlıkları tekilleştirilerek birleştiriliyor). Kapsamsız kaldığı sürece A'nın zevki B'nin
 // önerilerine kalıcı olarak karışırdı.
 registerScopedStore({
   keys: [STORAGE_KEY],
@@ -119,7 +119,7 @@ export async function recordSignal({ genres = [], type = 'view' } = {}) {
   // dönüp "Senin İçin" bölümünü gizliyordu.
   profile = { ...p, genres: capTop(g, MAX_GENRES), events: (p.events || 0) + 1, updatedAt: now };
   scheduleSave();
-  emit();
+  emit('local');
 
   if (__DEV__) {
     const top = topGenres(3).map((x) => `${x.name}(${x.weight.toFixed(1)})`).join(', ');
@@ -151,19 +151,7 @@ function normalize(obj) {
 // Tür → normalize ağırlık (toplam ~1) — skorlama için.
 // Etkileşim (view/wishlist) + kütüphane (oynanan) HARMANI.
 export function normalizedGenres() {
-  const interaction = normalize(decayed(profile, Date.now()).genres);
-  const library = profile.library?.genres || {};
-  const hasI = Object.keys(interaction).length > 0;
-  const hasL = Object.keys(library).length > 0;
-
-  if (hasI && hasL) {
-    // İkisi de var → yarı yarıya harman (kütüphane güçlü ama etkileşim güncel)
-    const out = {};
-    for (const k in interaction) out[k] = (out[k] || 0) + interaction[k] * (1 - LIBRARY_WEIGHT);
-    for (const k in library) out[k] = (out[k] || 0) + library[k] * LIBRARY_WEIGHT;
-    return out;
-  }
-  return hasL ? library : interaction;
+  return profileWeights(decayed(profile, Date.now()));
 }
 
 // Oynanan kütüphaneden türetilen zevk anlık görüntüsünü ayarla (birikmez, değiştirir).
@@ -172,7 +160,7 @@ export function setLibraryTaste(rawWeights = {}, sig = '') {
   const genres = normalize(rawWeights);
   profile = { ...profile, library: { genres, sig, updatedAt: Date.now() } };
   scheduleSave();
-  emit();
+  emit('local');
   if (__DEV__) {
     const top = Object.entries(genres).sort((a, b) => b[1] - a[1]).slice(0, 3)
       .map(([n, w]) => `${n}(${w.toFixed(2)})`).join(', ');
@@ -183,7 +171,7 @@ export function setLibraryTaste(rawWeights = {}, sig = '') {
 
 // Sunucudan gelen zevk profilini yerel profille BİRLEŞTİR (hesap senkronu).
 // Üzerine yazmıyoruz: iki cihazda da gezen kullanıcı sinyal kaybetmesin.
-export async function mergeRemoteTaste(remoteGenres = {}, remoteEvents = 0) {
+export async function mergeRemoteTaste(remoteGenres = {}, remoteEvents = 0, remoteLibrary) {
   if (!loaded) await loadProfile();
   const now = Date.now();
   const p = decayed(profile, now);
@@ -197,6 +185,7 @@ export async function mergeRemoteTaste(remoteGenres = {}, remoteEvents = 0) {
     genres: capTop(g, MAX_GENRES),
     events: Math.max(p.events || 0, Number(remoteEvents) || 0),
     updatedAt: now,
+    library: remoteLibrary && Number(remoteLibrary.updatedAt) > Number(p.library?.updatedAt || 0) ? remoteLibrary : p.library,
   };
   scheduleSave();
   emit();

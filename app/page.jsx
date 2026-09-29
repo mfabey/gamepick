@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback, useRef, useMemo, memo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import GameCard from './components/GameCard';
+import ForYouSection from './components/ForYouSection';
 import GameImage from './components/GameImage';
 import { useAuth } from './context/AuthContext';
 import { useLanguage } from './context/LanguageContext';
@@ -21,11 +22,9 @@ export default function Home() {
   const [sugLoading,  setSugLoading]  = useState(false);
 
   // Bölüm verileri
-  const [trendGames,   setTrendGames]   = useState([]);
   const [popularGames, setPopularGames] = useState([]); // hero arka plan için
   const [newGames,     setNewGames]     = useState([]);
   const [saleGames,    setSaleGames]    = useState([]);
-  const [loadingTrend, setLoadingTrend] = useState(true);
   const [loadingPop,   setLoadingPop]   = useState(true);
   const [loadingNew,   setLoadingNew]   = useState(true);
   const [loadingSale,  setLoadingSale]  = useState(true);
@@ -43,15 +42,6 @@ export default function Home() {
     finally { loadingSetter(false); }
   }, []);
 
-  // Gerçek zamanlı trending verisi (SteamSpy + RAWG)
-  useEffect(() => {
-    setLoadingTrend(true);
-    fetch('/api/trending')
-      .then(r => r.json())
-      .then(d => setTrendGames(d.results || []))
-      .catch(() => {})
-      .finally(() => setLoadingTrend(false));
-  }, []);
 
   useEffect(() => {
     fetchSection('popular',  setPopularGames, setLoadingPop);
@@ -221,16 +211,7 @@ export default function Home() {
           <Link href="/reviews"><span className="shortcut-index">02</span><span><strong>{lang === 'tr' ? 'Oyuncudan oyuncuya.' : 'From one player to another.'}</strong><small>{lang === 'tr' ? 'İncelemeleri oku, sohbete katıl' : 'Read reviews, join the conversation'}</small></span><span aria-hidden="true">↗</span></Link>
           <Link href={user ? '/library' : '/signup'}><span className="shortcut-index">03</span><span><strong>{lang === 'tr' ? 'Koleksiyonun burada.' : 'Your collection lives here.'}</strong><small>{lang === 'tr' ? 'Kütüphaneni tek yerden takip et' : 'Keep track of your game library'}</small></span><span aria-hidden="true">↗</span></Link>
         </div>
-        {/* Bu Hafta Trend — Yayıncıların oynadığı popüler oyunlar */}
-        <Section
-          title={lang === 'tr' ? 'Bu Hafta Trend' : 'Trending This Week'}
-          subtitle={lang === 'tr' ? 'Yayıncıların en çok oynadığı yapımlar' : 'Popular games played by streamers'}
-          href="/games?section=popular"
-          games={trendGames}
-          loading={loadingTrend}
-          badge={lang === 'tr' ? 'CANLI' : 'LIVE'}
-          cardWidth={188}
-        />
+        <ForYouSection />
 
         {/* Yeni Çıkanlar */}
         <Section

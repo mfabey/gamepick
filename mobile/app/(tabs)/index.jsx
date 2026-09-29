@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomFade } from '../../src/components/EdgeFade';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { fetchTrending, fetchGames } from '../../src/api/games';
+import { fetchGames } from '../../src/api/games';
 import { radius, spacing, PRESSED, type, SECTION_TITLE, TOUCH_MIN } from '../../src/theme';
 import { useTabBosluk } from '../../src/hooks/useAltBosluk';
 import { useYanBosluk } from '../../src/hooks/useIcerikAlani';
@@ -40,7 +40,7 @@ import { getReviewFeed, getFriendActivity, fetchPosts } from '../../src/api/soci
 import { getSession, subscribeSession } from '../../src/services/session';
 import { getCollections, subscribeCollections } from '../../src/services/collectionsStore';
 import { genreSlugsFor, rankCandidates } from '../../src/services/recommend';
-import { interleaveReviews, mergeSocial, orderHighlights, mergeHighlights, highlightIds } from '../../src/services/homeFeed';
+import { interleaveReviews, mergeSocial } from '../../src/services/homeFeed';
 import { useTabPressAction, scrollRefToTop } from '../../src/hooks/useTabPressAction';
 import { useReducedMotion } from '../../src/hooks/useReducedMotion';
 
@@ -73,24 +73,14 @@ export default function HomeScreen() {
   const onTabScroll = useTabBarScroll();
   const { t, lang, formatPrice } = useLanguage();
   const router = useRouter();
+  const [session, setSession] = useState(() => getSession());
+  useEffect(() => subscribeSession(() => setSession(getSession())), []);
+  const owner = session?.user?.uid || 'guest';
+  const [day, setDay] = useState(() => Math.floor(Date.now() / 86400000));
+  useFocusEffect(useCallback(() => { setDay(Math.floor(Date.now() / 86400000)); }, []));
 
-  const { data: trendData, ts: trendTs, refetch: trendTazele } = useQuery('home:trending', fetchTrending, { ttl: 3 * 60 * 1000 });
   const { data: newData, ts: newTs, refetch: newTazele }       = useQuery('home:new', fetchNewGames, { ttl: 5 * 60 * 1000 });
   const { data: saleData, ts: saleTs, refetch: saleTazele }    = useQuery('home:sale', fetchSaleGames, { ttl: 5 * 60 * 1000 });
-
-  // ── BANDIN OKUDUĞU DAMGA: ÜÇÜNÜN EN ESKİSİ ──
-  // Anasayfa üç ayrı sorgudan besleniyor ve üçü ayrı anlarda tazeleniyor.
-  // En YENİSİ yazılsaydı bant, ekrandaki en bayat şeridi gizleyerek
-  // olduğundan taze gösterirdi. En eskisi "içerik EN AZ bu kadar eski"
-  // diyor — eksik tarafta yanılmak, fazla tarafta yanılmaktan iyidir.
-  const enEskiTs = useMemo(() => {
-    const hepsi = [trendTs, newTs, saleTs].filter(Boolean);
-    return hepsi.length ? Math.min(...hepsi) : 0;
-  }, [trendTs, newTs, saleTs]);
-
-  const hepsiniTazele = useCallback(() => {
-    trendTazele(); newTazele(); saleTazele();
-  }, [trendTazele, newTazele, saleTazele]);
 
   // ── ŞERİT HAZIRLIĞI ──
   // Boş `image` alanı SÜZÜLÜYOR (aşağıdaki `kapakVar`) — ama ölçüldü: alan
@@ -112,8 +102,6 @@ export default function HomeScreen() {
       .slice(0, n);
   }, []);
 
-  const trend = useMemo(
-    () => hazirla(trendData?.results || trendData?.games || [], 14), [trendData, hazirla]);
   const fresh = useMemo(() => hazirla(newData?.results || [], 12), [newData, hazirla]);
   const sale  = useMemo(() => hazirla(saleData?.results || [], 12), [saleData, hazirla]);
 
@@ -155,43 +143,35 @@ export default function HomeScreen() {
   // Bağlı Steam kütüphanesini türle eşle → saat-ağırlıklı zevk sinyali (en güçlü)
   useLibraryTaste();
   const { isCold, topGenres, normalizedGenres, profile } = useTasteProfile();
-  // ── TÜR İMZASI OTURUM BOYUNCA SABİT ──────────────────────────────────────
-  // ÖLÇÜLDÜ, ÜÇ AŞAMADA. "Senin için" şeridi her geri dönüşte değişiyordu ve
-  // arkasında üç ayrı mekanizma vardı; ikisini kapatınca üçüncüsü kaldı:
-  //   1. useForYouFeed'in SIRALI sıfırlama imzası      → sırasız yapıldı
-  //   2. rankCandidates'ın seenIds/profile bağımlılığı → bağımlılıktan çıktı
-  //   3. topGenres(4)'ün KÜMESİ                        → burası
-  //
-  // Detay her açılışta `recordSignal({type:'view'})` çağırıyor; ağırlıklar
-  // oynayınca 4. sıradaki tür değişebiliyor, aday sorgusunun anahtarı farklı
-  // çıkıyor ve şerit baştan çekiliyordu. Ölçüm: ilk karta girip çıkınca şerit
-  // Manor Lords · SUPERHOT VR · Baldur's iken Crusader Kings III · Sayonara
-  // Wild Hearts · Red Alert oluyordu.
-  //
-  // İLK DOLU DEĞER DONUYOR: profil AsyncStorage'dan asenkron geliyor, ilk
-  // render'da boş olabiliyor — boş değeri dondurmak şeridi kalıcı olarak
-  // yedek türlere kilitlerdi.
-  //
-  // Öneri KAYBOLMUYOR: profil birikmeye devam ediyor ve uygulamanın bir
-  // sonraki açılışında yeni imza kullanılıyor. Değişen tek şey, kullanıcı
-  // ekrandayken listenin ayağının altından kaymaması.
+  const [recommendationEpoch, setRecommendationEpoch] = useState(0);
+  const lastRefresh = useRef(Date.now());
+  // Keep the shelf stable while returning from a game, but reset for a new
+  // account, a new day or an explicit refresh. A cold profile still gets a shelf.
   const canliSluglar = genreSlugsFor(topGenres(4));
-  const sluglarRef = useRef(null);
-  if (!sluglarRef.current && canliSluglar.length > 0) sluglarRef.current = canliSluglar;
-  const forYouSlugs = sluglarRef.current || canliSluglar;
-  // Adaylar tür imzasına göre cache'li.
-  //
-  // ANAHTAR SIRASIZ — bkz. useForYouFeed'deki aynı gerekçe. Sıralı anahtar,
-  // her detay ziyaretinden sonra tür ağırlıkları oynayınca DEĞİŞİYOR ve
-  // önbelleği ıskalıyordu: "Senin için" şeridi her dönüşte baştan çekiliyor,
-  // farklı oyunlar gösteriyordu. Küme aynıysa adaylar da aynı; sıra yalnızca
-  // sıralamayı etkiliyor, o da aşağıda `genreWeights` ile ayrıca yapılıyor.
-  const candKey = `foryou-cand:${[...forYouSlugs].sort().join(',')}`;
-  const { data: candData } = useQuery(
-    candKey,
-    () => fetchForYouCandidates(forYouSlugs),
-    { ttl: 5 * 60 * 1000, enabled: !isCold }
+  const sluglarRef = useRef({ owner: null, day: null, slugs: null });
+  if (sluglarRef.current.owner !== owner || sluglarRef.current.day !== day) {
+    sluglarRef.current = { owner, day, slugs: null };
+  }
+  if (!sluglarRef.current.slugs && canliSluglar.length) sluglarRef.current.slugs = canliSluglar;
+  const forYouSlugs = sluglarRef.current.slugs || [];
+  const candKey = `foryou-v2:${day}:${[...forYouSlugs].sort().join(',')}`;
+  const { data: candData, ts: candTs, loading: candLoading, isValidating: candRefreshing, refetch: candTazele } = useQuery(
+    candKey, () => fetchForYouCandidates(forYouSlugs), { ttl: 5 * 60 * 1000 }
   );
+  const enEskiTs = useMemo(() => {
+    const values = [candTs, newTs, saleTs].filter(Boolean);
+    return values.length ? Math.min(...values) : 0;
+  }, [candTs, newTs, saleTs]);
+  const hepsiniTazele = useCallback(() => {
+    lastRefresh.current = Date.now();
+    sluglarRef.current.slugs = canliSluglar.length ? canliSluglar : null;
+    setRecommendationEpoch(n => n + 1);
+    candTazele(); newTazele(); saleTazele();
+  }, [candTazele, newTazele, saleTazele, canliSluglar.join(',')]);
+  useFocusEffect(useCallback(() => {
+    // Return trips from a detail stay stable; longer absences refresh the shelf.
+    if (Date.now() - lastRefresh.current > 5 * 60 * 1000) hepsiniTazele();
+  }, [hepsiniTazele]));
   // Sahip olunan oyunlar (owned filtresi) — bağlıysa daima
   const ownedNames = useOwnedGames();
   // Görülen oyunlar (tazelik cezası)
@@ -220,7 +200,7 @@ export default function HomeScreen() {
   const forYou = useMemo(
     () => (candData ? rankCandidates(candData, { genreWeights: normalizedGenres(), ownedNames, seenIds, dismissedIds, limit: 12 }) : []),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [candData, ownedNames, dismissedIds]
+    [candData, ownedNames, dismissedIds, owner, isCold, recommendationEpoch]
   );
 
   // ── Sonsuz keşif akışı ──
@@ -244,6 +224,7 @@ export default function HomeScreen() {
     [forYou, fresh, sale]
   );
   const { items: feedItems, loadMore, loadingMore } = useForYouFeed({
+    ownerKey: `${owner}:${day}:${recommendationEpoch}`,
     enabled: true,
     slugs: feedSlugs,
     genreWeights,
@@ -255,14 +236,12 @@ export default function HomeScreen() {
   // ── Topluluk incelemeleri ──
   // İki uç PARALEL: biri diğerini beklemiyor ve ikisi de akışı bağlamıyor —
   // düşerlerse anasayfa yalnızca incelemesiz açılıyor, boş değil.
-  const [session, setSession] = useState(() => getSession());
-  useEffect(() => subscribeSession(() => setSession(getSession())), []);
   const [reviews, setReviews] = useState([]);
   const [posts, setPosts] = useState([]);
   const [friendGames, setFriendGames] = useState([]);
   const mod = useModerasyon();
   // Dev-only ölçüm: iskelet gerekli mi kararını sayıya bağlamak için.
-  useTimeToData('Home', trend.length > 0);
+  useTimeToData('Home', forYou.length > 0);
 
   const loadSocial = useCallback(() => {
     // İncelemeler HESAPSIZ da okunuyor (bkz. api/social/reviews/feed). Eskiden
@@ -344,36 +323,12 @@ export default function HomeScreen() {
     router.push('/reviews');
   }, [router]);
 
-  // ── Lider bölüm ──
-  // Header'da eskiden dört şerit vardı (arkadaşlar, Senin İçin, trend, yeni,
-  // indirim) ve hepsi aynı biçimdeydi; göz aralarında sıra kuramıyordu. Daha
-  // kötüsü hepsi ListHeaderComponent'te olduğu için asıl gövde — sosyal akış —
-  // kıvrımın ~1000pt altında başlıyordu.
-  //
-  // Artık TEK lider var ve hangisi olacağı veriye bakıyor: kişiye en özel olan
-  // hangisiyse o. Kalanlar akışa etiketli olarak karışıyor.
-  const lead = useMemo(() => {
-    if (hasFriendSignal(friendGames)) return 'friends';
-    if (!isCold && forYou.length > 0) return 'forYou';
-    return 'trend';
-  }, [friendGames, isCold, forYou]);
-
-  // Lider olarak kullanılan liste akışa TEKRAR girmiyor.
-  // Yeni Çıkanlar ve İndirimdekiler AKIŞTAN ÇIKTI, kendi şeritlerine döndüler:
-  // ikisi de niyetle aranan bölümler ("indirime ne girmiş?") ve akışın içine
-  // dağılınca o niyet karşılanamıyordu. Akışa karışan tek şey trend — o zaten
-  // "şuna da bak" cinsinden, aranan bir şey değil.
-  const highlights = useMemo(() => orderHighlights({
-    trend: lead === 'trend' ? [] : trend,
-  }), [lead, trend]);
-
   // Engel kümesi değişince akış yeniden süzülüyor — bkz. services/engel.js.
   const engelSurumu = useEngelliler();
 
   const feed = useMemo(() => {
-    const hlIds = highlightIds(highlights);
     const games = feedItems.filter(
-      (g) => !dismissedIds.has(String(g.id)) && !hlIds.has(String(g.id))
+      (g) => !dismissedIds.has(String(g.id))
     );
     // Görseli olanları başa al, görseli olmayanları en sona at
     const sortedGames = [...games].sort((a, b) => {
@@ -393,8 +348,8 @@ export default function HomeScreen() {
       suz(reviews, (r) => r?.author?.uid || r?.uid),
       suz(posts, (x) => x?.author?.uid || x?.uid),
     );
-    return mergeHighlights(interleaveReviews(sortedGames, social), highlights);
-  }, [feedItems, dismissedIds, reviews, posts, highlights, engelSurumu]);
+    return interleaveReviews(sortedGames, social);
+  }, [feedItems, dismissedIds, reviews, posts, engelSurumu]);
 
   // ── Paylaşım BU EKRANDA DEĞİL ──
   // Şerit kartlarının kapağında bir "arkadaşa gönder" dairesi vardı; dört
@@ -596,26 +551,24 @@ export default function HomeScreen() {
           </Pressable>
         </FadeIn>
 
-        {/* Not: Kayan kapak şeridi kaldırıldı. Trend/Yeni oyunları zaten
-            aşağıdaki kendi bölümlerinde gösteriyoruz; şerit aynı oyunları
-            ikinci kez, üstelik başlıksız gösterdiği için haberlerin önünü
-            gereksiz kapatıyordu. */}
-
-        {/* Arkadaş etkinliği KATALOG ŞERİTLERİNDEN ÖNCE. Sıra bilinçli:
-            "Trend" ve "Yeni" herkese aynı şeyi gösteriyor, bu şerit ise
-            yalnızca bu kullanıcıya ait. Kişiye özel olan, genel olanın
-            üstünde durmalı. */}
-        {lead === 'friends' && (
-          <FadeIn delay={120}>
-            <FriendActivity games={friendGames} onExpand={kartAc} />
-          </FadeIn>
-        )}
-
-        {lead === 'forYou' && (
-          <FadeIn delay={140}><Section title={t('home.forYou')} games={forYou} router={router} onDismiss={handleDismiss} onExpand={kartAc} /></FadeIn>
-        )}
-        {lead === 'trend' && (
-          <FadeIn delay={140}><Section title={t('home.trend')} games={trend} router={router} onExpand={kartAc} /></FadeIn>
+        <FadeIn delay={120}>
+          {forYou.length > 0 ? (
+            <Section title={t('home.forYou')} subtitle={t(isCold ? 'home.forYouStart' : 'home.forYouPersonal')}
+              games={forYou} router={router} onDismiss={handleDismiss} onExpand={kartAc} href="/swipe" />
+          ) : (
+            <View style={{ marginTop: spacing.s24, paddingHorizontal: spacing.s20, gap: spacing.s12 }}>
+              <Text style={styles.sectionTitle}>{t('home.forYou')}</Text>
+              {candLoading ? <ActivityIndicator color={colors.accent} /> : (
+                <Pressable onPress={hepsiniTazele} accessibilityRole="button">
+                  <Text style={{ color: colors.text2 }}>{t('home.forYouEmpty')}</Text>
+                  <Text style={styles.viewAll}>{t('common.retry')}</Text>
+                </Pressable>
+              )}
+            </View>
+          )}
+        </FadeIn>
+        {hasFriendSignal(friendGames) && (
+          <FadeIn delay={160}><FriendActivity games={friendGames} onExpand={kartAc} /></FadeIn>
         )}
 
         {/* Yeni Çıkanlar ve İndirimdekiler LİDERİN ALTINDA, tam ağırlıkta.
@@ -645,6 +598,8 @@ export default function HomeScreen() {
         renderItem={renderFeedItem}
         ListHeaderComponent={header}
         onEndReached={loadMore}
+        onRefresh={hepsiniTazele}
+        refreshing={candRefreshing}
         onEndReachedThreshold={0.6}
         // Geniş ekranda kolon ortalanıyor (bkz. theme → ICERIK_MAX).
         contentContainerStyle={[styles.listContent, { paddingHorizontal: yan }]}
@@ -682,7 +637,7 @@ function go(router, g) {
   });
 }
 
-function Section({ title, games, router, onDismiss, onExpand }) {
+function Section({ title, subtitle, games, router, onDismiss, onExpand, href = '/games' }) {
   const { t } = useLanguage();
   // Kanca erken donusten ONCE: asagida `games` bossa null donuluyor.
   const styles = useStyles(makeStyles);
@@ -696,10 +651,11 @@ function Section({ title, games, router, onDismiss, onExpand }) {
             flex:1 + shrink:0 ikilisi: başlık kalan yeri alır, bağlantı
             asla ezilmez. */}
         <Text style={[styles.sectionTitle, { flex: 1 }]}>{title}</Text>
-        <Pressable onPress={() => router.push('/games')} hitSlop={8} style={{ flexShrink: 0 }}>
+        <Pressable onPress={() => router.push(href)} hitSlop={8} style={{ flexShrink: 0 }}>
           <Text style={styles.viewAll}>{t('home.viewAll')} ›</Text>
         </Pressable>
       </View>
+      {subtitle && <Text style={[styles.forYouSubtitle]}>{subtitle}</Text>}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
         {games.map(g => <HomeCard key={g.id} game={g} router={router} onDismiss={onDismiss} onExpand={onExpand} />)}
       </ScrollView>
@@ -795,6 +751,7 @@ const makeStyles = (colors) => StyleSheet.create({
 
 
   // gap eklendi: başlık sarınca iki öğe birbirine yapışıyordu.
+  forYouSubtitle: { fontSize: type.footnote, color: colors.text3, marginHorizontal: spacing.s20, marginBottom: spacing.s12 },
   sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.s8, paddingHorizontal: spacing.s20, marginBottom: spacing.md },
   sectionTitle: { ...SECTION_TITLE, color: colors.text2 },
   // Bölüm başına bir tane olduğu için ekranda üç kez tekrarlıyordu. Gideceği

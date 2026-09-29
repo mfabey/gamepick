@@ -5,7 +5,7 @@
 // Görüldü/elendi karşılaştırması BİREBİR KİMLİKLE DEĞİL: aynı oyun listeye
 // hangi uçtan geldiğine göre iki farklı `rawg_` kimliği taşıyabiliyor, o yüzden
 // elenen oyun öteki uzaydan geri geliyordu. Gerekçe ve ölçüm: oyunKimlik.js.
-import { kumedeVar } from './oyunKimlik';
+import { kumedeVar, ayniOyun } from './oyunKimlik';
 
 // Tür adı → RAWG genre slug (aday üretiminde /api/games?genres=<slug> için)
 export const GENRE_SLUG = {
@@ -54,6 +54,8 @@ export const GENRE_CANON = {
 };
 
 export function canonicalGenre(name) {
+  name = typeof name === 'object' ? name?.name : name;
+  if (name === 'Role-Playing') return 'RPG';
   return GENRE_CANON[name] || name;
 }
 
@@ -62,7 +64,7 @@ export function genreSlugsFor(topGenres = [], max = 3) {
   const slugs = [];
   for (const item of topGenres) {
     const name = typeof item === 'string' ? item : item?.name;
-    const slug = GENRE_SLUG[name];
+    const slug = GENRE_SLUG[canonicalGenre(name)];
     if (slug && !slugs.includes(slug)) slugs.push(slug);
     if (slugs.length >= max) break;
   }
@@ -126,9 +128,10 @@ export function scoreGame(game, genreWeights = {}, { ownedNames, seenIds } = {})
 export function rankCandidates(candidates, { genreWeights = {}, ownedNames, seenIds, dismissedIds, limit = 20, diversity = 0.2 } = {}) {
   const map = new Map();
   for (const g of candidates || []) {
-    if (!g || g.id == null || map.has(g.id)) continue;
+    if (!g || g.id == null || map.has(String(g.id))) continue;
     if (kumedeVar(dismissedIds, g)) continue;   // "İlgilenmiyorum" → sert eleme
-    map.set(g.id, g);
+    if ([...map.values()].some(existing => ayniOyun(existing, g))) continue;
+    map.set(String(g.id), g);
   }
 
   const pool = [...map.values()]

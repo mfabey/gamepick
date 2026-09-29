@@ -6,7 +6,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { getValidToken, getAccount } from './session';
 import { pushUserData } from '../api/account';
-import { getProfile, mergeRemoteTaste } from './tasteProfile';
+import { getProfile, loadProfile, mergeRemoteTaste } from './tasteProfile';
 import { loadCollections, syncPayload, applyMergedCollections } from './collectionsStore';
 
 let running = false;
@@ -41,6 +41,8 @@ export async function syncAccountData(wishlist = [], applyWishlist, force = fals
 
   running = true;
   try {
+    await loadProfile();
+    if (getAccount()?.uid !== uid) return false;
     const local = getProfile();
     // Koleksiyonlar diskten yüklenmeden gönderilirse sunucuya BOŞ liste gider
     // ve birleştirme yerelde henüz okunmamış kayıtları göremez.
@@ -48,7 +50,7 @@ export async function syncAccountData(wishlist = [], applyWishlist, force = fals
     const cols = syncPayload();
 
     const res = await pushUserData(token, {
-      taste: { genres: local.genres || {}, events: local.events || 0 },
+      taste: { genres: local.genres || {}, events: local.events || 0, library: local.library },
       wishlist,
       collections: cols.collections,
       deleted: cols.deleted,
@@ -60,7 +62,7 @@ export async function syncAccountData(wishlist = [], applyWishlist, force = fals
     if (getAccount()?.uid !== uid) return false;
 
     if (res?.taste?.genres) {
-      await mergeRemoteTaste(res.taste.genres, res.taste.events);
+      await mergeRemoteTaste(res.taste.genres, res.taste.events, res.taste.library);
     }
     if (Array.isArray(res?.wishlist) && typeof applyWishlist === 'function') {
       await applyWishlist(res.wishlist);

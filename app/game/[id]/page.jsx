@@ -1,14 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth, normalizeName } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { recordWebTaste } from '../../lib/web-taste';
 
 export default function GameDetailPage({ params }) {
   const slug = params.id || params.slug;
-  const { user, ownedGames, xboxOwnedGames = new Set(), gamePassGames = new Set() } = useAuth();
+  const { user, ready, ownedGames, xboxOwnedGames = new Set(), gamePassGames = new Set() } = useAuth();
   const { lang, t, formatPrice } = useLanguage();
 
   const [game,         setGame]         = useState(null);
@@ -28,6 +29,14 @@ export default function GameDetailPage({ params }) {
   const [error,        setError]        = useState(null);
   const [imgIdx,       setImgIdx]       = useState(0);
   const [inWishlist,   setInWishlist]   = useState(false);
+  const recordedView = useRef(null);
+  useEffect(() => {
+    if (!ready || !game?.genres?.length) return;
+    const key = `${user?.uid || 'guest'}:${game.id || game.slug}`;
+    if (recordedView.current === key) return;
+    recordedView.current = key;
+    recordWebTaste(user?.uid || null, game.genres, 'view');
+  }, [ready, user?.uid, game]);
 
   const formatReleaseDate = (dateStr) => {
     if (!dateStr) return '';
@@ -97,6 +106,7 @@ export default function GameDetailPage({ params }) {
         };
         updated = [...(stored || []).filter(w => String(w.id) !== String(item.id)), item];
         setInWishlist(true);
+        // Keep the wishlist write and taste write sequential: both share user/data.
       }
       try {
         localStorage.setItem('gamerisen_wishlist', JSON.stringify(updated));
@@ -109,6 +119,7 @@ export default function GameDetailPage({ params }) {
           body: JSON.stringify({ wishlist: updated, overwriteWishlist: true }),
         }).catch(() => {});
       }
+      if (!inWishlist) recordWebTaste(user?.uid || null, game.genres, 'wishlist');
     } catch {}
   };
 
