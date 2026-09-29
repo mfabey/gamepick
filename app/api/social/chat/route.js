@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { verifyMobileToken } from '../../../lib/mobile-auth';
 import { rateLimit, tooManyRequests } from '../../../lib/rate-limit';
 import { validateFreeText } from '../../../lib/content-filter';
-import { areFriends, getHiddenUids, getProfile } from '../../../lib/social-store';
+import { areFriends, getHiddenUids, getProfile, isPrivilegedViewer } from '../../../lib/social-store';
 import {
   convId, appendMessage, getHistory, markRead, deleteMessage, getReadAt, isTyping, MAX_TEXT,
 } from '../../../lib/chat-store';
@@ -20,6 +20,7 @@ import { sendPush } from '../../../lib/push';
 // YALNIZCA ARKADAŞLAR. Bu, yabancıdan gelen mesaj spam'ini kökten kapatan en
 // basit kural: rastgele kullanıcıya yazmanın yolu yok, önce arkadaşlık isteği
 // kabul edilmeli. Apple Guideline 1.2'nin istediği önlemlerden biri de bu.
+// Geliştirici ve destek hesapları istisnadır.
 //
 // ENGELLEME arkadaşlıktan BAĞIMSIZ kontrol ediliyor: iki kullanıcı arkadaş
 // kalıp birbirini engellemiş olabilir; engel her durumda kazanır.
@@ -72,6 +73,11 @@ async function canTalk(me, other) {
   if (!other || other === me) return 'INVALID_TARGET';
   const hidden = await getHiddenUids(me);
   if (hidden.has(other)) return 'BLOCKED';
+
+  // Geliştirici / Destek hesapları her kullanıcıyla iletişim kurabilir
+  const isDev = (await isPrivilegedViewer(me)) || (await isPrivilegedViewer(other));
+  if (isDev) return null;
+
   if (!(await areFriends(me, other))) return 'NOT_FRIENDS';
   return null;
 }

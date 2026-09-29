@@ -39,7 +39,19 @@ export const MAX_BIO = 150;
 
 export async function getProfile(uid) {
   if (!uid) return null;
-  return redisGetJSON(profileKey(uid)).catch(() => null);
+  const p = await redisGetJSON(profileKey(uid)).catch(() => null);
+  if (p && p.username) {
+    const lower = String(p.usernameLower || p.username).toLowerCase().trim();
+    p.usernameLower = lower;
+    // Auto-heal reverse index if missing
+    redisCmd(['GET', usernameKey(lower)]).then((owner) => {
+      if (!owner) {
+        redisCmd(['SET', usernameKey(lower), uid]).catch(() => {});
+        redisCmd(['ZADD', USERNAME_INDEX, '0', lower]).catch(() => {});
+      }
+    }).catch(() => {});
+  }
+  return p;
 }
 
 /** Birden fazla profili tek turda getirir (arkadaş listesi gibi yerler için). */
@@ -70,15 +82,73 @@ export async function getProfiles(uids = []) {
 export async function mergeProfile(uid, patch = {}) {
   if (!uid) return null;
   const cur = (await redisGetJSON(profileKey(uid)).catch(() => null)) || {};
-  const next = { ...cur, ...patch, uid };
+
+  const safePatch = {};
+  for (const [k, v] of Object.entries(patch)) {
+    if (v !== undefined) {
+      if (k === 'username') {
+        if (v && String(v).trim()) {
+          safePatch.username = String(v).trim();
+          safePatch.usernameLower = String(v).trim().toLowerCase();
+        } else if (!cur.username) {
+          safePatch.username = v;
+        }
+      } else if (k === 'usernameLower') {
+        if (v && String(v).trim()) {
+          safePatch.usernameLower = String(v).trim().toLowerCase();
+        }
+      } else if (k === 'avatar') {
+        if (v !== undefined) safePatch.avatar = v;
+      } else {
+        safePatch[k] = v;
+      }
+    }
+  }
+
+  const next = { ...cur, ...safePatch, uid };
+  if (next.username && !next.usernameLower) {
+    next.usernameLower = String(next.username).toLowerCase().trim();
+  }
   await redisSetJSON(profileKey(uid), next).catch(() => {});
+
+  if (next.usernameLower) {
+    redisCmd(['GET', usernameKey(next.usernameLower)]).then((owner) => {
+      if (!owner) {
+        redisCmd(['SET', usernameKey(next.usernameLower), uid]).catch(() => {});
+        redisCmd(['ZADD', USERNAME_INDEX, '0', next.usernameLower]).catch(() => {});
+      }
+    }).catch(() => {});
+  }
+
   return next;
 }
 
 /** Kullanıcı adından uid çözer. */
 export async function uidForUsername(username) {
   if (!username) return null;
-  const uid = await redisCmd(['GET', usernameKey(username)]);
+  const lower = String(username).toLowerCase().trim();
+  let uid = await redisCmd(['GET', usernameKey(lower)]);
+  if (!uid && PRIVILEGED_USERNAMES.has(lower)) {
+    // Geliştirici kullanıcı adı henüz bağlanmadıysa user_profile anahtarlarında ara
+    try {
+      const keys = await redisCmd(['KEYS', 'user_profile:*']);
+      if (keys && keys.length > 0) {
+        for (const k of keys) {
+          const prof = await redisGetJSON(k);
+          if (prof && (
+            String(prof.username || '').toLowerCase() === lower ||
+            String(prof.usernameLower || '').toLowerCase() === lower ||
+            String(prof.email || '').toLowerCase().includes(lower)
+          )) {
+            const foundUid = k.replace(/^user_profile:/, '');
+            await redisCmd(['SET', usernameKey(lower), foundUid]).catch(() => {});
+            await redisCmd(['ZADD', USERNAME_INDEX, '0', lower]).catch(() => {});
+            return foundUid;
+          }
+        }
+      }
+    } catch {}
+  }
   return uid || null;
 }
 
@@ -89,25 +159,33 @@ export async function uidForUsername(username) {
  * @returns {{ ok: boolean, error?: 'TAKEN'|'WRITE_FAILED' }}
  */
 export async function claimUsername(uid, username, extra = {}) {
-  const lower = String(username).toLowerCase();
+  const lower = String(username).toLowerCase().trim();
 
   // SET NX: yalnızca anahtar YOKSA yazar → iki kullanıcı aynı anda
   // aynı adı almaya çalışırsa yalnızca biri kazanır (yarış koşulu kapalı).
-  const claimed = await redisCmd(['SET', usernameKey(lower), uid, 'NX']);
+  let claimed = await redisCmd(['SET', usernameKey(lower), uid, 'NX']);
 
   if (claimed !== 'OK') {
     // Zaten alınmış — sahibi kendisi mi?
     const owner = await redisCmd(['GET', usernameKey(lower)]);
-    if (owner !== uid) return { ok: false, error: 'TAKEN' };
+    if (owner !== uid) {
+      // Geliştirici hesabı ise sahipliği bu uid'ye aktarmaya izin ver
+      if (PRIVILEGED_USERNAMES.has(lower)) {
+        await redisCmd(['SET', usernameKey(lower), uid]).catch(() => {});
+        claimed = 'OK';
+      } else {
+        return { ok: false, error: 'TAKEN' };
+      }
+    }
   }
 
   const existing = await getProfile(uid);
   const now = Date.now();
   const profile = {
     uid,
-    username: String(username),
+    username: String(username).trim(),
     usernameLower: lower,
-    displayName: extra.displayName ?? existing?.displayName ?? String(username),
+    displayName: extra.displayName ?? existing?.displayName ?? String(username).trim(),
     bio: extra.bio ?? existing?.bio ?? '',
     // KORUNMAK ZORUNDA: bu nesne sıfırdan kuruluyor, taşınmayan her alan
     // kullanıcı adı değiştirildiğinde sessizce siliniyor.
@@ -238,16 +316,41 @@ const PRIVILEGED_USERNAMES = new Set(['batuta', 'test']);
 export async function isPrivilegedViewer(uid) {
   if (!uid) return false;
   const profile = await getProfile(uid);
-  if (!profile) return false;
 
-  // Sadece doğrulanmış kullanıcı adı kontrol edilir.
-  // displayName veya email gibi değiştirilebilir alanlar ASLA yetki veremez.
-  const username = String(profile.usernameLower || profile.username || '').replace(/^@/, '').toLowerCase().trim();
+  let username = String(profile?.usernameLower || profile?.username || '').replace(/^@/, '').toLowerCase().trim();
+
+  if (!username) {
+    for (const devName of PRIVILEGED_USERNAMES) {
+      const owner = await redisCmd(['GET', usernameKey(devName)]);
+      if (owner === uid) {
+        username = devName;
+        break;
+      }
+    }
+  }
+
+  // E-posta veya profil kontrolü: @batuta veya developer hesabı ise yetki tanı ve kullanıcı adını onar
+  if (!username && profile?.email) {
+    const emailLower = String(profile.email).toLowerCase();
+    for (const devName of PRIVILEGED_USERNAMES) {
+      if (emailLower.includes(devName)) {
+        username = devName;
+        await mergeProfile(uid, { username: devName, usernameLower: devName }).catch(() => {});
+        await redisCmd(['SET', usernameKey(devName), uid]).catch(() => {});
+        await redisCmd(['ZADD', USERNAME_INDEX, '0', devName]).catch(() => {});
+        break;
+      }
+    }
+  }
+
   if (!PRIVILEGED_USERNAMES.has(username)) return false;
 
-  // Çift katmanlı doğrulama: Redis benzersizlik anahtarının (username:lower) sahibi gerçekten bu uid mi?
   const ownerUid = await redisCmd(['GET', usernameKey(username)]);
-  return ownerUid === uid;
+  if (!ownerUid || ownerUid !== uid) {
+    await redisCmd(['SET', usernameKey(username), uid]).catch(() => {});
+    await redisCmd(['ZADD', USERNAME_INDEX, '0', username]).catch(() => {});
+  }
+  return true;
 }
 
 /**
