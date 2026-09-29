@@ -7,6 +7,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import GameCard from './components/GameCard';
 import GameImage from './components/GameImage';
+import ForYouSection from './components/ForYouSection';
 import { useAuth } from './context/AuthContext';
 import { useLanguage } from './context/LanguageContext';
 import { FALLBACK_GAMES } from './lib/fallback-games';
@@ -391,16 +392,8 @@ export default function Home() {
         {/* Sinematik vitrin */}
         <CinematicShowcase games={showcaseGames} />
 
-        {/* Bu Hafta Trend — Yayıncıların oynadığı popüler oyunlar */}
-        <Section
-          title={lang === 'tr' ? 'Bu Hafta Trend' : 'Trending This Week'}
-          subtitle={lang === 'tr' ? 'Yayıncıların en çok oynadığı yapımlar' : 'Popular games played by streamers'}
-          href="/games?section=popular"
-          games={trendGames}
-          loading={loadingTrend}
-          badge={lang === 'tr' ? 'CANLI' : 'LIVE'}
-          cardWidth={200}
-        />
+        {/* Senin İçin — Kişiselleştirilmiş öneriler */}
+        <ForYouSection />
 
         {/* Yeni Çıkanlar */}
         <Section

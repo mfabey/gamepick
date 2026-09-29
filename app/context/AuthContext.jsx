@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect } from 'react';
+import { bindTasteOwner } from '../lib/web-taste';
 
 const AuthContext = createContext(null);
 
@@ -14,7 +15,11 @@ export function normalizeName(name) {
 }
 
 export function AuthProvider({ children }) {
-  const [user,           setUser]           = useState(null);      // Site hesabı
+  const [user, setUserState] = useState(null);
+  const setUser = next => {
+    bindTasteOwner(next?.uid || null);
+    setUserState(next);
+  };
   const [steamUser,      setSteamUser]      = useState(null);      // İlk Steam hesabı (geriye uyumluluk)
   const [steamAccounts,  setSteamAccounts]  = useState([]);        // Tüm Steam hesapları
   const [xboxUser,       setXboxUser]       = useState(null);      // Xbox oturumu
@@ -55,6 +60,7 @@ export function AuthProvider({ children }) {
         setXboxUser(xboxData.user || null);
       }
     } catch (err) {
+      setUser(null);
       console.error('refreshAuth error:', err);
     }
   };
@@ -126,6 +132,7 @@ export function AuthProvider({ children }) {
   };
 
   const logout = async () => {
+    bindTasteOwner(undefined);
     try {
       await fetch('/api/auth/user-logout', { method: 'POST' });
     } catch {}

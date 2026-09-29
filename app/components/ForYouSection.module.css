@@ -1,0 +1,17 @@
+.section h2 { font-size: 26px; font-weight: 700; color: var(--text); }
+.description { margin-top: 6px; font-size: 15px; color: var(--text-3); }
+.actions, .choices { display: flex; gap: 8px; flex-wrap: wrap; }
+.actions { flex-shrink: 0; }
+.section button { border: 1px solid var(--border); border-radius: 999px; padding: 9px 15px; background: var(--bg-card); color: var(--text); font: inherit; font-size: 13px; cursor: pointer; }
+.section button:hover, .choices button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+.section button:disabled { opacity: .5; cursor: wait; }
+.section button:focus-visible, .row:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.choices { margin-bottom: 20px; }
+.row { min-width: 0; margin: 0; padding: 8px 0 12px; }
+.skeleton { width: 188px; height: 300px; flex-shrink: 0; border-radius: 16px; background: var(--bg-hover); }
+.empty { padding: 24px 0; color: var(--text-3); }
+.empty button { margin-top: 12px; }
+@media (max-width: 640px) {
+  .section :global(.section-heading) { align-items: flex-start; flex-direction: column; gap: 14px; }
+  .description { font-size: 14px; line-height: 1.5; }
+}

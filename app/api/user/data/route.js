@@ -4,6 +4,7 @@ import { verifyMobileToken } from '../../../lib/mobile-auth';
 import { readValue } from '../../../lib/session-cookie';
 import { redisGetJSON, redisSetJSON, redisPipeline, parseJSON } from '../../../lib/redis';
 import { mergeProfile } from '../../../lib/social-store';
+import { mergeTasteSnapshot, addTasteSignal } from '../../../../mobile/src/services/recommendProfile';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Hesaba bağlı kullanıcı verisi (zevk profili + takip listesi + koleksiyonlar).
@@ -13,7 +14,6 @@ import { mergeProfile } from '../../../lib/social-store';
 // PUT  → cihazdaki veriyi BİRLEŞTİREREK yaz (üzerine yazmaz)
 // ─────────────────────────────────────────────────────────────────────────────
 
-const MAX_GENRES = 60;
 const MAX_WISHLIST = 300;
 const MAX_COLLECTIONS = 50;
 const MAX_GAMES_PER_COL = 300;
@@ -114,7 +114,7 @@ export async function GET(request) {
     wishlist: wishlist || [],
     collections: collections || [],
     deleted: deleted || {},
-  });
+  }, { headers: { 'Cache-Control': 'private, no-store' } });
 }
 
 export async function PUT(request) {
@@ -123,6 +123,7 @@ export async function PUT(request) {
 
   let body = {};
   try { body = await request.json(); } catch { /* boş gövde */ }
+  if (!body || typeof body !== 'object' || Array.isArray(body)) body = {};
 
   const rows = await redisPipeline([
     ['GET', tasteKey(user.uid)],
@@ -132,24 +133,8 @@ export async function PUT(request) {
   ]);
   const [srvTaste, srvWish, srvCols, srvTombs] = (rows || []).map(parseJSON);
 
-  // ── Zevk profili: tür ağırlıklarını TOPLA ──────────────────────────────────
-  // Üzerine yazmıyoruz; iki cihazda da gezen kullanıcı sinyal kaybetmesin.
-  const merged = { ...(srvTaste?.genres || {}) };
-  const incoming = body.taste?.genres || {};
-  for (const k in incoming) {
-    const v = Number(incoming[k]);
-    if (Number.isFinite(v) && v > 0) merged[k] = (merged[k] || 0) + v;
-  }
-  // Bellek koruması: en ağır türleri tut
-  const genres = Object.fromEntries(
-    Object.entries(merged).sort((a, b) => b[1] - a[1]).slice(0, MAX_GENRES)
-  );
-
-  const taste = {
-    genres,
-    events: Math.max(srvTaste?.events || 0, Number(body.taste?.events) || 0),
-    updatedAt: Date.now(),
-  };
+  // Mobile sends a snapshot; web interactions send one explicit signal.
+  const taste = addTasteSignal(mergeTasteSnapshot(srvTaste || {}, body.taste || {}), body.tasteSignal);
 
   // ── Takip listesi: overwriteWishlist açıksa doğrudan yaz, yoksa sunucu verisi esastır ─────
   let wishlist;
@@ -183,10 +168,10 @@ export async function PUT(request) {
     : Promise.resolve();
 
   await Promise.all([
-    redisSetJSON(tasteKey(user.uid), taste).catch(() => {}),
-    redisSetJSON(wishKey(user.uid), wishlist).catch(() => {}),
-    redisSetJSON(colKey(user.uid), collections).catch(() => {}),
-    redisSetJSON(tombKey(user.uid), deleted).catch(() => {}),
+    (body.taste || body.tasteSignal) ? redisSetJSON(tasteKey(user.uid), taste) : null,
+    Array.isArray(body.wishlist) ? redisSetJSON(wishKey(user.uid), wishlist) : null,
+    (body.collections || body.deleted) ? redisSetJSON(colKey(user.uid), collections) : null,
+    (body.collections || body.deleted) ? redisSetJSON(tombKey(user.uid), deleted) : null,
     writeGameCount,
   ]);
 

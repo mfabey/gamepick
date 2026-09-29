@@ -1,14 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth, normalizeName } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { recordWebTaste } from '../../lib/web-taste';
 
 export default function GameDetailPage({ params }) {
   const slug = params.id || params.slug;
-  const { user, ownedGames, xboxOwnedGames = new Set(), gamePassGames = new Set() } = useAuth();
+  const { user, ready, ownedGames, xboxOwnedGames = new Set(), gamePassGames = new Set() } = useAuth();
   const { lang, t, formatPrice } = useLanguage();
 
   const [game,         setGame]         = useState(null);
@@ -28,6 +29,14 @@ export default function GameDetailPage({ params }) {
   const [error,        setError]        = useState(null);
   const [imgIdx,       setImgIdx]       = useState(0);
   const [inWishlist,   setInWishlist]   = useState(false);
+  const recordedView = useRef(null);
+  useEffect(() => {
+    if (!ready || !game?.genres?.length) return;
+    const key = `${user?.uid || 'guest'}:${game.id || game.slug}`;
+    if (recordedView.current === key) return;
+    recordedView.current = key;
+    recordWebTaste(user?.uid || null, game.genres, 'view');
+  }, [ready, user?.uid, game]);
 
   const formatReleaseDate = (dateStr) => {
     if (!dateStr) return '';
@@ -97,6 +106,7 @@ export default function GameDetailPage({ params }) {
         };
         updated = [...(stored || []).filter(w => String(w.id) !== String(item.id)), item];
         setInWishlist(true);
+        // Keep the wishlist write and taste write sequential: both share user/data.
       }
       try {
         localStorage.setItem('gamerisen_wishlist', JSON.stringify(updated));
@@ -109,6 +119,7 @@ export default function GameDetailPage({ params }) {
           body: JSON.stringify({ wishlist: updated, overwriteWishlist: true }),
         }).catch(() => {});
       }
+      if (!inWishlist) recordWebTaste(user?.uid || null, game.genres, 'wishlist');
     } catch {}
   };
 
@@ -132,21 +143,28 @@ export default function GameDetailPage({ params }) {
         setGame(g);
 
         // ── Steam fiyatı ─────────────────────────────────────────────────
-        if (g.steamAppId) {
-          setSteamLoading(true);
-          fetch('/api/steam-price?appid=' + g.steamAppId)
-            .then(r => r.json())
-            .then(d => { if (d.price != null) setSteamPrice(d); })
-            .catch(() => {})
-            .finally(() => setSteamLoading(false));
-        } else if (g.hasSteam) {
-          setSteamLoading(true);
-          fetch('/api/card-price?name=' + encodeURIComponent(g.name) + '&hasSteam=true')
-            .then(r => r.json())
-            .then(d => { if (d.price != null) setSteamPrice(d); })
-            .catch(() => {})
-            .finally(() => setSteamLoading(false));
-        }
+        const effSteamId = g.steamAppId
+          || (g.steamUrl ? g.steamUrl.match(/\/app\/(\d+)/)?.[1] : null)
+          || (g.id?.startsWith('rawg_') ? g.id.replace('rawg_', '') : (/^\d+$/.test(g.id) ? g.id : null));
+
+        setSteamLoading(true);
+        const steamPriceParam = effSteamId
+          ? `appid=${encodeURIComponent(effSteamId)}&name=${encodeURIComponent(g.name || '')}`
+          : `name=${encodeURIComponent(g.name || '')}`;
+
+        fetch('/api/steam-price?' + steamPriceParam)
+          .then(r => r.json())
+          .then(d => {
+            if (d && (d.price != null || d.isFree)) {
+              setSteamPrice(d);
+            } else {
+              setSteamPrice({ price: null, isFree: false, isAvailable: false });
+            }
+          })
+          .catch(() => {
+            setSteamPrice({ price: null, isFree: false, isAvailable: false });
+          })
+          .finally(() => setSteamLoading(false));
 
         // ── Epic + Xbox + GOG + Humble — ITAD (appid ile kesin eşleşme) ──
         setEpicLoading(true);
@@ -155,14 +173,29 @@ export default function GameDetailPage({ params }) {
         setHumbleLoading(true);
 
         // steamAppId varsa ITAD kesin lookup, her iki paramı gönder (lookup başarısız olursa title ile fallback çalışır)
-        const priceParam = g.steamAppId
-          ? `appid=${encodeURIComponent(g.steamAppId)}&title=${encodeURIComponent(g.name)}`
+        const priceParam = effSteamId
+          ? `appid=${encodeURIComponent(effSteamId)}&title=${encodeURIComponent(g.name)}`
           : `title=${encodeURIComponent(g.name)}`;
 
         fetch('/api/prices?' + priceParam)
           .then(r => r.json())
           .then(d => {
             const stores = d.stores || [];
+
+            // Steam — ITAD / prices route'u doğrudan Steam'i de içeriyorsa senkronize et
+            const itadSteam = stores.find(s =>
+              s.name?.toLowerCase().includes('steam') ||
+              s.storeId === '61'
+            );
+            if (itadSteam) {
+              setSteamPrice(prev => (prev && prev.price != null ? prev : {
+                price:    itadSteam.price,
+                original: itadSteam.original,
+                discount: itadSteam.discount ?? 0,
+                isFree:   itadSteam.isFree,
+                isAvailable: true,
+              }));
+            }
 
             // Epic — isimde 'epic' geçen her store
             const itadEpic = stores.find(s =>
@@ -490,19 +523,17 @@ export default function GameDetailPage({ params }) {
               <h2 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 10 }}>{t('detail.priceComparison')}</h2>
 
               {/* Steam */}
-              {game.hasSteam ? (
-                steamLoading
-                  ? <LoadingPriceRow />
-                  : (steamPrice && steamPrice.isAvailable !== false)
-                    ? <PriceCard store="Steam" icon="💻"
-                        price={steamPrice.price} original={steamPrice.original}
-                        discount={steamPrice.discount} isFree={steamPrice.isFree}
-                        url={game.steamUrl}
-                        highlight={isCheaperOption && bestStoreKey === 'Steam'}
-                      />
-                    : steamPrice?.isAvailable === false
-                      ? <MissingCard platform="Steam" />
-                      : <PlaceholderCard store="Steam" icon="💻" url={game.steamUrl} />
+              {steamLoading ? (
+                <LoadingPriceRow />
+              ) : (steamPrice && (steamPrice.price != null || steamPrice.isFree)) ? (
+                <PriceCard store="Steam" icon="💻"
+                  price={steamPrice.price} original={steamPrice.original}
+                  discount={steamPrice.discount} isFree={steamPrice.isFree}
+                  url={game.steamUrl || (effSteamId ? `https://store.steampowered.com/app/${effSteamId}` : undefined)}
+                  highlight={isCheaperOption && bestStoreKey === 'Steam'}
+                />
+              ) : (game.hasSteam || effSteamId) ? (
+                <PlaceholderCard store="Steam" icon="💻" url={game.steamUrl || `https://store.steampowered.com/app/${effSteamId || ''}`} />
               ) : (
                 <MissingCard platform="Steam" />
               )}
