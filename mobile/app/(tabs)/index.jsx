@@ -91,6 +91,8 @@ export default function HomeScreen() {
   const [session, setSession] = useState(() => getSession());
   useEffect(() => subscribeSession(() => setSession(getSession())), []);
   const owner = session?.user?.uid || 'guest';
+  const [showAllForYou, setShowAllForYou] = useState(false);
+  useEffect(() => setShowAllForYou(false), [owner]);
   const [day, setDay] = useState(() => Math.floor(Date.now() / 86400000));
   useFocusEffect(useCallback(() => { setDay(Math.floor(Date.now() / 86400000)); }, []));
   // Başlıktaki avatar (G-04) — sekme çubuğundaki profil avatarıyla aynı kaynak.
@@ -329,7 +331,7 @@ export default function HomeScreen() {
   // Cümledeki her bağlamın kendi hedefi var — selamlama okunacak bir başlık
   // değil, tek dokunuşluk bir kısayol. Oyuna giderken parametreler GameCard
   // ile aynı: detay ekranı ad/kapak beklemeden çiziliyor.
-  const baglamaGit = useCallback((hedef, oyun) => {
+  const baglamaGit = useCallback(({ hedef, oyun }) => {
     if (hedef === 'game' && oyun?.id) {
       router.push({
         pathname: '/game/[id]',
@@ -341,9 +343,11 @@ export default function HomeScreen() {
       return;
     }
     if (hedef === 'friends') { router.push('/friends'); return; }
-    // "Senin için" motorunun kendi ekranı deste — aynı useForYouFeed'i
-    // kullanıyor, dolayısıyla cümledeki sayı orada birebir karşılanıyor.
-    if (hedef === 'foryou')  { router.push('/swipe'); return; }
+    if (hedef === 'foryou') {
+      setShowAllForYou(true);
+      scrollRefToTop(listRef);
+      return;
+    }
     router.push('/reviews');
   }, [router]);
 
@@ -571,10 +575,14 @@ export default function HomeScreen() {
           <View style={sec.heading}>
             <SectionHeader title={t('home.forYou')}
               subtitle={heroGames.length ? (isCold ? t('home.forYouStart') : forYouReason || t('home.forYouPersonal')) : candLoading ? t('home.forYouStart') : t('home.forYouEmpty')}
-              action={heroGames.length ? t('home.viewAll') : candLoading ? undefined : t('common.retry')}
-              onAction={heroGames.length ? () => router.push('/swipe') : hepsiniTazele} />
+              action={heroGames.length ? (showAllForYou ? undefined : t('home.viewAll')) : candLoading ? undefined : t('common.retry')}
+              onAction={heroGames.length ? () => setShowAllForYou(true) : hepsiniTazele} />
           </View>
-          {candLoading && !heroGames.length ? <ActivityIndicator color={colors.accent} /> : <HeroRail games={heroGames} onExpand={kartAc} />}
+          {candLoading && !heroGames.length ? <ActivityIndicator color={colors.accent} /> : showAllForYou ? (
+            <View style={styles.forYouGrid}>
+              {forYou.map(game => <GameCard key={String(game.id)} game={game} onExpand={kartAc} />)}
+            </View>
+          ) : <HeroRail games={heroGames} onExpand={kartAc} />}
         </View>
 
         {/* G-04 sırası (kit home()): Senin İçin → Fiyatı Düşenler → Arkadaşların
@@ -763,4 +771,5 @@ const makeStyles = (colors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   listContent: {},
   headerWrap: { paddingBottom: spacing.s32 },
+  forYouGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: spacing.s16, paddingHorizontal: layout.gutter },
 });

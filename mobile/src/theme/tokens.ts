@@ -541,9 +541,6 @@ export const component = {
   // İstatistik tür çubukları — ReviewSummary çubuk dili (6 kalınlık); ad sütunu 88
   // (tür adları puan etiketinden uzun), satır 20, sayı sütunu 30.
   stats: { bar: 6, barRow: 20, barLabel: 88, barValue: 30 },
-  // Swipe (tasarımda karşılığı yok): kart en fazla 420 × 560 (eski ekranla
-  // aynı), karar daireleri 62 (ikon 28, x çizgisi 2.6), karar damgası çerçevesi 3.
-  swipe: { cardMaxWidth: 420, cardMaxHeight: 560, action: 62, actionIcon: 28, actionStroke: 2.6, stampBorder: 3 },
   // Oyun kartları sırası: satır en az 60, sıra numarası sütunu 22.
   gameCards: { row: 60, place: 22 },
   // Reels (tasarımda karşılığı yok): yan eylem dairesi dikeyde IconButton 44,

@@ -291,3 +291,10 @@ gitmez, YENİ BUILD gerektirir.
 `cameraPermission`'ı geri açmak tek başına yanlış olur — metin "sohbette
 fotoğraf çekip gönderebilmeniz için" diyor, o özellik yok. Önce
 `launchCameraAsync` yolu yazılsın, izin metni ONDAN SONRA geri gelsin.
+
+## Kaydırarak oyun seçme — KALDIRILDI (30 Eylül 2026)
+
+Kullanıcı sağa/sola kaydırarak beğenme veya eleme ekranını tamamen kaldırdı.
+`/swipe` rotası ve yönlendirmeleri geri eklenmemeli. Anasayfada Senin İçin
+→ Tümü, aynı kişiselleştirilmiş önerileri normal oyun kartlarıyla gösterir.
+Eski beğeni kayıtları istatistik ve ilgi geçmişi için korunur.

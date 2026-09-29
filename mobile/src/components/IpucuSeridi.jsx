@@ -23,7 +23,7 @@ import {
 //
 // ── TETİKLEYİCİ ZAMANLAYICI DEĞİL, BİRİKİM ──
 // Robot hissini veren şey ipucunun kendisi değil, ZAMANLANMIŞ olması: "30
-// saniye geçti, bir şey söyleyeyim". Buradaki dört ipucu da kullanıcının
+// saniye geçti, bir şey söyleyeyim". Buradaki üç ipucu da kullanıcının
 // kendi birikimini okuyor — kaç oyuna baktı, kaç oyun kaydetti, hangi
 // sekmeye hiç girmedi. Yani şerit, o eylemi yapmış (ya da yapmamış) birine
 // çıkıyor; ötekine hiç çıkmıyor.
@@ -76,9 +76,6 @@ const KATALOG = [
   // Beş sekmenin hepsi için ipucu YAZILMADI — anlaşılan sekmeyi anlatmak
   // gürültüdür.
   { id: 'topluluk', hedef: '/reviews',  uygun: ({ gorulen, toplulukGorulmedi }) => toplulukGorulmedi && gorulen >= 3 },
-  // Kaydırarak keşif TÜM uygulamada tek bağlantıya sahipti (anasayfadaki
-  // selamlama cümlesi). Beş oyuna bakmış biri katalogda geziniyor demektir.
-  { id: 'kaydir',   hedef: '/swipe',    uygun: ({ gorulen }) => gorulen >= 5 },
   // Listeler yalnızca Ayarlar'dan açılıyordu. İki oyun kaydetmiş biri
   // ayırmaya başlamak isteyebilir.
   { id: 'listeler', hedef: '/lists',    uygun: ({ kayitli }) => kayitli >= 2 },
@@ -104,7 +101,6 @@ export default function IpucuSeridi() {
   // "tanımlı ama kullanılmıyor" diye raporlardı.
   const METIN = {
     topluluk: t('ipucu.topluluk'),
-    kaydir:   t('ipucu.kaydir'),
     listeler: t('ipucu.listeler'),
     kesfet:   t('ipucu.kesfet'),
   };

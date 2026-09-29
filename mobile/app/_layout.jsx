@@ -89,7 +89,6 @@ function TemaliYigin() {
                 />
                 <Stack.Screen name="wishlist" />
                 <Stack.Screen name="discover" />
-                <Stack.Screen name="swipe" />
                 <Stack.Screen name="library" />
                 <Stack.Screen name="collections" />
                 <Stack.Screen name="collection/[id]" />
@@ -259,7 +258,7 @@ export default function RootLayout() {
   if (!hazir) return null;
 
   return (
-    // Jest sistemi kökten sarmalanmalı — swipe (Faz 1) ve diğer jest tabanlı
+    // Jest sistemi kökten sarmalanmalı — jest tabanlı
     // etkileşimler bu sağlayıcı olmadan sessizce çalışmaz.
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
