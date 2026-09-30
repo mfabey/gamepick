@@ -34,3 +34,7 @@ yarn-error.log*
 *-service-account.json
 google-play-service-account.json
 credentials/
+
+# Generated output & IDE
+output/
+.idea/
