@@ -104,22 +104,22 @@ struct SimpleEntry: TimelineEntry {
 let mockDeal = DealData(
     name: "The Witcher 3: Wild Hunt",
     discount: 80,
-    currentPrice: "99,99 ₺",
-    originalPrice: "499,99 ₺",
+    currentPrice: "₺99,99",
+    originalPrice: "₺499,99",
     image: nil
 )
 
 let mockStats = StatsData(
-    value: "14.250 ₺",
+    value: "₺14.250",
     hours: 245.5,
     games: 34,
     lastPlayed: "Cyberpunk 2077"
 )
 
 let mockWishlist = [
-    WishlistItem(name: "Elden Ring", discount: 30, price: "699,00 ₺", image: nil),
-    WishlistItem(name: "Hades II", discount: 15, price: "382,50 ₺", image: nil),
-    WishlistItem(name: "Portal 2", discount: 90, price: "10,50 ₺", image: nil)
+    WishlistItem(name: "Elden Ring", discount: 30, price: "₺699,00", image: nil),
+    WishlistItem(name: "Hades II", discount: 15, price: "₺382,50", image: nil),
+    WishlistItem(name: "Portal 2", discount: 90, price: "₺10,50", image: nil)
 ]
 
 // MARK: - Color Palette

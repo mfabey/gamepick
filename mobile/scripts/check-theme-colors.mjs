@@ -40,7 +40,7 @@ function dosyalar(dir, out = []) {
   for (const ad of readdirSync(dir)) {
     const p = join(dir, ad);
     if (statSync(p).isDirectory()) dosyalar(p, out);
-    else if (p.endsWith('.jsx') || p.endsWith('.js')) out.push(p);
+    else if (/\.[jt]sx?$/.test(p)) out.push(p);
   }
   return out;
 }

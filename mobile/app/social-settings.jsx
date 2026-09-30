@@ -6,28 +6,27 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  View, Text, Pressable, StyleSheet, Switch, ScrollView, ActivityIndicator, Alert,
+  View, StyleSheet, ScrollView, ActivityIndicator, Alert,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 
 import { getPrivacy, setPrivacy, getBlocked, unblockUser } from '../src/api/social';
 import { engelKaldir } from '../src/services/engel';
-import { radius, spacing, PRESSED, type, SECTION_TITLE, TOUCH_MIN } from '../src/theme';
+import { spacing } from '../src/theme';
+import { component as K, control as C, layout, radius as dsRadius, space } from '../src/theme/tokens';
+import { useDesignTheme } from '../src/theme/useDesignTheme';
 import { useYanBosluk } from '../src/hooks/useIcerikAlani';
-import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
-import Avatar from '../src/components/Avatar';
-import { SettingsGroup, SettingsRow, AYIRICI_SOL } from '../src/components/SettingsList';
+import { NavBar } from '../src/components/ui/Navigation';
+import { Button, ListGroup, ListRow, Switch, Txt } from '../src/components/ui/Primitives';
+import { UserRow } from '../src/components/ui/Social';
 
 export default function SocialSettingsScreen() {
-  const styles = useStyles(makeStyles);
   const yan = useYanBosluk();
   const insets = useSafeAreaInsets();
-  const { colors } = useTheme();
-  const router = useRouter();
+  const { colors } = useDesignTheme();
   const { t } = useLanguage();
   // Ayarlardaki "Engellenenler" satırı buraya `?odak=engel` ile geliyor.
   const { odak } = useLocalSearchParams();
@@ -141,132 +140,78 @@ export default function SocialSettingsScreen() {
     });
   }, [odak]);
 
+  // Dört anahtar aynı biçimde; fark yalnız ayar adı ve erişilebilirlik
+  // etiketi. Sıra ve gerekçesi aşağıda, satırların yanında.
+  const anahtar = (key, label) => (
+    <Switch
+      accessibilityLabel={label}
+      value={!bozuk && !!privacy[key]}
+      onValueChange={(v) => toggle(key, v)}
+      disabled={bozuk}
+    />
+  );
+
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      {/* Başlık listenin DIŞINDA: içerik kolonuyla aynı hizaya
-          getiriliyor — başlık tam genişlikte kalsaydı sayfanın adı ile
-          anlattığı şey iki ayrı sütunda dururdu. */}
-      <View style={[styles.head, { marginHorizontal: yan }]}>
-        <Pressable style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </Pressable>
-        <Text style={styles.title}>{t('soc.privacyTitle')}</Text>
-        <View style={styles.iconBtn} />
-      </View>
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
+      <NavBar title={t('soc.privacyTitle')} />
 
       {privacy === null ? (
-        <View style={styles.center}><ActivityIndicator color={colors.accent} /></View>
+        <View style={styles.center}><ActivityIndicator color={colors.text2} /></View>
       ) : (
-        <ScrollView ref={kaydirma} contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 40, paddingHorizontal: yan + spacing.lg }]} showsVerticalScrollIndicator={false}>
+        // ListGroup kendi 20'lik yan boşluğunu taşıyor (kit group()); kolon
+        // payı `yan` dışarıda — Ayarlar'la aynı düzen.
+        <ScrollView ref={kaydirma} contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + space[32], paddingHorizontal: yan }]} showsVerticalScrollIndicator={false}>
           {/* Anahtarlar kapalı ama bu bir DURUM değil bir BİLİNMEZLİK —
               bant tam olarak bunu söylüyor. Kırmızı yok. */}
           {bozuk ? (
-            <View style={styles.bozukBant}>
-              <Text style={styles.bozukBaslik}>{t('soc.privUnknown')}</Text>
-              <Text style={styles.bozukMetin}>{t('soc.privUnknownDesc')}</Text>
-              <Pressable onPress={load} hitSlop={8} style={({ pressed }) => [styles.bozukEylem, pressed && PRESSED]}>
-                <Text style={styles.bozukEylemText}>{t('common.retry')}</Text>
-              </Pressable>
+            <View style={[styles.bozukBant, { backgroundColor: colors.surface1 }]}>
+              <Txt variant="cardTitle">{t('soc.privUnknown')}</Txt>
+              <Txt variant="footnote" style={{ color: colors.text2 }}>{t('soc.privUnknownDesc')}</Txt>
+              <Button title={t('common.retry')} variant="secondary" height={36} onPress={load} style={styles.bozukEylem} />
             </View>
           ) : null}
 
-          <SettingsGroup>
+          <ListGroup>
             {/* EN ÜSTTE ve `discoverable`'ın ÖNÜNDE: ikisi farklı şeyi
                 kapatıyor ve karıştırılmaları kolay. `privateProfile` içeriği
                 (koleksiyon · inceleme · gönderi) arkadaşlarla sınırlıyor,
                 profilin kendisi bulunabilir kalıyor; `discoverable` profili
                 kullanıcı adıyla açılamaz hâle getiriyor. Sıra bu yüzden dar
                 olandan geniş olana. */}
-            <SettingsRow
-              icon="lock-closed-outline"
-              label={t('soc.privateProfile')}
-              desc={t('soc.privateProfileDesc')}
-              right={(
-                <Switch
-                  value={!bozuk && !!privacy.privateProfile}
-                  onValueChange={(v) => toggle('privateProfile', v)}
-                  disabled={bozuk}
-                  trackColor={{ false: colors.cardBorder, true: colors.green }}
-                  thumbColor="#fff"
-                />
-              )}
-            />
-            <SettingsRow
-              icon="pulse-outline"
-              label={t('soc.shareActivity')}
-              desc={t('soc.shareActivityDesc')}
-              right={(
-                <Switch
-                  value={!bozuk && !!privacy.shareActivity}
-                  onValueChange={(v) => toggle('shareActivity', v)}
-                  disabled={bozuk}
-                  trackColor={{ false: colors.cardBorder, true: colors.green }}
-                  thumbColor="#fff"
-                />
-              )}
-            />
-            <SettingsRow
-              icon="search-outline"
-              label={t('soc.discoverable')}
-              desc={t('soc.discoverableDesc')}
-              right={(
-                <Switch
-                  value={!bozuk && !!privacy.discoverable}
-                  onValueChange={(v) => toggle('discoverable', v)}
-                  disabled={bozuk}
-                  trackColor={{ false: colors.cardBorder, true: colors.green }}
-                  thumbColor="#fff"
-                />
-              )}
-            />
+            <ListRow icon="lock" title={t('soc.privateProfile')} description={t('soc.privateProfileDesc')} trailing={anahtar('privateProfile', t('soc.privateProfile'))} />
+            <ListRow icon="zap" title={t('soc.shareActivity')} description={t('soc.shareActivityDesc')} trailing={anahtar('shareActivity', t('soc.shareActivity'))} />
+            <ListRow icon="search" title={t('soc.discoverable')} description={t('soc.discoverableDesc')} trailing={anahtar('discoverable', t('soc.discoverable'))} />
             {/* Sunucu tarafi bu ayari zaten okuyordu ama arayuzde anahtari
                 yoktu — kullanici cevrimici gorunmeyi kapatamiyordu. */}
-            <SettingsRow
-              icon="ellipse-outline"
-              label={t('soc.showPresence')}
-              desc={t('soc.showPresenceDesc')}
-              right={(
-                <Switch
-                  value={!bozuk && !!privacy.showPresence}
-                  onValueChange={(v) => toggle('showPresence', v)}
-                  disabled={bozuk}
-                  trackColor={{ false: colors.cardBorder, true: colors.green }}
-                  thumbColor="#fff"
-                />
-              )}
-            />
-          </SettingsGroup>
+            <ListRow icon="eye" title={t('soc.showPresence')} description={t('soc.showPresenceDesc')} trailing={anahtar('showPresence', t('soc.showPresence'))} />
+          </ListGroup>
+
           {/* Başlık ve liste TEK sarmalayıcıda: `onLayout` bölümün tepesini
               veriyor, başlığın kendisini değil — kaydırma başlığı da ekrana
               almalı, yoksa kullanıcı listeyi neyin başlattığını göremez. */}
           <View onLayout={engelBolumuOlctu}>
-            <Text style={styles.sectionLabel}>{t('soc.blocked')}</Text>
-            {blocked === null ? null : blocked.length === 0 ? (
-              <Text style={styles.emptyText}>{t('soc.noBlocked')}</Text>
-            ) : (
-              <View style={styles.card}>
-                {blocked.map((p, i) => (
-                  <View key={p.uid}>
-                    {i > 0 && <View style={styles.divider} />}
-                    <View style={styles.blockRow}>
-                      {/* FAZ 8 — ÜÇÜNCÜ AVATAR KOPYASI SİLİNDİ. Burada satır
-                          içi bir IIFE vardı: ön ayar veya baş harf, FOTOĞRAF
-                          YOK. Faz 7'de social.jsx'te bulduğumun aynısı —
-                          fotoğrafı olan kişi harf olarak görünüyordu. */}
-                      <Avatar avatar={p.avatar} name={p.displayName || p.username} size={38} />
-                      <View style={{ flex: 1 }}>
-                        <Text numberOfLines={1} style={styles.blockName}>
-                          {p.displayName || p.username || p.uid}
-                        </Text>
-                        {p.username ? <Text style={styles.blockHandle}>@{p.username}</Text> : null}
-                      </View>
-                      <Pressable style={({ pressed }) => [styles.unblockBtn, pressed && PRESSED]} onPress={() => unblock(p)}>
-                        <Text style={styles.unblockText}>{t('soc.unblock')}</Text>
-                      </Pressable>
+            {blocked === null ? null : (
+              <ListGroup title={t('soc.blocked')}>
+                {blocked.length === 0
+                  // Boş liste de bir SATIR (iOS "engellenen kişi yok"
+                  // kalıbı): başlığın altında boş bir kutu kalmıyor.
+                  ? <ListRow title={t('soc.noBlocked')} />
+                  : blocked.map((p) => (
+                    // UserRow'un kendi yan boşluğu yok (düz listede sayfa
+                    // kenarına yaslanıyor); kutunun içinde ListRow'un 16'sı
+                    // veriliyor. Ayraç ikonsuz satır kuralıyla 16'dan.
+                    <View key={p.uid} style={styles.kisi}>
+                      {/* FAZ 8 — avatar ortak bileşenden: fotoğraflı kişi
+                          harf olarak görünmüyor (UserAvatar → Avatar). */}
+                      <UserRow
+                        avatar={p.avatar}
+                        name={p.displayName || p.username || p.uid}
+                        handle={p.username ? `@${p.username}` : ''}
+                        right={<Button title={t('soc.unblock')} variant="secondary" height={K.friends.action} onPress={() => unblock(p)} />}
+                      />
                     </View>
-                  </View>
-                ))}
-              </View>
+                  ))}
+              </ListGroup>
             )}
           </View>
         </ScrollView>
@@ -275,53 +220,16 @@ export default function SocialSettingsScreen() {
   );
 }
 
-const makeStyles = (colors) => StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
+const styles = StyleSheet.create({
+  safe: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  // Gruplar arası 28 — Ayarlar'la aynı (settings.jsx `groups`).
+  body: { paddingTop: space[16], gap: space[28] },
 
-  head: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: spacing.md, paddingTop: 6, paddingBottom: 10,
-  },
-  title: { flex: 1, textAlign: 'center', fontSize: type.body, fontWeight: '900', color: colors.text },
-  iconBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  // Bozuk bant — Faz 4/5'teki ikizleriyle aynı dil, 2.0 kart yüzeyinde.
+  // Kırmızı yok. Yan boşluk ListGroup kutusuyla aynı hizada.
+  bozukBant: { marginHorizontal: layout.gutter, padding: space[16], borderRadius: dsRadius.card, gap: space[4] },
+  bozukEylem: { alignSelf: 'flex-start', marginTop: space[8] },
 
-  body: { padding: spacing.lg },
-  card: {
-    backgroundColor: colors.card, borderRadius: radius.lg,
-    borderWidth: 1, borderColor: colors.cardBorder, paddingHorizontal: 15,
-  },
-  // Iceriden: avatar sutununu gectikten sonra basliyor — ayar listesiyle
-  // ayni dil (bkz. components/SettingsList.jsx).
-  // FAZ 8: elle 60 yazılıydı. SettingsList aynı çizgiyi TÜRETİYOR
-  // (PAD + ICON_COL + gap = 58) ve neden türettiğini yazıyor; profildeki
-  // ölü stil ise 56 diyordu. Tek çizgi için üç sayı — türetmenin gerekçesi
-  // kanıtlanmış oluyor. Tek kaynağa bağlandı.
-  // Bozuk bant — Faz 4/5'teki ikizleriyle aynı dil. Kırmızı yok.
-  bozukBant: {
-    marginBottom: spacing.s16, padding: spacing.s16, borderRadius: radius.md,
-    backgroundColor: colors.bgInput, gap: spacing.s4,
-  },
-  bozukBaslik: { color: colors.text, fontSize: type.subhead, fontWeight: '700' },
-  bozukMetin: { color: colors.text2, fontSize: type.footnote, lineHeight: 19 },
-  bozukEylem: { minHeight: TOUCH_MIN, justifyContent: 'center', alignSelf: 'flex-start' },
-  bozukEylemText: { color: colors.accentText, fontSize: type.subhead, fontWeight: '700' },
-
-  divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.cardBorder, marginLeft: AYIRICI_SOL },
-
-  sectionLabel: {
-    ...SECTION_TITLE, color: colors.text2,
-    marginTop: spacing.s24, marginBottom: spacing.s8,
-  },
-  emptyText: { color: colors.text2, fontSize: type.footnote, paddingVertical: 6 },
-
-  blockRow: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 11 },
-  blockName: { color: colors.text, fontSize: type.subhead, fontWeight: '700' },
-  blockHandle: { color: colors.text3, fontSize: type.caption, marginTop: 1 },
-  unblockBtn: {
-    paddingHorizontal: 13, height: 44, borderRadius: radius.md,
-    backgroundColor: colors.bgInput, alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1, borderColor: colors.cardBorder,
-  },
-  unblockText: { color: colors.text, fontSize: type.footnote, fontWeight: '700' },
+  kisi: { paddingHorizontal: C.listPadding },
 });

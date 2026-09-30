@@ -51,8 +51,70 @@ const screens = [
   'settings.jsx', 'social-settings.jsx', 'account.jsx', 'username-setup.jsx',
 ];
 
+// G-23 düzenindeki ekranlar ve ListGroup DIŞINDA kendi 20'lik payını taşıyan
+// yerel stilleri (tam genişlik kart, çıkış düğmesi, bozuk bandı).
+const G23 = {
+  'settings.jsx': ['profile', 'signOut'],
+  'social-settings.jsx': ['bozukBant'],
+  'stats.jsx': ['ozet'],
+};
+
 for (const file of screens) {
   const tree = ast(read(`app/${file}`));
+  // G-23: the shared ListGroup owns the 20 pt phone gutter. The ScrollView
+  // adds only the wide-window inset; adding the old phone padding doubles it.
+  if (G23[file]) {
+    let content, localStyles;
+    traverse(tree, {
+      VariableDeclarator(p) {
+        if (p.node.id.name === 'styles') localStyles = p.node.init.arguments[0];
+      },
+      JSXAttribute(p) {
+        if (p.node.name.name === 'contentContainerStyle') content = p.node.value.expression;
+      },
+    });
+    // Kap ya düz nesne ({ paddingHorizontal: yan }) ya da dizi
+    // ([styles.body, { paddingHorizontal: yan }]); dizideki taban stil yatay
+    // dolgu EKLEMEMELİ — eklerse telefon payı ikiye katlanır.
+    const parts = content?.type === 'ArrayExpression' ? content.elements : [content];
+    const props = parts.filter(p => p?.type === 'ObjectExpression').flatMap(p => p.properties);
+    const inset = props.find(p => p.key.name === 'paddingHorizontal');
+    assert.ok(inset, `${file}: wide-window inset missing`);
+    for (const base of parts.filter(p => p?.type === 'MemberExpression' && p.object.name === 'styles')) {
+      const baseProps = localStyles.properties.find(p => p.key.name === base.property.name)?.value?.properties || [];
+      assert.ok(!baseProps.some(p => ['padding', 'paddingHorizontal'].includes(p.key?.name)),
+        `${file}: styles.${base.property.name} telefon payını ikinci kez ekliyor`);
+    }
+    const tokensSource = parse(read('src/theme/tokens.ts'), { sourceType: 'module', plugins: ['typescript'] });
+    let gutter;
+    traverse(tokensSource, {
+      VariableDeclarator(p) {
+        if (p.node.id.name === 'layout') gutter = value(p.node.init.expression)?.gutter;
+      },
+    });
+    for (const name of G23[file]) {
+      const style = localStyles.properties.find(p => p.key.name === name)?.value;
+      assert.equal(value(style, { ...constants, layout: { gutter } })?.marginHorizontal, 20, `${file}: ${name} gutter`);
+    }
+    const primitives = parse(read('src/components/ui/Primitives.tsx'), { sourceType: 'module', plugins: ['jsx', 'typescript'] });
+    let groupMargin;
+    traverse(primitives, {
+      ObjectProperty(p) {
+        if (p.node.key.name === 'listGroup') groupMargin = p.node.value.properties.find(prop => prop.key.name === 'marginHorizontal')?.value;
+      },
+    });
+    assert.equal(gutter, 20);
+    assert.equal(value(groupMargin, { layout: { gutter } }), 20);
+    for (const width of widths) {
+      const yan = vm.runInNewContext(`(${insetFunction})()`, {
+        ICERIK_MAX: constants.ICERIK_MAX, useWindowDimensions: () => ({ width }),
+      });
+      const actual = value(inset.value, { yan }) + gutter;
+      assert.equal(actual, yan + 20, `${file} / ${width}: doubled or missing phone gutter`);
+      assert.ok(width - actual * 2 > 0);
+    }
+    continue;
+  }
   const styles = {};
   const containers = [];
   traverse(tree, {
@@ -109,7 +171,8 @@ for (const file of fs.readdirSync(new URL('src/components/', root)).filter((f) =
 
 // Kapakların toplam genişliği pencereye sığmalı; geniş ekranda sütun artmalı.
 const coverSource = read('src/components/CoverGrid.jsx');
-const gridEnv = { GRID_PAD: constants.spacing.s20, GRID_GAP: constants.spacing.s4, HEDEF_HUCRE: 114 };
+// CoverGrid.jsx'teki sabitlerle AYNI olmalı (2.0: GameCardSmall, 16 boşluk, 106 hücre).
+const gridEnv = { GRID_PAD: constants.spacing.s20, GRID_GAP: constants.spacing.s16, HEDEF_HUCRE: 106 };
 traverse(ast(coverSource), {
   FunctionDeclaration(p) {
     if (['gridCols', 'coverWidth'].includes(p.node.id.name)) {

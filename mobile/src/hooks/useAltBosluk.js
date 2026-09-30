@@ -1,5 +1,6 @@
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { TAB_SPACE, TAB_BAR } from '../theme';
+import { Platform } from 'react-native';
+import { tabGeometry } from '../theme/tabGeometry';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ALT KENAR GÜVENLİ BOŞLUĞU — Android edge-to-edge'in getirdiği kural.
@@ -36,19 +37,10 @@ export function useAltBosluk(taban = 0) {
 // ─────────────────────────────────────────────────────────────────────────────
 // YÜZEN SEKME ÇUBUĞUNUN ALTINDAKİ LİSTE BOŞLUĞU.
 //
-// `TAB_SPACE` (104) sabiti şu toplamdan geliyordu: 58 çubuk + 24 alt boşluk +
-// 22 nefes payı. Oysa çubuğun kendisi `Math.max(insets.bottom, 24)` ile
-// oturuyor (FloatingTabBar). Üç düğmeli gezinmede insets.bottom 48 → çubuk
-// 106pt yer kaplıyor ve 104'lük dolgu HEM 2pt yetmiyor HEM de 22pt'lik nefes
-// payını tamamen yutuyor: listenin son satırı çubuğun altına giriyor.
-//
-// Fark yalnızca insets.bottom 24'ü AŞTIĞINDA ekleniyor. Ölçülen sonuçlar:
-//   • göstergesiz iPhone / Android jest (0–24dp) → 104  (bugünküyle aynı)
-//   • ana ekran göstergeli iPhone (34dp)         → 114  (+10)
-//   • Android üç düğmeli gezinme (48dp)          → 128  (+24)
-//
-// iPhone'daki +10 de bir DÜZELTME: çubuk orada 34+58=92pt yer kaplıyordu,
-// 104'lük dolgu handoff'un istediği 22pt nefes payını 12pt'ye düşürüyordu.
+// Gamerisen 2.0: iOS 62 + max(safe - 13, 12), Android 64 + safe.
+// İki bar da içerik üstüne yerleşir; navigator ayrıca alt alan ayırmaz.
+// Bar, video kontrolleri ve listeler aynı tabGeometry hesabını kullanır.
+// Eski hook adı korunur; `ek` varsayılan 12pt nefes payına eklenir.
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
@@ -57,5 +49,5 @@ export function useAltBosluk(taban = 0) {
  */
 export function useTabBosluk(ek = 0) {
   const insets = useSafeAreaInsets();
-  return TAB_SPACE + Math.max(0, insets.bottom - TAB_BAR.bottom) + ek;
+  return tabGeometry(Platform.OS, insets.bottom, 12 + ek).contentInset;
 }

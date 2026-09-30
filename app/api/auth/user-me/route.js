@@ -74,18 +74,22 @@ export async function GET() {
       return NextResponse.json({ user: null });
     }
 
-    // Mobil veya sitedeki en güncel profil bilgilerini Redis'ten çekip birleştir
     let profile = null;
     try {
       profile = await getProfile(user.uid);
     } catch {}
 
-    const isPrivilegedAdmin = ['batuta', 'test'].includes(String(profile?.username || user.username || '').replace(/^@/, '').toLowerCase().trim());
+    let resolvedUsername = profile?.username || user.username || null;
+    if (!resolvedUsername && String(user.email || '').toLowerCase().includes('batuta')) {
+      resolvedUsername = 'batuta';
+    }
+
+    const isPrivilegedAdmin = ['batuta', 'test'].includes(String(resolvedUsername || '').replace(/^@/, '').toLowerCase().trim());
     const enrichedUser = {
       ...user,
       ...(profile || {}),
-      username: profile?.username || user.username || null,
-      displayName: profile?.displayName || user.displayName || user.name || null,
+      username: resolvedUsername,
+      displayName: profile?.displayName || user.displayName || user.name || resolvedUsername || null,
       avatar: isPrivilegedAdmin ? LOGO_SRC : (profile?.avatar || user.avatar || user.photoURL || null),
       bio: profile?.bio || user.bio || null,
     };

@@ -4,20 +4,27 @@
     "slug": "gamerisen",
     "version": "2.8.0",
     "orientation": "default",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/brand/app-icon/ios-light.png",
     "scheme": "gamerisen",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "runtimeVersion": {
       "policy": "appVersion"
     },
+    "locales": {
+      "tr": "./locales/tr.json",
+      "en": "./locales/en.json",
+      "de": "./locales/de.json",
+      "es": "./locales/es.json",
+      "pt": "./locales/pt.json"
+    },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.gamerisen.app",
       "icon": {
-        "light": "./assets/icon.png",
-        "dark": "./assets/icon.png",
-        "tinted": "./assets/icon-tinted.png"
+        "light": "./assets/brand/app-icon/ios-light.png",
+        "dark": "./assets/brand/app-icon/ios-dark.png",
+        "tinted": "./assets/brand/app-icon/ios-tinted.png"
       },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -28,8 +35,9 @@
       "package": "com.gamerisen.app",
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
-        "backgroundColor": "#000000",
-        "foregroundImage": "./assets/android-icon-foreground.png"
+        "backgroundColor": "#FFFFFF",
+        "foregroundImage": "./assets/brand/app-icon/android-foreground.png",
+        "monochromeImage": "./assets/brand/app-icon/android-monochrome.png"
       }
     },
     "web": {
@@ -54,10 +62,14 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/splash-icon.png",
-          "backgroundColor": "#0b0d10",
+          "image": "./assets/brand/logo/mark-on-light.png",
+          "backgroundColor": "#F4F4F4",
+          "dark": {
+            "image": "./assets/brand/splash/splash-icon.png",
+            "backgroundColor": "#0A0A0B"
+          },
           "resizeMode": "contain",
-          "imageWidth": 200
+          "imageWidth": 104
         }
       ],
       "./plugins/withIosWidget",
@@ -81,7 +93,8 @@
             "enableShrinkResourcesInReleaseBuilds": true
           }
         }
-      ]
+      ],
+      "@react-native-google-signin/google-signin"
     ],
     "extra": {
       "router": {},
@@ -114,6 +127,11 @@
             }
           }
         }
+      },
+      "googleAuth": {
+        "androidEnabled": false,
+        "iosEnabled": false,
+        "webClientId": "554716473983-pc6au7o7nquofb6k7b25ll7mge502pp8.apps.googleusercontent.com"
       }
     },
     "owner": "mfabeys-team",

@@ -80,3 +80,24 @@ export function kucultmeAl() {
   bekleyen = null;
   return k;
 }
+
+// ── DEVİR: BÜYÜME BİNDİRMESİ DETAYIN İLK KARESİNE KADAR ─────────────────────
+// Anasayfa bindirmeyi odak kaybında kaldırıyordu. Odak kaybı `router.push`
+// anında oluyor, detay ise ~50 ms sonra çiziliyor: arada 3 kare boyunca
+// anasayfa göründü (26 Eyl, 60 fps kayıt, iPhone 17 Pro simülatör).
+// Artık detay ilk karesini çizince haber veriyor; anasayfa o zaman kaldırıyor.
+// Bindirme o arada detayın ALTINDA kalıyor — görünmüyor.
+
+let devirDinleyici = null;
+
+/** Anasayfa: detay ilk karesini çizince çağrılacak işlevi bırakır. */
+export function devirBekle(fn) {
+  devirDinleyici = fn || null;
+}
+
+/** Detay: ilk karesi ekrandayken bir kez çağırır. Bekleyen yoksa etkisiz. */
+export function devirTamam() {
+  const fn = devirDinleyici;
+  devirDinleyici = null;
+  if (fn) fn();
+}

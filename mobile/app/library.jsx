@@ -1,25 +1,30 @@
-import { memo, useState, useEffect, useMemo, useCallback } from 'react';
+import { memo, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
-  View, Text, TextInput, Pressable, ScrollView,
-  StyleSheet, Alert, RefreshControl,
+  View, ScrollView, StyleSheet, Alert, useWindowDimensions, ActivityIndicator, Keyboard,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { Image } from 'expo-image';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { GamesGridSkeleton, Reveal } from '../src/components/Skeleton';
 import EmptyState from '../src/components/EmptyState';
 import CevrimdisiBant from '../src/components/CevrimdisiBant';
-import GameCover from '../src/components/GameCover';
+import { Icon } from '../src/components/Icon';
+import { GameCardSmall } from '../src/components/ui/GameCards';
+import { OverlayTag } from '../src/components/ui/Media';
+import { NavBar } from '../src/components/ui/Navigation';
+import { SearchField } from '../src/components/ui/SearchField';
+import { Button, Chip, ListGroup, ListRow, Segmented, Txt } from '../src/components/ui/Primitives';
+import { UserAvatar } from '../src/components/ui/Social';
+import { coverWidth, gridCols, GRID_GAP, GRID_PAD } from '../src/components/CoverGrid';
 import { prefetchImages } from '../src/utils/prefetch';
-import { radius, spacing, TAB_SPACE, type, CHIP, CHIP_TEXT, PRESSED, TOUCH_MIN } from '../src/theme';
-import { useKartSutun, useYanBosluk } from '../src/hooks/useIcerikAlani';
-import { useStyles, useTheme } from '../src/context/ThemeContext';
+import { spacing } from '../src/theme';
+import { component as K, layout, radius as dsRadius, space } from '../src/theme/tokens';
+import { useDesignTheme } from '../src/theme/useDesignTheme';
 import { useLanguage } from '../src/context/LanguageContext';
 import { useAuth } from '../src/context/AuthContext';
 import { fetchSteamPrices } from '../src/api/library';
 import { useConnectedLibrary } from '../src/hooks/useConnectedLibrary';
+import { YenileIsareti, YenileKontrol } from '../src/components/ui/Yenile';
 
 function computeValue(games, prices) {
   if (!games) return null;
@@ -32,12 +37,14 @@ function computeValue(games, prices) {
 }
 
 export default function LibraryScreen() {
-  const styles = useStyles(makeStyles);
-  const yan = useYanBosluk();
-  // (390 − 2×10) / 2 = 185 — maketin hücre genişliği.
-  const sutun = useKartSutun(185, 2);
-  const { colors } = useTheme();
-  const { t, lang, locale, formatPrice } = useLanguage();
+  const insets = useSafeAreaInsets();
+  // 2.0 GameCardSmall ızgarası — profil ızgarasıyla AYNI ölçü (CoverGrid):
+  // 390 pt'de 3 sütun × 106. Eskiden 2 sütun × 185 (Faz maketinin hücresi).
+  const { width: pencereEn } = useWindowDimensions();
+  const sutun = gridCols(pencereEn);
+  const kapakEn = coverWidth(pencereEn, sutun);
+  const { colors } = useDesignTheme();
+  const { t, locale, formatPrice } = useLanguage();
   const { steamAccounts: rawSteamAccounts = [], xbox, busy, loginSteam, loginXbox, account } = useAuth();
   const router = useRouter();
 
@@ -59,6 +66,21 @@ export default function LibraryScreen() {
 
   const [view, setView]     = useState('all');   // 'all' | 'steam_<id>' | 'xbox'
   const [search, setSearch] = useState('');
+
+  // ── ARAMA + KLAVYE ──
+  // Arama kutusu listenin başlığında, başlık kartının ALTINDA. Klavye açılınca
+  // sonuç ya da "sonuç yok" durumu klavyenin arkasında kalıyordu (SE, 26 Eyl).
+  // Klavye açıldığında (liste iç boşluğunu aldıktan sonra) kutu üste kaydırılıyor.
+  const listeRef = useRef(null);
+  const aramaY = useRef(0);
+  const aramaOdakta = useRef(false);
+  useEffect(() => {
+    const sub = Keyboard.addListener('keyboardDidShow', () => {
+      if (!aramaOdakta.current) return;
+      listeRef.current?.scrollToOffset({ offset: Math.max(0, aramaY.current - space[8]), animated: true });
+    });
+    return () => sub.remove();
+  }, []);
   const [sort, setSort]     = useState('hours');  // hours | name | value
 
   const steamIdsKey = steamAccounts.map(a => a.steamId).join(',');
@@ -109,7 +131,7 @@ export default function LibraryScreen() {
         const lastPlayedName = lastPlayedGame ? lastPlayedGame.name : '—';
         
         const payload = {
-          value: combined.value ? formatPrice(combined.value.sum) : '0,00 ₺',
+          value: combined.value ? formatPrice(combined.value.sum) : '₺0,00',
           hours: combined.totalHours || 0,
           games: combined.totalGames || 0,
           lastPlayed: lastPlayedName
@@ -195,9 +217,9 @@ export default function LibraryScreen() {
 
   const renderTile = useCallback(({ item }) => (
     <View style={styles.cell}>
-      <GameTile game={item} steam={isSteamView} price={steamPrices[item.appid]} onPress={handleOpenGame} />
+      <GameTile game={item} steam={isSteamView} price={steamPrices[item.appid]} width={kapakEn} onPress={handleOpenGame} />
     </View>
-  ), [isSteamView, steamPrices, styles, handleOpenGame]);
+  ), [isSteamView, steamPrices, handleOpenGame, kapakEn]);
 
   const doLogin = async (fn) => {
     const r = await fn();
@@ -212,92 +234,74 @@ export default function LibraryScreen() {
   // ── Hiç hesap yok ──
   if (sources.length === 0) {
     return (
-      <SafeAreaView style={styles.safe} edges={['top']}>
-        <View style={[styles.head, { marginHorizontal: yan }]}>
-          <Pressable style={({ pressed }) => [styles.back, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
-            <Ionicons name="chevron-back" size={24} color={colors.text} />
-          </Pressable>
-          <Text style={styles.title}>{t('nav.library')}</Text>
-          <View style={{ width: 24 }} />
-        </View>
-        <View style={styles.center}>
-          <Ionicons name="library-outline" size={54} color={colors.text3} />
-          <Text style={styles.h1}>{t('nav.library')}</Text>
-          <Text style={styles.prompt}>
+      <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
+        <NavBar title={t('nav.library')} />
+        <View style={styles.lock}>
+          <Icon name="grid" size={K.library.lockIcon} color={colors.text3} />
+          <Txt variant="title2" style={styles.lockTitle}>{t('nav.library')}</Txt>
+          <Txt variant="body" style={[styles.lockText, { color: colors.text2 }]}>
             {account ? t('library.connectPrompt') : t('prof.lockDesc')}
-          </Text>
-          <View style={{ width: '100%', gap: spacing.md, marginTop: spacing.sm }}>
-            {/* Profil yokken bağlama düğmeleri HİÇ sunulmuyor. Bağlantı hesaba
-                kaydedildiği için profilsiz bağlanan kullanıcı kütüphanesini ilk
-                oturum kapanışında kaybederdi. Profil ekranındaki kilidi burada
-                da uygulamak şart — aksi hâlde bu ekran kapıyı atlatıyordu. */}
-            {account ? (
-              <>
-                {/* tema-bagimsiz: magaza marka rengi (Steam / Xbox) */}
-                <Pressable disabled={busy} onPress={() => doLogin(loginSteam)} style={[styles.connectBtn, { backgroundColor: '#1b2838' }]}>
-                  <Ionicons name="logo-steam" size={19} color="#fff" />
-                  <Text style={styles.connectText}>{t('auth.connectSteam')}</Text>
-                </Pressable>
-                {/* tema-bagimsiz: magaza marka rengi (Steam / Xbox) */}
-                <Pressable disabled={busy} onPress={() => doLogin(loginXbox)} style={[styles.connectBtn, { backgroundColor: '#107C10' }]}>
-                  <Ionicons name="logo-xbox" size={19} color="#fff" />
-                  <Text style={styles.connectText}>{t('auth.connectXbox')}</Text>
-                </Pressable>
-              </>
-            ) : (
-              <Pressable onPress={() => router.push('/account')} style={[styles.connectBtn, { backgroundColor: colors.accentFillStrong }]}>
-                <Ionicons name="person-add-outline" size={19} color="#fff" />
-                <Text style={styles.connectText}>{t('prof.lockCta')}</Text>
-              </Pressable>
-            )}
-          </View>
+          </Txt>
         </View>
+        {/* Profil yokken bağlama düğmeleri HİÇ sunulmuyor. Bağlantı hesaba
+            kaydedildiği için profilsiz bağlanan kullanıcı kütüphanesini ilk
+            oturum kapanışında kaybederdi. Profil ekranındaki kilidi burada
+            da uygulamak şart — aksi hâlde bu ekran kapıyı atlatıyordu.
+            Bağlama satırları Ayarlar'ın "Hesap" grubuyla AYNI (G-23):
+            eskiden burada ayrı, marka renkli düğmeler vardı. */}
+        {account ? (
+          <ListGroup>
+            <ListRow icon="bag" title={t('auth.connectSteam')} onPress={() => doLogin(loginSteam)} disabled={busy}
+              trailing={busy ? <ActivityIndicator color={colors.text2} /> : undefined} />
+            <ListRow icon="pad" title={t('auth.connectXbox')} onPress={() => doLogin(loginXbox)} disabled={busy}
+              trailing={busy ? <ActivityIndicator color={colors.text2} /> : undefined} />
+          </ListGroup>
+        ) : (
+          <Button title={t('prof.lockCta')} icon="userplus" height={50} onPress={() => router.push('/account')} style={styles.lockCta} />
+        )}
       </SafeAreaView>
     );
   }
 
-  return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={[styles.head, { marginHorizontal: yan }]}>
-        <Pressable style={({ pressed }) => [styles.back, pressed && PRESSED]} onPress={() => router.back()} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </Pressable>
-        <Text style={styles.title}>{t('nav.library')}</Text>
-        <View style={{ width: 24 }} />
-      </View>
+  const sortItems = [
+    { value: 'hours', label: t('lib.sortHours') },
+    { value: 'name', label: t('lib.sortName') },
+    ...(isSteamView ? [{ value: 'value', label: t('lib.sortValue') }] : []),
+  ];
 
-      {/* Kaynak seçici */}
+  return (
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
+      <NavBar title={t('nav.library')} />
+
+      {/* Kaynak seçici — 2.0 Chip. Platformu ikon söylüyor (Ayarlar'la aynı:
+          Steam `bag`, Xbox `pad`), seçimi çipin kendi dolgusu. */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll} contentContainerStyle={styles.chipsRow}>
-        {sources.map(s => {
-          const active = view === s.key;
-          const accent = s.type === 'xbox' ? colors.xbox : s.type === 'combined' ? colors.accent : colors.steam;
-          const icon = s.type === 'xbox' ? 'logo-xbox' : s.type === 'combined' ? 'sparkles' : 'logo-steam';
-          return (
-            <Pressable key={s.key} onPress={() => setView(s.key)}
-              style={[styles.chip, active && styles.chipOn]}>
-              {/* Seçili değilken ikon marka renginde kalıyor — platformu o
-                  söylüyor. Seçim ise games/news ile aynı dil: dolu nötr yüzey,
-                  koyu metin. Önceden seçili çip marka rengiyle doluyordu, yani
-                  aynı renk hem "hangi platform" hem "hangisi seçili" demeye
-                  çalışıyordu. */}
-              <Ionicons name={icon} size={14} color={active ? colors.bg : accent} />
-              <Text style={[styles.chipText, active && styles.chipTextOn]} numberOfLines={1}>{s.label}</Text>
-            </Pressable>
-          );
-        })}
+        {sources.map(s => (
+          <Chip
+            key={s.key}
+            title={s.label}
+            icon={s.type === 'xbox' ? 'pad' : s.type === 'combined' ? 'layers' : 'bag'}
+            selected={view === s.key}
+            onPress={() => setView(s.key)}
+          />
+        ))}
       </ScrollView>
 
       <View style={{ flex: 1 }}>
       {loading && filtered.length === 0 ? (
-        <GamesGridSkeleton />
+        <GamesGridSkeleton kucuk />
       ) : errorMsg ? (
         <View style={styles.center}>
-          <Ionicons name="warning-outline" size={44} color={colors.danger} />
-          <Text style={styles.errText}>{errorMsg}</Text>
+          <Icon name="alert" size={K.library.errorIcon} color={colors.red} />
+          <Txt variant="body" style={[styles.centerText, { color: colors.text2 }]}>{errorMsg}</Txt>
         </View>
       ) : (
         <Reveal style={{ flex: 1 }}>
         <FlashList
+          ref={listeRef}
+          automaticallyAdjustKeyboardInsets
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
           data={filtered}
           keyExtractor={keyExtractor}
           numColumns={sutun}
@@ -305,36 +309,32 @@ export default function LibraryScreen() {
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
-            <View style={{ paddingHorizontal: 6 }}>
+            <View style={styles.listHeader}>
+              <YenileIsareti yenileniyor={refreshing} />
               <CevrimdisiBant
                 ts={libTs}
                 onRetry={libTazele}
                 style={{ marginBottom: spacing.s12 }}
               />
-              <LibraryHeaderCard header={header} formatPrice={formatPrice} pricesLoading={pricesLoading} t={t} lang={lang} locale={locale} />
+              <LibraryHeaderCard header={header} formatPrice={formatPrice} pricesLoading={pricesLoading} t={t} locale={locale} />
               {/* Arama + sıralama */}
-              <View style={styles.searchBox}>
-                <Ionicons name="search" size={16} color={colors.text3} />
-                <TextInput value={search} onChangeText={setSearch} placeholder={t('lib.search')}
-                  placeholderTextColor={colors.text3} style={styles.searchInput} />
-                {search ? <Pressable onPress={() => setSearch('')} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('a11y.clear')}><Ionicons name="close-circle" size={17} color={colors.text3} /></Pressable> : null}
+              <View onLayout={(e) => { aramaY.current = styles.listContent.paddingTop + e.nativeEvent.layout.y; }}>
+                <SearchField
+                  value={search}
+                  onChangeText={setSearch}
+                  placeholder={t('lib.search')}
+                  accessibilityLabel={t('lib.search')}
+                  onFocus={() => { aramaOdakta.current = true; }}
+                  onBlur={() => { aramaOdakta.current = false; }}
+                />
               </View>
+              {/* Sıralama tek seçimli ve ikincil: kısa boy Segmented; sağda
+                  süzülmüş oyun sayısı. */}
               <View style={styles.sortRow}>
-                {[
-                  { v: 'hours', label: t('lib.sortHours') },
-                  { v: 'name', label: t('lib.sortName') },
-                  ...(isSteamView ? [{ v: 'value', label: t('lib.sortValue') }] : []),
-                ].map(o => (
-                  <Pressable key={o.v} onPress={() => setSort(o.v)}
-                    style={[styles.sortChip, sort === o.v && styles.sortChipActive]}>
-                    {/* Yüzey (sortChipActive) zaten nötr; metin de vurgudan
-                        çıkıp ağırlığa devrediyor. Sıralama ikincil bir denetim
-                        olduğu için ana filtre çiplerinden daha sönük kalması
-                        kasıtlı — ama marka rengi taşımıyor. */}
-                    <Text style={[styles.sortChipText, sort === o.v && { color: colors.text, fontWeight: '700' }]}>{o.label}</Text>
-                  </Pressable>
-                ))}
-                <Text style={styles.countText}>{filtered.length}</Text>
+                <View style={styles.sortSeg}>
+                  <Segmented compact items={sortItems} value={sort} onChange={setSort} />
+                </View>
+                <Txt variant="captionStrong" style={[styles.num, { color: colors.text3 }]}>{filtered.length}</Txt>
               </View>
             </View>
           }
@@ -351,9 +351,11 @@ export default function LibraryScreen() {
               onAction={search ? () => setSearch('') : undefined}
             />
           ) : null}
-          ListFooterComponent={<View style={{ height: TAB_SPACE }} />}
+          // Alt dolgu `TAB_SPACE` DEĞİL: bu ekranda sekme çubuğu yok (plan
+          // §4.1'in işaret ettiği dört ekrandan biri). Güvenli alan + 40.
+          ListFooterComponent={<View style={{ height: insets.bottom + spacing.s40 }} />}
           refreshControl={(
-            <RefreshControl
+            <YenileKontrol
               refreshing={refreshing}
               onRefresh={async () => {
                 setRefreshing(true);
@@ -375,211 +377,170 @@ export default function LibraryScreen() {
 }
 
 // ── Başlık kartı (profil + istatistik + değer) ──
-function LibraryHeaderCard({ header, formatPrice, pricesLoading, t, lang, locale }) {
-  const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
+// İstatistik ekranının dili: surface1 kart (köşe 18), kenarlık ve renkli üst
+// şerit yok. Platformu küçük etiket söylüyor; değer (para) yeşil kalıyor.
+function LibraryHeaderCard({ header, formatPrice, pricesLoading, t, locale }) {
+  const { colors } = useDesignTheme();
   if (!header) return null;
 
-  const StatCell = ({ value, label, color }) => (
-    <View style={styles.statCell}>
-      <Text style={[styles.statValue, color && { color }]}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
-    </View>
-  );
+  const saat = (h) => `${h} ${t('home.hoursShort')}`;
+  // Kuruşsuz: 4 hücreli satırda "$162.93" SE'de kesiliyordu (26 Eyl).
+  const deger = (v) => (pricesLoading && !v ? '…' : v ? formatPrice(v.sum, { tam: true }) : '—');
 
-  const valueNode = (v) => pricesLoading && !v
-    ? <Text style={[styles.statValue, { color: colors.green }]}>…</Text>
-    : <Text style={[styles.statValue, { color: colors.green }]}>{v ? formatPrice(v.sum) : '—'}</Text>;
-
+  let bas;
+  let hucreler;
   if (header.kind === 'combined') {
-    const accent = colors.steam;
-    return (
-      // tema-bagimsiz: magaza marka rengi (Steam / Xbox)
-      <View style={[styles.headerCard, { borderColor: 'rgba(26,159,255,0.25)' }]}>
-        <View style={[styles.accentBar, { backgroundColor: accent }]} />
-        <View style={styles.headerRow}>
-          <View style={styles.avatarStack}>
-            {header.accounts.slice(0, 3).map((a, i) => (
-              a.avatar
-                ? <Image key={a.steamId} source={a.avatar} style={[styles.stackAvatar, { marginLeft: i ? -14 : 0 }]} contentFit="cover" />
-                : <View key={a.steamId} style={[styles.stackAvatar, styles.avatarFallback, { marginLeft: i ? -14 : 0, backgroundColor: accent }]}><Text style={styles.avatarInitial}>{a.name?.slice(0, 1).toUpperCase()}</Text></View>
-            ))}
-          </View>
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={styles.platformTag}>{t('lib.overview')}</Text>
-            <Text style={styles.headerName} numberOfLines={1}>{header.accounts.length} {t('lib.accounts')}</Text>
-          </View>
+    const kisiler = header.accounts.slice(0, 3);
+    const adim = K.library.stackAvatar - K.library.stackOverlap;
+    bas = (
+      <>
+        <View style={{ width: K.library.stackAvatar + (kisiler.length - 1) * adim, height: K.library.stackAvatar }}>
+          {kisiler.map((a, i) => (
+            /* Halka kartın zemini: üst üste binen yüzler birbirinden ayrılsın
+               (friends istek bandıyla aynı kalıp). */
+            <View key={a.steamId} style={[styles.stackAvatar, { left: i * adim, borderColor: colors.surface1 }]}>
+              <UserAvatar avatar={a.avatar} name={a.name} size={K.library.stackAvatar} />
+            </View>
+          ))}
         </View>
-        <View style={styles.statsRow}>
-          <StatCell value={header.stats.games} label={t('lib.games')} />
-          <StatCell value={`${header.stats.hours}${lang === 'tr' ? 's' : 'h'}`} label={t('lib.hours')} color={colors.accent} />
-          <View style={styles.statCell}>{valueNode(header.stats.value)}<Text style={styles.statLabel}>{t('lib.value')}</Text></View>
-        </View>
-      </View>
+        <HeaderName tag={t('lib.overview')} name={`${header.accounts.length} ${t('lib.accounts')}`} />
+      </>
     );
-  }
-
-  if (header.kind === 'steam') {
+    hucreler = [
+      { value: header.stats.games, label: t('lib.games') },
+      { value: saat(header.stats.hours), label: t('lib.hours') },
+      { value: deger(header.stats.value), label: t('lib.value'), color: colors.green },
+    ];
+  } else if (header.kind === 'steam') {
     const a = header.account;
-    return (
-      // tema-bagimsiz: magaza marka rengi (Steam / Xbox)
-      <View style={[styles.headerCard, { borderColor: 'rgba(26,159,255,0.25)' }]}>
-        <View style={[styles.accentBar, { backgroundColor: colors.steam }]} />
-        <View style={styles.headerRow}>
-          {a.avatar
-            ? <Image source={a.avatar} style={styles.headerAvatar} contentFit="cover" />
-            : <View style={[styles.headerAvatar, styles.avatarFallback, { backgroundColor: colors.steam }]}><Text style={styles.avatarInitial}>{a.name?.slice(0, 1).toUpperCase()}</Text></View>}
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={styles.platformTag}>STEAM</Text>
-            <Text style={styles.headerName} numberOfLines={1}>{a.name}</Text>
-          </View>
-        </View>
-        <View style={styles.statsRow}>
-          <StatCell value={header.stats.games} label={t('lib.games')} />
-          <StatCell value={header.stats.played} label={t('lib.played')} />
-          <StatCell value={`${header.stats.hours}${lang === 'tr' ? 's' : 'h'}`} label={t('lib.hours')} color={colors.accent} />
-          <View style={styles.statCell}>{valueNode(header.stats.value)}<Text style={styles.statLabel}>{t('lib.value')}</Text></View>
-        </View>
-      </View>
+    bas = (
+      <>
+        <UserAvatar avatar={a.avatar} name={a.name} size={K.library.avatar} />
+        <HeaderName tag="STEAM" name={a.name} />
+      </>
     );
+    hucreler = [
+      { value: header.stats.games, label: t('lib.games') },
+      { value: header.stats.played, label: t('lib.played') },
+      { value: saat(header.stats.hours), label: t('lib.hours') },
+      { value: deger(header.stats.value), label: t('lib.value'), color: colors.green },
+    ];
+  } else {
+    bas = (
+      <>
+        <UserAvatar avatar={header.avatar} name={header.gamertag} size={K.library.avatar} />
+        <HeaderName tag="XBOX" name={header.gamertag} />
+      </>
+    );
+    hucreler = [
+      { value: header.stats.games, label: t('lib.games') },
+      { value: header.stats.gamePass, label: 'Game Pass' },
+      { value: header.stats.gamerscore?.toLocaleString(locale), label: t('lib.gamerscore') },
+    ];
   }
 
-  // xbox
   return (
-    // tema-bagimsiz: magaza marka rengi (Steam / Xbox)
-    <View style={[styles.headerCard, { borderColor: 'rgba(16,124,16,0.3)' }]}>
-      <View style={[styles.accentBar, { backgroundColor: colors.xbox }]} />
-      <View style={styles.headerRow}>
-        {header.avatar
-          ? <Image source={header.avatar} style={styles.headerAvatar} contentFit="cover" />
-          // tema-bagimsiz: magaza marka rengi (Steam / Xbox)
-          : <View style={[styles.headerAvatar, styles.avatarFallback, { backgroundColor: 'rgba(16,124,16,0.3)' }]}><Ionicons name="logo-xbox" size={24} color={colors.xbox} /></View>}
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={[styles.platformTag, { color: colors.xbox }]}>XBOX</Text>
-          <Text style={styles.headerName} numberOfLines={1}>{header.gamertag}</Text>
-        </View>
-      </View>
+    <View style={[styles.headerCard, { backgroundColor: colors.surface1 }]}>
+      <View style={styles.headerRow}>{bas}</View>
       <View style={styles.statsRow}>
-        <StatCell value={header.stats.games} label={t('lib.games')} />
-        <StatCell value={header.stats.gamePass} label="Game Pass" color={colors.xbox} />
-        <StatCell value={header.stats.gamerscore?.toLocaleString(locale)} label={t('lib.gamerscore')} />
+        {hucreler.map((h) => (
+          <View key={h.label} style={styles.statCell}>
+            {/* Güvenlik ağı: çok büyük kütüphanede ("₺123.456") hücre yine
+                dolarsa kesmek yerine hafif küçülüyor. */}
+            <Txt variant="statValue" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[styles.num, h.color && { color: h.color }]}>{h.value}</Txt>
+            <Txt variant="caption" numberOfLines={1} style={{ color: colors.text2 }}>{h.label}</Txt>
+          </View>
+        ))}
       </View>
     </View>
   );
 }
 
-const GameTile = memo(function GameTile({ game, steam, price, onPress }) {
-  const styles = useStyles(makeStyles);
-  const { t, lang, formatPrice } = useLanguage();
-  const hourSymbol = lang === 'tr' ? 's' : 'h';
+function HeaderName({ tag, name }) {
+  const { colors } = useDesignTheme();
+  return (
+    <View style={styles.headerText}>
+      <Txt variant="caption2Strong" style={[styles.platformTag, { color: colors.text2 }]}>{tag}</Txt>
+      <Txt variant="headline" numberOfLines={1}>{name}</Txt>
+    </View>
+  );
+}
+
+// ── KUTUCUK: 2.0 GameCardSmall (kart ailesi 3/4) ──
+// Ad kapağın ALTINDA: eskiden kapak üstüne beyaz yazılıyordu ve açık renkli
+// kapakta okunmuyordu. Alt satır Steam'de "134 sa · ₺1.299" (kullanıcı
+// kararı: saat ve fiyat birlikte), Xbox'ta gamerscore. İndirim rozeti kalktı:
+// küçük kartın alt satırı fiyatla indirimi aynı anda taşımıyor ve sahip
+// olunan oyunda indirim bir karar değiştirmiyor. Fiyat, indirimdeyse güncel
+// fiyat (eski davranış). Game Pass kapak üstünde 2.0 `OverlayTag`.
+const GameTile = memo(function GameTile({ game, steam, price, width, onPress }) {
+  const { t, locale, formatPrice } = useLanguage();
   const isFree = price?.isFree;
   const onSale = price?.discount > 0 && !isFree;
+  let alt;
+  if (steam) {
+    // Kit tam saat gösteriyor ("134 sa"). Ham değer "43.3" idi: dar kutucukta
+    // alt satırı taşırıyordu, DE/TR'de ondalık ayraç da yanlıştı. 10 saatin
+    // altında tek ondalık, yerel ayraçla ("2,5 Std"). Oynanmamış oyun "0 Std":
+    // "Nicht gespielt · $5.14" 375 pt'de fiyatı tamamen yutuyordu (26 Eyl).
+    const saat = `${Number(game.hours || 0).toLocaleString(locale, { maximumFractionDigits: game.hours >= 10 ? 0 : 1 })} ${t('home.hoursShort')}`;
+    // Ücretsiz oyunda fiyat YOK: başlıktaki "değer" toplamı onları zaten
+    // saymıyor (computeValue), "Kostenlos" sahip olunan oyunda bilgi değil ve
+    // alt satırı kesiyordu.
+    const fiyat = !price || isFree ? null
+      : price.original != null ? formatPrice(onSale ? price.current : price.original)
+      : null;
+    alt = fiyat ? `${saat} · ${fiyat}` : saat;
+  } else {
+    alt = `${game.currentGamerscore ?? 0} G`;
+  }
   return (
-    <Pressable
+    <GameCardSmall
+      title={game.name}
+      image={game.image || null}
+      recyclingKey={String(game.appid ?? game.titleId)}
+      width={width}
+      subtitle={alt}
+      overlay={!steam && game.isGamePass ? <OverlayTag label="Game Pass" /> : null}
       onPress={() => onPress?.(game)}
-      style={({ pressed }) => [styles.tilePressable, pressed && PRESSED]}
-      accessibilityRole="button"
-      accessibilityLabel={game.name}
-    >
-      <GameCover uri={game.image} name={game.name} recyclingKey={String(game.appid ?? game.titleId)} style={styles.tile}>
-        {!steam && game.isGamePass ? (
-          <View style={styles.gpBadge}><Text style={styles.gpText}>GAME PASS</Text></View>
-        ) : null}
-        {steam && onSale ? (
-          <View style={styles.saleBadge}><Text style={styles.saleText}>-%{price.discount}</Text></View>
-        ) : null}
-        <View style={styles.tileInfo}>
-          <Text numberOfLines={2} style={styles.tileName}>{game.name}</Text>
-          <View style={styles.tileMeta}>
-            {steam ? (
-              game.hours > 0
-                ? <Text style={styles.tileHours}>{game.hours}<Text style={styles.tileSub}>{hourSymbol}</Text></Text>
-                : <Text style={styles.tileSub}>{t('library.notPlayed')}</Text>
-            ) : (
-              <Text style={styles.tileHours}>{game.currentGamerscore ?? 0}<Text style={styles.tileSub}> G</Text></Text>
-            )}
-            {steam && price ? (
-              isFree
-                ? <Text style={styles.tilePriceFree}>{t('card.free')}</Text>
-                : price.original != null
-                  ? <Text style={styles.tilePrice}>{formatPrice(onSale ? price.current : price.original)}</Text>
-                  : null
-            ) : null}
-          </View>
-        </View>
-      </GameCover>
-    </Pressable>
+    />
   );
 });
 
-const makeStyles = (colors) => StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
-  head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.s8, minHeight: TOUCH_MIN },
-  back: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', borderRadius: radius.full },
-  title: { fontSize: type.title3, fontWeight: '700', color: colors.text, letterSpacing: -0.22 },
-  header: { fontSize: type.title1, fontWeight: '800', color: colors.text, letterSpacing: -0.6, paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.xs },
-  chipsScroll: { flexGrow: 0, flexShrink: 0, maxHeight: 56 },
-  chipsRow: { paddingHorizontal: spacing.lg, gap: spacing.sm, paddingVertical: 10, alignItems: 'center' },
-  // Maketten: hap, dolgu 8/12, surface3, KENARLIK YOK, metin 13/400.
-  chip: { ...CHIP, flexDirection: 'row', alignItems: 'center', gap: spacing.s8, maxWidth: 200, backgroundColor: colors.bgInput },
-  chipText: { ...CHIP_TEXT, color: colors.text2 },
-  chipOn: { backgroundColor: colors.text },
-  chipTextOn: { color: colors.bg, fontWeight: '700' },
+const styles = StyleSheet.create({
+  safe: { flex: 1 },
+  num: { fontVariant: ['tabular-nums'] },
 
-  // Zemin BELİRTEÇTEN: sabit 'rgba(20,23,30,0.6)' koyu bir uygulama yüzeyiydi
-  // ve açık temada kart koyu kalıyordu (görsel üstünde değil, sayfa üstünde).
-  headerCard: { borderRadius: radius.lg, borderWidth: 1, overflow: 'hidden', backgroundColor: colors.card, marginBottom: 14 },
-  accentBar: { height: 3, width: '55%' },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingTop: 14 },
-  headerAvatar: { width: 52, height: 52, borderRadius: 12 },
-  avatarStack: { flexDirection: 'row' },
-  // Çerçeve kartın zeminiyle aynı olmalı — avatarları birbirinden ayıran şey
-  // o. Sabit '#0f141e' koyu zemin varsayıyordu.
-  stackAvatar: { width: 46, height: 46, borderRadius: 11, borderWidth: 2, borderColor: colors.card },
-  avatarFallback: { alignItems: 'center', justifyContent: 'center' },
-  avatarInitial: { color: '#fff', fontWeight: '800', fontSize: type.body },
-  platformTag: { fontSize: type.caption2, fontWeight: '800', color: colors.steam, letterSpacing: 1, marginBottom: 2 },
-  // Zemin headerCard: rgba(20,23,30,0.6) — koyu uygulama yuzeyi, gorsel
-  // degil. Saf beyaz burada theme.js'te olculen kontrast zarfinin disinda
-  // kaliyordu; token tonuna donuyor.
-  headerName: { fontSize: type.body, fontWeight: '800', color: colors.text },
-  statsRow: { flexDirection: 'row', paddingHorizontal: spacing.lg, paddingVertical: 14, gap: spacing.xs },
+  // Kilit ekranı: ikon + başlık + açıklama ortada, bağlama satırları altında.
+  lock: { alignItems: 'center', paddingHorizontal: space[32], paddingTop: space[32], paddingBottom: space[24], gap: space[8] },
+  lockTitle: { marginTop: space[8], textAlign: 'center' },
+  lockText: { textAlign: 'center' },
+  lockCta: { marginHorizontal: layout.gutter },
+
+  chipsScroll: { flexGrow: 0, flexShrink: 0 },
+  chipsRow: { paddingHorizontal: layout.gutter, gap: space[8], paddingTop: space[4], paddingBottom: space[12], alignItems: 'center' },
+
+  // Liste başlığı ızgara hücreleriyle aynı hizada: liste kenarı 20 − 8,
+  // başlık içi + 8 = 20 (sayfa payı).
+  listHeader: { paddingHorizontal: GRID_GAP / 2, gap: space[12], paddingBottom: space[12] },
+
+  headerCard: { borderRadius: dsRadius.group, padding: space[16], gap: space[16] },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: space[12] },
+  headerText: { flex: 1, minWidth: 0 },
+  platformTag: { letterSpacing: 1 },
+  stackAvatar: { position: 'absolute', top: 0, borderWidth: K.library.stackRing, borderRadius: dsRadius.pill },
+  statsRow: { flexDirection: 'row', gap: space[4] },
   statCell: { flex: 1, alignItems: 'center' },
-  statValue: { fontSize: type.headline, fontWeight: '800', color: colors.text, letterSpacing: -0.5 },
-  // Maket sayac karosu: etiket 13 / 400 / text2 ("Koleksiyon").
-  statLabel: { fontSize: type.footnote, fontWeight: '400', color: colors.text2, marginTop: spacing.s4 },
 
-  searchBox: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1, borderRadius: radius.md, paddingHorizontal: 14, height: 42, marginBottom: 10 },
-  searchInput: { flex: 1, color: colors.text, fontSize: type.subhead },
-  sortRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md },
-  sortChip: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radius.pill, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder },
-  // SEÇİM GÖRÜNMEZ OLUYORDU: 'rgba(255,255,255,0.10)' beyaz zeminde beyaz.
-  // bgHover iki temada da zeminden bir ton ayrışıyor.
-  sortChipActive: { borderColor: colors.borderHover, backgroundColor: colors.bgHover },
-  sortChipText: { fontSize: type.footnote, color: colors.text2 },
-  countText: { marginLeft: 'auto', fontSize: type.caption, color: colors.text3, fontWeight: '600' },
+  sortRow: { flexDirection: 'row', alignItems: 'center', gap: space[12] },
+  sortSeg: { flex: 1 },
 
-  listContent: { paddingHorizontal: 10, paddingTop: spacing.xs },
-  cell: { flex: 1, paddingHorizontal: 6, paddingBottom: spacing.md },
-  tilePressable: { width: '100%' },
-  tile: { width: '100%', aspectRatio: 3 / 4, borderRadius: radius.lg, overflow: 'hidden', backgroundColor: colors.card },
-  tileInfo: { position: 'absolute', left: 11, right: 11, bottom: 10 },
-  tileName: { color: '#fff', fontSize: type.subhead, fontWeight: '800', lineHeight: 17 },
-  tileMeta: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: spacing.xs },
-  tileHours: { color: colors.accentText, fontSize: type.body, fontWeight: '800' },
-  tileSub: { color: colors.text3, fontSize: type.caption2, fontWeight: '600' },
-  tilePrice: { color: '#fff', fontSize: type.footnote, fontWeight: '800' },
-  tilePriceFree: { color: colors.green, fontSize: type.footnote, fontWeight: '800' },
-  // tema-bagimsiz: magaza marka rengi (Steam / Xbox)
-  gpBadge: { position: 'absolute', top: 8, right: 8, backgroundColor: '#107c10', borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 },
-  gpText: { color: '#fff', fontSize: type.caption2, fontWeight: '800' },
-  saleBadge: { position: 'absolute', top: 8, left: 8, backgroundColor: colors.accentFillStrong, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 },
-  saleText: { color: '#0b0d10', fontSize: type.caption2, fontWeight: '800' },
+  // FlashList sütunları EŞİT bölüyor; 16 pt boşluk hücre başına 8+8 olarak
+  // veriliyor, liste kenarı 20 − 8 = 12. Hücre içi genişlik böylece tam
+  // `coverWidth()` (390 pt'de 106) — profil ızgarasıyla aynı ölçü.
+  listContent: { paddingHorizontal: GRID_PAD - GRID_GAP / 2, paddingTop: space[4] },
+  cell: { flex: 1, paddingHorizontal: GRID_GAP / 2, paddingBottom: GRID_GAP },
 
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, paddingHorizontal: 32 },
-  h1: { fontSize: type.title3, fontWeight: '800', color: colors.text },
-  prompt: { fontSize: type.subhead, color: colors.text3, textAlign: 'center', lineHeight: 20, marginBottom: spacing.sm },
-  connectBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, borderRadius: radius.md, paddingVertical: 14 },
-  connectText: { color: '#fff', fontWeight: '700', fontSize: type.subhead },
-  errText: { color: colors.text2, fontSize: type.subhead, textAlign: 'center' },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: space[12], paddingHorizontal: space[32] },
+  centerText: { textAlign: 'center' },
 });

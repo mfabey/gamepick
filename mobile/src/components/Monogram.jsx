@@ -84,6 +84,10 @@ export function initials(name) {
 // MODÜL SABİTİ DEĞİL, artık bileşenin içinde: modül düzeyinde dizi açılıştaki
 // paleti donduruyordu ve tema değişince monogram zeminleri eski temada
 // kalıyordu — beyaz sayfadaki koyu leke, tam da kaçınmak için yazılan şey.
+/**
+ * @param {{ name?: string, style?: any, size?: number, not?: boolean }} props
+ *   size: baş harflerin yazı boyutu (verilmezse 28); not: "kapak yok" notu
+ */
 export default function Monogram({ name, style, size, not: notGoster = true }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();

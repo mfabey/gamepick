@@ -1,0 +1,5 @@
+{
+  "ios": {
+    "NSLocationWhenInUseUsageDescription": "Gamerisen, paylaştığınız oyun kartına yalnızca şehir adını eklemek için konumunuzu kullanır. Konum bilginiz cihazınızdan çıkmaz."
+  }
+}

@@ -29,12 +29,13 @@
 // yok" der; devre dışı göstermek "var ama şu an çalışmıyor" der. İkincisi
 // doğru olan.
 // ─────────────────────────────────────────────────────────────────────────────
-import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-
-import { useStyles, useTheme } from '../context/ThemeContext';
+import { View, StyleSheet } from 'react-native';
+import { Icon } from './Icon';
+import { Button, Txt } from './ui/Primitives';
+import { useDesignTheme } from '../theme/useDesignTheme';
 import { useLanguage } from '../context/LanguageContext';
-import { type, radius, spacing, PRESSED, ICERIK_MAX } from '../theme';
+import { ICERIK_MAX } from '../theme';
+import { space } from '../theme/tokens';
 
 /**
  * @param {string[]} unavailable  çalışmayan filtre adları ('store'|'metacritic'|'tags'|'mode')
@@ -43,86 +44,40 @@ import { type, radius, spacing, PRESSED, ICERIK_MAX } from '../theme';
  * @param {func}     onRetry      "Tekrar dene"
  * @param {func}    [onDismiss]   "Yine de gez" — uyarıyı kapatır
  */
+// 2.0 / G-DS-4 "Hata · Satır içi" (27 Eyl): surface1 kart, 18 köşe, turuncu
+// ikon + 15/600 başlık, 13/18 açıklama, ikincil "Tekrar dene" (yenile ikonlu)
+// + üçüncül "Yine de gez". Eski sürüm kırmızı dolgulu kutu + kırmızı CTA'ydı:
+// 2.0'da hata bir uyarı, marka rengi değil.
 export default function LimitedMode({ unavailable = [], cevrimdisi = true, onRetry, onDismiss }) {
-  const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
+  const { colors } = useDesignTheme();
   const { t } = useLanguage();
-
-  // ADIYLA SÖYLE. Genel bir "bir şeyler ters gitti" mesajı kullanıcının
-  // hatayı kendinde aramasını engellemiyor — hangi filtrenin çalışmadığı
-  // tek tek yazılıyor.
   const adlar = unavailable.map((k) => t('filter.' + (k === 'metacritic' ? 'score' : k))).join(' · ');
-
   return (
-    <View style={styles.kutu}>
+    <View style={[styles.kutu, { backgroundColor: colors.surface1 }]} accessibilityRole="alert">
       <View style={styles.baslikSatir}>
-        <Ionicons
-          name={cevrimdisi ? 'cloud-offline-outline' : 'funnel-outline'}
-          size={18}
-          color={colors.accentText}
-        />
-        <Text style={styles.baslik}>
+        <Icon name={cevrimdisi ? 'wifioff' : 'sliders'} size={18} color={colors.orange} strokeWidth={2.2} />
+        <Txt variant="subhead" style={[styles.baslik, { color: colors.text }]}>
           {t(cevrimdisi ? 'limited.title' : 'limited.partialTitle')}
-        </Text>
+        </Txt>
       </View>
-
-      <Text style={styles.metin}>
+      <Txt variant="footnote" style={{ color: colors.text2 }}>
         {t(cevrimdisi ? 'limited.body' : 'limited.partialBody')}
         {adlar ? ` ${t('limited.disabled')}: ${adlar}.` : ''}
-      </Text>
-
+      </Txt>
       <View style={styles.eylemler}>
-        <Pressable
-          onPress={onRetry}
-          accessibilityRole="button"
-          style={({ pressed }) => [styles.birincil, pressed && PRESSED]}
-        >
-          <Text style={styles.birincilMetin}>{t('limited.retry')}</Text>
-        </Pressable>
-        {onDismiss ? (
-          <Pressable
-            onPress={onDismiss}
-            accessibilityRole="button"
-            style={({ pressed }) => [styles.ikincil, pressed && PRESSED]}
-          >
-            <Text style={styles.ikincilMetin}>{t('limited.browse')}</Text>
-          </Pressable>
-        ) : null}
+        <Button title={t('limited.retry')} variant="secondary" height={36} icon="refresh" onPress={onRetry} />
+        {onDismiss ? <Button title={t('limited.browse')} variant="tertiary" height={36} onPress={onDismiss} /> : null}
       </View>
     </View>
   );
 }
 
-const makeStyles = (colors) => StyleSheet.create({
-  // Handoff: brandWash dolgu, brandWashBorder kenarlık, yarıçap 12, dolgu 16.
+const styles = StyleSheet.create({
   kutu: {
-    // Geniş ekranda kutu da içerik tavanına tabi (bkz. theme → ICERIK_MAX).
-    width: '100%',
-    maxWidth: ICERIK_MAX,
-    alignSelf: 'center',
-    backgroundColor: colors.accentBg,
-    borderWidth: 1,
-    borderColor: colors.accentBorder,
-    borderRadius: radius.md,
-    padding: spacing.s16,
-    gap: spacing.s12,
+    width: '100%', maxWidth: ICERIK_MAX, alignSelf: 'center',
+    borderRadius: 18, padding: space[16], gap: space[8],
   },
-  baslikSatir: { flexDirection: 'row', alignItems: 'center', gap: spacing.s8 },
-  baslik: { color: colors.text, fontSize: type.body, fontWeight: '700', flex: 1 },
-  metin: { color: colors.text2, fontSize: type.footnote, lineHeight: 20 },
-  eylemler: { flexDirection: 'row', gap: spacing.s8 },
-  birincil: {
-    backgroundColor: colors.accentFillStrong,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.s16, paddingVertical: spacing.s12,
-    minHeight: 44, justifyContent: 'center',
-  },
-  // tema-bagimsiz: marka dolgusu ustundeki metin (tokens: onBrand)
-  birincilMetin: { color: '#FFFFFF', fontSize: type.footnote, fontWeight: '700' },
-  ikincil: {
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.s16, paddingVertical: spacing.s12,
-    minHeight: 44, justifyContent: 'center',
-  },
-  ikincilMetin: { color: colors.text2, fontSize: type.footnote, fontWeight: '600' },
+  baslikSatir: { flexDirection: 'row', alignItems: 'center', gap: space[8] },
+  baslik: { flex: 1, fontWeight: '600' },
+  eylemler: { flexDirection: 'row', gap: space[8], marginTop: space[4] },
 });

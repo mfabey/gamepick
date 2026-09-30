@@ -1,40 +1,44 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
-  View, Text, TextInput, Pressable, ActivityIndicator,
+  View, ActivityIndicator,
   StyleSheet, ScrollView,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import Animated, { useAnimatedStyle, interpolate, Extrapolation } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { fetchGames } from '../src/api/games';
-import IconButton from '../src/components/IconButton';
 import { fetchQuery, getEntry, isFresh, cacheTs } from '../src/services/queryCache';
 import CevrimdisiBant from '../src/components/CevrimdisiBant';
 import { useCevrimdisi } from '../src/hooks/useCevrimdisi';
-import GameCard from '../src/components/GameCard';
+import GameCard from '../src/components/ui/GameCard';
 import { GamesGridSkeleton, Reveal } from '../src/components/Skeleton';
 import { TopFade, BottomFade } from '../src/components/EdgeFade';
 import { prefetchImages } from '../src/utils/prefetch';
 import { useTimeToData } from '../src/dev/perf';
-import { radius, spacing, type, CHIP, CHIP_TEXT, CHIP_TEXT_ON, PRESSED, TOUCH_MIN } from '../src/theme';
+import { spacing } from '../src/theme';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useScrollCollapse } from '../src/context/TabBarContext';
 import { useLanguage } from '../src/context/LanguageContext';
 import FilterSheet, { FilterButton, countFilters, EtkinFiltreler } from '../src/components/FilterSheet';
 import LimitedMode from '../src/components/LimitedMode';
 import EmptyState from '../src/components/EmptyState';
+import { SearchField } from '../src/components/ui/SearchField';
+import { Button, Chip as UIChip, IconButton, Txt } from '../src/components/ui/Primitives';
+import { AramaOnerileri, AramaSonuclari } from '../src/components/BirlesikArama';
+import { Icon } from '../src/components/Icon';
+import { aramaEkle } from '../src/services/sonAramalar';
+import { recordSearchPick } from '../src/api/games';
+import { useDesignTheme } from '../src/theme/useDesignTheme';
+import { component as K } from '../src/theme/tokens';
 
 // Maketin sütun sayısı ve o sayının 390 pt'de verdiği hücre genişliği:
 // (390 − 2×10) / 2 = 185. Geniş ekranda sütun bu ölçüden türüyor.
-const COLS = 2;
-const HUCRE = 185;
 const NUM = 24;
 const PAGE1_TTL = 5 * 60 * 1000;   // 1. sayfa önbellek ömrü
 
 import { useReducedMotion } from '../src/hooks/useReducedMotion';
-import { useKartSutun } from '../src/hooks/useIcerikAlani';
+import { useDesignGrid } from '../src/hooks/useDesignGrid';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // BU EKRAN ARTIK SEKME DEĞİL, YIĞIN EKRANI.
@@ -70,6 +74,11 @@ export default function GamesScreen() {
   ], [t]);
 
   const [query, setQuery]       = useState('');   // arama kutusundaki canlı değer
+  // G-05/06 birleşik arama: kutu odakta ve boşken öneriler; sorgu varken
+  // kapsam (Tümü · Oyunlar · Kişiler · Topluluklar · Haberler). Oyunlar
+  // kapsamı bu ekranın kendi ızgarası.
+  const [odak, setOdak]         = useState(false);
+  const [kapsam, setKapsam]     = useState('all');
   const [searchTerm, setSearchTerm] = useState(''); // isteğe giden değer (yalnızca bu debounce'lu)
   // Bölüm rota parametresinden TOHUMLANABİLİYOR. Öncesinde bu ekran hiç
   // parametre okumuyordu (useLocalSearchParams yoktu), yani "indirimdekilere
@@ -252,17 +261,32 @@ export default function GamesScreen() {
   }, [reducedMotion, compact, headerH]);
 
   // Liste başlığın ALTINDAN kayıyor; dolgu olmasa ilk satır gizli kalırdı.
-  const sutun = useKartSutun(HUCRE, COLS);
+  const { columns: sutun, padding: gridPadding } = useDesignGrid();
   const listPad = useMemo(
-    () => ({ paddingHorizontal: 10, paddingTop: headerH + 6 }),
-    [headerH]
+    () => ({ paddingHorizontal: gridPadding, paddingTop: headerH + spacing.s12 }),
+    [headerH, gridPadding]
   );
 
   // FlashList için stabil referanslar (her render'da yeniden oluşmasın)
   const keyExtractor = useCallback((item) => String(item.id), []);
+  // Aramadan açılan oyun: sorgu son aramalara, Steam appid'i trend
+  // aramalara (yalnız appid gidiyor, sorgu metni değil). Gezinme GameCard'ın
+  // varsayılanıyla aynı parametreler.
+  const oyunAc = useCallback((g) => {
+    if (searchTerm) {
+      aramaEkle(searchTerm);
+      const appid = g.appid || (g.source === 'steam' ? g.rawgId : null);
+      if (appid) recordSearchPick(appid);
+    }
+    router.push({ pathname: '/game/[id]', params: { id: String(g.id), name: g.name, image: g.image || '',
+      slug: g.rawgSlug || '', appid: g.appid ? String(g.appid) : '', hasSteam: g.hasSteam ? '1' : '' } });
+  }, [searchTerm, router]);
   const renderGame = useCallback(({ item }) => (
-    <View style={styles.cell}><GameCard game={item} /></View>
-  ), [styles]);
+    <View style={styles.cell}><GameCard game={item} onPress={searchTerm ? () => oyunAc(item) : undefined} /></View>
+  ), [styles, searchTerm, oyunAc]);
+  // Sorgu silinince kapsam başa döner: sonraki arama yine "Tümü"yle açılır.
+  useEffect(() => { if (!searchTerm) setKapsam('all'); }, [searchTerm]);
+  const { colors: dc } = useDesignTheme();
 
   return (
     <View style={styles.safe}>
@@ -321,44 +345,59 @@ export default function GamesScreen() {
             anda en çok yeri o alır. Yan yana dururken başlığın taban çizgisi
             ile hizalı ve dokunma hedefi (44pt) korunuyor. */}
         <View style={styles.titleRow}>
-          <IconButton icon="chevron-back" size={26} color={colors.text}
-            onPress={goBack} style={styles.backBtn} />
-          <Text style={styles.title}>{t('games.title')}</Text>
+          <IconButton icon="back" label={t('a11y.back')} iconSize={K.navBar.backIcon}
+            strokeWidth={K.navBar.backStroke} onPress={goBack} style={styles.backBtn} />
+          <Txt variant="largeTitle" accessibilityRole="header" numberOfLines={1} style={styles.flex}>{t('games.title')}</Txt>
         </View>
-        {/* Arama + filtre AYNI SATIRDA: ikisi de "listeyi daralt" işi ve
-            filtre düğmesi kendi satırını hak etmiyor. Rozet etkin filtre
-            sayısını taşıyor — sayfa kapalıyken hangi filtrelerin açık
-            olduğunu gösteren tek işaret o. */}
+        {/* Arama TAM GENİŞLİK (kit): filtre düğmesi eskiden burada, kutunun
+            yanında 44 pt kareydi; artık bölüm çiplerinin başında "Filtrele ②"
+            hapı. Rozet etkin filtre sayısını taşıyor, altındaki etkin filtre
+            çipleri de hangilerinin açık olduğunu söylüyor. */}
+        {/* Arama alanı 2.0 `SearchField` (kit search_field): 40 pt, köşe 12,
+            `fill` zemin, 16 pt metin, odakta içte kırmızı halka ve temizle
+            düğmesi. Öncesi ekrana özel, kenarlıklı ve 14 pt bir kopyaydı —
+            aynı işi yapan iki farklı arama kutusu uygulamada duruyordu. */}
         <View style={styles.searchRow}>
-          <View style={styles.searchBox}>
-            <Ionicons name="search" size={17} color={colors.text3} />
-            <TextInput
+          <View style={styles.flex}>
+            <SearchField
               value={query}
               onChangeText={setQuery}
               placeholder={t('games.searchPlaceholder')}
-              placeholderTextColor={colors.text3}
-              style={styles.searchInput}
               returnKeyType="search"
+              onFocus={() => setOdak(true)}
+              onBlur={() => setOdak(false)}
+              onSubmitEditing={() => aramaEkle(query)}
             />
-            {query ? (
-              <Pressable onPress={() => setQuery('')} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('a11y.clear')}>
-                <Ionicons name="close-circle" size={18} color={colors.text3} />
-              </Pressable>
-            ) : null}
           </View>
-          <FilterButton count={filterCount} onPress={() => setSheetOpen(true)} />
         </View>
       </View>
+
+      {/* Kapsam (G-05/06): yalnız sorgu varken. Segment DEĞİL çip satırı
+          (kit search()): beş kapsam 375 pt'de segmente sığmıyor, Almanca
+          "Communitys" okunmayacak kadar küçülüyordu (SE, 27 Eyl). */}
+      {searchTerm ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} accessibilityLabel={t('srch.scope')}
+          style={styles.chipsScroll} contentContainerStyle={[styles.chipsRow, { paddingBottom: spacing.s8 }]}>
+          {[['all', 'srch.all'], ['games', 'srch.games'], ['people', 'srch.people'], ['communities', 'comm.communities'], ['news', 'srch.news']].map(([v, k]) => (
+            <Chip key={v} active={kapsam === v} label={t(k)} onPress={() => setKapsam(v)} />
+          ))}
+        </ScrollView>
+      ) : null}
 
       {/* Bölüm chip'leri.
           MOD SATIRI BURADAN KALKTI — filtre sayfasına taşındı. Bölüm burada
           kaldı çünkü o bir filtre değil, listenin ne olduğunu söyleyen ana
           kip (indirimdekiler ayrı bir Steam yolundan geliyor). */}
+      {!searchTerm || kapsam === 'games' ? (
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll} contentContainerStyle={[styles.chipsRow, { paddingBottom: 6 }]}>
+        {/* Filtre hapı satırın İLK öğesi (kit results() "Filtrele ②"; kullanıcı
+            kararı, 25 Eylül). Arama kutusu böylece kitteki gibi tam genişlik. */}
+        <FilterButton count={filterCount} onPress={() => setSheetOpen(true)} />
         {SECTIONS.map(s => (
           <Chip key={s.v} active={section === s.v} label={s.label} onPress={() => setSection(s.v)} />
         ))}
       </ScrollView>
+      ) : null}
 
       {/* FAZ 4 — ETKİN FİLTRE ÇİPLERİ. Rozetteki sayı artık ne olduğunu
           söylüyor ve tek dokunuşla kalkıyor. Başlık yüksekliği ÖLÇÜLDÜĞÜ
@@ -396,14 +435,19 @@ export default function GamesScreen() {
           // dokunulabilir kalmalı. Bayatlığı listenin tepesindeki bant
           // söylüyor. Bu dala yalnızca elde HİÇBİR ŞEY yokken düşülüyor.
           <View style={{ flex: 1, paddingTop: headerH }}>
-            <View style={styles.bozukBant}>
-              {/* Uçak modunda "oyun servisi yanıt vermiyor" demek yanlış:
-                  servis ayakta olabilir, telefon bağlı değil. */}
-              <Text style={styles.bozukBaslik}>{t(cevrimdisi ? 'offline.title' : 'games.degraded')}</Text>
-              <Text style={styles.bozukMetin}>{t(cevrimdisi ? 'offline.noCache' : 'games.degradedDesc')}</Text>
-              <Pressable onPress={() => load(true)} hitSlop={8} style={({ pressed }) => [styles.bozukEylem, pressed && PRESSED]}>
-                <Text style={styles.bozukEylemText}>{t('common.retry')}</Text>
-              </Pressable>
+            {/* 2.0 / DS 4 "Hata · Satır içi" (LimitedMode ile aynı dil):
+                surface1 kart, turuncu ikon, ikincil "Tekrar dene". Uçak
+                modunda "oyun servisi yanıt vermiyor" demek yanlış: servis
+                ayakta olabilir, telefon bağlı değil. */}
+            <View style={[styles.bozukBant, { backgroundColor: dc.surface1 }]}>
+              <View style={styles.bozukSatir}>
+                <Icon name={cevrimdisi ? 'wifioff' : 'alert'} size={18} color={dc.orange} strokeWidth={2.2} />
+                <Txt variant="subhead" style={styles.flex}>{t(cevrimdisi ? 'offline.title' : 'games.degraded')}</Txt>
+              </View>
+              <Txt variant="footnote" style={{ color: dc.text2 }}>{t(cevrimdisi ? 'offline.noCache' : 'games.degradedDesc')}</Txt>
+              <View style={styles.bozukEylem}>
+                <Button title={t('common.retry')} variant="secondary" height={36} icon="refresh" onPress={() => load(true)} />
+              </View>
             </View>
 
             {/* Önbellekteki liste SİLİNMİYOR — %55 opaklıkta duruyor.
@@ -415,7 +459,7 @@ export default function GamesScreen() {
                   numColumns={sutun}
                   keyExtractor={keyExtractor}
                   renderItem={renderGame}
-                  contentContainerStyle={styles.listContent}
+                  contentContainerStyle={[styles.listContent, { paddingHorizontal: gridPadding }]}
                   showsVerticalScrollIndicator={false}
                   scrollEnabled={false}
                 />
@@ -492,13 +536,27 @@ export default function GamesScreen() {
               // bant bırakırdı. Kalan tek gereksinim güvenli alan + göstergeye
               // yer.
               <View style={{ height: insets.bottom + 48, alignItems: 'center', justifyContent: 'center' }}>
-                {loadingMore ? <ActivityIndicator color={colors.accent} /> : null}
+                {loadingMore ? <ActivityIndicator color={colors.text2} /> : null}
               </View>
             }
           />
           </Reveal>
         )}
       </View>
+
+      {/* ── Birleşik arama katmanları (G-05/06) ── başlığın altından başlıyor,
+          ızgaranın ÜSTÜNE zeminle çiziliyor: ızgara ve sayfalama durumu
+          korunuyor, katman kalkınca kullanıcı kaldığı yerde. */}
+      {!query.trim() && odak && headerH > 0 ? (
+        <AramaOnerileri onSec={(q) => setQuery(q)}
+          style={[StyleSheet.absoluteFill, { top: headerH, backgroundColor: dc.bg }]} />
+      ) : null}
+      {searchTerm && kapsam !== 'games' && headerH > 0 ? (
+        <View style={[StyleSheet.absoluteFill, { top: headerH, backgroundColor: dc.bg }]}>
+          <AramaSonuclari q={searchTerm} kapsam={kapsam} onKapsam={setKapsam} oyunlar={games}
+            oyunlarYukleniyor={loading} oyunAc={oyunAc} altBosluk={insets.bottom + 48} />
+        </View>
+      ) : null}
 
       <FilterSheet
         unavailable={limited?.unavailable || []}
@@ -518,13 +576,15 @@ export default function GamesScreen() {
 // seçili çip ekranın tek gerçek CTA'sıyla aynı ağırlıktaydı.
 //
 // `accent` prop'u kaldırıldı — artık seçimin rengi diye bir şey yok.
+/**
+ * Bölüm çipi — 2.0 `Chip`e ince sarmalayıcı.
+ *
+ * EKRANA ÖZEL ÇİP KALKTI: aynı ekranda iki çip dili vardı (buradaki `CHIP`
+ * teması ve tasarımın 36 pt hapı). Sarmalayıcı yalnızca prop adlarını
+ * çeviriyor; çağrı yerleri (`SECTIONS.map`) değişmedi.
+ */
 function Chip({ active, label, onPress }) {
-  const styles = useStyles(makeStyles);
-  return (
-    <Pressable onPress={onPress} style={[styles.chip, active && styles.chipOn]}>
-      <Text style={[styles.chipText, active && styles.chipTextOn]}>{label}</Text>
-    </Pressable>
-  );
+  return <UIChip title={label} selected={active} onPress={onPress} />;
 }
 
 const makeStyles = (colors) => StyleSheet.create({
@@ -532,13 +592,10 @@ const makeStyles = (colors) => StyleSheet.create({
   // istemiyor. Tek eylem "Yeniden dene" ve o da metin (44pt hedef).
   bozukBant: {
     marginHorizontal: spacing.s20, marginBottom: spacing.s16,
-    padding: spacing.s16, borderRadius: radius.md,
-    backgroundColor: colors.bgInput, gap: spacing.s4,
+    padding: spacing.s16, borderRadius: 18, gap: spacing.s8,
   },
-  bozukBaslik: { color: colors.text, fontSize: type.subhead, fontWeight: '700' },
-  bozukMetin: { color: colors.text2, fontSize: type.footnote, lineHeight: 19 },
-  bozukEylem: { minHeight: TOUCH_MIN, justifyContent: 'center', alignSelf: 'flex-start' },
-  bozukEylemText: { color: colors.accentText, fontSize: type.subhead, fontWeight: '700' },
+  bozukSatir: { flexDirection: 'row', alignItems: 'center', gap: spacing.s8 },
+  bozukEylem: { flexDirection: 'row', marginTop: spacing.s4 },
 
   safe: { flex: 1, backgroundColor: colors.bg },
   // Mutlak konum: gizlenirken listenin yüksekliğini değiştirmesin.
@@ -554,29 +611,16 @@ const makeStyles = (colors) => StyleSheet.create({
   },
   header: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: 6 },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 2, marginBottom: spacing.md },
-  // IconButton 44pt'lik hedefi ortalıyor, yani chevron kendi kutusunda ~9pt
+  // IconButton 44pt'lik hedefi ortalıyor, yani ok kendi kutusunda ~10pt
   // içeride kalıyor. Negatif kenar boşluğu onu geri alıyor: aksi hâlde ok,
   // altındaki arama kutusunun sol kenarına göre sağa kaçık görünüyordu.
-  backBtn: { marginLeft: -11 },
-  title: { fontSize: type.title1, fontWeight: '800', color: colors.text, letterSpacing: -0.6 },
+  // Değer NavBar'ınkiyle aynı (tokens.navBar.backEdge).
+  backBtn: { marginLeft: K.navBar.backEdge },
+  flex: { flex: 1, minWidth: 0 },
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  searchBox: {
-    // flex:1 — filtre düğmesi sabit 44pt, kalan genişliği arama kutusu alıyor
-    flex: 1,
-    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
-    backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1,
-    borderRadius: radius.md, paddingHorizontal: 14, height: 44,
-  },
-  searchInput: { flex: 1, color: colors.text, fontSize: type.subhead },
   chipsScroll: { flexGrow: 0, flexShrink: 0, maxHeight: 54 },
   chipsRow: { paddingHorizontal: spacing.lg, gap: spacing.sm, paddingVertical: spacing.sm, alignItems: 'center' },
-  // Maketten: hap, dolgu 8/12, surface3, KENARLIK YOK, metin 13/400.
-  chip: { ...CHIP, backgroundColor: colors.bgInput },
-  chipText: { ...CHIP_TEXT, color: colors.text2 },
-  // SEGMENT dili — bir gorunum seciyor. Maket: text1 dolgu + koyu metin.
-  chipOn: { backgroundColor: colors.text },
-  chipTextOn: { ...CHIP_TEXT_ON, color: colors.bg },
-  cell: { flex: 1, paddingHorizontal: 6, paddingBottom: spacing.md },
+  cell: { flex: 1, alignItems: 'center', paddingHorizontal: 6, paddingBottom: spacing.md },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md },
   footer: { paddingVertical: spacing.xl },
 });

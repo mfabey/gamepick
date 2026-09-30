@@ -1,11 +1,12 @@
 import { memo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon } from './Icon';
 
 import { type, motion } from '../theme';
 import { useStyles, useTheme } from '../context/ThemeContext';
-import { getAvatarPreset } from '../utils/avatar';
+import { getAvatarPreset, PRESET_IKON } from '../utils/avatar';
+import { avatarPalette, component, fontFor } from '../theme/tokens';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Kullanıcı avatarı — TEK ÇİZİM YERİ.
@@ -23,6 +24,16 @@ import { getAvatarPreset } from '../utils/avatar';
 //   2. geçerli bir ön ayar kimliğiyse → renk + simge
 //   3. hiçbiri değilse                → adın baş harfi
 // ─────────────────────────────────────────────────────────────────────────────
+
+// Baş harf zemini (kit avatar() + COMPONENTS §5): `avatarPalette` içinden, ada
+// göre SABİT seçiliyor — aynı kişi her listede aynı renkte. Zemin kişinin
+// rengi, harf açık: tema bağımsız.
+function paletteFor(name) {
+  const s = String(name || '');
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+  return avatarPalette[Math.abs(h) % avatarPalette.length];
+}
 
 function isPhoto(v) {
   return typeof v === 'string' && (/^https?:\/\//.test(v) || /^data:image\//.test(v));
@@ -62,14 +73,14 @@ function Avatar({ avatar, name, size = 36, style }) {
       <View style={[styles.base, box, { backgroundColor: preset.bg }, style]}>
         {/* Simge çapla ölçekleniyor: sabit boyut, 22pt'lik avatarda taşıyor
             56pt'likte kayboluyordu. */}
-        <Ionicons name={preset.icon} size={Math.round(size * 0.5)} color={preset.iconColor} />
+        <Icon name={PRESET_IKON[preset.icon] || 'pad'} size={Math.round(size * 0.5)} color={preset.iconColor} strokeWidth={2.2} />
       </View>
     );
   }
 
   return (
-    <View style={[styles.base, box, style]}>
-      <Text style={[styles.letter, { fontSize: Math.round(size * 0.42) }]}>
+    <View style={[styles.base, box, { backgroundColor: paletteFor(name) }, style]}>
+      <Text allowFontScaling={false} style={[styles.letter, { fontSize: Math.floor(size * component.avatar.initialRatio) }]}>
         {String(name || '?').charAt(0).toUpperCase()}
       </Text>
     </View>
@@ -83,7 +94,7 @@ const makeStyles = (colors) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  letter: { color: colors.text2, fontWeight: '800' },
+  letter: { color: '#F5F5F7', ...fontFor('600'), letterSpacing: 0 },
 });
 
 export default memo(Avatar);

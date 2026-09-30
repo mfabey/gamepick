@@ -1,9 +1,10 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon } from './Icon';
 import * as Haptics from 'expo-haptics';
 
 import { spacing, PRESSED, SECTION_TITLE, NUMERIC } from '../theme';
-import { useStyles, useTheme } from '../context/ThemeContext';
+import { useStyles } from '../context/ThemeContext';
+import { useDesignTheme } from '../theme/useDesignTheme';
 import { useLanguage } from '../context/LanguageContext';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -23,10 +24,11 @@ import { useLanguage } from '../context/LanguageContext';
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const PROFILE_TABS = [
-  { key: 'collection', icon: 'grid-outline',              label: 'prof.tab.collection' },
-  { key: 'wishlist',   icon: 'heart-outline',             label: 'prof.tab.wishlist' },
-  { key: 'reviews',    icon: 'shield-checkmark-outline',  label: 'prof.tab.reviews' },
-  { key: 'posts',      icon: 'chatbubble-outline',        label: 'prof.tab.posts' },
+  // 2.0 ikonları (27 Eyl) — kullanıcı kararı: sekmeler İKONLU kalıyor (§7 soru 12).
+  { key: 'collection', icon: 'grid',    label: 'prof.tab.collection' },
+  { key: 'wishlist',   icon: 'heart',   label: 'prof.tab.wishlist' },
+  { key: 'reviews',    icon: 'shield',  label: 'prof.tab.reviews' },
+  { key: 'posts',      icon: 'comment', label: 'prof.tab.posts' },
 ];
 
 /**
@@ -37,7 +39,7 @@ export const PROFILE_TABS = [
  */
 export default function ProfileTabs({ active, counts = {}, onChange, disabled = false, right = null }) {
   const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
+  const { colors } = useDesignTheme();
   const { t } = useLanguage();
 
   const aktif = PROFILE_TABS.find((x) => x.key === active) || PROFILE_TABS[0];
@@ -48,7 +50,7 @@ export default function ProfileTabs({ active, counts = {}, onChange, disabled = 
       {/* GİZLİ PROFİLDE ŞERİT SİLİNMİYOR, SOLUYOR: kullanıcıya sayfanın
           yapısını öğretiyor ("burada dört sekme var") ama içeriğe söz
           vermiyor. Silmek, gizli profili bozuk bir sayfa gibi gösterirdi. */}
-      <View style={[styles.strip, disabled && styles.stripOff]} pointerEvents={disabled ? 'none' : 'auto'}>
+      <View style={[styles.strip, { borderTopColor: colors.line }, disabled && styles.stripOff]} pointerEvents={disabled ? 'none' : 'auto'}>
         {PROFILE_TABS.map((tab) => {
           const on = tab.key === active;
           return (
@@ -64,15 +66,15 @@ export default function ProfileTabs({ active, counts = {}, onChange, disabled = 
               accessibilityState={{ selected: on }}
               accessibilityLabel={t(tab.label)}
             >
-              <Ionicons name={tab.icon} size={20} color={on ? colors.text : colors.text3} />
-              {on ? <View style={styles.underline} /> : null}
+              <Icon name={tab.icon} size={22} color={on ? colors.text : colors.text3} strokeWidth={on ? 2.2 : 1.9} />
+              {on ? <View style={[styles.underline, { backgroundColor: colors.red }]} /> : null}
             </Pressable>
           );
         })}
       </View>
 
       <View style={styles.context}>
-        <Text style={styles.contextLabel} numberOfLines={1}>
+        <Text style={[styles.contextLabel, { color: colors.text3 }]} numberOfLines={1}>
           {t(aktif.label)}
           {Number.isFinite(sayi) ? <Text style={NUMERIC}>{` · ${sayi}`}</Text> : null}
         </Text>
@@ -82,10 +84,10 @@ export default function ProfileTabs({ active, counts = {}, onChange, disabled = 
   );
 }
 
-const makeStyles = (colors) => StyleSheet.create({
+const makeStyles = () => StyleSheet.create({
   strip: {
     height: 48, flexDirection: 'row',
-    borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.cardBorder,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
   stripOff: { opacity: 0.4 },
   // Sütun genişliği flex'e bırakıldı: 390pt'de 97.5 çıkıyor (maket ölçüsü) ve
@@ -96,7 +98,6 @@ const makeStyles = (colors) => StyleSheet.create({
     position: 'absolute', left: 0, right: 0, bottom: 0, height: 2,
     // Ekran başına izin verilen üç kırmızıdan biri (handoff denetim tablosu).
     // accent-serbest: AKTİF DURUM İŞARETİ — çizgi metin taşımıyor, kontrast eşiği geçerli değil
-    backgroundColor: colors.accent,
   },
 
   context: {
@@ -107,5 +108,5 @@ const makeStyles = (colors) => StyleSheet.create({
   // 11/600'ü değil: bu depo bölüm başlığını bir kez ölçüp SECTION_TITLE'a
   // bağladı ve 40+ yerde o duruyor. Tek ekran için ikinci bir üstyazı
   // kademesi açmak, o kararı sessizce bozardı.
-  contextLabel: { ...SECTION_TITLE, color: colors.text3, flex: 1, minWidth: 0 },
+  contextLabel: { ...SECTION_TITLE, flex: 1, minWidth: 0 },
 });

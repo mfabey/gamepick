@@ -1,13 +1,20 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Gamerisen geliştirici rozeti — 2.0 (27 Eyl).
+//
+// Satır içi (ad yanında): 2.0 `shield` ikonu, altın (kit: `trophy` tonu —
+// marka kırmızısı değil). Etiketli (profil başlığı): 2.0 `Badge` — altın
+// zemin + kalkan + "DEV". Eski sürüm Ionicons kalkanı ve sabit #F59E0B
+// renkli, kenarlıklı bir kutuydu; açık temada okunmuyordu.
+// ─────────────────────────────────────────────────────────────────────────────
 import { memo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, StyleSheet } from 'react-native';
+import { Icon } from './Icon';
+import { Txt } from './ui/Primitives';
 import { isDeveloperUser } from '../utils/developer';
-import { useStyles, useTheme } from '../context/ThemeContext';
-import { spacing, radius } from '../theme';
+import { useDesignTheme } from '../theme/useDesignTheme';
+import { component as K, space } from '../theme/tokens';
 
 /**
- * Gamerisen Geliştirici Kalkan Rozeti
- * 
  * @param {object|string} user       Kullanıcı nesnesi veya kullanıcı adı
  * @param {string}        username   Kullanıcı adı (@username)
  * @param {boolean}       isDeveloper Sunucu tarafından doğrulanmış geliştirici bayrağı
@@ -16,47 +23,30 @@ import { spacing, radius } from '../theme';
  * @param {object}        style      Ek stil nesnesi
  */
 function DevBadge({ user, username, isDeveloper, size = 13, showLabel = false, style }) {
-  const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
-
+  const { colors } = useDesignTheme();
   const isDev = isDeveloper || isDeveloperUser(user || username);
   if (!isDev) return null;
 
+  if (!showLabel) {
+    return (
+      <View style={[styles.satir, style]} accessibilityLabel="Gamerisen">
+        <Icon name="shield" size={size} color={colors.gold} fill={colors.goldTint} strokeWidth={2.2} />
+      </View>
+    );
+  }
   return (
-    <View style={[styles.wrap, showLabel && styles.wrapWithLabel, style]}>
-      <Ionicons name="shield-checkmark" size={size} color="#F59E0B" />
-      {showLabel ? <Text style={styles.labelText}>DEV</Text> : null}
+    <View style={[styles.etiket, { backgroundColor: colors.goldTint }, style]} accessibilityLabel="Gamerisen DEV">
+      <Icon name="shield" size={K.badgeSmall.icon} color={colors.gold} strokeWidth={2.4} />
+      <Txt variant="badge" style={{ color: colors.gold }}>DEV</Txt>
     </View>
   );
 }
 
-const makeStyles = (colors) => StyleSheet.create({
-  wrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: spacing.s4,
-  },
-  wrapWithLabel: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.s4,
-    // tema-bagimsiz: gelistirici rozeti ozel altin sarisi vurgusu
-    backgroundColor: 'rgba(245, 158, 11, 0.12)',
-    // tema-bagimsiz: gelistirici rozeti ozel altin sarisi cercevesi
-    borderColor: 'rgba(245, 158, 11, 0.35)',
-    borderWidth: 1,
-    borderRadius: radius.xs,
-    paddingHorizontal: spacing.s4,
-    paddingVertical: 0,
-    marginLeft: spacing.s8,
-  },
-  labelText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#F59E0B',
-    letterSpacing: 0.5,
-  },
+const styles = StyleSheet.create({
+  satir: { marginLeft: space[4], justifyContent: 'center' },
+  // 2.0 Badge ölçüsü: 18 yükseklik, köşe 5.
+  etiket: { flexDirection: 'row', alignItems: 'center', gap: K.badgeSmall.gap, height: K.badgeSmall.height,
+    borderRadius: K.badgeSmall.radius, paddingHorizontal: K.badgeSmall.paddingH, marginLeft: space[8] },
 });
 
 export default memo(DevBadge);

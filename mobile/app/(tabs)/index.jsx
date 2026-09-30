@@ -1,12 +1,11 @@
 import { memo, useMemo, useCallback, useEffect, useState, useRef } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomFade } from '../../src/components/EdgeFade';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { fetchGames } from '../../src/api/games';
-import { radius, spacing, PRESSED, type, SECTION_TITLE, TOUCH_MIN } from '../../src/theme';
+import { spacing } from '../../src/theme';
 import { useTabBosluk } from '../../src/hooks/useAltBosluk';
 import { useYanBosluk } from '../../src/hooks/useIcerikAlani';
 import { useStyles, useTheme } from '../../src/context/ThemeContext';
@@ -15,7 +14,17 @@ import { useLanguage } from '../../src/context/LanguageContext';
 import { useTimeToData } from '../../src/dev/perf';
 import FadeIn from '../../src/components/FadeIn';
 import Greeting from '../../src/components/Greeting';
-import GameCard from '../../src/components/GameCard';
+import HeroRail from '../../src/components/ui/HeroRail';
+import HomeMedia from '../../src/components/ui/HomeMedia';
+import GameCard from '../../src/components/ui/GameCard';
+import { HomeHeader } from '../../src/components/ui/Navigation';
+import { SectionHeader } from '../../src/components/ui/Primitives';
+import { bildirimSayisiTazele, useBildirimSayisi } from '../../src/services/bildirimSayaci';
+import { DealCard, PriceDropCard, Rail } from '../../src/components/ui/GameCards';
+import { FriendTile } from '../../src/components/ui/Social';
+import { usePrice } from '../../src/hooks/usePrice';
+import { component as K, layout } from '../../src/theme/tokens';
+import { useAuth } from '../../src/context/AuthContext';
 import { useQuery } from '../../src/hooks/useQuery';
 import { useTasteProfile } from '../../src/hooks/useTasteProfile';
 import { useOwnedGames } from '../../src/hooks/useOwnedGames';
@@ -28,13 +37,13 @@ import GamePostCard from '../../src/components/GamePostCard';
 import CevrimdisiBant from '../../src/components/CevrimdisiBant';
 import ReviewCard from '../../src/components/ReviewCard';
 import PostCard from '../../src/components/PostCard';
-import FriendActivity, { hasFriendSignal } from '../../src/components/FriendActivity';
+import { hasFriendSignal } from '../../src/components/FriendActivity';
 import ModerasyonKatmani from '../../src/components/ModerasyonKatmani';
 import { suz } from '../../src/services/engel';
 import { useEngelliler } from '../../src/hooks/useEngelliler';
 import { useModerasyon } from '../../src/hooks/useModerasyon';
 import CardExpand from '../../src/components/CardExpand';
-import { kaynakYaz, kucultmeAl } from '../../src/services/gecisKaynak';
+import { kaynakYaz, kucultmeAl, devirBekle } from '../../src/services/gecisKaynak';
 import { fetchForYouCandidates } from '../../src/api/recommend';
 import { getReviewFeed, getFriendActivity, fetchPosts } from '../../src/api/social';
 import { getSession, subscribeSession } from '../../src/services/session';
@@ -43,10 +52,16 @@ import { genreSlugsFor, rankCandidates } from '../../src/services/recommend';
 import { interleaveReviews, mergeSocial } from '../../src/services/homeFeed';
 import { useTabPressAction, scrollRefToTop } from '../../src/hooks/useTabPressAction';
 import { useReducedMotion } from '../../src/hooks/useReducedMotion';
+import { YenileIsareti, YenileKontrol } from '../../src/components/ui/Yenile';
 
 // Stabil fetcher'lar (key'in saf fonksiyonu)
 const fetchNewGames = () => fetchGames({ section: 'new', num: 12 });
 const fetchSaleGames = () => fetchGames({ section: 'sale', num: 12 });
+
+// Detay devir sinyali gelmezse büyüme bindirmesi en geç bu kadar sonra kalkar.
+// Detayın ilk karesi ölçüldü: ~50 ms. Bindirme o arada detayın altında
+// kaldığı için cömert tutmanın görünür bir bedeli yok.
+const DEVIR_YEDEK_MS = 1000;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SOĞUK KULLANICI İÇİN YEDEK TÜRLER.
@@ -76,8 +91,15 @@ export default function HomeScreen() {
   const [session, setSession] = useState(() => getSession());
   useEffect(() => subscribeSession(() => setSession(getSession())), []);
   const owner = session?.user?.uid || 'guest';
+  const [showAllForYou, setShowAllForYou] = useState(false);
+  useEffect(() => setShowAllForYou(false), [owner]);
   const [day, setDay] = useState(() => Math.floor(Date.now() / 86400000));
   useFocusEffect(useCallback(() => { setDay(Math.floor(Date.now() / 86400000)); }, []));
+  // Başlıktaki avatar (G-04) — sekme çubuğundaki profil avatarıyla aynı kaynak.
+  const { account } = useAuth();
+  // Zilin noktası (G-20): ekran odaklanınca tazeleniyor, aralıklı yoklama yok.
+  const bildirimSayisi = useBildirimSayisi();
+  useFocusEffect(useCallback(() => { bildirimSayisiTazele(); }, []));
 
   const { data: newData, ts: newTs, refetch: newTazele }       = useQuery('home:new', fetchNewGames, { ttl: 5 * 60 * 1000 });
   const { data: saleData, ts: saleTs, refetch: saleTazele }    = useQuery('home:sale', fetchSaleGames, { ttl: 5 * 60 * 1000 });
@@ -105,9 +127,10 @@ export default function HomeScreen() {
   const fresh = useMemo(() => hazirla(newData?.results || [], 12), [newData, hazirla]);
   const sale  = useMemo(() => hazirla(saleData?.results || [], 12), [saleData, hazirla]);
 
-  // Haber verisi ARTIK BURADA ÇEKİLMİYOR. Anasayfada haber şeridi yokken
-  // her açılışta haber isteği atmak boşa ağ trafiğiydi; /news kendi
-  // isteğini kendi yapıyor (aynı cache anahtarı, aynı hız).
+  // Haber ve video verisi BURADA DEĞİL, `HomeMedia` içinde çekiliyor: G-04'te
+  // "Oyun Dünyasından" ve "İzlemeye Değer" bölümleri var. Önbellek anahtarları
+  // /news (`news:v2:<dil>`) ve Videolar sekmesiyle (`video-catalog:<dil>`)
+  // ortak; ikinci ekran açılınca istek tekrarlanmıyor.
 
   // ── Günün Fırsatı Widget'ını Güncelle ──
   useEffect(() => {
@@ -203,6 +226,8 @@ export default function HomeScreen() {
     [candData, ownedNames, dismissedIds, owner, isCold, recommendationEpoch]
   );
 
+  const heroGames = useMemo(() => forYou.slice(0, 5), [forYou]);
+
   // ── Sonsuz keşif akışı ──
   // AKIŞ ARTIK HER ZAMAN AÇIK. Önceden `enabled: !isCold` ile kapalıydı ve
   // soğuk kullanıcıda anasayfa başlıkta bitiyordu (bkz. FALLBACK_SLUGS).
@@ -220,8 +245,8 @@ export default function HomeScreen() {
   // Şeritlerde gösterilen her şey akıştan elenir: aynı oyunu hem şeritte hem
   // akışta görmek listeyi bozuk gösteriyor.
   const excludeIds = useMemo(
-    () => new Set([...forYou, ...fresh, ...sale].map((g) => String(g.id))),
-    [forYou, fresh, sale]
+    () => new Set([...heroGames, ...fresh, ...sale].map((g) => String(g.id))),
+    [heroGames, fresh, sale]
   );
   const { items: feedItems, loadMore, loadingMore } = useForYouFeed({
     ownerKey: `${owner}:${day}:${recommendationEpoch}`,
@@ -236,6 +261,7 @@ export default function HomeScreen() {
   // ── Topluluk incelemeleri ──
   // İki uç PARALEL: biri diğerini beklemiyor ve ikisi de akışı bağlamıyor —
   // düşerlerse anasayfa yalnızca incelemesiz açılıyor, boş değil.
+
   const [reviews, setReviews] = useState([]);
   const [posts, setPosts] = useState([]);
   const [friendGames, setFriendGames] = useState([]);
@@ -305,7 +331,7 @@ export default function HomeScreen() {
   // Cümledeki her bağlamın kendi hedefi var — selamlama okunacak bir başlık
   // değil, tek dokunuşluk bir kısayol. Oyuna giderken parametreler GameCard
   // ile aynı: detay ekranı ad/kapak beklemeden çiziliyor.
-  const baglamaGit = useCallback((hedef, oyun) => {
+  const baglamaGit = useCallback(({ hedef, oyun }) => {
     if (hedef === 'game' && oyun?.id) {
       router.push({
         pathname: '/game/[id]',
@@ -317,11 +343,35 @@ export default function HomeScreen() {
       return;
     }
     if (hedef === 'friends') { router.push('/friends'); return; }
-    // "Senin için" motorunun kendi ekranı deste — aynı useForYouFeed'i
-    // kullanıyor, dolayısıyla cümledeki sayı orada birebir karşılanıyor.
-    if (hedef === 'foryou')  { router.push('/swipe'); return; }
+    if (hedef === 'foryou') {
+      setShowAllForYou(true);
+      scrollRefToTop(listRef);
+      return;
+    }
     router.push('/reviews');
   }, [router]);
+
+  const showFriends = hasFriendSignal(friendGames);
+
+  // "Çünkü RPG oyunlarını seviyorsun": adaylar hangi tür imzasıyla çekildiyse
+  // (donmuş `forYouSlugs`) onun ilki. Uydurma gerekçe yok — şeridi gerçekten
+  // belirleyen tür.
+  const forYouReason = useMemo(() => {
+    const slug = forYouSlugs[0];
+    const ad = slug ? t(`genre.${slug}`) : null;
+    return ad && ad !== `genre.${slug}` ? t('v2.forYouBecause').replace('{genre}', ad) : undefined;
+  }, [forYouSlugs, t]);
+
+  // İndirim listesi iki tasarım bölümüne bölünüyor: en yüksek iki indirim
+  // "Kaçırılmayacak Fırsatlar" bileti, kalanı "Fiyatı Düşenler". Fiyatı
+  // olmayan öğe fiyat kartına giremiyor; hiçbirinin fiyatı yoksa eski oyun
+  // kartı şeridi duruyor (usePrice kendi çeker).
+  const { deals, drops } = useMemo(() => {
+    const fiyatli = sale.filter((g) => g.price != null && g.original > g.price && (g.discount || 0) > 0);
+    const secilen = [...fiyatli].sort((a, b) => (b.discount || 0) - (a.discount || 0)).slice(0, K.home.dealCount);
+    const ayrilan = new Set(secilen.map((g) => String(g.id)));
+    return { deals: secilen, drops: fiyatli.filter((g) => !ayrilan.has(String(g.id))) };
+  }, [sale]);
 
   // Engel kümesi değişince akış yeniden süzülüyor — bkz. services/engel.js.
   const engelSurumu = useEngelliler();
@@ -394,7 +444,7 @@ export default function HomeScreen() {
       pathname: '/game/[id]',
       params: {
         id: String(g.id), name: g.name, image: g.image || '',
-        slug: g.rawgSlug || '', hasSteam: g.hasSteam ? '1' : '',
+        slug: g.rawgSlug || '', appid: g.appid ? String(g.appid) : '', hasSteam: g.hasSteam ? '1' : '',
         // appid ŞART OLDU: geçiş artık arkadaş ve inceleme kartlarını da
         // taşıyor, ikisi de detaya slug'la değil appid'yle gidiyor. Burada
         // düşseydi o iki yol büyüdükten sonra boş detaya inerdi.
@@ -417,10 +467,27 @@ export default function HomeScreen() {
   const kucultmeBitti = useCallback(() => setKuculen(null), []);
 
   useFocusEffect(useCallback(() => {
+    // Geri gelindiğinde büyüme bindirmesi kesin yok (devir sinyali hiç
+    // gelmediyse bile yedek zamanlayıcıyı beklemeden).
+    setBuyuyen(null);
     const bekleyen = kucultmeAl();
     if (bekleyen) setKuculen(bekleyen);
-    // Ekrandan çıkarken BÜYÜME bindirmesi kalmasın (detay devraldı).
-    return () => setBuyuyen(null);
+    // Ekrandan çıkarken BÜYÜME bindirmesi HEMEN kalkmıyor: odak kaybı detay
+    // çizilmeden oluyor ve arada 3 kare anasayfa görünüyordu (ölçüm:
+    // gecisKaynak.js → DEVİR). Detay ilk karesini çizince `devirTamam()`
+    // çağırıyor; gelmezse (büyümesiz gezinme, hata) yedek zamanlayıcı.
+    return () => {
+      let bitti = false;
+      let yedek = null;
+      const birak = () => {
+        if (bitti) return;
+        bitti = true;
+        clearTimeout(yedek);
+        setBuyuyen(null);
+      };
+      devirBekle(birak);
+      yedek = setTimeout(birak, DEVIR_YEDEK_MS);
+    };
   }, []));
 
   const keyExtractor = useCallback((item) => item.key, []);
@@ -456,7 +523,6 @@ export default function HomeScreen() {
         onExpand={kartAc}
         onMenu={(k) => mod.acMenu(k, { targetType: 'review', targetId: `${item.review.appid}:${item.review.uid}` })}
         onLongPress={() => mod.acMenu(item.review.author, { targetType: 'review', targetId: `${item.review.appid}:${item.review.uid}` })}
-        style={styles.feedReview}
       />
     ) : (
       <GamePostCard game={item.game} tag={item.tag} onDismiss={handleDismiss} onExpand={kartAc} />
@@ -466,48 +532,19 @@ export default function HomeScreen() {
   // Mevcut bölümlerin tamamı listenin başlığı olur → tek kaydırma, tek liste.
   const header = (
     <View style={styles.headerWrap}>
+        <YenileIsareti yenileniyor={candRefreshing} />
 
-        {/* ── Üst: marka (ortalı) + haberler ──
-            Marka ORTADA kalsın diye ikon akışa girmiyor, mutlak konumlu.
-            Aksi hâlde marka sola kayardı.
-
-            BU KÖŞENİN GEÇMİŞİ: önce kaydırarak keşif (swipe) girişiydi,
-            sonra mesajlar. Kaydırma arşive alındı, mesajlar ise alt
-            navigasyona terfi etti — orada rozetiyle birlikte duruyor.
-
-            Şimdi haberlerin girişi burada. Haberler eskiden anasayfanın en
-            üstünde 8 kartlık bir şerit ve alt navigasyonda bir sekmeydi;
-            ikisi de kalktı. Dış siteye çıkan içerik uygulamanın ilk
-            perdesini dolduramaz. */}
-        <View style={styles.topBar}>
-          {/* MARKA YAZISI, GÖVDE METNİ DEĞİL. Ölçüldü: erişilebilirlik
-              boyutlarında ekran genişliğini aşıp haber ikonunun üstüne
-              biniyordu. Ölçeklenmeyi tamamen KAPATMAK yanlış olurdu (büyük
-              yazıya ihtiyacı olan kullanıcı markayı da okuyamaz); üst sınır
-              konuyor — 1.4 kata kadar büyüyor, sonra duruyor. */}
-          {/* KELİME MARKASI — YENİ TASARIM PROJESİNE GÖRE.
-              Eski handoff'un maketi küçük harf "gamerisen" + kırmızı nokta
-              gösteriyordu ve öyle uygulanmıştı. Yeni projenin Faz 1 kareleri
-              (üçü de: iOS koyu, iOS açık, Android) "GAMERISEN" yazıyor.
-              Kullanıcı çelişkide yeni projeyi seçti.
-
-              maxFontSizeMultiplier 1.4 KALIYOR: erişilebilirlik boyutlarında
-              marka ekran genişliğini aşıp haber ikonunun üstüne biniyordu. */}
-          <Text style={styles.brand} maxFontSizeMultiplier={1.4} numberOfLines={1}>GAMERISEN</Text>
-          {/* Faz 1 karelerinde sağ üstte TEK simge var (haberler); arama
-              aşağıda kendi kutusunda. Arama ikonu buradan kalktı. */}
-          <View style={styles.topRight}>
-            <Pressable
-              style={({ pressed }) => [styles.topBtn, pressed && PRESSED]}
-              onPress={() => router.push('/news')}
-              accessibilityRole="button"
-              accessibilityLabel={t('news.title')}
-              hitSlop={6}
-            >
-              <Ionicons name="newspaper-outline" size={22} color={colors.text} />
-            </Pressable>
-          </View>
-        </View>
+        {/* G-04 başlığı: arama · bildirim · avatar (kit). Bildirim merkezi
+            (G-20) geldi; haber girişi başlıktan kalktı — "Oyun Dünyası"
+            rayının "Tümü" bağlantısı /news'e gidiyor. */}
+        <HomeHeader
+          onSearch={() => router.push('/games')}
+          onNotifications={() => router.push('/notifications')}
+          hasUnread={bildirimSayisi > 0}
+          avatar={account?.avatar}
+          name={account?.displayName || account?.username}
+          onProfile={() => router.push('/profile')}
+        />
 
         {/* Bant marka satırının ALTINDA: bu ekranda listenin tepesinde
             sabit bant için yer yok (yukarıdaki nota bkz.), ama başlıkla
@@ -534,48 +571,33 @@ export default function HomeScreen() {
           />
         </FadeIn>
 
-        {/* ── Arama ──
-            YENİ TASARIM PROJESİNE GÖRE GERİ GELDİ. Eski handoff'un maketi
-            aramayı başlıktaki bir ikona indiriyordu ve öyle uygulanmıştı;
-            Faz 1'in üç karesi de aramayı kendi kutusunda gösteriyor ve karar
-            tablosunda gerekçesi yazılı: "Ekranın tek kırmızısı: 44×44 dolgulu
-            düğme — Von Restorff + Fitts. Kırmızı tek anlam taşıyor: buraya
-            dokun."
-
-            Kutu METİN ALMIYOR, /games'e götürüyor — arama alanı orada. */}
-        <FadeIn delay={100}>
-          <Pressable style={({ pressed }) => [styles.search, pressed && PRESSED]} onPress={() => router.push('/games')}>
-            <Ionicons name="search" size={19} color={colors.text3} />
-            <Text style={styles.searchText}>{t('hero.search')}</Text>
-            <View style={styles.searchBtn}><Ionicons name="arrow-forward" size={16} color="#fff" /></View>
-          </Pressable>
-        </FadeIn>
-
-        <FadeIn delay={120}>
-          {forYou.length > 0 ? (
-            <Section title={t('home.forYou')} subtitle={t(isCold ? 'home.forYouStart' : 'home.forYouPersonal')}
-              games={forYou} router={router} onDismiss={handleDismiss} onExpand={kartAc} href="/swipe" />
-          ) : (
-            <View style={{ marginTop: spacing.s24, paddingHorizontal: spacing.s20, gap: spacing.s12 }}>
-              <Text style={styles.sectionTitle}>{t('home.forYou')}</Text>
-              {candLoading ? <ActivityIndicator color={colors.accent} /> : (
-                <Pressable onPress={hepsiniTazele} accessibilityRole="button">
-                  <Text style={{ color: colors.text2 }}>{t('home.forYouEmpty')}</Text>
-                  <Text style={styles.viewAll}>{t('common.retry')}</Text>
-                </Pressable>
-              )}
+        <View style={sec.section}>
+          <View style={sec.heading}>
+            <SectionHeader title={t('home.forYou')}
+              subtitle={heroGames.length ? (isCold ? t('home.forYouStart') : forYouReason || t('home.forYouPersonal')) : candLoading ? t('home.forYouStart') : t('home.forYouEmpty')}
+              action={heroGames.length ? (showAllForYou ? undefined : t('home.viewAll')) : candLoading ? undefined : t('common.retry')}
+              onAction={heroGames.length ? () => setShowAllForYou(true) : hepsiniTazele} />
+          </View>
+          {candLoading && !heroGames.length ? <ActivityIndicator color={colors.accent} /> : showAllForYou ? (
+            <View style={styles.forYouGrid}>
+              {forYou.map(game => <GameCard key={String(game.id)} game={game} onExpand={kartAc} />)}
             </View>
-          )}
-        </FadeIn>
-        {hasFriendSignal(friendGames) && (
-          <FadeIn delay={160}><FriendActivity games={friendGames} onExpand={kartAc} /></FadeIn>
-        )}
+          ) : <HeroRail games={heroGames} onExpand={kartAc} />}
+        </View>
 
-        {/* Yeni Çıkanlar ve İndirimdekiler LİDERİN ALTINDA, tam ağırlıkta.
-            Akışa karıştırılmışlardı; geri alındı çünkü ikisi de NİYETLE
-            aranıyor — "indirime ne girmiş" sorusunun akışta karşılığı yok. */}
-        <FadeIn delay={200}><Section title={t('home.new')} games={fresh} router={router} onExpand={kartAc} /></FadeIn>
-        <FadeIn delay={260}><Section title={t('home.sale')} games={sale} router={router} onExpand={kartAc} /></FadeIn>
+        {/* G-04 sırası (kit home()): Senin İçin → Fiyatı Düşenler → Arkadaşların
+            Ne Oynuyor? → Kaçırılmayacak Fırsatlar → Oyun Dünyasından → İzlemeye
+            Değer. Verisi olmayanlar ÇİZİLMİYOR: Gündem (etiket trendi yok),
+            "Toplulukta Popüler" (gönderiler akışta), "Belki Bunu Seversin"
+            (gerekçe kaynağı yok). Yeni Çıkanlar tasarımda yok ama niyetle
+            aranan bir bölüm; fırsatların altında kalıyor. */}
+        {drops.length > 0
+          ? <FadeIn delay={200}><DropSection games={drops} router={router} /></FadeIn>
+          : <FadeIn delay={200}><Section title={t('home.sale')} games={deals.length ? [] : sale} router={router} onExpand={kartAc} /></FadeIn>}
+        {showFriends && <FadeIn delay={220}><FriendSection games={friendGames} router={router} /></FadeIn>}
+        {deals.length > 0 && <FadeIn delay={240}><DealSection games={deals} router={router} /></FadeIn>}
+        <FadeIn delay={260}><Section title={t('home.new')} games={fresh} router={router} onExpand={kartAc} /></FadeIn>
+        <HomeMedia />
     </View>
   );
 
@@ -598,15 +620,14 @@ export default function HomeScreen() {
         renderItem={renderFeedItem}
         ListHeaderComponent={header}
         onEndReached={loadMore}
-        onRefresh={hepsiniTazele}
-        refreshing={candRefreshing}
+        refreshControl={<YenileKontrol refreshing={candRefreshing} onRefresh={hepsiniTazele} />}
         onEndReachedThreshold={0.6}
         // Geniş ekranda kolon ortalanıyor (bkz. theme → ICERIK_MAX).
         contentContainerStyle={[styles.listContent, { paddingHorizontal: yan }]}
         showsVerticalScrollIndicator={false}
         ListFooterComponent={
           <View style={{ height: tabBosluk, alignItems: 'center', justifyContent: 'center' }}>
-            {loadingMore ? <ActivityIndicator color={colors.accent} /> : null}
+            {loadingMore ? <ActivityIndicator color={colors.text2} /> : null}
           </View>
         }
       />
@@ -637,135 +658,118 @@ function go(router, g) {
   });
 }
 
-function Section({ title, subtitle, games, router, onDismiss, onExpand, href = '/games' }) {
+// Raylar `Rail` (FlatList, COMPONENTS §8 adımları): yalnız görünen kartlar
+// çiziliyor. Ölçüldü (boş fiyat önbelleği, kaydırmadan soğuk açılış):
+// ScrollView'ler her kartı bağladığı için 29 fiyat isteği gidiyordu.
+const gameKey = (g) => String(g.id);
+
+function Section({ title, subtitle, games, router, onDismiss, onExpand }) {
   const { t } = useLanguage();
   // Kanca erken donusten ONCE: asagida `games` bossa null donuluyor.
-  const styles = useStyles(makeStyles);
+  const renderItem = useCallback(({ item }) => (
+    <HomeCard game={item} router={router} onDismiss={onDismiss} onExpand={onExpand} />
+  ), [router, onDismiss, onExpand]);
   if (!games || games.length === 0) return null;
   return (
-    <View style={{ marginTop: spacing.s24 }}>
-      <View style={styles.sectionHead}>
-        {/* BÜYÜK YAZI TİPİNDE ÜST ÜSTE BİNİYORDU. Ölçüldü (simülatör,
-            accessibility-extra-large): başlık iki satıra sarıyor ama satırda
-            yer bırakmıyor, "Tümü ›" onun üstüne çıkıyordu.
-            flex:1 + shrink:0 ikilisi: başlık kalan yeri alır, bağlantı
-            asla ezilmez. */}
-        <Text style={[styles.sectionTitle, { flex: 1 }]}>{title}</Text>
-        <Pressable onPress={() => router.push(href)} hitSlop={8} style={{ flexShrink: 0 }}>
-          <Text style={styles.viewAll}>{t('home.viewAll')} ›</Text>
-        </Pressable>
+    <View style={sec.section}>
+      <View style={sec.heading}>
+        <SectionHeader title={title} subtitle={subtitle} action={t('home.viewAll')} onAction={() => router.push('/games')} />
       </View>
-      {subtitle && <Text style={[styles.forYouSubtitle]}>{subtitle}</Text>}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-        {games.map(g => <HomeCard key={g.id} game={g} router={router} onDismiss={onDismiss} onExpand={onExpand} />)}
-      </ScrollView>
+      <Rail kind="game" data={games} keyExtractor={gameKey} renderItem={renderItem} />
     </View>
   );
 }
 
-// Şerit kartı artık TEK KART AİLESİNDEN geliyor. Öncesinde burada ayrı bir
-// kart vardı: kendi rozetleri, kendi ad bindirmesi, kendi 132pt genişliği.
-// HTML ölçüsü 148 ("eski 132 değil") ve ad kapağın altında — ikisi de
-// GameCard'ın rail varyantında.
+// "Fiyatı Düşenler" (kit drop_card): indirim listesinin kendi fiyatı —
+// Steam özel fırsatlar kaynağı, rozet de o yüzden Steam. "Son 24 saatte"
+// notu YOK: fiyat geçmişi tutulmuyor, düşüşün ne zaman olduğu bilinmiyor.
+function DropSection({ games, router }) {
+  const { t, formatPrice } = useLanguage();
+  const renderItem = useCallback(({ item: g }) => (
+    <PriceDropCard title={g.name} image={g.image} oldPrice={formatPrice(g.original)} price={formatPrice(g.price)}
+      discount={g.discount} store={g.source === 'steam' ? 'Steam' : null} onPress={() => go(router, g)} />
+  ), [formatPrice, router]);
+  return (
+    <View style={sec.section}>
+      <View style={sec.heading}><SectionHeader title={t('v2.priceDrops')} action={t('home.viewAll')} onAction={() => router.push('/games')} /></View>
+      <Rail kind="drop" data={games} keyExtractor={gameKey} renderItem={renderItem} />
+    </View>
+  );
+}
+
+// "Arkadaşların Ne Oynuyor?" (kit friend): oyun başına en çok oynayan
+// arkadaş. "Şu anda oynuyor" DEĞİL: veri son iki haftanın saatleri ve 24
+// saate kadar bayat olabiliyor (bkz. FriendActivity başlığı).
+function FriendSection({ games, router }) {
+  const { t } = useLanguage();
+  const tiles = useMemo(() => games.filter((g) => g.friends?.length).map((g) => ({ key: String(g.appid), game: g, friend: g.friends[0] })), [games]);
+  const renderItem = useCallback(({ item: { game: g, friend } }) => (
+    <FriendTile avatar={friend.avatar} name={friend.name} game={g.name} gameImage={g.image}
+      status={g.count > 1 ? t('v2.friendsPlayed').replace('{n}', String(g.count)) : t('v2.playedThisWeek')}
+      onPress={() => router.push({ pathname: '/game/[id]', params: { id: `rawg_${g.appid}`, appid: g.appid, name: g.name || '', image: g.image } })} />
+  ), [router, t]);
+  if (!tiles.length) return null;
+  return (
+    <View style={sec.section}>
+      <View style={sec.heading}><SectionHeader title={t('v2.friendsPlaying')} action={t('home.viewAll')} onAction={() => router.push('/friends')} /></View>
+      <Rail kind="friend" data={tiles} keyExtractor={(x) => x.key} renderItem={renderItem} />
+    </View>
+  );
+}
+
+// "Kaçırılmayacak Fırsatlar" (kit deal_card): "En düşük fiyat" etiketinin
+// karşılığı card-price — mağazalar arası güncel en düşük (ITAD). Yanıt
+// gelene kadar indirim listesinin Steam fiyatı duruyor.
+function DealSection({ games, router }) {
+  const { t } = useLanguage();
+  const renderItem = useCallback(({ item }) => <HomeDeal game={item} router={router} />, [router]);
+  return (
+    <View style={sec.section}>
+      <View style={sec.heading}><SectionHeader title={t('v2.deals')} action={t('home.viewAll')} onAction={() => router.push('/games')} /></View>
+      <Rail kind="deal" data={games} keyExtractor={gameKey} renderItem={renderItem} />
+    </View>
+  );
+}
+
+const HomeDeal = memo(function HomeDeal({ game, router }) {
+  const { t, formatPrice } = useLanguage();
+  const p = usePrice(game);
+  const low = p?.price ?? game.price;
+  const normal = p?.original ?? game.original;
+  return (
+    <DealCard title={game.name} image={game.image} store={p?.storeName || 'Steam'} discount={p?.discount ?? game.discount}
+      lowPrice={formatPrice(low)} normalPrice={normal > low ? formatPrice(normal) : undefined}
+      actionLabel={t('v2.compareStores')} onAction={() => go(router, game)} onPress={() => go(router, game)} />
+  );
+});
+
+const sec = StyleSheet.create({
+  section: { marginTop: layout.sectionGap },
+  heading: { paddingHorizontal: layout.gutter, marginBottom: layout.headingToContent },
+});
+
+// Yeni kart aynı kapak geçişini ve öneri eleme sözleşmesini kullanır.
 const HomeCard = memo(function HomeCard({ game, router, onDismiss, onExpand }) {
   return (
     <GameCard
       game={game}
-      variant="rail"
       // `onExpand` verildiğinde dokunuş doğrudan gezinmiyor: kapak
       // çerçevesi ölçülüp büyüme geçişi başlıyor (bkz. CardExpand).
-      onPress={onExpand ? undefined : () => go(router, game)}
+      onPress={() => go(router, game)}
       onExpand={onExpand}
-      // FAZ 1: eleme artık GÖRÜNÜR bir "×". `onDismiss` yalnızca "Senin için"
-      // şeridinden geliyor — Yeni ve İndirim şeritleri onu göndermiyor,
-      // dolayısıyla orada daire de çıkmıyor.
-      onDismiss={onDismiss}
+      // ELEME UZUN BASMADA — kapaktaki "×" kaldırıldı (kullanıcı: "kötü
+      // duruyor", 26 Eyl). Akıştaki GamePostCard ile aynı sözleşme: uzun
+      // basma → "İlgilenmiyorum" onayı. `onDismiss` yalnızca "Senin için"
+      // şeridinden geliyor; Yeni ve İndirim şeritlerinde uzun basma boş.
+      // GameCard'a `onDismiss` VERİLMİYOR: verilirse daireyi yine çizer.
+      onLongPress={onDismiss ? () => onDismiss(game) : undefined}
     />
   );
 });
 
 const makeStyles = (colors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
-  // Tek sütuna geçilince listenin yatay dolgusu kaldırıldı: gönderi kartı
-  // kendi kenar boşluğunu (spacing.lg) taşıyor ve böylece bölüm başlıklarıyla
-  // AYNI hizada duruyor. Dolgu kalsaydı kartlar içeri kaçardı.
   listContent: {},
-  // Başlık tam genişlikte kalsın diye listenin yatay dolgusu geri alınıyor.
-  // paddingBottom ŞART: başlığın son bölümü (İndirimdekiler) ile altındaki
-  // iki sütunlu ızgara bitişik duruyordu, ızgara o bölümün devamı gibi
-  // görünüyordu. 24 = bölümler arası boşlukla aynı ritim (Faz 1: 26 → 24).
-  headerWrap: { paddingBottom: spacing.s24 },
-  // Akıştaki inceleme kartı, oyun gönderileriyle AYNI dikey ritmi tutuyor
-  // (GamePostCard marginBottom: s24). Bileşenin kendi 8'lik boşluğu kalsaydı
-  // incelemeler bir sonraki oyuna yapışık görünürdü.
-  feedReview: { marginBottom: spacing.s24 },
-  // Dikey dolgu 6/4 idi ve 40px ikon bandı taşırıyordu; marka ile ikon
-  // birbirine değiyordu. Bant ikonun boyuna göre açıldı.
-  // Marka artık ORTALI DEĞİL, sola yaslı (makette öyle).
-  // YATAY hizayı alignItems yönetiyor: bu View sütun yönlü, yani ana eksen
-  // DİKEY. justifyContent'i değiştirmek yatayda hiçbir şey yapmıyor —
-  // ilk denemede onu değiştirdim ve marka ortada kaldı.
-  topBar: {
-    alignItems: 'center', justifyContent: 'center',
-    paddingHorizontal: spacing.s20, paddingTop: spacing.s8, paddingBottom: spacing.s12,
-    minHeight: 52,
-  },
-  // İkon akıştan çıkarıldı: marka sola yaslandı ama düğme sağ kenarda kalmalı.
-  // Maket: iki dugme, aralari 12, sag kenardan 20.
-  topRight: {
-    position: 'absolute', right: spacing.s20, top: spacing.s8,
-    flexDirection: 'row', gap: spacing.s12,
-  },
-  // Maket: 36x36, r99, surface3 dolgulu. Bizde 40x40 ve dolgusuzdu.
-  // hitSlop 6 ile etkin dokunma alani 48x48 -- HIG'in 44 sinirinin ustunde.
-  topBtn: {
-    width: 36, height: 36, borderRadius: radius.pill,
-    backgroundColor: colors.bgInput,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  // Faz 1: arama ekranın tek kırmızısı. Kutu nötr, düğme accent.
-  search: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.s12,
-    marginTop: spacing.s12, marginHorizontal: spacing.s20,
-    backgroundColor: colors.card, borderColor: colors.borderHover, borderWidth: 1.5,
-    borderRadius: radius.lg, height: 56, paddingLeft: spacing.s16, paddingRight: spacing.s8,
-  },
-  searchText: { flex: 1, color: colors.text3, fontSize: type.subhead },
-  // 44×44 — Faz 1 ölçüsü ve HIG dokunma hedefi.
-  searchBtn: {
-    width: TOUCH_MIN, height: TOUCH_MIN, borderRadius: radius.md,
-    // accent-serbest: yalniz ok simgesi tasiyor, metin yok — WCAG grafik esigi 3:1 ve accent 4.45 onu asiyor
-    backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center',
-  },
-  // letterSpacing 1.5 KALKTI: o değer BÜYÜK HARF yazı içindi. Küçük harf
-  // kelime markasında harf aralığı açmak kelimeyi dağıtıyor.
-  // Maketten olculdu: 22px / 700 / -0.44px. Bizde 20 / 900 / 0 idi.
-  // Faz 1 kareleri: GAMERISEN, ortalı. Büyük harf marka olduğu için
-  // harf aralığı geri geldi.
-  brand: { fontSize: type.headline, fontWeight: '900', color: colors.text, letterSpacing: 1.5 },
-  // Makette markanın hemen ardındaki kırmızı işaret.
-  //
-  // Dikey yer TABANA bağlı, keyfi bir marginTop'a değil: ilk denemede
-  // `marginTop: 6` yazdım, boşluk cırcırı yakaladı ve haklıydı — 6 ölçekte
-  // yok. flex-end + 4pt, noktayı yazının taban çizgisine oturtuyor ve yazı
-
-
-  // gap eklendi: başlık sarınca iki öğe birbirine yapışıyordu.
-  forYouSubtitle: { fontSize: type.footnote, color: colors.text3, marginHorizontal: spacing.s20, marginBottom: spacing.s12 },
-  sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.s8, paddingHorizontal: spacing.s20, marginBottom: spacing.md },
-  sectionTitle: { ...SECTION_TITLE, color: colors.text2 },
-  // Bölüm başına bir tane olduğu için ekranda üç kez tekrarlıyordu. Gideceği
-  // yeri "›" zaten söylüyor; vurgu rengi buraya değil, sayfadaki tek gerçek
-  // eyleme (arama düğmesi) ait.
-  // MAKET KIRMIZI DIYOR. Bizde text2 idi ve gerekcesi yaziliydi ("ekran
-  // basina en cok 3 kirmizi oge"). Maket birebir izleniyor; ikisi
-  // arasindaki gerilim handoff'un kendi icinde -- bkz. commit.
-  // FAZ 1 ÖZ-DENETİMİ: "Kırmızı: içerik katmanında BİR TANE (arama
-  // düğmesi)." "Tümü ›" kırmızıydı ve her bölümde tekrar ediyordu —
-  // beş bölümde beş kırmızı, arama düğmesinin ayırt ediciliği bitiyordu.
-  // Maket ölçüsü: 13 · 700 · #9aa3b0 (koyu) / #5a6270 (açık) = text2.
-  viewAll: { fontSize: type.footnote, color: colors.text2, fontWeight: '700' },
-  row: { paddingHorizontal: spacing.s20, gap: spacing.md },
-
-  // tema-bagimsiz: oyun kapaginin ustundeki rozet; zemin gorsel
+  headerWrap: { paddingBottom: spacing.s32 },
+  forYouGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: spacing.s16, paddingHorizontal: layout.gutter },
 });

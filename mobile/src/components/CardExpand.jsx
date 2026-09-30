@@ -12,12 +12,15 @@
 // çerçeveye büyütülüyor.
 //
 // HEDEF ÇERÇEVE SABİT VE BİLİNİYOR: oyun detayının kapağı
-// `position:absolute; top:0; left:0; right:0; height:320` (game/[id].jsx →
-// coverWrap). Yani iniş noktası tahmin değil, ölçü.
+// `position:absolute; top:0; left:0; right:0; height:380` (game/[id].jsx →
+// cover, component.detail.heroHeight). Yani iniş noktası tahmin değil, ölçü.
 //
 // DEVİR ANI. Bindirme, detay ekranı ilk karesini çizene kadar duruyor.
-// İkisi AYNI görseli AYNI çerçevede gösterdiği için devir görünmüyor;
-// bindirme erken kaldırılsaydı bir kare boyunca boşluk görünürdü.
+// İkisi AYNI görseli AYNI çerçevede gösterdiği için devir görünmüyor.
+// Bu eskiden VARSAYIMDI ve tutmuyordu: bindirme anasayfanın odak kaybında
+// kalkıyordu, detay ~50 ms sonra çiziliyordu — 3 kare anasayfa göründü
+// (26 Eyl, 60 fps kayıt). Artık detay `devirTamam()` ile haber veriyor
+// (services/gecisKaynak.js → DEVİR).
 //
 // REDUCE MOTION: animasyon hiç kurulmuyor, çağrı yeri doğrudan gidiyor.
 // Hareket bir bilgi taşımıyor — yalnız sürekliliği anlatıyor — o yüzden
@@ -28,23 +31,25 @@
 // (çift açılışı önlemek için, bkz. _layout.jsx). Ama bu ayar İKİ YÖNE birden
 // uygulanıyor: geri çıkışta da hiçbir animasyon kalmıyordu, detay tek karede
 // yok oluyordu. Girişteki düzeltmenin görünmeyen bedeli buydu.
-// Çözüm, girişin aynısını ters oynatmak: kapak detayın 320pt alanından
+// Çözüm, girişin aynısını ters oynatmak: kapak detayın 380pt alanından
 // kartın çerçevesine küçülüyor, sonra pop yapılıyor.
 // ─────────────────────────────────────────────────────────────────────────────
 import { useEffect } from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
 import Animated, {
-  useSharedValue, useAnimatedStyle, withTiming, interpolate, Easing, runOnJS,
+  useSharedValue, useAnimatedStyle, useAnimatedReaction, withTiming, interpolate, Easing, runOnJS,
 } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 
 import GameCover from './GameCover';
 import { useTheme } from '../context/ThemeContext';
+import { useTabBarHidden } from '../context/TabBarContext';
 import { radius } from '../theme';
+import { component } from '../theme/tokens';
 
-// Detay ekranının kapak yüksekliği (game/[id].jsx → COVER_H). İkisi
-// ayrışırsa geçiş yanlış yere iner; bu yüzden burada da adlı sabit.
-export const HEDEF_KAPAK_Y = 320;
+// Detay ekranının kapak yüksekliği (G-07: 380, tokens → component.detail.heroHeight).
+// İki ekran AYNI jetonu okuyor; ayrışırsa geçiş yanlış yere iner.
+export const HEDEF_KAPAK_Y = component.detail.heroHeight;
 
 // App Store'un kendi geçişi ~380 ms sürüyor (videodan ölçüldü: kart
 // 3.08 sn'de yerinde, 3.46 sn'de oturmuş). Yay değil EĞRİ kullanılıyor:
@@ -61,9 +66,9 @@ const EGRI = Easing.bezier(0.2, 0.9, 0.2, 1);
  * `kaynak.hedefGorsel` — detayın gösterdiği kapak. Verilmezse ham `image`
  * kullanılıyor: detay da veri gelene kadar zaten onu basıyor.
  */
-// Bindirme KENDİSİ kalkmıyor: anasayfa, odağı kaybettiğinde temizliyor
-// (useFocusEffect). Böylece bindirme, detay ekranı devralana kadar
-// duruyor — erken kalksaydı bir kare boyunca boşluk görünürdü.
+// Bindirme KENDİSİ kalkmıyor: anasayfa, detay ilk karesini çizdiğini
+// bildirince temizliyor (useFocusEffect + devirBekle). Odak kaybında
+// hemen temizlemek YETMİYOR — ölçüldü, bkz. yukarıdaki DEVİR ANI.
 export default function CardExpand({ kaynak, onVar, yon = 'buyu' }) {
   const { colors } = useTheme();
   const ilerleme = useSharedValue(0);
@@ -81,6 +86,23 @@ export default function CardExpand({ kaynak, onVar, yon = 'buyu' }) {
       if (bitti) runOnJS(onVar)();
     });
   }, [kaynak, kucul, ilerleme, onVar]);
+
+  // ── SEKME ÇUBUĞU GEÇİŞLE BİRLİKTE İNİYOR ──
+  // Bindirme sekme EKRANININ içinde, çubuk ise gezgin seviyesinde: zIndex
+  // ne olursa olsun çubuk bindirmenin üstünde çiziliyordu — büyüyen kapağın
+  // önünde yüzen kapsül (cihaz turu, 25 Eyl). Çubuğun gizleme değeri
+  // ilerlemeye bağlı: büyürken aşağı kayıyor, küçülürken geri geliyor.
+  // Bindirme kalkınca sıfırlanıyor (o anda detay zaten her şeyi örtüyor).
+  const cubukGizli = useTabBarHidden();
+  const kaynakVar = !!kaynak;
+  useAnimatedReaction(
+    () => (kaynakVar ? ilerleme.value : -1),
+    (v) => { if (cubukGizli && v >= 0) cubukGizli.value = v; },
+    [kaynakVar, cubukGizli],
+  );
+  useEffect(() => {
+    if (!kaynakVar && cubukGizli) cubukGizli.value = 0;
+  }, [kaynakVar, cubukGizli]);
 
   const kutuStil = useAnimatedStyle(() => {
     if (!kaynak) return { opacity: 0 };

@@ -51,6 +51,14 @@ export const GENRE_CANON = {
   'Kart': 'Card',
   'Aile': 'Family',
   'Gündelik': 'Casual',
+  // Steam'in Türkçe adları ve yedek listedeki varyantlar (27 Eyl, canlı
+  // /api/games + fallback-games sayımı). 'Korku' eksikti: korku oyunları
+  // zevk profilindeki Horror ağırlığıyla hiç eşleşmiyordu.
+  'Korku': 'Horror',
+  'Bağımsız Yapım': 'Indie',
+  'Basit Eğlence': 'Casual',
+  'Kart & Masa': 'Card',
+  'Devasa Çok Oyunculu': 'Massively Multiplayer',
 };
 
 export function canonicalGenre(name) {

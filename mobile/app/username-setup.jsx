@@ -13,23 +13,26 @@ import { useYanBosluk } from '../src/hooks/useIcerikAlani';
 // ─────────────────────────────────────────────────────────────────────────────
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  View, Text, Pressable, StyleSheet, TextInput, ScrollView,
-  ActivityIndicator, KeyboardAvoidingView,
+  View, StyleSheet, ScrollView, ActivityIndicator, KeyboardAvoidingView,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
-import { radius, spacing, type, PRESSED, TOUCH_MIN } from '../src/theme';
-import { useStyles, useTheme } from '../src/context/ThemeContext';
+import { spacing } from '../src/theme';
+import { component as K, radius as dsRadius, space } from '../src/theme/tokens';
+import { useDesignTheme } from '../src/theme/useDesignTheme';
+import { useStyles } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
 import { checkUsername, setUsername } from '../src/api/social';
+import { Icon } from '../src/components/Icon';
+import { NavBar } from '../src/components/ui/Navigation';
+import { Button, TextField, Txt } from '../src/components/ui/Primitives';
 
 export default function UsernameSetupScreen() {
   const styles = useStyles(makeStyles);
   const yan = useYanBosluk();
-  const { colors } = useTheme();
+  const { colors } = useDesignTheme();
   const { t } = useLanguage();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -75,19 +78,10 @@ export default function UsernameSetupScreen() {
 
   const errKey = state.status === 'error' ? `soc.err.${state.code}` : null;
   const errText = errKey ? (t(errKey) !== errKey ? t(errKey) : t('soc.err.generic')) : null;
-  const hazir = state.status === 'ok' && !saving;
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={[styles.head, { marginHorizontal: yan }]}>
-        <Pressable onPress={() => router.back()} hitSlop={8}
-                   style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]}
-                   accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </Pressable>
-        <Text style={styles.title}>{t('soc.title')}</Text>
-        <View style={styles.iconBtn} />
-      </View>
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
+      <NavBar title={t('soc.title')} />
 
       {/* ANDROID'DE DE 'padding' — `undefined` DEĞİL. `undefined` iken
           KeyboardAvoidingView Android'de HİÇBİR ŞEY yapmıyor: RN 0.81
@@ -96,103 +90,71 @@ export default function UsernameSetupScreen() {
           alan hiç yukarı kaymıyordu (bkz. chat/[uid].jsx aynı not). */}
       <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
         <ScrollView
-          contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.s24, paddingHorizontal: yan + spacing.s20 }]}
+          contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + space[24], paddingHorizontal: yan + spacing.s20 }]}
           keyboardShouldPersistTaps="handled"
         >
-          <Ionicons name="at-outline" size={48} color={colors.accent} />
-          <Text style={styles.setupTitle}>{t('soc.setupTitle')}</Text>
-          <Text style={styles.setupText}>{t('soc.setupText')}</Text>
+          <Icon name="at" size={K.usernameSetup.icon} color={colors.red} />
+          <Txt variant="title2" accessibilityRole="header" style={styles.baslik}>{t('soc.setupTitle')}</Txt>
+          <Txt variant="body" style={[styles.lead, { color: colors.text2 }]}>{t('soc.setupText')}</Txt>
 
-          <Text style={styles.label}>{t('soc.usernameLabel')}</Text>
-          <View style={styles.inputWrap}>
-            <Text style={styles.at}>@</Text>
-            <TextInput
+          {/* G-03'teki kullanıcı adı alanının aynısı: kontrol sürerken sağda
+              gösterge; sonuç alanın altında (alınmış → hata, uygun → başarı,
+              diğer → ipucu). Eskiden durum sağda ikonla VE altta metinle iki
+              kez söyleniyordu; TextField'ın yardım satırı ikonu zaten taşıyor. */}
+          <View style={styles.alan}>
+            <TextField
+              label={t('soc.usernameLabel')}
+              icon="at"
               value={name}
               onChangeText={(v) => setName(v.replace(/[^a-zA-Z0-9_]/g, ''))}
               placeholder={t('soc.usernamePlaceholder')}
-              placeholderTextColor={colors.text3}
-              style={styles.input}
               maxLength={20}
               autoCapitalize="none"
               autoCorrect={false}
+              textContentType="username"
               returnKeyType="done"
               onSubmitEditing={submit}
+              trailing={state.status === 'checking' ? <ActivityIndicator size="small" color={colors.text3} /> : null}
+              error={errText || undefined}
+              success={!errText && state.status === 'ok' ? t('soc.available') : undefined}
+              helper={t('soc.usernameHint')}
             />
-            {state.status === 'checking' ? <ActivityIndicator size="small" color={colors.text3} /> : null}
-            {state.status === 'ok' ? <Ionicons name="checkmark-circle" size={21} color={colors.green} /> : null}
-            {state.status === 'error' ? <Ionicons name="close-circle" size={21} color={colors.danger} /> : null}
           </View>
 
-          <Text style={[styles.hint, errText ? { color: colors.danger } : null]}>
-            {errText || (state.status === 'ok' ? t('soc.available') : t('soc.usernameHint'))}
-          </Text>
-
-          <View style={styles.privacyNote}>
-            <Ionicons name="lock-closed-outline" size={15} color={colors.text2} />
-            <Text style={styles.privacyNoteText}>{t('soc.privacyNote')}</Text>
+          <View style={[styles.not, { backgroundColor: colors.surface1 }]}>
+            <Icon name="lock" size={K.usernameSetup.noteIcon} color={colors.text2} />
+            <Txt variant="footnote" style={[styles.notMetin, { color: colors.text2 }]}>{t('soc.privacyNote')}</Txt>
           </View>
 
-          <Pressable
-            style={({ pressed }) => [styles.cta, !hazir && styles.ctaOff, pressed && PRESSED]}
+          {/* Yüklenirken yalnız yay (2.0 Button `loading`): genişlik değişmiyor,
+              ikinci basış düğmenin kendisinde engelleniyor. */}
+          <Button
+            title={t('soc.create')}
+            height={52}
             onPress={submit}
-            disabled={!hazir}
-          >
-            {saving
-              ? <ActivityIndicator color={colors.onAccent} />
-              : <Text style={[styles.ctaText, !hazir && styles.ctaTextOff]}>{t('soc.create')}</Text>}
-          </Pressable>
+            disabled={state.status !== 'ok'}
+            loading={saving}
+            style={styles.cta}
+          />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-const makeStyles = (colors) => StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
+const makeStyles = () => StyleSheet.create({
+  safe: { flex: 1 },
 
-  head: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.s4 },
-  title: { flex: 1, textAlign: 'center', fontSize: type.body, fontWeight: '600', color: colors.text },
-  iconBtn: { width: TOUCH_MIN, height: TOUCH_MIN, alignItems: 'center', justifyContent: 'center' },
+  body: { paddingTop: space[16], paddingHorizontal: spacing.s20, alignItems: 'center' },
+  baslik: { marginTop: space[16], textAlign: 'center' },
+  lead: { marginTop: space[8], textAlign: 'center', maxWidth: K.usernameSetup.leadWidth },
 
-  body: { padding: spacing.s20, alignItems: 'center' },
-  setupTitle: {
-    fontSize: type.title3, fontWeight: '700', color: colors.text,
-    marginTop: spacing.s16, textAlign: 'center',
+  // Sütun ortalı (ikon ve başlık); alan ve not tam genişlik.
+  alan: { alignSelf: 'stretch', marginTop: space[32] },
+  not: {
+    alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', gap: space[8],
+    marginTop: space[24], padding: space[12], borderRadius: dsRadius.button,
   },
-  setupText: {
-    fontSize: type.subhead, color: colors.text2, textAlign: 'center',
-    lineHeight: 22, marginTop: spacing.s8, maxWidth: 300,
-  },
-
-  label: {
-    alignSelf: 'stretch', marginTop: spacing.s32, marginBottom: spacing.s8,
-    fontSize: type.footnote, fontWeight: '600', color: colors.text2,
-  },
-  inputWrap: {
-    alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', gap: spacing.s8,
-    height: TOUCH_MIN, paddingHorizontal: spacing.s12, borderRadius: radius.md,
-    backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder,
-  },
-  at: { fontSize: type.subhead, color: colors.text3 },
-  input: { flex: 1, fontSize: type.subhead, color: colors.text, padding: 0 },
-  hint: {
-    alignSelf: 'stretch', fontSize: type.footnote, color: colors.text3,
-    marginTop: spacing.s8,
-  },
-
-  privacyNote: {
-    alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', gap: spacing.s8,
-    marginTop: spacing.s24, padding: spacing.s12, borderRadius: radius.md,
-    backgroundColor: colors.card,
-  },
-  privacyNoteText: { flex: 1, fontSize: type.footnote, color: colors.text2, lineHeight: 18 },
-
-  cta: {
-    alignSelf: 'stretch', height: TOUCH_MIN, borderRadius: radius.md,
-    alignItems: 'center', justifyContent: 'center', marginTop: spacing.s24,
-    backgroundColor: colors.accentFillStrong,
-  },
-  ctaOff: { backgroundColor: colors.bgInput },
-  ctaText: { fontSize: type.subhead, fontWeight: '600', color: colors.onAccent },
-  ctaTextOff: { color: colors.text3 },
+  notMetin: { flex: 1 },
+  cta: { alignSelf: 'stretch', marginTop: space[24] },
 });

@@ -2,7 +2,6 @@
   "acc.appleReauthBtn",
   "acc.signedInAs",
   "auth.accounts",
-  "auth.disconnect",
   "auth.games",
   "col.added",
   "common.loading",
@@ -47,11 +46,6 @@
   "stats.collections",
   "stats.decisions",
   "stats.entry",
-  "stats.share",
   "stats.startSwiping",
-  "swipe.entry",
-  "vid.entry",
-  "wishlist.add",
-  "wishlist.added",
-  "wishlist.count"
+  "vid.entry"
 ]

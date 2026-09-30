@@ -15,7 +15,6 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import * as Haptics from 'expo-haptics';
@@ -35,22 +34,23 @@ import ReportSheet from '../../src/components/ReportSheet';
 import PersonMenu from '../../src/components/PersonMenu';
 import MessageMenu from '../../src/components/MessageMenu';
 import GifPicker from '../../src/components/GifPicker';
-import BubbleTail from '../../src/components/BubbleTail';
 import TypingBubble from '../../src/components/TypingBubble';
-import GlassSurface from '../../src/components/GlassSurface';
+import { Icon } from '../../src/components/Icon';
+import { Button, IconButton, PressableScale, Txt } from '../../src/components/ui/Primitives';
+import { UserAvatar } from '../../src/components/ui/Social';
+import { useDesignTheme } from '../../src/theme/useDesignTheme';
+import { component as K, typography } from '../../src/theme/tokens';
 import Animated, {
-  FadeIn, ZoomIn, withSpring, withTiming, useSharedValue, useAnimatedStyle,
+  FadeIn, ZoomIn, withSpring, withTiming,
 } from 'react-native-reanimated';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useReducedMotion } from '../../src/hooks/useReducedMotion';
-import { getAvatarPreset } from '../../src/utils/avatar';
 import {
-  ayracGerekli, ayracParcalari, kuyrukVar, ustBosluk,
+  ayracGerekli, ayracMetni, kuyrukVar, ustBosluk,
 } from '../../src/utils/messageGroups';
 import { saltEmojiMi, EMOJI_BOY } from '../../src/utils/emojiOnly';
 import { tmpDegistir, bekleyenEsIndeks } from '../../src/utils/gonderimEsleme';
 import { REACTIONS, reactionList } from '../../src/services/reactions';
-import { radius, spacing, type, PRESSED, motion, TOUCH_MIN, NUMERIC } from '../../src/theme';
+import { radius, spacing, type, PRESSED, motion, NUMERIC } from '../../src/theme';
 import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { useLanguage } from '../../src/context/LanguageContext';
 
@@ -60,6 +60,14 @@ import { useLanguage } from '../../src/context/LanguageContext';
 const TAM_EKRAN_ACIK = { enable: true };
 
 const MAX_TEXT = 1000;
+
+/** Kit chat() ölçüleri (tokens → component.chat). */
+const C = K.chat;
+const KC = C.composer;
+const SHARE = C.share;
+const IMG = C.image;
+const ALINTI = C.quote;
+const TEPKI = C.reaction;
 
 // Modul duzeyinde: satir ici verilseydi her render'da yeni kimlik olur ve
 // FlatList tum hucreleri yeniden anahtarlamak zorunda kalirdi.
@@ -82,20 +90,9 @@ const anahtar = (m) => m.yerelId || m.id;
 // dosyasında satır satır işaretli.
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Baloncuğun en fazla genişliği. Bizde %78'di; iOS %75. */
-const BALONCUK_EN = '75%';
 
-/** Baloncuk köşesi. Bizde radius.lg (16) idi; iOS 18. */
-const BALONCUK_YARICAP = 18;
-
-/**
- * Tapback rozetinin satırın üstünde açtığı yer.
- *
- * Rozet baloncuğun DIŞ üst köşesine biniyor (position: absolute). Bu pay
- * olmadan üstteki mesajın üstüne çıkıyor — grup içi boşluk 2pt ve rozet
- * 26pt yüksek.
- */
-const TAPBACK_PAYI = 20;
+/** Baloncuk köşesi — kit de 18 diyor (zengin baloncuklar sıradaki işte). */
+const BALONCUK_YARICAP = C.bubble.radius;
 
 /**
  * "Yazıyor" için sahte satır.
@@ -106,40 +103,13 @@ const TAPBACK_PAYI = 20;
  */
 const YAZIYOR_SATIRI = Object.freeze({ id: '__yaziyor__', typing: true });
 
-// ── Kompozitör ölçüleri [ÖLÇÜLDÜ] ──
-// iPhone 17 Pro (402pt): "+" Ø40, soldan 28 · alan 294×40, tam yuvarlak ·
-// sağdan 28 · aradaki boşluk 12.
-const EK_BTN = 40;
-const KAPSUL_YARICAP = 20;
-/** Kompozitörün yan kenar boşluğu. Ölçek dışı (28) — bu yüzden adlandırıldı. */
-const KOMPOZITOR_KENAR = 28;
-/** Gönder oku: alanın içinde, sağ uçta. */
-const GONDER_BTN = 32;
-
-// ── Başlık ölçüleri [ÖLÇÜLDÜ] ──
-/** Ortalanmış avatar. */
-const BASLIK_AVATAR = 60;
-/** Ad hapının yüksekliği (ölçüm 32.3). */
-const AD_HAPI_H = 32;
-/** Hap avatarın alt kenarına bu kadar biniyor. */
-const HAP_BINME = 5;
-
-// ── Baloncuk dolgusu ──
-// iOS: yatay 14, dikey 9. Bizde 13×9 idi.
-const BALONCUK_YAN = 14;
-const BALONCUK_DIKEY = 9;
-
-// ── Tapback rozeti ──
-// 26pt daire, baloncuğun üst kenarından 14 yukarı ve yan kenardan 6 dışarı.
-const TAPBACK_H = 26;
-const TAPBACK_BINME = 14;
-const TAPBACK_YAN = 6;
+// ── ESKİ iOS ÖLÇÜLERİ KALKTI ──
+// Kompozitör, başlık ve baloncuk dolgusu iOS 26.5 Simulator ölçümlerinden
+// geliyordu; G-19 hepsini kitin sayılarıyla değiştirdi (tokens → chat).
 
 // ── Ölçek dışı kalan eski dolgular ──
 // Bunlar bu ekranda zaten vardı ve değiştirilmedi; ham sayı olarak
 // bırakmak yerine adlandırıldı, böylece ne oldukları okunuyor.
-const ALINTI_DOLGU = 7;
-const ALINTI_ALT = 6;
 const PIN_DOLGU = 7;
 const REPLY_DOLGU = 9;
 /** Girdi dolgusu: 4 (kapsül) + 5 + 22 (satır) + 5 + 4 = 40pt kapsül. */
@@ -174,27 +144,19 @@ const GIRIS_MESAFE = 24;
 const GONDERIM_YAY = motion.settle;
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SAAT SÜTUNU — sola sürükleyince kenardan giriyor.
+// SAAT — BALONCUĞUN İÇİNDE (G-19, kit chat() recv/sent).
 //
-// Saatler KALICI DEĞİL, çünkü kalıcı olsalardı iki bedeli olurdu: sohbet
-// kalabalıklaşır ve baloncuğun %75'lik genişliği sütuna yer açmak için
-// daralırdı. iOS bu yüzden gizliyor ve bir hareketle veriyor.
-//
-// SÜTUN SATIRIN İÇİNDE, ayrı bir katman değil: ayrı bir sütun olsaydı her
-// saatin kendi mesajının dikey hizasına oturması ayrıca hesaplanacaktı.
-// Satırın içinde `right: -SAAT_SUTUN` ile bekliyor ve satırla birlikte
-// aynı `translateX`'i alıyor — hizalama kendiliğinden doğru.
+// Eskiden saatler gizliydi ve sola sürükleyince 56 pt'lik bir sütun
+// kenardan giriyordu. Gerekçe iOS'tu: kalıcı saat sohbeti kalabalıklaştırır
+// ve baloncuğun genişliğini daraltırdı. Kit bunun yerine saati baloncuğun
+// SON SATIRI olarak yazıyor (11/14, sağa yaslı) ve genişliği buna göre
+// veriyor (270). Gizli bir jestin keşfedilmesini beklemek yerine bilgi
+// duruyor; jest, paylaşılan değer ve satır başına animasyon kalktı.
 // ─────────────────────────────────────────────────────────────────────────────
-const SAAT_SUTUN = 56;
 
 // ── Medya ölçüleri ──
-// Kuyruk, görselin İKİNCİ bir kopyasını kendi ölçüsünde çiziyor (bkz.
-// BubbleTail) — o yüzden bu sayılar artık stil dosyasında gömülü kalamaz,
-// iki yerden okunuyorlar.
-const MEDYA_EN = 220;
-// 4:3 — telefon fotoğraflarının çoğunda üstten/alttan kırpma az oluyor.
-const MEDYA_BOY = 165;
-// GIF oranları çok değişken; kare kap + contain, kırpma olmuyor.
+// Görsel ve video kit im ölçüsünde (tokens → chat.image). GIF oranları çok
+// değişken; kare kap + contain, kırpma olmuyor.
 const GIF_OLCU = 200;
 
 
@@ -276,6 +238,11 @@ function lastSeenLabel(ts, t, lang) {
 export default function ChatScreen() {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
+  // 2.0 paleti: eski `colors` adlandırmasında vurgu kırmızı, kitin
+  // gönderilen baloncuğu ise BİRİNCİL yüzey (acS/onAc). İki palet yan
+  // yana duruyor çünkü ekranın henüz taşınmamış bölümleri eski adları
+  // kullanıyor (zengin baloncuklar — sıradaki iş).
+  const { colors: dc } = useDesignTheme();
   const router = useRouter();
   const { t, lang } = useLanguage();
   const insets = useSafeAreaInsets();
@@ -383,36 +350,12 @@ export default function ChatScreen() {
   // sade beliriyor — ilk açılışta geçmişin tamamı zıplamasın.
   const acilisRef = useRef(Date.now());
 
-  // ── Saat sütununun kayması ──
-  // Paylaşılan değer: her satır kendi `useAnimatedStyle`inde bunu okuyor,
-  // yani kaydırma UI iş parçacığında kalıyor ve JS'e hiç uğramıyor.
-  const kayma = useSharedValue(0);
-  // ── JEST NESNESİ EZBERLENİYOR ──
-  // RNGH'nin önerisi: ezberlenmezse her render'da yeni bir Gesture nesnesi
-  // üretiliyor ve GestureDetector yerel işleyiciyi söküp yeniden bağlıyor.
-  // Bu ekran 4 saniyede bir yokluyor (yedek yoklama), yani render sık.
-  //
-  // DÜRÜSTLÜK NOTU: bu bir HATA DÜZELTMESİ DEĞİL. Jest `useMemo` olmadan da
-  // çalışıyordu — ölçüldü: worklet'e ulaşan translateX tam -56'ya kadar
-  // gidiyor. Bir süre "jest çalışmıyor" sanıldı; sebebi üründe değil
-  // ÖLÇÜMDEYDİ: sentetik swipe parmağı yol biter bitmez kaldırıyor, yay
-  // ~400ms'de geri dönüyor ve ekran görüntüsü hep oturmuş hâli yakalıyordu.
-  const saatSurukle = useMemo(() => Gesture.Pan()
-    // Yatayda 20pt'den önce etkinleşmiyor, dikeyde 15pt'de VAZGEÇİYOR:
-    // ikisi olmadan jest, listenin kendi dikey kaydırmasıyla yarışıyor ve
-    // sohbeti kaydırmak imkânsız hâle geliyor.
-    .activeOffsetX([-20, 20])
-    .failOffsetY([-15, 15])
-    .onUpdate((e) => {
-      // YALNIZ SOLA. Sağa çekmek saatleri ters yönden getirirdi ve
-      // ekranın solunda gösterecek bir şey yok.
-      kayma.value = Math.min(0, Math.max(-SAAT_SUTUN, e.translationX));
-    })
-    // Bırakınca geri dönüş. `pop` ile -56'dan dönen satırlar sıfırı 12,2pt
-    // AŞIYORDU: baloncuklar ekranın sağ kenarına doğru taşıp geri geliyordu.
-    // `settle` ile taşma 0,7pt.
-    .onEnd(() => { kayma.value = withSpring(0, GONDERIM_YAY); }),
-  [kayma]);
+  // ── SÜRÜKLE-SAAT SÜTUNU KALDIRILDI (G-19) ──
+  // Saatler gizliydi ve sola sürükleyince 56 pt'lik bir sütun kenardan
+  // giriyordu (iOS Messages davranışı). Kit saati HER BALONCUĞUN İÇİNE
+  // koyuyor (11/14, sağa yaslı) — iki ayrı saat sistemi tutmak hem artıklık
+  // hem de gizli jestin keşfedilmeme riskiydi. Jest, paylaşılan değer ve
+  // satır başına `useAnimatedStyle` ile birlikte gitti.
 
   // uid `session.user.uid` içinde. `session.uid` yazılırsa daima null olur ve
   // KENDİ mesajların da karşı tarafınmış gibi sola hizalı çizilir.
@@ -628,7 +571,7 @@ export default function ChatScreen() {
     const rows = [];
     if (msg.text) {
       rows.push({
-        key: 'copy', icon: 'copy-outline', label: t('msg.copy'),
+        key: 'copy', icon: 'copy', label: t('msg.copy'),
         onPress: () => {
           Clipboard.setString(msg.text);
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
@@ -638,7 +581,7 @@ export default function ChatScreen() {
     // YANITLA en üstte: menünün en sık kullanılan eylemi ve iOS bağlam
     // menülerinde de ilk sırada duruyor.
     rows.unshift({
-      key: 'reply', icon: 'arrow-undo-outline', label: t('msg.reply'),
+      key: 'reply', icon: 'reply', label: t('msg.reply'),
       onPress: () => setReplyTo(msg),
     });
     // SABİTLE her iki tarafın mesajında da var: sabit ortak bir işaret,
@@ -651,12 +594,12 @@ export default function ChatScreen() {
     });
     if (mine) {
       rows.push({
-        key: 'delete', icon: 'trash-outline', label: t('msg.undo'),
+        key: 'delete', icon: 'trash', label: t('msg.undo'),
         destructive: true, onPress: () => confirmDelete(msg),
       });
     } else {
       rows.push({
-        key: 'report', icon: 'flag-outline', label: t('msg.reportMessage'),
+        key: 'report', icon: 'flag', label: t('msg.reportMessage'),
         destructive: true, onPress: () => setReportTarget(`${cid || other}:${msg.id}`),
       });
     }
@@ -971,7 +914,6 @@ export default function ChatScreen() {
       yeni={veri[index - 1]}
       // Ekran açıkken mi geldi? Gönderim animasyonu buna bağlı.
       taze={(item.at || 0) > acilisRef.current}
-      kayma={kayma}
       lang={lang}
       onLongPress={openMenu}
       // İkisi de KARARLI: baloncuk kendi `msg`ini ekleyip çağırıyor.
@@ -982,83 +924,66 @@ export default function ChatScreen() {
       myUid={myUid}
       t={t}
     />
-  )), [veri, myUid, seenId, kayma, lang, openMenu, react, paylasimAc, jumpTo, peer, t]);
+  )), [veri, myUid, seenId, lang, openMenu, react, paylasimAc, jumpTo, peer, t]);
 
   useEffect(() => { veriRef.current = veri; }, [veri]);
 
-  const preset = getAvatarPreset(peer?.avatar);
   const name = peer?.displayName || peer?.username || '…';
 
   let body = null;
   if (!session) {
-    body = <EmptyState icon="person-circle-outline" title={t('sf.needAccount')}
+    body = <EmptyState icon="userplus" title={t('sf.needAccount')}
       text={t('sf.needAccountText')} actionLabel={t('sf.goAccount')}
       onAction={() => router.push('/account')} />;
   } else if (loading) {
-    body = <View style={styles.center}><ActivityIndicator color={colors.accent} /></View>;
+    body = <View style={styles.center}><ActivityIndicator color={colors.text2} /></View>;
   } else if (error === 'NOT_FRIENDS') {
-    body = <EmptyState icon="people-outline" title={t('msg.notFriends')} text={t('msg.notFriendsText')}
+    body = <EmptyState icon="users" title={t('msg.notFriends')} text={t('msg.notFriendsText')}
       actionLabel={t('msg.goFriends')} onAction={() => router.push('/friends')} />;
   } else if (error === 'BLOCKED') {
-    body = <EmptyState icon="ban-outline" title={t('msg.blocked')} text={t('msg.blockedText')} />;
+    body = <EmptyState icon="lock" title={t('msg.blocked')} text={t('msg.blockedText')} />;
   } else if (error) {
-    body = <EmptyState icon="cloud-offline-outline" title={t('common.error')} text={t('common.errorText')} />;
+    body = <EmptyState icon="wifioff" title={t('common.error')} text={t('common.errorText')} />;
   }
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      {/* ── Başlık — iOS 26 düzeni ──
-          Avatar ORTALANMIŞ ve BÜYÜK (Ø60), adı taşıyan cam hap avatarın alt
-          kenarına biniyor. Ölçüler iOS 26.5 Simulator'da piksel ölçümüyle
-          alındı (bkz. ios-messages skill'i).
+      {/* ── Başlık — G-19 (kit chat() hdr) ──
+          SATIR BAŞLIK: geri · 38 avatar (çevrimiçi noktasıyla) · ad ve durum
+          · ⋯. Önceki düzen iOS 26'nın ortalanmış Ø60 avatarı ve cam ad
+          hapıydı; 2.0 uygulamanın kendi dili ve diğer ekranların üst
+          çubuklarıyla aynı hizada duruyor. Alt hat kitten: sohbet listesi
+          kaydıkça başlığın nerede bittiği belli olmalı.
 
-          Geri ve "daha fazla" düğmeleri MUTLAK KONUMLU: akışa girselerdi
-          ortadaki sütunu iterlerdi ve ad ekranın ortasında durmazdı — iki
-          düğme aynı genişlikte olmadığı için kaydırma da simetrik olmazdı.
+          AD DOKUNULABİLİR: kitte kişinin profiline gidiyor ve artık bizde de
+          bir profil ekranı var (`/u/[username]`). Kullanıcı adı yoksa
+          (profilini kurmamış kişi) dokunma yok — hiçbir yere gitmeyen bir
+          düğme olmaz. */}
+      <View style={[styles.header, { marginHorizontal: yan, borderBottomColor: dc.line }]}>
+        <IconButton icon="back" label={t('a11y.back')} iconSize={C.backIcon} strokeWidth={C.backStroke}
+                    onPress={() => router.back()} />
+        <UserAvatar avatar={peer?.avatar} name={name} size={C.headerAvatar} online={!!presence?.online} />
 
-          Ad hapında ÇEVRON YOK. iOS'ta var ve kişi kartını açıyor; bizde
-          başka bir kullanıcının profil ekranı yok. Hiçbir yere gitmeyen bir
-          çevron, olmayan bir ekran vaat ederdi. */}
-      <View style={[styles.header, { marginHorizontal: yan }]}>
-        <View style={styles.kimlik}>
-          {preset ? (
-            <View style={[styles.avatar, { backgroundColor: preset.bg }]}>
-              <Ionicons name={preset.icon} size={28} color={preset.iconColor} />
-            </View>
-          ) : (
-            <View style={styles.avatar}>
-              <Text style={styles.avatarLetter}>{name.charAt(0).toUpperCase()}</Text>
-            </View>
-          )}
-
-          <GlassSurface style={styles.adHapi} radius={radius.lg}>
-            <Text style={styles.title} numberOfLines={1}>{name}</Text>
-          </GlassSurface>
-
+        <PressableScale disabled={!peer?.username} dimDisabled={false}
+          accessibilityRole={peer?.username ? 'button' : 'text'}
+          onPress={() => peer?.username && router.push(`/u/${peer.username}`)} style={styles.kimlik}>
+          <Txt variant="cardTitleLarge" numberOfLines={1}>{name}</Txt>
           {/* Durum satırı yalnızca paylaşan kullanıcılarda çiziliyor.
               "YAZIYOR" ARTIK BURADA DEĞİL: akışın en altında kendi
               baloncuğu var (bkz. TypingBubble) — yazılmakta olan şey bir
-              mesaj ve yeri diğer mesajların yanı. */}
+              mesaj ve yeri diğer mesajların yanı.
+
+              Kitin "· Counter-Strike 2 oynuyor" eki YOK: durum ucu yalnız
+              `online` ve `lastSeen` veriyor, oynanan oyunu bilmiyoruz. */}
           {presence ? (
-            <Text style={styles.status} numberOfLines={1}>
+            <Txt variant="caption" numberOfLines={1}
+              style={{ color: presence.online ? dc.green : dc.text2 }}>
               {presence.online ? t('msg.online') : lastSeenLabel(presence.lastSeen, t, lang)}
-            </Text>
+            </Txt>
           ) : null}
-        </View>
+        </PressableScale>
 
-        <GlassSurface style={[styles.yuvarlakBtn, styles.geriBtn]} radius={TOUCH_MIN / 2}>
-          <Pressable style={({ pressed }) => [styles.yuvarlakHit, pressed && PRESSED]}
-                     onPress={() => router.back()} accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
-            <Ionicons name="chevron-back" size={22} color={colors.text} />
-          </Pressable>
-        </GlassSurface>
-
-        <GlassSurface style={[styles.yuvarlakBtn, styles.dahaBtn]} radius={TOUCH_MIN / 2}>
-          <Pressable style={({ pressed }) => [styles.yuvarlakHit, pressed && PRESSED]}
-                     onPress={() => setKisiMenu(true)} accessibilityRole="button" accessibilityLabel={t('a11y.more')}>
-            <Ionicons name="ellipsis-horizontal" size={19} color={colors.text2} />
-          </Pressable>
-        </GlassSurface>
+        <IconButton icon="more" label={t('a11y.more')} iconSize={C.headerIcon} onPress={() => setKisiMenu(true)} />
       </View>
 
       {/* ── Sabit mesaj bandı ──
@@ -1076,7 +1001,7 @@ export default function ChatScreen() {
             accessibilityRole="button"
             accessibilityLabel={t('msg.pinned')}
           >
-            <Ionicons name="pin" size={14} color={colors.accentText} />
+            <Icon name="pin" size={14} color={colors.accentText} strokeWidth={2.2} />
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={styles.pinLabel}>{t('msg.pinned')}</Text>
               <Text style={styles.pinText} numberOfLines={1}>
@@ -1091,7 +1016,7 @@ export default function ChatScreen() {
             accessibilityRole="button"
             accessibilityLabel={t('msg.unpin')}
           >
-            <Ionicons name="close" size={16} color={colors.text3} />
+            <Icon name="x" size={16} color={colors.text3} strokeWidth={2.4} />
           </Pressable>
         </Animated.View>
       ) : null}
@@ -1112,10 +1037,6 @@ export default function ChatScreen() {
           behavior="padding"
           keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}
         >
-          {/* Sola sürükleyince saat sütunu kenardan giriyor. Sarmalayıcı
-              LİSTENİN DIŞINDA: jest listenin tamamını kapsamalı, tek tek
-              satırları değil — parmağın nereye denk geldiği önemli değil. */}
-          <GestureDetector gesture={saatSurukle}>
             <FlatList
               ref={listRef}
               data={veri}
@@ -1133,10 +1054,10 @@ export default function ChatScreen() {
               // kısa boş alan görülebilir. Cihazda doğrulanacak tek sayı bu;
               // boşluk görülürse 15'e çekilir.
               //
-              // removeClippedSubviews BİLEREK AÇILMADI: baloncuklarda
-              // translateX animasyonu (saat sütunu) ve baloncuğun DIŞINA
+              // removeClippedSubviews BİLEREK AÇILMADI: baloncuğun DIŞINA
               // taşan tapback rozeti var — Android'de bu prop tam olarak bu
-              // iki durumda içerik kaybettiriyor.
+              // durumda içerik kaybettiriyor. (Saat sütununun translateX
+              // animasyonu G-19'da kalktı; kalan gerekçe rozet.)
               windowSize={11}
               // scrollToIndex, henüz çizilmemiş bir satır istendiğinde HATA
               // ATIYOR. Alıntıya dokunmak eski bir mesaja gidiyor ve o mesaj
@@ -1154,7 +1075,6 @@ export default function ChatScreen() {
                 </View>
               }
             />
-          </GestureDetector>
 
           {/* ── Yanıt önizlemesi ──
               Gönderme kutusunun ÜSTÜNDE, klavyeyle birlikte yükseliyor.
@@ -1181,7 +1101,7 @@ export default function ChatScreen() {
                 accessibilityRole="button"
                 accessibilityLabel={t('msg.cancel')}
               >
-                <Ionicons name="close" size={17} color={colors.text2} />
+                <Icon name="x" size={17} color={colors.text2} strokeWidth={2.4} />
               </Pressable>
             </Animated.View>
           ) : null}
@@ -1247,24 +1167,40 @@ export default function ChatScreen() {
 }
 
 /**
- * Tarih ayracı — iOS'un "Bugün 14:32" satırı.
+ * Tarih ayracı — G-19 (kit chat() div): ortada 24 pt hap, 12 pt yazı.
  *
- * GÜN KALIN, SAAT NORMAL. Tek ağırlıkta yazınca ikisi tek bir dizeye
- * dönüşüyor ve göz hangisinin ne olduğunu ayırmak için duraklıyor.
+ * YALNIZ GÜN. Öncesinde "Bugün 14:32" yazıyordu; saat artık her baloncuğun
+ * içinde duruyor ve ayraçtaki kopyası bilgi eklemiyordu.
  */
-function Ayrac({ at, t, lang }) {
+function Ayrac({ at, eski, t, lang }) {
   const styles = useStyles(makeStyles);
-  const { gun, saat } = ayracParcalari(at, t, lang);
+  const { colors: dc } = useDesignTheme();
   return (
     <View style={styles.ayrac}>
-      <Text style={styles.ayracMetin}>
-        <Text style={styles.ayracGun}>{gun}</Text>{'  '}{saat}
-      </Text>
+      <View style={[styles.ayracHap, { backgroundColor: dc.surface1 }]}>
+        <Txt variant="caption" style={{ color: dc.text3 }}>{ayracMetni({ at }, eski, t, lang)}</Txt>
+      </View>
     </View>
   );
 }
 
-/** Saat:dakika — okundu satırı ve ayraç dışında bir yerde kullanılmıyor. */
+/**
+ * Görselin üstündeki saat rozeti — kit chat() im.
+ *
+ * Metinli baloncukta saat son satır olarak yazılıyor; görselde yazacak bir
+ * zemin yok, o yüzden kit saati görselin sağ alt köşesine koyu bir rozetle
+ * basıyor. Rozet TEMA BAĞIMSIZ siyah: altındaki şey tema değil fotoğraf.
+ */
+function SaatRozeti({ ts, lang }) {
+  const styles = useStyles(makeStyles);
+  return (
+    <View style={styles.saatRozet} pointerEvents="none">
+      <Txt variant="caption2Strong" style={styles.saatRozetYazi}>{saatOf(ts, lang)}</Txt>
+    </View>
+  );
+}
+
+/** Saat:dakika — baloncuğun saat satırı ve okundu satırı bunu kullanıyor. */
 function saatOf(ts, lang) {
   const loc = lang === 'tr' ? 'tr-TR' : lang === 'de' ? 'de-DE'
     : lang === 'es' ? 'es-ES' : lang === 'pt' ? 'pt-BR' : 'en-US';
@@ -1314,6 +1250,11 @@ const Kompozitor = memo(function Kompozitor({
 }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
+  // 2.0 paleti: eski `colors` adlandırmasında vurgu kırmızı, kitin
+  // gönderilen baloncuğu ise BİRİNCİL yüzey (acS/onAc). İki palet yan
+  // yana duruyor çünkü ekranın henüz taşınmamış bölümleri eski adları
+  // kullanıyor (zengin baloncuklar — sıradaki iş).
+  const { colors: dc } = useDesignTheme();
   const { t } = useLanguage();
   const [text, setText] = useState('');
 
@@ -1335,8 +1276,10 @@ const Kompozitor = memo(function Kompozitor({
     onSend?.(govde);
   }, [text, onSend]);
 
+  const doluMu = !!text.trim();
+
   return (
-    <View style={[styles.composer, { paddingBottom: altDolgu }]}>
+    <View style={[styles.composer, { backgroundColor: dc.bg2, borderTopColor: dc.line, paddingBottom: altDolgu }]}>
       {/* ── TEK "+" DÜĞMESİ ──
           Öncesinde fotoğraf ve GIF için iki ayrı simge duruyordu.
           iOS'ta tek bir "+" var ve ekleri bir menüde topluyor; sebebi
@@ -1345,26 +1288,18 @@ const Kompozitor = memo(function Kompozitor({
           YETENEĞE BAĞLI kalıyor. Yapılandırma eksikken düğme hiç
           çizilmiyor — basınca "şu an kapalı" diyen bir düğme
           uygulamayı yarım gösteriyor (Guideline 2.2). Bugün tek ek
-          türü GIF; düğme menü açmadan doğrudan seçiciyi açıyor. */}
+          türü GIF; düğme menü açmadan doğrudan seçiciyi açıyor.
+
+          KİTİN DİĞER İKİ İKONU ÇİZİLMİYOR: "görsel gönder" fotoğraf
+          yüklemesi demek ve 2.7.0'da uygulamadan çıkarıldı (AGENTS.md);
+          "oyun paylaş" için kompozitörde bir oyun seçici yok — paylaşım
+          oyun ekranından başlıyor. */}
       {ekVar ? (
-        <GlassSurface style={styles.ekBtn} radius={EK_BTN / 2}>
-          <Pressable
-            style={({ pressed }) => [styles.ekHit, pressed && PRESSED]}
-            onPress={ekAc}
-            disabled={sending}
-            accessibilityRole="button"
-            accessibilityLabel={t('msg.attach')}
-          >
-            <Ionicons name="add" size={26} color={colors.text} />
-          </Pressable>
-        </GlassSurface>
+        <IconButton icon="plus" label={t('msg.attach')} variant="filled" iconSize={KC.plusIcon}
+                    disabled={sending} onPress={ekAc} />
       ) : null}
 
-      {/* Gönder düğmesi ALANIN İÇİNDE. Dışarıdaki ayrı daire,
-          kompozitörü üç parçalı bir alet çubuğuna çeviriyordu; iOS'ta
-          ok metin alanının sağ ucunda ve yalnızca yazacak bir şey
-          varken beliriyor. */}
-      <GlassSurface style={styles.girdiKapsul} radius={KAPSUL_YARICAP}>
+      <View style={[styles.girdiKapsul, { backgroundColor: dc.surface2 }]}>
         <TextInput
           style={styles.input}
           value={text}
@@ -1374,20 +1309,24 @@ const Kompozitor = memo(function Kompozitor({
           maxLength={MAX_TEXT}
           multiline
         />
-        {text.trim() || sending ? (
-          <Pressable
-            style={({ pressed }) => [styles.sendBtn, pressed && PRESSED]}
-            onPress={gonder}
-            disabled={sending}
-            accessibilityRole="button"
-            accessibilityLabel={t('msg.send')}
-          >
-            {sending
-              ? <ActivityIndicator size="small" color={colors.onAccent} />
-              : <Ionicons name="arrow-up" size={18} color={colors.onAccent} />}
-          </Pressable>
-        ) : null}
-      </GlassSurface>
+      </View>
+
+      {/* Gönder düğmesi ALANIN DIŞINDA ve HER ZAMAN ÇİZİLİ (kit comp).
+          Öncesinde kapsülün içindeydi ve yalnız yazınca beliriyordu; kit
+          onu ayrı bir daire olarak ve sürekli gösteriyor. Boşken pasif:
+          görünen ama çalışmayan bir düğme yalan değil, kapalı bir kapı —
+          kaybolup yerleşimi oynatan bir düğmeden daha sakin. */}
+      <PressableScale
+        style={[styles.sendBtn, { backgroundColor: dc.primary }]}
+        onPress={gonder}
+        disabled={sending || !doluMu}
+        accessibilityRole="button"
+        accessibilityLabel={t('msg.send')}
+      >
+        {sending
+          ? <ActivityIndicator size="small" color={dc.onPrimary} />
+          : <Icon name="send" size={KC.sendIcon} color={dc.onPrimary} strokeWidth={2} />}
+      </PressableScale>
     </View>
   );
 });
@@ -1406,19 +1345,17 @@ const Kompozitor = memo(function Kompozitor({
 // ebeveynde kararlı, mesajı argüman olarak alan işlevler.
 // ─────────────────────────────────────────────────────────────────────────────
 const Bubble = memo(function Bubble({
-  msg, mine, seen, eski, yeni, taze, kayma, lang,
+  msg, mine, seen, eski, yeni, taze, lang,
   onLongPress, onOpenShare, onReact, onJumpTo, myUid, peerName, t,
 }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
+  // 2.0 paleti: eski `colors` adlandırmasında vurgu kırmızı, kitin
+  // gönderilen baloncuğu ise BİRİNCİL yüzey (acS/onAc). İki palet yan
+  // yana duruyor çünkü ekranın henüz taşınmamış bölümleri eski adları
+  // kullanıyor (zengin baloncuklar — sıradaki iş).
+  const { colors: dc } = useDesignTheme();
   const azHareket = useReducedMotion();
-
-  // Sola sürükleme. HAREKETİ AZALT BUNU KAPATMIYOR: doğrudan manipülasyon
-  // animasyon sayılmıyor (bkz. hooks/useReducedMotion) — kapatılsaydı
-  // saatlere ulaşmanın hiçbir yolu kalmazdı.
-  const kaydir = useAnimatedStyle(() => ({
-    transform: [{ translateX: kayma.value }],
-  }));
 
   // Menu baloncuga TUTTURULUYOR, ekranin altina degil — hangi mesaja ait
   // oldugunu konumu soylemeli. Bunun icin baloncugun pencere koordinati
@@ -1454,7 +1391,7 @@ const Bubble = memo(function Bubble({
   const ayrac = ayracGerekli(msg, eski);
   // Tapback baloncuğun DIŞ üst köşesine biniyor; binen rozet için satırın
   // üstünde yer açılmazsa grup içi 2pt boşlukta üstteki mesaja giriyor.
-  const ustPay = ustBosluk(msg, eski) + (chips.length ? TAPBACK_PAYI : 0);
+  const ustPay = ustBosluk(msg, eski);
 
   const hasMedia = !!msg.media?.url;
   const hasText = !!msg.text;
@@ -1475,35 +1412,68 @@ const Bubble = memo(function Bubble({
       </View>
     );
   } else if (msg.share) {
-    // Paylaşım: medya değil, bir OYUNA/HABERE referans. Kendi kartı var.
-    govde = (
-      <View style={styles.shareCard}>
-        {/* Kartın ALT bölümü (shareBody) düz renk, yani kuyruk dolgusu
-            oraya kusursuz kaynaşıyor — görsel kopyasına gerek yok. */}
-        {kuyruk ? (
-          <BubbleTail mine={mine} dolgu={colors.bgInput} zemin={colors.bg} />
-        ) : null}
+    // ── PAYLAŞIM: medya değil, bir OYUNA/HABERE referans ──
+    // Kit iki ayrı şekil veriyor ve ikisi farklı işler: haber bir BAŞLIK
+    // (okunacak şey yazının kendisi → küçük resimli satır), oyun bir ÜRÜN
+    // (bakılacak şey kapak → geniş görselli kart).
+    //
+    // KİTİN FİYAT SATIRI ("En iyi fiyat ₺799 ₺1.229 Steam") ÇİZİLMİYOR:
+    // paylaşım yükünde fiyat yok ve kart başına istek açmak ters listede
+    // kartın yüksekliğini sonradan değiştirir — kaydırma sıçrar.
+    const haber = msg.share.kind === 'news';
+    const kose = mine ? styles.kuyrukBenim : styles.kuyrukOnun;
+    // ── KARTIN ALTINDAKİ SAAT (kit tstamp) ──
+    // Kartın içine yazılamıyor: haberde küçük resim ve başlık, oyunda düğme
+    // satırı var; kit de saati kartın DIŞINA, altına koyuyor.
+    const altSaat = (
+      <Txt variant="caption2" style={[styles.kartSaat, mine ? styles.kartSaatBenim : styles.kartSaatOnun,
+        { color: dc.text3 }]}>{saatOf(msg.at, lang)}</Txt>
+    );
+    const kart = haber ? (
+      <View style={[styles.shareNews, { backgroundColor: dc.surface1 }, kuyruk && kose]}>
         {/* Haberde görsel EKSİK OLABİLİR (RSS her zaman vermiyor);
             o hâlde kaynak baş harfi yer tutuyor, kutu boş kalmıyor. */}
         {msg.share.image ? (
-          <Image source={msg.share.image} style={styles.shareImg} contentFit="cover" transition={motion.image} />
+          <Image source={msg.share.image} style={styles.newsThumb} contentFit="cover" transition={motion.image} />
         ) : (
-          <View style={[styles.shareImg, styles.shareImgBos]}>
+          <View style={[styles.newsThumb, styles.shareImgBos]}>
             <Text style={styles.shareImgHarf}>
               {String(msg.share.source || msg.share.name || '?').charAt(0).toUpperCase()}
             </Text>
           </View>
         )}
+        <View style={styles.newsText}>
+          {/* Kitteki üst etiket bir KİCKER: "HABER · kaynak". Fiil değil —
+              "Haber paylaştı" cümlesi hem uzun hem satırı kırpıyordu. */}
+          <Txt variant="caption2Strong" numberOfLines={1} style={{ color: dc.text2 }}>
+            {msg.share.source ? `${t('msg.newsKicker')} · ${msg.share.source}` : t('msg.newsKicker')}
+          </Txt>
+          <Txt variant="footnoteStrong" numberOfLines={3}>{msg.share.name}</Txt>
+        </View>
+      </View>
+    ) : (
+      <View style={[styles.shareCard, { backgroundColor: dc.surface1 }, kuyruk && kose]}>
+        {msg.share.image ? (
+          <Image source={msg.share.image} style={styles.shareImg} contentFit="cover" transition={motion.image} />
+        ) : (
+          <View style={[styles.shareImg, styles.shareImgBos]}>
+            <Text style={styles.shareImgHarf}>
+              {String(msg.share.name || '?').charAt(0).toUpperCase()}
+            </Text>
+          </View>
+        )}
         <View style={styles.shareBody}>
-          <Text style={styles.shareName} numberOfLines={2}>{msg.share.name}</Text>
-          <Text style={styles.shareHint}>
-            {msg.share.kind === 'news' ? (msg.share.source || t('share.news'))
-              : msg.share.kind === 'game' ? t('share.game')
-              : t('msg.sharedReel')}
-          </Text>
+          <Txt variant="cardTitleLarge" numberOfLines={2}>{msg.share.name}</Txt>
+          {/* Düğme kartın kendi eylemi: karta dokunmak da aynı yere gidiyor
+              (acPaylasimi) ama görünür bir kapı olmadan kartın tıklanabilir
+              olduğu belli değildi. */}
+          <View style={styles.shareButton}>
+            <Button title={t('v2.viewGame')} variant="primary" height={SHARE.button} onPress={acPaylasimi} />
+          </View>
         </View>
       </View>
     );
+    govde = <View>{kart}{altSaat}</View>;
   } else if (saltEmoji) {
     // Baloncuk YOK: ne zemin, ne dolgu, ne kuyruk. Emoji kendi başına
     // duruyor — iOS'ta da öyle.
@@ -1519,18 +1489,10 @@ const Bubble = memo(function Bubble({
                    onPress={() => onJumpTo?.(msg.quote.id)} t={t} />
           </View>
         ) : null}
-        {/* Kuyruk GIF'in kendi kabına tutturuluyor, dıştaki sarmalayıcıya
-            değil: alıntı varsa sarmalayıcı ondan da yüksek ve kuyruk
-            alıntının hizasına düşerdi. */}
         <View style={styles.gifKap}>
-          {kuyruk ? (
-            <BubbleTail
-              mine={mine}
-              gorsel={{ url: msg.gif.url, w: GIF_OLCU, h: GIF_OLCU, fit: 'contain' }}
-              zemin={colors.bg}
-            />
-          ) : null}
-          <Image source={msg.gif.url} style={styles.gifBubble} contentFit="contain" transition={motion.image} />
+          <Image source={msg.gif.url} style={[styles.gifBubble, kuyruk && (mine ? styles.kuyrukBenim : styles.kuyrukOnun)]}
+                 contentFit="contain" transition={motion.image} />
+          <SaatRozeti ts={msg.at} lang={lang} />
         </View>
       </View>
     );
@@ -1538,32 +1500,17 @@ const Bubble = memo(function Bubble({
     govde = (
       <View style={[
         styles.bubble,
-        mine ? styles.bubbleMine : styles.bubbleTheirs,
+        { backgroundColor: mine ? dc.primary : dc.surface2 },
+        // ── KUYRUK ARTIK BİR KÖŞE ──
+        // Çizilen kuyruk ve onun salt görselde kullandığı
+        // "görselin ikinci kopyası" hilesi kalktı: kit kuyruğu baloncuğun
+        // KÖŞE YARIÇAPIYLA anlatıyor (18 18 18 6 / 18 18 6 18). Küçük köşe
+        // grubun SON baloncuğunda — kuyruk kuralı neyse o.
+        kuyruk && (mine ? styles.kuyrukBenim : styles.kuyrukOnun),
         // Salt görsel mesajda dolgu YOK: görselin baloncuğu tamamen doldurması
         // gerekiyor, aksi hâlde kenarlarda renkli bir çerçeve kalıyor.
         saltGorsel && styles.bubbleMediaOnly,
       ]}>
-        {/* Kuyruk İLK ÇOCUK: baloncuğun zemininin üstüne, metnin altına
-            giriyor. Sonraya konsa metnin son satırını örterdi.
-
-            SALT GÖRSELDE dolgu değil GÖRSELİN KOPYASI kullanılıyor: o
-            baloncukta zemin rengi yok, baloncuğu görsel dolduruyor. Kopya
-            görselin ARKASINDA kalıyor ve yalnızca yuvarlak köşenin saydam
-            bıraktığı yerden görünüyor — köşeyi kuyruğa o bağlıyor.
-
-            VİDEODA KUYRUK YOK: kopyalanacak bir kare elimizde yok (poster
-            görseli tutulmuyor). Maskeliyormuş gibi yapmak yerine kuyruksuz
-            bırakılıyor. */}
-        {kuyruk && !(saltGorsel && isVideo) ? (
-          <BubbleTail
-            mine={mine}
-            gorsel={saltGorsel
-              ? { url: msg.media.url, w: MEDYA_EN, h: MEDYA_BOY }
-              : undefined}
-            dolgu={mine ? colors.accentFillStrong : colors.bgInput}
-            zemin={colors.bg}
-          />
-        ) : null}
         <Quote quote={msg.quote} mine={mine} myUid={myUid} peerName={peerName}
                onPress={() => onJumpTo?.(msg.quote.id)} t={t} />
         {hasMedia && (isVideo
@@ -1580,19 +1527,27 @@ const Bubble = memo(function Bubble({
         {hasText && (
           <Text style={[
             styles.bubbleText,
-            mine && styles.bubbleTextMine,
+            mine && { color: dc.onPrimary },
             hasMedia && styles.bubbleTextUnderMedia,
           ]}>
             {msg.text}
           </Text>
+        )}
+        {/* Saat baloncuğun son satırı (kit recv/sent). SALT GÖRSELDE
+            baloncuğun dolgusu yok; kit orada saati görselin üstüne koyu bir
+            rozetle basıyor (kit im) — aşağıdaki SaatRozeti. */}
+        {saltGorsel ? <SaatRozeti ts={msg.at} lang={lang} /> : (
+          <Txt variant="caption2" style={[styles.saat, { color: mine ? dc.onPrimaryMuted : dc.text3 }]}>
+            {saatOf(msg.at, lang)}
+          </Txt>
         )}
       </View>
     );
   }
 
   return (
-    <Animated.View style={[{ marginTop: ustPay }, kaydir]}>
-      {ayrac ? <Ayrac at={msg.at} t={t} lang={lang} /> : null}
+    <View style={{ marginTop: ustPay }}>
+      {ayrac ? <Ayrac at={msg.at} eski={eski} t={t} lang={lang} /> : null}
 
       {/* Ekran açıkken gelen mesaj YAYLANARAK, aşağıdan (kompozitörün
           olduğu taraftan) giriyor. Geçmiş mesajlar ve "hareketi azalt"
@@ -1603,7 +1558,7 @@ const Bubble = memo(function Bubble({
       >
         <Pressable
           ref={rowRef}
-          style={[styles.sarmal, msg.pending && styles.sarmalBekliyor]}
+          style={[styles.sarmal, chips.length > 0 && styles.sarmalTepkili, msg.pending && styles.sarmalBekliyor]}
           onLongPress={msg.deleted ? undefined : handleLongPress}
           delayLongPress={400}
           onPress={msg.share ? acPaylasimi : onTap}
@@ -1616,8 +1571,9 @@ const Bubble = memo(function Bubble({
         </Pressable>
 
         {/* Gönderiliyor / başarısız — iyimser gönderimin görünen tarafı.
-            "Okundu" YALNIZCA en yeni okunmuş kendi mesajımda (bkz. seenId)
-            ve iOS gibi saatiyle birlikte. */}
+            "Okundu" YALNIZCA en yeni okunmuş kendi mesajımda (bkz. seenId).
+            SAATİ ARTIK TEKRARLAMIYOR: saat baloncuğun içinde duruyor, alt
+            satıra ikinci kez yazmak aynı bilgiyi iki kez söylerdi. */}
         {/* "Gönderiliyor…" ARTIK YAZI DEĞİL, OPAKLIK (bkz. sarmalBekliyor).
             Yazı olarak baloncuğun altına giriyordu; gönderim bitince
             kaybolunca satır kısalıyor ve altındaki her şey kayıyordu —
@@ -1628,17 +1584,10 @@ const Bubble = memo(function Bubble({
             karşılık bekleyen bir durum ve yer açmayı hak ediyor. */}
         {msg.failed ? <Text style={[styles.state, styles.stateFail]}>{t('msg.notSent')}</Text> : null}
         {seen && !msg.pending && !msg.failed ? (
-          <Text style={styles.seen}>{`${t('msg.seen')} ${saatOf(msg.at, lang)}`}</Text>
+          <Text style={styles.seen}>{t('msg.seen')}</Text>
         ) : null}
-
-        {/* Saat: satırın SAĞ DIŞINDA bekliyor, sürükleyince içeri giriyor.
-            Kapsayıcı tam genişlikte olduğu için baloncuk ne kadar dar
-            olursa olsun saatler DÜZ BİR SÜTUN oluşturuyor. */}
-        <View style={styles.saatKutu} pointerEvents="none">
-          <Text style={styles.saat} numberOfLines={1}>{saatOf(msg.at, lang)}</Text>
-        </View>
       </Animated.View>
-    </Animated.View>
+    </View>
   );
 });
 
@@ -1672,22 +1621,28 @@ function VideoBubble({ url }) {
  */
 function Quote({ quote, mine, myUid, peerName, onPress, t }) {
   const styles = useStyles(makeStyles);
+  const { colors } = useDesignTheme();
   if (!quote) return null;
   const kim = quote.from === myUid ? t('msg.replyToSelf') : (peerName || '');
   return (
     <Pressable
-      style={({ pressed }) => [styles.quote, mine && styles.quoteMine, pressed && PRESSED]}
+      style={({ pressed }) => [styles.quote, mine ? styles.quoteMine : styles.quoteTheirs, pressed && PRESSED]}
       onPress={quote.missing ? undefined : onPress}
     >
-      <View style={[styles.quoteStripe, mine && styles.quoteStripeMine]} />
-      <View style={{ flex: 1, minWidth: 0 }}>
-        {quote.missing ? null : <Text style={styles.quoteWho} numberOfLines={1}>{kim}</Text>}
-        <Text style={[styles.quoteText, (quote.deleted || quote.missing) && styles.quoteGone]} numberOfLines={2}>
-          {quote.missing ? t('msg.quoteMissing')
-            : quote.deleted ? t('msg.wasUndone')
-            : (quote.text || kindLabel(quote, t))}
-        </Text>
-      </View>
+      {/* ŞERİT GİTTİ (G-19): kit alıntıyı dikey çizgiyle değil, baloncuğun
+          içindeki AYRI BİR KUTUYLA ayırıyor — 10 köşeli, hafifçe aydınlık
+          bir katman. Çizgi bizim eklediğimiz bir dildi, kitte yok. */}
+      {quote.missing ? null : (
+        <Txt variant="captionStrong" numberOfLines={1}
+          style={{ color: mine ? colors.onPrimary : colors.text }}>{kim}</Txt>
+      )}
+      <Txt variant="footnote" numberOfLines={2}
+        style={[(quote.deleted || quote.missing) && styles.quoteGone,
+          { color: mine ? colors.onPrimaryMuted : colors.text2 }]}>
+        {quote.missing ? t('msg.quoteMissing')
+          : quote.deleted ? t('msg.wasUndone')
+          : (quote.text || kindLabel(quote, t))}
+      </Txt>
     </Pressable>
   );
 }
@@ -1695,12 +1650,11 @@ function Quote({ quote, mine, myUid, peerName, onPress, t }) {
 /**
  * Tepki rozetleri — iOS'un "tapback"i.
  *
- * ── BALONCUĞUN DIŞ ÜST KÖŞESİNDE, MUTLAK KONUMLU ──
- * Bir ara akışa alınmışlardı ve gerekçe doğruydu: rozetler baloncuğun ALT
- * kenarındayken metnin son satırını kapatıyordu. Çözüm rozetleri akışa
- * sokmak değil, iOS'un koyduğu yere koymak — üst köşeye ve baloncuğun
- * DIŞINA. Orada kapatacak metin yok; açılan tek şey satırın üstündeki
- * boşluk ve o da TAPBACK_PAYI ile veriliyor.
+ * ── BALONCUĞUN ALT KENARINA BİNİYOR (G-19, kit reply) ──
+ * Önce akıştaydı (metnin son satırını kapatıyordu), sonra iOS'a bakılıp üst
+ * dış köşeye alındı. Kit üçüncü bir yer söylüyor: alt kenar, içe doğru 10 pt
+ * girintili. Metni kapatmıyor çünkü baloncuğun DIŞINDA; üstteki mesaja da
+ * girmiyor çünkü yer satırın ALTINDA açılıyor (sarmalTepkili).
  *
  * ROZETE BASMAK O TEPKIYI ACIP KAPATIYOR — menuyu acmadan hizli yol.
  * Sayi YALNIZCA birden fazlaysa yaziliyor: "1" bilgi tasimiyor,
@@ -1742,46 +1696,24 @@ const makeStyles = (colors) => StyleSheet.create({
   flex:   { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  // ── Başlık — iOS 26 [ÖLÇÜLDÜ] ──
-  // Ortalanmış sütun; düğmeler mutlak konumlu, akışın dışında.
-  // ALT KENARLIK YOK: iOS 26'da başlık içerikle aynı zeminde duruyor ve
-  // ayrımı çizgi değil, camın kendisi yapıyor.
+  // ── Başlık — G-19 (kit chat() hdr) ──
+  // Tek satır: geri · avatar · ad sütunu · ⋯. Alt hat kitten.
   header: {
-    alignItems: 'center',
-    paddingBottom: spacing.s12,
+    height: C.headerHeight, paddingHorizontal: C.headerPaddingH, gap: C.headerGap,
+    flexDirection: 'row', alignItems: 'center',
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  kimlik: { alignItems: 'center', maxWidth: '70%' },
-  avatar: {
-    width: BASLIK_AVATAR, height: BASLIK_AVATAR, borderRadius: BASLIK_AVATAR / 2,
-    backgroundColor: colors.surfaceTile,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  avatarLetter: { color: colors.text2, fontSize: type.title3, fontWeight: '800' },
-  // Hap avatarın alt kenarına biniyor — ölçüm 5pt.
-  adHapi: {
-    marginTop: -HAP_BINME,
-    height: AD_HAPI_H, justifyContent: 'center',
-    paddingHorizontal: spacing.s12,
-    maxWidth: '100%',
-  },
-  title: { color: colors.text, fontSize: type.subhead, fontWeight: '700' },
-  // Durum satiri kucuk ve sessiz: bilgi tasiyor ama ada rakip olmamali.
-  status: { color: colors.text3, fontSize: type.caption2, marginTop: spacing.s4 },
+  // `minWidth: 0` olmadan uzun ad iki düğmeyi ekranın dışına itiyor.
+  kimlik: { flex: 1, minWidth: 0, marginLeft: C.headerNameLeft, alignItems: 'flex-start' },
 
-  // Geri ve "daha fazla": aynı geometri, farklı kenar.
-  yuvarlakBtn: {
-    position: 'absolute', top: 0,
-    width: TOUCH_MIN, height: TOUCH_MIN, borderRadius: TOUCH_MIN / 2,
+  // ── Tarih ayracı — kit chat() div ──
+  // Ortada 24 pt hap. SAAT ARTIK YOK: her baloncuk kendi saatini taşıyor,
+  // ayraçta tekrarı bilgi eklemiyordu.
+  ayrac: { alignItems: 'center', marginTop: C.divider.top },
+  ayracHap: {
+    height: C.divider.height, paddingHorizontal: C.divider.paddingH, borderRadius: radius.pill,
+    justifyContent: 'center',
   },
-  geriBtn: { left: spacing.s16 },
-  dahaBtn: { right: spacing.s16 },
-  yuvarlakHit: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-
-  // ── Tarih ayracı ──
-  // Ortada, sessiz. Gün kalın, saat normal.
-  ayrac: { alignItems: 'center', paddingTop: spacing.s24, paddingBottom: spacing.s12 },
-  ayracMetin: { color: colors.text3, fontSize: type.caption, lineHeight: 16 },
-  ayracGun:   { color: colors.text2, fontWeight: '700' },
 
   // ── Baloncuk satırı ──
   hizaBenim: { alignItems: 'flex-end' },
@@ -1797,43 +1729,31 @@ const makeStyles = (colors) => StyleSheet.create({
   // çünkü opaklık YERLEŞİMİ DEĞİŞTİRMİYOR — giren/çıkan bir yazı satırı
   // her gönderimde listeyi kaydırıyordu.
   sarmalBekliyor: { opacity: 0.55 },
+  // Alta binen rozet için yer: kit aynısını 14 pt alt boşlukla veriyor.
+  sarmalTepkili: { marginBottom: TEPKI.overlap },
 
   // Goruldu / durum isareti baloncugun ALTINDA ve hizasi satirdan geliyor.
   seen:  { color: colors.text3, fontSize: type.caption2, marginTop: spacing.s4 },
-  // Sürüklenince görünen saat. `right` NEGATİF: satırın dışında, kenar
-  // boşluğunun ötesinde duruyor ve translateX onu içeri getiriyor.
-  // NUMERIC şart: orantılı yazıda "1" ile "8" farklı genişlikte ve sütun
-  // kaydırırken titriyor.
-  //
-  // DİKEY ORTALAMA SARMALAYICIYLA: `textAlignVertical` yalnızca Android'de
-  // çalışıyor, iOS'ta hiçbir şey yapmıyor. Kapsayıcının yüksekliği
-  // baloncuğa göre değiştiği için sabit bir lineHeight da olmuyor.
-  saatKutu: {
-    position: 'absolute', right: -SAAT_SUTUN, top: 0, bottom: 0,
-    width: SAAT_SUTUN, alignItems: 'flex-end', justifyContent: 'center',
-  },
-  saat: { color: colors.text3, fontSize: type.caption2, ...NUMERIC },
+  // Baloncuğun son satırı: sağa yaslı saat (kit recv/sent). NUMERIC şart —
+  // orantılı yazıda "1" ile "8" farklı genişlikte ve alt alta duran saatler
+  // titriyor.
+  saat: { marginTop: C.bubble.timeTop, textAlign: 'right', ...NUMERIC },
   state: { color: colors.text3, fontSize: type.caption2, marginTop: spacing.s4 },
   stateFail: { color: colors.danger },
 
-  // ── Alıntı (baloncuğun içinde) ──
-  // Şeritli sol kenar, sohbet uygulamalarının ortak dili: alıntıyı metinden
-  // ayıran şey renk değil o dikey çizgi.
+  // ── Alıntı — G-19 (kit chat() reply) ──
+  // Baloncuğun içinde ayrı bir kutu: 10 köşe, zemini baloncuktan bir tık
+  // ayrışan katman.
   quote: {
-    flexDirection: 'row', gap: spacing.sm,
-    backgroundColor: colors.bgHover,
-    borderRadius: radius.sm,
-    padding: ALINTI_DOLGU, marginBottom: ALINTI_ALT,
+    borderRadius: ALINTI.radius,
+    paddingVertical: ALINTI.padding, paddingHorizontal: ALINTI.paddingH,
+    marginBottom: ALINTI.textTop,
   },
-  // tema-bagimsiz: kendi baloncugumun zemini colors.accentFillStrong; katman ona gore
-  quoteMine:       { backgroundColor: 'rgba(0,0,0,0.18)' },
-  // accent-serbest: 3px alinti seridi, uzerinde metin yok
-  quoteStripe:     { width: 3, borderRadius: 2, backgroundColor: colors.accent },
-  // tema-bagimsiz: kendi baloncugumun zemini colors.accentFillStrong; katman ona gore
-  quoteStripeMine: { backgroundColor: 'rgba(255,255,255,0.55)' },
-  quoteWho:  { color: colors.text2, fontSize: type.caption2, fontWeight: '800' },
-  quoteText: { color: colors.text2, fontSize: type.caption, lineHeight: 16 },
-  quoteGone: { fontStyle: 'italic', color: colors.text3 },
+  // tema-bagimsiz: baloncugun kendi zemini uzerinde katman; ikisi de tema disi
+  quoteTheirs: { backgroundColor: 'rgba(255,255,255,0.07)' },
+  // tema-bagimsiz: gonderilen baloncuk acik yuzey (primary); katman koyu olmali
+  quoteMine:   { backgroundColor: 'rgba(0,0,0,0.08)' },
+  quoteGone: { fontStyle: 'italic' },
 
   // ── Sabit mesaj bandı (başlığın hemen altında) ──
   pinBar: {
@@ -1850,7 +1770,7 @@ const makeStyles = (colors) => StyleSheet.create({
   // ── Yanıt önizlemesi (gönderme kutusunun üstünde) ──
   replyBar: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
-    marginHorizontal: KOMPOZITOR_KENAR, marginBottom: spacing.s8,
+    marginHorizontal: KC.paddingH, marginBottom: spacing.s8,
     paddingVertical: PIN_DOLGU, paddingHorizontal: REPLY_DOLGU,
     backgroundColor: colors.card,
     borderRadius: radius.md,
@@ -1865,14 +1785,18 @@ const makeStyles = (colors) => StyleSheet.create({
   // ── Tapback ──
   // Baloncuğun DIŞ üst köşesi. Kenarlık sayfa zemini renginde: rozet
   // baloncuğa değil, sayfaya oturuyormuş gibi görünsün.
-  chips: { position: 'absolute', top: -TAPBACK_BINME, flexDirection: 'row', gap: spacing.s4 },
-  chipsMine:   { left: -TAPBACK_YAN },
-  chipsTheirs: { right: -TAPBACK_YAN },
+  // ── Tepki rozeti — G-19 (kit reply) ──
+  // ALT KENARA BİNİYOR, üst köşeye değil: kit rozeti baloncuğun altına, içe
+  // doğru 10 pt girintiyle koyuyor. Yer açan pay da bu yüzden satırın
+  // ALTINDA (bkz. sarmalTepkili).
+  chips: { position: 'absolute', bottom: -TEPKI.overlap, flexDirection: 'row', gap: TEPKI.gap },
+  chipsMine:   { right: TEPKI.inset },
+  chipsTheirs: { left: TEPKI.inset },
   chip: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.s4,
-    paddingHorizontal: spacing.s8, height: TAPBACK_H, borderRadius: TAPBACK_H / 2,
-    backgroundColor: colors.bgInput,
-    borderWidth: 2, borderColor: colors.bg,
+    flexDirection: 'row', alignItems: 'center', gap: TEPKI.gap,
+    paddingHorizontal: TEPKI.paddingH, height: TEPKI.height, borderRadius: TEPKI.height / 2,
+    backgroundColor: colors.card,
+    borderWidth: TEPKI.ring, borderColor: colors.bg,
   },
   // Kendi tepkim vurgulu: hangi rozetin bana ait olduğunu renk söylüyor.
   chipMine:  { backgroundColor: colors.accentSoft, borderColor: colors.accentBorder },
@@ -1886,42 +1810,39 @@ const makeStyles = (colors) => StyleSheet.create({
   emptyWrap: { paddingVertical: spacing.xl, alignItems: 'center', transform: [{ scaleY: -1 }] },
   emptyText: { color: colors.text3, fontSize: type.footnote, textAlign: 'center' },
 
-  // ── Baloncuk ──
-  // 17/22 metin (HIG gövdesi), 14×9 dolgu, 18 köşe — iOS ölçüleri.
+  // ── Baloncuk — G-19 (kit chat() recv/sent) ──
+  // 15/21 metin, 9/14/8 dolgu, köşe 18. Genişlik ARTIK ORANLI DEĞİL: kit
+  // 270 pt sabit veriyor ve baloncuk içi saat bu genişliğe göre ölçüldü.
   bubble: {
-    maxWidth: BALONCUK_EN,
-    paddingHorizontal: BALONCUK_YAN, paddingVertical: BALONCUK_DIKEY,
-    borderRadius: BALONCUK_YARICAP,
+    maxWidth: C.bubble.maxWidth,
+    paddingTop: C.bubble.paddingTop, paddingHorizontal: C.bubble.paddingH, paddingBottom: C.bubble.paddingBottom,
+    borderRadius: C.bubble.radius,
   },
-  bubbleMine:   { backgroundColor: colors.accentFillStrong },
-  // Karşı tarafın baloncuğu surface2 idi ve koyu temada sayfa zemininden
-  // (bg) ayrışmıyordu: #15161A ile #0A0B0D arasındaki fark gözle zor
-  // seçiliyor. surface3 (#1C1E23) iOS'un zemin–baloncuk farkına yakın.
-  bubbleTheirs: { backgroundColor: colors.bgInput },
-  // `overflow: 'hidden'` KALDIRILDI: kuyruk baloncugun DISINA tasiyor ve
-  // kirpma onu yok ediyordu. Kose yuvarlakligi artik gorselin kendisinde
-  // (medyaTek), yani kirpmaya gerek kalmadi.
+  // Kuyruk = küçük köşe. Kendi mesajımda sağ alt, gelende sol alt.
+  kuyrukBenim: { borderBottomRightRadius: C.bubble.corner },
+  kuyrukOnun:  { borderBottomLeftRadius: C.bubble.corner },
+  // `overflow: 'hidden'` YOK: köşe yuvarlaklığı görselin kendisinde
+  // (medyaTek), kırpmaya gerek kalmıyor.
   bubbleMediaOnly: { padding: 0 },
-  // Paylasim karti baloncuk degil kart: icerik bizim degil, bir oyuna isaret.
+  // ── Paylaşım — G-19 (kit gcard / newsc) ──
+  // Kuyruk artık köşe olduğu için `overflow: 'hidden'` geri geldi: görselin
+  // üst köşeleri kartı takip ediyor, ayrıca köşe yarıçapı vermeye gerek yok.
   shareImgBos: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bgInput },
   shareImgHarf: { color: colors.text2, fontSize: type.title3, fontWeight: '800' },
-  // ARTIK BIR BALONCUK, kart degil: kuyrugu olan bir seyin kenarligi
-  // olamaz — kenarlik kuyrugu takip etmez ve kuyruk 'yapistirilmis'
-  // gorunur. Zemin de gelen baloncukla ayni (bgInput), boylece
-  // paylasim iOS'un zengin baglanti baloncugu gibi okunuyor.
-  // `overflow: 'hidden'` KALKTI (kuyrugu kirpiyordu); ust kose
-  // yuvarlakligi gorselin kendisine tasindi.
-  shareCard: {
-    width: 240, backgroundColor: colors.bgInput,
-    borderRadius: BALONCUK_YARICAP,
+  shareCard: { width: SHARE.width, borderRadius: BALONCUK_YARICAP, overflow: 'hidden' },
+  shareImg:  { width: SHARE.width, height: SHARE.imageHeight, backgroundColor: colors.surfaceTile },
+  shareBody: { padding: SHARE.padding },
+  shareButton: { marginTop: SHARE.buttonTop },
+  // Haber: geniş kapak değil küçük resimli satır — okunacak şey başlık.
+  shareNews: {
+    width: SHARE.width, padding: SHARE.newsPadding, borderRadius: BALONCUK_YARICAP,
+    flexDirection: 'row', gap: SHARE.newsGap,
   },
-  shareImg:  {
-    width: 240, height: 112, backgroundColor: colors.surfaceTile,
-    borderTopLeftRadius: BALONCUK_YARICAP, borderTopRightRadius: BALONCUK_YARICAP,
+  newsThumb: {
+    width: SHARE.newsThumb, height: SHARE.newsThumb, borderRadius: SHARE.newsThumbRadius,
+    backgroundColor: colors.surfaceTile,
   },
-  shareBody: { padding: spacing.sm, gap: spacing.s4 },
-  shareName: { color: colors.text, fontSize: type.footnote, fontWeight: '700' },
-  shareHint: { color: colors.text3, fontSize: type.caption2 },
+  newsText: { flex: 1, minWidth: 0, gap: SHARE.newsTextGap },
   // Geri alınan mesaj: dolgusuz, kesikli çerçeve — baloncuk olduğu belli olsun
   // ama içerik taşımadığı da anlaşılsın.
   bubbleGone: {
@@ -1931,13 +1852,28 @@ const makeStyles = (colors) => StyleSheet.create({
   goneText: { color: colors.text3, fontSize: type.footnote, fontStyle: 'italic' },
   // Satır yüksekliği boydan büyük: emojinin altı/üstü kırpılıyordu.
   emojiTek: { fontSize: EMOJI_BOY, lineHeight: EMOJI_BOY + 8 },
-  bubbleText:     { color: colors.text, fontSize: type.body, lineHeight: 22 },
-  bubbleTextMine: { color: colors.onAccent },
+  // Kit 15/21 (`bodyTight`); gönderi metninden (15/22) bir piksel sıkı.
+  bubbleText:     { color: colors.text, fontSize: typography.bodyTight.fontSize, lineHeight: typography.bodyTight.lineHeight },
   bubbleTextUnderMedia: { marginTop: spacing.s8 },
 
-  media: { width: MEDYA_EN, height: MEDYA_BOY, borderRadius: radius.md, backgroundColor: colors.bgInput },
-  // Salt gorselde baloncuk = gorsel, yani kose baloncuk yaricapinda olmali.
+  // Kit im: 220×150. Metinli baloncukta görsel metnin üstünde küçük köşeyle
+  // duruyor; salt görselde baloncuk = görsel.
+  media: { width: IMG.width, height: IMG.height, borderRadius: radius.md, backgroundColor: colors.bgInput },
   medyaTek: { borderRadius: BALONCUK_YARICAP },
+  // Paylaşım kartının altındaki saat (kit tstamp): 14 yükseklik, 4 üst pay.
+  kartSaat: { height: SHARE.timeHeight, marginTop: SHARE.timeTop, ...NUMERIC },
+  kartSaatBenim: { alignSelf: 'flex-end' },
+  kartSaatOnun:  { alignSelf: 'flex-start' },
+  // Görselin üstündeki saat (kit im). tema-bagimsiz: altındaki şey tema
+  // değil fotoğraf; rozet iki temada da koyu.
+  saatRozet: {
+    position: 'absolute', right: IMG.badgeInset, bottom: IMG.badgeInset,
+    height: IMG.badgeHeight, paddingHorizontal: IMG.badgePaddingH, borderRadius: IMG.badgeRadius,
+    // tema-bagimsiz: rozetin altindaki sey tema degil fotograf
+    backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center',
+  },
+  // tema-bagimsiz: koyu rozetin üstünde daima beyaz
+  saatRozetYazi: { color: '#FFFFFF', ...NUMERIC },
   // GIF oranlari cok degisken (kare, genis, uzun). Sabit yukseklik yerine
   // en-boy orani birakip contain kullaniyoruz — kirpma olmuyor.
   gifQuoteWrap: { width: 200 },
@@ -1947,27 +1883,25 @@ const makeStyles = (colors) => StyleSheet.create({
     borderRadius: BALONCUK_YARICAP, backgroundColor: colors.bgInput,
   },
 
-  // ── Kompozitör — iOS 26 [ÖLÇÜLDÜ] ──
-  // "+" Ø40 soldan 28, alan yüksekliği 40 tam yuvarlak, aradaki boşluk 12.
+  // ── Kompozitör — G-19 (kit chat() comp) ──
+  // Üst hatlı kendi zemini olan bir bant: + 44 · kapsül 44 (köşe 22) ·
+  // gönder 44. Kenar 12, aradaki boşluk 8.
   composer: {
-    flexDirection: 'row', alignItems: 'flex-end', gap: spacing.s12,
-    paddingHorizontal: KOMPOZITOR_KENAR, paddingTop: spacing.s8,
+    flexDirection: 'row', alignItems: 'flex-end', gap: KC.gap,
+    paddingHorizontal: KC.paddingH, paddingTop: KC.paddingTop,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
-  ekBtn: { width: EK_BTN, height: EK_BTN, borderRadius: EK_BTN / 2 },
-  ekHit: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  // Kapsül girdiyle gönder okunu birlikte taşıyor; okun yeri alanın İÇİ.
   girdiKapsul: {
     flex: 1, flexDirection: 'row', alignItems: 'flex-end',
-    minHeight: EK_BTN, borderRadius: KAPSUL_YARICAP,
-    paddingLeft: spacing.s16, paddingRight: spacing.s4, paddingVertical: spacing.s4,
+    minHeight: KC.input, borderRadius: KC.inputRadius,
+    paddingLeft: KC.inputLeft, paddingRight: KC.inputRight, paddingVertical: spacing.s4,
   },
   input: {
-    flex: 1, maxHeight: 120, color: colors.text, fontSize: type.body,
+    flex: 1, maxHeight: 120, color: colors.text, fontSize: typography.input.fontSize,
     paddingTop: GIRDI_DIKEY, paddingBottom: GIRDI_DIKEY,
   },
   sendBtn: {
-    width: GONDER_BTN, height: GONDER_BTN, borderRadius: GONDER_BTN / 2,
-    backgroundColor: colors.accentFillStrong,
+    width: KC.button, height: KC.button, borderRadius: KC.button / 2,
     alignItems: 'center', justifyContent: 'center',
   },
 });

@@ -22,7 +22,13 @@ import { startSharedLinkWatcher } from '../src/services/sharedLink';
 import { startDmPushSync } from '../src/services/dmPush';
 import { useLastNotificationResponse } from 'expo-notifications';
 import FpsMeter from '../src/dev/FpsMeter';
+import { ToastProvider } from '../src/components/ui/Toast';
 import { useTheme } from '../src/context/ThemeContext';
+import { useFonts } from 'expo-font';
+import { Inter_400Regular } from '@expo-google-fonts/inter/400Regular';
+import { Inter_500Medium } from '@expo-google-fonts/inter/500Medium';
+import { Inter_600SemiBold } from '@expo-google-fonts/inter/600SemiBold';
+import { Inter_700Bold } from '@expo-google-fonts/inter/700Bold';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AÇILIŞ PERDESİ ELDE TUTULUYOR.
@@ -83,7 +89,6 @@ function TemaliYigin() {
                 />
                 <Stack.Screen name="wishlist" />
                 <Stack.Screen name="discover" />
-                <Stack.Screen name="swipe" />
                 <Stack.Screen name="library" />
                 <Stack.Screen name="collections" />
                 <Stack.Screen name="collection/[id]" />
@@ -131,6 +136,16 @@ function TemaliYigin() {
 }
 
 export default function RootLayout() {
+  const [fontsLoaded, fontError] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold });
+  // ── GEZİNEN HER ŞEY `hazir`I BEKLİYOR ──
+  // Fontlar gelene kadar bu düzen `null` döndürüyor, yani Stack henüz yok.
+  // O aralıkta `router.push` çağrılırsa expo-router "Attempted to navigate
+  // before mounting the Root Layout component" hatası fırlatıyor. Soğuk
+  // açılışta iki yol tam o aralığa düşebiliyor: dokunulan bildirimin yanıtı
+  // (native çağrı, font dosyalarından önce dönebiliyor) ve paylaşım
+  // uzantısının bekleyen bağlantısı. Bu efektler Stack'in İLK KEZ çizildiği
+  // commit'te çalışıyor — font eklenmeden önceki zamanlamanın aynısı.
+  const hazir = fontsLoaded || !!fontError;
   // Zevk profilini açılışta belleğe yükle (keşif algoritması için) ve önbelleği geri yükle
   //
   // loadSession ÖNCE: depolar artık hesaba göre kapsanıyor ve sahip
@@ -159,6 +174,7 @@ export default function RootLayout() {
   useEffect(() => {
     let alive = true;
 
+    if (!fontsLoaded && !fontError) return;
     loadPerde().then(() => {
       if (!alive) return;
       // İKİ KARE BEKLENİYOR. Bayrağın çözüldüğü commit'te (tabs) düzeni
@@ -173,10 +189,11 @@ export default function RootLayout() {
     }).catch(() => { SplashScreen.hideAsync().catch(() => {}); });
 
     return () => { alive = false; };
-  }, []);
+  }, [fontsLoaded, fontError]);
 
-  // Share Extension'dan gelen bekleyen bir Steam linki varsa oyuna git
-  useEffect(() => { startSharedLinkWatcher(); }, []);
+  // Share Extension'dan gelen bekleyen bir Steam linki varsa oyuna git.
+  // `hazir` false → true yalnız bir kez döner; izleyici bir kez kuruluyor.
+  useEffect(() => { if (hazir) startSharedLinkWatcher(); }, [hazir]);
 
   // Sistem teması değişince (uygulama ön plana döndüğünde) paleti tazele
 
@@ -210,16 +227,20 @@ export default function RootLayout() {
       router.push('/chat/' + String(data.from));
       return;
     }
-    if (data.slug) {
-      router.push({ pathname: '/game/[id]', params: { id: String(data.slug), name: data.name || '', slug: String(data.slug) } });
+    // Fiyat bildirimi: sunucu artık appid de gönderiyor (27 Eyl); slug'ı
+    // olmayan (Steam kaynaklı) oyun da açılabilsin.
+    if (data.slug || data.appid) {
+      const id = data.appid ? `rawg_${data.appid}` : String(data.slug);
+      router.push({ pathname: '/game/[id]', params: { id, name: data.name || '', slug: String(data.slug || ''), appid: String(data.appid || '') } });
     }
   }, [router]);
 
   // Uygulama AÇIKKEN dokunulan bildirim
   useEffect(() => {
+    if (!hazir) return;
     const sub = Notifications.addNotificationResponseReceivedListener(handleResponse);
     return () => sub.remove();
-  }, [handleResponse]);
+  }, [handleResponse, hazir]);
 
   // Uygulama KAPALIYKEN dokunulan bildirim.
   // Kanca aynı yanıtı vermeye devam ediyor; işlenen kimliği tutmazsak
@@ -227,14 +248,17 @@ export default function RootLayout() {
   const sonYanit = useLastNotificationResponse();
   const islenenRef = useRef(null);
   useEffect(() => {
+    if (!hazir) return;
     const id = sonYanit?.notification?.request?.identifier;
     if (!id || islenenRef.current === id) return;
     islenenRef.current = id;
     handleResponse(sonYanit);
-  }, [sonYanit, handleResponse]);
+  }, [sonYanit, handleResponse, hazir]);
+
+  if (!hazir) return null;
 
   return (
-    // Jest sistemi kökten sarmalanmalı — swipe (Faz 1) ve diğer jest tabanlı
+    // Jest sistemi kökten sarmalanmalı — jest tabanlı
     // etkileşimler bu sağlayıcı olmadan sessizce çalışmaz.
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
@@ -244,7 +268,11 @@ export default function RootLayout() {
         <LanguageProvider>
           <AuthProvider>
             <WishlistProvider>
-              <TemaliYigin />
+              {/* Toast katmanı yığının ÜSTÜNDE: hangi ekrandan çağrılırsa çağrılsın
+                  aynı yerde, sekme çubuğunun üstünde görünsün (DS 4). */}
+              <ToastProvider>
+                <TemaliYigin />
+              </ToastProvider>
               {__DEV__ && <FpsMeter />}
             </WishlistProvider>
           </AuthProvider>

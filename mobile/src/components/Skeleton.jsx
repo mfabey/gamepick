@@ -1,11 +1,16 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
-import { Animated, Easing, View, StyleSheet } from 'react-native';
+import { Animated, Easing, View, StyleSheet, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
+// `motion` hâlâ gerekli: Reveal eski ölçeğin `motion.reveal` (160) adımını kullanıyor.
 import { radius, spacing, motion } from '../theme';
+import { component as K, motion as tasarimHareketi, radius as dsRadius, size as dsSize } from '../theme/tokens';
 import { useStyles, useTheme } from '../context/ThemeContext';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import FadeIn from './FadeIn';
+import { useDesignGrid } from '../hooks/useDesignGrid';
+import { coverWidth, gridCols, GRID_GAP, GRID_PAD } from './CoverGrid';
+import { smallCoverHeight } from './ui/GameCards';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Paylaşılan SÜPÜRME animasyonu — tüm iskelet blokları TEK loop'u paylaşır
@@ -21,7 +26,8 @@ import FadeIn from './FadeIn';
 // ─────────────────────────────────────────────────────────────────────────────
 // Handoff: sweepWidth 320, duration 1400, easing linear.
 const SWEEP_W = 320;
-const SWEEP_MS = motion.skeleton;
+// Gamerisen 2.0 (DS 4 · `.sk`): 1,3 sn doğrusal süpürme; eski handoff 1400 diyordu.
+const SWEEP_MS = tasarimHareketi.duration.loop;
 
 let sharedValue = null;
 let loopAnim = null;
@@ -104,9 +110,10 @@ export function Skeleton({ style }) {
   // surface3 (#1C1E23) ve fark 255'te 3 — gözle ayırt edilmiyor.
   // Düz hex yazsaydık açık temada bütün yükleme ekranları beyaz zeminde koyu
   // gri kutulara dönerdi; jetona bağlayınca iki tema da doğru geliyor.
+  // DS 4 `.sk`: surface1 → surface2 → surface1 (eski adlarla card → bgInput → card).
   const gradyan = useMemo(
-    () => [colors.bgInput, colors.surfaceTile, colors.bgInput],
-    [colors.bgInput, colors.surfaceTile]
+    () => [colors.card, colors.bgInput, colors.card],
+    [colors.card, colors.bgInput]
   );
 
   return (
@@ -149,13 +156,43 @@ export function Reveal({ children, style }) {
 }
 
 // ── Oyun grid iskeleti (Oyunlar / Kütüphane) ──
-export function GamesGridSkeleton({ count = 8 }) {
+// 2.0 (27 Eyl): 2.0 oyun kartının (ui/GameCard) ölçüleri — 148×198 kapak,
+// başlık 20, meta 16, fiyat 22 satırı; sütun sayısı ve kenar payı ızgarayla
+// aynı kancadan (useDesignGrid). Eski iskelet yüzde genişlikte 3:4 kutuydu:
+// veri gelince kartlar küçülüp yazı satırları beliriyor, sayfa zıplıyordu.
+//
+// `kucuk`: Kütüphane — küçük kart ızgarası (GameCardSmall, CoverGrid ölçüsü):
+// 3+ sütun, kapak 106×142 oranı, başlık + alt satır.
+export function GamesGridSkeleton({ count = 8, kucuk = false }) {
   const styles = useStyles(makeStyles);
+  const { columns, padding } = useDesignGrid();
+  const { width: pencere } = useWindowDimensions();
+  if (kucuk) {
+    const sutun = gridCols(pencere);
+    const en = coverWidth(pencere, sutun);
+    return (
+      <View style={[styles.grid, { paddingHorizontal: GRID_PAD - GRID_GAP / 2 }]}>
+        {Array.from({ length: sutun * 4 }).map((_, i) => (
+          <View key={i} style={{ width: `${100 / sutun}%`, paddingHorizontal: GRID_GAP / 2, paddingBottom: GRID_GAP }}>
+            <Skeleton style={{ width: en, height: smallCoverHeight(en), borderRadius: dsRadius.cover }} />
+            <View style={styles.kucukBaslik}><Skeleton style={styles.kartCizgi} /></View>
+            <View style={styles.kucukSatir}><Skeleton style={styles.kartCizgiKisa} /></View>
+          </View>
+        ))}
+      </View>
+    );
+  }
+  const genislik = `${100 / columns}%`;
   return (
-    <View style={styles.grid}>
+    <View style={[styles.grid, { paddingHorizontal: padding }]}>
       {Array.from({ length: count }).map((_, i) => (
-        <View key={i} style={styles.cell}>
-          <Skeleton style={styles.card} />
+        <View key={i} style={[styles.cell, { width: genislik }]}>
+          <View style={styles.kart}>
+            <Skeleton style={styles.card} />
+            <View style={styles.kartBaslik}><Skeleton style={styles.kartCizgi} /></View>
+            <View style={styles.kartMeta}><Skeleton style={styles.kartCizgiKisa} /></View>
+            <View style={styles.kartFiyat}><Skeleton style={styles.kartFiyatCizgi} /></View>
+          </View>
         </View>
       ))}
     </View>
@@ -268,13 +305,23 @@ export function TextBlockSkeleton({ lines = 4 }) {
 const makeStyles = (colors) => StyleSheet.create({
   // overflow: parıltı bloğun dışına taşmasın — 320pt'lik katman küçük
   // bloklarda (44pt küçük resim, 60pt satır) blok sınırını kat kat aşıyor.
-  box: { backgroundColor: colors.bgInput, borderRadius: radius.sm, overflow: 'hidden' },
+  box: { backgroundColor: colors.card, borderRadius: radius.sm, overflow: 'hidden' },
   sweep: { position: 'absolute', top: 0, bottom: 0, left: 0, width: SWEEP_W },
 
   // grid
-  grid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 10, paddingTop: 6 },
-  cell: { width: '50%', paddingHorizontal: 6, paddingBottom: spacing.md },
-  card: { width: '100%', aspectRatio: 3 / 4, borderRadius: radius.lg },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', paddingTop: 6 },
+  cell: { alignItems: 'center', paddingBottom: spacing.md },
+  // Satır yükseklikleri kartınkiyle aynı (K.gameCardMedium); çizgi satırın ortasında.
+  kart: { width: dsSize.cover.medium.width },
+  card: { width: dsSize.cover.medium.width, height: dsSize.cover.medium.height, borderRadius: dsRadius.cover },
+  kartBaslik: { height: 20, marginTop: K.gameCardMedium.titleTop, justifyContent: 'center' },
+  kartMeta: { height: K.gameCardMedium.metaHeight, marginTop: K.gameCardMedium.metaTop, justifyContent: 'center' },
+  kartFiyat: { height: K.gameCardMedium.priceRow, marginTop: K.gameCardMedium.priceTop, justifyContent: 'center' },
+  kartCizgi: { width: '82%', height: 12, borderRadius: 4 },
+  kartCizgiKisa: { width: '48%', height: 10, borderRadius: 4 },
+  kartFiyatCizgi: { width: 56, height: 14, borderRadius: 4 },
+  kucukBaslik: { height: 20, marginTop: K.gameCardSmall.titleTop, justifyContent: 'center' },
+  kucukSatir: { height: K.gameCardSmall.rowHeight, marginTop: K.gameCardSmall.rowTop, justifyContent: 'center' },
 
   // news
   newsFeatured: { marginHorizontal: spacing.lg, height: 210, borderRadius: radius.lg },

@@ -18,15 +18,17 @@
 // diyor. Veri desteklemedikçe ayrım iddia edilmiyor.
 // ─────────────────────────────────────────────────────────────────────────────
 import { useMemo } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Pressable, StyleSheet } from 'react-native';
+import { Icon } from './Icon';
+import { Txt } from './ui/Primitives';
 
 import { useConnectedLibrary } from '../hooks/useConnectedLibrary';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { useStyles, useTheme } from '../context/ThemeContext';
+import { useDesignTheme } from '../theme/useDesignTheme';
 import { normalizeName } from '../services/recommend';
-import { radius, spacing, type, PRESSED } from '../theme';
+import { PRESSED } from '../theme';
+import { component as K, space } from '../theme/tokens';
 
 export const BANT_Y = 36;
 
@@ -41,16 +43,16 @@ export function sahiplikDurumu({ ad, steamGames, xboxGames, xbox, steamBagli, xb
   if (!n) return null;
 
   if (steamGames.some((g) => normalizeName(g.name) === n)) {
-    return { anahtar: 'own.steam', ikon: 'checkmark-circle', olumlu: true, hedef: null };
+    return { anahtar: 'own.steam', ikon: 'checkc', olumlu: true, hedef: null };
   }
   if (xboxGames.some((g) => normalizeName(g.name) === n)) {
-    return { anahtar: 'own.xbox', ikon: 'checkmark-circle', olumlu: true, hedef: null };
+    return { anahtar: 'own.xbox', ikon: 'checkc', olumlu: true, hedef: null };
   }
 
   // Xbox oturumu düşmüşse sessizce "sahibi değil" demek YALAN olurdu:
   // oyun kütüphanede olabilir, biz bakamıyoruz.
   if (xboxBagli && xbox?.expired) {
-    return { anahtar: 'own.xboxExpired', ikon: 'time-outline', olumlu: false, hedef: 'account' };
+    return { anahtar: 'own.xboxExpired', ikon: 'clock', olumlu: false, hedef: 'account' };
   }
 
   // Hiçbir hesap bağlı değilse sahiplik BİLİNEMİYOR — boş bir kutu bilgi
@@ -58,17 +60,19 @@ export function sahiplikDurumu({ ad, steamGames, xboxGames, xbox, steamBagli, xb
   if (!steamBagli && !xboxBagli) return null;
 
   if (!steamBagli) {
-    return { anahtar: 'own.noSteam', ikon: 'ellipse-outline', olumlu: false, hedef: 'account' };
+    return { anahtar: 'own.noSteam', ikon: 'link', olumlu: false, hedef: 'account' };
   }
   return {
     anahtar: istekte ? 'own.notOwnedWish' : 'own.notOwned',
-    ikon: 'ellipse-outline', olumlu: false, hedef: null,
+    ikon: 'bag', olumlu: false, hedef: null,
   };
 }
 
+// 2.0 (27 Eyl): G-07'deki StatusPill dili — hap köşe (6), olumluda yeşil ton,
+// belirsizde nötr; 2.0 ikonlar. Yükseklik BANT_Y yer tutucusuyla aynı kalıyor
+// (soğuk açılışta sayfa zıplamasın), hap kendisi ortalanıyor.
 export default function OwnershipBand({ name, istekte, onGit }) {
-  const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
+  const { colors } = useDesignTheme();
   const { t } = useLanguage();
   const { steamAccounts = [], xbox: xboxSession } = useAuth();
   const { steamGames, xboxGames, xbox, loading } = useConnectedLibrary();
@@ -85,21 +89,16 @@ export default function OwnershipBand({ name, istekte, onGit }) {
   if (loading && (steamBagli || xboxBagli)) return <View style={styles.iskelet} />;
   if (!durum) return null;
 
-  const govde = (
-    <>
-      <Ionicons
-        name={durum.ikon}
-        size={15}
-        color={durum.olumlu ? colors.green : colors.text3}
-      />
-      <Text numberOfLines={1} style={[styles.metin, durum.olumlu && styles.metinOlumlu]}>
-        {t(durum.anahtar)}
-      </Text>
-      {durum.hedef ? <Ionicons name="chevron-forward" size={14} color={colors.text3} /> : null}
-    </>
+  const renk = durum.olumlu ? colors.green : colors.text2;
+  const hap = (
+    <View style={[styles.hap, { backgroundColor: durum.olumlu ? colors.greenTint : colors.pillNeutralSoft }]}>
+      <Icon name={durum.ikon} size={14} color={renk} strokeWidth={2.2} />
+      <Txt variant="captionStrong" numberOfLines={1} style={{ color: renk }}>{t(durum.anahtar)}</Txt>
+      {durum.hedef ? <Icon name="chev" size={13} color={colors.text3} strokeWidth={2.4} /> : null}
+    </View>
   );
 
-  if (!durum.hedef) return <View style={styles.bant}>{govde}</View>;
+  if (!durum.hedef) return <View style={styles.bant}>{hap}</View>;
 
   return (
     <Pressable
@@ -108,21 +107,16 @@ export default function OwnershipBand({ name, istekte, onGit }) {
       accessibilityRole="button"
       style={({ pressed }) => [styles.bant, pressed && PRESSED]}
     >
-      {govde}
+      {hap}
     </Pressable>
   );
 }
 
-const makeStyles = (colors) => StyleSheet.create({
-  bant: {
-    height: BANT_Y,
-    flexDirection: 'row', alignItems: 'center', gap: spacing.s8,
-    alignSelf: 'flex-start',
-    paddingHorizontal: spacing.s12,
-    borderRadius: radius.md,
-    backgroundColor: colors.bgInput,
+const styles = StyleSheet.create({
+  bant: { height: BANT_Y, justifyContent: 'center', alignSelf: 'flex-start' },
+  hap: {
+    height: 28, flexDirection: 'row', alignItems: 'center', gap: space[4] + 2,
+    paddingHorizontal: space[8] + 2, borderRadius: K.statusPill.radius,
   },
   iskelet: { height: BANT_Y },
-  metin: { fontSize: type.footnote, fontWeight: '600', color: colors.text2 },
-  metinOlumlu: { color: colors.green },
 });

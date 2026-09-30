@@ -5,6 +5,70 @@ için yazıldı. Yalnızca koddan/git'ten okunamayacak şeyler burada.
 
 ---
 
+## GÜNCEL — 27 Eylül 2026, akşam (Mac, 2.8.0 — 2.0 geçişi kapandı)
+
+**Önce bunu oku; aşağıdaki "Eski devir" bölümü tarihsel.**
+
+### Durum
+- Dal **`design-v2`** (mobil). Sürüm **2.8.0**; 2.7.2'ye OTA GÖNDERİLEMEZ
+  (yeni yerli modüller, runtime `appVersion`).
+- **Design 2.0 istemci işi bitti.** Kapananlar (27 Eyl): alt sayfalar DS 4,
+  hata durumları, gönderi/inceleme ailesi, sohbet sayfaları, G-02 tanıtım +
+  G-02b ilgi alanları, yenileme işareti, artıklar (Ionicons 0), Keşfet, izgara
+  iskeleti, Canlı Çubuk basılı tut + kaydır, alt sayfa odak kaybında kapanma
+  (derin bağlantı kusuru), büyüme geçişinde çubuk, tür adları arayüz dilinde,
+  auth/hesap silme metinleri, ve SUNUCU GEREKTİRENLER: birleşik arama
+  (G-05/06), fiyat geçmişi + hedef alarm (G-08), oyun toplulukları (G-11),
+  bildirim merkezi (G-20).
+- **Sunucu işi `main`'de DEĞİL, yerel `sunucu-2.0` dalında** (worktree
+  `~/gamepick-main`, `origin/main` 2f96a44 üstüne 3 commit): smart-search
+  Steam yedeği + beş dil, /api/social/notifications, /api/social/community,
+  /api/price-history, /api/search-trends, hedef fiyat (push/register + cron).
+  `npm run build` geçti; depolar Upstash taklidine karşı 23 senaryoyla
+  sınandı. **Yayına çıkması kullanıcı onayı bekliyor** (`main`'e push =
+  Vercel üretim dağıtımı). O dalda `main`'e sonradan gelen web commit'leri
+  (Batuhan) var, çakışma yok.
+- İstemci, sunucu yayında değilken zarifçe düşüyor: yeni bölümler çizilmiyor
+  ya da "yüklenemedi" gösteriyor. Veri gösteren hâller GEÇİCİ örnek veriyle
+  simülatörde doğrulandı (örnek veri commit'lenmedi).
+- ÖLÇÜLDÜ: RAWG aylık kotası dolu (401 "monthly API limit reached") —
+  smart-search her sorguda 0 sonuç veriyordu; Steam yedeği bunu çözüyor.
+  Model (Gemini/Groq) üretimde aralıklı çalışıyor; düşünce anahtar kelime
+  eşlemesi (artık 5 dil) devreye giriyor.
+- EAS build 55 (2.8.0) BU İŞLERDEN ÖNCE alınmıştı — mağazaya o gitmemeli;
+  yeni derleme gerekiyor.
+
+### Doğrulanamayanlar (dürüstlük notu)
+- Android: bu Mac'te SDK yok; yalnız `expo export` ile paketlendi.
+- Sunucu uçları üretim Redis/Firebase/ITAD ile uçtan uca YAYINDAN SONRA
+  denenecek: `curl -s "https://www.gamerisen.com/api/price-history?appid=1145360&title=Hades"`,
+  `…/api/smart-search` (debug:true → kaynak steam), bildirim merkezi için
+  iki hesapla arkadaşlık isteği / yanıt / beğeni.
+- Izgara iskeleti karesi yakalanamadı (veri önbellekten anında geliyor).
+- Web'in `app/api/auth/delete-account` ucu yeni bildirim/üyelik verisini
+  silmiyor (web koduna dokunulmadı; mobil `mobile-delete` siliyor).
+
+### Kullanıcının kuralları
+- Mobil çalışırken kökteki `app/` (web) koduna dokunma; sunucu uçları için
+  kullanıcı "Hepsini yap" dedi (27 Eyl) — yalnız API/lib, web sayfası yok.
+- Her iş sonunda dur, onay bekle (`CLAUDE.md`). Push onayı her iş için ayrı.
+- Derleme kararı "yalnız derle": App Store Connect'e yükleme/inceleme
+  kullanıcı söylemeden yok. Google girişi kapalı kalıyor.
+
+### Sıradaki
+1. Onay: `sunucu-2.0` → `main` push (üretim dağıtımı) ve `design-v2` push.
+2. Dağıtımdan sonra üretimde uçları doğrula (yukarıdaki komutlar).
+3. Yeni EAS iOS production derlemesi (2.8.0, build 56+); yükleme kararı
+   kullanıcıda. Mağaza ekran görüntüleri yeni tasarımla yeniden çekilmeli.
+4. `docs/design-migration.md` §7'de açık kalanlar: 6, 7, 8, 9, 11, 13, 14, 15.
+
+---
+
+> ## ⚠ ESKİ DEVİR (Faz dönemi, `main`, sürüm 2.5.0) — TARİHSEL, UYGULANMAZ
+> Aşağıdaki "push main" ve "production'a OTA" adımları o döneme aitti.
+> `design-v2`'deyken UYGULAMA: yanlış dala gider / yayındaki kullanıcılara
+> ulaşır. Bölüm 5 ("Çalışma biçimi") hâlâ geçerli.
+
 ## 1. Hemen yapılması gerekenler
 
 ### a) Push

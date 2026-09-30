@@ -15,7 +15,7 @@
 // useQuery aynı slug için istekleri tekilleştiriyor ve önbellekliyor.
 // ─────────────────────────────────────────────────────────────────────────────
 import { memo, useState, useCallback, useMemo } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -26,10 +26,16 @@ import { useLanguage } from '../context/LanguageContext';
 import { usePrice } from '../hooks/usePrice';
 import { useKapakOlcum } from '../hooks/useKapakOlcum';
 import { summarize } from '../utils/text';
-import { radius, spacing, PRESSED, type, NUMERIC, metacriticColor, motion } from '../theme';
 import { turAdi } from '../services/genreName';
-import { useStyles, useTheme } from '../context/ThemeContext';
 import Monogram from './Monogram';
+import { PRESSED, motion } from '../theme';
+import { useDesignTheme } from '../theme/useDesignTheme';
+import { designPalettes } from '../theme/palettes';
+import { layout, radius, space } from '../theme/tokens';
+import { Txt } from './ui/Primitives';
+import { DiscountTag, Price } from './ui/Commerce';
+import { OverlayTag } from './ui/Media';
+import { OutlineBadge } from './ui/GameDetailParts';
 
 const DETAIL_TTL = 24 * 60 * 60 * 1000;   // ekran görüntüleri ve metin sık değişmez
 const CLAMP_LINES = 3;
@@ -46,10 +52,10 @@ function hash(str) {
 }
 
 function GamePostCard({ game, onDismiss, tag, onExpand }) {
-  const styles = useStyles(makeStyles);
-  // Puan rengi PALETE bağlı: bu çip temalı yüzeyde duruyor (kapak rozetinin
-  // aksine). Modül seviyesindeki donuk palet AA'da kalıyordu — bkz. theme.js.
-  const { colors } = useTheme();
+  // 2.0 (27 Eyl): OverlayTag, DiscountTag, Price, Metacritic OutlineBadge
+  // (oyun detayıyla aynı), 2.0 tipografi. Görsel üstü metin tema bağımsız
+  // koyu palet (ART) — zemin görselin kendisi.
+  const { colors } = useDesignTheme();
   const router = useRouter();
   const { t, lang, formatPrice } = useLanguage();
   const [expanded, setExpanded] = useState(false);
@@ -116,7 +122,7 @@ function GamePostCard({ game, onDismiss, tag, onExpand }) {
         {/* collapsable={false} ŞART: RN Android'de yalnız düzen taşıyan
             View'leri ağaçtan düşürebiliyor ve düşen View `measureInWindow`
             veremiyor — ölçüm null döner, geçiş sessizce kaybolurdu. */}
-        <View ref={kapakRef} collapsable={false} style={styles.media}>
+        <View ref={kapakRef} collapsable={false} style={[styles.media, { backgroundColor: colors.surface2 }]}>
           {source && !imgFailed ? (
             <Image source={source} style={StyleSheet.absoluteFill} contentFit="cover"
               cachePolicy="memory-disk" transition={motion.image}
@@ -129,60 +135,49 @@ function GamePostCard({ game, onDismiss, tag, onExpand }) {
           {/* NEDEN BURADA. Trend/yeni/indirim oyunları artık ayrı şeritlerde
               değil, akışın içinde. Etiket olmadan akış "neden bu oyun?"
               sorusunu cevapsız bırakıyor ve rastgele bir yığın gibi okunuyor. */}
-          {tag ? (
-            <View style={styles.tagWrap}>
-              <Text style={styles.tagText}>{t('home.tag.' + tag)}</Text>
-            </View>
-          ) : null}
+          {tag ? <OverlayTag label={t('home.tag.' + tag)} /> : null}
 
           <View style={styles.overlay}>
-            <Text numberOfLines={2} style={styles.name}>{game.name}</Text>
+            <Txt variant="cardTitleLarge" numberOfLines={2} style={{ color: ART.white }}>{game.name}</Txt>
             {game.genres?.length ? (
-              <Text numberOfLines={1} style={styles.genres}>
+              <Txt variant="caption" numberOfLines={1} style={[styles.genres, { color: ART.onArt }]}>
                 {game.genres.slice(0, 3).map((g) => turAdi(g, t)).filter(Boolean).join(' · ')}
-              </Text>
+              </Txt>
             ) : null}
           </View>
         </View>
       </Pressable>
 
       <View style={styles.meta}>
-        {game.metacritic ? (
-          <View style={styles.mc}>
-            <Text style={[styles.mcText, NUMERIC, { color: metacriticColor(game.metacritic, colors) }]}>
-              {game.metacritic}
-            </Text>
-          </View>
-        ) : null}
-
-        {onSale ? <Text style={styles.sale}>-%{price.discount}</Text> : null}
-
         {isFree ? (
-          <Text style={styles.price}>{t('card.free')}</Text>
+          <Price value={t('card.free')} size={16} />
         ) : price?.price != null ? (
-          <Text style={[styles.price, NUMERIC]}>{formatPrice(price.price)}</Text>
+          <Price value={formatPrice(price.price)} size={16} />
         ) : null}
+        {onSale ? <DiscountTag percent={price.discount} size="xs" /> : null}
+        {game.metacritic ? <OutlineBadge label={`Metacritic ${game.metacritic}`} /> : null}
       </View>
 
       {text ? (
         <View style={styles.body}>
-          <Text
-            style={styles.desc}
+          <Txt
+            variant="body"
+            style={{ color: colors.text2 }}
             numberOfLines={expanded ? undefined : CLAMP_LINES}
             onTextLayout={onTextLayout}
           >
             {text}
-          </Text>
+          </Txt>
 
           {truncated && !expanded ? (
-            <Pressable onPress={() => setExpanded(true)} hitSlop={8}>
-              <Text style={styles.more}>{t('post.more')}</Text>
+            <Pressable onPress={() => setExpanded(true)} hitSlop={8} accessibilityRole="button">
+              <Txt variant="subhead" style={[styles.more, { color: colors.red }]}>{t('post.more')}</Txt>
             </Pressable>
           ) : null}
 
           {expanded ? (
-            <Pressable onPress={() => setExpanded(false)} hitSlop={8}>
-              <Text style={styles.more}>{t('post.less')}</Text>
+            <Pressable onPress={() => setExpanded(false)} hitSlop={8} accessibilityRole="button">
+              <Txt variant="subhead" style={[styles.more, { color: colors.red }]}>{t('post.less')}</Txt>
             </Pressable>
           ) : null}
 
@@ -195,51 +190,25 @@ function GamePostCard({ game, onDismiss, tag, onExpand }) {
 // game referansı akış yeniden sıralanmadıkça değişmiyor → gereksiz render yok
 export default memo(GamePostCard);
 
-const makeStyles = (colors) => StyleSheet.create({
-  // FAZ 1: ritim 24; kenar payi da maketin 20'si.
-  card: { marginHorizontal: spacing.s20, marginBottom: spacing.s24 },
+// Görsel üstü katmanlar TEMA BAĞIMSIZ koyu palet: açık temada da zemin görsel.
+const ART = designPalettes.dark;
 
+const styles = StyleSheet.create({
+  // FAZ 1: ritim 24; kenar payı sayfa payı (20).
+  card: { marginHorizontal: layout.gutter, marginBottom: space[24] },
   media: {
     // Ekran değil, tablet kolonu ve kart kenar payı çıktıktan sonraki genişlik.
     aspectRatio: 1 / 0.56,
-    width: '100%', borderRadius: radius.lg, overflow: 'hidden',
-    backgroundColor: colors.card,
+    width: '100%', borderRadius: radius.card, overflow: 'hidden',
   },
   // Metnin okunabilirliği görselin karanlığına bırakılamaz — parlak bir
   // ekran görüntüsünde beyaz yazı kaybolurdu.
   scrim: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '55%' },
-  // Etiket üstte-solda: kartın alt şeridi ad ve türlerin, orayı paylaşmıyor.
-  tagWrap: {
-    position: 'absolute', top: 12, left: 14,
-    // tema-bagimsiz: ekran goruntusunun ustundeki etiket
-    backgroundColor: 'rgba(6,7,9,0.72)',
-    paddingHorizontal: 9, paddingVertical: spacing.xs, borderRadius: radius.sm,
-  },
-  tagText: {
-    color: '#fff', fontSize: type.caption, fontWeight: '400',
-  },
-  overlay: { position: 'absolute', left: 14, right: 14, bottom: 12 },
-  name: { color: '#fff', fontSize: type.headline, fontWeight: '800', letterSpacing: -0.3 },
-  genres: { color: 'rgba(255,255,255,0.75)', fontSize: type.caption, fontWeight: '600', marginTop: 3 },
-
+  overlay: { position: 'absolute', left: space[16], right: space[16], bottom: space[12] },
+  genres: { marginTop: space[4] },
   // Sinyal satırı görselin HEMEN altında: kullanıcı kapağa bakarken göz zaten
   // orada, puan ve fiyat aramaya gitmiyor.
-  meta: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    paddingTop: 10,
-  },
-  mc: {
-    borderWidth: 1, borderColor: colors.cardBorder, borderRadius: radius.sm,
-    paddingHorizontal: 7, paddingVertical: 2,
-  },
-  mcText: { fontSize: type.caption, fontWeight: '800' },
-  sale: {
-    color: colors.accentText, fontSize: type.caption, fontWeight: '800',
-  },
-  price: { color: colors.text, fontSize: type.footnote, fontWeight: '700' },
-
-  body: { paddingTop: 10 },
-  desc: { color: colors.text2, fontSize: type.subhead, lineHeight: 20 },
-  more: { color: colors.accentText, fontSize: type.subhead, fontWeight: '700', marginTop: 6 },
-
+  meta: { flexDirection: 'row', alignItems: 'center', gap: space[8], paddingTop: space[12] },
+  body: { paddingTop: space[8] },
+  more: { fontWeight: '600', marginTop: space[4] },
 });

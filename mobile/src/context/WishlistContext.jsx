@@ -8,6 +8,7 @@ import { syncAccountData } from '../services/sync';
 import { pushUserData } from '../api/account';
 import { scopedKey, ownerReady, subscribeOwner, registerScopedStore } from '../services/owner';
 import { ayniOyun } from '../services/oyunKimlik';
+import { useLanguage } from './LanguageContext';
 import { subscribeProfile } from '../services/tasteProfile';
 
 // Taban adlar — gerçek anahtarlar sahibe göre türetilir (owner.js).
@@ -18,13 +19,17 @@ const NOTIF_KEY = 'gr_notif_enabled';
 registerScopedStore({ keys: [WISH_KEY, NOTIF_KEY] });
 
 // Bildirim sunucusunun beklediği biçim — saf dönüşüm, bileşene bağlı değil.
+// `target`: hedef fiyat (₺, card-price birimi) — G-08 fiyat alarmı. `image`
+// bildirim merkezindeki satırın küçük görseli.
 const watchPayload = (list) => list.map(g => ({
   id: g.id, appid: g.appid || null, slug: g.slug || null, name: g.name, hasSteam: !!g.hasSteam,
+  image: g.image || null, target: Number(g.hedef) > 0 ? Number(g.hedef) : null,
 }));
 
 const WishlistContext = createContext(null);
 
 export function WishlistProvider({ children }) {
+  const { lang } = useLanguage();
   const [items, setItems]     = useState([]);
   const [enabled, setEnabled] = useState(false);
   const [ready, setReady]     = useState(false);
@@ -60,7 +65,7 @@ export function WishlistProvider({ children }) {
 
       if (tokenRef.current) {
         try {
-          if (on) await registerPush(tokenRef.current, watchPayload(list), Platform.OS);
+          if (on) await registerPush(tokenRef.current, watchPayload(list), Platform.OS, lang);
           else await unregisterPush(tokenRef.current);
         } catch {}
       }
@@ -127,7 +132,8 @@ export function WishlistProvider({ children }) {
             name: g.name,
             appid: g.appid,
             discount: priceInfo?.discount || 0,
-            price: priceInfo?.current != null ? `${priceInfo.current.toLocaleString('tr-TR')} ₺` : '',
+            // Uygulamayla aynı biçim (2.0): ₺ önde.
+            price: priceInfo?.current != null ? `₺${priceInfo.current.toLocaleString('tr-TR')}` : '',
             originalPrice: priceInfo?.original != null ? priceInfo.original : 0,
             currentPrice: priceInfo?.current != null ? priceInfo.current : 0,
           };
@@ -201,8 +207,8 @@ export function WishlistProvider({ children }) {
 
   const syncBackend = useCallback(async (list) => {
     if (!enabled || !tokenRef.current) return;
-    try { await registerPush(tokenRef.current, watchPayload(list), Platform.OS); } catch {}
-  }, [enabled]);
+    try { await registerPush(tokenRef.current, watchPayload(list), Platform.OS, lang); } catch {}
+  }, [enabled, lang]);
 
   const persist = useCallback(async (list) => {
     setItems(list);
@@ -222,7 +228,10 @@ export function WishlistProvider({ children }) {
   // (RAWG id ↔ Steam appid; ölçüm ve gerekçe: services/oyunKimlik.js). Birebir
   // karşılaştırma yüzünden trend'den eklenen oyun aramada "listede değil"
   // görünüyor, ikinci kez eklenebiliyordu.
-  const add = useCallback(async (game) => {
+  // `ek.hedef`: eklerken hedef fiyat (G-08 fiyat sayfası). Ayrı bir
+  // setTarget çağrısı YETMİYORDU: aynı olay döngüsünde eski listeyi gören
+  // kapanış oyunu henüz listede bulamıyor, hedef yazılmıyordu.
+  const add = useCallback(async (game, ek = {}) => {
     if (items.some(i => ayniOyun(i, game))) return;
     const g = {
       id: game.id,
@@ -231,6 +240,7 @@ export function WishlistProvider({ children }) {
       appid: game.appid || null,
       hasSteam: !!game.hasSteam,
       image: game.image || '',
+      ...(Number(ek.hedef) > 0 ? { hedef: Math.round(Number(ek.hedef)) } : null),
     };
     await persist([...items, g]);
   }, [items, persist]);
@@ -242,10 +252,24 @@ export function WishlistProvider({ children }) {
     await persist(items.filter(i => !ayniOyun(i, oyun)));
   }, [items, persist]);
 
-  const toggle = useCallback(async (game) => {
+  const toggle = useCallback(async (game, ek) => {
     if (items.some(i => ayniOyun(i, game))) await remove(game);
-    else await add(game);
+    else await add(game, ek);
   }, [items, add, remove]);
+
+  // HEDEF FİYAT (G-08): listedeki oyunun `hedef` alanı (₺). null → hedef
+  // yok, yalnız indirim bildirimi. Listede olmayan oyuna hedef konmuyor:
+  // alarm = istek listesi (fiyat sayfasındaki anahtar da onu açıyor).
+  const setTarget = useCallback(async (game, hedef) => {
+    const deger = Number(hedef) > 0 ? Math.round(Number(hedef)) : null;
+    if (!items.some(i => ayniOyun(i, game))) return;
+    await persist(items.map(i => (ayniOyun(i, game) ? { ...i, hedef: deger } : i)));
+  }, [items, persist]);
+
+  const targetOf = useCallback((game) => {
+    const it = items.find(i => ayniOyun(i, game));
+    return Number(it?.hedef) > 0 ? Number(it.hedef) : null;
+  }, [items]);
 
   const isWatched = useCallback((gameOrId) => {
     const oyun = gameOrId && typeof gameOrId === 'object' ? gameOrId : { id: gameOrId };
@@ -256,11 +280,11 @@ export function WishlistProvider({ children }) {
     const r = await registerForPushToken();
     if (r.error) return r;
     tokenRef.current = r.token;
-    try { await registerPush(r.token, watchPayload(items), Platform.OS); } catch {}
+    try { await registerPush(r.token, watchPayload(items), Platform.OS, lang); } catch {}
     setEnabled(true);
     try { await AsyncStorage.setItem(scopedKey(NOTIF_KEY), '1'); } catch {}
     return { ok: true };
-  }, [items]);
+  }, [items, lang]);
 
   const disableNotifications = useCallback(async () => {
     if (tokenRef.current) await unregisterPush(tokenRef.current);
@@ -268,22 +292,23 @@ export function WishlistProvider({ children }) {
     try { await AsyncStorage.setItem(scopedKey(NOTIF_KEY), '0'); } catch {}
   }, []);
 
-  // Bildirimler açıksa açılışta token'ı tazele + kaydı yenile
+  // Bildirimler açıksa açılışta token'ı tazele + kaydı yenile. Dil değişince
+  // de: sunucu bildirim metnini kayıttaki dilde yazıyor.
   useEffect(() => {
     if (!ready || !enabled) return;
     (async () => {
       const r = await registerForPushToken();
       if (!r.error) {
         tokenRef.current = r.token;
-        try { await registerPush(r.token, watchPayload(items), Platform.OS); } catch {}
+        try { await registerPush(r.token, watchPayload(items), Platform.OS, lang); } catch {}
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, enabled]);
+  }, [ready, enabled, lang]);
 
   const value = useMemo(
-    () => ({ items, enabled, ready, add, remove, toggle, isWatched, enableNotifications, disableNotifications }),
-    [items, enabled, ready, add, remove, toggle, isWatched, enableNotifications, disableNotifications]
+    () => ({ items, enabled, ready, add, remove, toggle, isWatched, setTarget, targetOf, enableNotifications, disableNotifications }),
+    [items, enabled, ready, add, remove, toggle, isWatched, setTarget, targetOf, enableNotifications, disableNotifications]
   );
 
   return (

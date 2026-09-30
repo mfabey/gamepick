@@ -19,31 +19,33 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  View, Text, Pressable, StyleSheet, ActivityIndicator, RefreshControl,
-  useWindowDimensions, Alert,
+  View, Text, Pressable, StyleSheet, ActivityIndicator, useWindowDimensions, Alert,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
-import { spacing, type, PRESSED, TOUCH_MIN } from '../../src/theme';
+import { spacing } from '../../src/theme';
 import { useStyles, useTheme } from '../../src/context/ThemeContext';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { getUserProfile, friendAction } from '../../src/api/social';
 import { engelUygula } from '../../src/services/engel';
 import { getSession } from '../../src/services/session';
 
+import { NavBar } from '../../src/components/ui/Navigation';
+import { IconButton } from '../../src/components/ui/Primitives';
 import ProfileHeader from '../../src/components/ProfileHeader';
 import ProfileTabs from '../../src/components/ProfileTabs';
-import CoverCell, { coverWidth, gridCols, GRID_GAP } from '../../src/components/CoverGrid';
+import { coverWidth, gridCols, GRID_GAP, GRID_PAD } from '../../src/components/CoverGrid';
+import { GameCardSmall, smallCardHeight } from '../../src/components/ui/GameCards';
 import { useYanBosluk } from '../../src/hooks/useIcerikAlani';
 import ProfileReviewRow from '../../src/components/ProfileReviewRow';
 import PostCard from '../../src/components/PostCard';
 import EmptyState from '../../src/components/EmptyState';
 import PersonMenu from '../../src/components/PersonMenu';
 import ReportSheet from '../../src/components/ReportSheet';
+import { YenileIsareti, YenileKontrol } from '../../src/components/ui/Yenile';
 
 const PAGE = 20;
 
@@ -224,7 +226,7 @@ export default function UserProfileScreen() {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
         <Ust onBack={() => router.back()} title={`@${username}`} colors={colors} styles={styles} t={t} />
-        <EmptyState icon="person-outline" title={t('prof.notFound')} text={t('prof.notFoundDesc')} />
+        <EmptyState icon="users" title={t('prof.notFound')} text={t('prof.notFoundDesc')} />
       </SafeAreaView>
     );
   }
@@ -244,7 +246,7 @@ export default function UserProfileScreen() {
     if (item.__kilit) {
       return (
         <EmptyState
-          icon="lock-closed-outline"
+          icon="lock"
           title={t('prof.privateTitle')}
           text={t('prof.privateDesc')}
         />
@@ -255,7 +257,7 @@ export default function UserProfileScreen() {
       return (
         <EmptyState
           compact
-          icon={tab === 'reviews' ? 'shield-checkmark-outline' : tab === 'posts' ? 'chatbubble-outline' : 'albums-outline'}
+          icon={tab === 'reviews' ? 'shield' : tab === 'posts' ? 'comment' : 'layers'}
           title={t('prof.otherEmpty')}
           text={t('prof.otherEmptyDesc')}
         />
@@ -265,9 +267,11 @@ export default function UserProfileScreen() {
       return (
         <View style={styles.gridRow}>
           {item.map((g) => (
-            <CoverCell
+            <GameCardSmall
               key={g.id}
-              item={g}
+              title={g.name}
+              image={g.image || null}
+              recyclingKey={String(g.id)}
               width={kapakEn}
               onPress={() => router.push({
                 pathname: '/game/[id]',
@@ -305,13 +309,17 @@ export default function UserProfileScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       <Ust
         onBack={() => router.back()}
-        title={profil?.username ? `@${profil.username}` : `@${username}`}
+        // Başlıkta AD var, kullanıcı adı DEĞİL: `@handle` iki satır altındaki
+        // kimlik bloğunda zaten yazıyor (kendi profilimizde de aynı sebeple
+        // kaldırılmıştı). Profil gelene kadar çubuk boş kalmasın diye yoldaki
+        // kullanıcı adına düşüyor. Ad seçimi ProfileHeader ile aynı.
+        title={profil ? (profil.displayName || profil.username) : `@${username}`}
         onMore={profil ? acBaslikMenu : undefined}
         colors={colors} styles={styles} t={t}
       />
 
       {yukleniyor && !profil ? (
-        <View style={styles.center}><ActivityIndicator color={colors.accent} /></View>
+        <View style={styles.center}><ActivityIndicator color={colors.text2} /></View>
       ) : (
         <FlashList
           ref={listRef}
@@ -321,9 +329,10 @@ export default function UserProfileScreen() {
           renderItem={satirCiz}
           contentContainerStyle={{ paddingHorizontal: izgara ? 0 : yan }}
           extraData={tab}
-          estimatedItemSize={izgara ? Math.round((kapakEn * 4) / 3) + GRID_GAP : 140}
+          estimatedItemSize={izgara ? Math.round(smallCardHeight(kapakEn)) + GRID_GAP : 140}
           ListHeaderComponent={(
             <View>
+              <YenileIsareti yenileniyor={tazeleniyor} zemin={colors.bg} />
               <ProfileHeader
                 profile={profil}
                 friendship={sunucu?.friendship || 'none'}
@@ -342,14 +351,14 @@ export default function UserProfileScreen() {
           )}
           ListFooterComponent={(
             <View style={{ height: insets.bottom + spacing.s40, alignItems: 'center', paddingTop: spacing.s12 }}>
-              {dahaYukleniyor ? <ActivityIndicator color={colors.accent} /> : null}
+              {dahaYukleniyor ? <ActivityIndicator color={colors.text2} /> : null}
             </View>
           )}
           onEndReached={dahaYukle}
           onEndReachedThreshold={0.6}
           showsVerticalScrollIndicator={false}
           refreshControl={(
-            <RefreshControl refreshing={tazeleniyor} onRefresh={() => yukle(tab, { tazele: true })}
+            <YenileKontrol refreshing={tazeleniyor} onRefresh={() => yukle(tab, { tazele: true })}
                             tintColor={colors.text2} />
           )}
         />
@@ -379,41 +388,21 @@ export default function UserProfileScreen() {
   );
 }
 
-/** Üst çubuk — geri · kullanıcı adı · ⋯ */
-function Ust({ onBack, title, onMore, colors, styles, t }) {
-  return (
-    <View style={styles.topBar}>
-      <Pressable onPress={onBack} hitSlop={8} style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]}
-                 accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
-        <Ionicons name="chevron-back" size={24} color={colors.text} />
-      </Pressable>
-      <Text style={styles.handle} numberOfLines={1}>{title}</Text>
-      {onMore ? (
-        <Pressable onPress={onMore} hitSlop={8} style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]}
-                   accessibilityRole="button" accessibilityLabel={t('a11y.more')}>
-          <Ionicons name="ellipsis-horizontal" size={22} color={colors.text} />
-        </Pressable>
-      ) : <View style={styles.iconBtn} />}
-    </View>
-  );
+/** Üst çubuk — geri · ad · ⋯ */
+function Ust({ onBack, title, onMore, t }) {
+  return <NavBar title={title} onBack={onBack}
+    right={onMore ? <IconButton icon="more" label={t('a11y.more')} onPress={onMore} /> : undefined} />;
 }
 
 const makeStyles = (colors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  topBar: {
-    height: TOUCH_MIN, flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: spacing.s4,
-  },
-  handle: { flex: 1, fontSize: type.body, fontWeight: '600', color: colors.text, textAlign: 'center' },
-  iconBtn: { width: TOUCH_MIN, height: TOUCH_MIN, alignItems: 'center', justifyContent: 'center' },
-
   // Sabitlenen şerit: altından içerik geçtiği için zemin OPAK olmak zorunda.
   seritSarmal: { backgroundColor: colors.bg },
 
   gridRow: {
     flexDirection: 'row', gap: GRID_GAP,
-    paddingHorizontal: spacing.s20, marginBottom: GRID_GAP,
+    paddingHorizontal: GRID_PAD, marginBottom: GRID_GAP,
   },
 });

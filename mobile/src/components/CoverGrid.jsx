@@ -1,132 +1,47 @@
-import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
-
-import { radius, spacing, type, PRESSED_CARD, motion } from '../theme';
-import { useStyles } from '../context/ThemeContext';
+import { spacing } from '../theme';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Profil kapak ızgarası — koleksiyon ve istek listesi sekmelerinin ortak hücresi.
+// Profil kapak ızgarasının ÖLÇÜSÜ — koleksiyon ve istek listesi sekmeleri.
+// Hücrenin kendisi 2.0 `GameCardSmall` (ui/GameCards); burada yalnız sütun
+// sayısı ve hücre genişliği hesaplanıyor.
 //
-// ÜÇ SÜTUN, 3:4 KAPAK. Instagram karesi değil: bu uygulamanın bütün kapakları
-// 3:4 (jeton: coverRatio) ve kare kırpma oyun kapaklarının üstünü/altını
-// keserdi — logo genelde orada duruyor.
+// 2.0 (COMPONENTS §4): "GameCardSmall üç sütunda 16 boşlukla dizilir."
+// 390 pt'de (390 − 2×20 kenar − 2×16 boşluk) / 3 = 106 — kitin game_s
+// genişliğinin kendisi. Eski hücre 114 pt, 4 pt boşluk ve kapak üstünde
+// perdeli addı; 2.0'da ad kapağın ALTINDA.
 //
-// GENİŞLİK PENCEREDEN HESAPLANIYOR, yazılmıyor. Maket 390pt'de 114 diyor;
-// aynı sayı burada (390 − 2×20 kenar − 2×4 boşluk) / 3 olarak çıkıyor. Sabit
-// yazılsaydı dar cihazda ızgara taşardı — bu depoda TAM BU HATA bir kez
-// oldu: profil ızgarası kenar payı ayrı bir sabite bağlıydı ve gövde dolgusu
-// 16'dan 20'ye çekilince ızgara 8pt taşmıştı.
+// GENİŞLİK PENCEREDEN HESAPLANIYOR, yazılmıyor. Sabit yazılsaydı dar cihazda
+// ızgara taşardı — bu depoda TAM BU HATA bir kez oldu: profil ızgarası kenar
+// payı ayrı bir sabite bağlıydı ve gövde dolgusu 16'dan 20'ye çekilince ızgara
+// 8pt taşmıştı.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const GRID_GAP = spacing.s4;
+export const GRID_GAP = spacing.s16;
 export const GRID_PAD = spacing.s20;
 
-// Maketin 390 pt'de verdiği hücre genişliği. IZGARANIN ÖLÇÜ BİRİMİ BU:
-// geniş ekranda sütun sayısı artıyor, hücre boyu sabit kalıyor.
-const HEDEF_HUCRE = 114;
+// Kitin 390 pt'de verdiği hücre genişliği (game_s). IZGARANIN ÖLÇÜ BİRİMİ BU:
+// geniş ekranda sütun sayısı artıyor, hücre boyu sabite yakın kalıyor.
+const HEDEF_HUCRE = 106;
 
 /**
  * Sütun sayısı — PENCEREDEN TÜRÜYOR, sabit değil.
  *
- * Sabit 3 iken iPad'de (820 pt) her hücre 264 pt oluyordu: aynı sayıda kapak,
+ * Sabit 3 iken iPad'de (820 pt) her hücre ~250 pt oluyordu: aynı sayıda kapak,
  * iki buçuk katı büyüklükte. Izgaranın işi çok kapağı bir arada göstermek;
  * geniş ekranda kazanılan yer HÜCREYE değil SÜTUNA gitmeli.
  *
- * Alt sınır 3: maketin sayısı ve dar telefonda (320 pt) hesap zaten 3 veriyor.
- * Ölçüm: 390 → 3 (hücre 114) · 663 → 5 (121) · 820 → 6 (127).
+ * Alt sınır 3: kitin sayısı. 375 pt'de hesap 2 verirdi; 3 sütunda hücre
+ * 101 pt oluyor, 2 sütunda 157 — dar pencerede büyümek yerine hafif küçülmek
+ * kitin yoğunluğunu koruyor.
+ * Ölçüm: 375 → 3 (101) · 390 → 3 (106) · 411 → 3 (113) · 820 → 6 (117).
  */
 export function gridCols(width) {
   const n = Math.floor((width - GRID_PAD * 2 + GRID_GAP) / (HEDEF_HUCRE + GRID_GAP));
   return Math.max(3, n);
 }
 
-/** Tek hücrenin genişliği (pt). Yükseklik 3:4 oranından türüyor. */
+/** Tek hücrenin genişliği (pt). Yükseklik kitin 106×142 oranından türüyor. */
 export function coverWidth(windowWidth, cols = gridCols(windowWidth)) {
   const inner = windowWidth - GRID_PAD * 2;
   return (inner - GRID_GAP * (cols - 1)) / cols;
 }
-
-/** Ad yoksa da bir şey çizilmeli: baş harf, boş kutudan iyidir. */
-function initial(name) {
-  const s = String(name || '').trim();
-  return s ? s[0].toUpperCase() : '?';
-}
-
-/**
- * @param item  `{ id, appid, name, image }`
- * @param width coverWidth() sonucu — liste hesaplayıp veriyor, hücre değil
- * @param badge sağ üst rozet metni (indirim) — isteğe bağlı
- */
-export default function CoverCell({ item, width, badge, onPress }) {
-  const styles = useStyles(makeStyles);
-  const box = { width, height: Math.round((width * 4) / 3) };
-
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [styles.cell, box, pressed && PRESSED_CARD]}
-      accessibilityRole="button"
-      accessibilityLabel={item?.name || ''}
-    >
-      {/* Baş harf KAPAĞIN ALTINDA duruyor: görsel yüklenene kadar (ya da hiç
-          yüklenmezse) hücre boş bir dikdörtgen olmuyor. Kapak gelince üstünü
-          örtüyor — ayrı bir "yükleniyor" durumu gerekmiyor. */}
-      <Text style={styles.initial}>{initial(item?.name)}</Text>
-      {item?.image ? (
-        <Image
-          source={item.image}
-          style={StyleSheet.absoluteFill}
-          contentFit="cover"
-          transition={motion.image}
-          cachePolicy="memory-disk"
-        />
-      ) : null}
-
-      {/* Ad HER ZAMAN görünür: kapak görselleri birbirine benziyor ve
-          ızgarada 9 kapak yan yanayken ad tek ayırt edici bilgi. Okunabilirlik
-          için altta koyu bir perde var.
-
-          PERDE GRADYAN, DÜZ DOLGU DEĞİL. Emülatörde görüldü: %55'ten başlayan
-          düz dolgu kapağın ortasında GÖRÜNÜR BİR KENAR bırakıyordu — kapak
-          ikiye bölünmüş gibi duruyordu. Gradyan aynı okunabilirliği kenar
-          çizmeden veriyor. */}
-      <LinearGradient
-        // tema-bagimsiz: perde kapak GÖRSELİNİN üstünde; görsel iki temada da aynı
-        colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.78)']}
-        style={styles.scrim}
-        pointerEvents="none"
-      />
-      <Text style={styles.name} numberOfLines={2}>{item?.name}</Text>
-
-      {badge ? (
-        <View style={styles.badge}>
-          <Text style={styles.badgeText} numberOfLines={1}>{badge}</Text>
-        </View>
-      ) : null}
-    </Pressable>
-  );
-}
-
-const makeStyles = (colors) => StyleSheet.create({
-  cell: {
-    borderRadius: radius.md, overflow: 'hidden', justifyContent: 'flex-end',
-    padding: spacing.s8, backgroundColor: colors.surfaceTile,
-  },
-  initial: {
-    position: 'absolute', top: spacing.s8, left: spacing.s8,
-    fontSize: type.title3, fontWeight: '700', color: colors.text3,
-  },
-  // Gradyan %45'ten başlıyor: adın iki satırı ve altındaki dolgu bu aralıkta.
-  scrim: { ...StyleSheet.absoluteFillObject, top: '45%' },
-  // tema-bagimsiz: perdenin üstünde duruyor (yukarıdaki gerekçe).
-  name: { fontSize: type.caption2, fontWeight: '600', color: '#fff', lineHeight: 13 },
-  badge: {
-    position: 'absolute', top: spacing.s8, right: spacing.s8,
-    height: 20, paddingHorizontal: spacing.s8, borderRadius: radius.pill,
-    alignItems: 'center', justifyContent: 'center',
-    // Metin taşıyan dolgu → accentFillStrong (bkz. check-accent.mjs).
-    backgroundColor: colors.accentFillStrong,
-  },
-  badgeText: { fontSize: type.caption2, fontWeight: '600', color: colors.onAccent },
-});

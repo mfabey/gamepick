@@ -1,0 +1,5 @@
+{
+  "ios": {
+    "NSLocationWhenInUseUsageDescription": "Gamerisen uses your location only to add your city's name to a game card you share. Your location never leaves your device."
+  }
+}

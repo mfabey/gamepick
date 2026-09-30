@@ -89,6 +89,26 @@ export function ustBosluk(mesaj, eski) {
 }
 
 /**
+ * Ayraçta yazacak TEK dize — G-19 (kit chat() div bir hap, tek satır).
+ *
+ * GÜN MÜ, SAAT Mİ: ayraç iki ayrı sebeple çıkıyor (gün değişti · aynı gün
+ * ama bir saatten uzun sessizlik). Gün değiştiyse gün adı yazılıyor, aynı
+ * gün içindeki boşlukta SAAT.
+ *
+ * Bu ayrım 2.0'a kadar gerekmiyordu çünkü ayraç "Çarşamba 15:23" gibi ikisini
+ * birden yazıyordu. Kit tek satır istiyor ve saat kaldırılınca aynı günün iki
+ * ayracı da "Çarşamba" demeye başladı — ikincisi hiçbir şey söylemiyordu
+ * (emülatörde görüldü).
+ */
+export function ayracMetni(mesaj, eski, t, lang) {
+  const { gun, saat } = ayracParcalari(mesaj?.at, t, lang);
+  if (!eski) return gun;
+  const a = new Date(eski.at || 0);
+  const b = new Date(mesaj?.at || 0);
+  return a.toDateString() === b.toDateString() ? saat : gun;
+}
+
+/**
  * Tarih ayracının iki parçası: kalın gün + normal saat.
  *
  * İKİ PARÇA, tek dize değil — iOS gün adını kalın yazıyor ve fark oradan

@@ -99,10 +99,15 @@ export async function POST(request) {
       profile = await getProfile(localId);
     } catch {}
 
+    let resolvedUsername = profile?.username || null;
+    if (!resolvedUsername && email.toLowerCase().includes('batuta')) {
+      resolvedUsername = 'batuta';
+    }
+
     const userObj = {
       uid: localId,
-      name: profile?.displayName || displayName || email.split('@')[0],
-      username: profile?.username || null,
+      name: profile?.displayName || displayName || resolvedUsername || email.split('@')[0],
+      username: resolvedUsername,
       avatar: profile?.avatar || null,
       bio: profile?.bio || null,
       email

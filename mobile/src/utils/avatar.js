@@ -27,6 +27,15 @@ const PRESETS = {
   p12: { bg: '#1D4ED8', icon: 'planet',              iconColor: '#DBEAFE' },  // okyanus, gezegen
 };
 
+// 2.0 ikon karşılıkları (27 Eyl). Kayıtlı avatar DEĞİŞMİYOR ('preset:p1' vb.):
+// `icon` alanı eski ad olarak duruyor, çizim bu tablodan 2.0 ikonunu alıyor.
+// Tabloda olmayan bir ad gelirse (eski sürümden) Avatar 'pad'e düşüyor.
+export const PRESET_IKON = {
+  'game-controller': 'pad', rocket: 'rocket', flash: 'zap', flame: 'flame',
+  diamond: 'diamond', 'shield-checkmark': 'shield', star: 'star', moon: 'moon',
+  pulse: 'pulse', trophy: 'trophy', skull: 'skull', planet: 'planet',
+};
+
 /** Tüm ön ayar kimlikleri — seçici ızgarası için. */
 export const AVATAR_PRESET_IDS = Object.keys(PRESETS);
 

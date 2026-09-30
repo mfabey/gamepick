@@ -1,0 +1,323 @@
+{
+  "title": "Gamerisen — Mobil UI",
+  "boards": {
+    "G-01-Splash.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "01 Açılış",
+      "w": 390,
+      "x": 0,
+      "y": 3110
+    },
+    "G-02-Onboarding.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "02 Tanıtım",
+      "w": 390,
+      "x": 470,
+      "y": 3110
+    },
+    "G-02b-Interests.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "02b İlgi Alanları",
+      "w": 390,
+      "x": 940,
+      "y": 3110
+    },
+    "G-03-Login.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "03 Giriş",
+      "w": 390,
+      "x": 1410,
+      "y": 3110
+    },
+    "G-04-Home.dc.html": {
+      "h": 3824,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "04 Ana Sayfa",
+      "w": 390,
+      "x": 1880,
+      "y": 3110
+    },
+    "G-05-Search.dc.html": {
+      "h": 1072,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "05 Arama",
+      "w": 390,
+      "x": 2350,
+      "y": 3110
+    },
+    "G-06-Results.dc.html": {
+      "h": 1033,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "06 Arama Sonuçları",
+      "w": 390,
+      "x": 2820,
+      "y": 3110
+    },
+    "G-06b-Filters.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "06b Keşif Filtreleri",
+      "w": 390,
+      "x": 3290,
+      "y": 3110
+    },
+    "G-07-GameDetail.dc.html": {
+      "h": 3869,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "07 Oyun Detayı",
+      "w": 390,
+      "x": 0,
+      "y": 7354
+    },
+    "G-08-Prices.dc.html": {
+      "h": 1726,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "08 Fiyat Karşılaştırma",
+      "w": 390,
+      "x": 470,
+      "y": 7354
+    },
+    "G-09-Wishlist.dc.html": {
+      "h": 950,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "09 İstek Listesi",
+      "w": 390,
+      "x": 940,
+      "y": 7354
+    },
+    "G-10-Community.dc.html": {
+      "h": 1969,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "10 Topluluk",
+      "w": 390,
+      "x": 1410,
+      "y": 7354
+    },
+    "G-11-GameCommunity.dc.html": {
+      "h": 1635,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "11 Oyun Topluluğu",
+      "w": 390,
+      "x": 1880,
+      "y": 7354
+    },
+    "G-12-CreatePost.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "12 Gönderi Oluştur",
+      "w": 390,
+      "x": 2350,
+      "y": 7354
+    },
+    "G-13-PostDetail.dc.html": {
+      "h": 1225,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "13 Gönderi Detayı",
+      "w": 390,
+      "x": 2820,
+      "y": 7354
+    },
+    "G-14-Videos.dc.html": {
+      "h": 2099,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "14 Videolar",
+      "w": 390,
+      "x": 0,
+      "y": 11643
+    },
+    "G-15-VideoPlayer.dc.html": {
+      "h": 1231,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "15 Video Oynatıcı",
+      "w": 390,
+      "x": 470,
+      "y": 11643
+    },
+    "G-16-News.dc.html": {
+      "h": 1585,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "16 Oyun Haberleri",
+      "w": 390,
+      "x": 940,
+      "y": 11643
+    },
+    "G-17-NewsDetail.dc.html": {
+      "h": 2150,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "17 Haber Detayı",
+      "w": 390,
+      "x": 1410,
+      "y": 11643
+    },
+    "G-18-Messages.dc.html": {
+      "h": 949,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "18 Mesajlar",
+      "w": 390,
+      "x": 1880,
+      "y": 11643
+    },
+    "G-19-Chat.dc.html": {
+      "h": 1412,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "19 Sohbet",
+      "w": 390,
+      "x": 2350,
+      "y": 11643
+    },
+    "G-20-Notifications.dc.html": {
+      "h": 1048,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "20 Bildirimler",
+      "w": 390,
+      "x": 2820,
+      "y": 11643
+    },
+    "G-21-Profile.dc.html": {
+      "h": 1735,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "21 Profil",
+      "w": 390,
+      "x": 3290,
+      "y": 11643
+    },
+    "G-22-EditProfile.dc.html": {
+      "h": 1414,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "22 Profili Düzenle",
+      "w": 390,
+      "x": 3760,
+      "y": 11643
+    },
+    "G-23-Settings.dc.html": {
+      "h": 1676,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "23 Ayarlar",
+      "w": 390,
+      "x": 4230,
+      "y": 11643
+    },
+    "G-DS-1-Foundations.dc.html": {
+      "h": 2556,
+      "page": "v2",
+      "title": "DS 1 · Temeller",
+      "w": 1400,
+      "x": 0,
+      "y": 0
+    },
+    "G-DS-2-Controls.dc.html": {
+      "h": 1682,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "DS 2 · Kontroller",
+      "w": 1400,
+      "x": 1480,
+      "y": 0
+    },
+    "G-DS-3-Cards.dc.html": {
+      "h": 2038,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "DS 3 · İçerik Kartları",
+      "w": 1400,
+      "x": 2960,
+      "y": 0
+    },
+    "G-DS-4-States.dc.html": {
+      "h": 2362,
+      "page": "v2",
+      "title": "DS 4 · Durumlar ve Katmanlar",
+      "w": 1400,
+      "x": 4440,
+      "y": 0
+    },
+    "G-DS-5-Motion.dc.html": {
+      "h": 1244,
+      "is_interactive": true,
+      "page": "v2",
+      "title": "DS 5 · Mikro Etkileşimler",
+      "w": 1400,
+      "x": 5920,
+      "y": 0
+    },
+    "G-DS-6-AppIcon.dc.html": {
+      "h": 2112,
+      "page": "v2",
+      "title": "DS 6 · Uygulama Simgesi",
+      "w": 1400,
+      "x": 7400,
+      "y": 0
+    },
+    "G-DS-7-TabBar.dc.html": {
+      "h": 2063,
+      "page": "v2",
+      "title": "DS 7 · Sekme Çubuğu",
+      "w": 1400,
+      "x": 8880,
+      "y": 0
+    }
+  },
+  "order": [
+    "G-DS-1-Foundations.dc.html",
+    "G-DS-2-Controls.dc.html",
+    "G-DS-3-Cards.dc.html",
+    "G-DS-4-States.dc.html",
+    "G-DS-5-Motion.dc.html",
+    "G-DS-6-AppIcon.dc.html",
+    "G-DS-7-TabBar.dc.html",
+    "G-01-Splash.dc.html",
+    "G-02-Onboarding.dc.html",
+    "G-02b-Interests.dc.html",
+    "G-03-Login.dc.html",
+    "G-04-Home.dc.html",
+    "G-05-Search.dc.html",
+    "G-06-Results.dc.html",
+    "G-06b-Filters.dc.html",
+    "G-07-GameDetail.dc.html",
+    "G-08-Prices.dc.html",
+    "G-09-Wishlist.dc.html",
+    "G-10-Community.dc.html",
+    "G-11-GameCommunity.dc.html",
+    "G-12-CreatePost.dc.html",
+    "G-13-PostDetail.dc.html",
+    "G-14-Videos.dc.html",
+    "G-15-VideoPlayer.dc.html",
+    "G-16-News.dc.html",
+    "G-17-NewsDetail.dc.html",
+    "G-18-Messages.dc.html",
+    "G-19-Chat.dc.html",
+    "G-20-Notifications.dc.html",
+    "G-21-Profile.dc.html",
+    "G-22-EditProfile.dc.html",
+    "G-23-Settings.dc.html"
+  ]
+}

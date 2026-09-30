@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { View, Text, Pressable, StyleSheet, Modal, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import Animated, {
   useSharedValue, useAnimatedStyle, withSpring, withTiming,
@@ -11,8 +10,12 @@ import Animated, {
 import { anchorMenu } from '../services/menuAnchor';
 import { REACTIONS } from '../services/reactions';
 import { useReducedMotion } from '../hooks/useReducedMotion';
-import { radius, spacing, type, PRESSED } from '../theme';
-import { useStyles, useTheme } from '../context/ThemeContext';
+import { PRESSED } from '../theme';
+import { useStyles } from '../context/ThemeContext';
+import { Icon } from './Icon';
+import { Txt } from './ui/Primitives';
+import { useDesignTheme } from '../theme/useDesignTheme';
+import { radius, shadow, space } from '../theme/tokens';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Mesaj bağlam menüsü — uzun basınca çıkan eylem listesi.
@@ -48,7 +51,7 @@ const PAD_V = 6;
 
 export default function MessageMenu({ visible, onClose, actions = [], anchor, mine, onReact, myReaction }) {
   const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
+  const { colors } = useDesignTheme();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const reducedMotion = useReducedMotion();
@@ -103,14 +106,17 @@ export default function MessageMenu({ visible, onClose, actions = [], anchor, mi
 
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
-      <Animated.View style={[StyleSheet.absoluteFill, styles.backdrop, backdropStyle]}>
+      <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: colors.scrim }, backdropStyle]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="" />
       </Animated.View>
 
       <Animated.View
-        style={[styles.menu, { left: pos.x, top: pos.y, width: MENU_W }, menuStyle]}
+        style={[styles.menu, { left: pos.x, top: pos.y, width: MENU_W, boxShadow: shadow.popover }, menuStyle]}
         accessibilityViewIsModal
       >
+        {/* 2.0 popover (27 Eyl): gölge dış katmanda, kırpma iç katmanda —
+            aynı katmanda overflow:hidden iOS'ta gölgeyi kesiyordu. */}
+        <View style={[styles.menuIc, { backgroundColor: colors.surface1 }]}>
         {/* ── Hızlı tepki satırı ──
             EN ÜSTTE ve yatay: bir eylem listesi değil, tek dokunuşluk bir
             seçim. Listeye altı satır olarak eklenseydi menü iki katına çıkar
@@ -125,7 +131,7 @@ export default function MessageMenu({ visible, onClose, actions = [], anchor, mi
                 key={e}
                 style={({ pressed }) => [
                   styles.reactBtn,
-                  myReaction === e && styles.reactBtnOn,
+                  myReaction === e && { backgroundColor: colors.accentTint },
                   pressed && PRESSED,
                 ]}
                 onPress={() => run(() => onReact(e))}
@@ -146,65 +152,41 @@ export default function MessageMenu({ visible, onClose, actions = [], anchor, mi
               styles.row,
               // Ayırıcı satırlar ARASINDA, sonuncudan sonra yok — son çizgi
               // menünün kendi kenarıyla çakışıp kalın görünüyordu.
-              (i > 0 || onReact) && styles.rowDivider,
-              pressed && PRESSED,
+              (i > 0 || onReact) && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line },
+              pressed && { backgroundColor: colors.pillNeutral },
             ]}
             onPress={() => run(a.onPress)}
             accessibilityRole="button"
             accessibilityLabel={a.label}
           >
-            <Text style={[styles.label, a.destructive && styles.labelBad]}>{a.label}</Text>
-            <Ionicons
-              name={a.icon}
-              size={19}
-              color={a.destructive ? colors.danger : colors.text2}
-            />
+            <Txt variant="input" numberOfLines={1} style={[styles.label, { color: a.destructive ? colors.red : colors.text }]}>{a.label}</Txt>
+            {/* 2.0 ikon adı (copy, reply, trash, flag…) — çağıran veriyor. */}
+            <Icon name={a.icon} size={20} color={a.destructive ? colors.red : colors.text2} />
           </Pressable>
         ))}
+        </View>
       </Animated.View>
     </Modal>
   );
 }
 
-const makeStyles = (colors) => StyleSheet.create({
-  // tema-bagimsiz: kipli katman ve golgesi
-  backdrop: { backgroundColor: 'rgba(0,0,0,0.45)' },
-
-  menu: {
-    position: 'absolute',
-    paddingVertical: PAD_V,
-    backgroundColor: colors.bgElevated,
-    borderRadius: radius.lg,
-    borderWidth: 1, borderColor: colors.cardBorder,
-    // Gölge menüyü sohbetten ayırıyor; yarı saydam arka planla birlikte
-    // "üstte duran katman" hissini veren şey bu.
-    // tema-bagimsiz: kipli katman ve golgesi
-    shadowColor: '#000', shadowOpacity: 0.4,
-    shadowRadius: 20, shadowOffset: { width: 0, height: 8 },
-    elevation: 12,
-    overflow: 'hidden',
-  },
-
-  // Metin SOLDA, ikon SAĞDA. iOS bağlam menülerinin düzeni bu; ters çevirmek
-  // sistemin geri kalanıyla uyumsuz görünüyor.
+const makeStyles = () => StyleSheet.create({
+  menu: { position: 'absolute', borderRadius: radius.card },
+  menuIc: { borderRadius: radius.card, overflow: 'hidden', paddingVertical: PAD_V },
   row: {
     height: ROW_H,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space[12],
+    paddingHorizontal: space[16],
   },
-  rowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.cardBorder },
-
   reactRow: {
     height: REACT_ROW_H,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: space[8],
   },
   reactBtn: {
-    width: 32, height: 32, borderRadius: 16,
+    width: 36, height: 36, borderRadius: 18,
     alignItems: 'center', justifyContent: 'center',
   },
-  reactBtnOn: { backgroundColor: colors.accentSoft },
   reactEmoji: { fontSize: 21 },
-  label:    { color: colors.text, fontSize: type.subhead, fontWeight: '600' },
-  labelBad: { color: colors.danger },
+  label: { flex: 1 },
 });

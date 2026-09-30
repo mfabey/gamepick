@@ -24,13 +24,11 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { useRef, useCallback, useEffect, useState, useMemo } from 'react';
 import {
-  View, Text, Pressable, StyleSheet, ActivityIndicator, RefreshControl,
-  useWindowDimensions, Share,
+  View, Text, Pressable, StyleSheet, ActivityIndicator, useWindowDimensions, Share,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 
 import { TopFade, BottomFade } from '../../src/components/EdgeFade';
 import { Skeleton } from '../../src/components/Skeleton';
@@ -54,11 +52,14 @@ import { weeklyReport } from '../../src/services/stats';
 
 import ProfileHeader from '../../src/components/ProfileHeader';
 import ProfileTabs from '../../src/components/ProfileTabs';
-import CoverCell, { coverWidth, gridCols, GRID_GAP } from '../../src/components/CoverGrid';
+import { coverWidth, gridCols, GRID_GAP, GRID_PAD } from '../../src/components/CoverGrid';
+import { GameCardSmall, smallCardHeight } from '../../src/components/ui/GameCards';
 import { useYanBosluk } from '../../src/hooks/useIcerikAlani';
 import ProfileReviewRow from '../../src/components/ProfileReviewRow';
 import PostCard from '../../src/components/PostCard';
+import { Button, IconButton } from '../../src/components/ui/Primitives';
 import EmptyState from '../../src/components/EmptyState';
+import { YenileIsareti, YenileKontrol } from '../../src/components/ui/Yenile';
 
 // Sunucunun sayfa boyutu (`/api/social/profile` PAGE). "Devamı var mı" kararı
 // bu sayıya bakıyor, o yüzden sunucuyla AYNI kalmak zorunda.
@@ -399,30 +400,22 @@ export default function ProfileScreen() {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
         <TopFade top={insets.top} />
+        {/* 2.0 (27 Eyl): ortak EmptyState (DS 4 boş durum) — kişi+ ikonu
+            (hesap gerekli), birincil "Giriş yap" + üçüncül "Hesap oluştur".
+            ÜÇ EŞİT DÜĞME DEĞİL: giriş dolu, kayıt sessiz. HER DÜĞME KENDİ
+            FORMUNA GİDİYOR (mode=signin / mode=signup) — ikisi aynı yere
+            gidince "Hesap oluştur" giriş formuna düşüyordu. */}
         <View style={styles.gate}>
-          <View style={styles.gateIcon}>
-            <Ionicons name="person-outline" size={34} color={colors.text3} />
-          </View>
-          <Text style={styles.gateTitle}>{t('prof.lockTitle')}</Text>
-          <Text style={styles.gateText}>{t('prof.lockDesc')}</Text>
-          {/* ÜÇ EŞİT DÜĞME DEĞİL: giriş dolu, kayıt sessiz, üçüncüsü metin
-              bağlantısı. Hiyerarşi olmadan kullanıcı hangisinin ana yol
-              olduğunu seçemiyordu.
-
-              HER DÜĞME KENDİ FORMUNA GİDİYOR. İkisi de çıplak `/account`a
-              gidiyordu ve ekran sabit giriş modunda açıldığı için "Hesap
-              oluştur" kaydolma formuna DEĞİL giriş formuna düşürüyordu;
-              kullanıcı altta bir bağlantı daha bulup ikinci kez dokunmak
-              zorundaydı. İki ayrı düğme sunup ikisini aynı yere göndermek
-              hiyerarşinin verdiği sözü tutmamaktı. */}
-          <Pressable style={({ pressed }) => [styles.gateBtn, pressed && PRESSED]}
-                     onPress={() => router.push('/account?mode=signin')}>
-            <Text style={styles.gateBtnText}>{t('acc.signIn')}</Text>
-          </Pressable>
-          <Pressable style={({ pressed }) => [styles.gateBtn2, pressed && PRESSED]}
-                     onPress={() => router.push('/account?mode=signup')}>
-            <Text style={styles.gateBtn2Text}>{t('acc.signUp')}</Text>
-          </Pressable>
+          <EmptyState
+            icon="userplus"
+            title={t('prof.lockTitle')}
+            text={t('prof.lockDesc')}
+            actionLabel={t('acc.signIn')}
+            onAction={() => router.push('/account?mode=signin')}
+          >
+            <Button title={t('acc.signUp')} variant="tertiary" height={40}
+              onPress={() => router.push('/account?mode=signup')} style={styles.gateAlt} />
+          </EmptyState>
         </View>
       </SafeAreaView>
     );
@@ -433,7 +426,7 @@ export default function ProfileScreen() {
     if (yok) {
       return (
         <EmptyState
-          icon="at-outline"
+          icon="at"
           title={t('prof.noUsername')}
           text={t('prof.needUsername')}
           actionLabel={t('prof.noUsername')}
@@ -442,10 +435,14 @@ export default function ProfileScreen() {
       );
     }
     const map = {
-      collection: { icon: 'albums-outline', title: t('col.empty'), text: t('col.emptyText'), label: t('nav.games'), go: '/games' },
-      wishlist:   { icon: 'heart-outline', title: t('prof.emptyWishlist'), text: t('prof.emptyWishlistDesc'), label: t('nav.games'), go: '/games' },
-      reviews:    { icon: 'shield-checkmark-outline', title: t('rev.mineEmpty'), text: t('rev.mineEmptyDesc'), label: t('tab.community'), go: '/(tabs)/reviews' },
-      posts:      { icon: 'chatbubble-outline', title: t('prof.emptyPosts'), text: t('prof.emptyPostsDesc'), label: t('tab.community'), go: '/(tabs)/reviews' },
+      // Koleksiyon VAR ama hepsi boşsa "henüz koleksiyon yok" yanlış konuşuyordu
+      // (26 Eyl, SE: bir boş koleksiyonla profil "Koleksiyon yok" diyordu).
+      collection: (collections?.length || 0) > 0
+        ? { icon: 'layers', title: t('prof.colNoGames'), text: t('col.emptyListText'), label: t('nav.games'), go: '/games' }
+        : { icon: 'layers', title: t('col.empty'), text: t('col.emptyText'), label: t('nav.games'), go: '/games' },
+      wishlist:   { icon: 'heart', title: t('prof.emptyWishlist'), text: t('prof.emptyWishlistDesc'), label: t('nav.games'), go: '/games' },
+      reviews:    { icon: 'shield', title: t('rev.mineEmpty'), text: t('rev.mineEmptyDesc'), label: t('tab.community'), go: '/(tabs)/reviews' },
+      posts:      { icon: 'comment', title: t('prof.emptyPosts'), text: t('prof.emptyPostsDesc'), label: t('tab.community'), go: '/(tabs)/reviews' },
     }[tab];
     return (
       <EmptyState
@@ -473,9 +470,11 @@ export default function ProfileScreen() {
       return (
         <View style={styles.gridRow}>
           {item.map((g) => (
-            <CoverCell
+            <GameCardSmall
               key={g.id}
-              item={g}
+              title={g.name}
+              image={g.image || null}
+              recyclingKey={String(g.id)}
               width={kapakEn}
               onPress={() => router.push({
                 pathname: '/game/[id]',
@@ -507,19 +506,25 @@ export default function ProfileScreen() {
       <BottomFade />
 
       {/* ── Üst çubuk ──
-          Kullanıcı adı ve ayarlar HER ZAMAN görünür kalıyor: ekran artık
-          kaydırılacak bir içerik sayfası ve ayarların dibe inmesi kabul
-          edilemezdi. Kimlik bloğu kayıp gidiyor (parallax yok — iOS'ta
-          pahalı ve bu ekranın taşıdığı bilgiye değmiyor). */}
+          Ayarlar HER ZAMAN görünür kalıyor: ekran kaydırılacak bir içerik
+          sayfası ve ayarların dibe inmesi kabul edilemezdi. Kimlik bloğu
+          kayıp gidiyor (parallax yok — iOS'ta pahalı ve bu ekranın taşıdığı
+          bilgiye değmiyor).
+
+          KULLANICI ADI BURADAN KALKTI (G-21): kit onu adın altına koyuyor ve
+          kimlik bloğu artık orada yazıyor — aynı ekranda iki kez "@test"
+          duruyordu (emülatörde görüldü).
+
+          PAYLAŞ DA BURAYA GELDİ: kit ikisini (paylaş · ayarlar) kapağın sağ
+          üstünde yan yana çiziyor. Kapak görselimiz yok, o çift bu çubuğa
+          düştü; avatar satırında yalnız "Profili düzenle" kaldı — kitteki
+          avrow'un birebir karşılığı. */}
       <View style={styles.topBar}>
-        <Text style={styles.handle} numberOfLines={1}>
-          {profil?.username ? `@${profil.username}` : t('nav.profile')}
-        </Text>
-        <Pressable onPress={() => router.push('/settings')} hitSlop={8}
-                   style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]}
-                   accessibilityRole="button" accessibilityLabel={t('prof.settingsTitle')}>
-          <Ionicons name="settings-outline" size={22} color={colors.text} />
-        </Pressable>
+        <View style={styles.flex} />
+        {profil?.username ? (
+          <IconButton icon="share" label={t('stats.share')} onPress={paylas} />
+        ) : null}
+        <IconButton icon="gear" label={t('prof.settingsTitle')} onPress={() => router.push('/settings')} />
       </View>
 
       <FlashList
@@ -532,9 +537,10 @@ export default function ProfileScreen() {
         renderItem={satirCiz}
         contentContainerStyle={{ paddingHorizontal: izgara ? 0 : yan }}
         extraData={tab}
-        estimatedItemSize={izgara ? Math.round((kapakEn * 4) / 3) + GRID_GAP : 140}
+        estimatedItemSize={izgara ? Math.round(smallCardHeight(kapakEn)) + GRID_GAP : 140}
         ListHeaderComponent={(
           <View>
+            <YenileIsareti yenileniyor={tazeleniyor} zemin={colors.bg} />
             {/* İLK AÇILIŞTA YER TUTUCU. Önbellek boşken (hesabın bu cihazdaki
                 ilk profil açılışı) başlık hâlâ yanıtı bekliyor. Önceden bu
                 sürede HİÇBİR ŞEY çiziliyordu; içerik en üstte duruyor, başlık
@@ -551,7 +557,6 @@ export default function ProfileScreen() {
                 else router.push('/library');
               }}
               onEdit={() => router.push('/profile-edit')}
-              onShare={profil?.username ? paylas : undefined}
               onConnect={() => router.push('/settings')}
               onWeek={() => router.push('/stats')}
             />
@@ -560,7 +565,7 @@ export default function ProfileScreen() {
         ListFooterComponent={(
           <View style={{ height: tabBosluk, alignItems: 'center', paddingTop: spacing.s12 }}>
             {dahaYukleniyor || (yukleniyor && veri.length > 0)
-              ? <ActivityIndicator color={colors.accent} />
+              ? <ActivityIndicator color={colors.text2} />
               : null}
           </View>
         )}
@@ -570,7 +575,7 @@ export default function ProfileScreen() {
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
         refreshControl={(
-          <RefreshControl refreshing={tazeleniyor} onRefresh={onTazele}
+          <YenileKontrol refreshing={tazeleniyor} onRefresh={onTazele}
                           tintColor={colors.text2} />
         )}
       />
@@ -641,42 +646,17 @@ const makeStyles = (colors) => StyleSheet.create({
     height: TOUCH_MIN, flexDirection: 'row', alignItems: 'center',
     paddingLeft: spacing.s20, paddingRight: spacing.s12,
   },
-  handle: { flex: 1, fontSize: type.body, fontWeight: '600', color: colors.text },
-  iconBtn: { width: TOUCH_MIN, height: TOUCH_MIN, alignItems: 'center', justifyContent: 'center' },
+  flex: { flex: 1 },
 
   // Sabitlenen şerit: altından içerik geçtiği için zemin OPAK olmak zorunda.
   seritSarmal: { backgroundColor: colors.bg },
 
   gridRow: {
     flexDirection: 'row', gap: GRID_GAP,
-    paddingHorizontal: spacing.s20, marginBottom: GRID_GAP,
+    paddingHorizontal: GRID_PAD, marginBottom: GRID_GAP,
   },
 
   // ── Oturum yok ──
-  gate: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.s32 },
-  gateIcon: {
-    width: 88, height: 88, borderRadius: 44,
-    alignItems: 'center', justifyContent: 'center',
-    backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder,
-  },
-  gateTitle: {
-    fontSize: type.title3, fontWeight: '700', color: colors.text,
-    marginTop: spacing.s24, textAlign: 'center',
-  },
-  gateText: {
-    fontSize: type.subhead, color: colors.text2, textAlign: 'center',
-    lineHeight: 22, marginTop: spacing.s12, maxWidth: 300,
-  },
-  gateBtn: {
-    height: TOUCH_MIN, alignSelf: 'stretch', borderRadius: radius.md,
-    alignItems: 'center', justifyContent: 'center', marginTop: spacing.s24,
-    backgroundColor: colors.accentFillStrong,
-  },
-  gateBtnText: { fontSize: type.subhead, fontWeight: '600', color: colors.onAccent },
-  gateBtn2: {
-    height: TOUCH_MIN, alignSelf: 'stretch', borderRadius: radius.md,
-    alignItems: 'center', justifyContent: 'center', marginTop: spacing.s8,
-    backgroundColor: colors.bgInput,
-  },
-  gateBtn2Text: { fontSize: type.subhead, fontWeight: '600', color: colors.text },
+  gate: { flex: 1, justifyContent: 'center' },
+  gateAlt: { alignSelf: 'center', width: 260, marginTop: spacing.s4 },
 });

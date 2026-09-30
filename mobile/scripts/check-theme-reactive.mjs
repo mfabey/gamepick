@@ -28,7 +28,7 @@ for (const alt of ['app', 'src']) {
       if (e.name === 'node_modules' || e.name.startsWith('.')) continue;
       const p = path.join(d, e.name);
       if (e.isDirectory()) tara(p);
-      else if (p.endsWith('.jsx')) dosyalar.push(p);
+      else if (/\.[jt]sx$/.test(p)) dosyalar.push(p);
     }
   })(path.join(KOK, alt));
 }

@@ -1,4 +1,4 @@
-import { API_BASE } from './client';
+import { apiGet } from './client';
 
 /**
  * Dikey video akışı — Steam HLS fragmanları.
@@ -10,6 +10,21 @@ import { API_BASE } from './client';
  * çıkma eğiliminde ama sıra deterministik değil.
  */
 export function fetchVideoFeed(page = 1, lang = 'tr', seed = '') {
-  const q = `page=${page}&lang=${lang}${seed ? `&seed=${encodeURIComponent(seed)}` : ''}`;
-  return fetch(`${API_BASE}/api/video-feed?${q}`).then((r) => r.json());
+  return apiGet('/api/video-feed', { page, lang, seed });
+}
+
+/**
+ * Tek video — DERİN BAĞLANTI İÇİN.
+ *
+ * `?id=` DESTEĞİ HER SUNUCUDA YOK: uç, id'yi tanımayan bir sürümde
+ * parametreyi yok sayıp akış sayfasını döndürüyor ve yanıtta `item`
+ * bulunmuyor. O durumda `undefined` dönmek ekranı SONSUZA DEK
+ * "yükleniyor"da bırakıyordu — `useQuery` veriyi `undefined` olduğu sürece
+ * yüklenmiş saymıyor (cihazda görüldü; haber detayında da aynı hata vardı,
+ * bkz. api/news.js).
+ *
+ * Karşılık `null`: "istek bitti, kayıt yok".
+ */
+export function fetchVideo(id, lang = 'tr') {
+  return apiGet('/api/video-feed', { id, lang }).then(data => data?.item ?? null);
 }

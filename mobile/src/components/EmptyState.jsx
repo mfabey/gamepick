@@ -5,37 +5,40 @@
 // kullanıcıyı bir sonraki adıma yönlendirmeli. Bu yüzden eylem düğmesi
 // birinci sınıf bir seçenek.
 //
-// ── ÖLÇÜLER TAHMİN DEĞİL, PLATFORMDAN ÖLÇÜLDÜ ──
-// Handoff 56 / 17-650 / 13-1.5 diyor; bizde 84 / 20-800 / 15 vardı. Hangisi
-// doğru diye tartışmak yerine kaynağa bakıldı: iOS'un kendi boş durumu
-// (UIContentUnavailableConfiguration — Dosyalar > Son Kullanılanlar)
-// simülatörde açılıp PNG piksel düzeyinde ölçüldü. Instagram ve X dâhil
-// bütün iOS uygulamalarının izlediği kalıp bu.
+// ── ÖLÇÜLER: G-DS-4 "Boş durum" (kit ds.py empty()) ──
+//   kutu     84 × 84, köşe 26, zemin surface1; ikon 36 `text2`, çizgi 1.8
+//   başlık   20/26 700 (title2), kutudan 20 aşağıda
+//   açıklama 15/22 (body) `text2`, başlıktan 8 aşağıda
+//   eylem    260 genişlikte 48 pt birincil düğme, açıklamadan 22 aşağıda
+//   yanlar   30
 //
-//   simge            48 pt (çıplak sembol, kap yok)
-//   başlık kapak     16.3 pt → ~22 pt bold   (.title2)
-//   açıklama kapak   10.7 pt → ~15 pt        (.subheadline)
-//   simge → başlık   23.3 pt
-//   başlık → açıklama 11.3 pt
+// Önceki sürüm iOS'un kendi boş durumunu (UIContentUnavailableConfiguration)
+// piksel ölçüp 56'lık kutu / 22 pt başlık kullanıyordu. 2.0 tasarım sistemi
+// bu bileşeni ayrıca tarif ediyor ve doğruluk sırasında kaynak kazanır. O
+// ölçümün asıl vardığı yer — açıklamanın 13'e İNDİRİLMEMESİ, 15 kalması —
+// DS 4 ile zaten aynı.
 //
-// SONUÇ: açıklama 13'e İNDİRİLMEDİ. Platformun kendisi 15 kullanıyor ve boş
-// ekranda o cümle ekrandaki TEK yönlendirme — küçültülecek en son yer orası.
-// Başlık ise 20'den 22'ye ÇIKTI; ölçüm 22'yi gösteriyor ve ölçeğimizde zaten
-// title3 olarak duruyordu.
+// Eylem artık 2.0 `Button` primary (nötr): eskiden kırmızı dolguydu; 2.0'da
+// kırmızı CTA kararı yalnız G-03'ün.
 //
-// Simge kabı KALDI ama 84'ten handoff'un 56'sına indi. Apple simgeyi çıplak
-// koyuyor; bizde kap, "çıplak simge ekranda kaybolmuş gibi duruyordu" diye
-// bilerek eklenmişti ve Instagram da kap kullanıyor. 56'lık kap + 28'lik
-// sembol, Apple'ın 48'lik çıplak sembolüyle aynı görsel ağırlıkta.
+// `icon` ve `actionIcon` 2.0 ikon adı (Icon.tsx), Ionicons değil.
+//
+// `compact`: listenin İÇİNDE (ListEmptyComponent) — tam ekran boyu başlığın
+// altına sıkışırdı. DS'de ayrı ölçüsü yok; kutu 64 / köşe 20 / ikon 28,
+// başlık headline, eylem 44.
 // ─────────────────────────────────────────────────────────────────────────────
-import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, StyleSheet } from 'react-native';
 
-import { radius, spacing, type, PRESSED, ICERIK_MAX } from '../theme';
-import { useStyles, useTheme } from '../context/ThemeContext';
+import { Icon } from './Icon';
+import { Button, Txt } from './ui/Primitives';
+import { ICERIK_MAX } from '../theme';
+import { component as K, space } from '../theme/tokens';
+import { useDesignTheme } from '../theme/useDesignTheme';
+
+const E = K.emptyState;
 
 export default function EmptyState({
-  icon = 'sparkles-outline',
+  icon = 'spark',
   title,
   text,
   actionLabel,
@@ -44,27 +47,25 @@ export default function EmptyState({
   compact = false,
   children,
 }) {
-  const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
+  const { colors } = useDesignTheme();
 
   return (
     <View style={[styles.root, compact && styles.compact]}>
-      <View style={[styles.iconWrap, compact && styles.iconWrapCompact]}>
-        <Ionicons name={icon} size={compact ? 24 : 28} color={colors.text3} />
+      <View style={[styles.iconWrap, compact && styles.iconWrapCompact, { backgroundColor: colors.surface1 }]}>
+        <Icon name={icon} size={compact ? E.iconCompact : E.icon} color={colors.text2} strokeWidth={E.iconStroke} />
       </View>
 
-      {title ? <Text style={styles.title}>{title}</Text> : null}
-      {text ? <Text style={styles.text}>{text}</Text> : null}
+      {title ? <Txt variant={compact ? 'headline' : 'title2'} style={styles.title}>{title}</Txt> : null}
+      {text ? <Txt variant="body" style={[styles.text, { color: colors.text2 }]}>{text}</Txt> : null}
 
       {actionLabel && onAction ? (
-        <Pressable
-          style={({ pressed }) => [styles.action, pressed && PRESSED]}
+        <Button
+          title={actionLabel}
+          icon={actionIcon}
+          height={compact ? 44 : 48}
           onPress={onAction}
-          accessibilityRole="button"
-        >
-          {actionIcon ? <Ionicons name={actionIcon} size={17} color="#fff" /> : null}
-          <Text style={styles.actionText}>{actionLabel}</Text>
-        </Pressable>
+          style={styles.action}
+        />
       ) : null}
 
       {children}
@@ -72,13 +73,13 @@ export default function EmptyState({
   );
 }
 
-const makeStyles = (colors) => StyleSheet.create({
+const styles = StyleSheet.create({
   root: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing.xl,
-    paddingVertical: 40,
+    paddingHorizontal: E.paddingH,
+    paddingVertical: space[32],
     // GENİŞ EKRANDA BOŞ DURUM DA TAVANA TABİ. iPad'de (820 pt) açıklama
     // metni tek satırda ekranın ucundan ucuna uzuyor ve "boş" ekran, dolu
     // bir ekrandan daha geniş bir satır uzunluğuyla okunuyordu.
@@ -86,49 +87,16 @@ const makeStyles = (colors) => StyleSheet.create({
     maxWidth: ICERIK_MAX,
     alignSelf: 'center',
   },
-  compact: { flex: 0, paddingVertical: 28 },
+  compact: { flex: 0, paddingVertical: space[28] },
 
-  // Handoff'un 56'lık yuvası. Kap boş alana odak noktası veriyor; çıplak
-  // simge denendiğinde ekranda kaybolmuş gibi duruyordu.
   iconWrap: {
-    width: 56, height: 56, borderRadius: 28,
-    backgroundColor: colors.card,
-    borderWidth: 1, borderColor: colors.cardBorder,
+    width: E.box, height: E.box, borderRadius: E.boxRadius,
     alignItems: 'center', justifyContent: 'center',
-    marginBottom: spacing.s24,      // ölçüm: 23.3 pt
   },
-  iconWrapCompact: { width: 48, height: 48, borderRadius: 24, marginBottom: spacing.s16 },
+  iconWrapCompact: { width: E.boxCompact, height: E.boxCompact, borderRadius: E.boxRadiusCompact },
 
-  // Ölçüm: kapak 16.3 pt → 22 pt bold. Ölçekte title3 olarak zaten vardı.
-  title: {
-    color: colors.text,
-    fontSize: type.title3,
-    fontWeight: '700',
-    textAlign: 'center',
-    letterSpacing: -0.3,
-  },
-  // Ölçüm: kapak 10.7 pt → 15 pt. Handoff 13 diyordu; platform 15 kullanıyor
-  // ve bu cümle boş ekrandaki tek yönlendirme.
-  text: {
-    color: colors.text2,
-    fontSize: type.subhead,
-    textAlign: 'center',
-    marginTop: spacing.s12,          // ölçüm: 11.3 pt
-    lineHeight: 21,
-    maxWidth: 280,                   // handoff ölçüsü — satır uzunluğu kısalıyor
-  },
+  title: { textAlign: 'center', marginTop: space[20] },
+  text: { textAlign: 'center', marginTop: space[8] },
 
-  // Handoff: yarıçap 12, dolgu 12/16. minHeight 44 EKLENDİ — 15 pt metinle
-  // 12'lik dikey dolgu 42 pt ediyor ve Apple'ın 44 pt dokunma hedefi altında
-  // kalıyordu.
-  action: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: spacing.s8,
-    minHeight: 44,
-    paddingHorizontal: spacing.s16, paddingVertical: spacing.s12,
-    borderRadius: radius.md, backgroundColor: colors.accentFillStrong,
-    marginTop: spacing.s24,
-  },
-  // tema-bagimsiz: marka dolgusu ustundeki metin (tokens: onBrand)
-  actionText: { color: '#FFFFFF', fontSize: type.subhead, fontWeight: '700' },
+  action: { width: E.actionWidth, maxWidth: '100%', marginTop: E.actionTop },
 });

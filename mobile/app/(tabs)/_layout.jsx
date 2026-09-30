@@ -4,7 +4,7 @@ import { Tabs } from 'expo-router';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { TabBarProvider } from '../../src/context/TabBarContext';
 import { loadPerde, perdeGorulduMu, perdeyiGorulduYaz } from '../../src/services/perde';
-import FloatingTabBar from '../../src/components/FloatingTabBar';
+import AppTabBar from '../../src/components/navigation/AppTabBar';
 import IpucuSeridi from '../../src/components/IpucuSeridi';
 import AcilisPerdesi from '../../src/components/AcilisPerdesi';
 
@@ -66,7 +66,7 @@ export default function TabLayout() {
      <View style={{ flex: 1 }}>
       <Tabs
         screenOptions={{ headerShown: false }}
-        tabBar={(props) => <FloatingTabBar {...props} />}
+        tabBar={(props) => <AppTabBar {...props} />}
       >
         {/* Alt navigasyon, uygulamanın kendini tanıttığı yer. Bu yüzden iki
             sıra buradan taşındı:

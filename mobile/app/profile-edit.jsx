@@ -17,16 +17,19 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { useCallback, useEffect, useState } from 'react';
 import {
-  View, Text, Pressable, StyleSheet, TextInput, ScrollView, Modal,
-  ActivityIndicator, Alert, KeyboardAvoidingView,
+  View, Pressable, StyleSheet, ScrollView,
+  Alert, KeyboardAvoidingView,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon } from '../src/components/Icon';
+import { AltSayfa } from '../src/components/ui/AltSayfa';
+import { useDesignTheme } from '../src/theme/useDesignTheme';
+import { PRESET_IKON } from '../src/utils/avatar';
 import * as Haptics from 'expo-haptics';
 
 import Avatar from '../src/components/Avatar';
-import { radius, spacing, type, avatar as avatarSize, PRESSED, NUMERIC, TOUCH_MIN, SHEET_LAYOUT } from '../src/theme';
+import { spacing } from '../src/theme';
 import { useYanBosluk } from '../src/hooks/useIcerikAlani';
 import { useStyles, useTheme } from '../src/context/ThemeContext';
 import { useLanguage } from '../src/context/LanguageContext';
@@ -36,7 +39,8 @@ import {
   setAvatar as apiSetAvatar,
 } from '../src/api/social';
 import { updateSessionUser } from '../src/services/session';
-import { chatCapabilities } from '../src/services/realtime';
+import { Button, TextField, Txt } from '../src/components/ui/Primitives';
+import { NavBar, QueryState } from '../src/components/ui/ScreenParts';
 
 // Sunucudaki MAX_BIO ile AYNI SAYI olmak zorunda (app/lib/social-store.js).
 // Ayrışırlarsa kullanıcı ekranda yazabildiği bir metni kaydedemez.
@@ -47,6 +51,7 @@ export default function ProfileEditScreen() {
   const styles = useStyles(makeStyles);
   const yan = useYanBosluk();
   const { colors } = useTheme();
+  const { colors: dc } = useDesignTheme();
   const { t } = useLanguage();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -58,33 +63,25 @@ export default function ProfileEditScreen() {
   const [saving, setSaving] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
 
-  // FOTOĞRAF SEÇENEĞİ SUNUCUYA SORULUYOR. Kullanıcı görsel yüklemesi şu an
-  // kapalı (sunucuda `USER_UPLOADS_ENABLED`); kapalıyken düğmeyi çizip
-  // basınca "şu an kapalı" demek, sohbet kompozitöründe bilerek kaçınılan
-  // şeyin aynısı olurdu — Guideline 2.2 açısından tamamlanmamış uygulama
-  // sinyali.
-  //
-  // BAŞLANGIÇ KAPALI: yanıt gelene kadar düğme göstermek, bir an görünüp
-  // kaybolan düğme demek. `chatCapabilities` hata durumunda da kapalı
-  // dönüyor ve yanıtı önbelleğe alıyor — ek ağ trafiği yok.
-  const [fotoAcik, setFotoAcik] = useState(false);
-  useEffect(() => {
-    chatCapabilities().then((c) => setFotoAcik(!!c.photos)).catch(() => {});
-  }, []);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [loadAttempt, setLoadAttempt] = useState(0);
 
   useEffect(() => {
     let alive = true;
-    getMyProfile()
-      .then((r) => {
-        if (!alive || !r?.profile) return;
-        setProfile(r.profile);
-        setDisplayName(r.profile.displayName || '');
-        setBio(r.profile.bio || '');
-        setAvatarState(r.profile.avatar || null);
-      })
-      .catch(() => {});
+    setLoading(true);
+    setLoadError(false);
+    getMyProfile().then((r) => {
+      if (!alive) return;
+      if (!r?.profile?.username) throw new Error('PROFILE_UNAVAILABLE');
+      setProfile(r.profile);
+      setDisplayName(r.profile.displayName || '');
+      setBio(r.profile.bio || '');
+      setAvatarState(r.profile.avatar || null);
+    }).catch(() => { if (alive) setLoadError(true); })
+      .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
-  }, []);
+  }, [loadAttempt]);
 
   const save = useCallback(async () => {
     if (saving || !profile?.username) return;
@@ -134,23 +131,17 @@ export default function ProfileEditScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      {/* Başlık listenin DIŞINDA: içerik kolonuyla aynı hizaya
-          getiriliyor — başlık tam genişlikte kalsaydı sayfanın adı ile
-          anlattığı şey iki ayrı sütunda dururdu. */}
-      <View style={[styles.head, { marginHorizontal: yan }]}>
-        <Pressable onPress={() => router.back()} hitSlop={10}
-                   style={({ pressed }) => [styles.iconBtn, pressed && PRESSED]}
-                   accessibilityRole="button" accessibilityLabel={t('a11y.back')}>
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </Pressable>
-        <Text style={styles.title}>{t('prof.editProfile')}</Text>
-        <Pressable onPress={save} disabled={saving || !profile} hitSlop={10}
-                   style={({ pressed }) => [styles.saveBtn, pressed && PRESSED]}>
-          {saving
-            ? <ActivityIndicator size="small" color={colors.accentText} />
-            : <Text style={styles.saveText}>{t('prof.save')}</Text>}
-        </Pressable>
+      <View style={{ marginHorizontal: yan }}>
+        <NavBar title={t('prof.editProfile')} border
+          left={<Pressable accessibilityRole="button" disabled={saving} accessibilityState={{ disabled: saving }}
+            onPress={() => router.back()} style={styles.cancel}>
+            <Txt variant="input" style={{ color: colors.text2 }}>{t('common.cancel')}</Txt>
+          </Pressable>}
+          right={<Button title={t('prof.save')} height={34} onPress={save}
+            loading={saving} disabled={loading || loadError || !profile?.username} />} />
       </View>
+      <QueryState loading={loading} error={loadError}
+        retry={loadError ? () => setLoadAttempt(n => n + 1) : undefined} />
 
       {/* ANDROID'DE DE 'padding' — `undefined` DEĞİL. `undefined` iken
           KeyboardAvoidingView Android'de HİÇBİR ŞEY yapmıyor: RN 0.81
@@ -159,45 +150,33 @@ export default function ProfileEditScreen() {
           alan hiç yukarı kaymıyordu (bkz. chat/[uid].jsx aynı not).
           `check:edge` bu kuralı denetliyor ve birleştirme sırasında bir kez
           düşürüldüğü için yakaladı. */}
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
+      {!loading && !loadError && <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
         <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.s40, paddingHorizontal: yan + spacing.s20 }]}
                     keyboardShouldPersistTaps="handled">
           {/* Avatar — dokunuş seçiciyi açıyor. Kalem rozeti değişebilirliği
               ima ediyor; jest artık gizli değil, ekranın işi bu. */}
-          <Pressable style={styles.avatarWrap} onPress={() => setPickerOpen(true)}>
-            <Avatar avatar={avatar} name={displayName || profile?.username} size={avatarSize.xl} style={styles.avatarXl} />
-            <View style={styles.avatarBadge}>
-              <Ionicons name="pencil" size={12} color={colors.onAccent} />
+          <Pressable style={styles.avatarWrap} accessibilityRole="button" accessibilityLabel={t('prof.chooseAvatar')} onPress={() => setPickerOpen(true)}>
+            <Avatar avatar={avatar} name={displayName || profile?.username} size={88} style={styles.avatarXl} />
+            <View style={[styles.avatarBadge, { backgroundColor: dc.primary, borderColor: dc.bg }]}>
+              <Icon name="pen" size={16} color={dc.onPrimary} strokeWidth={2.2} />
             </View>
           </Pressable>
-          <Text style={styles.handle} numberOfLines={1}>
+          <Txt variant="footnote" numberOfLines={1} style={[styles.handle, { color: dc.text3 }]}>
             {profile?.username ? `@${profile.username}` : ''}
-          </Text>
+          </Txt>
 
-          <Text style={styles.label}>{t('prof.displayName')}</Text>
-          <TextInput
-            style={styles.input}
-            value={displayName}
-            onChangeText={(v) => setDisplayName(v.slice(0, MAX_NAME))}
-            placeholder={profile?.username || ''}
-            placeholderTextColor={colors.text3}
-            maxLength={MAX_NAME}
-          />
-
-          <Text style={styles.label}>{t('prof.bio')}</Text>
-          <TextInput
-            style={[styles.input, styles.inputMulti]}
-            value={bio}
-            onChangeText={(v) => setBio(v.slice(0, MAX_BIO))}
-            placeholder={t('prof.bioHint')}
-            placeholderTextColor={colors.text3}
-            multiline
-            maxLength={MAX_BIO}
-          />
-          {/* Sayaç SAĞDA ve sessiz: sınıra yaklaşmak hata değil, bilgi. */}
-          <Text style={[styles.counter, NUMERIC]}>{bio.length}/{MAX_BIO}</Text>
+          <View style={styles.fields}>
+            <TextField label={t('prof.displayName')} value={displayName}
+              onChangeText={setDisplayName} placeholder={profile?.username || ''}
+              maxLength={MAX_NAME} editable={!saving} />
+            <TextField label={t('soc.usernameLabel')} icon="at"
+              value={profile?.username || ''} editable={false} />
+            <TextField label={t('prof.bio')} value={bio} onChangeText={setBio}
+              placeholder={t('prof.bioHint')} multiline counter
+              maxLength={MAX_BIO} editable={!saving} />
+          </View>
         </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAvoidingView>}
 
       <AvatarPicker
         visible={pickerOpen}
@@ -210,134 +189,68 @@ export default function ProfileEditScreen() {
 }
 
 // ─── Avatar seçici ──────────────────────────────────────────────────────────
-// RN Modal kullanılıyor — native kütüphane EKLENMEZ, OTA güvenli.
+// Ortak AltSayfa (RN Modal üstünde) — native kütüphane EKLENMEZ, OTA güvenli.
 // Profil sekmesinden BURAYA TAŞINDI: düzenleme tek ekranda toplandı.
 function AvatarPicker({ visible, current, onSelect, onClose }) {
   const styles = useStyles(makeStyles);
-  const insets = useSafeAreaInsets();
-  const { colors } = useTheme();
+  const { colors } = useDesignTheme();
   const { t } = useLanguage();
+  // 2.0 (27 Eyl): ortak AltSayfa; başlık satırında mevcut avatar. Ön ayar
+  // simgeleri 2.0 ikonlarıyla (PRESET_IKON), kayıtlı kimlikler aynı.
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
-      <Pressable style={styles.pickerOverlay} onPress={onClose}>
-        <Pressable style={[styles.pickerSheet, { paddingBottom: Math.max(insets.bottom, spacing.s20) }]} onPress={(e) => e.stopPropagation()}>
-          <ScrollView style={styles.pickerScroll} bounces={false}>
-          <View style={styles.pickerHandle} />
-          <Text style={styles.pickerTitle}>{t('prof.chooseAvatar')}</Text>
-
-          {/* MEVCUT AVATAR GÖRÜNÜR: seçiciyi açan kullanıcı NEYİ değiştirdiğini
-              görmeliydi; ekranda yalnız seçenekler vardı, başlangıç yoktu. */}
-          <View style={styles.pickerCurrent}>
-            <Avatar avatar={current} name={t('nav.profile')} size={56} />
-            <Text style={styles.pickerCurrentLabel}>{t('prof.currentAvatar')}</Text>
-          </View>
-
-          <View style={styles.pickerGrid}>
-            {AVATAR_PRESET_IDS.map((id) => {
-              const p = getAvatarPreset(id);
-              const active = current === id;
-              return (
-                <Pressable
-                  key={id}
-                  style={({ pressed }) => [styles.pickerItem, active && styles.pickerItemActive, pressed && { opacity: 0.7 }]}
-                  onPress={() => onSelect(id)}
-                >
-                  <View style={[styles.pickerCircle, { backgroundColor: p.bg }]}>
-                    <Ionicons name={p.icon} size={26} color={p.iconColor} />
-                  </View>
-                </Pressable>
-              );
-            })}
-          </View>
-
-          {current ? (
-            <Pressable style={({ pressed }) => [styles.pickerRemove, pressed && { opacity: 0.7 }]}
-                       onPress={() => onSelect(null)}>
-              <Ionicons name="close-circle-outline" size={18} color={colors.text3} />
-              <Text style={styles.pickerRemoveText}>{t('prof.removeAvatar')}</Text>
-            </Pressable>
-          ) : null}
-          </ScrollView>
-        </Pressable>
-      </Pressable>
-    </Modal>
+    <AltSayfa visible={visible} onClose={onClose} title={t('prof.chooseAvatar')} subtitle={t('prof.currentAvatar')}
+      leading={<Avatar avatar={current} name={t('nav.profile')} size={40} />} oran={0.8}>
+      <ScrollView bounces={false} style={styles.pickerScroll} contentContainerStyle={styles.pickerIc}>
+        <View style={styles.pickerGrid}>
+          {AVATAR_PRESET_IDS.map((id) => {
+            const p = getAvatarPreset(id);
+            const active = current === id;
+            return (
+              <Pressable
+                key={id}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: active }}
+                style={({ pressed }) => [styles.pickerItem, { borderColor: active ? colors.text : 'transparent' }, pressed && { opacity: 0.7 }]}
+                onPress={() => onSelect(id)}
+              >
+                <View style={[styles.pickerCircle, { backgroundColor: p.bg }]}>
+                  <Icon name={PRESET_IKON[p.icon] || 'pad'} size={26} color={p.iconColor} strokeWidth={2.2} />
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
+        {current ? (
+          <Button title={t('prof.removeAvatar')} variant="tertiary" icon="x" onPress={() => onSelect(null)} style={styles.pickerRemove} />
+        ) : null}
+      </ScrollView>
+    </AltSayfa>
   );
 }
 
 const makeStyles = (colors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
 
-  head: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: spacing.s12, paddingBottom: spacing.s8,
-  },
-  iconBtn: { width: TOUCH_MIN, height: TOUCH_MIN, alignItems: 'center', justifyContent: 'center' },
-  title: { flex: 1, textAlign: 'center', fontSize: type.body, fontWeight: '600', color: colors.text },
-  saveBtn: { minWidth: TOUCH_MIN, height: TOUCH_MIN, alignItems: 'flex-end', justifyContent: 'center', paddingRight: spacing.s8 },
-  saveText: { fontSize: type.subhead, fontWeight: '600', color: colors.accentText },
-
   body: { padding: spacing.s20 },
 
-  avatarWrap: { alignSelf: 'center' },
+  cancel: { minHeight: 44, justifyContent: 'center' },
+  avatarWrap: { alignSelf: 'flex-start' },
   avatarXl: { backgroundColor: colors.surfaceTile, borderWidth: 1, borderColor: colors.borderHover },
   avatarBadge: {
     position: 'absolute', right: 0, bottom: 0,
-    width: 28, height: 28, borderRadius: 14,
+    width: 32, height: 32, borderRadius: 16,
     alignItems: 'center', justifyContent: 'center',
-    backgroundColor: colors.accentFillStrong,
-    borderWidth: 2, borderColor: colors.bg,
+    borderWidth: 2,
   },
-  handle: {
-    textAlign: 'center', marginTop: spacing.s8,
-    fontSize: type.footnote, fontWeight: '500', color: colors.text3,
-  },
+  handle: { marginTop: spacing.s8 },
 
-  label: {
-    marginTop: spacing.s24, marginBottom: spacing.s8,
-    fontSize: type.footnote, fontWeight: '600', color: colors.text2,
-  },
-  input: {
-    minHeight: TOUCH_MIN, borderRadius: radius.md,
-    paddingHorizontal: spacing.s12, paddingVertical: spacing.s12,
-    backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder,
-    fontSize: type.subhead, color: colors.text,
-  },
-  inputMulti: { minHeight: 96, textAlignVertical: 'top' },
-  counter: {
-    alignSelf: 'flex-end', marginTop: spacing.s8,
-    fontSize: type.caption, fontWeight: '500', color: colors.text3,
-  },
+  fields: { gap: spacing.s16, marginTop: spacing.s20 },
 
-  pickerOverlay: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },
-  pickerSheet: {
-    ...SHEET_LAYOUT, maxHeight: '90%',
-    backgroundColor: colors.bgElevated,
-    borderTopLeftRadius: 22, borderTopRightRadius: 22,
-    paddingHorizontal: spacing.s20, paddingBottom: spacing.s40, paddingTop: spacing.s12,
-    borderWidth: 1, borderColor: colors.cardBorder, borderBottomWidth: 0,
-  },
   pickerScroll: { flexGrow: 0 },
-  pickerHandle: {
-    width: 36, height: 4, borderRadius: 2,
-    backgroundColor: colors.text3, opacity: 0.4,
-    alignSelf: 'center', marginBottom: spacing.s16,
-  },
-  pickerTitle: {
-    fontSize: type.headline, fontWeight: '800', color: colors.text,
-    textAlign: 'center', marginBottom: spacing.s20,
-  },
-  pickerCurrent: { alignItems: 'center', gap: spacing.s8, marginBottom: spacing.s16 },
-  pickerCurrentLabel: { color: colors.text3, fontSize: type.caption },
-
+  pickerIc: { paddingHorizontal: spacing.s20, paddingBottom: spacing.s8 },
   pickerGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: spacing.s12 },
-  pickerItem: { padding: spacing.s4, borderRadius: 32, borderWidth: 2.5, borderColor: 'transparent' },
   // Seçim kenarlığı NÖTR: kırmızı bu sistemde eylem demek, seçim bir durum.
-  pickerItemActive: { borderColor: colors.text },
+  pickerItem: { padding: spacing.s4, borderRadius: 32, borderWidth: 2.5 },
   pickerCircle: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
-
-  pickerRemove: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: spacing.s4, marginTop: spacing.s16, paddingVertical: spacing.s12,
-  },
-  pickerRemoveText: { color: colors.text3, fontSize: type.footnote, fontWeight: '600' },
+  pickerRemove: { alignSelf: 'center', marginTop: spacing.s16 },
 });
