@@ -160,12 +160,28 @@ function SectionHeader({ children, action }) {
 }
 
 /* ─────────────────────────────────────────────
-   Epic Logo
+   Platform Logos
 ───────────────────────────────────────────── */
+function SteamLogo({ size = 24, color = '#fff' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={color} xmlns="http://www.w3.org/2000/svg">
+      <path d="M11.979 0C5.678 0 .511 4.86.022 11.037l6.432 2.658c.545-.371 1.203-.59 1.912-.59.063 0 .125.004.188.006l2.861-4.142V8.91c0-2.495 2.028-4.524 4.524-4.524 2.494 0 4.524 2.031 4.524 4.527s-2.03 4.525-4.524 4.525h-.105l-4.076 2.911c0 .052.004.105.004.159 0 1.875-1.515 3.396-3.39 3.396-1.635 0-3.016-1.173-3.331-2.727L.436 15.27C1.862 20.307 6.486 24 11.979 24c6.627 0 11.999-5.373 11.999-12S18.605 0 11.979 0zM7.54 18.21l-1.473-.61c.262.543.714.999 1.314 1.25 1.297.539 2.793-.076 3.332-1.375.263-.63.264-1.319.005-1.949s-.75-1.121-1.377-1.383c-.624-.26-1.29-.249-1.878-.03l1.523.63c.956.4 1.409 1.5 1.009 2.455-.397.957-1.497 1.41-2.454 1.012H7.54zm11.415-9.303c0-1.662-1.353-3.015-3.015-3.015-1.665 0-3.015 1.353-3.015 3.015 0 1.665 1.35 3.015 3.015 3.015 1.663 0 3.015-1.35 3.015-3.015zm-5.273-.005c0-1.252 1.013-2.266 2.265-2.266 1.249 0 2.266 1.014 2.266 2.266 0 1.251-1.017 2.265-2.266 2.265-1.253 0-2.265-1.014-2.265-2.265z"/>
+    </svg>
+  );
+}
+
+function XboxLogo({ size = 24, color = '#fff' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 512 512" fill={color} xmlns="http://www.w3.org/2000/svg">
+      <path d="M126.8 248.3c39.7-58.6 77.9-92.8 77.9-92.8s-42.1-48.9-92.8-67.4l-3.3-.8A224.13 224.13 0 0077.2 391c0-4.4.6-70.3 49.6-142.7zM480 256a223.71 223.71 0 00-76.6-168.7l-3.2.9c-50.7 18.5-92.9 67.4-92.9 67.4s38.2 34.2 77.9 92.8c49 72.4 49.6 138.3 49.5 142.7A222.8 222.8 0 00480 256zM201.2 80.9c29.3 13.1 54.6 34.6 54.6 34.6s25.5-21.4 54.8-34.6c36.8-16.5 64.9-11.3 72.3-9.5a224.06 224.06 0 00-253.8 0c7.2-1.8 35.2-7.1 72.1 9.5zM358.7 292.9C312.4 236 255.8 199 255.8 199s-56.3 37-102.7 93.9c-39.8 48.9-54.6 84.8-62.6 107.8l-1.3 4.8a224 224 0 00333.6 0l-1.4-4.8c-8-23-22.9-58.9-62.7-107.8z"/>
+    </svg>
+  );
+}
+
 function EpicLogo({ size = 24, color = '#fff' }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill={color} xmlns="http://www.w3.org/2000/svg">
-      <path d="M10.82 17.653c-1.503 0-2.812-1.026-3.08-2.476-.492-2.348 1.488-4.364 3.86-4.116 1.107.13 2.052.793 2.564 1.777l1.96-1.157C15.228 10.02 13.565 9 11.59 9c-3.157 0-5.748 2.454-6.027 5.568-.316 3.518 2.705 6.485 6.273 6.136 2.23-.217 4.15-1.534 5.094-3.522l-1.925-1.092c-.67 1.43-2.186 2.37-3.87 2.37M24 12c0 6.627-5.373 12-12 12S0 18.627 0 12 5.373 0 12 0s12 5.373 12 12m-6.49-1.956h-2.19v6.52h2.19z"/>
+      <path d="M3.537 0C2.165 0 1.66.506 1.66 1.879V18.44a4.262 4.262 0 00.02.433c.031.3.037.59.316.92.027.033.311.245.311.245.153.075.258.13.43.2l8.335 3.491c.433.199.614.276.928.27h.002c.314.006.495-.071.928-.27l8.335-3.492c.172-.07.277-.124.43-.2 0 0 .284-.211.311-.243.28-.33.285-.621.316-.92a4.261 4.261 0 00.02-.434V1.879c0-1.373-.506-1.88-1.878-1.88zm13.366 3.11h.68c1.138 0 1.688.553 1.688 1.696v1.88h-1.374v-1.8c0-.369-.17-.54-.523-.54h-.235c-.367 0-.537.17-.537.539v5.81c0 .369.17.54.537.54h.262c.353 0 .523-.171.523-.54V8.619h1.373v2.143c0 1.144-.562 1.71-1.7 1.71h-.694c-1.138 0-1.7-.566-1.7-1.71V4.82c0-1.144.562-1.709 1.7-1.709zm-12.186.08h3.114v1.274H6.117v2.603h1.648v1.275H6.117v2.774h1.74v1.275h-3.14zm3.816 0h2.198c1.138 0 1.7.564 1.7 1.708v2.445c0 1.144-.562 1.71-1.7 1.71h-.799v3.338h-1.4zm4.53 0h1.4v9.201h-1.4zm-3.13 1.235v3.392h.575c.354 0 .523-.171.523-.54V4.965c0-.368-.17-.54-.523-.54zm-3.74 10.147a1.708 1.708 0 01.591.108 1.745 1.745 0 01.49.299l-.452.546a1.247 1.247 0 00-.308-.195.91.91 0 00-.363-.068.658.658 0 00-.28.06.703.703 0 00-.224.163.783.783 0 00-.151.243.799.799 0 00-.056.299v.008a.852.852 0 00.056.31.7.7 0 00.157.245.736.736 0 00.238.16.774.774 0 00.303.058.79.79 0 00.445-.116v-.339h-.548v-.565H7.37v1.255a2.019 2.019 0 01-.524.307 1.789 1.789 0 01-.683.123 1.642 1.642 0 01-.602-.107 1.46 1.46 0 01-.478-.3 1.371 1.371 0 01-.318-.455 1.438 1.438 0 01-.115-.58v-.008a1.426 1.426 0 01.113-.57 1.449 1.449 0 01.312-.46 1.418 1.418 0 01.474-.309 1.58 1.58 0 01.598-.111 1.708 1.708 0 01.045 0zm11.963.008a2.006 2.006 0 01.612.094 1.61 1.61 0 01.507.277l-.386.546a1.562 1.562 0 00-.39-.205 1.178 1.178 0 00-.388-.07.347.347 0 00-.208.052.154.154 0 00-.07.127v.008a.158.158 0 00.022.084.198.198 0 00.076.066.831.831 0 00.147.06c.062.02.14.04.236.061a3.389 3.389 0 01.43.122 1.292 1.292 0 01.328.17.678.678 0 01.207.24.739.739 0 01.071.337v.008a.865.865 0 01-.081.382.82.82 0 01-.229.285 1.032 1.032 0 01-.353.18 1.606 1.606 0 01-.46.061 2.16 2.16 0 01-.71-.116 1.718 1.718 0 01-.593-.346l.43-.514c.277.223.578.335.9.335a.457.457 0 00.236-.05.157.157 0 00.082-.142v-.008a.15.15 0 00-.02-.077.204.204 0 00-.073-.066.753.753 0 00-.143-.062 2.45 2.45 0 00-.233-.062 5.036 5.036 0 01-.413-.113 1.26 1.26 0 01-.331-.16.72.72 0 01-.222-.243.73.73 0 01-.082-.36v-.008a.863.863 0 01.074-.359.794.794 0 01.214-.283 1.007 1.007 0 01.34-.185 1.423 1.423 0 01.448-.066 2.006 2.006 0 01.025 0zm-9.358.025h.742l1.183 2.81h-.825l-.203-.499H8.623l-.198.498h-.81zm2.197.02h.814l.663 1.08.663-1.08h.814v2.79h-.766v-1.602l-.711 1.091h-.016l-.707-1.083v1.593h-.754zm3.469 0h2.235v.658h-1.473v.422h1.334v.61h-1.334v.442h1.493v.658h-2.255zm-5.3.897l-.315.793h.624zm-1.145 5.19h8.014l-4.09 1.348z"/>
     </svg>
   );
 }
@@ -231,7 +247,7 @@ function DonutChart({ data, lang }) {
 /* ─────────────────────────────────────────────
    Account Card
 ───────────────────────────────────────────── */
-function AccountCard({ name, status, connected, color, initials, onToggle, lang, profileUrl, avatar }) {
+function AccountCard({ name, status, connected, color, initials, icon, onToggle, lang, profileUrl, avatar }) {
   const [hovered, setHovered] = useState(false);
 
   const content = (
@@ -245,7 +261,7 @@ function AccountCard({ name, status, connected, color, initials, onToggle, lang,
         flexShrink: 0, boxShadow: connected ? `0 0 14px ${color}18` : 'none',
         transition: 'all 0.25s', overflow: 'hidden',
       }}>
-        {avatar ? <img src={avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
+        {avatar ? <img src={avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (icon || initials)}
       </div>
       <div style={{ minWidth: 0, flex: 1 }}>
         <p style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -865,13 +881,13 @@ export default function ProfilePage() {
               )}
               {steamAccounts.map(a => (
                 <span key={a.steamId} style={{ padding: '4px 10px', borderRadius: 999, background: 'rgba(26,159,255,0.1)', border: '1px solid rgba(26,159,255,0.25)', fontSize: 11.5, color: '#5eb7ff', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="#5eb7ff"><path d="M11.979 0C5.678 0 .511 4.86.022 11.037l6.432 2.658c.545-.371 1.203-.59 1.912-.59.063 0 .125.004.188.006l2.861-4.142V8.91c0-2.495 2.028-4.524 4.524-4.524 2.494 0 4.524 2.031 4.524 4.527s-2.03 4.525-4.524 4.525h-.105l-4.076 2.909c0 .052.004.105.004.159 0 1.875-1.515 3.396-3.39 3.396-1.635 0-3.016-1.173-3.331-2.727L.436 15.27C1.862 20.307 6.486 24 11.979 24c6.627 0 11.999-5.373 11.999-12S18.605 0 11.979 0z"/></svg>
+                  <SteamLogo size={12} color="#5eb7ff" />
                   {a.name?.slice(0, 14)}
                 </span>
               ))}
               {xboxUser && (
                 <span style={{ padding: '4px 10px', borderRadius: 999, background: 'rgba(16,124,16,0.12)', border: '1px solid rgba(16,124,16,0.3)', fontSize: 11.5, color: '#4ade80', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="#4ade80"><path d="M5.26 3.31C6.93 2.14 9.02 1.5 12 1.5s5.07.64 6.74 1.81c.41.28.45.87.08 1.2C17.49 5.65 15.6 8.38 12 12c-3.6-3.62-5.49-6.35-6.82-7.49-.37-.33-.33-.92.08-1.2zM2.09 6.44C.79 8.12 0 10.2 0 12.5 0 17.75 4.28 22 9.5 22c1.95 0 3.76-.6 5.25-1.62-1.58-1.34-4.74-4.56-7.98-8.7-1.34-1.73-2.9-3.84-4.68-5.24zm19.82 0c-1.78 1.4-3.34 3.51-4.68 5.24-3.24 4.14-6.4 7.36-7.98 8.7C10.74 21.4 12.55 22 14.5 22 19.72 22 24 17.75 24 12.5c0-2.3-.79-4.38-2.09-6.06z"/></svg>
+                  <XboxLogo size={12} color="#4ade80" />
                   {xboxUser.gamertag?.slice(0, 12)}
                 </span>
               )}
@@ -948,7 +964,7 @@ export default function ProfilePage() {
                         key={account.steamId}
                         name={`Steam — ${account.name}`}
                         status={libsLoading ? (lang === 'tr' ? 'Yükleniyor...' : 'Loading...') : (lang === 'tr' ? `Bağlı · ${steamLib?.games?.length ?? 0} oyun` : `Connected · ${steamLib?.games?.length ?? 0} games`)}
-                        connected={true} color="#1a9fff" initials="STM" avatar={account.avatar}
+                        connected={true} color="#1a9fff" initials="STM" icon={<SteamLogo size={20} color="#1a9fff" />} avatar={account.avatar}
                         profileUrl={account.profileUrl || `https://steamcommunity.com/profiles/${account.steamId}`}
                         onToggle={async () => { if (steamLogoutAccount) await steamLogoutAccount(account.steamId); }}
                         lang={lang}
@@ -964,13 +980,13 @@ export default function ProfilePage() {
                     )}
                   </>
                 ) : (
-                  <AccountCard name="Steam" status={lang === 'tr' ? 'Bağlı değil' : 'Not connected'} connected={false} color="#1a9fff" initials="STM" profileUrl={null} onToggle={() => window.location.href = '/api/auth/steam'} lang={lang} />
+                  <AccountCard name="Steam" status={lang === 'tr' ? 'Bağlı değil' : 'Not connected'} connected={false} color="#1a9fff" initials="STM" icon={<SteamLogo size={20} color="var(--text-3)" />} profileUrl={null} onToggle={() => window.location.href = '/api/auth/steam'} lang={lang} />
                 )}
 
                 <AccountCard
                   name="Xbox / Game Pass"
                   status={xboxUser ? (xboxUser.isMock ? (lang === 'tr' ? `Simülasyon — ${rawXboxCount} oyun` : `Simulation — ${rawXboxCount} games`) : (lang === 'tr' ? `Bağlı — ${rawXboxCount} oyun` : `Connected — ${rawXboxCount} games`)) : (lang === 'tr' ? 'Bağlı değil' : 'Not connected')}
-                  connected={!!xboxUser} color="#16a34a" initials="XBX" avatar={xboxUser?.avatar}
+                  connected={!!xboxUser} color="#16a34a" initials="XBX" icon={<XboxLogo size={18} color={xboxUser ? '#4ade80' : 'var(--text-3)'} />} avatar={xboxUser?.avatar}
                   profileUrl={xboxUser?.gamertag ? `https://live.xbox.com/Profile?Gamertag=${encodeURIComponent(xboxUser.gamertag)}` : null}
                   onToggle={() => { if (xboxUser) xboxLogout(); else window.location.href = '/api/auth/xbox'; }}
                   lang={lang}
