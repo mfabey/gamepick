@@ -265,6 +265,20 @@ const STEAM_TAG_MAP = {
   'card': '1738'
 };
 
+const isStoreBg = (url) => !url || url.includes('storepagebackground');
+const sanitizeSteamImg = (url) => {
+  if (!url || isStoreBg(url)) return null;
+  const u = String(url);
+  const m = u.match(/\/apps\/(\d+)\//);
+  if (m && m[1]) {
+    const appid = m[1];
+    if (u.includes('alt_assets') || u.includes('capsule_sm_120') || u.includes('capsule_184x69') || u.includes('capsule_231x87') || u.includes('header_alt_assets_')) {
+      return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/header.jpg`;
+    }
+  }
+  return u;
+};
+
 async function fetchSteamSearchPaginated(searchUrl, isFree = false, isOnSale = false, fetchReleaseDates = false) {
   try {
     const res = await fetch(searchUrl, { next: { revalidate: 1800 } });
@@ -293,31 +307,33 @@ async function fetchSteamSearchPaginated(searchUrl, isFree = false, isOnSale = f
               return null;
             }
             releasedDate = steamData.release_date?.date || null;
-            gercekKapak = steamData.header_image || null;
-            const isStoreBg = (url) => !url || url.includes('storepagebackground');
-            const cleanBg = !isStoreBg(steamData.background_raw) ? steamData.background_raw : (!isStoreBg(steamData.background) ? steamData.background : null);
-            heroImage = steamData.screenshots?.[0]?.path_full || cleanBg || steamData.header_image || null;
+            gercekKapak = sanitizeSteamImg(steamData.header_image) || null;
+            const cleanBg = sanitizeSteamImg(steamData.background_raw) || sanitizeSteamImg(steamData.background) || null;
+            heroImage = steamData.screenshots?.[0]?.path_full || cleanBg || gercekKapak || null;
             backgroundImage = cleanBg || steamData.screenshots?.[0]?.path_full || null;
             screenshots = (steamData.screenshots || []).map(s => s.path_full).filter(Boolean);
           }
         } catch {}
 
         const slug = generateSlug(item.name);
+        const cleanHeader = gercekKapak || (appid ? `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/header.jpg` : null) || sanitizeSteamImg(item.logo);
+        const coverImage = appid ? `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/library_600x900.jpg` : cleanHeader;
+        const libraryHero = appid ? `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/library_hero.jpg` : cleanHeader;
+
         const g = {
           id: 'rawg_' + appid,
           rawgId: appid,
           rawgSlug: slug,
           name: item.name,
-          // Sıra: Steam'in verdiği gerçek adres → öne çıkanlar kapsülü →
-          // (son çare) düz yol. Düz yol yalnızca ESKİ oyunlarda çalışıyor.
-          image: gercekKapak || item.logo
-            || (appid ? `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/header.jpg` : null),
-          heroImage: heroImage || gercekKapak || item.logo,
+          image: cleanHeader,
+          coverImage,
+          verticalImage: coverImage,
+          heroImage: heroImage || libraryHero || cleanHeader,
           backgroundImage,
           screenshots,
           // Kapak Steam'den çözülemediyse işaretle — istemci sona atsın.
-          gorselYok: !gercekKapak && !item.logo,
-          logo: item.logo,
+          gorselYok: !cleanHeader,
+          logo: cleanHeader,
           metacritic: null,
           reviewScore: 0,
           totalReviews: 0,
@@ -411,9 +427,11 @@ async function fetchSteamSearchByTerm(term) {
           original = amountToTRY(item.price.initial, item.price.currency || 'USD', rate);
         }
 
-        const isStoreBg = (url) => !url || url.includes('storepagebackground');
-        const cleanBg = !isStoreBg(steamData?.background_raw) ? steamData?.background_raw : (!isStoreBg(steamData?.background) ? steamData?.background : null);
-        let heroImage = steamData?.screenshots?.[0]?.path_full || cleanBg || steamData?.header_image || item.tiny_image;
+        const cleanBg = sanitizeSteamImg(steamData?.background_raw) || sanitizeSteamImg(steamData?.background) || null;
+        const cleanHeader = sanitizeSteamImg(steamData?.header_image) || (appid ? `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/header.jpg` : null) || sanitizeSteamImg(item.tiny_image) || null;
+        const coverImage = appid ? `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/library_600x900.jpg` : cleanHeader;
+        const libraryHero = appid ? `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/library_hero.jpg` : cleanHeader;
+        let heroImage = steamData?.screenshots?.[0]?.path_full || cleanBg || libraryHero || cleanHeader;
         let backgroundImage = cleanBg || steamData?.screenshots?.[0]?.path_full || null;
         let screenshots = (steamData?.screenshots || []).map(s => s.path_full).filter(Boolean);
 
@@ -422,11 +440,13 @@ async function fetchSteamSearchByTerm(term) {
           rawgId: appid,
           rawgSlug: slug,
           name,
-          image: steamData?.header_image || item.tiny_image || null,
+          image: cleanHeader,
+          coverImage,
+          verticalImage: coverImage,
           heroImage,
           backgroundImage,
           screenshots,
-          gorselYok: !steamData?.header_image && !item.tiny_image,
+          gorselYok: !cleanHeader,
           metacritic: steamData?.metacritic?.score || null,
           reviewScore: 0,
           totalReviews: steamData?.recommendations?.total || 0,
@@ -541,9 +561,11 @@ async function fetchSteamFeatured(category) {
       const price = item.final_price != null ? amountToTRY(item.final_price, item.currency || 'USD', rate) : null;
       const original = item.original_price != null ? amountToTRY(item.original_price, item.currency || 'USD', rate) : null;
 
-      const isStoreBg = (url) => !url || url.includes('storepagebackground');
-      const cleanBg = !isStoreBg(steamData?.background_raw) ? steamData?.background_raw : (!isStoreBg(steamData?.background) ? steamData?.background : null);
-      const heroImage = steamData?.screenshots?.[0]?.path_full || cleanBg || steamData?.header_image || item.header_image || item.large_capsule_image;
+      const cleanBg = sanitizeSteamImg(steamData?.background_raw) || sanitizeSteamImg(steamData?.background) || null;
+      const cleanHeader = sanitizeSteamImg(steamData?.header_image) || sanitizeSteamImg(item.header_image) || sanitizeSteamImg(item.large_capsule_image) || (item.id ? `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${item.id}/header.jpg` : null);
+      const coverImage = item.id ? `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${item.id}/library_600x900.jpg` : cleanHeader;
+      const libraryHero = item.id ? `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${item.id}/library_hero.jpg` : cleanHeader;
+      const heroImage = steamData?.screenshots?.[0]?.path_full || cleanBg || libraryHero || cleanHeader;
       const backgroundImage = cleanBg || steamData?.screenshots?.[0]?.path_full || null;
       const screenshots = (steamData?.screenshots || []).map(s => s.path_full).filter(Boolean);
 
@@ -552,7 +574,9 @@ async function fetchSteamFeatured(category) {
         rawgId:       item.id,
         rawgSlug:     slug,
         name:         item.name,
-        image:        steamData?.header_image || item.header_image || item.large_capsule_image || item.small_capsule_image,
+        image:        cleanHeader,
+        coverImage,
+        verticalImage: coverImage,
         heroImage,
         backgroundImage,
         screenshots,
@@ -624,9 +648,11 @@ async function fetchSteamNewReleases() {
       const price = item.final_price != null ? amountToTRY(item.final_price, item.currency || 'USD', rate) : null;
       const original = item.original_price != null ? amountToTRY(item.original_price, item.currency || 'USD', rate) : null;
 
-      const isStoreBg = (url) => !url || url.includes('storepagebackground');
-      const cleanBg = !isStoreBg(steamData?.background_raw) ? steamData?.background_raw : (!isStoreBg(steamData?.background) ? steamData?.background : null);
-      const heroImage = steamData?.screenshots?.[0]?.path_full || cleanBg || steamData?.header_image || item.header_image || item.large_capsule_image;
+      const cleanBg = sanitizeSteamImg(steamData?.background_raw) || sanitizeSteamImg(steamData?.background) || null;
+      const cleanHeader = sanitizeSteamImg(steamData?.header_image) || sanitizeSteamImg(item.header_image) || sanitizeSteamImg(item.large_capsule_image) || (item.id ? `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${item.id}/header.jpg` : null);
+      const coverImage = item.id ? `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${item.id}/library_600x900.jpg` : cleanHeader;
+      const libraryHero = item.id ? `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${item.id}/library_hero.jpg` : cleanHeader;
+      const heroImage = steamData?.screenshots?.[0]?.path_full || cleanBg || libraryHero || cleanHeader;
       const backgroundImage = cleanBg || steamData?.screenshots?.[0]?.path_full || null;
       const screenshots = (steamData?.screenshots || []).map(s => s.path_full).filter(Boolean);
 
@@ -635,7 +661,9 @@ async function fetchSteamNewReleases() {
         rawgId:       item.id,
         rawgSlug:     slug,
         name:         item.name,
-        image:        steamData?.header_image || item.header_image || item.large_capsule_image || item.small_capsule_image,
+        image:        cleanHeader,
+        coverImage,
+        verticalImage: coverImage,
         heroImage,
         backgroundImage,
         screenshots,
@@ -712,10 +740,17 @@ async function fetchSteamByMode(mode, { genres = '', q = '', section = '', page 
       const appidMatch = (item.logo || '').match(/\/apps\/(\d+)\//);
       const appid = appidMatch ? parseInt(appidMatch[1]) : null;
       const slug  = generateSlug(item.name);
+      const cleanHeader = appid ? `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/header.jpg` : sanitizeSteamImg(item.logo);
+      const coverImage = appid ? `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/library_600x900.jpg` : cleanHeader;
+      const libraryHero = appid ? `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/library_hero.jpg` : cleanHeader;
       return {
         id: 'rawg_' + appid, rawgId: appid, rawgSlug: slug, name: item.name,
-        image: appid ? `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/header.jpg` : item.logo,
-        logo: item.logo, metacritic: null, reviewScore: 0, totalReviews: 0,
+        image: cleanHeader,
+        coverImage,
+        verticalImage: coverImage,
+        heroImage: libraryHero,
+        logo: cleanHeader,
+        metacritic: null, reviewScore: 0, totalReviews: 0,
         isFree: section === 'free', onSale: section === 'sale', price: null, noData: false,
         platforms: ['pc'], source: 'steam', hasSteam: true, hasEpic: false, hasStores: true,
         genres: [], released: null,
@@ -731,10 +766,13 @@ async function fetchSteamByMode(mode, { genres = '', q = '', section = '', page 
             if (isSteamDataAdult(data)) {
               return null;
             }
-            g.image = data.header_image || g.image;
-            const isStoreBg = (url) => !url || url.includes('storepagebackground');
-            const cleanBg = !isStoreBg(data.background_raw) ? data.background_raw : (!isStoreBg(data.background) ? data.background : null);
-            g.heroImage = data.screenshots?.[0]?.path_full || cleanBg || data.header_image || g.image;
+            const cleanHeader = sanitizeSteamImg(data.header_image) || (g.rawgId ? `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${g.rawgId}/header.jpg` : null) || g.image;
+            g.image = cleanHeader;
+            g.coverImage = g.rawgId ? `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${g.rawgId}/library_600x900.jpg` : cleanHeader;
+            g.verticalImage = g.coverImage;
+            const cleanBg = sanitizeSteamImg(data.background_raw) || sanitizeSteamImg(data.background) || null;
+            const libraryHero = g.rawgId ? `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${g.rawgId}/library_hero.jpg` : cleanHeader;
+            g.heroImage = data.screenshots?.[0]?.path_full || cleanBg || libraryHero || cleanHeader;
             g.backgroundImage = cleanBg || data.screenshots?.[0]?.path_full || null;
             g.screenshots = (data.screenshots || []).map(s => s.path_full).filter(Boolean);
           }
@@ -1439,6 +1477,9 @@ function formatRawgGame(game) {
     rawgSlug:     game.slug,
     name:         game.name,
     image:        game.background_image,
+    coverImage:   game.background_image,
+    verticalImage: game.background_image,
+    heroImage:    game.background_image,
     metacritic:   game.metacritic    || null,
     reviewScore:  game.rating        ? Math.round(game.rating * 20) : 0,
     totalReviews: game.ratings_count || 0,

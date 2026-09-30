@@ -9,9 +9,6 @@
 // görsel BURADAN çözülüyor. Liste tek yerden üretilmezse iki taraf ayrışır
 // ve sohbette görünen haber, haber ekranındakiyle aynı olmayabilirdi.
 // ─────────────────────────────────────────────────────────────────────────────
-import { newsId } from './news-identity';
-import { redisPipeline } from './redis';
-
 const FEEDS_TR = [
   { url: 'https://www.merlininkazani.com/feed/',         source: 'Merlin\'in Kazanı' },
   { url: 'https://frpnet.net/feed',                    source: 'FRPNET' },
@@ -251,7 +248,7 @@ export async function getNewsList(lang = 'tr') {
   }));
 
   const results = all.map((n, i) => ({
-    id:      newsId(n.url),
+    id:      'news_' + i,
     cat:     n.cat,
     date:    formatDate(n.pubDate, lang),
     // Bağıl tazeliği İSTEMCİ hesaplıyor (bkz. yukarıdaki not).
@@ -266,7 +263,5 @@ export async function getNewsList(lang = 'tr') {
     featured: i === 0,
   }));
 
-  // Retain summaries for old links; this does not copy full publisher articles.
-  if (results.length) await redisPipeline(results.map(item => ['SET', `news:article:${item.id}`, JSON.stringify(item), 'EX', '7776000'])).catch(() => {});
   return results;
 }

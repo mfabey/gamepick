@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
-import { LOGO_SRC } from '../lib/logo';
+import { LOGO_SRC, LOGO_DARK_SRC, LOGO_LIGHT_SRC } from '../lib/logo';
 
 export default function NavBar() {
   const pathname = usePathname();
@@ -80,47 +80,6 @@ export default function NavBar() {
   useEffect(() => {
     if (!pathname.startsWith('/game/')) setViewing(null);
   }, [pathname]);
-
-  // İlk ziyaret ipucu — alt barın ne işe yaradığını tanıtır
-  const [hintOpen, setHintOpen] = useState(false);
-  useEffect(() => {
-    try {
-      if (typeof localStorage !== 'undefined' && !localStorage.getItem('gp_bar_hint_seen')) {
-        const t = setTimeout(() => setHintOpen(true), 1100);
-        return () => clearTimeout(t);
-      }
-    } catch (e) {}
-  }, []);
-  // Açılınca birkaç saniye sonra kendiliğinden kapanır
-  useEffect(() => {
-    if (!hintOpen) return;
-    const t = setTimeout(() => dismissHint(), 5000);
-    return () => clearTimeout(t);
-  }, [hintOpen]);
-  const dismissHint = () => {
-    try { if (typeof localStorage !== 'undefined') localStorage.setItem('gp_bar_hint_seen', '1'); } catch (e) {}
-    setHintOpen(false);
-  };
-
-  // Kayan turuncu pill göstergesi
-  const navRef = useRef(null);
-  const [pill, setPill] = useState({ width: 0, top: 0, height: 0, transform: 'translateX(0)', opacity: 0 });
-  useEffect(() => {
-    const place = () => {
-      const nav = navRef.current;
-      if (!nav) return;
-      const tabs = nav.querySelectorAll('[data-tab]');
-      const idx = NAV_LINKS.findIndex(l => isActive(l.href));
-      const el = idx >= 0 ? tabs[idx] : null;
-      if (!el) { setPill(p => ({ ...p, opacity: 0 })); return; }
-      setPill({ opacity: 1, width: el.offsetWidth, top: el.offsetTop, height: el.offsetHeight, transform: `translateX(${el.offsetLeft}px)` });
-    };
-    place();
-    const t = setTimeout(place, 0);
-    if (typeof document !== 'undefined' && document.fonts && document.fonts.ready) document.fonts.ready.then(place);
-    if (typeof window !== 'undefined') window.addEventListener('resize', place);
-    return () => { clearTimeout(t); if (typeof window !== 'undefined') window.removeEventListener('resize', place); };
-  }, [pathname, lang]);
 
   return (
     <>
@@ -213,7 +172,14 @@ export default function NavBar() {
 
           {/* Ortalı logo */}
           <Link href="/" className="nav-logo">
-            <img src={LOGO_SRC} alt="" className="nav-logo-img" width={36} height={36} style={{ display: 'block', filter: 'drop-shadow(0 4px 12px var(--accent-glow))' }} />
+            <img
+              src={mounted && theme === 'light' ? LOGO_LIGHT_SRC : LOGO_DARK_SRC}
+              alt=""
+              className="nav-logo-img"
+              width={36}
+              height={36}
+              style={{ display: 'block', filter: 'none' }}
+            />
             <span className="nav-logo-text">Gamerisen</span>
           </Link>
 
@@ -286,7 +252,9 @@ export default function NavBar() {
                   display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 9,
                   background: 'var(--accent-bg)', border: '1px solid var(--accent-border)', fontSize: 13, fontWeight: 600, color: 'var(--accent)',
                 }}>
-                  {user.avatar ? (
+                  {['batuta', 'test'].includes(String(user.username || '').replace(/^@/, '').toLowerCase().trim()) ? (
+                    <img src={LOGO_SRC} className="nav-user-avatar" alt="" style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover' }} />
+                  ) : user.avatar ? (
                     <img src={user.avatar} className="nav-user-avatar" alt="" style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover' }} />
                   ) : steamUser?.avatar ? (
                     <img src={steamUser.avatar} className="nav-user-avatar" alt="" style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover' }} />
@@ -336,26 +304,6 @@ export default function NavBar() {
             )}
           </div>
         </div>
-      </header>
-
-      {/* ── Alt cam sekme çubuğu ── */}
-      {/* İlk ziyaret ipucu: salt görsel — alt bara dikkat çeken ışık + oklar */}
-      {!hideBottomBar && hintOpen && (
-        <>
-          <div onClick={dismissHint} style={{
-            position: 'fixed', inset: 0, zIndex: 199, cursor: 'pointer',
-            background: 'radial-gradient(60% 220px at 50% 100%, rgba(36,29,20,0) 0%, rgba(36,29,20,0.42) 70%)',
-          }} />
-          <div style={{
-            position: 'fixed', left: '50%', bottom: 112, zIndex: 201, transform: 'translateX(-50%)',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, pointerEvents: 'none',
-          }}>
-            <svg width="40" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.55, animation: 'navHintArrow 1.4s ease-in-out infinite' }}><path d="M6 9l6 6 6-6"/></svg>
-            <svg width="48" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'navHintArrow 1.4s ease-in-out 0.18s infinite', filter: 'drop-shadow(0 4px 10px var(--accent-bg))' }}><path d="M6 9l6 6 6-6"/></svg>
-          </div>
-        </>
-      )}
-
       {!hideBottomBar && (
         <>
           {/* Mobil için Üstte Yüzen Şu An İnceleniyor Rozeti */}
@@ -364,7 +312,7 @@ export default function NavBar() {
               position: 'fixed',
               left: '50%',
               bottom: 88, // Alt bar 14px + ~60px yükseklik = ~74px civarında biter. 88px idealdir.
-              zIndex: hintOpen ? 201 : 200,
+              zIndex: 200,
               alignItems: 'center',
               gap: 8,
               background: 'linear-gradient(180deg, color-mix(in srgb, var(--bg-card) 95%, transparent), color-mix(in srgb, var(--bg-card) 85%, transparent))',
@@ -393,30 +341,12 @@ export default function NavBar() {
             </div>
           )}
 
-          <nav ref={navRef} className="bottom-nav" style={{
-            position: 'fixed', left: '50%', transform: 'translateX(-50%)', bottom: 28, zIndex: hintOpen ? 201 : 200,
-            display: 'flex', gap: 6,
-            background: 'linear-gradient(180deg, color-mix(in srgb, var(--bg-card) 46%, transparent), color-mix(in srgb, var(--bg-card) 30%, transparent))',
-            backdropFilter: 'blur(22px) saturate(185%)', WebkitBackdropFilter: 'blur(22px) saturate(185%)',
-            borderRadius: 999, padding: 11,
-            boxShadow: 'inset 0 1px 0.5px rgba(255,255,255,0.5), inset 0 -1px 0.5px rgba(255,255,255,0.12), inset 0 0 0 1px color-mix(in srgb, var(--text) 7%, transparent), 0 8px 22px -12px rgba(0,0,0,0.26), 0 24px 60px -18px rgba(0,0,0,0.34)',
-            animation: hintOpen
-              ? 'navBarIn 0.85s cubic-bezier(0.16,1,0.3,1) both, navBarAttract 1.5s ease-in-out 0.9s 2, navBarRing 1.6s ease-out 1s 2'
-              : 'navBarIn 0.85s cubic-bezier(0.16,1,0.3,1) both',
-          }}>
-            <div aria-hidden className="bottom-nav-pill" style={{
-              position: 'absolute', left: 0, top: pill.top, height: pill.height, width: pill.width,
-              transform: pill.transform, opacity: pill.opacity,
-              borderRadius: 999,
-              transition: 'transform 0.62s cubic-bezier(0.34,1.32,0.46,1), width 0.62s cubic-bezier(0.34,1.32,0.46,1), opacity 0.4s ease',
-              zIndex: 0, pointerEvents: 'none',
-            }} />
+          <nav className="bottom-nav" aria-label={lang === 'tr' ? 'Ana menü' : 'Main navigation'}>
             {NAV_LINKS.map(l => {
               const active = isActive(l.href);
               return (
                 <Link key={l.href} href={l.href} data-tab="t"
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; }}
+                  aria-current={active ? 'page' : undefined}
                   className={`bottom-nav-link ${active ? 'active' : ''}`}
                   style={{
                     color: active ? 'var(--text)' : 'var(--text-2)',
@@ -456,6 +386,7 @@ export default function NavBar() {
           </nav>
         </>
       )}
+      </header>
     </>
   );
 }

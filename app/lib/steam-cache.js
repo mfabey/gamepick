@@ -29,7 +29,7 @@ export async function getSteamDetailsCached(appid, lang = 'en') {
       });
       if (!res.ok) return null;
       const data = await res.json();
-      const entry = data[appid];
+      const entry = data[appid] || (data && typeof data === 'object' ? Object.values(data)[0] : null);
       if (entry && entry.success && entry.data) {
         return entry.data;
       }

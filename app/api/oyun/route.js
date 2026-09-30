@@ -76,7 +76,7 @@ export async function GET(request) {
 
   // 1. Check Redis Cache
   const cachedResult = await getCachedData(cacheKey);
-  if (cachedResult) {
+  if (cachedResult && (cachedResult.dataAvailable === true || cachedResult.games?.length > 0)) {
     return NextResponse.json({ ...cachedResult, cached: true });
   }
 
@@ -94,6 +94,12 @@ export async function GET(request) {
 
     if (!res.ok) throw new Error(`Steam API returned status ${res.status}`);
     const data = await res.json();
+
+    // Steam can return an empty response for private game details. Do not
+    // present that as a verified empty library or cache it as zero playtime.
+    if (!Array.isArray(data?.response?.games) && data?.response?.game_count !== 0) {
+      return NextResponse.json({ games: [], unavailable: true });
+    }
 
     const raw = data?.response?.games || [];
     const games = raw
@@ -115,6 +121,7 @@ export async function GET(request) {
     const playedGames = games.filter(g => g.hours > 0).length;
 
     const responseData = {
+      dataAvailable: true,
       games,
       total: games.length,
       played: playedGames,

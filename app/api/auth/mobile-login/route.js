@@ -75,18 +75,11 @@ export async function POST(request) {
     }
 
     const socialProfile = await getProfile(localId).catch(() => null);
-
-    // Developer hesabı veya mevcut kullanıcı adı için koruma ve çözümleme
-    let resolvedUsername = socialProfile?.username || null;
-    if (!resolvedUsername && email.toLowerCase().includes('batuta')) {
-      resolvedUsername = 'batuta';
-    }
-
     const user = {
       uid: localId,
-      name: socialProfile?.displayName || displayName || resolvedUsername || email.split('@')[0],
-      displayName: socialProfile?.displayName || displayName || resolvedUsername || '',
-      username: resolvedUsername || '',
+      name: socialProfile?.displayName || displayName || email.split('@')[0],
+      displayName: socialProfile?.displayName || displayName || '',
+      username: socialProfile?.username || '',
       avatar: socialProfile?.avatar || null,
       email,
     };

@@ -13,6 +13,31 @@ const GRADIENTS = [
   'linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)', // Purple to Pink
 ];
 
+function isCleanImg(url) {
+  if (!url) return false;
+  const u = String(url);
+  return !u.includes('storepagebackground') &&
+         !u.includes('alt_assets') &&
+         !u.includes('capsule_sm_120') &&
+         !u.includes('capsule_184x69') &&
+         !u.includes('capsule_231x87') &&
+         !u.includes('placeholder');
+}
+
+function sanitizeSteamUrl(url) {
+  if (!url) return url;
+  const u = String(url);
+  if (u.includes('storepagebackground')) return null;
+  const m = u.match(/\/apps\/(\d+)\//);
+  if (m && m[1]) {
+    const appid = m[1];
+    if (u.includes('alt_assets') || u.includes('capsule_sm_120') || u.includes('capsule_184x69') || u.includes('capsule_231x87') || u.includes('header_alt_assets_')) {
+      return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/header.jpg`;
+    }
+  }
+  return u;
+}
+
 const getGradient = (name) => {
   if (!name) return GRADIENTS[0];
   let hash = 0;
@@ -52,7 +77,8 @@ const SLUG_TO_STEAM_ID = {
   'football-manager-2026': '3551390',
   'tbh-task-bar-hero': '3678970',
   'task-bar-hero': '3678970',
-  '007-first-light': '1659040'
+  '007-first-light': '1659040',
+  'stellaris': '281990'
 };
 
 const ID_TO_STEAM_ID = {
@@ -77,7 +103,8 @@ const ID_TO_STEAM_ID = {
   906504: '1809540',   // Nine Sols
   976564: '553850',    // Helldivers 2
   356714: '945360',    // Among Us
-  4704690: '4704690'   // Meccha Chameleon
+  4704690: '4704690',  // Meccha Chameleon
+  281990: '281990'     // Stellaris
 };
 
 export default function GameImage({
@@ -115,15 +142,16 @@ export default function GameImage({
     }
 
     // Name-based fallback mapping for unreleased/new games
+    if (nameLower.includes('stellaris')) return '281990';
     if (nameLower.includes('forza horizon 6')) return '2483190';
     if (nameLower.includes('football manager 26') || nameLower.includes('football manager 2026')) return '3551390';
     if (nameLower.includes('task bar hero') || nameLower.startsWith('tbh')) return '3678970';
     if (nameLower.includes('007 first light')) return '1659040';
 
-    if (game.appid) return game.appid;
-    if (game.steamAppId) return game.steamAppId;
-    if (game.steamAppid) return game.steamAppid;
-    if (game.steam_appid) return game.steam_appid;
+    if (game.appid) return String(game.appid);
+    if (game.steamAppId) return String(game.steamAppId);
+    if (game.steamAppid) return String(game.steamAppid);
+    if (game.steam_appid) return String(game.steam_appid);
 
     if (game.image) {
       const match = game.image.match(/\/apps\/(\d+)\//);
@@ -167,14 +195,28 @@ export default function GameImage({
       if (stage === 0) {
         const appid = getSteamAppId();
         if (appid) return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/library_600x900.jpg`;
+        if (isCleanImg(game.backgroundImage)) return sanitizeSteamUrl(game.backgroundImage);
+        if (isCleanImg(game.heroImage)) return sanitizeSteamUrl(game.heroImage);
+        if (game.screenshots?.[0]) return game.screenshots[0];
+        if (isCleanImg(game.image) && !game.image.includes('capsule_sm_120') && !game.image.includes('capsule_231x87')) {
+          return sanitizeSteamUrl(game.image);
+        }
         return getImgSrc(1);
       }
       if (stage === 1) {
-        if (game.heroImage) return game.heroImage;
-        if (game.backgroundImage) return game.backgroundImage;
-        return game.image || getImgSrc(2);
+        if (isCleanImg(game.backgroundImage)) return sanitizeSteamUrl(game.backgroundImage);
+        if (isCleanImg(game.heroImage)) return sanitizeSteamUrl(game.heroImage);
+        if (game.screenshots?.[0]) return game.screenshots[0];
+        if (isCleanImg(game.image) && !game.image.includes('capsule_sm_120') && !game.image.includes('capsule_231x87')) {
+          return sanitizeSteamUrl(game.image);
+        }
+        const appid = getSteamAppId();
+        if (appid) return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/header.jpg`;
+        return sanitizeSteamUrl(game.image) || getImgSrc(2);
       }
       if (stage === 2) {
+        if (game.image && !game.image.includes('placeholder')) return sanitizeSteamUrl(game.image);
+        if (game.logo) return game.logo;
         const appid = getSteamAppId();
         if (appid) return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/capsule_231x87.jpg`;
         return getImgSrc(3);
@@ -186,29 +228,25 @@ export default function GameImage({
       }
     } else if (isHero) {
       if (stage === 0) {
-        if (game.heroImage && !game.heroImage.includes('storepagebackground')) return game.heroImage;
-        if (game.screenshots?.[0]) return game.screenshots[0];
-        if (game.backgroundImage && !game.backgroundImage.includes('storepagebackground')) return game.backgroundImage;
-        // If image is a high-res direct URL (RAWG, Epic, IGDB, etc.)
-        if (game.image && !game.image.includes('/header') && !game.image.includes('capsule') && !game.image.includes('placeholder') && !game.image.includes('storepagebackground')) {
-          return game.image;
-        }
-        if (game.image && !game.image.includes('placeholder') && !game.image.includes('storepagebackground')) {
-          return game.image;
-        }
-        const appid = getSteamAppId();
-        if (appid) return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/header.jpg`;
-        return game.image || getImgSrc(1);
-      }
-      if (stage === 1) {
-        if (game.screenshots?.[0]) return game.screenshots[0];
-        if (game.image && !game.image.includes('storepagebackground')) return game.image;
         const appid = getSteamAppId();
         if (appid) return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/library_hero.jpg`;
-        return game.image || getImgSrc(2);
+        if (isCleanImg(game.heroImage)) return sanitizeSteamUrl(game.heroImage);
+        if (game.screenshots?.[0]) return game.screenshots[0];
+        if (isCleanImg(game.backgroundImage)) return sanitizeSteamUrl(game.backgroundImage);
+        if (isCleanImg(game.image)) return sanitizeSteamUrl(game.image);
+        return getImgSrc(1);
+      }
+      if (stage === 1) {
+        if (isCleanImg(game.heroImage)) return sanitizeSteamUrl(game.heroImage);
+        if (game.screenshots?.[0]) return game.screenshots[0];
+        if (isCleanImg(game.backgroundImage)) return sanitizeSteamUrl(game.backgroundImage);
+        if (isCleanImg(game.image)) return sanitizeSteamUrl(game.image);
+        const appid = getSteamAppId();
+        if (appid) return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/header.jpg`;
+        return getImgSrc(2);
       }
       if (stage === 2) {
-        if (game.image && !game.image.includes('storepagebackground')) return game.image;
+        if (isCleanImg(game.image)) return sanitizeSteamUrl(game.image);
         const appid = getSteamAppId();
         if (appid) return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/header.jpg`;
         return getImgSrc(3);
@@ -227,18 +265,20 @@ export default function GameImage({
       }
     } else {
       if (stage === 0) {
-        if (game.image && !game.image.includes('capsule_sm_120') && !game.image.includes('placeholder')) {
-          return game.image;
+        if (isCleanImg(game.image) && !game.image.includes('capsule_sm_120')) {
+          return sanitizeSteamUrl(game.image);
         }
-        if (game.heroImage) return game.heroImage;
-        return game.image || getImgSrc(1);
-      }
-      if (stage === 1) {
-        if (game.heroImage) return game.heroImage;
-        if (game.backgroundImage) return game.backgroundImage;
-        if (game.logo) return game.logo.replace('capsule_sm_120.jpg', 'capsule_231x87.jpg');
+        if (isCleanImg(game.heroImage)) return sanitizeSteamUrl(game.heroImage);
         const appid = getSteamAppId();
         if (appid) return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/header.jpg`;
+        return sanitizeSteamUrl(game.image) || getImgSrc(1);
+      }
+      if (stage === 1) {
+        if (isCleanImg(game.heroImage)) return sanitizeSteamUrl(game.heroImage);
+        if (isCleanImg(game.backgroundImage)) return sanitizeSteamUrl(game.backgroundImage);
+        const appid = getSteamAppId();
+        if (appid) return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/header.jpg`;
+        if (game.logo) return game.logo.replace('capsule_sm_120.jpg', 'capsule_231x87.jpg');
         return getImgSrc(2);
       }
       if (stage === 2) {

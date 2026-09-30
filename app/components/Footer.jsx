@@ -1,11 +1,13 @@
 'use client';
 
 import { useLanguage } from '../context/LanguageContext';
-import { LOGO_SRC } from '../lib/logo';
+import { useTheme } from '../context/ThemeContext';
+import { LOGO_SRC, LOGO_DARK_SRC, LOGO_LIGHT_SRC } from '../lib/logo';
 import Link from 'next/link';
 
 export default function Footer() {
   const { lang, t } = useLanguage();
+  const { theme, mounted } = useTheme();
   const tr = lang === 'tr';
   const year = new Date().getFullYear();
 
@@ -74,13 +76,19 @@ export default function Footer() {
         {/* Marka */}
         <div>
           <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none', marginBottom: 14, width: 'fit-content' }}>
-            <img src={LOGO_SRC} alt="" width={32} height={32} style={{ display: 'block', filter: 'drop-shadow(0 4px 12px var(--accent-glow))' }} />
+            <img
+              src={mounted && theme === 'light' ? LOGO_LIGHT_SRC : LOGO_DARK_SRC}
+              alt=""
+              width={32}
+              height={32}
+              style={{ display: 'block', filter: 'drop-shadow(0 4px 12px var(--accent-glow))' }}
+            />
             <span style={{ fontFamily: 'var(--font-heading, var(--font-body))', fontWeight: 700, fontSize: 19, letterSpacing: '-0.5px', color: 'var(--text)' }}>Gamerisen</span>
           </Link>
           <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--text-2)', maxWidth: 300, margin: '0 0 16px' }}>
             {tr
-              ? '500.000+ oyunu keşfet; Steam, Epic, GOG ve Xbox fiyatlarını tek ekranda karşılaştır.'
-              : 'Discover 500,000+ games and compare Steam, Epic, GOG and Xbox prices on one screen.'}
+              ? 'Oyunları keşfet, mağaza fiyatlarını karşılaştır ve koleksiyonunu oyuncularla paylaş.'
+              : 'Discover games, compare store prices and share your collection with other players.'}
           </p>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap', marginTop: 6 }}>
             {/* Sosyal Medya İkonları */}

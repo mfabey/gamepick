@@ -3,6 +3,7 @@ import { signValue, readValue, SESSION_TTL_SEC, LINK_TTL_SEC } from '../../../li
 import { cookies } from 'next/headers';
 import { redisCmd, redisGetJSON, redisSetJSON } from '../../../lib/redis';
 import { mergeProfile, getProfile } from '../../../lib/social-store';
+import { LOGO_SRC } from '../../../lib/logo';
 
 export const dynamic = 'force-dynamic';
 
@@ -73,22 +74,19 @@ export async function GET() {
       return NextResponse.json({ user: null });
     }
 
+    // Mobil veya sitedeki en güncel profil bilgilerini Redis'ten çekip birleştir
     let profile = null;
     try {
       profile = await getProfile(user.uid);
     } catch {}
 
-    let resolvedUsername = profile?.username || user.username || null;
-    if (!resolvedUsername && String(user.email || '').toLowerCase().includes('batuta')) {
-      resolvedUsername = 'batuta';
-    }
-
+    const isPrivilegedAdmin = ['batuta', 'test'].includes(String(profile?.username || user.username || '').replace(/^@/, '').toLowerCase().trim());
     const enrichedUser = {
       ...user,
       ...(profile || {}),
-      username: resolvedUsername,
-      displayName: profile?.displayName || user.displayName || user.name || resolvedUsername || null,
-      avatar: profile?.avatar || user.avatar || user.photoURL || null,
+      username: profile?.username || user.username || null,
+      displayName: profile?.displayName || user.displayName || user.name || null,
+      avatar: isPrivilegedAdmin ? LOGO_SRC : (profile?.avatar || user.avatar || user.photoURL || null),
       bio: profile?.bio || user.bio || null,
     };
 

@@ -142,7 +142,7 @@ export default function SignupPage() {
   }
 
   return (
-    <div style={{
+    <div className="auth-page" style={{
       minHeight: 'calc(100vh - 60px)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       padding: '40px 20px',

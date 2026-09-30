@@ -225,20 +225,12 @@ export async function GET(request) {
     collections, wishlist, friendCount, postCount, reviewCount, conn,
   } = okuma;
 
+  // `username` yoksa sosyal kimlik hiç kurulmamış demektir (kimlik uçları
+  // aynı anahtara ad/e-posta yazıyor — bkz. mergeProfile). Böyle bir kaydı
+  // profil saymak, adı olmayan bir sayfaya kapı açardı.
+  if (!profile?.username) return notFound();
+
   const isSelf = !!viewerUid && viewerUid === targetUid;
-
-  let activeProfile = profile;
-  if (!activeProfile?.username && isSelf) {
-    const fallbackUsername = viewer?.username || (viewer?.email ? viewer.email.split('@')[0] : 'Gamer');
-    activeProfile = await mergeProfile(targetUid, {
-      username: fallbackUsername,
-      displayName: viewer?.name || fallbackUsername,
-      email: viewer?.email || '',
-    }).catch(() => null) || { username: fallbackUsername, displayName: fallbackUsername, uid: targetUid };
-  }
-
-  // `username` yoksa sosyal kimlik hiç kurulmamış demektir
-  if (!activeProfile?.username) return notFound();
 
   // ── Kapı 1: engel ──
   // 403 DEĞİL 404: "engellendin" demek, engelleyenin kimliğini ve kararını
@@ -275,16 +267,16 @@ export async function GET(request) {
   const body = {
     profile: {
       uid: targetUid,
-      username: activeProfile.username,
-      displayName: activeProfile.displayName || activeProfile.username,
-      bio: activeProfile.bio || '',
-      avatar: activeProfile.avatar ?? null,
+      username: profile.username,
+      displayName: profile.displayName || profile.username,
+      bio: profile.bio || '',
+      avatar: profile.avatar ?? null,
       isDeveloper: targetIsDev,
       counts: {
         // Sayaç üçlüsü (maket): gönderi · arkadaş · oyun.
         posts: postCount,
         friends: friendCount,
-        games: Number(activeProfile.gameCount) || 0,
+        games: Number(profile.gameCount) || 0,
         // Sekme bağlam satırı ("KOLEKSİYON · 214") bu üçünü okuyor.
         collection: collectionGames.length,
         wishlist: wishItems.length,

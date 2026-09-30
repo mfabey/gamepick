@@ -185,6 +185,11 @@ async function hydrate(ids, viewerUid) {
   }));
 }
 
+/** Kimlik listesini sayaçlarla doldurur — topluluk akışı (community-store) kullanıyor. */
+export async function hydratePosts(ids, viewerUid = null) {
+  return hydrate(ids, viewerUid);
+}
+
 /** Genel akış — en yeni önce. Yanıtlar burada YOK. */
 export async function listFeed({ limit = 20, offset = 0, viewerUid = null } = {}) {
   const capped = Math.min(limit, MAX_FEED);

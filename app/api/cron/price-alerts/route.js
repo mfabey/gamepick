@@ -1,5 +1,16 @@
 import { NextResponse } from 'next/server';
 import { hasRedis, redisCmd, redisGetJSON, redisSetJSON } from '../../../lib/redis.js';
+import { addNotif } from '../../../lib/notif-store';
+
+// Bildirim metinleri kaydın diline göre (push/register `lang`, 27 Eyl).
+// Eski kayıtlarda dil yok → Türkçe (önceki davranış).
+const METIN = {
+  tr: { sale: '💸 İndirim!', saleBody: (n, d) => `${n} şimdi -%${d} indirimde`, target: '🎯 Hedef fiyat', targetBody: (n, p) => `${n} hedefinin altına düştü: ₺${p}` },
+  en: { sale: '💸 On sale!', saleBody: (n, d) => `${n} is now ${d}% off`, target: '🎯 Target price', targetBody: (n) => `${n} dropped below your target price` },
+  de: { sale: '💸 Im Angebot!', saleBody: (n, d) => `${n} jetzt ${d} % reduziert`, target: '🎯 Zielpreis', targetBody: (n) => `${n} ist unter deinen Zielpreis gefallen` },
+  es: { sale: '💸 ¡En oferta!', saleBody: (n, d) => `${n} ahora con ${d}% de descuento`, target: '🎯 Precio objetivo', targetBody: (n) => `${n} bajó de tu precio objetivo` },
+  pt: { sale: '💸 Em promoção!', saleBody: (n, d) => `${n} agora com ${d}% de desconto`, target: '🎯 Preço-alvo', targetBody: (n) => `${n} caiu abaixo do seu preço-alvo` },
+};
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -120,6 +131,30 @@ export async function GET(request) {
 
       if (!price || price.price == null) continue;
 
+      const M = METIN[rec.lang] || METIN.tr;
+      const oyun = { name: w.name, appid: w.appid || null, slug: w.slug || null, image: w.image || null };
+
+      // HEDEF FİYAT (G-08): fiyat hedefin altına İLK düştüğünde bir kez;
+      // hedefin üstüne çıkınca bayrak sıfırlanıyor, sonraki düşüş yine
+      // bildiriliyor. Baseline'dan ÖNCE: kullanıcı hedefi az önce koyduysa ve
+      // fiyat zaten altındaysa ilk turda haber verilir. Hedef bildirimi gittiyse aynı turda indirim
+      // bildirimi ayrıca gitmiyor (tek olay, iki push olmasın).
+      let hedefGitti = false;
+      if (w.target) {
+        const altinda = price.price <= w.target;
+        if (altinda && !w.targetHit) {
+          messages.push({
+            to: rec.token, title: M.target, body: M.targetBody(w.name, price.price),
+            data: { slug: w.slug || '', name: w.name, appid: w.appid || '', type: 'price-target' },
+            sound: 'default', priority: 'high',
+          });
+          if (rec.uid) await addNotif(rec.uid, { type: 'price_target', key: `price:${w.key}`, data: { game: oyun, price: price.price, discount, target: w.target } });
+          w.targetHit = true; changed = true; hedefGitti = true;
+        } else if (!altinda && w.targetHit) {
+          w.targetHit = false; changed = true;
+        }
+      }
+
       // İlk kez görülüyorsa baseline ayarla, bildirim gönderme
       if (prev == null) {
         w.lastDiscount = discount;
@@ -129,15 +164,16 @@ export async function GET(request) {
       }
 
       // Yeni/daha derin indirim → bildirim
-      if (discount > 0 && discount > prev) {
+      if (!hedefGitti && discount > 0 && discount > prev) {
         messages.push({
           to: rec.token,
-          title: '💸 İndirim!',
-          body: `${w.name} şimdi -%${discount} indirimde`,
-          data: { slug: w.slug || '', name: w.name, type: 'price-alert' },
+          title: M.sale,
+          body: M.saleBody(w.name, discount),
+          data: { slug: w.slug || '', name: w.name, appid: w.appid || '', type: 'price-alert' },
           sound: 'default',
           priority: 'high',
         });
+        if (rec.uid) await addNotif(rec.uid, { type: 'price_drop', key: `price:${w.key}`, data: { game: oyun, price: price.price, discount, original: price.original ?? null } });
       }
 
       if (discount !== prev || price.price !== w.lastPrice) {
