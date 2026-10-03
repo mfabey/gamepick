@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { signValue, readValue, SESSION_TTL_SEC, LINK_TTL_SEC } from '../../../lib/session-cookie';
 import { cookies } from 'next/headers';
 import { redisCmd, redisGetJSON, redisSetJSON } from '../../../lib/redis';
-import { mergeProfile, getProfile } from '../../../lib/social-store';
+import { mergeProfile, getProfile, isBatutaAccount } from '../../../lib/social-store';
 import { LOGO_SRC } from '../../../lib/logo';
 
 export const dynamic = 'force-dynamic';
@@ -80,7 +80,7 @@ export async function GET() {
     } catch {}
 
     let resolvedUsername = profile?.username || user.username || null;
-    if (!resolvedUsername && String(user.email || '').toLowerCase().includes('batuta')) {
+    if (!resolvedUsername && isBatutaAccount(user)) {
       resolvedUsername = 'batuta';
     }
 

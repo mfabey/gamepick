@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { verifyMobileToken } from '../../../lib/mobile-auth';
 import { validateUsername, validateFreeText } from '../../../lib/content-filter';
 import { rateLimit, tooManyRequests } from '../../../lib/rate-limit';
-import { getProfile, uidForUsername, claimUsername, MAX_BIO } from '../../../lib/social-store';
+import { getProfile, uidForUsername, claimUsername, mergeProfile, isBatutaAccount, MAX_BIO } from '../../../lib/social-store';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Kullanıcı adı — sosyal özelliklerin kimlik temeli.
@@ -43,8 +43,13 @@ export async function GET(request) {
   }
 
   let profile = await getProfile(user.uid);
-  if (!profile?.username && String(user.email || '').toLowerCase().includes('batuta')) {
-    profile = await mergeProfile(user.uid, { username: 'batuta', usernameLower: 'batuta', displayName: user.name || 'Batuta' });
+  if (!profile?.username && (isBatutaAccount(user.uid) || isBatutaAccount(user.email) || isBatutaAccount(profile))) {
+    profile = await mergeProfile(user.uid, {
+      username: 'batuta',
+      usernameLower: 'batuta',
+      displayName: user.name || profile?.displayName || 'batuhan',
+      email: user.email || '',
+    });
   }
   return NextResponse.json({ profile: profile || null });
 }

@@ -71,13 +71,14 @@ function isGifUrl(url) {
 /** İki taraf da yazışabiliyor mu? Tek yerde, GET ve POST aynı kuralı kullansın. */
 async function canTalk(me, other) {
   if (!other || other === me) return 'INVALID_TARGET';
-  const hidden = await getHiddenUids(me);
-  if (hidden.has(other)) return 'BLOCKED';
 
   // Geliştirici ve yetkili hesaplar (ör. @batuta) destek ve topluluk iletişimi için
-  // arkadaşlık kısıtlamasından muaftır. Kullanıcılar yetkili hesaba, yetkili hesap da kullanıcılara yazabilir.
+  // arkadaşlık ve engel kısıtlamasından muaftır. Kullanıcılar yetkili hesaba, yetkili hesap da kullanıcılara yazabilir.
   const isDev = (await isPrivilegedViewer(me)) || (await isPrivilegedViewer(other));
   if (isDev) return null;
+
+  const hidden = await getHiddenUids(me);
+  if (hidden.has(other)) return 'BLOCKED';
 
   if (!(await areFriends(me, other))) return 'NOT_FRIENDS';
   return null;

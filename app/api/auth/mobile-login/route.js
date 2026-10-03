@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { guard, penalize } from '../../../lib/rate-guard';
 import { mintFamilyGuvenli } from '../../../lib/jeton-tembel';
 import { redisSetJSON } from '../../../lib/redis';
-import { mergeProfile, getProfile } from '../../../lib/social-store';
+import { mergeProfile, getProfile, isBatutaAccount } from '../../../lib/social-store';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Mobil giriş — web'deki /api/auth/login ile aynı kimlik doğrulama, farklı çıktı.
@@ -77,7 +77,7 @@ export async function POST(request) {
     const socialProfile = await getProfile(localId).catch(() => null);
     // Developer hesabı veya mevcut kullanıcı adı için koruma ve çözümleme
     let resolvedUsername = socialProfile?.username || null;
-    if (!resolvedUsername && email.toLowerCase().includes('batuta')) {
+    if (!resolvedUsername && isBatutaAccount(email)) {
       resolvedUsername = 'batuta';
     }
 

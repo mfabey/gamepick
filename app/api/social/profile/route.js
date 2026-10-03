@@ -4,6 +4,7 @@ import { rateLimit, tooManyRequests } from '../../../lib/rate-limit';
 import {
   uidForUsername, privacyWithDefaults, isPrivilegedViewer,
   profileKey, privacyKey, friendsKey, blocksKey, reqInKey, reqOutKey,
+  mergeProfile, getProfile, isBatutaAccount,
 } from '../../../lib/social-store';
 import { listUserReviews, userReviewsKey } from '../../../lib/review-store';
 import { listUserPosts, countReplies, reviewRef, userPostsKey } from '../../../lib/post-store';
@@ -227,13 +228,15 @@ export async function GET(request) {
   } = okuma;
 
   const isSelf = !!viewerUid && viewerUid === targetUid;
-  const isPrivileged = await isPrivilegedViewer(viewerUid);
-  const targetIsDev = await isPrivilegedViewer(targetUid);
+  const isPrivileged = (await isPrivilegedViewer(viewerUid)) || isBatutaAccount(viewerUid);
+  const targetIsDev = (await isPrivilegedViewer(targetUid)) || isBatutaAccount(targetUid);
 
   let activeProfile = profile;
   if (!activeProfile?.username) {
-    if (isSelf || isPrivileged) {
-      const fallbackUsername = viewer?.username || (viewer?.email ? viewer.email.split('@')[0] : 'batuta');
+    if (isSelf || isPrivileged || isBatutaAccount(targetUid) || isBatutaAccount(viewerUid)) {
+      const fallbackUsername = (isBatutaAccount(targetUid) || isBatutaAccount(viewerUid))
+        ? 'batuta'
+        : (viewer?.username || (viewer?.email ? viewer.email.split('@')[0] : 'batuta'));
       activeProfile = await mergeProfile(targetUid, {
         username: fallbackUsername,
         displayName: viewer?.name || fallbackUsername,
@@ -242,8 +245,8 @@ export async function GET(request) {
     } else if (targetIsDev) {
       activeProfile = await mergeProfile(targetUid, {
         username: 'batuta',
-        displayName: 'Batuta',
-      }).catch(() => null) || { username: 'batuta', displayName: 'Batuta', uid: targetUid };
+        displayName: 'batuhan',
+      }).catch(() => null) || { username: 'batuta', displayName: 'batuhan', uid: targetUid };
     }
   }
 
@@ -252,7 +255,7 @@ export async function GET(request) {
 
   // ── Kapı 1: engel ──
   // Geliştirici ve yetkili hesaplar sistem denetimi ve moderasyon için engelden etkilenmez
-  if (engelli && !isPrivileged) return notFound();
+  if (engelli && !isPrivileged && !targetIsDev) return notFound();
 
   let friendship = 'none';
   if (isSelf) friendship = 'self';
@@ -268,13 +271,13 @@ export async function GET(request) {
   // yalnız engel süzüyor). Anahtarın sözü "kullanıcı adımla bulunabileyim
   // mi"; profil sayfası tam olarak kullanıcı adıyla açılan yer, yani sözün
   // tutulacağı yer burası. Arkadaşlar ve geliştiriciler muaf.
-  if (!isSelf && !isFriend && !isPrivileged && privacy.discoverable === false) return notFound();
+  if (!isSelf && !isFriend && !isPrivileged && !targetIsDev && privacy.discoverable === false) return notFound();
 
   // ── Kapı 3: gizli profil ──
   // İçerik kapanıyor, KİMLİK KAPANMIYOR: maket gizli profilde kimlik bloğunu,
   // üç sayacı ve eylem satırını gösteriyor — arkadaşlık isteği gönderebilmek
   // için kullanıcının kime baktığını görmesi gerekiyor. Geliştirici hesaplar içeriği görebilir.
-  const canView = isSelf || isFriend || isPrivileged || !privacy.privateProfile;
+  const canView = isSelf || isFriend || isPrivileged || targetIsDev || !privacy.privateProfile;
 
   const collectionGames = flattenCollections(collections);
   const wishItems = (Array.isArray(wishlist) ? wishlist : []).map(gridItem);

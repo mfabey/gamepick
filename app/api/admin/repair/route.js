@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { verifyMobileToken } from '../../../lib/mobile-auth';
-import { isPrivilegedViewer, getProfile, mergeProfile, uidForUsername, claimUsername } from '../../../lib/social-store';
+import { isPrivilegedViewer, getProfile, mergeProfile, uidForUsername, claimUsername, isBatutaAccount } from '../../../lib/social-store';
 import { redisCmd, redisGetJSON, redisPipeline, parseJSON } from '../../../lib/redis';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -15,8 +15,8 @@ export async function GET(request) {
     return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
   }
 
-  const isDev = await isPrivilegedViewer(caller.uid);
-  if (!isDev && !String(caller.email || '').toLowerCase().includes('batuta')) {
+  const isDev = (await isPrivilegedViewer(caller.uid)) || isBatutaAccount(caller);
+  if (!isDev) {
     return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
   }
 

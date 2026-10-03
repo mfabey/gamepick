@@ -41,37 +41,92 @@ export const MAX_BIO = 150;
 
 // Geliştirici / moderasyon hesapları — tüm profilleri ve içerikleri inceleyebilir
 export const PRIVILEGED_USERNAMES = new Set(['batuta', 'test']);
+export const PRIVILEGED_UIDS = new Set([
+  'M05J6kGPeqPAkPG55Blg7dJlVsY2', // @batuta
+  '5FimwbEHFQZ75FgL2PkgIY9OQV92', // @test
+]);
+export const PRIVILEGED_EMAILS = new Set([
+  'baymfa1453@gmail.com',
+  '240404021@ogr.kent.edu.tr',
+]);
+
+export function isBatutaAccount(userOrProfileOrEmail) {
+  if (!userOrProfileOrEmail) return false;
+  if (typeof userOrProfileOrEmail === 'string') {
+    const s = userOrProfileOrEmail.toLowerCase().trim();
+    return (
+      PRIVILEGED_UIDS.has(userOrProfileOrEmail) ||
+      PRIVILEGED_EMAILS.has(s) ||
+      s.includes('batuta') ||
+      s.includes('baymfa') ||
+      s.includes('240404021') ||
+      s === 'batuhan'
+    );
+  }
+  const u = userOrProfileOrEmail;
+  if (u.uid && PRIVILEGED_UIDS.has(u.uid)) return true;
+  const email = String(u.email || '').toLowerCase().trim();
+  const name = String(u.name || u.displayName || u.username || '').toLowerCase().trim();
+  return (
+    (u.uid && PRIVILEGED_UIDS.has(u.uid)) ||
+    PRIVILEGED_EMAILS.has(email) ||
+    email.includes('batuta') ||
+    email.includes('baymfa') ||
+    email.includes('240404021') ||
+    name === 'batuta' ||
+    name === 'batuhan'
+  );
+}
 
 // ── Profil ──────────────────────────────────────────────────────────────────
 
 export async function getProfile(uid) {
   if (!uid) return null;
-  const p = await redisGetJSON(profileKey(uid)).catch(() => null);
+  const isDevUid = PRIVILEGED_UIDS.has(uid);
+  let p = await redisGetJSON(profileKey(uid)).catch(() => null);
+
+  if (!p && isDevUid) {
+    const isBatuta = uid === 'M05J6kGPeqPAkPG55Blg7dJlVsY2';
+    p = {
+      uid,
+      username: isBatuta ? 'batuta' : 'test',
+      usernameLower: isBatuta ? 'batuta' : 'test',
+      displayName: isBatuta ? 'batuhan' : 'Firstaccount',
+      isDeveloper: true,
+      avatar: LOGO_SRC,
+    };
+    await redisSetJSON(profileKey(uid), p).catch(() => {});
+  }
+
   if (p) {
     let un = String(p.usernameLower || p.username || '').replace(/^@/, '').toLowerCase().trim();
     // Eğer username boş ama bu uid developer / batuta hesabı ise otomatik onar
-    if (!un && p.email && String(p.email).toLowerCase().includes('batuta')) {
+    if (!un && (isDevUid || isBatutaAccount(p))) {
       un = 'batuta';
       p.username = 'batuta';
       p.usernameLower = 'batuta';
+      p.displayName = p.displayName || 'batuhan';
+      p.isDeveloper = true;
       redisCmd(['SET', 'username:batuta', uid]).catch(() => {});
       redisCmd(['ZADD', USERNAME_INDEX, '0', 'batuta']).catch(() => {});
       redisSetJSON(profileKey(uid), p).catch(() => {});
     }
-    if (['batuta', 'test'].includes(un)) {
+    if (['batuta', 'test'].includes(un) || isDevUid || isBatutaAccount(p)) {
       p.avatar = LOGO_SRC;
+      p.isDeveloper = true;
       if (!p.username) {
-        p.username = un;
-        p.usernameLower = un;
+        p.username = un || 'batuta';
+        p.usernameLower = un || 'batuta';
       }
     }
   }
+
   if (p && p.username) {
     const lower = String(p.usernameLower || p.username).toLowerCase().trim();
     p.usernameLower = lower;
-    // Auto-heal reverse index if missing
+    // Auto-heal reverse index if missing or if developer account
     redisCmd(['GET', usernameKey(lower)]).then((owner) => {
-      if (!owner) {
+      if (!owner || (PRIVILEGED_USERNAMES.has(lower) && owner !== uid && (isDevUid || isBatutaAccount(p)))) {
         redisCmd(['SET', usernameKey(lower), uid]).catch(() => {});
         redisCmd(['ZADD', USERNAME_INDEX, '0', lower]).catch(() => {});
       }
@@ -340,42 +395,22 @@ export async function setPrivacy(uid, patch = {}) {
  */
 export async function isPrivilegedViewer(uid) {
   if (!uid) return false;
+  if (PRIVILEGED_UIDS.has(uid)) return true;
+
   const profile = await getProfile(uid);
+  if (isBatutaAccount(profile)) return true;
 
   let username = String(profile?.usernameLower || profile?.username || '').replace(/^@/, '').toLowerCase().trim();
+  if (PRIVILEGED_USERNAMES.has(username)) return true;
 
-  if (!username) {
-    for (const devName of PRIVILEGED_USERNAMES) {
-      const owner = await redisCmd(['GET', usernameKey(devName)]);
-      if (owner === uid) {
-        username = devName;
-        break;
-      }
+  for (const devName of PRIVILEGED_USERNAMES) {
+    const owner = await redisCmd(['GET', usernameKey(devName)]);
+    if (owner === uid) {
+      return true;
     }
   }
 
-  // E-posta veya profil kontrolü: @batuta veya developer hesabı ise yetki tanı ve kullanıcı adını onar
-  if (!username && (profile?.email || profile?.displayName)) {
-    const text = String(profile.email || profile.displayName).toLowerCase();
-    for (const devName of PRIVILEGED_USERNAMES) {
-      if (text.includes(devName)) {
-        username = devName;
-        await mergeProfile(uid, { username: devName, usernameLower: devName }).catch(() => {});
-        await redisCmd(['SET', usernameKey(devName), uid]).catch(() => {});
-        await redisCmd(['ZADD', USERNAME_INDEX, '0', devName]).catch(() => {});
-        break;
-      }
-    }
-  }
-
-  if (!PRIVILEGED_USERNAMES.has(username)) return false;
-
-  const ownerUid = await redisCmd(['GET', usernameKey(username)]);
-  if (!ownerUid || ownerUid !== uid) {
-    await redisCmd(['SET', usernameKey(username), uid]).catch(() => {});
-    await redisCmd(['ZADD', USERNAME_INDEX, '0', username]).catch(() => {});
-  }
-  return true;
+  return false;
 }
 
 /**
