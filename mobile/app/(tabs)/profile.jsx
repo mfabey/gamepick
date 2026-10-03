@@ -52,6 +52,7 @@ import { weeklyReport } from '../../src/services/stats';
 
 import ProfileHeader from '../../src/components/ProfileHeader';
 import ProfileTabs from '../../src/components/ProfileTabs';
+import { isDeveloperUser } from '../../src/utils/developer';
 import { coverWidth, gridCols, GRID_GAP, GRID_PAD } from '../../src/components/CoverGrid';
 import { GameCardSmall, smallCardHeight } from '../../src/components/ui/GameCards';
 import { useYanBosluk } from '../../src/hooks/useIcerikAlani';
@@ -184,7 +185,14 @@ export default function ProfileScreen() {
     const sessiz = !tazele && !uzakMi && !!onbellektenBaslik(onbellekRef.current);
     if (tazele) setTazeleniyor(true); else if (!sessiz) setYukleniyor(true);
     try {
-      const r = await getUserProfile(uzakMi ? { tab: hedefTab, offset: 0 } : {});
+      const uParam = account?.username || (account?.email ? account.email.split('@')[0] : undefined);
+      const uidParam = account?.uid || undefined;
+      const queryParams = {
+        ...(uParam ? { username: uParam } : {}),
+        ...(uidParam ? { uid: uidParam } : {}),
+        ...(uzakMi ? { tab: hedefTab, offset: 0 } : {}),
+      };
+      const r = await getUserProfile(queryParams);
       yanitGeldi.current = true;
       setSunucu(r);
       basligiAldik.current = true;
@@ -207,22 +215,18 @@ export default function ProfileScreen() {
         fetchQuery(anahtar, () => Promise.resolve(baslik), { force: true }).catch(() => {});
       }
     } catch (e) {
-      // 404 = kullanıcı adı henüz kurulmamış. Hata DEĞİL, bir sonraki adım:
-      // sosyal kimlik kurulmadan profilin gösterecek bir şeyi yok.
-      //
-      // Önbellekten çizilmiş bir başlık varsa KALDIRILIYOR: sunucu artık
-      // "profil yok" diyor ve eski kimliği boş durum mesajının üstünde
-      // göstermek çelişki olurdu.
       if (e?.status === 404) {
         yanitGeldi.current = true;
-        setSunucu(null);
-        setYok(true);
+        if (!account) {
+          setSunucu(null);
+          setYok(true);
+        }
       }
     } finally {
       setYukleniyor(false);
       setTazeleniyor(false);
     }
-  }, []);
+  }, [account]);
 
   const onTazele = useCallback(async () => {
     await Promise.all([
@@ -328,10 +332,24 @@ export default function ProfileScreen() {
     reviews: sunucu?.profile?.counts?.reviews || 0,
   }), [sunucu, gameCount, yerelKoleksiyon.length, yerelIstek.length, hasConnections]);
 
-  const profil = useMemo(
-    () => (sunucu?.profile ? { ...sunucu.profile, counts: sayaclar } : null),
-    [sunucu, sayaclar]
-  );
+  const profil = useMemo(() => {
+    if (sunucu?.profile) {
+      return { ...sunucu.profile, counts: sayaclar };
+    }
+    if (account) {
+      const isDev = isDeveloperUser(account);
+      const username = account.username || (account.email ? account.email.split('@')[0] : (isDev ? 'batuta' : ''));
+      return {
+        uid: account.uid,
+        username,
+        displayName: account.displayName || account.name || username,
+        avatar: account.avatar || null,
+        isDeveloper: isDev,
+        counts: sayaclar,
+      };
+    }
+    return null;
+  }, [sunucu, sayaclar, account]);
 
   // ── Oyun sayısını sunucuya bildir ──
   // BAŞKASININ profilindeki "oyun" sayacının tek kaynağı bu. Kütüphane

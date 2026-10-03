@@ -61,8 +61,8 @@ export default function UserProfileScreen() {
   const { t } = useLanguage();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
-  const { username } = useLocalSearchParams();
+  const { username: rawUsername } = useLocalSearchParams();
+  const username = useMemo(() => (typeof rawUsername === 'string' ? rawUsername.replace(/^@/, '').trim() : ''), [rawUsername]);
 
   const listRef = useRef(null);
   const [sunucu, setSunucu] = useState(null);
