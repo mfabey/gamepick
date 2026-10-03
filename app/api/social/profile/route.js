@@ -250,19 +250,6 @@ export async function GET(request) {
   // `username` yoksa sosyal kimlik hiç kurulmamış demektir
   if (!activeProfile?.username) return notFound();
 
-  let activeProfile = profile;
-  if (!activeProfile?.username && isSelf) {
-    const fallbackUsername = viewer?.username || (viewer?.email ? viewer.email.split('@')[0] : 'Gamer');
-    activeProfile = await mergeProfile(targetUid, {
-      username: fallbackUsername,
-      displayName: viewer?.name || fallbackUsername,
-      email: viewer?.email || '',
-    }).catch(() => null) || { username: fallbackUsername, displayName: fallbackUsername, uid: targetUid };
-  }
-
-  // `username` yoksa sosyal kimlik hiç kurulmamış demektir
-  if (!activeProfile?.username) return notFound();
-
   // ── Kapı 1: engel ──
   // Geliştirici ve yetkili hesaplar sistem denetimi ve moderasyon için engelden etkilenmez
   if (engelli && !isPrivileged) return notFound();
