@@ -46,6 +46,7 @@ export const PRIVILEGED_UIDS = new Set([
   '5FimwbEHFQZ75FgL2PkgIY9OQV92', // @test
 ]);
 export const PRIVILEGED_EMAILS = new Set([
+  'xxxbatuhan@gmail.com',
   'baymfa1453@gmail.com',
   '240404021@ogr.kent.edu.tr',
 ]);
