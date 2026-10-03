@@ -282,6 +282,11 @@ export async function GET(request) {
   const collectionGames = flattenCollections(collections);
   const wishItems = (Array.isArray(wishlist) ? wishlist : []).map(gridItem);
 
+  const rawGameCount = Number(activeProfile.gameCount) || 0;
+  const computedGames = rawGameCount > 0
+    ? rawGameCount
+    : (collectionGames.length > 0 ? collectionGames.length : wishItems.length);
+
   const body = {
     profile: {
       uid: targetUid,
@@ -294,7 +299,7 @@ export async function GET(request) {
         // Sayaç üçlüsü (maket): gönderi · arkadaş · oyun.
         posts: postCount,
         friends: friendCount,
-        games: Number(activeProfile.gameCount) || 0,
+        games: computedGames,
         // Sekme bağlam satırı ("KOLEKSİYON · 214") bu üçünü okuyor.
         collection: collectionGames.length,
         wishlist: wishItems.length,

@@ -167,6 +167,14 @@ export default function ProfileScreen() {
     [wishlist]
   );
 
+  const ilkKendiGecisRef = useRef(false);
+  useEffect(() => {
+    if (!ilkKendiGecisRef.current && yerelKoleksiyon.length === 0 && yerelIstek.length > 0 && tab === 'collection') {
+      ilkKendiGecisRef.current = true;
+      setTab('wishlist');
+    }
+  }, [yerelKoleksiyon.length, yerelIstek.length, tab]);
+
   const week = useMemo(() => weeklyReport({ wishlistCount: wishlist.length }), [wishlist.length]);
 
   // Başlık bir kez alındı mı? YEREL sekmeye geçerken ağa çıkmamak için.
@@ -326,7 +334,7 @@ export default function ProfileScreen() {
   const sayaclar = useMemo(() => ({
     posts: sunucu?.profile?.counts?.posts || 0,
     friends: sunucu?.profile?.counts?.friends || 0,
-    games: hasConnections ? gameCount : 0,
+    games: hasConnections ? gameCount : (yerelKoleksiyon.length > 0 ? yerelKoleksiyon.length : (yerelIstek.length || sunucu?.profile?.counts?.games || 0)),
     collection: yerelKoleksiyon.length,
     wishlist: yerelIstek.length,
     reviews: sunucu?.profile?.counts?.reviews || 0,
@@ -572,7 +580,12 @@ export default function ProfileScreen() {
               onCounter={(k) => {
                 if (k === 'posts') sekmeDegis('posts');
                 else if (k === 'friends') router.push('/friends');
-                else router.push('/library');
+                else {
+                  if (hasConnections) router.push('/library');
+                  else if (yerelKoleksiyon.length > 0) sekmeDegis('collection');
+                  else if (yerelIstek.length > 0) sekmeDegis('wishlist');
+                  else router.push('/library');
+                }
               }}
               onEdit={() => router.push('/profile-edit')}
               onConnect={() => router.push('/settings')}

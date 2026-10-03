@@ -66,6 +66,7 @@ export default function UserProfileScreen() {
   const username = useMemo(() => (typeof rawUsername === 'string' ? rawUsername.replace(/^@/, '').trim() : ''), [rawUsername]);
 
   const listRef = useRef(null);
+  const ilkGecisYapildi = useRef(false);
   const [sunucu, setSunucu] = useState(null);
   const [tab, setTab] = useState('collection');
   const [items, setItems] = useState([]);
@@ -106,6 +107,30 @@ export default function UserProfileScreen() {
       const r = await getUserProfile({ username, tab: hedefTab, offset: 0 });
       setSunucu(r);
       setBulunamadi(false);
+
+      const counts = r?.profile?.counts || {};
+      // Eğer hedef sekme collection ve boşsa, kullanıcının dolu olan ilk sekmesine otomatik geç (wishlist > reviews > posts)
+      if (!ilkGecisYapildi.current && hedefTab === 'collection' && (!counts.collection || counts.collection === 0)) {
+        ilkGecisYapildi.current = true;
+        let doluTab = null;
+        if ((counts.wishlist || 0) > 0) doluTab = 'wishlist';
+        else if ((counts.reviews || 0) > 0) doluTab = 'reviews';
+        else if ((counts.posts || 0) > 0) doluTab = 'posts';
+
+        if (doluTab) {
+          setTab(doluTab);
+          const rDolu = await getUserProfile({ username, tab: doluTab, offset: 0 }).catch(() => null);
+          if (rDolu) {
+            setSunucu(rDolu);
+            const dList = rDolu?.items || [];
+            setItems(dList);
+            setHasMore(!!rDolu.hasMore);
+            setOffset(dList.length);
+            return;
+          }
+        }
+      }
+
       const list = r?.items || [];
       setItems(list);
       setHasMore(!!r.hasMore);
@@ -201,7 +226,20 @@ export default function UserProfileScreen() {
     if (anahtar === 'report') setSikayet(true);
   }, [sunucu, router, arkadaslik, t]);
 
-  const profil = sunucu?.profile || null;
+  const profil = useMemo(() => {
+    if (!sunucu?.profile) return null;
+    const c = sunucu.profile.counts || {};
+    const computedGames = (c.games || 0) > 0
+      ? c.games
+      : ((c.collection || 0) > 0 ? c.collection : (c.wishlist || 0));
+    return {
+      ...sunucu.profile,
+      counts: {
+        ...c,
+        games: computedGames,
+      },
+    };
+  }, [sunucu]);
   const canView = sunucu?.canView !== false;
   const izgara = tab === 'collection' || tab === 'wishlist';
   // Sütun sayısı ve hücre genişliği AYNI genişlikten türüyor; ikisini
@@ -340,10 +378,13 @@ export default function UserProfileScreen() {
                 mutual={sunucu?.mutualFriends || 0}
                 busy={islemde}
                 onCounter={(k) => {
-                  if (k === 'posts') setTab('posts');
-                  // Arkadaş ve oyun sayaçları BAŞKASININ profilinde hedefsiz:
-                  // onun arkadaş listesi ve kütüphanesi bize kapalı. Sayı
-                  // bilgi olarak duruyor, yalancı bir kapı açmıyor.
+                  if (k === 'posts') {
+                    setTab('posts');
+                  } else if (k === 'games') {
+                    const c = profil?.counts || {};
+                    if ((c.collection || 0) > 0) setTab('collection');
+                    else setTab('wishlist');
+                  }
                 }}
                 onMessage={() => router.push(`/chat/${profil.uid}`)}
                 onFriend={arkadaslik}

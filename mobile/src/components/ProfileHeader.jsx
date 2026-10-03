@@ -99,6 +99,7 @@ export default function ProfileHeader({
   if (!profile) return null;
 
   const c = profile.counts || {};
+  const gamesN = (c.games || 0) > 0 ? c.games : ((c.collection || 0) > 0 ? c.collection : (c.wishlist || 0));
   const isSelf = friendship === 'self';
   const name = profile.displayName || profile.username;
 
@@ -149,7 +150,7 @@ export default function ProfileHeader({
       <View style={styles.stats}>
         <Counter n={c.posts || 0}   label={t('prof.statPosts')}   onPress={() => onCounter?.('posts')} />
         <Counter n={c.friends || 0} label={t('prof.statFriends')} onPress={() => onCounter?.('friends')} />
-        <Counter n={c.games || 0}   label={t('prof.statGames')}   onPress={() => onCounter?.('games')} />
+        <Counter n={gamesN}         label={t('prof.statGames')}   onPress={() => onCounter?.('games')} />
       </View>
 
       {/* ── Çipler ── */}
