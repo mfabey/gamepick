@@ -20,6 +20,7 @@ import { sendPush } from '../../../lib/push';
 // YALNIZCA ARKADAŞLAR. Bu, yabancıdan gelen mesaj spam'ini kökten kapatan en
 // basit kural: rastgele kullanıcıya yazmanın yolu yok, önce arkadaşlık isteği
 // kabul edilmeli. Apple Guideline 1.2'nin istediği önlemlerden biri de bu.
+// Geliştirici ve destek hesapları istisnadır.
 //
 // ENGELLEME arkadaşlıktan BAĞIMSIZ kontrol ediliyor: iki kullanıcı arkadaş
 // kalıp birbirini engellemiş olabilir; engel her durumda kazanır.

@@ -66,6 +66,17 @@ export async function getProfile(uid) {
       }
     }
   }
+  if (p && p.username) {
+    const lower = String(p.usernameLower || p.username).toLowerCase().trim();
+    p.usernameLower = lower;
+    // Auto-heal reverse index if missing
+    redisCmd(['GET', usernameKey(lower)]).then((owner) => {
+      if (!owner) {
+        redisCmd(['SET', usernameKey(lower), uid]).catch(() => {});
+        redisCmd(['ZADD', USERNAME_INDEX, '0', lower]).catch(() => {});
+      }
+    }).catch(() => {});
+  }
   return p;
 }
 

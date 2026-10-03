@@ -75,6 +75,7 @@ export async function POST(request) {
     }
 
     const socialProfile = await getProfile(localId).catch(() => null);
+    // Developer hesabı veya mevcut kullanıcı adı için koruma ve çözümleme
     let resolvedUsername = socialProfile?.username || null;
     if (!resolvedUsername && email.toLowerCase().includes('batuta')) {
       resolvedUsername = 'batuta';

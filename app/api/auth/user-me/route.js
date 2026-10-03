@@ -74,7 +74,6 @@ export async function GET() {
       return NextResponse.json({ user: null });
     }
 
-    // Mobil veya sitedeki en güncel profil bilgilerini Redis'ten çekip birleştir
     let profile = null;
     try {
       profile = await getProfile(user.uid);

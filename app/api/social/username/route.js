@@ -42,7 +42,10 @@ export async function GET(request) {
     });
   }
 
-  const profile = await getProfile(user.uid);
+  let profile = await getProfile(user.uid);
+  if (!profile?.username && String(user.email || '').toLowerCase().includes('batuta')) {
+    profile = await mergeProfile(user.uid, { username: 'batuta', usernameLower: 'batuta', displayName: user.name || 'Batuta' });
+  }
   return NextResponse.json({ profile: profile || null });
 }
 

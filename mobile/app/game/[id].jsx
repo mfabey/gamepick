@@ -16,6 +16,7 @@ import { fetchGameDetail, fetchGameByAppid, fetchSteamReviews } from '../../src/
 import { motion } from '../../src/theme';
 import { useYanBosluk } from '../../src/hooks/useIcerikAlani';
 import { stripHtml } from '../../src/utils/text';
+import { heroImage } from '../../src/utils/images';
 import { bagilZaman } from '../../src/utils/relativeTime';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useTimeToData } from '../../src/dev/perf';
@@ -344,7 +345,8 @@ export default function GameDetail() {
   // alıyor ve bağımlılık dizisi RENDER SIRASINDA değerlendiriliyor. Aşağıda
   // kalsaydı const'ın geçici ölü bölgesine (TDZ) düşer, ekran açılır açılmaz
   // ReferenceError verirdi.
-  const cover = g?.image || image;
+  const rawCover = detail?.screenshots?.[0] || g?.image || image;
+  const cover = heroImage(rawCover, detail?.steamAppId || appid);
 
   const cikiliyor = useRef(false);
 
