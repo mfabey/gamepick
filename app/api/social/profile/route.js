@@ -180,7 +180,8 @@ export async function GET(request) {
   const viewerUid = viewer?.uid || null;
 
   const { searchParams } = new URL(request.url);
-  const username = (searchParams.get('username') || '').trim();
+  const rawUsername = (searchParams.get('username') || '').trim();
+  const username = rawUsername.replace(/^@/, '').trim();
   const uidParam = (searchParams.get('uid') || '').trim();
   const tab = searchParams.get('tab');
   const offset = Math.max(0, Number(searchParams.get('offset')) || 0);
@@ -225,17 +226,33 @@ export async function GET(request) {
     collections, wishlist, friendCount, postCount, reviewCount, conn,
   } = okuma;
 
-  // `username` yoksa sosyal kimlik hiç kurulmamış demektir (kimlik uçları
-  // aynı anahtara ad/e-posta yazıyor — bkz. mergeProfile). Böyle bir kaydı
-  // profil saymak, adı olmayan bir sayfaya kapı açardı.
-  if (!profile?.username) return notFound();
-
   const isSelf = !!viewerUid && viewerUid === targetUid;
+  const isPrivileged = await isPrivilegedViewer(viewerUid);
+  const targetIsDev = await isPrivilegedViewer(targetUid);
+
+  let activeProfile = profile;
+  if (!activeProfile?.username) {
+    if (isSelf || isPrivileged) {
+      const fallbackUsername = viewer?.username || (viewer?.email ? viewer.email.split('@')[0] : 'batuta');
+      activeProfile = await mergeProfile(targetUid, {
+        username: fallbackUsername,
+        displayName: viewer?.name || fallbackUsername,
+        email: viewer?.email || '',
+      }).catch(() => null) || { username: fallbackUsername, displayName: fallbackUsername, uid: targetUid };
+    } else if (targetIsDev) {
+      activeProfile = await mergeProfile(targetUid, {
+        username: 'batuta',
+        displayName: 'Batuta',
+      }).catch(() => null) || { username: 'batuta', displayName: 'Batuta', uid: targetUid };
+    }
+  }
+
+  // `username` yoksa sosyal kimlik hiç kurulmamış demektir
+  if (!activeProfile?.username) return notFound();
 
   // ── Kapı 1: engel ──
-  // 403 DEĞİL 404: "engellendin" demek, engelleyenin kimliğini ve kararını
-  // ifşa eder. Var olmayan sayfa gibi davranmak tek doğru cevap.
-  if (engelli) return notFound();
+  // Geliştirici ve yetkili hesaplar sistem denetimi ve moderasyon için engelden etkilenmez
+  if (engelli && !isPrivileged) return notFound();
 
   let friendship = 'none';
   if (isSelf) friendship = 'self';
@@ -245,8 +262,6 @@ export async function GET(request) {
     else if (friendState.incoming.includes(targetUid)) friendship = 'incoming';
   }
   const isFriend = friendship === 'friends';
-  const isPrivileged = await isPrivilegedViewer(viewerUid);
-  const targetIsDev = await isPrivilegedViewer(targetUid);
 
   // ── Kapı 2: bulunabilirlik ──
   // `discoverable` bugüne kadar HİÇBİR YERDE uygulanmıyordu (searchUsers
@@ -267,16 +282,16 @@ export async function GET(request) {
   const body = {
     profile: {
       uid: targetUid,
-      username: profile.username,
-      displayName: profile.displayName || profile.username,
-      bio: profile.bio || '',
-      avatar: profile.avatar ?? null,
+      username: activeProfile.username,
+      displayName: activeProfile.displayName || activeProfile.username,
+      bio: activeProfile.bio || '',
+      avatar: activeProfile.avatar ?? null,
       isDeveloper: targetIsDev,
       counts: {
         // Sayaç üçlüsü (maket): gönderi · arkadaş · oyun.
         posts: postCount,
         friends: friendCount,
-        games: Number(profile.gameCount) || 0,
+        games: Number(activeProfile.gameCount) || 0,
         // Sekme bağlam satırı ("KOLEKSİYON · 214") bu üçünü okuyor.
         collection: collectionGames.length,
         wishlist: wishItems.length,
@@ -321,9 +336,9 @@ export async function GET(request) {
       replyCount: yanit[reviewRef(r.appid, r.uid)] || 0,
       author: {
         uid: targetUid,
-        username: profile.username,
-        displayName: profile.displayName || profile.username,
-        avatar: profile.avatar ?? null,
+        username: activeProfile.username,
+        displayName: activeProfile.displayName || activeProfile.username,
+        avatar: activeProfile.avatar ?? null,
         isDeveloper: targetIsDev,
       },
     }));
@@ -338,9 +353,9 @@ export async function GET(request) {
       ...p,
       author: {
         uid: targetUid,
-        username: profile.username,
-        displayName: profile.displayName || profile.username,
-        avatar: profile.avatar ?? null,
+        username: activeProfile.username,
+        displayName: activeProfile.displayName || activeProfile.username,
+        avatar: activeProfile.avatar ?? null,
         isDeveloper: targetIsDev,
       },
     }));
