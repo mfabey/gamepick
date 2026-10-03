@@ -36,12 +36,16 @@ const HEDEF_HUCRE = 106;
  * Ölçüm: 375 → 3 (101) · 390 → 3 (106) · 411 → 3 (113) · 820 → 6 (117).
  */
 export function gridCols(width) {
-  const n = Math.floor((width - GRID_PAD * 2 + GRID_GAP) / (HEDEF_HUCRE + GRID_GAP));
-  return Math.max(3, n);
+  const w = Number(width) > 0 ? Number(width) : 390;
+  const n = Math.floor((w - GRID_PAD * 2 + GRID_GAP) / (HEDEF_HUCRE + GRID_GAP));
+  return Math.max(3, n || 3);
 }
 
 /** Tek hücrenin genişliği (pt). Yükseklik kitin 106×142 oranından türüyor. */
 export function coverWidth(windowWidth, cols = gridCols(windowWidth)) {
-  const inner = windowWidth - GRID_PAD * 2;
-  return (inner - GRID_GAP * (cols - 1)) / cols;
+  const w = Number(windowWidth) > 0 ? Number(windowWidth) : 390;
+  const c = Math.max(1, Number(cols) || 3);
+  const inner = w - GRID_PAD * 2;
+  const val = (inner - GRID_GAP * (c - 1)) / c;
+  return Number(val) > 0 ? val : 106;
 }

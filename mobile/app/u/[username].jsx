@@ -61,6 +61,7 @@ export default function UserProfileScreen() {
   const { t } = useLanguage();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const { username: rawUsername } = useLocalSearchParams();
   const username = useMemo(() => (typeof rawUsername === 'string' ? rawUsername.replace(/^@/, '').trim() : ''), [rawUsername]);
 
