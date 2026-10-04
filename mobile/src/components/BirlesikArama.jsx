@@ -117,8 +117,8 @@ export function AramaSonuclari({ q, kapsam, onKapsam, oyunlar = [], oyunlarYukle
   }, [haber.data, q]);
 
   const kisiSatir = (p) => (
-    <UserRow key={p.uid} avatar={p.avatar} name={p.displayName || p.username} handle={`@${p.username}`}
-      onPress={() => router.push(`/u/${p.username}`)} />
+    <UserRow key={p.uid} avatar={p.avatar} name={p.displayName || p.username} handle={p.username ? `@${p.username}` : ''}
+      onPress={() => router.push(`/u/${p.username || p.uid}`)} />
   );
   const toplulukSatir = (c) => (
     <CommunityRow key={c.appid} image={c.image} name={t('comm.title').replace('{name}', c.name)}

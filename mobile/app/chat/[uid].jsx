@@ -855,7 +855,8 @@ export default function ChatScreen() {
    */
   const kisiSec = useCallback((anahtar) => {
     if (anahtar === 'profile') {
-      if (peer?.username) router.push(`/u/${peer.username}`);
+      const target = peer?.username || peer?.uid || other;
+      if (target) router.push(`/u/${target}`);
       return;
     }
     if (anahtar === 'report') { setReportTarget(cid || other); return; }
@@ -964,9 +965,12 @@ export default function ChatScreen() {
                     onPress={() => router.back()} />
         <UserAvatar avatar={peer?.avatar} name={name} size={C.headerAvatar} online={!!presence?.online} />
 
-        <PressableScale disabled={!peer?.username} dimDisabled={false}
-          accessibilityRole={peer?.username ? 'button' : 'text'}
-          onPress={() => peer?.username && router.push(`/u/${peer.username}`)} style={styles.kimlik}>
+        <PressableScale disabled={!peer?.username && !peer?.uid && !other} dimDisabled={false}
+          accessibilityRole={(peer?.username || peer?.uid || other) ? 'button' : 'text'}
+          onPress={() => {
+            const target = peer?.username || peer?.uid || other;
+            if (target) router.push(`/u/${target}`);
+          }} style={styles.kimlik}>
           <Txt variant="cardTitleLarge" numberOfLines={1}>{name}</Txt>
           {/* Durum satırı yalnızca paylaşan kullanıcılarda çiziliyor.
               "YAZIYOR" ARTIK BURADA DEĞİL: akışın en altında kendi

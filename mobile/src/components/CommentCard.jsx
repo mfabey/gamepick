@@ -43,6 +43,7 @@ function CommentCard({ reply, rootAuthorUid, onRequireAccount, onReply, onMenu }
 
   const name = reply.author?.displayName || reply.author?.username || t('post.someone');
   const username = reply.author?.username;
+  const targetUser = username || reply.author?.uid;
 
   return (
     <Comment
@@ -55,7 +56,7 @@ function CommentCard({ reply, rootAuthorUid, onRequireAccount, onReply, onMenu }
       onLike={onLike}
       onReply={onReply}
       onMore={onMenu ? () => onMenu(reply.author) : undefined}
-      onProfile={username ? () => router.push(`/u/${username}`) : undefined}
+      onProfile={targetUser ? () => router.push(`/u/${targetUser}`) : undefined}
       badge={<DevBadge user={reply.author} username={username} isDeveloper={reply.author?.isDeveloper} size={11} />}
       // "Yazar" hapı: yanıt kök gönderinin sahibinden geliyorsa (kit `op`).
       author={!!rootAuthorUid && reply.author?.uid === rootAuthorUid}

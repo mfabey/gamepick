@@ -85,8 +85,8 @@ export default function FriendRequestsScreen() {
                   <UserRow
                     avatar={p.avatar}
                     name={p.displayName || p.username}
-                    handle={`@${p.username}`}
-                    onPress={() => router.push(`/u/${p.username}`)}
+                    handle={p.username ? `@${p.username}` : ''}
+                    onPress={() => router.push(`/u/${p.username || p.uid}`)}
                   />
                   {/* İki düğme EŞİT GENİŞLİKTE ve 44 yüksekliğinde: kabul
                       birincil ama reddetmek de meşru bir seçim, küçültülmüyor.
@@ -113,8 +113,8 @@ export default function FriendRequestsScreen() {
                   key={p.uid}
                   avatar={p.avatar}
                   name={p.displayName || p.username}
-                  handle={`@${p.username}`}
-                  onPress={() => router.push(`/u/${p.username}`)}
+                  handle={p.username ? `@${p.username}` : ''}
+                  onPress={() => router.push(`/u/${p.username || p.uid}`)}
                   right={
                     <Button title={t('soc.cancel')} variant="secondary" height={K.friends.action}
                       onPress={() => act(p.uid, 'cancel')} style={styles.action} />

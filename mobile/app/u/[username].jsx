@@ -62,13 +62,31 @@ export default function UserProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const { username: rawUsername } = useLocalSearchParams();
-  const username = useMemo(() => (typeof rawUsername === 'string' ? rawUsername.replace(/^@/, '').trim() : ''), [rawUsername]);
+  const { username: rawUsername, uid: rawUid } = useLocalSearchParams();
+  const username = useMemo(() => {
+    for (const val of [rawUsername, rawUid]) {
+      if (typeof val === 'string') {
+        const clean = val.replace(/^@/, '').trim();
+        if (clean && clean !== 'null' && clean !== 'undefined') return clean;
+      }
+    }
+    return '';
+  }, [rawUsername, rawUid]);
+
+  const targetUid = useMemo(() => {
+    if (typeof rawUid === 'string' && rawUid && rawUid !== 'null' && rawUid !== 'undefined') {
+      return rawUid.trim();
+    }
+    if (username && username.length > 20) {
+      return username;
+    }
+    return '';
+  }, [rawUid, username]);
 
   const listRef = useRef(null);
   const ilkGecisYapildi = useRef(false);
   const [sunucu, setSunucu] = useState(null);
-  const [tab, setTab] = useState('collection');
+  const [tab, setTab] = useState('wishlist');
   const [items, setItems] = useState([]);
   const [hasMore, setHasMore] = useState(false);
   const [offset, setOffset] = useState(0);
@@ -104,30 +122,28 @@ export default function UserProfileScreen() {
   const yukle = useCallback(async (hedefTab, { tazele = false } = {}) => {
     if (tazele) setTazeleniyor(true); else setYukleniyor(true);
     try {
-      const r = await getUserProfile({ username, tab: hedefTab, offset: 0 });
+      const r = await getUserProfile({
+        username,
+        ...(targetUid ? { uid: targetUid } : {}),
+        tab: hedefTab,
+        offset: 0,
+      });
       setSunucu(r);
       setBulunamadi(false);
 
       const counts = r?.profile?.counts || {};
-      // Eğer hedef sekme collection ve boşsa, kullanıcının dolu olan ilk sekmesine otomatik geç (wishlist > reviews > posts)
-      if (!ilkGecisYapildi.current && hedefTab === 'collection' && (!counts.collection || counts.collection === 0)) {
+      // Eğer ilk açılışta hedef sekme boşsa ve kullanıcının dolu başka sekmesi varsa ona geç
+      if (!ilkGecisYapildi.current && (!counts[hedefTab] || counts[hedefTab] === 0)) {
         ilkGecisYapildi.current = true;
         let doluTab = null;
         if ((counts.wishlist || 0) > 0) doluTab = 'wishlist';
+        else if ((counts.collection || 0) > 0) doluTab = 'collection';
         else if ((counts.reviews || 0) > 0) doluTab = 'reviews';
         else if ((counts.posts || 0) > 0) doluTab = 'posts';
 
-        if (doluTab) {
+        if (doluTab && doluTab !== hedefTab) {
           setTab(doluTab);
-          const rDolu = await getUserProfile({ username, tab: doluTab, offset: 0 }).catch(() => null);
-          if (rDolu) {
-            setSunucu(rDolu);
-            const dList = rDolu?.items || [];
-            setItems(dList);
-            setHasMore(!!rDolu.hasMore);
-            setOffset(dList.length);
-            return;
-          }
+          return;
         }
       }
 
@@ -145,7 +161,7 @@ export default function UserProfileScreen() {
       setYukleniyor(false);
       setTazeleniyor(false);
     }
-  }, [username]);
+  }, [username, targetUid]);
 
   useEffect(() => { if (username) yukle(tab); }, [username, tab, yukle]);
 
@@ -153,14 +169,19 @@ export default function UserProfileScreen() {
     if (dahaYukleniyor || !hasMore) return;
     setDahaYukleniyor(true);
     try {
-      const r = await getUserProfile({ username, tab, offset });
+      const r = await getUserProfile({
+        username,
+        ...(targetUid ? { uid: targetUid } : {}),
+        tab,
+        offset,
+      });
       const list = r?.items || [];
       setItems((s) => [...s, ...list]);
       setHasMore(list.length === PAGE);
       setOffset((o) => o + list.length);
     } catch { /* sessiz: bayat liste duruyor */ }
     finally { setDahaYukleniyor(false); }
-  }, [username, tab, offset, hasMore, dahaYukleniyor]);
+  }, [username, targetUid, tab, offset, hasMore, dahaYukleniyor]);
 
   // ── Arkadaşlık ──
   // İYİMSER: dokunuşun 100ms içinde karşılığı olmalı. Sunucu reddederse
@@ -261,10 +282,10 @@ export default function UserProfileScreen() {
   }, [izgara, items, canView, sutun]);
 
   // ── Bulunamadı ──
-  if (bulunamadi) {
+  if (bulunamadi || (!yukleniyor && !sunucu?.profile)) {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
-        <Ust onBack={() => router.back()} title={`@${username}`} colors={colors} styles={styles} t={t} />
+        <Ust onBack={() => router.back()} title={username ? `@${username}` : ''} colors={colors} styles={styles} t={t} />
         <EmptyState icon="users" title={t('prof.notFound')} text={t('prof.notFoundDesc')} />
       </SafeAreaView>
     );

@@ -28,12 +28,16 @@ function unauthorized() {
 }
 
 function shape(uids, profiles) {
-  return uids.map((uid) => ({
-    uid,
-    username: profiles[uid]?.username || null,
-    displayName: profiles[uid]?.displayName || profiles[uid]?.username || null,
-    avatar: profiles[uid]?.avatar || null,
-  }));
+  return uids.map((uid) => {
+    const p = profiles[uid] || {};
+    const un = p.username || (p.email ? p.email.split('@')[0] : (p.displayName ? p.displayName.replace(/\s+/g, '_') : uid));
+    return {
+      uid,
+      username: un,
+      displayName: p.displayName || un,
+      avatar: p.avatar || null,
+    };
+  });
 }
 
 export async function GET(request) {

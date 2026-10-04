@@ -48,7 +48,8 @@ export function useModerasyon() {
     if (!kisi) return;
 
     if (anahtar === 'profile') {
-      if (kisi.username) router.push(`/u/${kisi.username}`);
+      const target = kisi.username || kisi.uid;
+      if (target) router.push(`/u/${target}`);
       return;
     }
     if (anahtar === 'report') { setReportTarget(kisi.hedef); return; }

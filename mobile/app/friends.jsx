@@ -110,7 +110,7 @@ export default function FriendsScreen() {
     if (!kisi) return;
     // ARTIK "PROFİLİNE GİT" VAR. Bu satır menüde bilerek yoktu çünkü gidecek
     // bir ekran yoktu; `/u/[username]` ile o boşluk kapandı.
-    if (anahtar === 'profile') { router.push(`/u/${kisi.username}`); return; }
+    if (anahtar === 'profile') { router.push(`/u/${kisi.username || kisi.uid}`); return; }
     if (anahtar === 'message') { router.push(`/chat/${kisi.uid}`); return; }
     if (anahtar === 'remove') {
       Alert.alert(kisi.displayName || kisi.username, t('soc.removeConfirm'), [
@@ -231,7 +231,7 @@ export default function FriendsScreen() {
                   <KisiSatiri
                     key={r.uid}
                     person={r}
-                    onPress={() => router.push(`/u/${r.username}`)}
+                    onPress={() => router.push(`/u/${r.username || r.uid}`)}
                     onLongPress={() => setMenu({ person: r, arkadas: r.relation === 'friends' })}
                     right={
                       r.relation === 'friends' ? <Durum text={t('soc.friends')} />
@@ -256,7 +256,7 @@ export default function FriendsScreen() {
                   <KisiSatiri
                     key={f.uid}
                     person={f}
-                    onPress={() => router.push(`/u/${f.username}`)}
+                    onPress={() => router.push(`/u/${f.username || f.uid}`)}
                     onLongPress={() => setMenu({ person: f, arkadas: true })}
                     right={
                       <IconButton icon="msg" label={t('soc.menu.message')} iconSize={K.friends.messageIcon}

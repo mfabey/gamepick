@@ -213,23 +213,44 @@ export async function mergeProfile(uid, patch = {}) {
   return next;
 }
 
-/** Kullanıcı adından uid çözer. */
+/** Kullanıcı adından veya UID'den uid çözer. */
 export async function uidForUsername(username) {
   if (!username) return null;
-  const lower = String(username).replace(/^@/, '').toLowerCase().trim();
-  let uid = await redisCmd(['GET', usernameKey(lower)]);
-  if (!uid && PRIVILEGED_USERNAMES.has(lower)) {
-    // Geliştirici kullanıcı adı henüz bağlanmadıysa user_profile anahtarlarında ara
-    try {
-      const keys = await redisCmd(['KEYS', 'user_profile:*']);
-      if (keys && keys.length > 0) {
-        for (const k of keys) {
-          const prof = await redisGetJSON(k);
-          if (prof && (
-            String(prof.username || '').replace(/^@/, '').toLowerCase().trim() === lower ||
-            String(prof.usernameLower || '').replace(/^@/, '').toLowerCase().trim() === lower ||
-            String(prof.email || '').toLowerCase().includes(lower)
-          )) {
+  const clean = String(username).replace(/^@/, '').trim();
+  const lower = clean.toLowerCase();
+  if (!lower) return null;
+
+  // 1. Doğrudan username:{lower} anahtarından oku
+  let uid = await redisCmd(['GET', usernameKey(lower)]).catch(() => null);
+  if (uid) return uid;
+
+  // 2. Eğer gönderilen değer zaten doğrudan bir UID ise
+  try {
+    const directProf = await redisGetJSON(profileKey(clean)).catch(() => null);
+    if (directProf) {
+      if (directProf.username) {
+        const uLower = String(directProf.usernameLower || directProf.username).toLowerCase().trim();
+        redisCmd(['SET', usernameKey(uLower), clean]).catch(() => {});
+        redisCmd(['ZADD', USERNAME_INDEX, '0', uLower]).catch(() => {});
+      }
+      return clean;
+    }
+  } catch {}
+
+  // 3. User profile kayıtlarında kullanıcı adı, email veya isim eşleşmesi ara
+  try {
+    const keys = await redisCmd(['KEYS', 'user_profile:*']).catch(() => null);
+    if (keys && keys.length > 0) {
+      for (const k of keys) {
+        const prof = await redisGetJSON(k).catch(() => null);
+        if (prof) {
+          const pUser = String(prof.username || '').replace(/^@/, '').toLowerCase().trim();
+          const pUserLower = String(prof.usernameLower || '').replace(/^@/, '').toLowerCase().trim();
+          const pEmail = String(prof.email || '').toLowerCase().trim();
+          const pEmailPre = pEmail.split('@')[0];
+          const pName = String(prof.displayName || prof.name || '').toLowerCase().trim();
+
+          if (pUser === lower || pUserLower === lower || pEmail === lower || pEmailPre === lower || pName === lower) {
             const foundUid = k.replace(/^user_profile:/, '');
             await redisCmd(['SET', usernameKey(lower), foundUid]).catch(() => {});
             await redisCmd(['ZADD', USERNAME_INDEX, '0', lower]).catch(() => {});
@@ -237,9 +258,10 @@ export async function uidForUsername(username) {
           }
         }
       }
-    } catch {}
-  }
-  return uid || null;
+    }
+  } catch {}
+
+  return null;
 }
 
 /**

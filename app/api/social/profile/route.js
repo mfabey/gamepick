@@ -201,25 +201,32 @@ export async function GET(request) {
   const rlKey = viewerUid
     ? `rl:profile:${viewerUid}`
     : `rl:profile:ip:${clientIp(request)}`;
+  const isPrivilegedCaller = (await isPrivilegedViewer(viewerUid)) || isBatutaAccount(viewerUid) || isBatutaAccount(viewer?.email);
+
   // Tur sayısının gerekçesi `profilOku`nun üstünde.
-  const bilinenUid = username ? null : (uidParam || viewerUid);
+  const bilinenUid = uidParam || (username ? null : viewerUid);
   let rl;
   let targetUid;
   let okuma = null;
   if (bilinenUid) {
     targetUid = bilinenUid;
     [rl, okuma] = await Promise.all([
-      rateLimit(rlKey, 300, 3600),
+      isPrivilegedCaller ? Promise.resolve({ ok: true }) : rateLimit(rlKey, 300, 3600),
       profilOku(targetUid, viewerUid),
     ]);
   } else {
-    [rl, targetUid] = await Promise.all([
-      rateLimit(rlKey, 300, 3600),
-      uidForUsername(username),
+    // Önce kullanıcı adından veya UID'den çöz
+    targetUid = await uidForUsername(username);
+    if (!targetUid) {
+      const direct = await getProfile(username).catch(() => null);
+      if (direct?.uid) targetUid = direct.uid;
+    }
+    [rl, okuma] = await Promise.all([
+      isPrivilegedCaller ? Promise.resolve({ ok: true }) : rateLimit(rlKey, 300, 3600),
+      targetUid ? profilOku(targetUid, viewerUid) : Promise.resolve(null),
     ]);
-    if (rl.ok && targetUid) okuma = await profilOku(targetUid, viewerUid);
   }
-  if (!rl.ok) return NextResponse.json(tooManyRequests(), { status: 429 });
+  if (!isPrivilegedCaller && !rl.ok) return NextResponse.json(tooManyRequests(), { status: 429 });
   if (!targetUid || !okuma) return notFound();
 
   const {
@@ -228,25 +235,41 @@ export async function GET(request) {
   } = okuma;
 
   const isSelf = !!viewerUid && viewerUid === targetUid;
-  const isPrivileged = (await isPrivilegedViewer(viewerUid)) || isBatutaAccount(viewerUid);
+  const isPrivileged = isPrivilegedCaller;
   const targetIsDev = (await isPrivilegedViewer(targetUid)) || isBatutaAccount(targetUid);
+  const targetIsBatuta = isBatutaAccount(targetUid) || (targetUid === 'M05J6kGPeqPAkPG55Blg7dJlVsY2');
 
   let activeProfile = profile;
   if (!activeProfile?.username) {
-    if (isSelf || isPrivileged || isBatutaAccount(targetUid) || isBatutaAccount(viewerUid)) {
-      const fallbackUsername = (isBatutaAccount(targetUid) || isBatutaAccount(viewerUid))
-        ? 'batuta'
-        : (viewer?.username || (viewer?.email ? viewer.email.split('@')[0] : 'batuta'));
-      activeProfile = await mergeProfile(targetUid, {
-        username: fallbackUsername,
-        displayName: viewer?.name || fallbackUsername,
-        email: viewer?.email || '',
-      }).catch(() => null) || { username: fallbackUsername, displayName: fallbackUsername, uid: targetUid };
-    } else if (targetIsDev) {
+    if (targetIsBatuta) {
       activeProfile = await mergeProfile(targetUid, {
         username: 'batuta',
         displayName: 'batuhan',
       }).catch(() => null) || { username: 'batuta', displayName: 'batuhan', uid: targetUid };
+    } else if (targetIsDev) {
+      activeProfile = await mergeProfile(targetUid, {
+        username: 'test',
+        displayName: 'Firstaccount',
+      }).catch(() => null) || { username: 'test', displayName: 'Firstaccount', uid: targetUid };
+    } else if (isSelf) {
+      const selfName = viewer?.username || (viewer?.email ? viewer.email.split('@')[0] : 'kullanici');
+      activeProfile = await mergeProfile(targetUid, {
+        username: selfName,
+        displayName: viewer?.name || selfName,
+        email: viewer?.email || '',
+      }).catch(() => null) || { username: selfName, displayName: viewer?.name || selfName, uid: targetUid };
+    } else {
+      const fallbackName = (username && username.length <= 20)
+        ? username
+        : (activeProfile?.email
+          ? activeProfile.email.split('@')[0]
+          : (activeProfile?.displayName ? activeProfile.displayName.replace(/\s+/g, '_') : (targetUid.length > 8 ? `user_${targetUid.slice(0, 6)}` : targetUid)));
+      activeProfile = {
+        ...(activeProfile || {}),
+        uid: targetUid,
+        username: fallbackName,
+        displayName: activeProfile?.displayName || fallbackName,
+      };
     }
   }
 

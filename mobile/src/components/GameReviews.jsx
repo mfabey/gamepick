@@ -196,7 +196,10 @@ export default function GameReviews({ appid, gameName, hideTitle = false }) {
           key={`${r.appid}:${r.uid}`}
           review={r}
           onOpenThread={() => konuAc(r)}
-          onAuthor={() => r.author?.username && router.push(`/u/${r.author.username}`)}
+          onAuthor={() => {
+            const target = r.author?.username || r.author?.uid;
+            if (target) router.push(`/u/${target}`);
+          }}
           onMenu={(k) => mod.acMenu(k, { targetType: 'review', targetId: `${r.appid}:${r.uid}` })}
         />
       ))}

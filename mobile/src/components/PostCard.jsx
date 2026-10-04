@@ -69,6 +69,7 @@ function PostCard({ post, onOpen, onMenu, onLongPressMenu, onRequireAccount, com
 
   const name = post.author?.displayName || post.author?.username || t('post.someone');
   const username = post.author?.username;
+  const targetUser = username || post.author?.uid;
   const open = useCallback(() => (onOpen ? onOpen(post) : router.push(`/post/${post.id}`)), [onOpen, post, router]);
 
   return (
@@ -87,7 +88,7 @@ function PostCard({ post, onOpen, onMenu, onLongPressMenu, onRequireAccount, com
             handle={username ? `@${username}` : ''}
             time={timeAgo(post.at, lang)}
             badge={<DevBadge user={post.author} username={username} isDeveloper={post.author?.isDeveloper} size={13} />}
-            onProfile={username ? () => router.push(`/u/${username}`) : undefined}
+            onProfile={targetUser ? () => router.push(`/u/${targetUser}`) : undefined}
             onMore={onMenu ? () => onMenu(post.author) : undefined}
           />
         }
