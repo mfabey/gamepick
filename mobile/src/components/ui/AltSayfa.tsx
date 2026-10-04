@@ -39,6 +39,8 @@ const F = K.filterSheet;
 type Props = {
   visible: boolean;
   onClose: () => void;
+  /** Modal tamamen kapandıktan sonra (native dismiss) çağrılan geri çağırma */
+  onDismiss?: () => void;
   /** Başlık satırı (kit: 16/600). Verilmezse satır yok. */
   title?: string;
   subtitle?: string;
@@ -59,7 +61,7 @@ type Props = {
   contentStyle?: StyleProp<ViewStyle>;
 };
 
-export function AltSayfa({ visible, onClose, title, subtitle, leading, trailing, klavye = false, oran = 0.82,
+export function AltSayfa({ visible, onClose, onDismiss, title, subtitle, leading, trailing, klavye = false, oran = 0.82,
   sabitOran, footer, accessibilityLabel, children, contentStyle }: Props) {
   const { colors } = useDesignTheme();
   const { t } = useLanguage();
@@ -142,7 +144,7 @@ export function AltSayfa({ visible, onClose, title, subtitle, leading, trailing,
   );
 
   return (
-    <Modal visible={acik} transparent animationType="none" onRequestClose={onClose} statusBarTranslucent navigationBarTranslucent>
+    <Modal visible={acik} transparent animationType="none" onRequestClose={onClose} onDismiss={onDismiss} statusBarTranslucent navigationBarTranslucent>
       <GestureHandlerRootView style={styles.kok}>
         <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: colors.scrim }, zemin]}>
           <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityRole="button" accessibilityLabel={t('a11y.close')} />

@@ -6,7 +6,7 @@
 // Gönderim davranışı AYNEN: arkadaşa dokun → sohbete kart düşer, satır
 // "Gönderildi" olur; hata olursa satır eski hâlinde kalır ve tekrar denenir.
 // ─────────────────────────────────────────────────────────────────────────────
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { View, StyleSheet, ActivityIndicator, FlatList } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { getFriends, sendChat } from '../api/social';
@@ -34,9 +34,11 @@ export default function ShareToFriendSheet({ visible, onClose, appid, gameId, ne
   const [friends, setFriends] = useState(null);
   const [sent, setSent] = useState({});       // uid → true
   const [busy, setBusy] = useState(null);     // gönderim sürerken uid
+  const pendingShareRef = useRef(false);
 
   useEffect(() => {
     if (!visible) return;
+    pendingShareRef.current = false;
     setSent({});
     setFriends(null);
     if (!getSession()) { setFriends([]); return; }
@@ -63,16 +65,38 @@ export default function ShareToFriendSheet({ visible, onClose, appid, gameId, ne
     finally { setBusy(null); }
   }, [busy, sent, appid, gameId, newsUrl]);
 
+  const handleDismiss = useCallback(() => {
+    if (pendingShareRef.current) {
+      pendingShareRef.current = false;
+      setTimeout(() => {
+        onSystemShare?.();
+      }, 50);
+    }
+  }, [onSystemShare]);
+
+  const handleOtherApps = useCallback(() => {
+    if (pendingShareRef.current) return;
+    pendingShareRef.current = true;
+    onClose?.();
+    // Güvenlik zamanlayıcısı: onDismiss native olarak tetiklenmezse devreye girer
+    setTimeout(() => {
+      if (pendingShareRef.current) {
+        pendingShareRef.current = false;
+        onSystemShare?.();
+      }
+    }, 450);
+  }, [onClose, onSystemShare]);
+
   const digerSatiri = onSystemShare ? (
     <View style={styles.diger}>
       <ListGroup>
-        <ListRow title={t('share.otherApps')} icon="share" onPress={() => { onClose?.(); onSystemShare(); }} />
+        <ListRow title={t('share.otherApps')} icon="share" onPress={handleOtherApps} />
       </ListGroup>
     </View>
   ) : null;
 
   return (
-    <AltSayfa visible={visible} onClose={onClose} title={t('share.title')} subtitle={gameName || undefined} oran={0.7}>
+    <AltSayfa visible={visible} onClose={onClose} onDismiss={handleDismiss} title={t('share.title')} subtitle={gameName || undefined} oran={0.7}>
       {friends === null ? (
         <View style={styles.merkez}><ActivityIndicator color={colors.text2} /></View>
       ) : friends.length === 0 ? (

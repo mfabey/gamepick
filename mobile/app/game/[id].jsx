@@ -267,12 +267,14 @@ export default function GameDetail() {
 
   // Oyunu iOS paylaşım katmanıyla paylaş
   const onShare = useCallback(async () => {
+    const gameName = detail?.name || name || '';
     const url = detail?.steamUrl || detail?.officialUrl || '';
     try {
-      Haptics.selectionAsync();
+      Haptics.selectionAsync().catch(() => {});
       await Share.share({
-        title: detail?.name || name,
-        message: url ? `${detail?.name || name} — ${url}` : `${detail?.name || name}`,
+        title: gameName,
+        message: url ? `${gameName} — ${url}` : gameName,
+        ...(url ? { url } : {}),
       });
     } catch { /* kullanıcı iptal etti */ }
   }, [detail, name]);
