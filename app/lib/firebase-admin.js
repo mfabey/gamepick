@@ -13,9 +13,83 @@ import path from 'path';
 // ─────────────────────────────────────────────────────────────────────────────
 
 let cached;
+let lastCredsInfo = null;
+let lastInitError = null;
+
+export function getServiceAccountInfo() {
+  return {
+    creds: lastCredsInfo,
+    error: lastInitError,
+  };
+}
+
+function parseServiceAccount(raw) {
+  if (!raw) return null;
+  if (typeof raw === 'object' && raw !== null) return raw;
+
+  let str = String(raw).trim();
+
+  // Çevreleyen tırnak işaretlerini (tek veya çift) temizle
+  if ((str.startsWith('"') && str.endsWith('"')) || (str.startsWith("'") && str.endsWith("'"))) {
+    str = str.slice(1, -1).trim();
+  }
+
+  // Eğer Base64 ile kodlanmışsa çöz
+  if (!str.startsWith('{')) {
+    try {
+      const dec = Buffer.from(str, 'base64').toString('utf8');
+      if (dec.trim().startsWith('{')) {
+        str = dec.trim();
+      }
+    } catch {}
+  }
+
+  let creds = null;
+  try {
+    creds = JSON.parse(str);
+  } catch (err1) {
+    // Kaçışlı JSON (JSON stringi içinde JSON) durumunu dene
+    try {
+      creds = JSON.parse(str.replace(/\\"/g, '"').replace(/\\\\/g, '\\'));
+    } catch (err2) {
+      lastInitError = `JSON ayrıştırma hatası: ${err1?.message || err1}`;
+      console.error('[firebase-admin] JSON parse hatası:', err1?.message || err1);
+      return null;
+    }
+  }
+
+  if (!creds || typeof creds !== 'object') {
+    lastInitError = 'Çözümlenen kimlik bir nesne değil.';
+    return null;
+  }
+
+  // Private key'deki satır sonlarını normalize et
+  if (typeof creds.private_key === 'string') {
+    creds.private_key = creds.private_key.replace(/\\n/g, '\n');
+  }
+
+  return creds;
+}
 
 function loadServiceAccountCreds() {
-  let raw = process.env.FIREBASE_SERVICE_ACCOUNT;
+  const possibleEnvNames = [
+    'FIREBASE_SERVICE_ACCOUNT',
+    'FIREBASE_SERVICE_ACCOUNT_KEY',
+    'FIREBASE_ADMIN_CREDENTIALS',
+    'FIREBASE_ADMIN_KEY',
+    'FIREBASE_CREDENTIALS',
+    'GOOGLE_APPLICATION_CREDENTIALS_JSON',
+  ];
+
+  let raw = null;
+  for (const name of possibleEnvNames) {
+    if (process.env[name]) {
+      raw = process.env[name];
+      break;
+    }
+  }
+
+  // Ortam değişkeni yoksa yerel dosya yollarını dene (Geliştirme ortamı için)
   if (!raw) {
     const fallbackPaths = [
       process.env.FIREBASE_SERVICE_ACCOUNT_PATH,
@@ -33,18 +107,20 @@ function loadServiceAccountCreds() {
     }
   }
 
-  if (!raw) return null;
-
-  try {
-    const creds = typeof raw === 'string' ? JSON.parse(raw) : raw;
-    if (typeof creds.private_key === 'string') {
-      creds.private_key = creds.private_key.replace(/\\n/g, '\n');
-    }
-    return creds;
-  } catch (err) {
-    console.error('[firebase-admin] Servis hesabı JSON çözümlenemedi:', err?.message || err);
+  if (!raw) {
+    lastInitError = 'FIREBASE_SERVICE_ACCOUNT ortam değişkeni veya anahtar dosyası bulunamadı.';
     return null;
   }
+
+  const creds = parseServiceAccount(raw);
+  if (creds) {
+    lastCredsInfo = {
+      projectId: creds.project_id || null,
+      clientEmail: creds.client_email || null,
+      privateKeyId: creds.private_key_id ? String(creds.private_key_id).slice(0, 12) + '...' : null,
+    };
+  }
+  return creds;
 }
 
 /** @returns Firebase Admin Auth örneği, ya da yapılandırılmamışsa null. */
@@ -63,6 +139,7 @@ export function adminAuth() {
       : initializeApp({ credential: cert(creds) });
     cached = getAuth(app);
   } catch (err) {
+    lastInitError = `initializeApp hatası: ${err?.message || err}`;
     console.error('firebase-admin başlatılamadı:', err?.message || err);
     cached = null;
   }

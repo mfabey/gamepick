@@ -16,6 +16,7 @@ export default function AdminUsersPage() {
   const [repairing, setRepairing] = useState(false);
   const [users, setUsers] = useState([]);
   const [backendStats, setBackendStats] = useState(null);
+  const [firebaseDiagnostic, setFirebaseDiagnostic] = useState(null);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('all'); // 'all', 'hasUsername', 'connected', 'social', 'google', 'apple', 'dev'
@@ -56,6 +57,9 @@ export default function AdminUsersPage() {
         setUsers(data.users);
         if (data.stats) {
           setBackendStats(data.stats);
+        }
+        if (data.firebase) {
+          setFirebaseDiagnostic(data.firebase);
         }
       } else {
         setError(data.error || 'FETCH_ERROR');
@@ -509,7 +513,7 @@ export default function AdminUsersPage() {
         {/* Top Header & Dev Operator Card */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 20, marginBottom: 32 }}>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8, flexWrap: 'wrap' }}>
               <div className="dev-badge-pulse">
                 <span className="dev-pulse-dot" />
                 GAMERISEN DEV ENGINE
@@ -517,6 +521,44 @@ export default function AdminUsersPage() {
               <span style={{ fontSize: 12, color: 'var(--text-3)', fontWeight: 600 }}>
                 Canlı Veri Senkronizasyonu
               </span>
+              {firebaseDiagnostic && (
+                <div
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '3px 10px',
+                    borderRadius: 999,
+                    fontSize: 11.5,
+                    fontWeight: 700,
+                    background:
+                      firebaseDiagnostic.status === 'connected'
+                        ? 'rgba(34,197,94,0.12)'
+                        : 'rgba(239,68,68,0.12)',
+                    border: `1px solid ${
+                      firebaseDiagnostic.status === 'connected'
+                        ? 'rgba(34,197,94,0.3)'
+                        : 'rgba(239,68,68,0.3)'
+                    }`,
+                    color:
+                      firebaseDiagnostic.status === 'connected' ? '#4ade80' : '#f87171',
+                  }}
+                  title={firebaseDiagnostic.error || `Firebase Projesi: ${firebaseDiagnostic.projectId || 'gamerisen'}`}
+                >
+                  <span
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: '50%',
+                      background:
+                        firebaseDiagnostic.status === 'connected' ? '#22c55e' : '#ef4444',
+                    }}
+                  />
+                  {firebaseDiagnostic.status === 'connected'
+                    ? `Firebase Admin: ${firebaseDiagnostic.fetchedCount} Kullanıcı Aktif`
+                    : `Firebase: ${firebaseDiagnostic.error || 'Bağlantı Hatası'}`}
+                </div>
+              )}
             </div>
 
             <h1

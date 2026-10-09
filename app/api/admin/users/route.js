@@ -36,14 +36,36 @@ export async function GET(request) {
 
   const usersMap = new Map();
 
+  const firebaseDiagnostic = {
+    status: 'idle',
+    fetchedCount: 0,
+    projectId: null,
+    clientEmail: null,
+    error: null,
+  };
+
   // 2. Firebase Admin SDK üzerinden tüm Firebase kullanıcılarını çek (varsa)
   try {
     const admin = await adminAuthGuvenli();
+    let credsMeta = null;
+    try {
+      const fbAdminMod = await import('../../../lib/firebase-admin');
+      credsMeta = fbAdminMod.getServiceAccountInfo?.();
+      if (credsMeta?.creds) {
+        firebaseDiagnostic.projectId = credsMeta.creds.projectId;
+        firebaseDiagnostic.clientEmail = credsMeta.creds.clientEmail;
+      }
+    } catch {}
+
     if (admin) {
       let pageToken = undefined;
       do {
         const list = await admin.listUsers(1000, pageToken);
-        for (const fbUser of list.users || []) {
+        const usersBatch = list.users || [];
+        firebaseDiagnostic.status = 'connected';
+        firebaseDiagnostic.fetchedCount += usersBatch.length;
+
+        for (const fbUser of usersBatch) {
           usersMap.set(fbUser.uid, {
             uid: fbUser.uid,
             email: fbUser.email || '',
@@ -71,8 +93,13 @@ export async function GET(request) {
         }
         pageToken = list.pageToken;
       } while (pageToken && usersMap.size < 10000);
+    } else {
+      firebaseDiagnostic.status = 'no_credentials';
+      firebaseDiagnostic.error = credsMeta?.error || 'Firebase Admin yapılandırılmamış veya credentials bulunamadı.';
     }
   } catch (err) {
+    firebaseDiagnostic.status = 'error';
+    firebaseDiagnostic.error = err?.message || String(err);
     console.error('[Admin users] Firebase listUsers hatası:', err?.message || err);
   }
 
@@ -395,6 +422,7 @@ export async function GET(request) {
     ok: true,
     total: userList.length,
     stats: aggregateStats,
+    firebase: firebaseDiagnostic,
     users: userList,
   });
 }
