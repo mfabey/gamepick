@@ -35,13 +35,39 @@ function parseServiceAccount(raw) {
   }
 
   // Eğer Base64 ile kodlanmışsa çöz
-  if (!str.startsWith('{')) {
+  if (!str.startsWith('{') && !str.includes('service_account') && !str.includes('private_key')) {
     try {
       const dec = Buffer.from(str, 'base64').toString('utf8');
-      if (dec.trim().startsWith('{')) {
+      if (dec.trim().startsWith('{') || dec.includes('service_account')) {
         str = dec.trim();
       }
     } catch {}
+  }
+
+  // Kırpılma / Eksik karakter otomatik onarımı:
+  // Vercel'e yapıştırılırken baştaki '{' veya '{"' atlandıysa (örn: type": "service_account"...)
+  if (str.startsWith('type":')) {
+    str = '{"' + str;
+  } else if (str.startsWith('"type"')) {
+    str = '{' + str;
+  } else if (!str.startsWith('{')) {
+    const typeIdx = str.indexOf('"type"');
+    const typeBareIdx = str.indexOf('type":');
+    if (typeIdx !== -1) {
+      str = '{' + str.slice(typeIdx);
+    } else if (typeBareIdx !== -1) {
+      str = '{"' + str.slice(typeBareIdx);
+    }
+  }
+
+  // Sonda eksik '}' varsa ekle veya sondaki fazlalığı temizle
+  if (!str.endsWith('}')) {
+    const lastBrace = str.lastIndexOf('}');
+    if (lastBrace !== -1 && lastBrace > str.lastIndexOf('"')) {
+      str = str.slice(0, lastBrace + 1);
+    } else {
+      str = str + '}';
+    }
   }
 
   let creds = null;
