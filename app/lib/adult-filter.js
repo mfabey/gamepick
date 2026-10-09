@@ -2,15 +2,66 @@
  * Adult / NSFW / Hentai / 18+ content filter utility
  */
 
+export const MAINSTREAM_ALLOWLIST = new Set([
+  'the-witcher-3-wild-hunt',
+  'the-witcher-2-assassins-of-kings-enhanced-edition',
+  'the-witcher-enhanced-edition',
+  'the-witcher',
+  'witcher-3',
+  'cyberpunk-2077',
+  'baldurs-gate-3',
+  'baldurs-gate-iii',
+  'grand-theft-auto-v',
+  'grand-theft-auto-iv',
+  'grand-theft-auto-san-andreas',
+  'mass-effect',
+  'mass-effect-2',
+  'mass-effect-3',
+  'mass-effect-legendary-edition',
+  'dragon-age-inquisition',
+  'dragon-age-origins',
+  'dragon-age-ii',
+  'dragon-age-the-veilguard',
+  'detroit-become-human',
+  'conan-exiles',
+  'rust',
+  'outlast',
+  'outlast-2',
+  'heavy-rain',
+  'far-cry-3',
+  'far-cry-4',
+  'far-cry-5',
+  'south-park-the-stick-of-truth',
+  'south-park-the-fractured-but-whole',
+  'bayonetta',
+  'catherine',
+  'catherine-full-body',
+  'red-dead-redemption-2',
+  'red-dead-redemption',
+  'the-last-of-us-part-i',
+  'the-last-of-us-part-ii',
+  'god-of-war',
+  'god-of-war-ragnarok',
+  'assassins-creed-valhalla',
+  'assassins-creed-odyssey',
+  'assassins-creed-origins',
+  'fallout-4',
+  'fallout-new-vegas',
+  'the-elder-scrolls-v-skyrim',
+  'the-elder-scrolls-v-skyrim-special-edition',
+  'elden-ring',
+  'dark-souls-iii',
+]);
+
 const ADULT_REGEX_PATTERNS = [
-  /\b(?:18\+|\+18|18plus|18-plus|18_plus|r-?18\+?|r-?18g|r-?18x|21\+|adults?\s*only|mature\s*18\+?)\b/i,
+  /\b(?:18\+|\+18|18plus|18-plus|18_plus|r-?18\+?|r-?18g|r-?18x|21\+|adults?\s*only)\b/i,
   /(?:^|\s|\W)(?:18\s*\+|\+\s*18)(?:$|\s|\W)/i,
   /\b(?:being\s+a\s+dik|dik|freshwomen|college\s+kings|milfy\s+city|acting\s+lessons|treasure\s+of\s+nadia|genesis\s+order|summertime\s+saga)\b/i,
   /\b(?:xxx|x-rated|hentai|eroge|ecchi|nsfw|uncensored|ahegao|futanari|bukkake|creampie|doujinshi)\b/i,
-  /\b(?:succubus|stripper|peeping|voyeur|futa|oppai|waifu|milf|femdom|pegging|dildo|masturbat\w*)\b/i,
+  /\b(?:succubus|stripper|peeping|voyeur|futa|oppai|femdom|pegging|dildo|masturbat\w*)\b/i,
   /\b(?:boobs?|tits?|titties|titty|pussy|vagina|penis|clitoris|orgasm|cuckold|camgirl|striptease)\b/i,
   /\b(?:erotica|erotic|porn|porno|fetish|bdsm|bondage|seduce|seduced|seduction|lingerie|thong)\b/i,
-  /\b(?:yuri|yaoi|harem|lewd|panty|panties|ejaculat\w*|intercourse|sensual|sexual)\b/i,
+  /\b(?:yuri|yaoi|lewd|panty|panties|ejaculat\w*|intercourse)\b/i,
   /\b(?:sexy\s*(?:girl|anime|waifu|babe|beach|puzzle|match|cards?|simulator)|hot\s*(?:girl|anime|babe|waifu)s?)\b/i,
   /\b(?:hentai\s*\w+|anime\s*girls?\s*18\+|erotic\s*\w+|adult\s*game|adult\s*novel|nude\s*\w+)\b/i,
   /\b(?:toys\s*18\+?|toy\s*18\+?|naughty\s*\w+|horny\s*\w+|smut|smutty|busty\s*\w+)\b/i,
@@ -21,10 +72,10 @@ const ADULT_REGEX_PATTERNS = [
 const FORBIDDEN_SUBSTRINGS = [
   'hentai', 'porn', 'porno', 'erotica', 'erotic', 'eroge', 'ecchi', 'nsfw', 'uncensored',
   'boobs', 'boob', 'tits', 'titties', 'oppai', 'vagina', 'penis', 'dildo', 'masturbat',
-  'panty', 'panties', 'harem', 'lewd', 'stripper', 'waifu', 'milf', 'succubus', 'bdsm',
+  'panty', 'panties', 'lewd', 'stripper', 'milf', 'succubus', 'bdsm',
   'bondage', 'seduce', 'seduced', 'seduction', 'camgirl', 'clitoris', 'orgasm', 'cuckold',
   'yuri', 'yaoi', 'striptease', 'ahegao', 'futanari', 'futa', 'bukkake', 'creampie',
-  'ejaculat', 'voyeur', 'lingerie', 'thong', 'intercourse', 'fetish', 'sensual', 'sexual',
+  'ejaculat', 'voyeur', 'lingerie', 'thong', 'intercourse', 'fetish',
   'r18', 'r-18', '18+', '+18', '18plus', '18-plus', '18_plus', 'adultsonly', 'adult-only',
   'erocart', 'doujin', 'doujinshi', 'nudity', 'naked', 'submissive', 'dominatrix',
   'deepthroat', 'femdom', 'footfetish', 'foot-fetish', 'pegging', 'incest',
@@ -38,20 +89,28 @@ const FORBIDDEN_SUBSTRINGS = [
 const STANDALONE_FORBIDDEN = new Set([
   'sex', 'adult', 'adults', 'nude', 'nudity', 'naked', 'lust', 'xxx', 'rape', 'raping',
   'sadism', 'masochism', 'condom', 'babe', 'babes', 'slut', 'sluts', 'whore', 'whores',
-  'pussy', 'dick', 'dik', 'cock', 'cum', 'anal', 'eroge', 'oppai', 'porno', 'lewd', 'waifu',
-  'harem', 'milf', 'stripper', 'bdsm', 'yuri', 'yaoi', 'hentai', 'erotic', 'erotica',
+  'pussy', 'dick', 'dik', 'cock', 'cum', 'anal', 'eroge', 'oppai', 'porno', 'lewd',
+  'milf', 'stripper', 'bdsm', 'yuri', 'yaoi', 'hentai', 'erotic', 'erotica',
   'ecchi', 'nsfw', 'uncensored', 'boob', 'boobs', 'tits', 'tit', 'titties', 'titty',
   'dildo', 'vagina', 'penis', 'masturbation', 'masturbate', 'clitoris', 'orgasm',
   'panties', 'panty', 'fetish', 'toys18', 'r18', '18plus', '18+', 'naughty', 'horny',
   'kinky', 'smut', 'busty', 'thicc', 'blowjob', 'handjob', 'cumshot', 'freshwomen',
 ]);
 
+// Explicit tags representing pornographic or 18+ eroge content
 const FORBIDDEN_TAGS = new Set([
-  'hentai', 'nsfw', 'erotica', 'erotic', 'porn', 'adult-only', 'uncensored',
+  'hentai', 'nsfw', 'erotica', 'porn', 'adult-only', 'adultsonly', 'uncensored',
   'r-18', 'r18', 'r18+', 'xxx', 'lewd', 'ecchi', 'eroge', 'visual-novel-18',
   'dating-sim-18', 'fetish', 'oppai', 'ahegao', 'futanari', 'futa', 'bukkake',
   'creampie', 'doujinshi', 'camgirl', 'striptease', 'femdom', 'pegging', 'dildo', 'masturbation'
 ]);
+
+// Substrings strictly applied to tags (not general titles)
+const EXPLICIT_TAG_SUBSTRINGS = [
+  'hentai', 'eroge', 'erotica', 'nsfw', 'porn', 'adult-only', 'adultsonly',
+  'r-18', 'r18', 'xxx', 'ahegao', 'futanari', 'bukkake', 'creampie',
+  'doujinshi', 'pegging', 'masturbat', 'dildo'
+];
 
 const FORBIDDEN_STEAM_DESCRIPTOR_IDS = new Set([3]);
 
@@ -60,6 +119,11 @@ export function isAdultTitleOrSlug(name, slug) {
   const rawSlug = String(slug || '');
   const n = rawName.toLowerCase();
   const s = rawSlug.toLowerCase();
+
+  const cleanSlug = s.replace(/^rawg_/, '').replace(/^steam_/, '');
+  if (MAINSTREAM_ALLOWLIST.has(cleanSlug)) {
+    return false;
+  }
 
   // 1. Regex pattern matches
   if (ADULT_REGEX_PATTERNS.some(re => re.test(rawName) || re.test(rawSlug) || re.test(n) || re.test(s))) {
@@ -83,25 +147,30 @@ export function isAdultTitleOrSlug(name, slug) {
 
 export function isAdultContent(game) {
   if (!game) return false;
-  if (isAdultTitleOrSlug(game.name, game.slug || game.rawgSlug)) {
+
+  const rawSlug = String(game.slug || game.rawgSlug || '').toLowerCase();
+  const cleanSlug = rawSlug.replace(/^rawg_/, '').replace(/^steam_/, '');
+  if (MAINSTREAM_ALLOWLIST.has(cleanSlug)) {
+    return false;
+  }
+
+  // 1. Title or slug check
+  if (isAdultTitleOrSlug(game.name, cleanSlug)) {
     return true;
   }
 
-  // 1. RAWG Tags
-  if (game.tags && Array.isArray(game.tags)) {
-    const hasForbiddenTag = game.tags.some(t => {
-      const tagSlug = (t.slug || '').toLowerCase();
-      const tagName = (t.name || '').toLowerCase();
-      if (FORBIDDEN_TAGS.has(tagSlug) || FORBIDDEN_TAGS.has(tagName)) return true;
-      if (FORBIDDEN_SUBSTRINGS.some(sub => tagSlug.includes(sub) || tagName.includes(sub))) return true;
-      return false;
-    });
-    if (hasForbiddenTag) return true;
+  // 2. Age / ESRB Rating
+  // ESRB id 5 / adults-only is Adult Only (18+ AO).
+  // Mature (id 4 / 17+) is standard mainstream gaming (e.g. Witcher 3, GTA V, Cyberpunk 2077).
+  if (game.esrb_rating?.slug === 'adults-only' || game.esrb_rating?.id === 5) {
+    return true;
   }
 
-  // 2. RAWG Genres
+  const isCertifiedMainstreamRating = ['mature', 'teen', 'everyone-10-plus', 'everyone'].includes(game.esrb_rating?.slug) || [1, 2, 3, 4].includes(game.esrb_rating?.id);
+
+  // 3. RAWG Genres
   if (game.genres && Array.isArray(game.genres)) {
-    const forbiddenGenres = ['mature-only', 'adult-only', 'erotica', 'hentai', 'sexual'];
+    const forbiddenGenres = ['mature-only', 'adult-only', 'erotica', 'hentai'];
     const hasForbiddenGenre = game.genres.some(g => {
       const genreSlug = (g.slug || g.name || '').toLowerCase();
       return forbiddenGenres.some(fg => genreSlug.includes(fg));
@@ -109,9 +178,19 @@ export function isAdultContent(game) {
     if (hasForbiddenGenre) return true;
   }
 
-  // 3. Age / ESRB Rating
-  if (game.esrb_rating?.slug === 'adults-only' || game.esrb_rating?.id === 5) {
-    return true;
+  // 4. RAWG Tags
+  if (game.tags && Array.isArray(game.tags)) {
+    const hasExplicitAdultTag = game.tags.some(t => {
+      const tagSlug = (t.slug || '').toLowerCase();
+      const tagName = (t.name || '').toLowerCase();
+      if (FORBIDDEN_TAGS.has(tagSlug) || FORBIDDEN_TAGS.has(tagName)) return true;
+      if (EXPLICIT_TAG_SUBSTRINGS.some(sub => tagSlug.includes(sub) || tagName.includes(sub))) return true;
+      return false;
+    });
+
+    if (hasExplicitAdultTag && !isCertifiedMainstreamRating) {
+      return true;
+    }
   }
 
   return false;
@@ -119,6 +198,12 @@ export function isAdultContent(game) {
 
 export function isSteamDataAdult(steamData) {
   if (!steamData) return false;
+
+  const cleanName = String(steamData.name || '').toLowerCase();
+  const cleanSlug = cleanName.replace(/[^a-z0-9]+/g, '-');
+  if (MAINSTREAM_ALLOWLIST.has(cleanSlug)) {
+    return false;
+  }
 
   // 1. Title check
   if (steamData.name && isAdultTitleOrSlug(steamData.name, steamData.name)) {

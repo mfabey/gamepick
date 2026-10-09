@@ -3,12 +3,14 @@
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { useAuth, normalizeName } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { recordWebTaste } from '../../lib/web-taste';
 
 export default function GameDetailPage({ params }) {
-  const slug = params.id || params.slug;
+  const routeParams = useParams();
+  const slug = routeParams?.id || routeParams?.slug || params?.id || params?.slug;
   const { user, ready, ownedGames, xboxOwnedGames = new Set(), gamePassGames = new Set() } = useAuth();
   const { lang, t, formatPrice } = useLanguage();
 
@@ -143,13 +145,13 @@ export default function GameDetailPage({ params }) {
         setGame(g);
 
         // ── Steam fiyatı ─────────────────────────────────────────────────
-        const effSteamId = g.steamAppId
-          || (g.steamUrl ? g.steamUrl.match(/\/app\/(\d+)/)?.[1] : null)
-          || (g.id?.startsWith('rawg_') ? g.id.replace('rawg_', '') : (/^\d+$/.test(g.id) ? g.id : null));
+        const effectiveSteamId = g.steamAppId
+          || (g.steamUrl ? g.steamUrl.match(/\/apps?\/(\d+)/)?.[1] : null)
+          || (g.id && String(g.id).startsWith('rawg_') ? String(g.id).replace('rawg_', '') : (/^\d+$/.test(String(g.id || '')) ? String(g.id) : null));
 
         setSteamLoading(true);
-        const steamPriceParam = effSteamId
-          ? `appid=${encodeURIComponent(effSteamId)}&name=${encodeURIComponent(g.name || '')}`
+        const steamPriceParam = effectiveSteamId
+          ? `appid=${encodeURIComponent(effectiveSteamId)}&name=${encodeURIComponent(g.name || '')}`
           : `name=${encodeURIComponent(g.name || '')}`;
 
         fetch('/api/steam-price?' + steamPriceParam)
@@ -173,9 +175,9 @@ export default function GameDetailPage({ params }) {
         setHumbleLoading(true);
 
         // steamAppId varsa ITAD kesin lookup, her iki paramı gönder (lookup başarısız olursa title ile fallback çalışır)
-        const priceParam = effSteamId
-          ? `appid=${encodeURIComponent(effSteamId)}&title=${encodeURIComponent(g.name)}`
-          : `title=${encodeURIComponent(g.name)}`;
+        const priceParam = effectiveSteamId
+          ? `appid=${encodeURIComponent(effectiveSteamId)}&title=${encodeURIComponent(g.name || '')}`
+          : `title=${encodeURIComponent(g.name || '')}`;
 
         fetch('/api/prices?' + priceParam)
           .then(r => r.json())
@@ -331,6 +333,12 @@ export default function GameDetailPage({ params }) {
   const allImages = [game.image, ...(game.screenshots || [])].filter(Boolean);
   const media = allImages.map(src => ({ type: 'image', src }));
   const activeMedia = media[imgIdx] || media[0];
+
+  const effSteamId = game ? (
+    game.steamAppId
+    || (game.steamUrl ? game.steamUrl.match(/\/apps?\/(\d+)/)?.[1] : null)
+    || (game.id && String(game.id).startsWith('rawg_') ? String(game.id).replace('rawg_', '') : (/^\d+$/.test(String(game.id || '')) ? String(game.id) : null))
+  ) : null;
 
   return (
     <div style={{ position: 'relative', overflow: 'hidden', minHeight: '100vh' }}>
@@ -533,7 +541,7 @@ export default function GameDetailPage({ params }) {
                   highlight={isCheaperOption && bestStoreKey === 'Steam'}
                 />
               ) : (game.hasSteam || effSteamId) ? (
-                <PlaceholderCard store="Steam" icon="💻" url={game.steamUrl || `https://store.steampowered.com/app/${effSteamId || ''}`} />
+                <PlaceholderCard store="Steam" icon="💻" url={game.steamUrl || (effSteamId ? `https://store.steampowered.com/app/${effSteamId}` : 'https://store.steampowered.com')} />
               ) : (
                 <MissingCard platform="Steam" />
               )}
