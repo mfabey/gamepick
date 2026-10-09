@@ -235,6 +235,7 @@ export default function NavBar() {
                 {isDevUser && (
                   <Link
                     href="/admin"
+                    className="desktop-only"
                     title="Geliştirici Paneli"
                     style={{
                       padding: '6px 10px',
@@ -311,6 +312,7 @@ export default function NavBar() {
             )}
           </div>
         </div>
+      </header>
       {!hideBottomBar && (
         <>
           {/* Mobil için Üstte Yüzen Şu An İnceleniyor Rozeti */}
@@ -393,7 +395,6 @@ export default function NavBar() {
           </nav>
         </>
       )}
-      </header>
     </>
   );
 }

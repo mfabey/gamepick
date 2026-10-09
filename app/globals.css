@@ -719,8 +719,12 @@ html[data-theme="light"] .nav-header {
 /* Mobile Navbar Overrides */
 @media (max-width: 768px) {
   .nav-container {
-    padding: 0 16px;
+    padding: 0 12px;
     height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
   }
   
   .nav-logo {
@@ -729,6 +733,9 @@ html[data-theme="light"] .nav-header {
     transform: translateX(-50%);
     gap: 6px;
     margin: 0 !important;
+    white-space: nowrap;
+    z-index: 5;
+    pointer-events: auto;
   }
   
   .nav-logo-icon {
@@ -743,11 +750,15 @@ html[data-theme="light"] .nav-header {
   }
   
   .nav-logo-text {
-    font-size: 17px;
+    font-size: 16px;
+    white-space: nowrap;
   }
   
   .nav-right-group {
-    gap: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    z-index: 10;
   }
   
   .nav-support-link-desktop {
@@ -777,8 +788,11 @@ html[data-theme="light"] .nav-header {
   }
   
   .nav-left-group {
+    display: flex;
+    align-items: center;
     margin-right: auto !important;
-    gap: 16px !important;
+    gap: 8px !important;
+    z-index: 10;
   }
   
   .nav-lang-selector {
