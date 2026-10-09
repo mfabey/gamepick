@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { verifyMobileToken } from '../../../lib/mobile-auth';
+import { readValue } from '../../../lib/session-cookie';
 import {
   isPrivilegedViewer,
   getProfile,
@@ -10,7 +12,7 @@ import {
   PRIVILEGED_UIDS,
   PRIVILEGED_EMAILS,
 } from '../../../lib/social-store';
-import { redisCmd, redisPipeline, redisSetJSON, parseJSON } from '../../../lib/redis';
+import { redisCmd, redisGetJSON, redisPipeline, redisSetJSON, parseJSON } from '../../../lib/redis';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Admin / Developer Hesap Onarım & Teşhis Ucu
@@ -23,18 +25,65 @@ const BATUTA_UID = 'M05J6kGPeqPAkPG55Blg7dJlVsY2';
 const TEST_UID = '5FimwbEHFQZ75FgL2PkgIY9OQV92';
 
 async function checkAuth(request) {
-  const caller = await verifyMobileToken(request);
+  let caller = await verifyMobileToken(request);
+
+  if (!caller?.uid) {
+    try {
+      const cookieStore = await cookies();
+      const session = cookieStore.get('gp_user_session');
+      if (session?.value) {
+        const u = await readValue(session.value);
+        if (u?.uid) caller = u;
+      }
+      if (!caller?.uid) {
+        const steamSession = cookieStore.get('gp_steam_session') || cookieStore.get('gp_steam_accounts');
+        if (steamSession?.value) {
+          const su = await readValue(steamSession.value);
+          const steamAccount = Array.isArray(su) ? su[0] : su;
+          const sid = steamAccount?.steamId;
+          if (sid) {
+            let uid = await redisCmd(['GET', `steam_to_uid:${sid}`]);
+            if (!uid) {
+              const keys = await redisCmd(['KEYS', 'user_connections:*']);
+              if (keys && keys.length > 0) {
+                for (const key of keys) {
+                  const conn = await redisGetJSON(key);
+                  const accounts = conn?.steamAccounts || (conn?.steam ? [conn.steam] : []);
+                  if (accounts.some(a => a?.steamId === sid)) {
+                    uid = key.replace('user_connections:', '');
+                    await redisCmd(['SET', `steam_to_uid:${sid}`, uid]);
+                    break;
+                  }
+                }
+              }
+            }
+            if (uid) {
+              const cached = await redisGetJSON(`user_profile:${uid}`);
+              if (cached) caller = cached;
+              else caller = { uid, username: isDeveloperAccount(uid) ? (isBatutaAccount(uid) ? 'batuta' : 'test') : null };
+            }
+          }
+        }
+      }
+    } catch {}
+  }
+
   if (!caller?.uid) return null;
 
   const callerEmail = String(caller.email || '').toLowerCase().trim();
-  const isDev =
+  const callerUsername = String(caller.username || caller.usernameLower || '').replace(/^@/, '').toLowerCase().trim();
+  const isDev = Boolean(
     caller.isDeveloper === true ||
+    ['batuta', 'test', 'test8'].includes(callerUsername) ||
     (await isPrivilegedViewer(caller.uid)) ||
+    (await isPrivilegedViewer(caller)) ||
     isDeveloperAccount(caller) ||
     isDeveloperAccount(callerEmail) ||
     isDeveloperAccount(caller.uid) ||
+    isDeveloperAccount(callerUsername) ||
     PRIVILEGED_UIDS.has(caller.uid) ||
-    PRIVILEGED_EMAILS.has(callerEmail);
+    PRIVILEGED_EMAILS.has(callerEmail)
+  );
 
   if (!isDev) return null;
   return caller;

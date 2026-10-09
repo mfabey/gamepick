@@ -47,7 +47,9 @@ export default function AdminUsersPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/admin/users');
+      const res = await fetch('/api/admin/users', {
+        credentials: 'include',
+      });
       if (res.status === 401 || res.status === 403) {
         setError('FORBIDDEN');
         setLoading(false);
@@ -78,6 +80,7 @@ export default function AdminUsersPage() {
     try {
       const res = await fetch('/api/admin/repair', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'global_sync' }),
       });
@@ -100,6 +103,7 @@ export default function AdminUsersPage() {
     try {
       const res = await fetch('/api/admin/repair', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'repair_user', targetUid }),
       });
@@ -338,6 +342,27 @@ export default function AdminUsersPage() {
               : 'Gamerisen Geliştirici & Sistem Paneli yalnızca yetkili sistem geliştiricileri (@batuta ve @test) tarafından görüntülenebilir.'}
           </p>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+            {user && (
+              <button
+                onClick={() => fetchUsers()}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '12px 26px',
+                  borderRadius: 12,
+                  background: 'linear-gradient(135deg, var(--accent), #d97706)',
+                  color: '#fff',
+                  fontSize: 14,
+                  fontWeight: 700,
+                  border: 'none',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 18px var(--accent-glow)',
+                }}
+              >
+                🔄 Yeniden Dene
+              </button>
+            )}
             {!user && (
               <Link
                 href="/login"

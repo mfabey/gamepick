@@ -68,19 +68,22 @@ export function isBatutaAccount(userOrProfileOrEmail) {
       s === 'm05j6kgpeqpakkpg55blg7djlvsy2' ||
       s === 'xxxbatuhan@gmail.com' ||
       s === '240404021@ogr.kent.edu.tr' ||
-      s === 'batuta'
+      s === 'batuta' ||
+      s === 'batuhan'
     );
   }
   const u = userOrProfileOrEmail;
   const uid = String(u.uid || u.localId || u.userId || '');
   if (uid === 'M05J6kGPeqPAkPG55Blg7dJlVsY2') return true;
   const email = String(u.email || '').toLowerCase().trim();
-  const name = String(u.username || u.usernameLower || '').replace(/^@/, '').toLowerCase().trim();
+  const uname = String(u.username || u.usernameLower || '').replace(/^@/, '').toLowerCase().trim();
+  const dname = String(u.displayName || u.name || '').replace(/^@/, '').toLowerCase().trim();
   return (
     uid === 'M05J6kGPeqPAkPG55Blg7dJlVsY2' ||
     email === 'xxxbatuhan@gmail.com' ||
     email === '240404021@ogr.kent.edu.tr' ||
-    name === 'batuta'
+    ['batuta', 'batuhan'].includes(uname) ||
+    ['batuta', 'batuhan'].includes(dname)
   );
 }
 
@@ -100,7 +103,8 @@ export function isTestAccount(userOrProfileOrEmail) {
       s === 'muhammedfurkanakarsu@gmail.com' ||
       s === 'yasuoxsmurf05@gmail.com' ||
       s === 'test' ||
-      s === 'test8'
+      s === 'test8' ||
+      s === 'firstaccount'
     );
   }
   const u = userOrProfileOrEmail;
@@ -113,14 +117,18 @@ export function isTestAccount(userOrProfileOrEmail) {
     'baiGoZo4qBe7WYZzIHBAnyaI3FB2',
   ].includes(uid)) return true;
   const email = String(u.email || '').toLowerCase().trim();
-  const name = String(u.username || u.usernameLower || u.displayName || u.name || '').replace(/^@/, '').toLowerCase().trim();
+  const uname = String(u.username || u.usernameLower || '').replace(/^@/, '').toLowerCase().trim();
+  const dname = String(u.displayName || u.name || '').replace(/^@/, '').toLowerCase().trim();
   return (
     ['gamerisen@hotmail.com', 'baymfa1453@gmail.com', 'baymfa2006@gmail.com', 'muhammedfurkanakarsu@gmail.com', 'yasuoxsmurf05@gmail.com'].includes(email) ||
-    ['test', 'test8'].includes(name)
+    ['test', 'test8', 'firstaccount'].includes(uname) ||
+    ['test', 'test8', 'firstaccount'].includes(dname)
   );
 }
 
 export function isDeveloperAccount(userOrProfileOrEmail) {
+  if (!userOrProfileOrEmail) return false;
+  if (typeof userOrProfileOrEmail === 'object' && userOrProfileOrEmail.isDeveloper === true) return true;
   return isBatutaAccount(userOrProfileOrEmail) || isTestAccount(userOrProfileOrEmail);
 }
 
@@ -459,8 +467,16 @@ export async function setPrivacy(uid, patch = {}) {
  * @param {string|null} uid
  * @returns {Promise<boolean>}
  */
-export async function isPrivilegedViewer(uid) {
-  if (!uid) return false;
+export async function isPrivilegedViewer(uidOrUser) {
+  if (!uidOrUser) return false;
+  if (typeof uidOrUser === 'object') {
+    if (uidOrUser.isDeveloper === true) return true;
+    if (isDeveloperAccount(uidOrUser)) return true;
+    const uid = uidOrUser.uid || uidOrUser.localId || uidOrUser.userId;
+    if (!uid) return false;
+    return isPrivilegedViewer(uid);
+  }
+  const uid = String(uidOrUser);
   if (PRIVILEGED_UIDS.has(uid) || isDeveloperAccount(uid)) return true;
 
   const profile = await getProfile(uid);

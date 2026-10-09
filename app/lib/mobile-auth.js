@@ -15,6 +15,7 @@ import { createHash } from 'crypto';
 import { adminAuthGuvenli } from './admin-tembel';
 import { readValue } from './session-cookie';
 import { isBatutaAccount, isTestAccount, isDeveloperAccount } from './social-store';
+import { redisCmd, redisGetJSON } from './redis';
 
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY || process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
 
@@ -86,6 +87,7 @@ export async function verifyMobileToken(request) {
     const admin = await adminAuthGuvenli();
     if (admin) {
       try {
+        const decoded = await admin.verifyIdToken(idToken, true);
         const isDev = isDeveloperAccount(decoded.uid) || isDeveloperAccount(decoded.email);
         const isBatu = isBatutaAccount(decoded.uid) || isBatutaAccount(decoded.email);
         const devName = isBatu ? 'batuta' : 'test';
@@ -171,22 +173,36 @@ export async function verifyMobileToken(request) {
     }
   }
 
-  // ── WEB ÇEREZİ DOĞRULAMA (gp_user_session) ──────────────────────────────────
+  // ── WEB ÇEREZİ DOĞRULAMA (gp_user_session / gp_steam_session / gp_xbox_session) ──
   try {
-    let cookieVal = null;
-    if (request?.cookies?.get) {
-      cookieVal = request.cookies.get('gp_user_session')?.value;
-    }
-    if (!cookieVal && request?.headers) {
-      const cookieHeader = (typeof request.headers.get === 'function' ? request.headers.get('cookie') : request.headers?.cookie) || '';
-      const match = cookieHeader.match(/gp_user_session=([^;]+)/);
-      if (match) {
-        cookieVal = decodeURIComponent(match[1]);
+    let cookieStore = null;
+    try {
+      const nextHeaders = await import('next/headers');
+      if (typeof nextHeaders.cookies === 'function') {
+        cookieStore = await nextHeaders.cookies();
       }
-    }
+    } catch {}
 
-    if (cookieVal) {
-      const sessionUser = await readValue(cookieVal);
+    const cookieHeader = (typeof request?.headers?.get === 'function' ? request.headers.get('cookie') : request?.headers?.cookie) || '';
+
+    const getCookie = (name) => {
+      let val = cookieStore?.get?.(name)?.value;
+      if (!val && request?.cookies?.get) {
+        val = request.cookies.get(name)?.value;
+      }
+      if (!val && cookieHeader) {
+        const match = cookieHeader.match(new RegExp(`${name}=([^;]+)`));
+        if (match) {
+          try { val = decodeURIComponent(match[1]); } catch { val = match[1]; }
+        }
+      }
+      return val || null;
+    };
+
+    // 1. Standart web oturumu (gp_user_session)
+    const userCookieVal = getCookie('gp_user_session');
+    if (userCookieVal) {
+      const sessionUser = await readValue(userCookieVal);
       if (sessionUser?.uid) {
         const isDev = isDeveloperAccount(sessionUser) || isDeveloperAccount(sessionUser.uid) || isDeveloperAccount(sessionUser.email) || isDeveloperAccount(sessionUser.username);
         const isBatu = isBatutaAccount(sessionUser) || isBatutaAccount(sessionUser.uid) || isBatutaAccount(sessionUser.email) || isBatutaAccount(sessionUser.username);
@@ -199,6 +215,70 @@ export async function verifyMobileToken(request) {
           username: isDev ? devName : (sessionUser.username || null),
           isDeveloper: isDev,
         };
+      }
+    }
+
+    // 2. Steam otomatik giriş yedek oturumu (gp_steam_session / gp_steam_accounts)
+    const steamCookieVal = getCookie('gp_steam_session') || getCookie('gp_steam_accounts');
+    if (steamCookieVal) {
+      const parsedSteam = await readValue(steamCookieVal);
+      const steamAccount = Array.isArray(parsedSteam) ? parsedSteam[0] : parsedSteam;
+      const steamId = steamAccount?.steamId;
+      if (steamId) {
+        let uid = await redisCmd(['GET', `steam_to_uid:${steamId}`]).catch(() => null);
+        if (!uid) {
+          const keys = await redisCmd(['KEYS', 'user_connections:*']).catch(() => null);
+          if (keys && keys.length > 0) {
+            for (const key of keys) {
+              const conn = await redisGetJSON(key).catch(() => null);
+              const accounts = conn?.steamAccounts || (conn?.steam ? [conn.steam] : []);
+              if (accounts.some(a => a?.steamId === steamId)) {
+                uid = key.replace('user_connections:', '');
+                await redisCmd(['SET', `steam_to_uid:${steamId}`, uid]).catch(() => {});
+                break;
+              }
+            }
+          }
+        }
+
+        if (uid) {
+          const cachedUser = await redisGetJSON(`user_profile:${uid}`).catch(() => null);
+          const isDev = isDeveloperAccount(cachedUser) || isDeveloperAccount(uid) || isDeveloperAccount(cachedUser?.email) || isDeveloperAccount(cachedUser?.username);
+          const isBatu = isBatutaAccount(cachedUser) || isBatutaAccount(uid) || isBatutaAccount(cachedUser?.email) || isBatutaAccount(cachedUser?.username);
+          const devName = isBatu ? 'batuta' : 'test';
+          return {
+            uid,
+            email: cachedUser?.email || '',
+            emailVerified: !!cachedUser?.emailVerified,
+            name: cachedUser?.displayName || cachedUser?.name || steamAccount?.name || (isBatu ? 'batuhan' : 'Firstaccount'),
+            username: isDev ? devName : (cachedUser?.username || null),
+            isDeveloper: isDev,
+          };
+        }
+      }
+    }
+
+    // 3. Xbox oturum yedeği (gp_xbox_session)
+    const xboxCookieVal = getCookie('gp_xbox_session');
+    if (xboxCookieVal) {
+      const xboxAccount = await readValue(xboxCookieVal);
+      const gamertag = xboxAccount?.gamertag;
+      if (gamertag) {
+        const uid = await redisCmd(['GET', `xbox_to_uid:${gamertag}`]).catch(() => null);
+        if (uid) {
+          const cachedUser = await redisGetJSON(`user_profile:${uid}`).catch(() => null);
+          const isDev = isDeveloperAccount(cachedUser) || isDeveloperAccount(uid) || isDeveloperAccount(cachedUser?.email) || isDeveloperAccount(cachedUser?.username);
+          const isBatu = isBatutaAccount(cachedUser) || isBatutaAccount(uid) || isBatutaAccount(cachedUser?.email) || isBatutaAccount(cachedUser?.username);
+          const devName = isBatu ? 'batuta' : 'test';
+          return {
+            uid,
+            email: cachedUser?.email || '',
+            emailVerified: !!cachedUser?.emailVerified,
+            name: cachedUser?.displayName || cachedUser?.name || gamertag,
+            username: isDev ? devName : (cachedUser?.username || null),
+            isDeveloper: isDev,
+          };
+        }
       }
     }
   } catch {
