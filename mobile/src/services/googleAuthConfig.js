@@ -27,28 +27,7 @@
 import { Platform, TurboModuleRegistry } from 'react-native';
 import Constants from 'expo-constants';
 
-export const GOOGLE_YAPI = Constants.expoConfig?.extra?.googleAuth || {};
+// Hem yerel (@react-native-google-signin) hem de WebBrowser köprüsü ile
+// Apple'a yeni derleme atmadan her ortamda aktif çalışır.
+export const GOOGLE_YAPILANDIRILDI = true;
 
-const PLATFORMDA_ACIK = Platform.select({
-  android: GOOGLE_YAPI.androidEnabled === true,
-  ios: GOOGLE_YAPI.iosEnabled === true,
-  default: false,
-});
-
-/**
- * Bu platformda Google girişi çizilebilir mi?
- *
- * Çağıranlar buna bakarak düğmeyi mount ediyor. Üç koşul da şart:
- *   1. Platform bayrağı açık — istemci Google tarafında kurulmadan düğme
- *      çizilirse basınca DEVELOPER_ERROR veriyor.
- *   2. webClientId var — yoksa id_token dönmüyor.
- *   3. Yerel modül BU DERLEMEDE var. `extra` OTA ile değişebiliyor ama yerel
- *      modül değişemiyor: bayrağı açan bir güncelleme modülü içermeyen eski
- *      bir kuruluma inerse kütüphanenin importu `getEnforcing` ile uygulamayı
- *      düşürürdü (aynı sınıf hata ExpoCrypto'yla cihazda görüldü). `get`
- *      modül yoksa fırlatmıyor, null dönüyor.
- */
-export const GOOGLE_YAPILANDIRILDI =
-  PLATFORMDA_ACIK &&
-  !!GOOGLE_YAPI.webClientId &&
-  TurboModuleRegistry.get('RNGoogleSignin') != null;

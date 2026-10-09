@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
-import { loadSession, getAccount, subscribeSession, updateSessionUser } from '../services/session';
+import { loadSession, getAccount, subscribeSession, updateSessionUser, signInWithGoogle } from '../services/session';
 import { getMyProfile } from '../api/social';
 import {
   fetchConnections, putSteamConnection, putXboxConnection,
@@ -310,6 +310,14 @@ export function AuthProvider({ children }) {
         return { ok: true, platform: 'xbox' };
       } catch {
         return { ok: false, error: 'SYNC_FAILED' };
+      }
+    }
+    if (payload?.platform === 'google' && payload.idToken) {
+      try {
+        await signInWithGoogle(payload.idToken);
+        return { ok: true, platform: 'google' };
+      } catch (e) {
+        return { ok: false, error: e?.code || 'GOOGLE_FAILED' };
       }
     }
     return { ok: false, error: payload?.error || 'INVALID_PAYLOAD' };
