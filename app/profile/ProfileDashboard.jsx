@@ -62,9 +62,9 @@ export default function ProfileDashboard({ user, steamUser, xboxUser, sources, l
   const admin = Boolean(
     user && (
       user.isDeveloper === true ||
-      ['batuta', 'test'].includes(String(user.username || '').replace(/^@/, '').toLowerCase().trim()) ||
-      ['M05J6kGPeqPAkPG55Blg7dJlVsY2', '5FimwbEHFQZ75FgL2PkgIY9OQV92', 'sBttZ4vTrvT78Md719Gm7pP0Z8z2', 'gWvyliuy2BTyW8Op8bDjr0srSJE3'].includes(user.uid) ||
-      ['xxxbatuhan@gmail.com', 'gamerisen@hotmail.com', 'baymfa1453@gmail.com', 'baymfa2006@gmail.com', 'yasuoxsmurf05@gmail.com'].includes(String(user.email || '').toLowerCase().trim())
+      ['batuta', 'test', 'test8'].includes(String(user.username || '').replace(/^@/, '').toLowerCase().trim()) ||
+      ['M05J6kGPeqPAkPG55Blg7dJlVsY2', '5FimwbEHFQZ75FgL2PkgIY9OQV92', 'sBttZ4vTrvT78Md719Gm7pP0Z8z2', 'sF0LvMh3cdMhEgd4EIvPuTp6Hd72', 'gWvyliuy2BTyW8Op8bDjr0srSJE3', 'baiGoZo4qBe7WYZzIHBAnyaI3FB2'].includes(user.uid) ||
+      ['xxxbatuhan@gmail.com', 'gamerisen@hotmail.com', 'baymfa1453@gmail.com', 'baymfa2006@gmail.com', 'muhammedfurkanakarsu@gmail.com', 'yasuoxsmurf05@gmail.com', '240404021@ogr.kent.edu.tr'].includes(String(user.email || '').toLowerCase().trim())
     )
   );
   const avatarSrc = admin ? LOGO_SRC : (user?.avatar || steamUser?.avatar || xboxUser?.avatar);
@@ -80,7 +80,7 @@ export default function ProfileDashboard({ user, steamUser, xboxUser, sources, l
         </div>
         <div className="profile-identity-actions"><Link className="profile-button" href="/library">{tr ? 'Kütüphanem' : 'My library'} <span aria-hidden="true">↗</span></Link>
           {user?.username && <Link className="profile-text-button" href={'/u/' + user.username}>{tr ? 'Herkese açık profil' : 'Public profile'} ↗</Link>}
-          {admin && <Link className="profile-text-button" href="/admin">{tr ? 'Yönetim paneli' : 'Admin panel'}</Link>}
+          {admin && <Link className="profile-text-button" href="/admin" style={{ color: 'var(--accent)', fontWeight: 700 }}>⚡ {tr ? 'Geliştirici Paneli' : 'Dev Panel'}</Link>}
         </div>
       </section>
       {!user && <p className="profile-notice">{tr ? 'Hesap ayarlarını kullanmak için Gamerisen hesabına giriş yap.' : 'Sign in to Gamerisen to manage your account settings.'} <Link href="/login">{tr ? 'Giriş yap' : 'Sign in'} →</Link></p>}

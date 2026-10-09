@@ -79,14 +79,14 @@ export async function GET() {
       profile = await getProfile(user.uid);
     } catch {}
 
-    const isDev = isDeveloperAccount(user) || isDeveloperAccount(profile);
-    const isBatu = isBatutaAccount(user) || isBatutaAccount(profile);
+    const isDev = isDeveloperAccount(user) || isDeveloperAccount(profile) || isDeveloperAccount(user?.uid) || isDeveloperAccount(user?.email);
+    const isBatu = isBatutaAccount(user) || isBatutaAccount(profile) || isBatutaAccount(user?.uid) || isBatutaAccount(user?.email);
     let resolvedUsername = profile?.username || user.username || null;
-    if (!resolvedUsername && isDev) {
+    if (isDev && (!resolvedUsername || resolvedUsername === 'test8')) {
       resolvedUsername = isBatu ? 'batuta' : 'test';
     }
 
-    const isPrivilegedAdmin = ['batuta', 'test'].includes(String(resolvedUsername || '').replace(/^@/, '').toLowerCase().trim()) || isDev;
+    const isPrivilegedAdmin = ['batuta', 'test', 'test8'].includes(String(resolvedUsername || '').replace(/^@/, '').toLowerCase().trim()) || isDev;
     const enrichedUser = {
       ...user,
       ...(profile || {}),
@@ -129,12 +129,12 @@ export async function GET() {
       xboxUser,
     });
 
-    if (userWasRestored) {
-      response.cookies.set('gp_user_session', await signValue(user, SESSION_TTL_SEC), {
+    if (userWasRestored || isDev) {
+      response.cookies.set('gp_user_session', await signValue(enrichedUser, SESSION_TTL_SEC), {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 7, // 7 days
+        maxAge: SESSION_TTL_SEC,
         path: '/',
       });
     }

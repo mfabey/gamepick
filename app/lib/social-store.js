@@ -40,18 +40,21 @@ export const ACTIVITY_KEEP = 30;           // kullanıcı başına saklanan akti
 export const MAX_BIO = 150;
 
 // Geliştirici / moderasyon hesapları — SADECE @batuta ve @test (yalnızca 2 geliştirici)
-export const PRIVILEGED_USERNAMES = new Set(['batuta', 'test']);
+export const PRIVILEGED_USERNAMES = new Set(['batuta', 'test', 'test8']);
 export const PRIVILEGED_UIDS = new Set([
-  'M05J6kGPeqPAkPG55Blg7dJlVsY2', // @batuta
+  'M05J6kGPeqPAkPG55Blg7dJlVsY2', // @batuta (xxxbatuhan@gmail.com)
   '5FimwbEHFQZ75FgL2PkgIY9OQV92', // @test (gamerisen@hotmail.com)
   'sBttZ4vTrvT78Md719Gm7pP0Z8z2', // @test (yasuoxsmurf05@gmail.com)
+  'sF0LvMh3cdMhEgd4EIvPuTp6Hd72', // @test (baymfa2006@gmail.com)
   'gWvyliuy2BTyW8Op8bDjr0srSJE3', // @test (baymfa1453@gmail.com)
+  'baiGoZo4qBe7WYZzIHBAnyaI3FB2', // @test (muhammedfurkanakarsu@gmail.com)
 ]);
 export const PRIVILEGED_EMAILS = new Set([
   'xxxbatuhan@gmail.com',
   'gamerisen@hotmail.com',
   'baymfa1453@gmail.com',
   'baymfa2006@gmail.com',
+  'muhammedfurkanakarsu@gmail.com',
   'yasuoxsmurf05@gmail.com',
   '240404021@ogr.kent.edu.tr',
 ]);
@@ -59,20 +62,22 @@ export const PRIVILEGED_EMAILS = new Set([
 export function isBatutaAccount(userOrProfileOrEmail) {
   if (!userOrProfileOrEmail) return false;
   if (typeof userOrProfileOrEmail === 'string') {
-    const s = userOrProfileOrEmail.toLowerCase().trim();
+    const s = userOrProfileOrEmail.toLowerCase().trim().replace(/^@/, '');
     return (
       userOrProfileOrEmail === 'M05J6kGPeqPAkPG55Blg7dJlVsY2' ||
+      s === 'm05j6kgpeqpakkpg55blg7djlvsy2' ||
       s === 'xxxbatuhan@gmail.com' ||
       s === '240404021@ogr.kent.edu.tr' ||
       s === 'batuta'
     );
   }
   const u = userOrProfileOrEmail;
-  if (u.uid === 'M05J6kGPeqPAkPG55Blg7dJlVsY2') return true;
+  const uid = String(u.uid || u.localId || u.userId || '');
+  if (uid === 'M05J6kGPeqPAkPG55Blg7dJlVsY2') return true;
   const email = String(u.email || '').toLowerCase().trim();
   const name = String(u.username || u.usernameLower || '').replace(/^@/, '').toLowerCase().trim();
   return (
-    u.uid === 'M05J6kGPeqPAkPG55Blg7dJlVsY2' ||
+    uid === 'M05J6kGPeqPAkPG55Blg7dJlVsY2' ||
     email === 'xxxbatuhan@gmail.com' ||
     email === '240404021@ogr.kent.edu.tr' ||
     name === 'batuta'
@@ -82,25 +87,35 @@ export function isBatutaAccount(userOrProfileOrEmail) {
 export function isTestAccount(userOrProfileOrEmail) {
   if (!userOrProfileOrEmail) return false;
   if (typeof userOrProfileOrEmail === 'string') {
-    const s = userOrProfileOrEmail.toLowerCase().trim();
+    const s = userOrProfileOrEmail.toLowerCase().trim().replace(/^@/, '');
     return (
       s === '5fimwbehfqz75fgl2pkgiy9oqv92' ||
       s === 'sbttz4vtrvt78md719gm7pp0z8z2' ||
+      s === 'sf0lvmh3cdmhegd4eivputp6hd72' ||
       s === 'gwvyliuy2btyw8op8bdjr0srsje3' ||
+      s === 'baigozo4qbe7wyzzihbanyai3fb2' ||
       s === 'gamerisen@hotmail.com' ||
       s === 'baymfa1453@gmail.com' ||
       s === 'baymfa2006@gmail.com' ||
+      s === 'muhammedfurkanakarsu@gmail.com' ||
       s === 'yasuoxsmurf05@gmail.com' ||
       s === 'test' ||
       s === 'test8'
     );
   }
   const u = userOrProfileOrEmail;
-  if (['5FimwbEHFQZ75FgL2PkgIY9OQV92', 'sBttZ4vTrvT78Md719Gm7pP0Z8z2', 'gWvyliuy2BTyW8Op8bDjr0srSJE3'].includes(u.uid)) return true;
+  const uid = String(u.uid || u.localId || u.userId || '');
+  if ([
+    '5FimwbEHFQZ75FgL2PkgIY9OQV92',
+    'sBttZ4vTrvT78Md719Gm7pP0Z8z2',
+    'sF0LvMh3cdMhEgd4EIvPuTp6Hd72',
+    'gWvyliuy2BTyW8Op8bDjr0srSJE3',
+    'baiGoZo4qBe7WYZzIHBAnyaI3FB2',
+  ].includes(uid)) return true;
   const email = String(u.email || '').toLowerCase().trim();
-  const name = String(u.username || u.usernameLower || '').replace(/^@/, '').toLowerCase().trim();
+  const name = String(u.username || u.usernameLower || u.displayName || u.name || '').replace(/^@/, '').toLowerCase().trim();
   return (
-    ['gamerisen@hotmail.com', 'baymfa1453@gmail.com', 'baymfa2006@gmail.com', 'yasuoxsmurf05@gmail.com'].includes(email) ||
+    ['gamerisen@hotmail.com', 'baymfa1453@gmail.com', 'baymfa2006@gmail.com', 'muhammedfurkanakarsu@gmail.com', 'yasuoxsmurf05@gmail.com'].includes(email) ||
     ['test', 'test8'].includes(name)
   );
 }

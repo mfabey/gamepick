@@ -86,13 +86,16 @@ export async function verifyMobileToken(request) {
     const admin = await adminAuthGuvenli();
     if (admin) {
       try {
-        const decoded = await admin.verifyIdToken(idToken, true);
+        const isDev = isDeveloperAccount(decoded.uid) || isDeveloperAccount(decoded.email);
+        const isBatu = isBatutaAccount(decoded.uid) || isBatutaAccount(decoded.email);
+        const devName = isBatu ? 'batuta' : 'test';
         const user = {
           uid: decoded.uid,
           email: decoded.email || '',
           emailVerified: !!decoded.email_verified,
           name: decoded.name || (decoded.email || '').split('@')[0],
-          username: decoded.username || null,
+          username: decoded.username || (isDev ? devName : null),
+          isDeveloper: isDev,
         };
         writeCache(key, user, idToken);
         return user;
@@ -185,15 +188,15 @@ export async function verifyMobileToken(request) {
     if (cookieVal) {
       const sessionUser = await readValue(cookieVal);
       if (sessionUser?.uid) {
-        const isDev = isDeveloperAccount(sessionUser.uid) || isDeveloperAccount(sessionUser.email) || isDeveloperAccount(sessionUser.username);
-        const isBatu = isBatutaAccount(sessionUser.uid) || isBatutaAccount(sessionUser.email);
+        const isDev = isDeveloperAccount(sessionUser) || isDeveloperAccount(sessionUser.uid) || isDeveloperAccount(sessionUser.email) || isDeveloperAccount(sessionUser.username);
+        const isBatu = isBatutaAccount(sessionUser) || isBatutaAccount(sessionUser.uid) || isBatutaAccount(sessionUser.email) || isBatutaAccount(sessionUser.username);
         const devName = isBatu ? 'batuta' : 'test';
         return {
           uid: sessionUser.uid,
           email: sessionUser.email || '',
           emailVerified: !!sessionUser.emailVerified,
           name: sessionUser.displayName || sessionUser.name || sessionUser.username || (sessionUser.email || '').split('@')[0],
-          username: sessionUser.username || (isDev ? devName : null),
+          username: isDev ? devName : (sessionUser.username || null),
           isDeveloper: isDev,
         };
       }

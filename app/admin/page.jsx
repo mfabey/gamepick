@@ -30,9 +30,9 @@ export default function AdminUsersPage() {
   const isDev = Boolean(
     user && (
       user.isDeveloper === true ||
-      ['batuta', 'test'].includes(String(user.username || '').replace(/^@/, '').toLowerCase().trim()) ||
-      ['M05J6kGPeqPAkPG55Blg7dJlVsY2', '5FimwbEHFQZ75FgL2PkgIY9OQV92', 'sBttZ4vTrvT78Md719Gm7pP0Z8z2', 'gWvyliuy2BTyW8Op8bDjr0srSJE3'].includes(user.uid) ||
-      ['xxxbatuhan@gmail.com', 'gamerisen@hotmail.com', 'baymfa1453@gmail.com', 'baymfa2006@gmail.com', 'yasuoxsmurf05@gmail.com'].includes(String(user.email || '').toLowerCase().trim())
+      ['batuta', 'test', 'test8'].includes(String(user.username || '').replace(/^@/, '').toLowerCase().trim()) ||
+      ['M05J6kGPeqPAkPG55Blg7dJlVsY2', '5FimwbEHFQZ75FgL2PkgIY9OQV92', 'sBttZ4vTrvT78Md719Gm7pP0Z8z2', 'sF0LvMh3cdMhEgd4EIvPuTp6Hd72', 'gWvyliuy2BTyW8Op8bDjr0srSJE3', 'baiGoZo4qBe7WYZzIHBAnyaI3FB2'].includes(user.uid) ||
+      ['xxxbatuhan@gmail.com', 'gamerisen@hotmail.com', 'baymfa1453@gmail.com', 'baymfa2006@gmail.com', 'muhammedfurkanakarsu@gmail.com', 'yasuoxsmurf05@gmail.com', '240404021@ogr.kent.edu.tr'].includes(String(user.email || '').toLowerCase().trim())
     )
   );
 
@@ -118,16 +118,13 @@ export default function AdminUsersPage() {
   useEffect(() => {
     if (ready) {
       if (!user) {
-        setError('FORBIDDEN');
-        setLoading(false);
-      } else if (!isDev) {
-        setError('FORBIDDEN');
+        setError('UNAUTHORIZED');
         setLoading(false);
       } else {
         fetchUsers();
       }
     }
-  }, [ready, user, isDev]);
+  }, [ready, user]);
 
   const copyToClipboard = (text, id, label = 'Panoya kopyalandı!') => {
     if (!text) return;
@@ -325,7 +322,7 @@ export default function AdminUsersPage() {
   }
 
   // Erişim reddedildi durumu
-  if (error === 'FORBIDDEN' || (!isDev && ready)) {
+  if (error === 'UNAUTHORIZED' || error === 'FORBIDDEN' || (!isDev && ready && !loading && !users.length)) {
     return (
       <div style={{ minHeight: '85vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
         <div className="premium-dashboard-card" style={{ maxWidth: 460, width: '100%', padding: '40px 32px', textAlign: 'center' }}>
@@ -333,29 +330,53 @@ export default function AdminUsersPage() {
             🛡️
           </div>
           <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: 22, fontWeight: 900, color: 'var(--text)', marginBottom: 10, letterSpacing: '-0.3px' }}>
-            Erişim Yetkiniz Bulunmuyor
+            {!user ? 'Giriş Yapmalısınız' : 'Erişim Yetkiniz Bulunmuyor'}
           </h2>
           <p style={{ fontSize: 13.5, color: 'var(--text-3)', lineHeight: 1.6, marginBottom: 28 }}>
-            Gamerisen Geliştirici & Sistem Paneli yalnızca yetkili sistem yöneticileri (@batuta) tarafından görüntülenebilir.
+            {!user 
+              ? 'Gamerisen Geliştirici & Sistem Paneline erişmek için yetkili bir geliştirici hesabıyla giriş yapmanız gerekmektedir.'
+              : 'Gamerisen Geliştirici & Sistem Paneli yalnızca yetkili sistem geliştiricileri (@batuta ve @test) tarafından görüntülenebilir.'}
           </p>
-          <Link
-            href="/"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '12px 26px',
-              borderRadius: 12,
-              background: 'linear-gradient(135deg, var(--accent), #d97706)',
-              color: '#fff',
-              fontSize: 14,
-              fontWeight: 700,
-              textDecoration: 'none',
-              boxShadow: '0 4px 18px var(--accent-glow)',
-            }}
-          >
-            ← Ana Sayfaya Dön
-          </Link>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+            {!user && (
+              <Link
+                href="/login"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '12px 26px',
+                  borderRadius: 12,
+                  background: 'linear-gradient(135deg, var(--accent), #d97706)',
+                  color: '#fff',
+                  fontSize: 14,
+                  fontWeight: 700,
+                  textDecoration: 'none',
+                  boxShadow: '0 4px 18px var(--accent-glow)',
+                }}
+              >
+                Giriş Yap →
+              </Link>
+            )}
+            <Link
+              href="/"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '12px 26px',
+                borderRadius: 12,
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid var(--border)',
+                color: 'var(--text)',
+                fontSize: 14,
+                fontWeight: 600,
+                textDecoration: 'none',
+              }}
+            >
+              ← Ana Sayfaya Dön
+            </Link>
+          </div>
         </div>
       </div>
     );

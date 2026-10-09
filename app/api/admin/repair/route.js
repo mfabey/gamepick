@@ -72,7 +72,7 @@ export async function GET(request) {
   });
   results.healed.push('user_profile:' + BATUTA_UID + ' -> @batuta');
 
-  // 4. Test profilini onar
+  // 4. Test profillerini onar
   await mergeProfile(TEST_UID, {
     username: 'test',
     usernameLower: 'test',
@@ -80,6 +80,19 @@ export async function GET(request) {
     isDeveloper: true,
   });
   results.healed.push('user_profile:' + TEST_UID + ' -> @test');
+
+  const OTHER_DEV_UIDS = [
+    'sBttZ4vTrvT78Md719Gm7pP0Z8z2',
+    'sF0LvMh3cdMhEgd4EIvPuTp6Hd72',
+    'gWvyliuy2BTyW8Op8bDjr0srSJE3',
+    'baiGoZo4qBe7WYZzIHBAnyaI3FB2',
+  ];
+  for (const tuid of OTHER_DEV_UIDS) {
+    try {
+      await mergeProfile(tuid, { isDeveloper: true });
+      results.healed.push('user_profile:' + tuid + ' -> isDeveloper: true');
+    } catch {}
+  }
 
   results.profile = caller.uid === BATUTA_UID ? batutaProf : await getProfile(caller.uid);
 

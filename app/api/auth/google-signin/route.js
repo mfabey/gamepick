@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { signValue, SESSION_TTL_SEC } from '../../../lib/session-cookie';
 import { mintFamily } from '../../../lib/refresh-token';
 import { guard } from '../../../lib/rate-guard';
-import { mergeProfile, getProfile } from '../../../lib/social-store';
+import { mergeProfile, getProfile, isDeveloperAccount, isBatutaAccount } from '../../../lib/social-store';
+import { LOGO_SRC } from '../../../lib/logo';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Google ile giriş. Google Identity Services'ten (web) veya expo-auth-session'dan
@@ -73,11 +74,17 @@ export async function POST(request) {
       profile = await getProfile(localId);
     } catch {}
 
+    const isDev = isDeveloperAccount(localId) || isDeveloperAccount(email) || isDeveloperAccount(profile);
+    const isBatu = isBatutaAccount(localId) || isBatutaAccount(email) || isBatutaAccount(profile);
+    const devName = isBatu ? 'batuta' : 'test';
+    const resolvedUsername = isDev ? (profile?.username || devName) : (profile?.username || null);
+
     const user = {
       uid: localId,
-      name: profile?.displayName || displayName || (email ? email.split('@')[0] : 'Google Kullanıcısı'),
-      username: profile?.username || null,
-      avatar: profile?.avatar || null,
+      name: isDev ? (profile?.displayName || displayName || (isBatu ? 'batuhan' : 'Firstaccount')) : (profile?.displayName || displayName || (email ? email.split('@')[0] : 'Google Kullanıcısı')),
+      username: resolvedUsername,
+      isDeveloper: isDev,
+      avatar: isDev ? LOGO_SRC : (profile?.avatar || null),
       bio: profile?.bio || null,
       email: email || '',
       provider: 'google',
@@ -95,14 +102,12 @@ export async function POST(request) {
 
     // Web httpOnly çerez bekliyor, mobil yanıttaki token'ları saklıyor.
     if (body.web === true) {
-      // ÇEREZ İMZALI VE DAR. Main burada `user` nesnesinin tamamını düz JSON
-      // olarak yazıyordu; kullanıcı adı, avatar ve bio başlıkta görünsün diye.
-      // İki sebeple alınmadı: bu ağaçtaki her okuyucu `readValue` bekliyor ve
-      // imzasız değeri reddediyor, üstelik o alanlar zaten yukarıda
-      // `mergeProfile` ile depoya yazılıyor ve `user-me` oradan zenginleştirip
-      // başlığa veriyor. Yani main'in kazanımı korunuyor, çerez şişmiyor.
       response.cookies.set('gp_user_session', await signValue({
-        uid: user.uid, name: user.name, email: user.email,
+        uid: user.uid,
+        name: user.name,
+        email: user.email,
+        username: user.username,
+        isDeveloper: user.isDeveloper,
       }, SESSION_TTL_SEC), {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',

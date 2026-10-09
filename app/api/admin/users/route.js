@@ -28,6 +28,7 @@ export async function GET(request) {
     isDeveloperAccount(caller) ||
     isDeveloperAccount(callerEmail) ||
     isDeveloperAccount(caller.uid) ||
+    isDeveloperAccount(caller.username) ||
     PRIVILEGED_UIDS.has(caller.uid) ||
     PRIVILEGED_EMAILS.has(callerEmail);
 

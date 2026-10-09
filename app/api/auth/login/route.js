@@ -11,10 +11,39 @@ const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
 
 export async function POST(request) {
   try {
-    const { email, password } = await request.json();
+    let { email, password } = await request.json();
 
     if (!email || !password) {
       return NextResponse.json({ error: 'E-posta ve şifre zorunludur.' }, { status: 400 });
+    }
+
+    email = String(email).trim();
+
+    // Kullanıcı adı desteği (örn: 'test', '@test', 'batuta', '@batuta')
+    let candidateEmails = [];
+    if (!email.includes('@')) {
+      const clean = email.replace(/^@/, '').toLowerCase();
+      if (clean === 'batuta') {
+        candidateEmails = ['xxxbatuhan@gmail.com'];
+      } else if (clean === 'test' || clean === 'test8') {
+        candidateEmails = ['gamerisen@hotmail.com', 'yasuoxsmurf05@gmail.com', 'baymfa2006@gmail.com'];
+      } else {
+        const uid = await redisCmd(['GET', `username:${clean}`]);
+        if (uid) {
+          const prof = await getProfile(uid);
+          if (prof?.email) candidateEmails = [prof.email];
+        }
+      }
+      if (candidateEmails.length > 0) {
+        email = candidateEmails[0];
+      }
+    } else {
+      candidateEmails = [email];
+      if (email.toLowerCase() === 'gamerisen@hotmail.com') {
+        candidateEmails.push('yasuoxsmurf05@gmail.com');
+      } else if (email.toLowerCase() === 'yasuoxsmurf05@gmail.com') {
+        candidateEmails.push('gamerisen@hotmail.com');
+      }
     }
 
     // Hesap ekseni YALNIZ başarısız denemede artıyor (bkz. rate-guard.js):
@@ -41,28 +70,35 @@ export async function POST(request) {
       return response;
     }
 
-    // 1. Sign In User with Firebase Auth
-    const signInRes = await fetch(
-      `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREBASE_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, returnSecureToken: true }),
+    // 1. Sign In User with Firebase Auth (tüm aday e-postaları dene)
+    let signInRes = null;
+    let signInData = null;
+    let matchedEmail = email;
+
+    for (const em of candidateEmails) {
+      signInRes = await fetch(
+        `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREBASE_API_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: em, password, returnSecureToken: true }),
+        }
+      );
+      signInData = await signInRes.json();
+      if (signInRes.ok) {
+        matchedEmail = em;
+        email = em;
+        break;
       }
-    );
+    }
 
-    const signInData = await signInRes.json();
-
-    if (!signInRes.ok) {
+    if (!signInRes || !signInRes.ok) {
       const errMsg = signInData?.error?.message;
       if (errMsg === 'INVALID_LOGIN_CREDENTIALS' || errMsg === 'INVALID_PASSWORD' || errMsg === 'EMAIL_NOT_FOUND') {
         // Başarısız deneme hesap sayacına yazılıyor — parola deneme burada durur.
         await penalize(request, 'login', { account: email });
         return NextResponse.json({ error: 'E-posta veya şifre hatalı.' }, { status: 400 });
       }
-      // Firebase'in ham kodu (TOO_MANY_ATTEMPTS_TRY_LATER, USER_DISABLED…)
-      // loga gidiyor, kullanıcıya değil: Google'ın iç kodları kullanıcı için
-      // anlamsız, dışarıdan bakan için bilgi.
       return yukariAkisHatasi(signInData?.error?.message, 'auth/login',
         'Giriş yapılamadı. Lütfen tekrar deneyin.', 400);
     }

@@ -3,7 +3,8 @@ import { signValue, SESSION_TTL_SEC } from '../../../lib/session-cookie';
 import { mintFamily } from '../../../lib/refresh-token';
 import { guard } from '../../../lib/rate-guard';
 import { redisSetJSON } from '../../../lib/redis';
-import { mergeProfile, getProfile } from '../../../lib/social-store';
+import { mergeProfile, getProfile, isDeveloperAccount, isBatutaAccount } from '../../../lib/social-store';
+import { LOGO_SRC } from '../../../lib/logo';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Sign in with Apple — Guideline 4.8 uyumu (e-posta/şifre girişi sunduğumuz için
@@ -90,11 +91,17 @@ export async function POST(request) {
       profile = await getProfile(localId);
     } catch {}
 
+    const isDev = isDeveloperAccount(localId) || isDeveloperAccount(email) || isDeveloperAccount(profile);
+    const isBatu = isBatutaAccount(localId) || isBatutaAccount(email) || isBatutaAccount(profile);
+    const devName = isBatu ? 'batuta' : 'test';
+    const resolvedUsername = isDev ? (profile?.username || devName) : (profile?.username || null);
+
     const user = {
       uid: localId,
-      name: profile?.displayName || displayName || (email ? email.split('@')[0] : 'Apple Kullanıcısı'),
-      username: profile?.username || null,
-      avatar: profile?.avatar || null,
+      name: isDev ? (profile?.displayName || displayName || (isBatu ? 'batuhan' : 'Firstaccount')) : (profile?.displayName || displayName || (email ? email.split('@')[0] : 'Apple Kullanıcısı')),
+      username: resolvedUsername,
+      isDeveloper: isDev,
+      avatar: isDev ? LOGO_SRC : (profile?.avatar || null),
       bio: profile?.bio || null,
       email: email || '',
       provider: 'apple',
@@ -115,9 +122,12 @@ export async function POST(request) {
     // `web: true` geldiğinde çerez de kuruluyor — mobil bu başlığı yok sayar,
     // bu yüzden mevcut mobil akış etkilenmiyor.
     if (body.web === true) {
-      // ÇEREZ İMZALI VE DAR — gerekçe google-signin ile birebir aynı.
       response.cookies.set('gp_user_session', await signValue({
-        uid: user.uid, name: user.name, email: user.email,
+        uid: user.uid,
+        name: user.name,
+        email: user.email,
+        username: user.username,
+        isDeveloper: user.isDeveloper,
       }, SESSION_TTL_SEC), {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
