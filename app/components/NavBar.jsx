@@ -350,14 +350,7 @@ export default function NavBar() {
             </div>
           )}
 
-          <nav className="bottom-nav" aria-label={lang === 'tr' ? 'Ana menü' : 'Main navigation'} style={{
-            position: 'fixed',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            zIndex: 200,
-            display: 'flex',
-            alignItems: 'center',
-          }}>
+          <nav className="bottom-nav" aria-label={lang === 'tr' ? 'Ana menü' : 'Main navigation'}>
             {NAV_LINKS.map(l => {
               const active = isActive(l.href);
               return (
