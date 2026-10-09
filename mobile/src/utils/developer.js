@@ -13,7 +13,7 @@ export const DEVELOPER_UIDS = new Set([
 ]);
 export const DEVELOPER_EMAILS = new Set([
   'xxxbatuhan@gmail.com',
-  'baymfa1453@gmail.com',
+  'gamerisen@hotmail.com',
   '240404021@ogr.kent.edu.tr',
 ]);
 

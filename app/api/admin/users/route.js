@@ -324,8 +324,8 @@ export async function GET(request) {
   const TEST_UID = '5FimwbEHFQZ75FgL2PkgIY9OQV92';
 
   for (const [uid, u] of usersMap.entries()) {
-    const isBatuta = isBatutaAccount(uid) || isBatutaAccount(u.email) || isBatutaAccount(u.username);
-    const isTest = isTestAccount(uid) || isTestAccount(u.email) || isTestAccount(u.username);
+    const isBatuta = uid === BATUTA_UID || isBatutaAccount(uid) || isBatutaAccount(u.email);
+    const isTest = uid === TEST_UID || String(u.email || '').toLowerCase().trim() === 'gamerisen@hotmail.com';
 
     if (isBatuta) {
       u.isDeveloper = true;
@@ -437,7 +437,7 @@ export async function GET(request) {
   // 8. Sıralama ve geliştirici etiketleme (SADECE @batuta ve @test geliştiricidir)
   const userList = Array.from(usersMap.values()).map(u => ({
     ...u,
-    isDeveloper: Boolean(u.isDeveloper || isDeveloperAccount(u) || isDeveloperAccount(u.uid) || isDeveloperAccount(u.email) || isDeveloperAccount(u.username)),
+    isDeveloper: Boolean(u.isDeveloper),
   }));
 
   userList.sort((a, b) => {

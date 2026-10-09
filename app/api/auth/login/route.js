@@ -26,7 +26,7 @@ export async function POST(request) {
       if (clean === 'batuta') {
         candidateEmails = ['xxxbatuhan@gmail.com'];
       } else if (clean === 'test' || clean === 'test8') {
-        candidateEmails = ['gamerisen@hotmail.com', 'yasuoxsmurf05@gmail.com', 'baymfa2006@gmail.com'];
+        candidateEmails = ['gamerisen@hotmail.com'];
       } else {
         const uid = await redisCmd(['GET', `username:${clean}`]);
         if (uid) {
@@ -39,11 +39,6 @@ export async function POST(request) {
       }
     } else {
       candidateEmails = [email];
-      if (email.toLowerCase() === 'gamerisen@hotmail.com') {
-        candidateEmails.push('yasuoxsmurf05@gmail.com');
-      } else if (email.toLowerCase() === 'yasuoxsmurf05@gmail.com') {
-        candidateEmails.push('gamerisen@hotmail.com');
-      }
     }
 
     // Hesap ekseni YALNIZ başarısız denemede artıyor (bkz. rate-guard.js):

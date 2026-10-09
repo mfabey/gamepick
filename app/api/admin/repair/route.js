@@ -131,16 +131,32 @@ export async function GET(request) {
   });
   results.healed.push('user_profile:' + TEST_UID + ' -> @test');
 
-  const OTHER_DEV_UIDS = [
+  const OTHER_TEST_UIDS = [
     'sBttZ4vTrvT78Md719Gm7pP0Z8z2',
     'sF0LvMh3cdMhEgd4EIvPuTp6Hd72',
     'gWvyliuy2BTyW8Op8bDjr0srSJE3',
     'baiGoZo4qBe7WYZzIHBAnyaI3FB2',
   ];
-  for (const tuid of OTHER_DEV_UIDS) {
+  for (const tuid of OTHER_TEST_UIDS) {
     try {
-      await mergeProfile(tuid, { isDeveloper: true });
-      results.healed.push('user_profile:' + tuid + ' -> isDeveloper: true');
+      const tp = await redisGetJSON(`user_profile:${tuid}`);
+      if (tp) {
+        let dirty = false;
+        if (tp.isDeveloper) {
+          tp.isDeveloper = false;
+          dirty = true;
+        }
+        const tun = String(tp.username || '').replace(/^@/, '').toLowerCase().trim();
+        if (tun === 'test' || tun === 'batuta') {
+          tp.username = null;
+          tp.usernameLower = null;
+          dirty = true;
+        }
+        if (dirty) {
+          await redisSetJSON(`user_profile:${tuid}`, tp);
+          results.healed.push('user_profile:' + tuid + ' -> temizlendi (isDeveloper: false)');
+        }
+      }
     } catch {}
   }
 

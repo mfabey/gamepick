@@ -227,8 +227,8 @@ export default function NavBar() {
               const isDevUser = Boolean(
                 user.isDeveloper === true ||
                 ['batuta', 'test', 'test8'].includes(String(user.username || '').replace(/^@/, '').toLowerCase().trim()) ||
-                ['M05J6kGPeqPAkPG55Blg7dJlVsY2', '5FimwbEHFQZ75FgL2PkgIY9OQV92', 'sBttZ4vTrvT78Md719Gm7pP0Z8z2', 'sF0LvMh3cdMhEgd4EIvPuTp6Hd72', 'gWvyliuy2BTyW8Op8bDjr0srSJE3', 'baiGoZo4qBe7WYZzIHBAnyaI3FB2'].includes(user.uid) ||
-                ['xxxbatuhan@gmail.com', 'gamerisen@hotmail.com', 'baymfa1453@gmail.com', 'baymfa2006@gmail.com', 'muhammedfurkanakarsu@gmail.com', 'yasuoxsmurf05@gmail.com', '240404021@ogr.kent.edu.tr'].includes(String(user.email || '').toLowerCase().trim())
+                ['M05J6kGPeqPAkPG55Blg7dJlVsY2', '5FimwbEHFQZ75FgL2PkgIY9OQV92'].includes(user.uid) ||
+                ['xxxbatuhan@gmail.com', 'gamerisen@hotmail.com', '240404021@ogr.kent.edu.tr'].includes(String(user.email || '').toLowerCase().trim())
               );
               return (
               <div className="nav-auth-group" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
