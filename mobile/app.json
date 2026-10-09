@@ -40,10 +40,10 @@
         "monochromeImage": "./assets/brand/app-icon/android-monochrome.png"
       }
     },
-    "web": {
-      "favicon": "./assets/favicon.png",
-      "bundler": "metro"
-    },
+    "platforms": [
+      "ios",
+      "android"
+    ],
     "plugins": [
       "expo-router",
       [
