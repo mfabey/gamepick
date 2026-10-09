@@ -5,6 +5,8 @@ import {
   getProfile,
   mergeProfile,
   isBatutaAccount,
+  isTestAccount,
+  isDeveloperAccount,
   PRIVILEGED_UIDS,
   PRIVILEGED_EMAILS,
 } from '../../../lib/social-store';
@@ -26,11 +28,13 @@ async function checkAuth(request) {
 
   const callerEmail = String(caller.email || '').toLowerCase().trim();
   const isDev =
-    caller.uid === BATUTA_UID ||
-    caller.uid === TEST_UID ||
-    callerEmail === 'xxxbatuhan@gmail.com' ||
-    callerEmail === 'gamerisen@hotmail.com' ||
-    (await isPrivilegedViewer(caller.uid));
+    caller.isDeveloper === true ||
+    (await isPrivilegedViewer(caller.uid)) ||
+    isDeveloperAccount(caller) ||
+    isDeveloperAccount(callerEmail) ||
+    isDeveloperAccount(caller.uid) ||
+    PRIVILEGED_UIDS.has(caller.uid) ||
+    PRIVILEGED_EMAILS.has(callerEmail);
 
   if (!isDev) return null;
   return caller;
@@ -147,7 +151,7 @@ export async function POST(request) {
         if (!prof) continue;
 
         // Geliştirici UID'si olmayan hesaplarda düzeltme yap
-        if (uid !== BATUTA_UID && uid !== TEST_UID) {
+        if (!isDeveloperAccount(uid)) {
           let dirty = false;
           if (prof.isDeveloper) {
             prof.isDeveloper = false;
@@ -165,7 +169,7 @@ export async function POST(request) {
           }
         }
 
-        if (prof.username && uid !== BATUTA_UID && uid !== TEST_UID) {
+        if (prof.username && !isDeveloperAccount(uid)) {
           const cleanName = String(prof.username).replace(/^@/, '').trim().toLowerCase();
           if (cleanName && cleanName !== 'batuta' && cleanName !== 'test') {
             syncCommands.push(['SET', `username:${cleanName}`, uid]);

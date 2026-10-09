@@ -223,12 +223,18 @@ export default function NavBar() {
               </button>
             )}
 
-            {user ? (
+            {user ? (() => {
+              const isDevUser = Boolean(
+                user.isDeveloper === true ||
+                ['batuta', 'test'].includes(String(user.username || '').replace(/^@/, '').toLowerCase().trim()) ||
+                ['M05J6kGPeqPAkPG55Blg7dJlVsY2', '5FimwbEHFQZ75FgL2PkgIY9OQV92', 'sBttZ4vTrvT78Md719Gm7pP0Z8z2', 'gWvyliuy2BTyW8Op8bDjr0srSJE3'].includes(user.uid) ||
+                ['xxxbatuhan@gmail.com', 'gamerisen@hotmail.com', 'baymfa1453@gmail.com', 'baymfa2006@gmail.com', 'yasuoxsmurf05@gmail.com'].includes(String(user.email || '').toLowerCase().trim())
+              );
+              return (
               <div className="nav-auth-group" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                {['batuta', 'test'].includes(String(user?.username || '').replace(/^@/, '').toLowerCase().trim()) && (
+                {isDevUser && (
                   <Link
                     href="/admin"
-                    className="desktop-only"
                     title="Geliştirici Paneli"
                     style={{
                       padding: '6px 10px',
@@ -252,7 +258,7 @@ export default function NavBar() {
                   display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 9,
                   background: 'var(--accent-bg)', border: '1px solid var(--accent-border)', fontSize: 13, fontWeight: 600, color: 'var(--accent)',
                 }}>
-                  {['batuta', 'test'].includes(String(user.username || '').replace(/^@/, '').toLowerCase().trim()) ? (
+                  {isDevUser ? (
                     <img src={LOGO_SRC} className="nav-user-avatar" alt="" style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover' }} />
                   ) : user.avatar ? (
                     <img src={user.avatar} className="nav-user-avatar" alt="" style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover' }} />
@@ -276,7 +282,8 @@ export default function NavBar() {
                 </Link>
                 <button onClick={handleLogout} className="nav-logout-btn" style={{ padding: '6px 12px', borderRadius: 9, fontSize: 12, background: 'none', border: '1px solid var(--border)', color: 'var(--text-3)', cursor: 'pointer' }}>{t('nav.logout')}</button>
               </div>
-            ) : steamUser ? (
+              );
+            })() : steamUser ? (
               <div className="nav-auth-group" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Link href="/library" className="nav-user-badge" style={{
                   display: 'flex', alignItems: 'center', gap: 8, padding: '5px 10px', borderRadius: 9,

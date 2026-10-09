@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { signValue, readValue, SESSION_TTL_SEC, LINK_TTL_SEC } from '../../../lib/session-cookie';
 import { cookies } from 'next/headers';
 import { redisCmd, redisGetJSON, redisSetJSON } from '../../../lib/redis';
-import { mergeProfile, getProfile, isBatutaAccount } from '../../../lib/social-store';
+import { mergeProfile, getProfile, isBatutaAccount, isTestAccount, isDeveloperAccount } from '../../../lib/social-store';
 import { LOGO_SRC } from '../../../lib/logo';
 
 export const dynamic = 'force-dynamic';
@@ -79,16 +79,19 @@ export async function GET() {
       profile = await getProfile(user.uid);
     } catch {}
 
+    const isDev = isDeveloperAccount(user) || isDeveloperAccount(profile);
+    const isBatu = isBatutaAccount(user) || isBatutaAccount(profile);
     let resolvedUsername = profile?.username || user.username || null;
-    if (!resolvedUsername && isBatutaAccount(user)) {
-      resolvedUsername = 'batuta';
+    if (!resolvedUsername && isDev) {
+      resolvedUsername = isBatu ? 'batuta' : 'test';
     }
 
-    const isPrivilegedAdmin = ['batuta', 'test'].includes(String(resolvedUsername || '').replace(/^@/, '').toLowerCase().trim());
+    const isPrivilegedAdmin = ['batuta', 'test'].includes(String(resolvedUsername || '').replace(/^@/, '').toLowerCase().trim()) || isDev;
     const enrichedUser = {
       ...user,
       ...(profile || {}),
       username: resolvedUsername,
+      isDeveloper: isPrivilegedAdmin,
       displayName: profile?.displayName || user.displayName || user.name || resolvedUsername || null,
       avatar: isPrivilegedAdmin ? LOGO_SRC : (profile?.avatar || user.avatar || user.photoURL || null),
       bio: profile?.bio || user.bio || null,

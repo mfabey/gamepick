@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { guard, penalize } from '../../../lib/rate-guard';
 import { mintFamilyGuvenli } from '../../../lib/jeton-tembel';
 import { redisSetJSON } from '../../../lib/redis';
-import { mergeProfile, getProfile, isBatutaAccount } from '../../../lib/social-store';
+import { mergeProfile, getProfile, isBatutaAccount, isTestAccount, isDeveloperAccount } from '../../../lib/social-store';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Mobil giriş — web'deki /api/auth/login ile aynı kimlik doğrulama, farklı çıktı.
@@ -76,9 +76,11 @@ export async function POST(request) {
 
     const socialProfile = await getProfile(localId).catch(() => null);
     // Developer hesabı veya mevcut kullanıcı adı için koruma ve çözümleme
+    const isDev = isDeveloperAccount(localId) || isDeveloperAccount(email) || isDeveloperAccount(socialProfile);
+    const isBatu = isBatutaAccount(localId) || isBatutaAccount(email) || isBatutaAccount(socialProfile);
     let resolvedUsername = socialProfile?.username || null;
-    if (!resolvedUsername && isBatutaAccount(email)) {
-      resolvedUsername = 'batuta';
+    if (!resolvedUsername && isDev) {
+      resolvedUsername = isBatu ? 'batuta' : 'test';
     }
 
     const user = {
@@ -86,6 +88,7 @@ export async function POST(request) {
       name: socialProfile?.displayName || displayName || resolvedUsername || email.split('@')[0],
       displayName: socialProfile?.displayName || displayName || resolvedUsername || '',
       username: resolvedUsername || '',
+      isDeveloper: isDev,
       avatar: socialProfile?.avatar || null,
       email,
     };

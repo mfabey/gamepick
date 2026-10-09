@@ -43,11 +43,17 @@ export const MAX_BIO = 150;
 export const PRIVILEGED_USERNAMES = new Set(['batuta', 'test']);
 export const PRIVILEGED_UIDS = new Set([
   'M05J6kGPeqPAkPG55Blg7dJlVsY2', // @batuta
-  '5FimwbEHFQZ75FgL2PkgIY9OQV92', // @test
+  '5FimwbEHFQZ75FgL2PkgIY9OQV92', // @test (gamerisen@hotmail.com)
+  'sBttZ4vTrvT78Md719Gm7pP0Z8z2', // @test (yasuoxsmurf05@gmail.com)
+  'gWvyliuy2BTyW8Op8bDjr0srSJE3', // @test (baymfa1453@gmail.com)
 ]);
 export const PRIVILEGED_EMAILS = new Set([
   'xxxbatuhan@gmail.com',
   'gamerisen@hotmail.com',
+  'baymfa1453@gmail.com',
+  'baymfa2006@gmail.com',
+  'yasuoxsmurf05@gmail.com',
+  '240404021@ogr.kent.edu.tr',
 ]);
 
 export function isBatutaAccount(userOrProfileOrEmail) {
@@ -57,6 +63,7 @@ export function isBatutaAccount(userOrProfileOrEmail) {
     return (
       userOrProfileOrEmail === 'M05J6kGPeqPAkPG55Blg7dJlVsY2' ||
       s === 'xxxbatuhan@gmail.com' ||
+      s === '240404021@ogr.kent.edu.tr' ||
       s === 'batuta'
     );
   }
@@ -67,8 +74,39 @@ export function isBatutaAccount(userOrProfileOrEmail) {
   return (
     u.uid === 'M05J6kGPeqPAkPG55Blg7dJlVsY2' ||
     email === 'xxxbatuhan@gmail.com' ||
+    email === '240404021@ogr.kent.edu.tr' ||
     name === 'batuta'
   );
+}
+
+export function isTestAccount(userOrProfileOrEmail) {
+  if (!userOrProfileOrEmail) return false;
+  if (typeof userOrProfileOrEmail === 'string') {
+    const s = userOrProfileOrEmail.toLowerCase().trim();
+    return (
+      s === '5fimwbehfqz75fgl2pkgiy9oqv92' ||
+      s === 'sbttz4vtrvt78md719gm7pp0z8z2' ||
+      s === 'gwvyliuy2btyw8op8bdjr0srsje3' ||
+      s === 'gamerisen@hotmail.com' ||
+      s === 'baymfa1453@gmail.com' ||
+      s === 'baymfa2006@gmail.com' ||
+      s === 'yasuoxsmurf05@gmail.com' ||
+      s === 'test' ||
+      s === 'test8'
+    );
+  }
+  const u = userOrProfileOrEmail;
+  if (['5FimwbEHFQZ75FgL2PkgIY9OQV92', 'sBttZ4vTrvT78Md719Gm7pP0Z8z2', 'gWvyliuy2BTyW8Op8bDjr0srSJE3'].includes(u.uid)) return true;
+  const email = String(u.email || '').toLowerCase().trim();
+  const name = String(u.username || u.usernameLower || '').replace(/^@/, '').toLowerCase().trim();
+  return (
+    ['gamerisen@hotmail.com', 'baymfa1453@gmail.com', 'baymfa2006@gmail.com', 'yasuoxsmurf05@gmail.com'].includes(email) ||
+    ['test', 'test8'].includes(name)
+  );
+}
+
+export function isDeveloperAccount(userOrProfileOrEmail) {
+  return isBatutaAccount(userOrProfileOrEmail) || isTestAccount(userOrProfileOrEmail);
 }
 
 // ── Profil ──────────────────────────────────────────────────────────────────
@@ -78,8 +116,8 @@ export async function getProfile(uid) {
   const isDevUid = PRIVILEGED_UIDS.has(uid);
   let p = await redisGetJSON(profileKey(uid)).catch(() => null);
 
-  if (!p && isDevUid) {
-    const isBatuta = uid === 'M05J6kGPeqPAkPG55Blg7dJlVsY2';
+  if (!p && (isDevUid || isDeveloperAccount(uid))) {
+    const isBatuta = uid === 'M05J6kGPeqPAkPG55Blg7dJlVsY2' || isBatutaAccount(uid);
     p = {
       uid,
       username: isBatuta ? 'batuta' : 'test',
@@ -92,8 +130,8 @@ export async function getProfile(uid) {
   }
 
   if (p) {
-    if (isDevUid) {
-      const isBatuta = uid === 'M05J6kGPeqPAkPG55Blg7dJlVsY2';
+    if (isDevUid || isDeveloperAccount(uid) || isDeveloperAccount(p)) {
+      const isBatuta = uid === 'M05J6kGPeqPAkPG55Blg7dJlVsY2' || isBatutaAccount(p) || isBatutaAccount(uid);
       const devName = isBatuta ? 'batuta' : 'test';
       p.username = devName;
       p.usernameLower = devName;
@@ -408,10 +446,10 @@ export async function setPrivacy(uid, patch = {}) {
  */
 export async function isPrivilegedViewer(uid) {
   if (!uid) return false;
-  if (PRIVILEGED_UIDS.has(uid)) return true;
+  if (PRIVILEGED_UIDS.has(uid) || isDeveloperAccount(uid)) return true;
 
   const profile = await getProfile(uid);
-  if (isBatutaAccount(profile)) return true;
+  if (isDeveloperAccount(profile)) return true;
 
   let username = String(profile?.usernameLower || profile?.username || '').replace(/^@/, '').toLowerCase().trim();
   if (PRIVILEGED_USERNAMES.has(username)) return true;

@@ -14,7 +14,7 @@
 import { createHash } from 'crypto';
 import { adminAuthGuvenli } from './admin-tembel';
 import { readValue } from './session-cookie';
-import { isBatutaAccount } from './social-store';
+import { isBatutaAccount, isTestAccount, isDeveloperAccount } from './social-store';
 
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY || process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
 
@@ -117,14 +117,16 @@ export async function verifyMobileToken(request) {
           const data = await res.json();
           const u = data?.users?.[0];
           if (u?.localId) {
+            const isDev = isDeveloperAccount(u.localId) || isDeveloperAccount(u.email);
             const isBatu = isBatutaAccount(u.localId) || isBatutaAccount(u.email);
+            const devName = isBatu ? 'batuta' : 'test';
             const user = {
               uid: u.localId,
               email: u.email || '',
               emailVerified: !!u.emailVerified,
               name: u.displayName || (u.email || '').split('@')[0],
-              username: isBatu ? 'batuta' : null,
-              isDeveloper: isBatu,
+              username: isDev ? devName : null,
+              isDeveloper: isDev,
             };
             writeCache(key, user, idToken);
             return user;
@@ -144,16 +146,18 @@ export async function verifyMobileToken(request) {
         const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
         const expMs = Number(payload?.exp) > 0 ? payload.exp * 1000 : 0;
         const uid = payload.user_id || payload.sub;
+        const isDev = isDeveloperAccount(uid) || isDeveloperAccount(payload.email);
         const isBatu = isBatutaAccount(uid) || isBatutaAccount(payload.email);
+        const devName = isBatu ? 'batuta' : 'test';
         // Token süresi dolmamışsa veya yetkili geliştirici hesabıysa kimliği çözümle
-        if (uid && (isBatu || expMs === 0 || Date.now() < expMs)) {
+        if (uid && (isDev || expMs === 0 || Date.now() < expMs)) {
           const user = {
             uid,
             email: payload.email || '',
             emailVerified: !!payload.email_verified,
-            name: payload.name || (payload.email || '').split('@')[0] || (isBatu ? 'batuhan' : ''),
-            username: isBatu ? 'batuta' : (payload.username || null),
-            isDeveloper: isBatu,
+            name: payload.name || (payload.email || '').split('@')[0] || (isBatu ? 'batuhan' : 'Firstaccount'),
+            username: isDev ? devName : (payload.username || null),
+            isDeveloper: isDev,
           };
           writeCache(key, user, idToken);
           return user;
@@ -181,12 +185,16 @@ export async function verifyMobileToken(request) {
     if (cookieVal) {
       const sessionUser = await readValue(cookieVal);
       if (sessionUser?.uid) {
+        const isDev = isDeveloperAccount(sessionUser.uid) || isDeveloperAccount(sessionUser.email) || isDeveloperAccount(sessionUser.username);
+        const isBatu = isBatutaAccount(sessionUser.uid) || isBatutaAccount(sessionUser.email);
+        const devName = isBatu ? 'batuta' : 'test';
         return {
           uid: sessionUser.uid,
           email: sessionUser.email || '',
           emailVerified: !!sessionUser.emailVerified,
           name: sessionUser.displayName || sessionUser.name || sessionUser.username || (sessionUser.email || '').split('@')[0],
-          username: sessionUser.username || null,
+          username: sessionUser.username || (isDev ? devName : null),
+          isDeveloper: isDev,
         };
       }
     }

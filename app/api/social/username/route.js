@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { verifyMobileToken } from '../../../lib/mobile-auth';
 import { validateUsername, validateFreeText } from '../../../lib/content-filter';
 import { rateLimit, tooManyRequests } from '../../../lib/rate-limit';
-import { getProfile, uidForUsername, claimUsername, mergeProfile, isBatutaAccount, MAX_BIO } from '../../../lib/social-store';
+import { getProfile, uidForUsername, claimUsername, mergeProfile, isBatutaAccount, isTestAccount, isDeveloperAccount, MAX_BIO } from '../../../lib/social-store';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Kullanıcı adı — sosyal özelliklerin kimlik temeli.
@@ -43,11 +43,14 @@ export async function GET(request) {
   }
 
   let profile = await getProfile(user.uid);
-  if (!profile?.username && (isBatutaAccount(user.uid) || isBatutaAccount(user.email) || isBatutaAccount(profile))) {
+  if (!profile?.username && (isDeveloperAccount(user.uid) || isDeveloperAccount(user.email) || isDeveloperAccount(profile))) {
+    const isBatu = isBatutaAccount(user.uid) || isBatutaAccount(user.email) || isBatutaAccount(profile);
+    const devName = isBatu ? 'batuta' : 'test';
+    const devDisplay = isBatu ? 'batuhan' : 'Firstaccount';
     profile = await mergeProfile(user.uid, {
-      username: 'batuta',
-      usernameLower: 'batuta',
-      displayName: user.name || profile?.displayName || 'batuhan',
+      username: devName,
+      usernameLower: devName,
+      displayName: user.name || profile?.displayName || devDisplay,
       email: user.email || '',
     });
   }

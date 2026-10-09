@@ -59,7 +59,14 @@ export default function ProfileDashboard({ user, steamUser, xboxUser, sources, l
   const hasXbox = sources.some(s => s.platform === 'xbox');
   const steamNote = !hasSteam ? (tr ? 'Steam hesabını bağla' : 'Connect Steam') : stats.steamCount == null ? (tr ? 'Veri alınamadı' : 'Data unavailable') : stats.steamPartial ? (tr ? 'Erişilebilen Steam hesapları' : 'Available Steam accounts') : (tr ? 'Bağlı Steam hesaplarından' : 'From connected Steam accounts');
   const failed = sources.some(s => ['error', 'unavailable', 'partial'].includes(s.status));
-  const admin = ['batuta', 'test'].includes(String(user?.username || '').replace(/^@/, '').toLowerCase().trim());
+  const admin = Boolean(
+    user && (
+      user.isDeveloper === true ||
+      ['batuta', 'test'].includes(String(user.username || '').replace(/^@/, '').toLowerCase().trim()) ||
+      ['M05J6kGPeqPAkPG55Blg7dJlVsY2', '5FimwbEHFQZ75FgL2PkgIY9OQV92', 'sBttZ4vTrvT78Md719Gm7pP0Z8z2', 'gWvyliuy2BTyW8Op8bDjr0srSJE3'].includes(user.uid) ||
+      ['xxxbatuhan@gmail.com', 'gamerisen@hotmail.com', 'baymfa1453@gmail.com', 'baymfa2006@gmail.com', 'yasuoxsmurf05@gmail.com'].includes(String(user.email || '').toLowerCase().trim())
+    )
+  );
   const avatarSrc = admin ? LOGO_SRC : (user?.avatar || steamUser?.avatar || xboxUser?.avatar);
   return <main className="profile-page">
     <div className="container">

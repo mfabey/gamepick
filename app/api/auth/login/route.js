@@ -3,7 +3,8 @@ import { signValue, SESSION_TTL_SEC, LINK_TTL_SEC } from '../../../lib/session-c
 import { sunucuHatasi, yukariAkisHatasi } from '../../../lib/api-error';
 import { canUseAuthMock, authNotConfigured } from '../../../lib/auth-config';
 import { redisCmd, redisSetJSON } from '../../../lib/redis';
-import { mergeProfile, getProfile } from '../../../lib/social-store';
+import { mergeProfile, getProfile, isBatutaAccount, isTestAccount, isDeveloperAccount } from '../../../lib/social-store';
+import { LOGO_SRC } from '../../../lib/logo';
 import { guard, penalize } from '../../../lib/rate-guard';
 
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
@@ -99,16 +100,19 @@ export async function POST(request) {
       profile = await getProfile(localId);
     } catch {}
 
+    const isDev = isDeveloperAccount(localId) || isDeveloperAccount(email) || isDeveloperAccount(profile);
+    const isBatu = isBatutaAccount(localId) || isBatutaAccount(email) || isBatutaAccount(profile);
     let resolvedUsername = profile?.username || null;
-    if (!resolvedUsername && email.toLowerCase().includes('batuta')) {
-      resolvedUsername = 'batuta';
+    if (!resolvedUsername && isDev) {
+      resolvedUsername = isBatu ? 'batuta' : 'test';
     }
 
     const userObj = {
       uid: localId,
       name: profile?.displayName || displayName || resolvedUsername || email.split('@')[0],
       username: resolvedUsername,
-      avatar: profile?.avatar || null,
+      isDeveloper: isDev,
+      avatar: isDev ? LOGO_SRC : (profile?.avatar || null),
       bio: profile?.bio || null,
       email
     };

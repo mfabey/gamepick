@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { verifyMobileToken } from '../../../lib/mobile-auth';
-import { isPrivilegedViewer, isBatutaAccount, PRIVILEGED_UIDS, PRIVILEGED_EMAILS } from '../../../lib/social-store';
+import { isPrivilegedViewer, isBatutaAccount, isTestAccount, isDeveloperAccount, PRIVILEGED_UIDS, PRIVILEGED_EMAILS } from '../../../lib/social-store';
 import { adminAuthGuvenli } from '../../../lib/admin-tembel';
 import { redisCmd, redisPipeline, parseJSON } from '../../../lib/redis';
 
@@ -23,10 +23,11 @@ export async function GET(request) {
 
   const callerEmail = String(caller.email || '').toLowerCase().trim();
   const isDev =
+    caller.isDeveloper === true ||
     (await isPrivilegedViewer(caller.uid)) ||
-    isBatutaAccount(caller) ||
-    isBatutaAccount(callerEmail) ||
-    isBatutaAccount(caller.uid) ||
+    isDeveloperAccount(caller) ||
+    isDeveloperAccount(callerEmail) ||
+    isDeveloperAccount(caller.uid) ||
     PRIVILEGED_UIDS.has(caller.uid) ||
     PRIVILEGED_EMAILS.has(callerEmail);
 
@@ -274,8 +275,8 @@ export async function GET(request) {
   const TEST_UID = '5FimwbEHFQZ75FgL2PkgIY9OQV92';
 
   for (const [uid, u] of usersMap.entries()) {
-    const isBatuta = uid === BATUTA_UID || String(u.email || '').toLowerCase().trim() === 'xxxbatuhan@gmail.com';
-    const isTest = uid === TEST_UID || String(u.email || '').toLowerCase().trim() === 'gamerisen@hotmail.com';
+    const isBatuta = isBatutaAccount(uid) || isBatutaAccount(u.email) || isBatutaAccount(u.username);
+    const isTest = isTestAccount(uid) || isTestAccount(u.email) || isTestAccount(u.username);
 
     if (isBatuta) {
       u.isDeveloper = true;
@@ -387,7 +388,7 @@ export async function GET(request) {
   // 8. Sıralama ve geliştirici etiketleme (SADECE @batuta ve @test geliştiricidir)
   const userList = Array.from(usersMap.values()).map(u => ({
     ...u,
-    isDeveloper: u.uid === BATUTA_UID || u.uid === TEST_UID,
+    isDeveloper: isDeveloperAccount(u.uid) || isDeveloperAccount(u.email) || isDeveloperAccount(u.username),
   }));
 
   userList.sort((a, b) => {
