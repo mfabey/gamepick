@@ -848,8 +848,22 @@ html[data-theme="light"] .nav-header {
 
 /* ===== BOTTOM NAVIGATION BAR RESPONSIVE ===== */
 .bottom-nav {
-  transition: bottom 0.25s ease, padding 0.25s ease, gap 0.25s ease;
-  isolation: isolate;
+  position: fixed !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  bottom: 28px !important;
+  z-index: 200 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--bg-card) 46%, transparent), color-mix(in srgb, var(--bg-card) 30%, transparent)) !important;
+  backdrop-filter: blur(22px) saturate(185%) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(185%) !important;
+  border-radius: 999px !important;
+  padding: 11px !important;
+  box-shadow: inset 0 1px 0.5px rgba(255,255,255,0.5), inset 0 -1px 0.5px rgba(255,255,255,0.12), inset 0 0 0 1px color-mix(in srgb, var(--text) 7%, transparent), 0 8px 22px -12px rgba(0,0,0,0.26), 0 24px 60px -18px rgba(0,0,0,0.34) !important;
+  transition: bottom 0.25s ease, padding 0.25s ease, gap 0.25s ease !important;
+  isolation: isolate !important;
 }
 /* Apple Liquid Glass — Fresnel cam kenarı (rim) + specular parıltı (yalnızca alt bar) */
 .bottom-nav::before {
@@ -944,7 +958,14 @@ html[data-theme="light"] .bottom-nav-pill {
 }
 
 @media (max-width: 768px) {
+  body {
+    padding-bottom: calc(84px + env(safe-area-inset-bottom, 16px));
+  }
+
   .bottom-nav {
+    position: fixed !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
     bottom: max(16px, env(safe-area-inset-bottom, 16px)) !important;
     padding: 8px 10px !important;
     gap: 4px !important;
@@ -953,6 +974,7 @@ html[data-theme="light"] .bottom-nav-pill {
     justify-content: center !important;
     border-radius: 28px !important;
     box-shadow: inset 0 1px 0.5px rgba(255,255,255,0.45), inset 0 0 0 1px color-mix(in srgb, var(--text) 8%, transparent), 0 10px 36px rgba(0,0,0,0.32) !important;
+    z-index: 200 !important;
   }
   
   .bottom-nav a[data-tab] {
