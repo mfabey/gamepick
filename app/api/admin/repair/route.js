@@ -12,6 +12,7 @@ import {
   PRIVILEGED_UIDS,
   PRIVILEGED_EMAILS,
 } from '../../../lib/social-store';
+import { adminAuthGuvenli } from '../../../lib/admin-tembel';
 import { redisCmd, redisGetJSON, redisPipeline, redisSetJSON, parseJSON } from '../../../lib/redis';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -271,6 +272,76 @@ export async function POST(request) {
         results.details.push(`@${cleanName} -> ${targetUid} eşlemesi başarıyla onarıldı.`);
       }
     }
+  } else if (action === 'delete_user' && targetUid) {
+    if (
+      isDeveloperAccount(targetUid) ||
+      isBatutaAccount(targetUid) ||
+      isTestAccount(targetUid) ||
+      PRIVILEGED_UIDS.has(targetUid)
+    ) {
+      return NextResponse.json({ error: 'Geliştirici hesapları (@batuta ve @test) silinemez!' }, { status: 403 });
+    }
+
+    const prof = await getProfile(targetUid);
+    if (prof) {
+      const tEmail = String(prof.email || '').toLowerCase().trim();
+      const tUsername = String(prof.username || prof.usernameLower || '').replace(/^@/, '').toLowerCase().trim();
+      if (
+        isDeveloperAccount(prof) ||
+        isBatutaAccount(prof) ||
+        isTestAccount(prof) ||
+        ['batuta', 'test', 'test8'].includes(tUsername) ||
+        PRIVILEGED_EMAILS.has(tEmail)
+      ) {
+        return NextResponse.json({ error: 'Geliştirici hesapları (@batuta ve @test) silinemez!' }, { status: 403 });
+      }
+    }
+
+    let fbDeleted = false;
+    try {
+      const admin = await adminAuthGuvenli();
+      if (admin) {
+        await admin.deleteUser(targetUid);
+        fbDeleted = true;
+      }
+    } catch (fbErr) {
+      console.warn('[Admin repair delete_user] Firebase deleteUser:', fbErr?.message || fbErr);
+    }
+
+    if (prof?.username) {
+      const clean = prof.username.replace(/^@/, '').toLowerCase().trim();
+      if (!['batuta', 'test', 'test8'].includes(clean)) {
+        await redisCmd(['DEL', `username:${clean}`]);
+        await redisCmd(['ZREM', 'username_index', clean]);
+      }
+    }
+
+    const connections = await redisGetJSON(`user_connections:${targetUid}`);
+    if (connections) {
+      const steamAccounts = connections.steamAccounts || (connections.steam ? [connections.steam] : []);
+      for (const acc of steamAccounts) {
+        if (acc?.steamId) {
+          await redisCmd(['DEL', `steam_to_uid:${acc.steamId}`]);
+        }
+      }
+      if (connections.xbox?.gamertag) {
+        await redisCmd(['DEL', `xbox_to_uid:${connections.xbox.gamertag}`]);
+      }
+    }
+
+    await redisCmd(['DEL', `user_profile:${targetUid}`]);
+    await redisCmd(['DEL', `user_connections:${targetUid}`]);
+    await redisCmd(['DEL', `user_blocks:${targetUid}`]);
+    await redisCmd(['DEL', `user_blocked_by:${targetUid}`]);
+    await redisCmd(['DEL', `friends:${targetUid}`]);
+    await redisCmd(['DEL', `friend_req_in:${targetUid}`]);
+    await redisCmd(['DEL', `friend_req_out:${targetUid}`]);
+    await redisCmd(['DEL', `user_activity:${targetUid}`]);
+    await redisCmd(['DEL', `user_privacy:${targetUid}`]);
+    await redisCmd(['DEL', `web_tastes:${targetUid}`]);
+
+    results.repairedCount = 1;
+    results.details.push(`Kullanıcı (${targetUid}) silindi.`);
   }
 
   return NextResponse.json({ ok: true, results });

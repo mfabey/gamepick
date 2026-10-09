@@ -22,6 +22,8 @@ export default function AdminUsersPage() {
   const [filterType, setFilterType] = useState('all'); // 'all', 'hasUsername', 'connected', 'social', 'google', 'apple', 'dev'
   const [sortBy, setSortBy] = useState('newest'); // 'newest', 'lastActive', 'collections', 'reviews', 'name'
   const [selectedUser, setSelectedUser] = useState(null);
+  const [userToDelete, setUserToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
   const [toast, setToast] = useState(null);
   const [showJson, setShowJson] = useState(false);
@@ -116,6 +118,34 @@ export default function AdminUsersPage() {
       }
     } catch (err) {
       showToast(err?.message || 'Hata oluştu.', 'error');
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!userToDelete || deleting) return;
+    setDeleting(true);
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetUid: userToDelete.uid }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        showToast(`${userToDelete.displayName || userToDelete.username || 'Kullanıcı'} başarıyla silindi!`, 'success');
+        if (selectedUser?.uid === userToDelete.uid) {
+          setSelectedUser(null);
+        }
+        setUserToDelete(null);
+        await fetchUsers();
+      } else {
+        showToast(data.error || 'Kullanıcı silinemedi.', 'error');
+      }
+    } catch (err) {
+      showToast(err?.message || 'Silme işlemi sırasında hata oluştu.', 'error');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -1460,6 +1490,29 @@ export default function AdminUsersPage() {
                             >
                               {copiedId === `uid-${u.uid}` ? '✓' : 'UID'}
                             </button>
+
+                            {!isBatutaOrDev && (
+                              <button
+                                onClick={() => setUserToDelete(u)}
+                                className="action-btn-hover"
+                                title="Kullanıcıyı Sil"
+                                style={{
+                                  padding: '6px 10px',
+                                  borderRadius: 8,
+                                  background: 'rgba(239,68,68,0.1)',
+                                  border: '1px solid rgba(239,68,68,0.25)',
+                                  color: '#ef4444',
+                                  fontSize: 12,
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 4,
+                                }}
+                              >
+                                🗑️ Sil
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -1587,6 +1640,28 @@ export default function AdminUsersPage() {
                 >
                   🛠️ İndeksi Onar
                 </button>
+                {!selectedUser.isDeveloper && (
+                  <button
+                    onClick={() => setUserToDelete(selectedUser)}
+                    style={{
+                      flex: 1,
+                      padding: '10px 14px',
+                      borderRadius: 10,
+                      background: 'rgba(239,68,68,0.12)',
+                      border: '1px solid rgba(239,68,68,0.3)',
+                      color: '#ef4444',
+                      fontSize: 13,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 6,
+                    }}
+                  >
+                    🗑️ Kullanıcıyı Sil
+                  </button>
+                )}
               </div>
 
               {/* Section 1: Kimlik & Sistem */}
@@ -1832,6 +1907,174 @@ export default function AdminUsersPage() {
                   </div>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete User Confirmation Modal */}
+      {userToDelete && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.78)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10000,
+            padding: 20,
+          }}
+          onClick={() => !deleting && setUserToDelete(null)}
+        >
+          <div
+            style={{
+              maxWidth: 480,
+              width: '100%',
+              background: 'var(--bg-card, #12131a)',
+              border: '1.5px solid rgba(239, 68, 68, 0.35)',
+              borderRadius: 22,
+              padding: '34px 28px',
+              boxShadow: '0 25px 60px rgba(0, 0, 0, 0.7), 0 0 35px rgba(239, 68, 68, 0.18)',
+              textAlign: 'center',
+              animation: 'slideUp 0.2s ease',
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Warning Icon Badge */}
+            <div
+              style={{
+                width: 66,
+                height: 66,
+                borderRadius: '50%',
+                background: 'rgba(239, 68, 68, 0.12)',
+                border: '1.5px solid rgba(239, 68, 68, 0.35)',
+                color: '#ef4444',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 30,
+                margin: '0 auto 18px',
+              }}
+            >
+              ⚠️
+            </div>
+
+            <h3
+              style={{
+                fontFamily: 'var(--font-heading)',
+                fontSize: 21,
+                fontWeight: 800,
+                color: 'var(--text)',
+                marginBottom: 12,
+                letterSpacing: '-0.3px',
+              }}
+            >
+              Kullanıcıyı Silmek İstediğinize Emin Misiniz?
+            </h3>
+
+            {/* Target User Info Card */}
+            <div
+              style={{
+                background: 'rgba(255, 255, 255, 0.03)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                borderRadius: 14,
+                padding: '14px 16px',
+                marginBottom: 18,
+                textAlign: 'left',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 7,
+                fontSize: 13,
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: 'var(--text-3)' }}>Kullanıcı:</span>
+                <span style={{ fontWeight: 800, color: 'var(--text)' }}>
+                  {userToDelete.displayName || 'İsimsiz Oyuncu'} {userToDelete.username ? `(@${userToDelete.username})` : ''}
+                </span>
+              </div>
+              {userToDelete.email && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: 'var(--text-3)' }}>E-Posta:</span>
+                  <span style={{ color: 'var(--text-2)', fontWeight: 600 }}>{userToDelete.email}</span>
+                </div>
+              )}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: 'var(--text-3)' }}>UID:</span>
+                <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--text-3)' }}>
+                  {userToDelete.uid}
+                </span>
+              </div>
+            </div>
+
+            <p
+              style={{
+                fontSize: 13,
+                color: 'var(--text-3)',
+                lineHeight: 1.6,
+                marginBottom: 26,
+              }}
+            >
+              Bu işlem <strong style={{ color: '#ef4444' }}>geri alınamaz</strong>. Kullanıcının Firebase Auth hesabı, kullanıcı adı, profili ve veritabanı kayıtları kalıcı olarak silinecektir.
+            </p>
+
+            <div
+              style={{
+                display: 'flex',
+                gap: 12,
+                justifyContent: 'center',
+              }}
+            >
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={() => setUserToDelete(null)}
+                style={{
+                  flex: 1,
+                  padding: '12px 18px',
+                  borderRadius: 12,
+                  background: 'rgba(255, 255, 255, 0.06)',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text)',
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: deleting ? 'not-allowed' : 'pointer',
+                  transition: 'background 0.15s ease',
+                }}
+              >
+                Hayır, İptal Et
+              </button>
+
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={handleDeleteUser}
+                style={{
+                  flex: 1,
+                  padding: '12px 18px',
+                  borderRadius: 12,
+                  background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                  border: 'none',
+                  color: '#fff',
+                  fontSize: 14,
+                  fontWeight: 800,
+                  cursor: deleting ? 'not-allowed' : 'pointer',
+                  boxShadow: '0 4px 18px rgba(239, 68, 68, 0.35)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  transition: 'transform 0.15s ease, opacity 0.15s ease',
+                  opacity: deleting ? 0.7 : 1,
+                }}
+              >
+                {deleting ? 'Siliniyor...' : 'Evet, Kullanıcıyı Sil'}
+              </button>
             </div>
           </div>
         </div>

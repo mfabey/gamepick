@@ -476,3 +476,182 @@ export async function GET(request) {
     users: userList,
   });
 }
+
+export async function DELETE(request) {
+  // 1. Kimlik ve yetki doğrulaması
+  let caller = await verifyMobileToken(request);
+
+  if (!caller?.uid) {
+    try {
+      const cookieStore = await cookies();
+      const session = cookieStore.get('gp_user_session');
+      if (session?.value) {
+        const u = await readValue(session.value);
+        if (u?.uid) caller = u;
+      }
+      if (!caller?.uid) {
+        const steamSession = cookieStore.get('gp_steam_session') || cookieStore.get('gp_steam_accounts');
+        if (steamSession?.value) {
+          const su = await readValue(steamSession.value);
+          const steamAccount = Array.isArray(su) ? su[0] : su;
+          const sid = steamAccount?.steamId;
+          if (sid) {
+            let uid = await redisCmd(['GET', `steam_to_uid:${sid}`]);
+            if (uid) {
+              const cached = await redisGetJSON(`user_profile:${uid}`);
+              if (cached) caller = cached;
+              else caller = { uid, username: isDeveloperAccount(uid) ? (isBatutaAccount(uid) ? 'batuta' : 'test') : null };
+            }
+          }
+        }
+      }
+    } catch {}
+  }
+
+  if (!caller?.uid) {
+    return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
+  }
+
+  const callerEmail = String(caller.email || '').toLowerCase().trim();
+  const callerUsername = String(caller.username || caller.usernameLower || '').replace(/^@/, '').toLowerCase().trim();
+  const isDev = Boolean(
+    caller.isDeveloper === true ||
+    ['batuta', 'test', 'test8'].includes(callerUsername) ||
+    (await isPrivilegedViewer(caller.uid)) ||
+    (await isPrivilegedViewer(caller)) ||
+    isDeveloperAccount(caller) ||
+    isDeveloperAccount(callerEmail) ||
+    isDeveloperAccount(caller.uid) ||
+    isDeveloperAccount(callerUsername) ||
+    PRIVILEGED_UIDS.has(caller.uid) ||
+    PRIVILEGED_EMAILS.has(callerEmail)
+  );
+
+  if (!isDev) {
+    return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+  }
+
+  let targetUid = null;
+  try {
+    const body = await request.json().catch(() => ({}));
+    targetUid = body?.targetUid || body?.uid;
+  } catch {}
+
+  if (!targetUid) {
+    const { searchParams } = new URL(request.url);
+    targetUid = searchParams.get('uid') || searchParams.get('targetUid');
+  }
+
+  if (!targetUid) {
+    return NextResponse.json({ error: 'Silinecek kullanıcı UID parametresi eksik.' }, { status: 400 });
+  }
+
+  // Geliştirici hesap koruması (SADECE @batuta ve @test geliştiricidir, silinemezler!)
+  if (
+    isDeveloperAccount(targetUid) ||
+    isBatutaAccount(targetUid) ||
+    isTestAccount(targetUid) ||
+    PRIVILEGED_UIDS.has(targetUid)
+  ) {
+    return NextResponse.json({ error: 'Geliştirici hesapları (@batuta ve @test) silinemez!' }, { status: 403 });
+  }
+
+  let targetProfile = null;
+  try {
+    targetProfile = await redisGetJSON(`user_profile:${targetUid}`);
+  } catch {}
+
+  if (targetProfile) {
+    const tEmail = String(targetProfile.email || '').toLowerCase().trim();
+    const tUsername = String(targetProfile.username || targetProfile.usernameLower || '').replace(/^@/, '').toLowerCase().trim();
+    if (
+      isDeveloperAccount(targetProfile) ||
+      isBatutaAccount(targetProfile) ||
+      isTestAccount(targetProfile) ||
+      ['batuta', 'test', 'test8'].includes(tUsername) ||
+      PRIVILEGED_EMAILS.has(tEmail)
+    ) {
+      return NextResponse.json({ error: 'Geliştirici hesapları (@batuta ve @test) silinemez!' }, { status: 403 });
+    }
+  }
+
+  // 1. Firebase Auth'tan sil (Varsa)
+  let fbDeleted = false;
+  try {
+    const admin = await adminAuthGuvenli();
+    if (admin) {
+      await admin.deleteUser(targetUid);
+      fbDeleted = true;
+    }
+  } catch (fbErr) {
+    console.warn('[Admin users DELETE] Firebase deleteUser:', fbErr?.message || fbErr);
+  }
+
+  // 2. Redis sosyal & kullanıcı adı dizinlerini temizle
+  try {
+    if (targetProfile?.username) {
+      const clean = targetProfile.username.replace(/^@/, '').toLowerCase().trim();
+      if (!['batuta', 'test', 'test8'].includes(clean)) {
+        await redisCmd(['DEL', `username:${clean}`]);
+        await redisCmd(['ZREM', 'username_index', clean]);
+      }
+    }
+    if (targetProfile?.usernameLower) {
+      const clean = targetProfile.usernameLower.replace(/^@/, '').toLowerCase().trim();
+      if (!['batuta', 'test', 'test8'].includes(clean)) {
+        await redisCmd(['DEL', `username:${clean}`]);
+        await redisCmd(['ZREM', 'username_index', clean]);
+      }
+    }
+
+    // Bağlantıları temizle (Steam, Xbox vb.)
+    const connections = await redisGetJSON(`user_connections:${targetUid}`);
+    if (connections) {
+      const steamAccounts = connections.steamAccounts || (connections.steam ? [connections.steam] : []);
+      for (const acc of steamAccounts) {
+        if (acc?.steamId) {
+          await redisCmd(['DEL', `steam_to_uid:${acc.steamId}`]);
+        }
+      }
+      if (connections.xbox?.gamertag) {
+        await redisCmd(['DEL', `xbox_to_uid:${connections.xbox.gamertag}`]);
+      }
+    }
+
+    // Kullanıcıya ait tüm anahtarları sil
+    await redisCmd(['DEL', `user_profile:${targetUid}`]);
+    await redisCmd(['DEL', `user_connections:${targetUid}`]);
+    await redisCmd(['DEL', `user_blocks:${targetUid}`]);
+    await redisCmd(['DEL', `user_blocked_by:${targetUid}`]);
+    await redisCmd(['DEL', `friends:${targetUid}`]);
+    await redisCmd(['DEL', `friend_req_in:${targetUid}`]);
+    await redisCmd(['DEL', `friend_req_out:${targetUid}`]);
+    await redisCmd(['DEL', `user_activity:${targetUid}`]);
+    await redisCmd(['DEL', `user_privacy:${targetUid}`]);
+    await redisCmd(['DEL', `web_tastes:${targetUid}`]);
+
+    // Olası username:* ters indeks taraması
+    const userKeys = await redisCmd(['KEYS', `username:*`]);
+    if (userKeys && userKeys.length > 0) {
+      for (const uk of userKeys) {
+        const val = await redisCmd(['GET', uk]);
+        if (val === targetUid) {
+          const uName = uk.replace('username:', '');
+          if (!['batuta', 'test', 'test8'].includes(uName)) {
+            await redisCmd(['DEL', uk]);
+            await redisCmd(['ZREM', 'username_index', uName]);
+          }
+        }
+      }
+    }
+  } catch (redisErr) {
+    console.error('[Admin users DELETE] Redis clean error:', redisErr?.message || redisErr);
+  }
+
+  return NextResponse.json({
+    ok: true,
+    deletedUid: targetUid,
+    fbDeleted,
+    message: 'Kullanıcı başarıyla silindi.',
+  });
+}
