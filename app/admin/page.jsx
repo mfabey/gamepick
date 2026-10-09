@@ -25,15 +25,12 @@ export default function AdminUsersPage() {
   const [toast, setToast] = useState(null);
   const [showJson, setShowJson] = useState(false);
 
-  // Geliştirici yetki doğrulaması: username, uid, email esnek kontrolleri
+  // Geliştirici yetki doğrulaması: SADECE @batuta ve @test (yalnızca 2 geliştirici)
   const isDev = Boolean(
     user && (
       ['batuta', 'test'].includes(String(user.username || '').replace(/^@/, '').toLowerCase().trim()) ||
       ['M05J6kGPeqPAkPG55Blg7dJlVsY2', '5FimwbEHFQZ75FgL2PkgIY9OQV92'].includes(user.uid) ||
-      ['xxxbatuhan@gmail.com', 'baymfa1453@gmail.com', '240404021@ogr.kent.edu.tr'].includes(String(user.email || '').toLowerCase().trim()) ||
-      String(user.email || '').toLowerCase().includes('batuta') ||
-      String(user.email || '').toLowerCase().includes('baymfa') ||
-      user.isDeveloper
+      ['xxxbatuhan@gmail.com', 'gamerisen@hotmail.com'].includes(String(user.email || '').toLowerCase().trim())
     )
   );
 
@@ -815,7 +812,7 @@ export default function AdminUsersPage() {
               { key: 'social', label: 'Etkileşimi Olanlar' },
               { key: 'google', label: `Google (${stats.googleCount})` },
               { key: 'apple', label: `Apple (${stats.appleCount})` },
-              { key: 'dev', label: 'Geliştiriciler' },
+              { key: 'dev', label: `Geliştiriciler (${users.filter(u => u.isDeveloper).length})` },
             ].map(f => {
               const active = filterType === f.key;
               return (

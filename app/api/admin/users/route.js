@@ -242,19 +242,30 @@ export async function GET(request) {
     console.error('[Admin users] username_index tarama hatası:', err?.message || err);
   }
 
-  // 6. Developer hesaplarını otomatik tespit & onarım garantisi
+  // 6. Geliştirici hesapları — SADECE @batuta ve @test (yalnızca 2 geliştirici)
+  const BATUTA_UID = 'M05J6kGPeqPAkPG55Blg7dJlVsY2';
+  const TEST_UID = '5FimwbEHFQZ75FgL2PkgIY9OQV92';
+
   for (const [uid, u] of usersMap.entries()) {
-    if (
-      PRIVILEGED_UIDS.has(uid) ||
-      PRIVILEGED_EMAILS.has(String(u.email || '').toLowerCase().trim()) ||
-      isBatutaAccount(u) ||
-      isBatutaAccount(u.email)
-    ) {
+    const isBatuta = uid === BATUTA_UID || String(u.email || '').toLowerCase().trim() === 'xxxbatuhan@gmail.com';
+    const isTest = uid === TEST_UID || String(u.email || '').toLowerCase().trim() === 'gamerisen@hotmail.com';
+
+    if (isBatuta) {
       u.isDeveloper = true;
-      if (!u.username && (uid === 'M05J6kGPeqPAkPG55Blg7dJlVsY2' || isBatutaAccount(u.email))) {
-        u.username = 'batuta';
-        u.usernameLower = 'batuta';
-        u.displayName = u.displayName || 'batuhan';
+      u.username = 'batuta';
+      u.usernameLower = 'batuta';
+      u.displayName = u.displayName || 'batuhan';
+    } else if (isTest) {
+      u.isDeveloper = true;
+      u.username = 'test';
+      u.usernameLower = 'test';
+      u.displayName = u.displayName || 'Firstaccount';
+    } else {
+      u.isDeveloper = false;
+      const uName = String(u.username || '').toLowerCase().trim();
+      if (uName === 'batuta' || uName === 'test') {
+        u.username = null;
+        u.usernameLower = null;
       }
     }
   }
@@ -346,10 +357,10 @@ export async function GET(request) {
     }
   }
 
-  // 8. Sıralama ve geliştirici etiketleme (En yeni kayıt en üstte)
+  // 8. Sıralama ve geliştirici etiketleme (SADECE @batuta ve @test geliştiricidir)
   const userList = Array.from(usersMap.values()).map(u => ({
     ...u,
-    isDeveloper: !!u.isDeveloper || ['batuta', 'test'].includes(String(u.username || u.usernameLower || '').toLowerCase()),
+    isDeveloper: u.uid === BATUTA_UID || u.uid === TEST_UID,
   }));
 
   userList.sort((a, b) => {

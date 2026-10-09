@@ -39,7 +39,7 @@ export const ACTIVITY_KEEP = 30;           // kullanıcı başına saklanan akti
 // kesilen metnin sunucuya hiç yazılmaması için burada.
 export const MAX_BIO = 150;
 
-// Geliştirici / moderasyon hesapları — tüm profilleri ve içerikleri inceleyebilir
+// Geliştirici / moderasyon hesapları — SADECE @batuta ve @test (yalnızca 2 geliştirici)
 export const PRIVILEGED_USERNAMES = new Set(['batuta', 'test']);
 export const PRIVILEGED_UIDS = new Set([
   'M05J6kGPeqPAkPG55Blg7dJlVsY2', // @batuta
@@ -47,8 +47,7 @@ export const PRIVILEGED_UIDS = new Set([
 ]);
 export const PRIVILEGED_EMAILS = new Set([
   'xxxbatuhan@gmail.com',
-  'baymfa1453@gmail.com',
-  '240404021@ogr.kent.edu.tr',
+  'gamerisen@hotmail.com',
 ]);
 
 export function isBatutaAccount(userOrProfileOrEmail) {
@@ -56,26 +55,19 @@ export function isBatutaAccount(userOrProfileOrEmail) {
   if (typeof userOrProfileOrEmail === 'string') {
     const s = userOrProfileOrEmail.toLowerCase().trim();
     return (
-      PRIVILEGED_UIDS.has(userOrProfileOrEmail) ||
-      PRIVILEGED_EMAILS.has(s) ||
-      s.includes('batuta') ||
-      s.includes('baymfa') ||
-      s.includes('240404021') ||
-      s === 'batuhan'
+      userOrProfileOrEmail === 'M05J6kGPeqPAkPG55Blg7dJlVsY2' ||
+      s === 'xxxbatuhan@gmail.com' ||
+      s === 'batuta'
     );
   }
   const u = userOrProfileOrEmail;
-  if (u.uid && PRIVILEGED_UIDS.has(u.uid)) return true;
+  if (u.uid === 'M05J6kGPeqPAkPG55Blg7dJlVsY2') return true;
   const email = String(u.email || '').toLowerCase().trim();
-  const name = String(u.name || u.displayName || u.username || '').toLowerCase().trim();
+  const name = String(u.username || u.usernameLower || '').replace(/^@/, '').toLowerCase().trim();
   return (
-    (u.uid && PRIVILEGED_UIDS.has(u.uid)) ||
-    PRIVILEGED_EMAILS.has(email) ||
-    email.includes('batuta') ||
-    email.includes('baymfa') ||
-    email.includes('240404021') ||
-    name === 'batuta' ||
-    name === 'batuhan'
+    u.uid === 'M05J6kGPeqPAkPG55Blg7dJlVsY2' ||
+    email === 'xxxbatuhan@gmail.com' ||
+    name === 'batuta'
   );
 }
 
@@ -100,24 +92,22 @@ export async function getProfile(uid) {
   }
 
   if (p) {
-    let un = String(p.usernameLower || p.username || '').replace(/^@/, '').toLowerCase().trim();
-    // Eğer username boş ama bu uid developer / batuta hesabı ise otomatik onar
-    if (!un && (isDevUid || isBatutaAccount(p))) {
-      un = 'batuta';
-      p.username = 'batuta';
-      p.usernameLower = 'batuta';
-      p.displayName = p.displayName || 'batuhan';
-      p.isDeveloper = true;
-      redisCmd(['SET', 'username:batuta', uid]).catch(() => {});
-      redisCmd(['ZADD', USERNAME_INDEX, '0', 'batuta']).catch(() => {});
-      redisSetJSON(profileKey(uid), p).catch(() => {});
-    }
-    if (['batuta', 'test'].includes(un) || isDevUid || isBatutaAccount(p)) {
+    if (isDevUid) {
+      const isBatuta = uid === 'M05J6kGPeqPAkPG55Blg7dJlVsY2';
+      const devName = isBatuta ? 'batuta' : 'test';
+      p.username = devName;
+      p.usernameLower = devName;
+      p.displayName = p.displayName || (isBatuta ? 'batuhan' : 'Firstaccount');
       p.avatar = LOGO_SRC;
       p.isDeveloper = true;
-      if (!p.username) {
-        p.username = un || 'batuta';
-        p.usernameLower = un || 'batuta';
+    } else {
+      // Geliştirici UID'si DEĞİLSE asla geliştirici olamaz
+      p.isDeveloper = false;
+      const un = String(p.usernameLower || p.username || '').replace(/^@/, '').toLowerCase().trim();
+      // Yanlışlıkla başka bir hesaba 'batuta' veya 'test' atanmışsa kaldır
+      if (['batuta', 'test'].includes(un)) {
+        p.username = null;
+        p.usernameLower = null;
       }
     }
   }
@@ -127,7 +117,7 @@ export async function getProfile(uid) {
     p.usernameLower = lower;
     // Auto-heal reverse index if missing or if developer account
     redisCmd(['GET', usernameKey(lower)]).then((owner) => {
-      if (!owner || (PRIVILEGED_USERNAMES.has(lower) && owner !== uid && (isDevUid || isBatutaAccount(p)))) {
+      if (!owner || (PRIVILEGED_USERNAMES.has(lower) && owner !== uid && isDevUid)) {
         redisCmd(['SET', usernameKey(lower), uid]).catch(() => {});
         redisCmd(['ZADD', USERNAME_INDEX, '0', lower]).catch(() => {});
       }
