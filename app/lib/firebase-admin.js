@@ -60,14 +60,21 @@ function parseServiceAccount(raw) {
     }
   }
 
-  // Sonda eksik '}' varsa ekle veya sondaki fazlalığı temizle
-  if (!str.endsWith('}')) {
-    const lastBrace = str.lastIndexOf('}');
-    if (lastBrace !== -1 && lastBrace > str.lastIndexOf('"')) {
-      str = str.slice(0, lastBrace + 1);
-    } else {
-      str = str + '}';
+  // Sonda kesilmiş / kapanmamış tırnak kontrolü (Unterminated string in JSON):
+  let quoteCount = 0;
+  for (let i = 0; i < str.length; i++) {
+    if (str[i] === '"' && (i === 0 || str[i - 1] !== '\\')) {
+      quoteCount++;
     }
+  }
+  // Eğer çift tırnak sayısı tek ise, son dize kapanmamıştır (örn: "universe_domain": "googleapis.com)
+  if (quoteCount % 2 !== 0) {
+    str = str + '"';
+  }
+
+  // Sonda eksik '}' varsa ekle
+  if (!str.trim().endsWith('}')) {
+    str = str + '\n}';
   }
 
   let creds = null;
@@ -78,9 +85,38 @@ function parseServiceAccount(raw) {
     try {
       creds = JSON.parse(str.replace(/\\"/g, '"').replace(/\\\\/g, '\\'));
     } catch (err2) {
-      lastInitError = `JSON ayrıştırma hatası: ${err1?.message || err1}`;
-      console.error('[firebase-admin] JSON parse hatası:', err1?.message || err1);
-      return null;
+      // Eğer son özellik bozulmuşsa (örneğin son satırdaki virgül veya eksik değer),
+      // son geçerli virgüle kadar kesip nesneyi kapatmayı dene:
+      try {
+        const lastComma = str.lastIndexOf(',');
+        if (lastComma > 0) {
+          const cutJson = str.slice(0, lastComma).trim() + '\n}';
+          creds = JSON.parse(cutJson);
+        }
+      } catch (err3) {
+        // Regex tabanlı kurtarma (Firebase Admin için yalnızca private_key, client_email ve project_id gereklidir)
+        try {
+          const pKeyMatch = str.match(/"private_key"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+          const cEmailMatch = str.match(/"client_email"\s*:\s*"([^"]+)"/);
+          const pIdMatch = str.match(/"project_id"\s*:\s*"([^"]+)"/);
+          const kIdMatch = str.match(/"private_key_id"\s*:\s*"([^"]+)"/);
+          if (pKeyMatch && cEmailMatch) {
+            creds = {
+              type: "service_account",
+              project_id: pIdMatch ? pIdMatch[1] : "gamerisen",
+              private_key_id: kIdMatch ? kIdMatch[1] : undefined,
+              private_key: pKeyMatch[1],
+              client_email: cEmailMatch[1],
+            };
+          }
+        } catch {}
+      }
+
+      if (!creds) {
+        lastInitError = `JSON ayrıştırma hatası: ${err1?.message || err1}`;
+        console.error('[firebase-admin] JSON parse hatası:', err1?.message || err1);
+        return null;
+      }
     }
   }
 
