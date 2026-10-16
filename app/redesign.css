@@ -69,6 +69,13 @@ html[data-theme] .gr-glass, html[data-theme] .premium-dashboard-card {
 .premium-glass-input { background: var(--bg-input); border-color: var(--border); border-radius: 6px; }
 
 /* A stable two-row desktop header replaces the floating glass navigation. */
+.site-navigation { display: contents; }
+@media (min-width: 769px) {
+  /* Keep both rows in one sticky surface, including the space beside the tabs.
+     On phones display: contents keeps the bottom bar fixed to the viewport. */
+  html body > .site-navigation { display: block; position: sticky; top: 0; z-index: 1000; background: var(--bg); }
+  .site-navigation .nav-header { position: relative !important; }
+}
 html .nav-header { background: var(--bg) !important; border-color: var(--border) !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
 .nav-container { height: 68px; max-width: 1320px; gap: 24px; }
 .nav-logo { position: static; transform: none; order: 0; margin-right: auto; }
@@ -207,7 +214,7 @@ html[data-theme] {
 .library-invite { background: var(--bg-card) !important; border-color: var(--border) !important; border-radius: 8px !important; border-left: 3px solid var(--accent) !important; }
 
 /* Route-specific surfaces retain their controls, query parameters and state. */
-.games-page .sticky-search-bar { top: 114px !important; box-shadow: none; background: var(--bg-body) !important; border-bottom: 1px solid var(--border) !important; }
+.games-page .sticky-search-bar { top: 115px !important; box-shadow: none; background: var(--bg-body) !important; border-bottom: 1px solid var(--border) !important; }
 .games-page .sticky-search-bar input { min-width: 0; width: 100%; }
 .games-page .sticky-search-bar .container { padding-block: 12px !important; }
 .games-page .games-layout { gap: 24px !important; }
@@ -295,7 +302,7 @@ html[data-theme] {
   .news-card > div:last-child { padding: 12px !important; }
   .news-card h3 { font-size: 13px !important; }
   .library-invite { padding: 24px !important; }
-  .games-page .sticky-search-bar { top: 60px !important; }
+  .games-page .sticky-search-bar { top: 61px !important; }
   .games-page .grid-auto { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 12px; }
   .catalog-intro { padding-top: 24px !important; padding-bottom: 16px !important; }
   .catalog-intro h1 { font-size: 26px; }

@@ -82,7 +82,7 @@ export default function NavBar() {
   }, [pathname]);
 
   return (
-    <>
+    <div className="site-navigation">
       {/* ── Üst bar: ortalı logo + sağda tema & hesap ── */}
       <header className="nav-header">
         <div className="nav-container">
@@ -395,6 +395,6 @@ export default function NavBar() {
           </nav>
         </>
       )}
-    </>
+    </div>
   );
 }
