@@ -78,7 +78,7 @@ export default function PrivacyPage() {
             <section>
               <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>5. Üçüncü Taraf Hesap Bağlantıları</h2>
               <p>
-                Kütüphanenizi entegre ettiğinizde (Steam & Xbox Live resmi API entegrasyonu), yalnızca herkese açık olan oyun listeleriniz, başarılarınız ve hesap adlarınız sorgulanır.
+                Kütüphanenizi veya oyun hesaplarınızı entegre ettiğinizde (Steam, Xbox Live ve Riot Games resmi API entegrasyonları), yalnızca herkese açık olan oyun listeleriniz, başarılarınız, rank/lig bilgileriniz ve oyuncu etiketleriniz sorgulanır.
               </p>
               <ul style={{ paddingLeft: 20, marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <li>Hesap şifrelerinize veya ödeme yöntemlerinize hiçbir şekilde erişilmez, bu veriler sunucularımızda görülmez ve tutulmaz.</li>
@@ -194,7 +194,7 @@ export default function PrivacyPage() {
             <section>
               <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>5. Third-Party Integrations</h2>
               <p>
-                When you connect your library (Steam & Xbox Live integration), we query only your public game lists, achievements, and account names through official secure APIs.
+                When you connect your library or gaming accounts (Steam, Xbox Live, and Riot Games official API integrations), we query only your public game lists, achievements, ranked tiers, and player tags through official secure APIs.
               </p>
               <ul style={{ paddingLeft: 20, marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <li>We do not access, view, or store your account passwords or payment details.</li>

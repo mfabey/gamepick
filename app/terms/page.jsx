@@ -97,6 +97,9 @@ export default function TermsPage() {
               <p>
                 Sitede gösterilen oyun isimleri, kapak görselleri, markalar ve logolar ilgili yayıncı ve geliştirici şirketlerin mülkiyetindedir. Gamerisen, Valve Corporation (Steam), Microsoft (Xbox), Epic Games veya GOG ile hiçbir resmi veya ticari ortaklığa sahip değildir. Tüm ticari markalar hak sahiplerine aittir.
               </p>
+              <p style={{ marginTop: 10 }}>
+                Gamerisen, Riot Games tarafından onaylanmamıştır ve Riot Games veya Riot Games mülklerinin üretiminde veya yönetiminde resmi olarak yer alan kişilerin görüş veya fikirlerini yansıtmaz. Riot Games ve ilgili tüm mülkler, Riot Games, Inc.&apos;in ticari markaları veya tescilli ticari markalarıdır.
+              </p>
             </section>
 
             <section>
@@ -177,6 +180,9 @@ export default function TermsPage() {
               <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>6. Copyrights and Trademarks</h2>
               <p>
                 All game titles, images, brands, and logos displayed on this site belong to their respective owners. Gamerisen is not affiliated with Valve Corporation (Steam), Microsoft (Xbox), Epic Games, or GOG in any official or commercial way. All trademarks belong to their respective owners.
+              </p>
+              <p style={{ marginTop: 10 }}>
+                Gamerisen isn&apos;t endorsed by Riot Games and doesn&apos;t reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.
               </p>
             </section>
 

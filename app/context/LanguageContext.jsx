@@ -170,7 +170,7 @@ const TRANSLATIONS = {
     'footer.poweredBy': 'Steam Destekli',
     'footer.terms': 'Kullanıcı Sözleşmesi',
     'footer.privacy': 'Gizlilik Politikası',
-    'footer.disclaimer': 'Valve Corporation, Steam, Xbox veya Microsoft ile hiçbir resmi bağımız yoktur. Tüm ticari markalar kendi sahiplerine aittir.'
+    'footer.disclaimer': 'Gamerisen, Riot Games tarafından onaylanmamıştır ve Riot Games veya Riot Games mülklerinin üretiminde/yönetiminde resmi olarak yer alan kişilerin görüşlerini yansıtmaz. Riot Games ve ilgili tüm mülkler, Riot Games, Inc.\'in ticari markalarıdır. Valve Corporation, Steam, Xbox veya Microsoft ile hiçbir resmi bağımız yoktur.'
   },
   en: {
     // Nav links
@@ -337,7 +337,7 @@ const TRANSLATIONS = {
     'footer.poweredBy': 'Powered by Steam',
     'footer.terms': 'Terms of Service',
     'footer.privacy': 'Privacy Policy',
-    'footer.disclaimer': 'We are not affiliated with Valve Corporation, Steam, Xbox, or Microsoft in any way. All trademarks belong to their respective owners.'
+    'footer.disclaimer': 'Gamerisen isn\'t endorsed by Riot Games and doesn\'t reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc. We are not affiliated with Valve Corporation, Steam, Xbox, or Microsoft in any way.'
   }
 };
 
