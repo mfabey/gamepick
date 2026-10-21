@@ -181,8 +181,8 @@ export default function SignupPage() {
           display: 'flex', flexDirection: 'column', gap: 6,
         }}>
           {(lang === 'tr'
-            ? ['Steam, Epic ve Xbox kütüphaneni tek ekranda gör', 'Fiyat alarmı ile en ucuz fiyatı yakala', 'AI ile ruh haline göre oyun önerisi al']
-            : ['See your Steam, Epic, and Xbox libraries in one screen', 'Catch the lowest price with price alerts', 'Get mood-based game recommendations with AI']
+            ? ['Steam, Riot Games ve Xbox kütüphaneni tek ekranda gör', 'Fiyat alarmı ile en ucuz fiyatı yakala', 'AI ile ruh haline göre oyun önerisi al']
+            : ['See your Steam, Riot Games, and Xbox libraries in one screen', 'Catch the lowest price with price alerts', 'Get mood-based game recommendations with AI']
           ).map(t => (
             <p key={t} style={{ fontSize: 12, color: 'var(--text-2)', display: 'flex', gap: 8 }}>
               <span style={{ color: 'var(--accent)', fontWeight: 700 }}>✓</span> {t}
