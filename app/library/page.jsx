@@ -394,8 +394,8 @@ function ConnectPrompt({ platform, lang, t, onConnect }) {
   if (platform === 'riot') {
     return (
       <div style={{ textAlign: 'center', padding: '72px 24px', maxWidth: 440, margin: '0 auto' }}>
-        <div style={{ width: 72, height: 72, borderRadius: 18, background: 'rgba(255,70,85,0.08)', border: '1px solid rgba(255,70,85,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', boxShadow: '0 0 20px rgba(255,70,85,0.1)' }}>
-          <RiotLogo size={36} color="#ff4655" />
+        <div style={{ width: 76, height: 76, borderRadius: '50%', background: '#d13639', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', boxShadow: '0 8px 28px rgba(209,54,57,0.4)', border: '2px solid rgba(255,255,255,0.15)' }}>
+          <RiotLogo size={42} color="#ffffff" />
         </div>
         <h2 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', marginBottom: 8 }}>Riot Games</h2>
         <p style={{ fontSize: 14.5, color: 'var(--text-3)', lineHeight: 1.6 }}>
@@ -1149,7 +1149,7 @@ function XboxLogo({ size = 24, color = '#fff' }) {
 function RiotLogo({ size = 24, color = '#ff4655' }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill={color} xmlns="http://www.w3.org/2000/svg">
-      <path d="M13.414 1.764L1.306 7.37v1.863l11.464 2.808 1.488-.364-.844-3.535 3.197.784.776-3.256-3.198-.783.83-3.475-1.605-.647zm.784 10.975l-1.39.34.846 3.54-3.198-.784-.775 3.256 3.197.783-.83 3.475 1.605.65 8.045-9.444V9.92l-7.494 2.819zm-1.89-6.335l-.776 3.255-3.198-.783-.775 3.256 3.197.783-.83 3.475 1.605.65 3.996-4.69-3.219-5.946z"/>
+      <path d="M13.458.86 0 7.093l3.353 12.761 2.552-.313-.701-8.024.838-.373 1.447 8.202 4.361-.535-.775-8.857.83-.37 1.591 9.025 4.412-.542-.849-9.708.84-.374 1.74 9.87L24 17.318V3.5Zm.316 19.356.222 1.256L24 23.14v-4.18l-10.22 1.256Z" />
     </svg>
   );
 }
