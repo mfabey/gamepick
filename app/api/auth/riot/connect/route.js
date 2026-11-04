@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { readValue, signValue, LINK_TTL_SEC } from '../../../../lib/session-cookie';
 import { cookies } from 'next/headers';
 import { redisCmd, redisGetJSON, redisSetJSON } from '../../../../lib/redis';
+import { isDeveloperAccount } from '../../../../lib/social-store';
 
 // Bölge / Cluster eşleştirmeleri
 const REGION_MAP = {
@@ -23,6 +24,21 @@ export async function POST(request) {
   try {
     const body = await request.json().catch(() => ({}));
     const { riotId, region = 'tr1', isDemo } = body;
+
+    // Geliştirici Hesabı Denetimi (@batuta ve @test)
+    const cookieStore = await cookies();
+    const userSession = cookieStore.get('gp_user_session');
+    let user = null;
+    if (userSession?.value) {
+      try { user = await readValue(userSession.value); } catch {}
+    }
+
+    if (!user || !isDeveloperAccount(user)) {
+      return NextResponse.json(
+        { error: 'Riot Games entegrasyonu şu anda geliştirici test aşamasındadır (@batuta ve @test). Çok yakında tüm kullanıcılara açılacaktır.' },
+        { status: 403 }
+      );
+    }
 
     // Demo / Önizleme Modu (API Key beklenirken veya test için)
     if (isDemo) {
@@ -60,16 +76,11 @@ export async function POST(request) {
         updatedAt: new Date().toISOString(),
       };
 
-      const cookieStore = await cookies();
-      const userSession = cookieStore.get('gp_user_session');
-      if (userSession?.value) {
+      if (user?.uid) {
         try {
-          const user = await readValue(userSession.value);
-          if (user?.uid) {
-            const conn = (await redisGetJSON(`user_connections:${user.uid}`).catch(() => null)) || {};
-            conn.riot = demoData;
-            await redisSetJSON(`user_connections:${user.uid}`, conn);
-          }
+          const conn = (await redisGetJSON(`user_connections:${user.uid}`).catch(() => null)) || {};
+          conn.riot = demoData;
+          await redisSetJSON(`user_connections:${user.uid}`, conn);
         } catch {}
       }
 
@@ -214,17 +225,12 @@ export async function POST(request) {
     };
 
     // Redis ve Oturuma Kaydet
-    const cookieStore = await cookies();
-    const userSession = cookieStore.get('gp_user_session');
-    if (userSession?.value) {
+    if (user?.uid) {
       try {
-        const user = await readValue(userSession.value);
-        if (user?.uid) {
-          const conn = (await redisGetJSON(`user_connections:${user.uid}`).catch(() => null)) || {};
-          conn.riot = riotData;
-          await redisSetJSON(`user_connections:${user.uid}`, conn);
-          await redisCmd(['SET', `riot_to_uid:${puuid}`, user.uid]);
-        }
+        const conn = (await redisGetJSON(`user_connections:${user.uid}`).catch(() => null)) || {};
+        conn.riot = riotData;
+        await redisSetJSON(`user_connections:${user.uid}`, conn);
+        await redisCmd(['SET', `riot_to_uid:${puuid}`, user.uid]);
       } catch {}
     }
 

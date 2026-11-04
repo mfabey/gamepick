@@ -21,7 +21,15 @@ export default function LibraryPage() {
 
   const hasSteam = steamAccounts.length > 0;
   const hasXbox  = !!xboxUser;
-  const hasRiot  = !!riotUser;
+  const isDev = Boolean(
+    user && (
+      user.isDeveloper === true ||
+      ['batuta', 'test', 'test8'].includes(String(user.username || '').replace(/^@/, '').toLowerCase().trim()) ||
+      ['M05J6kGPeqPAkPG55Blg7dJlVsY2', '5FimwbEHFQZ75FgL2PkgIY9OQV92'].includes(user.uid) ||
+      ['xxxbatuhan@gmail.com', 'gamerisen@hotmail.com', '240404021@ogr.kent.edu.tr'].includes(String(user.email || '').toLowerCase().trim())
+    )
+  );
+  const hasRiot  = isDev && !!riotUser;
   const hasAny   = hasSteam || hasXbox || hasRiot;
 
   const [platform, setPlatform]           = useState('steam');   // 'steam' | 'xbox' | 'epic'
@@ -253,7 +261,7 @@ export default function LibraryPage() {
               icon={<SteamLogo size={16} color={platform === 'steam' ? '#1a9fff' : 'currentColor'} />} />
             <PlatformTab active={platform === 'xbox'} onClick={() => setPlatform('xbox')} color="#4ade80" label="Xbox" count={hasXbox ? 1 : 0}
               icon={<XboxLogo size={15} color={platform === 'xbox' ? '#4ade80' : 'currentColor'} />} />
-            <PlatformTab active={platform === 'riot'} onClick={() => setPlatform('riot')} color="#ff4655" label="Riot Games" count={hasRiot ? 1 : 0}
+            <PlatformTab active={platform === 'riot'} onClick={() => setPlatform('riot')} color="#ff4655" label="Riot Games" count={isDev && hasRiot ? 1 : 0} soonLabel={!isDev ? (lang === 'tr' ? 'Yakında' : 'Soon') : undefined}
               icon={<RiotLogo size={15} color={platform === 'riot' ? '#ff4655' : 'currentColor'} />} />
           </div>
         </div>
@@ -311,9 +319,13 @@ export default function LibraryPage() {
 
         {/* ── RIOT GAMES ── */}
         {platform === 'riot' && (
-          !hasRiot
-            ? <RiotConnectCard lang={lang} t={t} onConnected={(data) => setRiotUser(data)} />
+          !isDev ? (
+            <RiotComingSoonPrompt lang={lang} />
+          ) : (
+            !hasRiot
+              ? <RiotConnectCard lang={lang} t={t} onConnected={(data) => setRiotUser(data)} />
             : <RiotProfileView riotUser={riotUser} onLogout={riotLogout} onRefresh={(data) => setRiotUser(data)} lang={lang} t={t} />
+          )
         )}
 
         {/* ── Genel Toplam ── */}
@@ -1706,6 +1718,25 @@ function RiotGameBanner({ title, tag, sub, statusColor }) {
         <span style={{ width: 8, height: 8, borderRadius: "50%", background: statusColor }} />
         <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-2)" }}>{sub}</span>
       </div>
+    </div>
+  );
+}
+
+function RiotComingSoonPrompt({ lang }) {
+  return (
+    <div style={{ textAlign: "center", padding: "72px 24px", maxWidth: 440, margin: "0 auto" }}>
+      <div style={{ width: 76, height: 76, borderRadius: "50%", background: "#d13639", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px", boxShadow: "0 8px 28px rgba(209,54,57,0.4)", border: "2px solid rgba(255,255,255,0.15)" }}>
+        <RiotLogo size={42} color="#ffffff" />
+      </div>
+      <h2 style={{ fontSize: 22, fontWeight: 800, color: "var(--text)", marginBottom: 8 }}>Riot Games</h2>
+      <p style={{ fontSize: 14.5, color: "var(--text-3)", lineHeight: 1.6 }}>
+        {lang === "tr"
+          ? "Riot Games (Valorant & LoL) entegrasyonu çok yakında! Resmi onay sonrasında Riot ID hesabınızı bağlayıp rank, lig ve ustalık rozetlerinizi profilinizde sergileyebileceksiniz."
+          : "Riot Games (Valorant & LoL) integration is coming soon! After official approval, you will be able to connect your Riot ID and showcase your ranks and mastery on your profile."}
+      </p>
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 20, padding: "8px 18px", borderRadius: 20, background: "rgba(255,70,85,0.1)", border: "1px solid rgba(255,70,85,0.3)", color: "#ff4655", fontSize: 12.5, fontWeight: 700 }}>
+        <span>⏳</span> {lang === "tr" ? "Resmi Onay Bekleniyor (Çok Yakında)" : "Awaiting Official Approval (Coming Soon)"}
+      </span>
     </div>
   );
 }

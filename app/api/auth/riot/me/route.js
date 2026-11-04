@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { readValue } from '../../../../lib/session-cookie';
 import { cookies } from 'next/headers';
 import { redisGetJSON } from '../../../../lib/redis';
+import { isDeveloperAccount } from '../../../../lib/social-store';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,6 +14,9 @@ export async function GET() {
   if (userSession?.value) {
     try {
       const user = await readValue(userSession.value);
+      if (!isDeveloperAccount(user)) {
+        return NextResponse.json({ riot: null });
+      }
       if (user?.uid) {
         const conn = await redisGetJSON(`user_connections:${user.uid}`).catch(() => null);
         if (conn) {
