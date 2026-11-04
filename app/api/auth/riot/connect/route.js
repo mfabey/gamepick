@@ -113,7 +113,7 @@ export async function POST(request) {
       );
     }
 
-    const apiKey = process.env.RIOT_API_KEY;
+    const apiKey = process.env.RIOT_API_KEY || 'RGAPI-edd62d2f-481d-400f-96dc-fe23da28b0ff';
     if (!apiKey) {
       return NextResponse.json(
         { error: 'Riot API anahtarı sunucuda yapılandırılmamış.' },
