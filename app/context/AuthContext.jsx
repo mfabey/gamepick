@@ -23,6 +23,7 @@ export function AuthProvider({ children }) {
   const [steamUser,      setSteamUser]      = useState(null);      // İlk Steam hesabı (geriye uyumluluk)
   const [steamAccounts,  setSteamAccounts]  = useState([]);        // Tüm Steam hesapları
   const [xboxUser,       setXboxUser]       = useState(null);      // Xbox oturumu
+  const [riotUser,       setRiotUser]       = useState(null);      // Riot Games oturumu
   const [ownedGames,     setOwnedGames]     = useState(new Set()); // İlk Steam hesabının oyunları
   const [xboxOwnedGames, setXboxOwnedGames] = useState(new Set());
   const [gamePassGames,  setGamePassGames]  = useState(new Set());
@@ -32,10 +33,11 @@ export function AuthProvider({ children }) {
 
   const refreshAuth = async () => {
     try {
-      const [userData, steamData, xboxData] = await Promise.all([
+      const [userData, steamData, xboxData, riotData] = await Promise.all([
         fetch('/api/auth/user-me').then(r => r.json()).catch(() => ({ user: null })),
         fetch('/api/auth/me').then(r => r.json()).catch(() => ({ user: null, accounts: [] })),
         fetch('/api/auth/xbox/me').then(r => r.json()).catch(() => ({ user: null })),
+        fetch('/api/auth/riot/me').then(r => r.json()).catch(() => ({ riot: null })),
       ]);
 
       if (userData.user) {
@@ -48,9 +50,10 @@ export function AuthProvider({ children }) {
         setSteamAccounts(accounts);
         setSteamUser(accounts[0] || null);
         setXboxUser(userData.xboxUser || null);
+        setRiotUser(userData.riotUser || null);
       } else {
         setUser(null);
-        // Hesapsız / misafir web oturumu (yalnızca Steam/Xbox cookie ile bağlanmış):
+        // Hesapsız / misafir web oturumu (yalnızca Steam/Xbox/Riot cookie ile bağlanmış):
         const rawAccounts = Array.isArray(steamData.accounts)
           ? steamData.accounts
           : (steamData.user ? [steamData.user] : []);
@@ -58,6 +61,7 @@ export function AuthProvider({ children }) {
         setSteamAccounts(accounts);
         setSteamUser(accounts[0] || null);
         setXboxUser(xboxData.user || null);
+        setRiotUser(riotData.riot || null);
       }
     } catch (err) {
       setUser(null);
@@ -140,6 +144,7 @@ export function AuthProvider({ children }) {
     setSteamUser(null);
     setSteamAccounts([]);
     setXboxUser(null);
+    setRiotUser(null);
     setOwnedGames(new Set());
     setXboxOwnedGames(new Set());
     setGamePassGames(new Set());
@@ -184,6 +189,7 @@ export function AuthProvider({ children }) {
       setSteamUser(null);
       setSteamAccounts([]);
       setXboxUser(null);
+      setRiotUser(null);
       setOwnedGames(new Set());
       setXboxOwnedGames(new Set());
       setGamePassGames(new Set());
@@ -218,11 +224,19 @@ export function AuthProvider({ children }) {
     window.location.href = '/api/auth/xbox/logout';
   };
 
+  // ── Riot Games işlemleri ─────────────────────────────────────────────────
+  const riotLogout = async () => {
+    try {
+      await fetch('/api/auth/riot/connect', { method: 'DELETE' });
+    } catch {}
+    setRiotUser(null);
+  };
+
   return (
     <AuthContext.Provider value={{
-      user, steamUser, steamAccounts, xboxUser,
+      user, steamUser, steamAccounts, xboxUser, riotUser, setRiotUser,
       ownedGames, xboxOwnedGames, gamePassGames,
-      ready, signup, login, logout, steamLogout, steamLogoutAccount, xboxLogout,
+      ready, signup, login, logout, steamLogout, steamLogoutAccount, xboxLogout, riotLogout,
       resetPassword, changePassword, deleteAccount, refreshAuth,
     }}>
       {children}

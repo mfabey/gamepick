@@ -100,7 +100,7 @@ export const AUTH_ENTRY_ROUTES = new Set([
  * çıkarılıyor, istekten değil.
  */
 export const SESSION_ROUTES = new Set([
-  'auth/me', 'auth/user-me', 'auth/xbox/me',
+  'auth/me', 'auth/user-me', 'auth/xbox/me', 'auth/riot/me', 'auth/riot/connect',
   'auth/change-password', 'auth/delete-account', 'auth/steam-remove',
   'steam-library', 'xbox-library',
   // KÜTÜPHANE UÇLARI. Önce yanlışlıkla PUBLIC yazılmıştı ("çerez varsa

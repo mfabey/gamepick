@@ -12,7 +12,7 @@ import { useLanguage } from '../context/LanguageContext';
 // ANA SAYFA
 // ─────────────────────────────────────────────────────────────────────────────
 export default function LibraryPage() {
-  const { user, steamAccounts: rawSteamAccounts = [], steamLogoutAccount, xboxUser, xboxLogout } = useAuth();
+  const { user, steamAccounts: rawSteamAccounts = [], steamLogoutAccount, xboxUser, xboxLogout, riotUser, riotLogout, setRiotUser } = useAuth();
   const { lang, t } = useLanguage();
 
   const steamAccounts = useMemo(() => (
@@ -21,7 +21,8 @@ export default function LibraryPage() {
 
   const hasSteam = steamAccounts.length > 0;
   const hasXbox  = !!xboxUser;
-  const hasAny   = hasSteam || hasXbox;
+  const hasRiot  = !!riotUser;
+  const hasAny   = hasSteam || hasXbox || hasRiot;
 
   const [platform, setPlatform]           = useState('steam');   // 'steam' | 'xbox' | 'epic'
   const [steamView, setSteamView]         = useState('all');     // 'all' | steamId
@@ -45,7 +46,8 @@ export default function LibraryPage() {
   // Varsayılan platform: bağlı olana göre
   useEffect(() => {
     if (!hasSteam && hasXbox) setPlatform('xbox');
-  }, [hasSteam, hasXbox]);
+    else if (!hasSteam && !hasXbox && hasRiot) setPlatform('riot');
+  }, [hasSteam, hasXbox, hasRiot]);
 
   // steamView geçerliliğini koru
   useEffect(() => {
@@ -251,7 +253,7 @@ export default function LibraryPage() {
               icon={<SteamLogo size={16} color={platform === 'steam' ? '#1a9fff' : 'currentColor'} />} />
             <PlatformTab active={platform === 'xbox'} onClick={() => setPlatform('xbox')} color="#4ade80" label="Xbox" count={hasXbox ? 1 : 0}
               icon={<XboxLogo size={15} color={platform === 'xbox' ? '#4ade80' : 'currentColor'} />} />
-            <PlatformTab active={platform === 'riot'} onClick={() => setPlatform('riot')} color="#ff4655" label="Riot Games" soonLabel={lang === 'tr' ? 'Yakında' : 'Soon'}
+            <PlatformTab active={platform === 'riot'} onClick={() => setPlatform('riot')} color="#ff4655" label="Riot Games" count={hasRiot ? 1 : 0}
               icon={<RiotLogo size={15} color={platform === 'riot' ? '#ff4655' : 'currentColor'} />} />
           </div>
         </div>
@@ -308,7 +310,11 @@ export default function LibraryPage() {
         )}
 
         {/* ── RIOT GAMES ── */}
-        {platform === 'riot' && <ConnectPrompt platform="riot" lang={lang} t={t} />}
+        {platform === 'riot' && (
+          !hasRiot
+            ? <RiotConnectCard lang={lang} t={t} onConnected={(data) => setRiotUser(data)} />
+            : <RiotProfileView riotUser={riotUser} onLogout={riotLogout} onRefresh={(data) => setRiotUser(data)} lang={lang} t={t} />
+        )}
 
         {/* ── Genel Toplam ── */}
         {hasAny && <GrandTotalSummary grand={grand} loading={steamLoading || steamPricesLoading || xboxLoading} />}
@@ -391,24 +397,6 @@ function ProfileChip({ active, onClick, accent, avatar, icon, label, sub, onRemo
 // BAĞLANTI / YAKINDA EKRANI
 // ─────────────────────────────────────────────────────────────────────────────
 function ConnectPrompt({ platform, lang, t, onConnect }) {
-  if (platform === 'riot') {
-    return (
-      <div style={{ textAlign: 'center', padding: '72px 24px', maxWidth: 440, margin: '0 auto' }}>
-        <div style={{ width: 76, height: 76, borderRadius: '50%', background: '#d13639', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', boxShadow: '0 8px 28px rgba(209,54,57,0.4)', border: '2px solid rgba(255,255,255,0.15)' }}>
-          <RiotLogo size={42} color="#ffffff" />
-        </div>
-        <h2 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', marginBottom: 8 }}>Riot Games</h2>
-        <p style={{ fontSize: 14.5, color: 'var(--text-3)', lineHeight: 1.6 }}>
-          {lang === 'tr'
-            ? 'Riot Games (Valorant & LoL) entegrasyonu çok yakında! Resmi onay sonrasında Riot ID hesabınızı bağlayıp rank, lig ve ustalık rozetlerinizi profilinizde sergileyebileceksiniz.'
-            : 'Riot Games (Valorant & LoL) integration is coming soon! After official approval, you will be able to connect your Riot ID and showcase your ranks and mastery on your profile.'}
-        </p>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 20, padding: '8px 18px', borderRadius: 20, background: 'rgba(255,70,85,0.1)', border: '1px solid rgba(255,70,85,0.3)', color: '#ff4655', fontSize: 12.5, fontWeight: 700 }}>
-          <span>⏳</span> {lang === 'tr' ? 'Resmi Onay Bekleniyor (Çok Yakında)' : 'Awaiting Official Approval (Coming Soon)'}
-        </span>
-      </div>
-    );
-  }
   const isSteam = platform === 'steam';
   const color = isSteam ? '#1a9fff' : '#107C10';
   return (
@@ -1329,3 +1317,395 @@ function XboxConnectModal({ onClose, xboxError, setXboxError }) {
   );
 }
 
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RIOT GAMES BİLEŞENLERİ
+// ─────────────────────────────────────────────────────────────────────────────
+function RiotConnectCard({ lang, t, onConnected }) {
+  const [riotId, setRiotId] = useState("");
+  const [region, setRegion] = useState("tr1");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleSubmit = async (e, isDemo = false) => {
+    if (e) e.preventDefault();
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/auth/riot/connect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ riotId: isDemo ? "Gamerisen#TR1" : riotId, region, isDemo }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || (lang === "tr" ? "Riot hesabı doğrulanamadı." : "Failed to verify Riot account."));
+      }
+      if (onConnected) onConnected(data.riot);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{ maxWidth: 520, margin: "0 auto", padding: "40px 28px", background: "var(--bg-card)", borderRadius: 24, border: "1px solid rgba(255, 70, 85, 0.25)", boxShadow: "0 12px 40px rgba(0,0,0,0.25)" }}>
+      <div style={{ textAlign: "center", marginBottom: 28 }}>
+        <div style={{ width: 76, height: 76, borderRadius: "50%", background: "#d13639", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px", boxShadow: "0 8px 28px rgba(209,54,57,0.4)", border: "2px solid rgba(255,255,255,0.15)" }}>
+          <RiotLogo size={42} color="#ffffff" />
+        </div>
+        <h2 style={{ fontSize: 24, fontWeight: 800, color: "var(--text)", marginBottom: 8, letterSpacing: "-0.5px" }}>
+          {lang === "tr" ? "Riot Games Hesabını Bağla" : "Connect Riot Games Account"}
+        </h2>
+        <p style={{ fontSize: 14, color: "var(--text-3)", lineHeight: 1.6, maxWidth: 420, margin: "0 auto" }}>
+          {lang === "tr"
+            ? "Riot ID ile hesabınızı doğrulayarak League of Legends ve Valorant liginizi, seviyenizi ve istatistiklerinizi Gamerisen profilinizde sergileyin."
+            : "Verify your Riot ID to showcase your League of Legends & Valorant ranks, level, and competitive stats on Gamerisen."}
+        </p>
+      </div>
+
+      {error && (
+        <div style={{ padding: "12px 16px", borderRadius: 12, background: "rgba(239, 68, 68, 0.1)", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#f87171", fontSize: 13, marginBottom: 20, display: "flex", alignItems: "flex-start", gap: 10 }}>
+          <span style={{ fontSize: 16 }}>⚠️</span>
+          <div style={{ flex: 1, lineHeight: 1.45 }}>{error}</div>
+        </div>
+      )}
+
+      <form onSubmit={(e) => handleSubmit(e, false)}>
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--text-2)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+            {lang === "tr" ? "Riot ID (Oyun Adı # Etiket)" : "Riot ID (Game Name # Tag)"}
+          </label>
+          <input
+            type="text"
+            required
+            value={riotId}
+            onChange={(e) => setRiotId(e.target.value)}
+            placeholder={lang === "tr" ? "Örn: Faker#KR1 veya Oyuncu#TR1" : "e.g. Faker#KR1 or Gamer#NA1"}
+            className="premium-glass-input"
+            style={{ width: "100%", padding: "12px 16px", borderRadius: 12, fontSize: 14, background: "var(--bg-input)", border: "1px solid var(--border)", color: "var(--text)" }}
+          />
+        </div>
+
+        <div style={{ marginBottom: 24 }}>
+          <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--text-2)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+            {lang === "tr" ? "Bölge / Sunucu" : "Region / Server"}
+          </label>
+          <select
+            value={region}
+            onChange={(e) => setRegion(e.target.value)}
+            className="premium-glass-input"
+            style={{ width: "100%", padding: "12px 16px", borderRadius: 12, fontSize: 14, background: "var(--bg-input)", border: "1px solid var(--border)", color: "var(--text)", cursor: "pointer" }}
+          >
+            <option value="tr1">Türkiye (TR)</option>
+            <option value="euw1">Batı Avrupa (EUW)</option>
+            <option value="eun1">Kuzey & Doğu Avrupa (EUNE)</option>
+            <option value="na1">Kuzey Amerika (NA)</option>
+            <option value="kr">Kore (KR)</option>
+          </select>
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          style={{
+            width: "100%", padding: "14px", borderRadius: 12, border: "none",
+            background: "linear-gradient(135deg, #d13639, #ff4655)",
+            color: "#ffffff", fontSize: 15, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer",
+            boxShadow: "0 4px 20px rgba(209, 54, 57, 0.35)", transition: "transform .15s",
+            opacity: loading ? 0.7 : 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+          }}
+        >
+          {loading ? (lang === "tr" ? "Doğrulanıyor…" : "Verifying…") : (lang === "tr" ? "Riot Hesabını Doğrula ve Bağla" : "Verify & Connect Riot Account")}
+        </button>
+      </form>
+
+      <div style={{ marginTop: 20, paddingTop: 18, borderTop: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span style={{ fontSize: 12, color: "var(--text-3)" }}>
+          {lang === "tr" ? "Örnek görünümü test etmek için:" : "Want to preview with sample data?"}
+        </span>
+        <button
+          type="button"
+          onClick={() => handleSubmit(null, true)}
+          disabled={loading}
+          style={{ background: "none", border: "none", color: "#ff4655", fontSize: 12, fontWeight: 700, cursor: "pointer", padding: 4 }}
+        >
+          {lang === "tr" ? "Demo Profille Önizle →" : "Preview with Demo →"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function RiotProfileView({ riotUser, onLogout, onRefresh, lang, t }) {
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
+
+  if (!riotUser) return null;
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/auth/riot/connect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          riotId: riotUser.riotId || (riotUser.gameName + "#" + riotUser.tagLine),
+          region: riotUser.region || "tr1",
+          isDemo: !!riotUser.isDemo,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || "Yenileme başarısız");
+      if (onRefresh) onRefresh(data.riot);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const getTierColor = (tier) => {
+    const t = String(tier || "").toUpperCase();
+    if (t.includes("CHALLENGER")) return "#f4c053";
+    if (t.includes("GRANDMASTER")) return "#cd3333";
+    if (t.includes("MASTER")) return "#9d48e0";
+    if (t.includes("DIAMOND")) return "#576bce";
+    if (t.includes("EMERALD")) return "#2ec971";
+    if (t.includes("PLATINUM")) return "#4e9996";
+    if (t.includes("GOLD")) return "#cd8837";
+    if (t.includes("SILVER")) return "#80989d";
+    if (t.includes("BRONZE")) return "#8c523a";
+    return "#707070";
+  };
+
+  const ranks = riotUser.ranks || [];
+  const soloRank = ranks.find(r => r.queueType === "RANKED_SOLO_5x5");
+  const flexRank = ranks.find(r => r.queueType === "RANKED_FLEX_SR");
+
+  return (
+    <div>
+      <div style={{
+        background: "var(--bg-card)", borderRadius: 20, border: "1px solid rgba(255,70,85,0.2)",
+        padding: "24px 28px", marginBottom: 28, display: "flex", alignItems: "center",
+        justifyContent: "space-between", flexWrap: "wrap", gap: 20,
+        boxShadow: "0 8px 30px rgba(0,0,0,0.2)",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
+          <div style={{ position: "relative" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={"https://ddragon.leagueoflegends.com/cdn/14.21.1/img/profileicon/" + (riotUser.profileIconId || 1) + ".png"}
+              alt="Summoner Icon"
+              style={{ width: 68, height: 68, borderRadius: "50%", border: "3px solid #ff4655", objectFit: "cover" }}
+              onError={(e) => { e.currentTarget.style.display = "none"; }}
+            />
+            <span style={{
+              position: "absolute", bottom: -6, left: "50%", transform: "translateX(-50%)",
+              background: "#12141a", border: "1px solid #ff4655", color: "#fff",
+              fontSize: 10.5, fontWeight: 800, padding: "2px 8px", borderRadius: 12, whiteSpace: "nowrap",
+            }}>
+              Lv. {riotUser.summonerLevel || 1}
+            </span>
+          </div>
+
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <h2 style={{ fontSize: 22, fontWeight: 800, color: "var(--text)", letterSpacing: "-0.4px", margin: 0 }}>
+                {riotUser.gameName}
+                <span style={{ color: "var(--text-3)", fontWeight: 500, fontSize: 16, marginLeft: 4 }}>
+                  #{riotUser.tagLine}
+                </span>
+              </h2>
+              <span style={{
+                fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 6,
+                background: "rgba(255,70,85,0.15)", color: "#ff4655", textTransform: "uppercase",
+              }}>
+                {(riotUser.region || "tr1").toUpperCase()}
+              </span>
+              {riotUser.isDemo && (
+                <span style={{
+                  fontSize: 10.5, fontWeight: 700, padding: "3px 8px", borderRadius: 6,
+                  background: "rgba(234,179,8,0.15)", color: "#eab308",
+                }}>
+                  Demo
+                </span>
+              )}
+            </div>
+            <p style={{ fontSize: 12.5, color: "var(--text-3)", marginTop: 6, margin: 0 }}>
+              {lang === "tr" ? "Riot Games Bağlı Hesap" : "Connected Riot Games Account"}
+            </p
+          ></div>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            style={{
+              display: "flex", alignItems: "center", gap: 6, padding: "9px 16px", borderRadius: 12,
+              background: "var(--bg-input)", border: "1px solid var(--border)", color: "var(--text-2)",
+              fontSize: 13, fontWeight: 600, cursor: refreshing ? "not-allowed" : "pointer",
+            }}
+          >
+            <span style={{ display: "inline-block", transform: refreshing ? "rotate(360deg)" : "none", transition: "transform .6s linear" }}>🔄</span>
+            {refreshing ? (lang === "tr" ? "Yenileniyor…" : "Refreshing…") : (lang === "tr" ? "Yenile" : "Refresh")}
+          </button>
+
+          <button
+            onClick={onLogout}
+            style={{
+              padding: "9px 16px", borderRadius: 12, background: "rgba(239,68,68,0.1)",
+              border: "1px solid rgba(239,68,68,0.25)", color: "#ef4444",
+              fontSize: 13, fontWeight: 600, cursor: "pointer",
+            }}
+          >
+            {lang === "tr" ? "Bağlantıyı Kes" : "Disconnect"}
+          </button>
+        </div>
+      </div>
+
+      {error && (
+        <div style={{ padding: "12px 16px", borderRadius: 12, background: "rgba(239, 68, 68, 0.1)", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#f87171", fontSize: 13, marginBottom: 20 }}>
+          {error}
+        </div>
+      )}
+
+      {/* Dereceli Lig Kartları */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 20, marginBottom: 32 }}>
+        <RiotRankCard
+          queueTitle={lang === "tr" ? "Dereceli Tek / Çift" : "Ranked Solo / Duo"}
+          queueCode="Solo/Duo"
+          rankEntry={soloRank}
+          tierColor={getTierColor(soloRank?.tier)}
+          lang={lang}
+        />
+
+        <RiotRankCard
+          queueTitle={lang === "tr" ? "Dereceli Esnek (5v5)" : "Ranked Flex (5v5)"}
+          queueCode="Flex"
+          rankEntry={flexRank}
+          tierColor={getTierColor(flexRank?.tier)}
+          lang={lang}
+        />
+      </div>
+
+      {/* Ekosistem Oyunları */}
+      <div style={{ marginTop: 24 }}>
+        <h3 style={{ fontSize: 17, fontWeight: 700, color: "var(--text)", marginBottom: 16 }}>
+          {lang === "tr" ? "Riot Oyunları" : "Riot Games Ecosystem"}
+        </h3>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 14 }}>
+          <RiotGameBanner
+            title="League of Legends"
+            tag="MOBA"
+            sub={soloRank ? (soloRank.tier + " " + soloRank.rank) : (lang === "tr" ? "Bağlı" : "Linked")}
+            statusColor="#4ade80"
+          />
+          <RiotGameBanner
+            title="Valorant"
+            tag="Tactical FPS"
+            sub={lang === "tr" ? "Riot ID Entegre" : "Riot ID Integrated"}
+            statusColor="#ff4655"
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RiotRankCard({ queueTitle, queueCode, rankEntry, tierColor, lang }) {
+  if (!rankEntry) {
+    return (
+      <div style={{
+        background: "var(--bg-card)", borderRadius: 16, border: "1px solid var(--border)",
+        padding: "24px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", minHeight: 180,
+      }}>
+        <div style={{ width: 44, height: 44, borderRadius: 12, background: "var(--bg-input)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, marginBottom: 10 }}>
+          🛡️
+        </div>
+        <h4 style={{ fontSize: 16, fontWeight: 700, color: "var(--text)", margin: "0 0 4px 0" }}>{queueTitle}</h4>
+        <span style={{ fontSize: 13, color: "var(--text-3)" }}>
+          {lang === "tr" ? "Bu sezon henüz dereceli maç oynanmadı" : "Unranked in current season"}
+        </span>
+      </div>
+    );
+  }
+
+  const { tier, rank, leaguePoints, wins, losses, winRate } = rankEntry;
+
+  return (
+    <div style={{
+      background: "var(--bg-card)", borderRadius: 18, border: "1px solid " + tierColor + "40",
+      padding: "22px 24px", position: "relative", overflow: "hidden",
+      boxShadow: "0 4px 20px " + tierColor + "15",
+    }}>
+      <div style={{
+        position: "absolute", top: -30, right: -30, width: 120, height: 120,
+        borderRadius: "50%", background: tierColor + "12", filter: "blur(30px)", pointerEvents: "none"
+      }} />
+
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+        <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-3)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+          {queueTitle}
+        </span>
+        <span style={{ fontSize: 11, fontWeight: 800, padding: "2px 8px", borderRadius: 6, background: tierColor + "20", color: tierColor }}>
+          {queueCode}
+        </span>
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 16 }}>
+        <div style={{
+          width: 52, height: 52, borderRadius: 14, background: tierColor + "20",
+          border: "1.5px solid " + tierColor, display: "flex", alignItems: "center",
+          justifyContent: "center", fontSize: 22, color: tierColor, fontWeight: 800,
+        }}>
+          💎
+        </div>
+        <div>
+          <h4 style={{ fontSize: 20, fontWeight: 800, color: "var(--text)", margin: 0 }}>
+            {tier} {rank}
+          </h4>
+          <span style={{ fontSize: 13.5, fontWeight: 700, color: tierColor }}>
+            {leaguePoints} LP
+          </span>
+        </div>
+      </div>
+
+      <div style={{ paddingTop: 12, borderTop: "1px solid var(--border)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, marginBottom: 6 }}>
+          <span style={{ color: "var(--text-2)" }}>
+            {wins}G - {losses}M
+          </span>
+          <span style={{ fontWeight: 700, color: winRate >= 50 ? "#4ade80" : "#f87171" }}>
+            %{winRate} {lang === "tr" ? "Kazanma" : "Win Rate"}
+          </span>
+        </div>
+
+        <div style={{ width: "100%", height: 6, borderRadius: 3, background: "var(--bg-input)", overflow: "hidden" }}>
+          <div style={{ width: Math.min(Math.max(winRate, 5), 100) + "%", height: "100%", borderRadius: 3, background: winRate >= 50 ? "linear-gradient(90deg, #22c55e, #4ade80)" : "linear-gradient(90deg, #ef4444, #f87171)" }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RiotGameBanner({ title, tag, sub, statusColor }) {
+  return (
+    <div style={{
+      background: "var(--bg-card)", borderRadius: 14, border: "1px solid var(--border)",
+      padding: "14px 18px", display: "flex", alignItems: "center", justifyContent: "space-between",
+    }}>
+      <div>
+        <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text)", margin: "0 0 2px 0" }}>{title}</p>
+        <span style={{ fontSize: 11.5, color: "var(--text-3)" }}>{tag}</span>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <span style={{ width: 8, height: 8, borderRadius: "50%", background: statusColor }} />
+        <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-2)" }}>{sub}</span>
+      </div>
+    </div>
+  );
+}

@@ -105,6 +105,7 @@ export async function GET() {
     const steamAccounts = rawSteamAccounts.filter(a => a && typeof a === 'object' && a.steamId);
     const steamUser = steamAccounts[0] || null;
     const xboxUser = connections.xbox || null;
+    const riotUser = connections.riot || null;
 
     // Auto-cache profile and links to Redis
     try {
@@ -120,6 +121,9 @@ export async function GET() {
       if (xboxUser && xboxUser.gamertag && !xboxUser.isMock) {
         await redisCmd(['SET', `xbox_to_uid:${xboxUser.gamertag}`, user.uid]);
       }
+      if (riotUser && riotUser.puuid) {
+        await redisCmd(['SET', `riot_to_uid:${riotUser.puuid}`, user.uid]);
+      }
     } catch {}
 
     const response = NextResponse.json({
@@ -127,6 +131,7 @@ export async function GET() {
       steamUser,
       steamAccounts,
       xboxUser,
+      riotUser,
     });
 
     if (userWasRestored || isDev) {
@@ -147,14 +152,6 @@ export async function GET() {
       maxAge: LINK_TTL_SEC,
     };
 
-    // ÇEREZLER REDIS'E GÖRE YAZILIYOR VE SİLİNİYOR (main'in yapısı).
-    // Öncesi "yoksa yaz" idi; hesap ayrıldığında eski çerez cihazda kalıyor
-    // ve bağlantı kopmuş görünmüyordu. Artık tek doğruluk kaynağı Redis.
-    //
-    // DEĞERLER İMZALI (bu dalın kuralı). Main düz JSON yazıyordu; bu ağaçta
-    // aynı çerezleri okuyan her yer `readValue` kullanıyor (steam-owner.js,
-    // auth/me, oyun-merged, xbox-library) ve imzasız değeri REDDEDER. Düz
-    // JSON birleştirilseydi Steam ve Xbox bağlantısı web'de sessizce ölürdü.
     if (steamAccounts.length > 0) {
       response.cookies.set('gp_steam_accounts', await signValue(steamAccounts, LINK_TTL_SEC), cookieOpts);
       response.cookies.set('gp_steam_session', await signValue(steamAccounts[0], LINK_TTL_SEC), cookieOpts);
@@ -172,6 +169,14 @@ export async function GET() {
     } else {
       if (cookieStore.get('gp_xbox_session')) {
         response.cookies.set('gp_xbox_session', '', { ...cookieOpts, maxAge: 0 });
+      }
+    }
+
+    if (riotUser) {
+      response.cookies.set('gp_riot_session', await signValue(riotUser, LINK_TTL_SEC), cookieOpts);
+    } else {
+      if (cookieStore.get('gp_riot_session')) {
+        response.cookies.set('gp_riot_session', '', { ...cookieOpts, maxAge: 0 });
       }
     }
 
