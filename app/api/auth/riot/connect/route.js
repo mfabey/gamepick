@@ -113,11 +113,15 @@ export async function POST(request) {
       );
     }
 
-    const apiKey = process.env.RIOT_API_KEY || 'RGAPI-edd62d2f-481d-400f-96dc-fe23da28b0ff';
+    // Anahtar YALNIZCA ortam değişkeninden okunur. Kaynağa gömülü yedek
+    // anahtar (ef0c04c) public repoda sızmıştı; scripts/check-secrets.mjs
+    // bunun tekrarını build aşamasında durdurur.
+    const apiKey = process.env.RIOT_API_KEY;
     if (!apiKey) {
+      console.error('Riot connect: RIOT_API_KEY tanımlı değil.');
       return NextResponse.json(
-        { error: 'Riot API anahtarı sunucuda yapılandırılmamış.' },
-        { status: 500 }
+        { error: 'Riot bağlantısı şu anda kullanılamıyor. Lütfen daha sonra tekrar deneyin.' },
+        { status: 503 }
       );
     }
 
@@ -134,9 +138,11 @@ export async function POST(request) {
 
     if (!accRes.ok) {
       if (accRes.status === 401) {
+        // Sunucu yapılandırma sorunu: ayrıntı loga, kullanıcıya genel mesaj.
+        console.error('Riot connect: API anahtarı reddedildi (401). Anahtarı Riot Developer Portal üzerinden yenileyip RIOT_API_KEY ortam değişkenini güncelleyin.');
         return NextResponse.json(
-          { error: 'Riot API anahtarının süresi dolmuş veya geçersiz. Lütfen Riot Developer Portal üzerinden anahtarınızı yenileyin (Regenerate API Key).' },
-          { status: 401 }
+          { error: 'Riot bağlantısı şu anda kullanılamıyor. Lütfen daha sonra tekrar deneyin.' },
+          { status: 503 }
         );
       }
       if (accRes.status === 404) {

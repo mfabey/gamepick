@@ -7,12 +7,13 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "prebuild": "node scripts/check-access-policy.mjs && node scripts/check-cors-policy.mjs",
+    "prebuild": "node scripts/check-access-policy.mjs && node scripts/check-cors-policy.mjs && node scripts/check-secrets.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "check:access": "node scripts/check-access-policy.mjs",
     "check:cors": "node scripts/check-cors-policy.mjs",
+    "check:secrets": "node scripts/check-secrets.mjs",
     "metrics:mail": "node scripts/mail-volume.mjs",
     "backup:redis": "node scripts/redis-backup.mjs",
     "restore:redis": "node scripts/redis-restore.mjs"
